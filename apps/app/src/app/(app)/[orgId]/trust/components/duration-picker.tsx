@@ -4,15 +4,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from "@trycompai/ui/select";
 
 const DURATION_OPTIONS = [
-  { value: 7, label: '7 days' },
-  { value: 30, label: '30 days' },
-  { value: 60, label: '60 days' },
-  { value: 90, label: '90 days' },
-  { value: 180, label: '6 months' },
-  { value: 365, label: '1 year' },
+  { value: 7, label: "7 days" },
+  { value: 30, label: "30 days" },
+  { value: 60, label: "60 days" },
+  { value: 90, label: "90 days" },
+  { value: 180, label: "6 months" },
+  { value: 365, label: "1 year" },
 ] as const;
 
 export function DurationPicker({

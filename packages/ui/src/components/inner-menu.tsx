@@ -1,5 +1,5 @@
-import { ArrowLeftIcon } from 'lucide-react';
-import Link from 'next/link';
+import Link from "next/link";
+import { ArrowLeftIcon } from "lucide-react";
 
 interface InnerMenuProps {
   title: string;
@@ -16,7 +16,9 @@ export function InnerMenu({ title, previous }: InnerMenuProps) {
           </Link>
         </li>
         <li>
-          <span className="text-primary font-medium underline underline-offset-8">{title}</span>
+          <span className="text-primary font-medium underline underline-offset-8">
+            {title}
+          </span>
         </li>
       </ul>
     </nav>

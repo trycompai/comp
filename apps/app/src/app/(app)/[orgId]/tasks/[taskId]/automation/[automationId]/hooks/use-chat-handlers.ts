@@ -1,8 +1,8 @@
-import { api } from '@/lib/api-client';
-import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { mutate } from 'swr';
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api-client";
+import { toast } from "sonner";
+import { mutate } from "swr";
 
 interface UseChatHandlersProps {
   sendMessage: (message: { text: string }, options?: any) => void;
@@ -43,7 +43,7 @@ export function useChatHandlers({
           }>(`/v1/tasks/${taskId}/automations`, {}, orgId);
 
           if (response.error || !response.data?.success) {
-            throw new Error(response.error || 'Failed to create automation');
+            throw new Error(response.error || "Failed to create automation");
           }
 
           realAutomationId = response.data.automation.id;
@@ -55,16 +55,25 @@ export function useChatHandlers({
           mutate([`task-automations-${taskId}`, orgId, taskId]);
 
           // Invalidate the automation cache so breadcrumb updates
-          mutate([`automation-${realAutomationId}`, orgId, taskId, realAutomationId]);
+          mutate([
+            `automation-${realAutomationId}`,
+            orgId,
+            taskId,
+            realAutomationId,
+          ]);
 
           // Silently replace the URL without navigation/reload
           window.history.replaceState(
             null,
-            '',
+            "",
             `/${orgId}/tasks/${taskId}/automation/${realAutomationId}`,
           );
         } catch (error) {
-          toast.error(error instanceof Error ? error.message : 'Failed to create automation');
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to create automation",
+          );
           return;
         }
       }
@@ -74,8 +83,8 @@ export function useChatHandlers({
         { text },
         {
           body: {
-            modelId: 'openai/gpt-5-mini',
-            reasoningEffort: 'medium',
+            modelId: "openai/gpt-5-mini",
+            reasoningEffort: "medium",
             orgId,
             taskId,
             automationId: realAutomationId,
@@ -83,9 +92,17 @@ export function useChatHandlers({
         },
       );
 
-      setInput('');
+      setInput("");
     },
-    [sendMessage, setInput, orgId, taskId, automationId, isEphemeral, updateAutomationId],
+    [
+      sendMessage,
+      setInput,
+      orgId,
+      taskId,
+      automationId,
+      isEphemeral,
+      updateAutomationId,
+    ],
   );
 
   const handleSecretAdded = useCallback(
@@ -96,8 +113,8 @@ export function useChatHandlers({
         },
         {
           body: {
-            modelId: 'openai/gpt-5-mini',
-            reasoningEffort: 'medium',
+            modelId: "openai/gpt-5-mini",
+            reasoningEffort: "medium",
             orgId,
             taskId,
             automationId,
@@ -112,7 +129,7 @@ export function useChatHandlers({
     (info: Record<string, string>) => {
       const infoText = Object.entries(info)
         .map(([key, value]) => `${key}: ${value}`)
-        .join('\n');
+        .join("\n");
 
       sendMessage(
         {
@@ -120,8 +137,8 @@ export function useChatHandlers({
         },
         {
           body: {
-            modelId: 'openai/gpt-5-mini',
-            reasoningEffort: 'medium',
+            modelId: "openai/gpt-5-mini",
+            reasoningEffort: "medium",
             orgId,
             taskId,
             automationId,

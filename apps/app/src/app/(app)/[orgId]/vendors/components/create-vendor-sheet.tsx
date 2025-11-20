@@ -1,22 +1,33 @@
-'use client';
+"use client";
 
-import { Member, User } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
-import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import { CreateVendorForm } from './create-vendor-form';
+import { X } from "lucide-react";
+import { useQueryState } from "nuqs";
 
-export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: User })[] }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('createVendorSheet');
+import { Member, User } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Drawer, DrawerContent, DrawerTitle } from "@trycompai/ui/drawer";
+import { useMediaQuery } from "@trycompai/ui/hooks";
+import { ScrollArea } from "@trycompai/ui/scroll-area";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@trycompai/ui/sheet";
+
+import { CreateVendorForm } from "./create-vendor-form";
+
+export function CreateVendorSheet({
+  assignees,
+}: {
+  assignees: (Member & { user: User })[];
+}) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [open, setOpen] = useQueryState("createVendorSheet");
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
+    setOpen(open ? "true" : null);
   };
 
   if (isDesktop) {
@@ -24,7 +35,7 @@ export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{'Create Vendor'}</SheetTitle>
+            <SheetTitle>{"Create Vendor"}</SheetTitle>
             <Button
               size="icon"
               variant="ghost"
@@ -45,7 +56,7 @@ export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: 
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Create Vendor'}</DrawerTitle>
+      <DrawerTitle hidden>{"Create Vendor"}</DrawerTitle>
       <DrawerContent className="p-6">
         <CreateVendorForm assignees={assignees} />
       </DrawerContent>

@@ -1,8 +1,11 @@
-'use client';
+"use client";
 
-import type { Member, Policy } from '@db';
-import type { JSONContent } from '@tiptap/react';
-import { Button } from '@trycompai/ui/button';
+import type { JSONContent } from "@tiptap/react";
+import type { Member, Policy } from "@trycompai/db";
+import { ArrowRight, Check } from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Card,
   CardContent,
@@ -10,11 +13,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
-import { ArrowRight, Check } from 'lucide-react';
-import { useState } from 'react';
-import { PolicyEditor } from './PolicyEditor';
-import { PortalPdfViewer } from './PortalPdfViewer';
+} from "@trycompai/ui/card";
+
+import { PolicyEditor } from "./PolicyEditor";
+import { PortalPdfViewer } from "./PortalPdfViewer";
 
 interface PolicyCardProps {
   policy: Policy;
@@ -25,15 +27,23 @@ interface PolicyCardProps {
   isLastPolicy?: boolean;
 }
 
-export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }: PolicyCardProps) {
-  const [isAccepted, setIsAccepted] = useState(policy.signedBy.includes(member.id));
+export function PolicyCard({
+  policy,
+  onNext,
+  onComplete,
+  member,
+  isLastPolicy,
+}: PolicyCardProps) {
+  const [isAccepted, setIsAccepted] = useState(
+    policy.signedBy.includes(member.id)
+  );
 
   const handleAccept = () => {
     setIsAccepted(true);
     onComplete?.();
   };
 
-  const isPdfPolicy = policy.displayFormat === 'PDF';
+  const isPdfPolicy = policy.displayFormat === "PDF";
 
   return (
     <Card className="relative flex max-h-[calc(100vh-450px)] w-full flex-col shadow-md">
@@ -42,9 +52,15 @@ export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }:
           <div className="space-y-4 text-center">
             <Check className="text-primary mx-auto h-12 w-12" />
             <h3 className="text-xl font-semibold">Policy Accepted</h3>
-            <p className="text-muted-foreground">You have accepted this policy</p>
+            <p className="text-muted-foreground">
+              You have accepted this policy
+            </p>
             <div className="flex justify-center gap-2">
-              <Button variant="outline" onClick={() => setIsAccepted(false)} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsAccepted(false)}
+                className="gap-2"
+              >
                 View Again
               </Button>
               {!isLastPolicy && (
@@ -59,7 +75,9 @@ export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }:
       )}
       <CardHeader>
         <CardTitle className="text-2xl">{policy.name}</CardTitle>
-        <CardDescription className="text-muted-foreground">{policy.description}</CardDescription>
+        <CardDescription className="text-muted-foreground">
+          {policy.description}
+        </CardDescription>
       </CardHeader>
       <CardContent className="w-full flex-1 overflow-y-auto">
         <div className="w-full border-t pt-6">
@@ -71,9 +89,12 @@ export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }:
             )}
           </div>
           <p className="text-muted-foreground mt-4 text-sm">
-            Status: {policy.status}{' '}
+            Status: {policy.status}{" "}
             {policy.updatedAt && (
-              <span>(Last updated: {new Date(policy.updatedAt).toLocaleDateString()})</span>
+              <span>
+                (Last updated: {new Date(policy.updatedAt).toLocaleDateString()}
+                )
+              </span>
             )}
           </p>
         </div>

@@ -1,15 +1,18 @@
-import { SetupLoadingStep } from '@/app/(app)/setup/components/SetupLoadingStep';
-import { getOrganizations } from '@/data/getOrganizations';
-import { auth } from '@/utils/auth';
-import type { Organization } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { SetupLoadingStep } from "@/app/(app)/setup/components/SetupLoadingStep";
+import { getOrganizations } from "@/data/getOrganizations";
+import { auth } from "@/utils/auth";
+
+import type { Organization } from "@trycompai/db";
 
 interface SetupLoadingPageProps {
   params: Promise<{ orgId: string }>;
 }
 
-export default async function SetupLoadingPage({ params }: SetupLoadingPageProps) {
+export default async function SetupLoadingPage({
+  params,
+}: SetupLoadingPageProps) {
   const { orgId } = await params;
 
   const session = await auth.api.getSession({
@@ -19,7 +22,7 @@ export default async function SetupLoadingPage({ params }: SetupLoadingPageProps
   const user = session?.user;
 
   if (!session || !session.session || !user) {
-    return redirect('/auth');
+    return redirect("/auth");
   }
 
   // Fetch existing organizations
@@ -29,7 +32,7 @@ export default async function SetupLoadingPage({ params }: SetupLoadingPageProps
     const result = await getOrganizations();
     organizations = result.organizations;
   } catch (error) {
-    console.error('Failed to fetch organizations:', error);
+    console.error("Failed to fetch organizations:", error);
   }
 
   return <SetupLoadingStep organizationId={orgId} />;

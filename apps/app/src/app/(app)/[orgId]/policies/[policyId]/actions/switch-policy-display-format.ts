@@ -1,23 +1,24 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const switchDisplayFormatSchema = z.object({
   policyId: z.string(),
-  format: z.enum(['EDITOR', 'PDF']),
+  format: z.enum(["EDITOR", "PDF"]),
 });
 
 export const switchPolicyDisplayFormatAction = authActionClient
   .inputSchema(switchDisplayFormatSchema)
   .metadata({
-    name: 'switch-policy-display-format',
+    name: "switch-policy-display-format",
     track: {
-      event: 'switch-policy-display-format',
-      channel: 'server',
+      event: "switch-policy-display-format",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -25,7 +26,7 @@ export const switchPolicyDisplayFormatAction = authActionClient
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      return { success: false, error: 'Not authorized' };
+      return { success: false, error: "Not authorized" };
     }
 
     try {
@@ -37,13 +38,14 @@ export const switchPolicyDisplayFormatAction = authActionClient
       });
 
       const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      let path =
+        headersList.get("x-pathname") || headersList.get("referer") || "";
+      path = path.replace(/\/[a-z]{2}\//, "/");
       revalidatePath(path);
 
       return { success: true };
     } catch (error) {
-      console.error('Error switching policy display format:', error);
-      return { success: false, error: 'Failed to switch view.' };
+      console.error("Error switching policy display format:", error);
+      return { success: false, error: "Failed to switch view." };
     }
   });

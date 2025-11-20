@@ -1,12 +1,20 @@
-'use client';
+"use client";
 
-import type { GlobalVendors, Member, User, Vendor } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { PencilIcon } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import { UpdateTitleAndDescriptionSheet } from '../title-and-description/update-title-and-description-sheet';
-import { UpdateSecondaryFieldsForm } from './update-secondary-fields-form';
+import { PencilIcon } from "lucide-react";
+import { useQueryState } from "nuqs";
+
+import type { GlobalVendors, Member, User, Vendor } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+
+import { UpdateTitleAndDescriptionSheet } from "../title-and-description/update-title-and-description-sheet";
+import { UpdateSecondaryFieldsForm } from "./update-secondary-fields-form";
 
 export function SecondaryFields({
   vendor,
@@ -17,7 +25,7 @@ export function SecondaryFields({
   assignees: (Member & { user: User })[];
   globalVendor: GlobalVendors | null;
 }) {
-  const [_, setOpen] = useQueryState('vendor-overview-sheet');
+  const [_, setOpen] = useQueryState("vendor-overview-sheet");
 
   return (
     <div className="space-y-4">
@@ -30,7 +38,7 @@ export function SecondaryFields({
                 size="icon"
                 variant="ghost"
                 className="m-0 size-auto p-0 hover:bg-transparent"
-                onClick={() => setOpen('true')}
+                onClick={() => setOpen("true")}
               >
                 <PencilIcon className="h-3 w-3" />
               </Button>

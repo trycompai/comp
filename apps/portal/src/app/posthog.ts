@@ -1,11 +1,11 @@
-'use server';
+"use server";
 
-import { Properties } from 'posthog-js';
-import { PostHog } from 'posthog-node';
+import { Properties } from "posthog-js";
+import { PostHog } from "posthog-node";
 
 let posthogInstance: PostHog | null = null;
 
-function getPostHogClient(): PostHog | null {
+async function getPostHogClient() {
   if (posthogInstance) {
     return posthogInstance;
   }
@@ -23,7 +23,7 @@ function getPostHogClient(): PostHog | null {
 
   // If keys are not set, warn and return null
   console.warn(
-    'PostHog keys (NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST) are not set, tracking is disabled.',
+    "PostHog keys (NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST) are not set, tracking is disabled."
   );
   return null;
 }
@@ -31,11 +31,15 @@ function getPostHogClient(): PostHog | null {
 // Export the getter function as the primary way to access the client
 export { getPostHogClient };
 
-export async function track(distinctId: string, eventName: string, properties?: Properties) {
-  const client = getPostHogClient();
+export async function track(
+  distinctId: string,
+  eventName: string,
+  properties?: Properties
+) {
+  const client = await getPostHogClient();
   if (!client) return;
 
-  console.log('[PostHog]: Tracking server side event:', eventName);
+  console.log("[PostHog]: Tracking server side event:", eventName);
 
   client.capture({
     distinctId,
@@ -45,7 +49,7 @@ export async function track(distinctId: string, eventName: string, properties?: 
 }
 
 export async function identify(distinctId: string, properties?: Properties) {
-  const client = getPostHogClient();
+  const client = await getPostHogClient();
   if (!client) return;
 
   client.identify({
@@ -55,7 +59,7 @@ export async function identify(distinctId: string, properties?: Properties) {
 }
 
 export async function getFeatureFlags(distinctId: string) {
-  const client = getPostHogClient();
+  const client = await getPostHogClient();
   if (!client) return {};
 
   const flags = await client.getAllFlags(distinctId);

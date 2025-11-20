@@ -1,8 +1,8 @@
-import 'server-only';
+import "server-only";
 
-import { openai } from '@ai-sdk/openai';
-import { embed } from 'ai';
-import { env } from '@/env.mjs';
+import { env } from "@/env.mjs";
+import { openai } from "@ai-sdk/openai";
+import { embed } from "ai";
 
 /**
  * Generates an embedding vector for the given text using OpenAI's embedding model
@@ -11,20 +11,19 @@ import { env } from '@/env.mjs';
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not configured');
+    throw new Error("OPENAI_API_KEY is not configured");
   }
 
   try {
     const { embedding } = await embed({
-      model: openai.embedding('text-embedding-3-small'),
+      model: openai.embedding("text-embedding-3-small"),
       value: text,
     });
 
     return embedding;
   } catch (error) {
     throw new Error(
-      `Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Failed to generate embedding: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
-

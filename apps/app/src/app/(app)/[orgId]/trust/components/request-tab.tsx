@@ -1,12 +1,25 @@
-import { useAccessRequests, usePreviewNda, useResendNda } from '@/hooks/use-access-requests';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Skeleton } from '@trycompai/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { ApproveDialog } from './approve-dialog';
-import { DenyDialog } from './deny-dialog';
+import { useState } from "react";
+import {
+  useAccessRequests,
+  usePreviewNda,
+  useResendNda,
+} from "@/hooks/use-access-requests";
+import { toast } from "sonner";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import { Skeleton } from "@trycompai/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@trycompai/ui/table";
+
+import { ApproveDialog } from "./approve-dialog";
+import { DenyDialog } from "./deny-dialog";
 
 export function RequestsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessRequests(orgId);
@@ -17,22 +30,22 @@ export function RequestsTab({ orgId }: { orgId: string }) {
 
   const handleResendNda = (requestId: string) => {
     toast.promise(resendNda(requestId), {
-      loading: 'Resending...',
-      success: 'NDA email resent',
-      error: 'Failed to resend NDA',
+      loading: "Resending...",
+      success: "NDA email resent",
+      error: "Failed to resend NDA",
     });
   };
 
   const handlePreviewNda = async (requestId: string) => {
     toast.promise(
       previewNda(requestId).then((result) => {
-        window.open(result.pdfDownloadUrl, '_blank');
+        window.open(result.pdfDownloadUrl, "_blank");
         return result;
       }),
       {
-        loading: 'Generating preview...',
-        success: 'Preview NDA generated',
-        error: 'Failed to generate preview',
+        loading: "Generating preview...",
+        success: "Preview NDA generated",
+        error: "Failed to generate preview",
       },
     );
   };
@@ -88,23 +101,28 @@ export function RequestsTab({ orgId }: { orgId: string }) {
             ))
           ) : data && data.length > 0 ? (
             data.map((request) => {
-              const ndaPending = request.status === 'approved' && !request.grant;
+              const ndaPending =
+                request.status === "approved" && !request.grant;
               return (
                 <TableRow key={request.id}>
-                  <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {new Date(request.createdAt).toLocaleDateString()}
+                  </TableCell>
                   <TableCell>{request.name}</TableCell>
                   <TableCell>{request.email}</TableCell>
-                  <TableCell>{request.company || '-'}</TableCell>
-                  <TableCell className="max-w-xs truncate">{request.purpose || '-'}</TableCell>
+                  <TableCell>{request.company || "-"}</TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {request.purpose || "-"}
+                  </TableCell>
                   <TableCell>{request.requestedDurationDays ?? 30}d</TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        request.status === 'approved'
-                          ? 'default'
-                          : request.status === 'denied'
-                            ? 'destructive'
-                            : 'secondary'
+                        request.status === "approved"
+                          ? "default"
+                          : request.status === "denied"
+                            ? "destructive"
+                            : "secondary"
                       }
                     >
                       {request.status}
@@ -116,14 +134,14 @@ export function RequestsTab({ orgId }: { orgId: string }) {
                     ) : request.grant ? (
                       <Badge variant="default">signed</Badge>
                     ) : (
-                      '-'
+                      "-"
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        disabled={request.status !== 'under_review'}
+                        disabled={request.status !== "under_review"}
                         onClick={() => setApproveId(request.id)}
                       >
                         Approve
@@ -131,7 +149,7 @@ export function RequestsTab({ orgId }: { orgId: string }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={request.status !== 'under_review'}
+                        disabled={request.status !== "under_review"}
                         onClick={() => setDenyId(request.id)}
                       >
                         Deny
@@ -159,7 +177,10 @@ export function RequestsTab({ orgId }: { orgId: string }) {
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+              <TableCell
+                colSpan={9}
+                className="text-muted-foreground py-8 text-center text-sm"
+              >
                 No access requests yet
               </TableCell>
             </TableRow>
@@ -167,9 +188,19 @@ export function RequestsTab({ orgId }: { orgId: string }) {
         </TableBody>
       </Table>
       {approveId && (
-        <ApproveDialog orgId={orgId} requestId={approveId} onClose={() => setApproveId(null)} />
+        <ApproveDialog
+          orgId={orgId}
+          requestId={approveId}
+          onClose={() => setApproveId(null)}
+        />
       )}
-      {denyId && <DenyDialog orgId={orgId} requestId={denyId} onClose={() => setDenyId(null)} />}
+      {denyId && (
+        <DenyDialog
+          orgId={orgId}
+          requestId={denyId}
+          onClose={() => setDenyId(null)}
+        />
+      )}
     </div>
   );
 }

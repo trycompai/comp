@@ -1,15 +1,20 @@
-import { decrypt, encrypt, type EncryptedData } from '@/lib/encryption';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import type { EncryptedData } from "@/lib/encryption";
+import { NextRequest, NextResponse } from "next/server";
+import { decrypt, encrypt } from "@/lib/encryption";
+import { auth } from "@/utils/auth";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const updateSecretSchema = z.object({
   name: z
     .string()
     .min(1)
     .max(100)
-    .regex(/^[A-Z0-9_]+$/, 'Name must be uppercase letters, numbers, and underscores only')
+    .regex(
+      /^[A-Z0-9_]+$/,
+      "Name must be uppercase letters, numbers, and underscores only",
+    )
     .optional(),
   value: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
@@ -18,11 +23,18 @@ const updateSecretSchema = z.object({
 });
 
 // GET /api/secrets/[id] - Get a specific secret (value is decrypted)
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const organizationId: string | null = request.nextUrl.searchParams.get('organizationId');
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const organizationId: string | null =
+    request.nextUrl.searchParams.get("organizationId");
 
   if (!organizationId) {
-    return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Organization ID is required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -31,7 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       headers: request.headers,
     });
     if (!session?.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const secret = await db.secret.findFirst({
@@ -42,11 +54,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     if (!secret) {
-      return NextResponse.json({ error: 'Secret not found' }, { status: 404 });
+      return NextResponse.json({ error: "Secret not found" }, { status: 404 });
     }
 
     // Decrypt the value before returning
-    const decryptedValue = await decrypt(JSON.parse(secret.value) as EncryptedData);
+    const decryptedValue = await decrypt(
+      JSON.parse(secret.value) as EncryptedData,
+    );
 
     return NextResponse.json({
       secret: {
@@ -55,20 +69,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
-    console.error('Error fetching secret:', error);
-    return NextResponse.json({ error: 'Failed to fetch secret' }, { status: 500 });
+    console.error("Error fetching secret:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch secret" },
+      { status: 500 },
+    );
   }
 }
 
 // PUT /api/secrets/[id] - Update a secret
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
     const session = await auth.api.getSession({
       headers: request.headers,
     });
     if (!session?.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -82,8 +102,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
 
-    if (!member || (!member.role.includes('admin') && !member.role.includes('owner'))) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (
+      !member ||
+      (!member.role.includes("admin") && !member.role.includes("owner"))
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify the secret belongs to this organization
@@ -95,7 +118,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     if (!existingSecret) {
-      return NextResponse.json({ error: 'Secret not found' }, { status: 404 });
+      return NextResponse.json({ error: "Secret not found" }, { status: 404 });
     }
 
     // If name is being changed, check for duplicates
@@ -124,8 +147,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const encryptedValue = await encrypt(validatedData.value);
       updateData.value = JSON.stringify(encryptedValue);
     }
-    if (validatedData.description !== undefined) updateData.description = validatedData.description;
-    if (validatedData.category !== undefined) updateData.category = validatedData.category;
+    if (validatedData.description !== undefined)
+      updateData.description = validatedData.description;
+    if (validatedData.category !== undefined)
+      updateData.category = validatedData.category;
 
     // Update the secret
     const updatedSecret = await db.secret.update({
@@ -143,10 +168,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ secret: updatedSecret });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid input", details: error.issues },
+        { status: 400 },
+      );
     }
-    console.error('Error updating secret:', error);
-    return NextResponse.json({ error: 'Failed to update secret' }, { status: 500 });
+    console.error("Error updating secret:", error);
+    return NextResponse.json(
+      { error: "Failed to update secret" },
+      { status: 500 },
+    );
   }
 }
 
@@ -155,10 +186,14 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const organizationId: string | null = request.nextUrl.searchParams.get('organizationId');
+  const organizationId: string | null =
+    request.nextUrl.searchParams.get("organizationId");
 
   if (!organizationId) {
-    return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Organization ID is required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -167,7 +202,7 @@ export async function DELETE(
       headers: request.headers,
     });
     if (!session?.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is admin
@@ -178,8 +213,11 @@ export async function DELETE(
       },
     });
 
-    if (!member || (!member.role.includes('admin') && !member.role.includes('owner'))) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (
+      !member ||
+      (!member.role.includes("admin") && !member.role.includes("owner"))
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify the secret belongs to this organization
@@ -191,7 +229,7 @@ export async function DELETE(
     });
 
     if (!existingSecret) {
-      return NextResponse.json({ error: 'Secret not found' }, { status: 404 });
+      return NextResponse.json({ error: "Secret not found" }, { status: 404 });
     }
 
     // Delete the secret
@@ -204,7 +242,10 @@ export async function DELETE(
       deletedSecretName: existingSecret.name,
     });
   } catch (error) {
-    console.error('Error deleting secret:', error);
-    return NextResponse.json({ error: 'Failed to delete secret' }, { status: 500 });
+    console.error("Error deleting secret:", error);
+    return NextResponse.json(
+      { error: "Failed to delete secret" },
+      { status: 500 },
+    );
   }
 }

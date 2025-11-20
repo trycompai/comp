@@ -1,6 +1,12 @@
-import type { Context } from '@trycompai/db';
-import { Badge } from '@trycompai/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import type { Context } from "@trycompai/db";
+import { Badge } from "@trycompai/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
 
 export async function ContextHubList({ entries }: { entries: Context[] }) {
   return (
@@ -8,8 +14,8 @@ export async function ContextHubList({ entries }: { entries: Context[] }) {
       <CardHeader>
         <CardTitle>Context</CardTitle>
         <CardDescription>
-          You can add context to the Comp AI platform to help it better understand your
-          organization/processes.
+          You can add context to the Comp AI platform to help it better
+          understand your organization/processes.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

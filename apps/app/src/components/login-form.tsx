@@ -1,14 +1,24 @@
-'use client';
+"use client";
 
-import { GithubSignIn } from '@/components/github-sign-in';
-import { GoogleSignIn } from '@/components/google-sign-in';
-import { MagicLinkSignIn } from '@/components/magic-link';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardTitle } from '@trycompai/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
-import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { GithubSignIn } from "@/components/github-sign-in";
+import { GoogleSignIn } from "@/components/google-sign-in";
+import { MagicLinkSignIn } from "@/components/magic-link";
+import { CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "@trycompai/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@trycompai/ui/collapsible";
 
 interface LoginFormProps {
   inviteCode?: string;
@@ -16,9 +26,16 @@ interface LoginFormProps {
   showGithub: boolean;
 }
 
-export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps) {
+export function LoginForm({
+  inviteCode,
+  showGoogle,
+  showGithub,
+}: LoginFormProps) {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
-  const [magicLinkState, setMagicLinkState] = useState({ sent: false, email: '' });
+  const [magicLinkState, setMagicLinkState] = useState({
+    sent: false,
+    email: "",
+  });
   const searchParams = useSearchParams();
 
   const handleMagicLinkSent = (email: string) => {
@@ -28,19 +45,24 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
   if (magicLinkState.sent) {
     return (
       <Card className="w-full max-w-md">
-        <CardContent className="flex flex-col items-center justify-center text-center space-y-6 py-16 px-6">
-          <CheckCircle2 className="h-16 w-16 text-primary" />
+        <CardContent className="flex flex-col items-center justify-center space-y-6 px-6 py-16 text-center">
+          <CheckCircle2 className="text-primary h-16 w-16" />
           <div className="space-y-2">
-            <CardTitle className="text-2xl font-semibold text-card-foreground">
+            <CardTitle className="text-card-foreground text-2xl font-semibold">
               Magic link sent
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Check your inbox at{' '}
-              <span className="font-semibold text-foreground">{magicLinkState.email}</span> for a
-              magic link to sign in.
+            <CardDescription className="text-muted-foreground text-sm">
+              Check your inbox at{" "}
+              <span className="text-foreground font-semibold">
+                {magicLinkState.email}
+              </span>{" "}
+              for a magic link to sign in.
             </CardDescription>
           </div>
-          <Button variant="link" onClick={() => setMagicLinkState({ sent: false, email: '' })}>
+          <Button
+            variant="link"
+            onClick={() => setMagicLinkState({ sent: false, email: "" })}
+          >
             Use another method
           </Button>
         </CardContent>
@@ -49,7 +71,10 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
   }
 
   const preferredSignInOption = showGoogle ? (
-    <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+    <GoogleSignIn
+      inviteCode={inviteCode}
+      searchParams={searchParams as URLSearchParams}
+    />
   ) : (
     <MagicLinkSignIn
       key="preferred-magic"
@@ -85,7 +110,11 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
       {preferredSignInOption}
 
       {moreOptionsList.length > 0 && (
-        <Collapsible open={isOptionsOpen} onOpenChange={setIsOptionsOpen} className="w-full">
+        <Collapsible
+          open={isOptionsOpen}
+          onOpenChange={setIsOptionsOpen}
+          className="w-full"
+        >
           <div className="relative flex items-center justify-center py-2">
             <div className="absolute inset-x-0 top-1/2 flex items-center">
               <span className="w-full border-t" />
@@ -94,7 +123,7 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
               <Button
                 variant="outline"
                 size="sm"
-                className="relative px-4 text-sm text-muted-foreground bg-background hover:bg-muted"
+                className="text-muted-foreground bg-background hover:bg-muted relative px-4 text-sm"
               >
                 More options
                 {isOptionsOpen ? (
@@ -106,7 +135,7 @@ export function LoginForm({ inviteCode, showGoogle, showGithub }: LoginFormProps
             </CollapsibleTrigger>
           </div>
 
-          <CollapsibleContent className="space-y-4 pt-4 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95">
+          <CollapsibleContent className="data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 space-y-4 pt-4">
             {moreOptionsList}
           </CollapsibleContent>
         </Collapsible>

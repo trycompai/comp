@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Label, Pie, PieChart } from 'recharts';
+import * as React from "react";
+import { Info } from "lucide-react";
+import { Label, Pie, PieChart } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import type { ChartConfig } from "@trycompai/ui/chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 import {
-  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
-import { Info } from 'lucide-react';
+} from "@trycompai/ui/chart";
 
 interface TasksChartData {
   done: number;
@@ -22,8 +22,8 @@ interface TasksChartProps {
 }
 
 const CHART_COLORS = {
-  done: 'hsl(var(--chart-primary))',
-  remaining: 'hsl(var(--muted))',
+  done: "hsl(var(--chart-primary))",
+  remaining: "hsl(var(--muted))",
 };
 
 export function TasksChart({ data }: TasksChartProps) {
@@ -31,12 +31,12 @@ export function TasksChart({ data }: TasksChartProps) {
     if (!data) return [];
     const items = [
       {
-        name: 'Done',
+        name: "Done",
         value: data.done,
         fill: CHART_COLORS.done,
       },
       {
-        name: 'Remaining',
+        name: "Remaining",
         value: data.remaining,
         fill: CHART_COLORS.remaining,
       },
@@ -57,7 +57,9 @@ export function TasksChart({ data }: TasksChartProps) {
             <div className="text-muted-foreground flex justify-center">
               <Info className="h-10 w-10 opacity-30" />
             </div>
-            <p className="text-muted-foreground text-center text-sm">No data available</p>
+            <p className="text-muted-foreground text-center text-sm">
+              No data available
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -66,12 +68,15 @@ export function TasksChart({ data }: TasksChartProps) {
 
   const chartConfig = {
     value: {
-      label: 'Task Status',
+      label: "Task Status",
     },
   } satisfies ChartConfig;
 
   return (
-    <ChartContainer config={chartConfig} className="mx-auto h-[160px] max-w-[200px]">
+    <ChartContainer
+      config={chartConfig}
+      className="mx-auto h-[160px] max-w-[200px]"
+    >
       <PieChart
         width={200}
         height={160}
@@ -82,7 +87,10 @@ export function TasksChart({ data }: TasksChartProps) {
           left: 0,
         }}
       >
-        <ChartTooltip cursor={false} content={<ChartTooltipContent isPercentage={true} />} />
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent isPercentage={true} />}
+        />
         <Pie
           data={chartData}
           dataKey="value"
@@ -97,7 +105,7 @@ export function TasksChart({ data }: TasksChartProps) {
         >
           <Label
             content={({ viewBox }) => {
-              if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                 return (
                   <g>
                     <text

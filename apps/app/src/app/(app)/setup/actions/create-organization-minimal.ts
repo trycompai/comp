@@ -1,28 +1,33 @@
-'use server';
+"use server";
 
-import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
-import { authActionClientWithoutOrg } from '@/actions/safe-action';
-import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { initializeOrganization } from "@/actions/organization/lib/initialize-organization";
+import { authActionClientWithoutOrg } from "@/actions/safe-action";
+import { createTrainingVideoEntries } from "@/lib/db/employee";
+import { auth } from "@/utils/auth";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 // Minimal schema - only the first 3 fields
 const minimalOrgSchema = z.object({
-  frameworkIds: z.array(z.string()).min(1, 'Please select at least one framework'),
-  organizationName: z.string().min(2, 'Organization name must be at least 2 characters'),
-  website: z.string().url('Please enter a valid URL'),
+  frameworkIds: z
+    .array(z.string())
+    .min(1, "Please select at least one framework"),
+  organizationName: z
+    .string()
+    .min(2, "Organization name must be at least 2 characters"),
+  website: z.string().url("Please enter a valid URL"),
 });
 
 export const createOrganizationMinimal = authActionClientWithoutOrg
   .inputSchema(minimalOrgSchema)
   .metadata({
-    name: 'create-organization-minimal',
+    name: "create-organization-minimal",
     track: {
-      event: 'create-organization-minimal',
-      channel: 'server',
+      event: "create-organization-minimal",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -34,13 +39,13 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       if (!session) {
         return {
           success: false,
-          error: 'Not authorized.',
+          error: "Not authorized.",
         };
       }
 
       // Check if user email domain is trycomp.ai
       const userEmail = session.user.email;
-      const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
+      const isTryCompEmail = userEmail?.endsWith("@trycomp.ai") ?? false;
 
       // Create a new organization
       const newOrg = await db.organization.create({
@@ -49,21 +54,22 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           website: parsedInput.website,
           onboardingCompleted: false, // Explicitly set to false
           // Auto-enable for trycomp.ai emails or local development
-          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' || isTryCompEmail) && {
+          ...((process.env.NEXT_PUBLIC_APP_ENV !== "production" ||
+            isTryCompEmail) && {
             hasAccess: true,
           }),
           members: {
             create: {
               userId: session.user.id,
-              role: 'owner',
+              role: "owner",
             },
           },
           // Only save the context for frameworkIds (we need this for later)
           context: {
             create: {
-              question: 'Which compliance frameworks do you need?',
-              answer: parsedInput.frameworkIds.join(', '),
-              tags: ['onboarding'],
+              question: "Which compliance frameworks do you need?",
+              answer: parsedInput.frameworkIds.join(", "),
+              tags: ["onboarding"],
             },
           },
         },
@@ -110,12 +116,13 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
 
       // Revalidate paths
       const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      let path =
+        headersList.get("x-pathname") || headersList.get("referer") || "";
+      path = path.replace(/\/[a-z]{2}\//, "/");
 
       revalidatePath(path);
-      revalidatePath('/');
-      revalidatePath('/setup');
+      revalidatePath("/");
+      revalidatePath("/setup");
 
       // NO JOB TRIGGERS - that happens after payment in complete-onboarding
 
@@ -124,7 +131,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         organizationId: orgId,
       };
     } catch (error) {
-      console.error('Error during minimal organization creation:', error);
+      console.error("Error during minimal organization creation:", error);
 
       if (error instanceof Error) {
         return {
@@ -135,7 +142,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
 
       return {
         success: false,
-        error: 'Failed to create organization',
+        error: "Failed to create organization",
       };
     }
   });

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useQuestionnaireParser } from '../hooks/useQuestionnaireParser';
-import { QuestionnaireResults } from './QuestionnaireResults';
-import { QuestionnaireSidebar } from './QuestionnaireSidebar';
-import { QuestionnaireUpload } from './QuestionnaireUpload';
+import { useQuestionnaireParser } from "../hooks/useQuestionnaireParser";
+import { QuestionnaireResults } from "./QuestionnaireResults";
+import { QuestionnaireSidebar } from "./QuestionnaireSidebar";
+import { QuestionnaireUpload } from "./QuestionnaireUpload";
 
 export function QuestionnaireParser() {
   const {
@@ -48,16 +48,17 @@ export function QuestionnaireParser() {
     return (
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2 lg:gap-3">
-          <h1 className="text-xl lg:text-2xl font-semibold text-foreground">
+          <h1 className="text-foreground text-xl font-semibold lg:text-2xl">
             Security Questionnaire
           </h1>
-          <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed max-w-3xl">
-            Automatically analyze and answer questionnaires using AI. Upload questionnaires from
-            vendors, and our system will extract questions and generate answers based on your
-            organization's policies and documentation.
+          <p className="text-muted-foreground max-w-3xl text-xs leading-relaxed lg:text-sm">
+            Automatically analyze and answer questionnaires using AI. Upload
+            questionnaires from vendors, and our system will extract questions
+            and generate answers based on your organization's policies and
+            documentation.
           </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-12">
           <div className="lg:col-span-2">
             <QuestionnaireUpload
               selectedFile={selectedFile}
@@ -79,7 +80,9 @@ export function QuestionnaireParser() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl lg:text-2xl font-semibold text-foreground">Security Questionnaire</h1>
+      <h1 className="text-foreground text-xl font-semibold lg:text-2xl">
+        Security Questionnaire
+      </h1>
       <QuestionnaireResults
         orgId={orgId}
         results={results}

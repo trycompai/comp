@@ -1,11 +1,15 @@
-import { logger, task } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { backfillTrainingVideosForOrg } from './backfill-training-videos-for-org';
+import { logger, task } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
+
+import { backfillTrainingVideosForOrg } from "./backfill-training-videos-for-org";
 
 export const backfillTrainingVideosForAllOrgs = task({
-  id: 'backfill-training-videos-for-all-orgs',
+  id: "backfill-training-videos-for-all-orgs",
   run: async () => {
-    logger.info('Starting training video completion backfill for all organizations');
+    logger.info(
+      "Starting training video completion backfill for all organizations",
+    );
 
     try {
       // Get all organizations
@@ -20,14 +24,14 @@ export const backfillTrainingVideosForAllOrgs = task({
           },
         },
         orderBy: {
-          createdAt: 'asc', // Process older organizations first
+          createdAt: "asc", // Process older organizations first
         },
       });
 
       logger.info(`Found ${organizations.length} organizations to process`);
 
       if (organizations.length === 0) {
-        logger.info('No organizations found, nothing to backfill');
+        logger.info("No organizations found, nothing to backfill");
         return {
           success: true,
           organizationsProcessed: 0,
@@ -35,7 +39,10 @@ export const backfillTrainingVideosForAllOrgs = task({
       }
 
       // Log some stats about what we're about to process
-      const totalMembers = organizations.reduce((sum, org) => sum + org._count.members, 0);
+      const totalMembers = organizations.reduce(
+        (sum, org) => sum + org._count.members,
+        0,
+      );
       logger.info(
         `About to process ${organizations.length} organizations with a total of ${totalMembers} members`,
       );
@@ -70,9 +77,13 @@ export const backfillTrainingVideosForAllOrgs = task({
         try {
           await backfillTrainingVideosForOrg.batchTrigger(batch);
           totalTriggered += batch.length;
-          logger.info(`Successfully triggered batch ${i + 1}/${batches.length}`);
+          logger.info(
+            `Successfully triggered batch ${i + 1}/${batches.length}`,
+          );
         } catch (error) {
-          logger.error(`Failed to trigger batch ${i + 1}/${batches.length}: ${error}`);
+          logger.error(
+            `Failed to trigger batch ${i + 1}/${batches.length}: ${error}`,
+          );
           throw error;
         }
       }
@@ -88,7 +99,9 @@ export const backfillTrainingVideosForAllOrgs = task({
         totalMembers,
       };
     } catch (error) {
-      logger.error(`Error during training video backfill batch trigger: ${error}`);
+      logger.error(
+        `Error during training video backfill batch trigger: ${error}`,
+      );
       throw error;
     }
   },

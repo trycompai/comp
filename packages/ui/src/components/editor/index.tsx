@@ -1,16 +1,17 @@
-'use client';
+"use client";
 
-import type { JSONContent } from '@tiptap/react';
-import { EditorContent, useEditor } from '@tiptap/react';
-import { useEffect, useState } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
-import { Separator } from '../separator';
-import { defaultExtensions } from './extensions';
-import { LinkSelector } from './selectors/link-selector';
-import { NodeSelector } from './selectors/node-selector';
-import { TextButtons } from './selectors/text-buttons';
-import { linkifyContent } from './utils/linkify-content';
-import { validateAndFixTipTapContent } from './utils/validate-content';
+import type { JSONContent } from "@tiptap/react";
+import { useEffect, useState } from "react";
+import { EditorContent, useEditor } from "@tiptap/react";
+import { useDebouncedCallback } from "use-debounce";
+
+import { Separator } from "../separator";
+import { defaultExtensions } from "./extensions";
+import { LinkSelector } from "./selectors/link-selector";
+import { NodeSelector } from "./selectors/node-selector";
+import { TextButtons } from "./selectors/text-buttons";
+import { linkifyContent } from "./utils/linkify-content";
+import { validateAndFixTipTapContent } from "./utils/validate-content";
 
 export interface EditorProps {
   initialContent?: JSONContent | JSONContent[];
@@ -32,33 +33,38 @@ export const Editor = ({
   onUpdate,
   onSave,
   readOnly = false,
-  placeholder = 'Start writing...',
+  placeholder = "Start writing...",
   className,
   saveDebounceMs = 500,
   showSaveStatus = true,
   showWordCount = true,
   showToolbar = true,
-  minHeight = '500px',
-  maxHeight = '500px',
+  minHeight = "500px",
+  maxHeight = "500px",
 }: EditorProps) => {
-  const [saveStatus, setSaveStatus] = useState<'Saved' | 'Saving' | 'Unsaved'>('Saved');
+  const [saveStatus, setSaveStatus] = useState<"Saved" | "Saving" | "Unsaved">(
+    "Saved",
+  );
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [charsCount, setCharsCount] = useState<number>(0);
   const [openNode, setOpenNode] = useState(false);
   const [openLink, setOpenLink] = useState(false);
 
   // Ensure content is properly structured and add link marks for plain URLs in read-only mode
-  const validated = initialContent ? validateAndFixTipTapContent(initialContent) : null;
-  const formattedContent = readOnly && validated ? linkifyContent(validated) : validated;
+  const validated = initialContent
+    ? validateAndFixTipTapContent(initialContent)
+    : null;
+  const formattedContent =
+    readOnly && validated ? linkifyContent(validated) : validated;
 
   const editor = useEditor({
     extensions: defaultExtensions({ placeholder, openLinksOnClick: readOnly }),
-    content: formattedContent || '',
+    content: formattedContent || "",
     editable: !readOnly,
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: `prose prose-lg  prose-headings:font-title font-default focus:outline-hidden max-w-full ${className || ''}`,
+        class: `prose prose-lg  prose-headings:font-title font-default focus:outline-hidden max-w-full ${className || ""}`,
       },
     },
     onUpdate: ({ editor }) => {
@@ -75,7 +81,7 @@ export const Editor = ({
       }
 
       if (initialLoadComplete && onSave) {
-        setSaveStatus('Unsaved');
+        setSaveStatus("Unsaved");
         debouncedSave(content);
       }
     },
@@ -88,14 +94,14 @@ export const Editor = ({
   const debouncedSave = useDebouncedCallback(async (content: JSONContent) => {
     if (!onSave) return;
 
-    setSaveStatus('Saving');
+    setSaveStatus("Saving");
 
     try {
       await onSave(content);
-      setSaveStatus('Saved');
+      setSaveStatus("Saved");
     } catch (err) {
-      console.error('Failed to save content:', err);
-      setSaveStatus('Unsaved');
+      console.error("Failed to save content:", err);
+      setSaveStatus("Unsaved");
     }
   }, saveDebounceMs);
 
@@ -105,22 +111,30 @@ export const Editor = ({
     <div className="bg-background relative w-full p-4">
       <div className="relative">
         {showToolbar && !readOnly && editor && (
-          <div className="mb-4 border-muted rounded-sm bg-background flex items-center gap-1 p-2 border relative">
-            <NodeSelector open={openNode} onOpenChange={setOpenNode} editor={editor} />
+          <div className="border-muted bg-background relative mb-4 flex items-center gap-1 rounded-sm border p-2">
+            <NodeSelector
+              open={openNode}
+              onOpenChange={setOpenNode}
+              editor={editor}
+            />
             <Separator orientation="vertical" className="h-6" />
             <TextButtons editor={editor} />
             <Separator orientation="vertical" className="h-6" />
-            <LinkSelector open={openLink} onOpenChange={setOpenLink} editor={editor} />
+            <LinkSelector
+              open={openLink}
+              onOpenChange={setOpenLink}
+              editor={editor}
+            />
 
             {(showSaveStatus || showWordCount) && (
               <div className="absolute top-2 right-2 flex items-center gap-2">
                 {showSaveStatus && (
-                  <div className="bg-accent text-muted-foreground px-3 py-1 text-sm rounded-sm leading-6">
+                  <div className="bg-accent text-muted-foreground rounded-sm px-3 py-1 text-sm leading-6">
                     {saveStatus}
                   </div>
                 )}
                 {showWordCount && charsCount > 0 && (
-                  <div className="bg-accent text-muted-foreground px-3 py-1 text-sm rounded-sm leading-6">
+                  <div className="bg-accent text-muted-foreground rounded-sm px-3 py-1 text-sm leading-6">
                     {charsCount} Words
                   </div>
                 )}
@@ -139,10 +153,10 @@ export const Editor = ({
 };
 
 // Export types and utilities
-export { useEditor } from '@tiptap/react';
-export type { JSONContent } from '@tiptap/react';
+export { useEditor } from "@tiptap/react";
+export type { JSONContent } from "@tiptap/react";
 export {
   debugTipTapContent,
   isValidTipTapContent,
   validateAndFixTipTapContent,
-} from './utils/validate-content';
+} from "./utils/validate-content";

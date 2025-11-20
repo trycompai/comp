@@ -1,17 +1,21 @@
-import { auth } from '@/app/lib/auth';
-import { env } from '@/env.mjs';
-import { logger } from '@/utils/logger';
-import { client } from '@trycompai/kv';
-import { Ratelimit } from '@upstash/ratelimit';
-import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from 'next-safe-action';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { headers } from "next/headers";
+import { auth } from "@/app/lib/auth";
+import { env } from "@/env.mjs";
+import { logger } from "@/utils/logger";
+import { Ratelimit } from "@upstash/ratelimit";
+import {
+  createSafeActionClient,
+  DEFAULT_SERVER_ERROR_MESSAGE,
+} from "next-safe-action";
+import { z } from "zod";
+
+import { client } from "@trycompai/kv";
 
 let ratelimit: Ratelimit | undefined;
 
 if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
   ratelimit = new Ratelimit({
-    limiter: Ratelimit.fixedWindow(10, '10s'),
+    limiter: Ratelimit.fixedWindow(10, "10s"),
     redis: client,
   });
 }
@@ -48,7 +52,7 @@ export const authActionClient = actionClientWithMeta
     const { session, user } = response ?? {};
 
     if (!session) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     const result = await next({
@@ -58,9 +62,9 @@ export const authActionClient = actionClientWithMeta
       },
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      logger('Input ->', clientInput as string);
-      logger('Result ->', result.data as string);
+    if (process.env.NODE_ENV === "development") {
+      logger("Input ->", clientInput as string);
+      logger("Result ->", result.data as string);
 
       return result;
     }
@@ -75,17 +79,17 @@ export const authActionClient = actionClientWithMeta
     const headersList = await headers();
 
     const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
-      `${headersList.get('x-forwarded-for')}-${metadata.name}`,
+      `${headersList.get("x-forwarded-for")}-${metadata.name}`,
     );
 
     if (!success) {
-      throw new Error('Too many requests');
+      throw new Error("Too many requests");
     }
 
     return next({
       ctx: {
-        ip: headersList.get('x-forwarded-for'),
-        userAgent: headersList.get('user-agent'),
+        ip: headersList.get("x-forwarded-for"),
+        userAgent: headersList.get("user-agent"),
         ratelimit: {
           remaining: rateLimitRemaining,
         },
@@ -98,7 +102,7 @@ export const authActionClient = actionClientWithMeta
     });
 
     if (!session) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     // try {

@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import type { Control, FrameworkEditorRequirement, RequirementMap, Task } from '@trycompai/db';
-import { RequirementControlsTable } from './table/RequirementControlsTable';
+import type {
+  Control,
+  FrameworkEditorRequirement,
+  RequirementMap,
+  Task,
+} from "@trycompai/db";
+
+import { RequirementControlsTable } from "./table/RequirementControlsTable";
 
 interface RequirementControlsProps {
   requirement: FrameworkEditorRequirement;
@@ -20,7 +26,9 @@ export function RequirementControls({
       <div className="space-y-2">
         <h1 className="text-xl font-semibold">{requirement.name}</h1>
         {requirement.description && (
-          <p className="text-muted-foreground text-sm leading-relaxed">{requirement.description}</p>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {requirement.description}
+          </p>
         )}
       </div>
 

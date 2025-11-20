@@ -1,5 +1,5 @@
 interface Props {
-  className?: string
+  className?: string;
 }
 export function VercelDashed({ className }: Props) {
   return (
@@ -15,5 +15,5 @@ export function VercelDashed({ className }: Props) {
         fill="currentColor"
       />
     </svg>
-  )
+  );
 }

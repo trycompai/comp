@@ -1,14 +1,15 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { steps } from '@/app/(app)/setup/lib/constants';
-import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
-import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
-import { tasks } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { cookies, headers } from "next/headers";
+import { authActionClient } from "@/actions/safe-action";
+import { steps } from "@/app/(app)/setup/lib/constants";
+import { createFleetLabelForOrg } from "@/jobs/tasks/device/create-fleet-label-for-org";
+import { onboardOrganization as onboardOrganizationTask } from "@/jobs/tasks/onboarding/onboard-organization";
+import { tasks } from "@trigger.dev/sdk";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 // Schema for the remaining fields (steps 4-12)
 const onboardingCompletionSchema = z.object({
@@ -33,10 +34,10 @@ const onboardingCompletionSchema = z.object({
 export const completeOnboarding = authActionClient
   .inputSchema(onboardingCompletionSchema)
   .metadata({
-    name: 'complete-onboarding',
+    name: "complete-onboarding",
     track: {
-      event: 'complete-onboarding',
-      channel: 'server',
+      event: "complete-onboarding",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -47,7 +48,7 @@ export const completeOnboarding = authActionClient
       if (parsedInput.organizationId !== activeOrganizationId) {
         return {
           success: false,
-          error: 'Organization mismatch',
+          error: "Organization mismatch",
         };
       }
 
@@ -62,7 +63,7 @@ export const completeOnboarding = authActionClient
       if (!member) {
         return {
           success: false,
-          error: 'Access denied',
+          error: "Access denied",
         };
       }
 
@@ -73,10 +74,13 @@ export const completeOnboarding = authActionClient
         .map((step) => ({
           question: step.question,
           answer:
-            typeof parsedInput[step.key as keyof typeof parsedInput] === 'object'
-              ? JSON.stringify(parsedInput[step.key as keyof typeof parsedInput])
+            typeof parsedInput[step.key as keyof typeof parsedInput] ===
+            "object"
+              ? JSON.stringify(
+                  parsedInput[step.key as keyof typeof parsedInput],
+                )
               : (parsedInput[step.key as keyof typeof parsedInput] as string),
-          tags: ['onboarding'],
+          tags: ["onboarding"],
           organizationId: parsedInput.organizationId,
         }));
       await db.context.createMany({ data: contextData });
@@ -88,9 +92,12 @@ export const completeOnboarding = authActionClient
       });
 
       // Now trigger the jobs that were skipped during minimal creation
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
-        organizationId: parsedInput.organizationId,
-      });
+      const handle = await tasks.trigger<typeof onboardOrganizationTask>(
+        "onboard-organization",
+        {
+          organizationId: parsedInput.organizationId,
+        },
+      );
 
       // Update onboarding record with job ID
       await db.onboarding.update({
@@ -101,20 +108,24 @@ export const completeOnboarding = authActionClient
       });
 
       // Set cookie for job tracking
-      (await cookies()).set('publicAccessToken', handle.publicAccessToken);
+      (await cookies()).set("publicAccessToken", handle.publicAccessToken);
 
       // Create Fleet Label
-      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
-        organizationId: parsedInput.organizationId,
-      });
+      await tasks.trigger<typeof createFleetLabelForOrg>(
+        "create-fleet-label-for-org",
+        {
+          organizationId: parsedInput.organizationId,
+        },
+      );
 
       // Revalidate paths
       const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      let path =
+        headersList.get("x-pathname") || headersList.get("referer") || "";
+      path = path.replace(/\/[a-z]{2}\//, "/");
 
       revalidatePath(path);
-      revalidatePath('/');
+      revalidatePath("/");
       revalidatePath(`/${parsedInput.organizationId}`);
 
       return {
@@ -125,7 +136,7 @@ export const completeOnboarding = authActionClient
         redirectUrl: `/${parsedInput.organizationId}/`,
       };
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error("Error completing onboarding:", error);
 
       if (error instanceof Error) {
         return {
@@ -136,7 +147,7 @@ export const completeOnboarding = authActionClient
 
       return {
         success: false,
-        error: 'Failed to complete onboarding',
+        error: "Failed to complete onboarding",
       };
     }
   });

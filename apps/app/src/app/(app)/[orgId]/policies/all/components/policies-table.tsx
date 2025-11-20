@@ -1,21 +1,23 @@
-'use client';
+"use client";
 
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { Download, Loader2 } from 'lucide-react';
-import * as React from 'react';
+import * as React from "react";
+import { useParams } from "next/navigation";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { CreatePolicySheet } from "@/components/sheets/create-policy-sheet";
+import { useDataTable } from "@/hooks/use-data-table";
+import { downloadAllPolicies } from "@/lib/pdf-generator";
+import { useRealtimeRun } from "@trigger.dev/react-hooks";
+import { Download, Loader2 } from "lucide-react";
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
-import { useDataTable } from '@/hooks/use-data-table';
-import { downloadAllPolicies } from '@/lib/pdf-generator';
-import type { Policy } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { useParams } from 'next/navigation';
-import { getLogsForPolicy } from '../../[policyId]/data';
-import { getPolicies } from '../data/queries';
-import { getPolicyColumns } from './policies-table-columns';
-import { type PolicyTailoringStatus, PolicyTailoringProvider } from './policy-tailoring-context';
+import type { Policy } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+
+import type { PolicyTailoringStatus } from "./policy-tailoring-context";
+import { getLogsForPolicy } from "../../[policyId]/data";
+import { getPolicies } from "../data/queries";
+import { getPolicyColumns } from "./policies-table-columns";
+import { PolicyTailoringProvider } from "./policy-tailoring-context";
 
 interface PoliciesTableProps {
   promises: Promise<[Awaited<ReturnType<typeof getPolicies>>]>;
@@ -23,16 +25,23 @@ interface PoliciesTableProps {
 }
 
 type PolicyStatusMap = Record<string, PolicyTailoringStatus>;
-const ACTIVE_POLICY_STATUSES: PolicyTailoringStatus[] = ['queued', 'pending', 'processing'];
+const ACTIVE_POLICY_STATUSES: PolicyTailoringStatus[] = [
+  "queued",
+  "pending",
+  "processing",
+];
 
-export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps) {
+export function PoliciesTable({
+  promises,
+  onboardingRunId,
+}: PoliciesTableProps) {
   const [{ data, pageCount }] = React.use(promises);
   const [isDownloadingAll, setIsDownloadingAll] = React.useState(false);
   const params = useParams();
   const orgId = params.orgId as string;
 
   const shouldSubscribeToRun = Boolean(onboardingRunId);
-  const { run } = useRealtimeRun(shouldSubscribeToRun ? onboardingRunId! : '', {
+  const { run } = useRealtimeRun(shouldSubscribeToRun ? onboardingRunId! : "", {
     enabled: shouldSubscribeToRun,
   });
 
@@ -49,10 +58,10 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
       const status = meta[statusKey];
 
       if (
-        status === 'queued' ||
-        status === 'pending' ||
-        status === 'processing' ||
-        status === 'completed'
+        status === "queued" ||
+        status === "pending" ||
+        status === "processing" ||
+        status === "completed"
       ) {
         acc[policy.id] = status;
       }
@@ -64,9 +73,14 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
     if (!run?.metadata) return null;
 
     const meta = run.metadata as Record<string, unknown>;
-    const total = typeof meta.policiesTotal === 'number' ? (meta.policiesTotal as number) : 0;
+    const total =
+      typeof meta.policiesTotal === "number"
+        ? (meta.policiesTotal as number)
+        : 0;
     const completed =
-      typeof meta.policiesCompleted === 'number' ? (meta.policiesCompleted as number) : 0;
+      typeof meta.policiesCompleted === "number"
+        ? (meta.policiesCompleted as number)
+        : 0;
 
     if (total === 0) {
       return null;
@@ -88,7 +102,7 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
     const fallbackStatuses: PolicyStatusMap = { ...policyStatuses };
     data.forEach((policy) => {
       if (!fallbackStatuses[policy.id]) {
-        fallbackStatuses[policy.id] = 'queued';
+        fallbackStatuses[policy.id] = "queued";
       }
     });
     return fallbackStatuses;
@@ -152,7 +166,11 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
           getRowProps={getRowProps}
         >
           <>
-            <DataTableToolbar table={table} sheet="create-policy-sheet" action="Create Policy">
+            <DataTableToolbar
+              table={table}
+              sheet="create-policy-sheet"
+              action="Create Policy"
+            >
               {/* <DataTableSortList table={table} align="end" /> */}
               {data.length > 0 && (
                 <Button
@@ -163,7 +181,7 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
                 >
                   {isDownloadingAll ? (
                     <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
                       Downloading...
                     </span>
                   ) : (
@@ -177,14 +195,17 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
             </DataTableToolbar>
 
             {hasActivePolicies && policyProgress && (
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <div className="border-primary/20 from-primary/10 via-primary/5 mt-3 flex items-center gap-3 rounded-xl border bg-linear-to-r to-transparent px-4 py-3">
+                <div className="bg-primary/15 text-primary flex h-10 w-10 items-center justify-center rounded-full">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-primary">Tailoring your policies</span>
-                  <span className="text-xs text-muted-foreground">
-                    Personalized {policyProgress.completed}/{policyProgress.total} policies
+                  <span className="text-primary text-sm font-medium">
+                    Tailoring your policies
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    Personalized {policyProgress.completed}/
+                    {policyProgress.total} policies
                   </span>
                 </div>
               </div>

@@ -1,27 +1,30 @@
 // update-risk-action.ts
 
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { updateRiskSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { updateRiskSchema } from "../schema";
 
 export const updateRiskAction = authActionClient
   .inputSchema(updateRiskSchema)
   .metadata({
-    name: 'update-risk',
+    name: "update-risk",
     track: {
-      event: 'update-risk',
-      channel: 'server',
+      event: "update-risk",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id, title, description, category, department, assigneeId, status } = parsedInput;
+    const { id, title, description, category, department, assigneeId, status } =
+      parsedInput;
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     try {
@@ -43,13 +46,13 @@ export const updateRiskAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/register`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}`);
-      revalidateTag('risks', { expire: 0 });
+      revalidateTag("risks", { expire: 0 });
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Error updating risk:', error);
+      console.error("Error updating risk:", error);
 
       return {
         success: false,

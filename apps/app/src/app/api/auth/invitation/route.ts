@@ -1,13 +1,13 @@
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const inviteCode = searchParams.get('code');
+  const inviteCode = searchParams.get("code");
 
   if (!inviteCode) {
-    return redirect('/');
+    return redirect("/");
   }
 
   const session = await auth.api.getSession({

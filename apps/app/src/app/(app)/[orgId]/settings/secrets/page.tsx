@@ -1,9 +1,11 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { cache } from 'react';
-import { SecretsTable } from './components/table/SecretsTable';
+import type { Metadata } from "next";
+import { cache } from "react";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { SecretsTable } from "./components/table/SecretsTable";
 
 export default async function SecretsPage() {
   const secrets = await getSecrets();
@@ -13,7 +15,7 @@ export default async function SecretsPage() {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Secrets',
+    title: "Secrets",
   };
 }
 
@@ -40,7 +42,7 @@ const getSecrets = cache(async () => {
       lastUsedAt: true,
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 

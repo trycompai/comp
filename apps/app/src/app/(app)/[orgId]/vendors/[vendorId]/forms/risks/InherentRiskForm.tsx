@@ -1,21 +1,29 @@
-'use client';
+"use client";
 
-import { updateVendorInherentRisk } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/update-vendor-inherent-risk';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Impact, Likelihood } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { updateVendorInherentRisk } from "@/app/(app)/[orgId]/vendors/[vendorId]/actions/update-vendor-inherent-risk";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryState } from "nuqs";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { Impact, Likelihood } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { useToast } from '@trycompai/ui/use-toast';
-import { useQueryState } from 'nuqs';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+} from "@trycompai/ui/select";
+import { useToast } from "@trycompai/ui/use-toast";
 
 const formSchema = z.object({
   inherentProbability: z.nativeEnum(Likelihood),
@@ -36,7 +44,7 @@ export function InherentRiskForm({
   initialImpact = Impact.insignificant,
 }: InherentRiskFormProps) {
   const { toast } = useToast();
-  const [_, setOpen] = useQueryState('inherent-risk-sheet');
+  const [_, setOpen] = useQueryState("inherent-risk-sheet");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -55,17 +63,17 @@ export function InherentRiskForm({
       });
 
       toast({
-        title: 'Success',
-        description: 'Inherent risk updated successfully',
+        title: "Success",
+        description: "Inherent risk updated successfully",
       });
 
-      setOpen('false');
+      setOpen("false");
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error("Error submitting form:", error);
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
     }
   }
@@ -78,19 +86,31 @@ export function InherentRiskForm({
           name="inherentProbability"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{'Inherent Probability'}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+              <FormLabel>{"Inherent Probability"}</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                value={field.value}
+              >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={'Select a probability'} />
+                    <SelectValue placeholder={"Select a probability"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={Likelihood.very_likely}>{'Very Likely'}</SelectItem>
-                  <SelectItem value={Likelihood.likely}>{'Likely'}</SelectItem>
-                  <SelectItem value={Likelihood.possible}>{'Possible'}</SelectItem>
-                  <SelectItem value={Likelihood.unlikely}>{'Unlikely'}</SelectItem>
-                  <SelectItem value={Likelihood.very_unlikely}>{'Very Unlikely'}</SelectItem>
+                  <SelectItem value={Likelihood.very_likely}>
+                    {"Very Likely"}
+                  </SelectItem>
+                  <SelectItem value={Likelihood.likely}>{"Likely"}</SelectItem>
+                  <SelectItem value={Likelihood.possible}>
+                    {"Possible"}
+                  </SelectItem>
+                  <SelectItem value={Likelihood.unlikely}>
+                    {"Unlikely"}
+                  </SelectItem>
+                  <SelectItem value={Likelihood.very_unlikely}>
+                    {"Very Unlikely"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -103,19 +123,25 @@ export function InherentRiskForm({
           name="inherentImpact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{'Inherent Impact'}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+              <FormLabel>{"Inherent Impact"}</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                value={field.value}
+              >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={'Select an impact'} />
+                    <SelectValue placeholder={"Select an impact"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={Impact.insignificant}>{'Insignificant'}</SelectItem>
-                  <SelectItem value={Impact.minor}>{'Minor'}</SelectItem>
-                  <SelectItem value={Impact.moderate}>{'Moderate'}</SelectItem>
-                  <SelectItem value={Impact.major}>{'Major'}</SelectItem>
-                  <SelectItem value={Impact.severe}>{'Severe'}</SelectItem>
+                  <SelectItem value={Impact.insignificant}>
+                    {"Insignificant"}
+                  </SelectItem>
+                  <SelectItem value={Impact.minor}>{"Minor"}</SelectItem>
+                  <SelectItem value={Impact.moderate}>{"Moderate"}</SelectItem>
+                  <SelectItem value={Impact.major}>{"Major"}</SelectItem>
+                  <SelectItem value={Impact.severe}>{"Severe"}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -124,7 +150,7 @@ export function InherentRiskForm({
         />
 
         <div className="flex justify-end">
-          <Button type="submit">{'Save'}</Button>
+          <Button type="submit">{"Save"}</Button>
         </div>
       </form>
     </Form>

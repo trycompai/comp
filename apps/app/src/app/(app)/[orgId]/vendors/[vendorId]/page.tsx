@@ -1,17 +1,19 @@
-'use server';
+"use server";
 
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { auth } from '@/utils/auth';
-import { CommentEntityType, db } from '@trycompai/db';
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { cache } from 'react';
-import { Comments } from '../../../../../components/comments/Comments';
-import { VendorActions } from './components/VendorActions';
-import { VendorInherentRiskChart } from './components/VendorInherentRiskChart';
-import { VendorResidualRiskChart } from './components/VendorResidualRiskChart';
-import { SecondaryFields } from './components/secondary-fields/secondary-fields';
+import type { Metadata } from "next";
+import { cache } from "react";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+import { auth } from "@/utils/auth";
+
+import { CommentEntityType, db } from "@trycompai/db";
+
+import { Comments } from "../../../../../components/comments/Comments";
+import { SecondaryFields } from "./components/secondary-fields/secondary-fields";
+import { VendorActions } from "./components/VendorActions";
+import { VendorInherentRiskChart } from "./components/VendorInherentRiskChart";
+import { VendorResidualRiskChart } from "./components/VendorResidualRiskChart";
 
 interface PageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;
@@ -23,14 +25,14 @@ export default async function VendorPage({ params }: PageProps) {
   const assignees = await getAssignees();
 
   if (!vendor || !vendor.vendor) {
-    redirect('/');
+    redirect("/");
   }
 
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Vendors', href: `/${orgId}/vendors` },
-        { label: vendor.vendor?.name ?? '', current: true },
+        { label: "Vendors", href: `/${orgId}/vendors` },
+        { label: vendor.vendor?.name ?? "", current: true },
       ]}
       headerRight={<VendorActions vendorId={vendorId} />}
     >
@@ -105,7 +107,7 @@ const getAssignees = cache(async () => {
     where: {
       organizationId: session.session.activeOrganizationId,
       role: {
-        notIn: ['employee', 'contractor'],
+        notIn: ["employee", "contractor"],
       },
     },
     include: {
@@ -118,6 +120,6 @@ const getAssignees = cache(async () => {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Vendors',
+    title: "Vendors",
   };
 }

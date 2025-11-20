@@ -1,4 +1,5 @@
-import { type Page, expect } from '@playwright/test';
+import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 
 /**
  * Helper functions for E2E tests
@@ -10,17 +11,21 @@ export async function waitForURL(page: Page, urlPattern: string | RegExp) {
 }
 
 // Fill a form field with retry logic
-export async function fillFormField(page: Page, selector: string, value: string) {
+export async function fillFormField(
+  page: Page,
+  selector: string,
+  value: string,
+) {
   const field = page.locator(selector);
   await expect(field).toBeVisible({ timeout: 10000 });
   await field.clear();
   await field.fill(value);
 
   // Special handling for website inputs that strip protocols
-  if (selector.includes('website')) {
+  if (selector.includes("website")) {
     // The WebsiteInput component strips https:// from display
     // so we just verify the field has some value
-    await expect(field).not.toHaveValue('');
+    await expect(field).not.toHaveValue("");
   } else {
     await expect(field).toHaveValue(value);
   }
@@ -33,7 +38,7 @@ export async function clickAndWait(
   options?: { waitForNavigation?: boolean },
 ) {
   const element = page.locator(selector);
-  await element.waitFor({ state: 'visible' });
+  await element.waitFor({ state: "visible" });
 
   if (options?.waitForNavigation) {
     await Promise.all([page.waitForNavigation(), element.click()]);
@@ -44,7 +49,7 @@ export async function clickAndWait(
 
 // Wait for network idle (useful after data mutations)
 export async function waitForNetworkIdle(page: Page) {
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState("networkidle");
 }
 
 // Generate unique test data
@@ -59,7 +64,10 @@ export function generateTestData() {
 }
 
 // Check if element exists
-export async function elementExists(page: Page, selector: string): Promise<boolean> {
+export async function elementExists(
+  page: Page,
+  selector: string,
+): Promise<boolean> {
   return (await page.locator(selector).count()) > 0;
 }
 
@@ -81,11 +89,15 @@ export async function expectToast(page: Page, expectedText: string) {
 }
 
 // Mock API responses
-export async function mockAPIResponse(page: Page, url: string | RegExp, response: any) {
+export async function mockAPIResponse(
+  page: Page,
+  url: string | RegExp,
+  response: any,
+) {
   await page.route(url, (route) => {
     route.fulfill({
       status: 200,
-      contentType: 'application/json',
+      contentType: "application/json",
       body: JSON.stringify(response),
     });
   });

@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-const STORAGE_KEY = 'frameworks-cards-order';
+const STORAGE_KEY = "frameworks-cards-order";
 
 export function useCardOrder(defaultOrder: number[]) {
   const [order, setOrder] = useState<number[]>(() => {
-    if (typeof window === 'undefined') return defaultOrder;
+    if (typeof window === "undefined") return defaultOrder;
 
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -17,7 +17,7 @@ export function useCardOrder(defaultOrder: number[]) {
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(order));
     }
   }, [order]);

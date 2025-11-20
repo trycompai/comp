@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { formatDate } from '@/lib/utils/format-date';
-import { cn } from '@trycompai/ui/cn';
+import { formatDate } from "@/lib/utils/format-date";
+
+import { cn } from "@trycompai/ui/cn";
 
 interface StatusDateProps {
   date: Date;
@@ -16,9 +17,9 @@ export function StatusDate({ date, isClosed }: StatusDateProps) {
   return (
     <span
       className={cn(
-        'text-sm',
-        isOverdue && 'text-destructive',
-        isClosed && 'text-muted-foreground line-through',
+        "text-sm",
+        isOverdue && "text-destructive",
+        isClosed && "text-muted-foreground line-through",
       )}
     >
       {formattedDate}

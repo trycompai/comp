@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { FrameworkPill } from '@/components/framework-pill';
-import type { FrameworkEditorFramework } from '@trycompai/db';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
+import { FrameworkPill } from "@/components/framework-pill";
+
+import type { FrameworkEditorFramework } from "@trycompai/db";
 
 interface FrameworkSelectionProps {
   value: string[];
@@ -10,9 +11,16 @@ interface FrameworkSelectionProps {
   onLoadingChange?: (loading: boolean) => void;
 }
 
-export function FrameworkSelection({ value, onChange, onLoadingChange }: FrameworkSelectionProps) {
+export function FrameworkSelection({
+  value,
+  onChange,
+  onLoadingChange,
+}: FrameworkSelectionProps) {
   const [frameworks, setFrameworks] = useState<
-    Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>[]
+    Pick<
+      FrameworkEditorFramework,
+      "id" | "name" | "description" | "version" | "visible"
+    >[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const onChangeRef = useRef(onChange);
@@ -28,12 +36,12 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
     async function fetchFrameworks() {
       try {
         onLoadingChange?.(true);
-        const response = await fetch('/api/frameworks');
-        if (!response.ok) throw new Error('Failed to fetch frameworks');
+        const response = await fetch("/api/frameworks");
+        if (!response.ok) throw new Error("Failed to fetch frameworks");
         const data = await response.json();
         setFrameworks(data.frameworks);
       } catch (error) {
-        console.error('Error fetching frameworks:', error);
+        console.error("Error fetching frameworks:", error);
       } finally {
         setIsLoading(false);
         onLoadingChange?.(false);
@@ -45,7 +53,10 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
 
   // Separate effect for auto-selection - only when frameworks first load
   useEffect(() => {
-    if (frameworks.length > 0 && (!valueRef.current || valueRef.current.length === 0)) {
+    if (
+      frameworks.length > 0 &&
+      (!valueRef.current || valueRef.current.length === 0)
+    ) {
       const visibleFrameworks = frameworks.filter((f) => f.visible);
       if (visibleFrameworks.length > 0) {
         onChangeRef.current([visibleFrameworks[0].id]);
@@ -68,7 +79,9 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
             isSelected={value.includes(framework.id)}
             onSelectionChange={(checked) => {
               onChange(
-                checked ? [...value, framework.id] : value.filter((id) => id !== framework.id),
+                checked
+                  ? [...value, framework.id]
+                  : value.filter((id) => id !== framework.id),
               );
             }}
           />

@@ -1,52 +1,70 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+import { useState } from "react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Cloud,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+import { Input } from "@trycompai/ui/input";
+import { Label } from "@trycompai/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { ArrowLeft, CheckCircle2, Cloud, ExternalLink, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { connectCloudAction } from '../actions/connect-cloud';
-import { validateAwsCredentialsAction } from '../actions/validate-aws-credentials';
+} from "@trycompai/ui/select";
 
-type CloudProvider = 'aws' | 'gcp' | 'azure' | null;
-type Step = 'choose' | 'connect' | 'validate-aws' | 'success';
+import { connectCloudAction } from "../actions/connect-cloud";
+import { validateAwsCredentialsAction } from "../actions/validate-aws-credentials";
+
+type CloudProvider = "aws" | "gcp" | "azure" | null;
+type Step = "choose" | "connect" | "validate-aws" | "success";
 
 const CLOUD_PROVIDERS = [
   {
-    id: 'aws' as const,
-    name: 'Amazon Web Services',
-    shortName: 'AWS',
-    description: 'Scan AWS Security Hub for vulnerabilities and compliance issues',
-    color: 'from-orange-500 to-yellow-600',
-    logoUrl: 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/cloud-tests/aws',
+    id: "aws" as const,
+    name: "Amazon Web Services",
+    shortName: "AWS",
+    description:
+      "Scan AWS Security Hub for vulnerabilities and compliance issues",
+    color: "from-orange-500 to-yellow-600",
+    logoUrl:
+      "https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ",
+    guideUrl: "https://trycomp.ai/docs/cloud-tests/aws",
   },
   {
-    id: 'gcp' as const,
-    name: 'Google Cloud Platform',
-    shortName: 'GCP',
-    description: 'Monitor GCP Security Command Center for security findings',
-    color: 'from-blue-500 to-cyan-600',
-    logoUrl: 'https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/cloud-tests/gcp',
+    id: "gcp" as const,
+    name: "Google Cloud Platform",
+    shortName: "GCP",
+    description: "Monitor GCP Security Command Center for security findings",
+    color: "from-blue-500 to-cyan-600",
+    logoUrl:
+      "https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ",
+    guideUrl: "https://trycomp.ai/docs/cloud-tests/gcp",
   },
   {
-    id: 'azure' as const,
-    name: 'Microsoft Azure',
-    shortName: 'Azure',
-    description: 'Check Azure Security Center for compliance data',
-    color: 'from-blue-600 to-indigo-700',
-    logoUrl: 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/cloud-tests/azure',
+    id: "azure" as const,
+    name: "Microsoft Azure",
+    shortName: "Azure",
+    description: "Check Azure Security Center for compliance data",
+    color: "from-blue-600 to-indigo-700",
+    logoUrl:
+      "https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ",
+    guideUrl: "https://trycomp.ai/docs/cloud-tests/azure",
   },
 ];
 
@@ -59,66 +77,69 @@ interface ProviderFieldBase {
 }
 
 interface ProviderFieldWithOptions extends ProviderFieldBase {
-  type?: 'password' | 'textarea' | 'select';
+  type?: "password" | "textarea" | "select";
   options?: { value: string; label: string }[];
 }
 
-const PROVIDER_FIELDS: Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[]> = {
+const PROVIDER_FIELDS: Record<
+  "aws" | "gcp" | "azure",
+  ProviderFieldWithOptions[]
+> = {
   aws: [
     {
-      id: 'access_key_id',
-      label: 'Access Key ID',
-      placeholder: 'AKIAIOSFODNN7EXAMPLE',
-      helpText: 'IAM → Users → Security credentials',
+      id: "access_key_id",
+      label: "Access Key ID",
+      placeholder: "AKIAIOSFODNN7EXAMPLE",
+      helpText: "IAM → Users → Security credentials",
     },
     {
-      id: 'secret_access_key',
-      label: 'Secret Access Key',
-      placeholder: 'Enter your secret access key',
-      helpText: 'Provided when creating the access key',
-      type: 'password',
+      id: "secret_access_key",
+      label: "Secret Access Key",
+      placeholder: "Enter your secret access key",
+      helpText: "Provided when creating the access key",
+      type: "password",
     },
   ],
   gcp: [
     {
-      id: 'organization_id',
-      label: 'Organization ID',
-      placeholder: '123456789012',
-      helpText: 'Console → IAM & Admin → Settings',
+      id: "organization_id",
+      label: "Organization ID",
+      placeholder: "123456789012",
+      helpText: "Console → IAM & Admin → Settings",
     },
     {
-      id: 'service_account_key',
-      label: 'Service Account Key',
-      placeholder: 'Paste your JSON key here',
-      helpText: 'IAM & Admin → Service Accounts → Keys → Add Key',
-      type: 'textarea',
+      id: "service_account_key",
+      label: "Service Account Key",
+      placeholder: "Paste your JSON key here",
+      helpText: "IAM & Admin → Service Accounts → Keys → Add Key",
+      type: "textarea",
     },
   ],
   azure: [
     {
-      id: 'AZURE_SUBSCRIPTION_ID',
-      label: 'Subscription ID',
-      placeholder: '00000000-0000-0000-0000-000000000000',
-      helpText: 'Azure Portal → Subscriptions',
+      id: "AZURE_SUBSCRIPTION_ID",
+      label: "Subscription ID",
+      placeholder: "00000000-0000-0000-0000-000000000000",
+      helpText: "Azure Portal → Subscriptions",
     },
     {
-      id: 'AZURE_TENANT_ID',
-      label: 'Tenant ID',
-      placeholder: '00000000-0000-0000-0000-000000000000',
-      helpText: 'Azure Active Directory → Overview',
+      id: "AZURE_TENANT_ID",
+      label: "Tenant ID",
+      placeholder: "00000000-0000-0000-0000-000000000000",
+      helpText: "Azure Active Directory → Overview",
     },
     {
-      id: 'AZURE_CLIENT_ID',
-      label: 'Client ID',
-      placeholder: '00000000-0000-0000-0000-000000000000',
-      helpText: 'App registrations → Overview',
+      id: "AZURE_CLIENT_ID",
+      label: "Client ID",
+      placeholder: "00000000-0000-0000-0000-000000000000",
+      helpText: "App registrations → Overview",
     },
     {
-      id: 'AZURE_CLIENT_SECRET',
-      label: 'Client Secret',
-      placeholder: 'Enter your client secret',
-      helpText: 'App registrations → Certificates & secrets',
-      type: 'password',
+      id: "AZURE_CLIENT_SECRET",
+      label: "Client Secret",
+      placeholder: "Enter your client secret",
+      helpText: "App registrations → Certificates & secrets",
+      type: "password",
     },
   ],
 };
@@ -134,29 +155,35 @@ interface EmptyStateProps {
   onConnected?: (trigger?: TriggerInfo) => void;
 }
 
-export function EmptyState({ onBack, connectedProviders = [], onConnected }: EmptyStateProps = {}) {
-  const [step, setStep] = useState<Step>('choose');
+export function EmptyState({
+  onBack,
+  connectedProviders = [],
+  onConnected,
+}: EmptyStateProps = {}) {
+  const [step, setStep] = useState<Step>("choose");
   const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(null);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isConnecting, setIsConnecting] = useState(false);
-  const [awsRegions, setAwsRegions] = useState<{ value: string; label: string }[]>([]);
-  const [awsAccountId, setAwsAccountId] = useState<string>('');
+  const [awsRegions, setAwsRegions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [awsAccountId, setAwsAccountId] = useState<string>("");
 
   const handleProviderSelect = (providerId: CloudProvider) => {
     setSelectedProvider(providerId);
-    setStep('connect');
+    setStep("connect");
     setCredentials({});
     setErrors({});
   };
 
   const handleBack = () => {
-    if (step === 'connect') {
-      setStep('choose');
+    if (step === "connect") {
+      setStep("choose");
       setSelectedProvider(null);
       setCredentials({});
       setErrors({});
-    } else if (step === 'choose' && onBack) {
+    } else if (step === "choose" && onBack) {
       onBack();
     }
   };
@@ -179,7 +206,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
 
     fields.forEach((field) => {
       if (!credentials[field.id]?.trim()) {
-        newErrors[field.id] = 'This field is required';
+        newErrors[field.id] = "This field is required";
       }
     });
 
@@ -191,10 +218,10 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
     // For AWS, validate credentials first
     if (!credentials.access_key_id || !credentials.secret_access_key) {
       setErrors({
-        access_key_id: !credentials.access_key_id ? 'Required' : '',
-        secret_access_key: !credentials.secret_access_key ? 'Required' : '',
+        access_key_id: !credentials.access_key_id ? "Required" : "",
+        secret_access_key: !credentials.secret_access_key ? "Required" : "",
       });
-      toast.error('Please enter your AWS credentials');
+      toast.error("Please enter your AWS credentials");
       return;
     }
 
@@ -207,15 +234,15 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
 
       if (result?.data?.success && result.data.regions) {
         setAwsRegions(result.data.regions);
-        setAwsAccountId(result.data.accountId || '');
-        setStep('validate-aws');
-        toast.success('Credentials validated! Now select your region.');
+        setAwsAccountId(result.data.accountId || "");
+        setStep("validate-aws");
+        toast.success("Credentials validated! Now select your region.");
       } else {
-        toast.error(result?.data?.error || 'Failed to validate credentials');
+        toast.error(result?.data?.error || "Failed to validate credentials");
       }
     } catch (error) {
-      console.error('Validation error:', error);
-      toast.error('An unexpected error occurred');
+      console.error("Validation error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsConnecting(false);
     }
@@ -223,7 +250,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
 
   const handleConnect = async () => {
     if (!validateFields() || !selectedProvider) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -235,12 +262,14 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
       });
 
       if (result?.data?.success) {
-        setStep('success');
+        setStep("success");
         if (result.data?.trigger) {
           onConnected?.(result.data.trigger);
         }
         if (result.data?.runErrors && result.data.runErrors.length > 0) {
-          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
+          toast.error(
+            result.data.runErrors[0] || "Initial scan reported an issue",
+          );
         }
         // If user already has clouds, automatically return to results after 2 seconds
         if (onBack) {
@@ -249,24 +278,26 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
           }, 2000);
         }
       } else {
-        toast.error(result?.data?.error || 'Failed to connect cloud provider');
+        toast.error(result?.data?.error || "Failed to connect cloud provider");
       }
     } catch (error) {
-      console.error('Connection error:', error);
-      toast.error('An unexpected error occurred');
+      console.error("Connection error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const provider = selectedProvider ? CLOUD_PROVIDERS.find((p) => p.id === selectedProvider) : null;
+  const provider = selectedProvider
+    ? CLOUD_PROVIDERS.find((p) => p.id === selectedProvider)
+    : null;
 
   // AWS Step 2.5: Region Selection (after credential validation)
-  if (step === 'validate-aws' && provider && selectedProvider === 'aws') {
+  if (step === "validate-aws" && provider && selectedProvider === "aws") {
     return (
-      <div className="mx-auto max-w-7xl flex min-h-[600px] w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
+      <div className="mx-auto flex min-h-[600px] w-full max-w-7xl flex-col gap-6 py-4 md:py-6 lg:py-8">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setStep('connect')}>
+          <Button variant="ghost" size="sm" onClick={() => setStep("connect")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
@@ -286,9 +317,12 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
                   />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-semibold">Select AWS Region</CardTitle>
+                  <CardTitle className="text-xl font-semibold">
+                    Select AWS Region
+                  </CardTitle>
                   <CardDescription className="mt-0.5 text-sm">
-                    Credentials verified {awsAccountId && `• Account: ${awsAccountId}`}
+                    Credentials verified{" "}
+                    {awsAccountId && `• Account: ${awsAccountId}`}
                   </CardDescription>
                 </div>
               </div>
@@ -300,11 +334,11 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
                   Region
                 </Label>
                 <Select
-                  value={credentials.region || ''}
-                  onValueChange={(value) => handleFieldChange('region', value)}
+                  value={credentials.region || ""}
+                  onValueChange={(value) => handleFieldChange("region", value)}
                   disabled={isConnecting}
                 >
-                  <SelectTrigger className="h-11 rounded-lg transition-colors focus-visible:ring-primary">
+                  <SelectTrigger className="focus-visible:ring-primary h-11 rounded-lg transition-colors">
                     <SelectValue placeholder="Select your AWS region" />
                   </SelectTrigger>
                   <SelectContent>
@@ -343,7 +377,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
   }
 
   // Step 1: Choose Provider
-  if (step === 'choose') {
+  if (step === "choose") {
     return (
       <div className="container mx-auto flex min-h-[600px] w-full flex-col items-center justify-center gap-8 p-4 md:p-6 lg:p-8">
         {onBack && (
@@ -354,7 +388,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
             </Button>
           </div>
         )}
-        <div className="flex flex-col items-center gap-6 text-center max-w-2xl mx-auto">
+        <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
           <div className="relative">
             <div className="absolute inset-0 rounded-full" />
             <div className="relative rounded-2xl p-4">
@@ -363,63 +397,67 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
           </div>
           <div className="space-y-4">
             <h1 className="text-4xl font-bold tracking-tight">
-              {onBack ? 'Add Another Cloud' : 'Continuous Cloud Scanning'}
+              {onBack ? "Add Another Cloud" : "Continuous Cloud Scanning"}
             </h1>
             <div className="space-y-3">
-              <p className="text-muted-foreground text-lg leading-relaxed max-w-lg mx-auto">
-                Automatically monitor your cloud infrastructure for security vulnerabilities and
-                compliance issues.
+              <p className="text-muted-foreground mx-auto max-w-lg text-lg leading-relaxed">
+                Automatically monitor your cloud infrastructure for security
+                vulnerabilities and compliance issues.
               </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-medium text-primary">Always-on monitoring</span>
+              <div className="bg-primary/10 border-primary/20 inline-flex items-center gap-2 rounded-full border px-4 py-2">
+                <div className="bg-primary h-1.5 w-1.5 animate-pulse rounded-full" />
+                <span className="text-primary text-xs font-medium">
+                  Always-on monitoring
+                </span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="grid w-full max-w-4xl gap-4 md:grid-cols-3">
-          {CLOUD_PROVIDERS.filter((cp) => !connectedProviders.includes(cp.id)).map(
-            (cloudProvider) => (
-              <Card
-                key={cloudProvider.id}
-                className="group relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] hover:border-primary hover:shadow-xl"
-                onClick={() => handleProviderSelect(cloudProvider.id)}
-              >
+          {CLOUD_PROVIDERS.filter(
+            (cp) => !connectedProviders.includes(cp.id),
+          ).map((cloudProvider) => (
+            <Card
+              key={cloudProvider.id}
+              className="group hover:border-primary relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] hover:shadow-xl"
+              onClick={() => handleProviderSelect(cloudProvider.id)}
+            >
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${cloudProvider.color} opacity-0 transition-opacity group-hover:opacity-5`}
+              />
+              <CardHeader className="relative space-y-4 pb-4">
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br ${cloudProvider.color} opacity-0 transition-opacity group-hover:opacity-5`}
-                />
-                <CardHeader className="relative space-y-4 pb-4">
-                  <div
-                    className={`bg-gradient-to-br ${cloudProvider.color} w-fit rounded-lg p-2.5 shadow-sm`}
-                  >
-                    <img
-                      src={cloudProvider.logoUrl}
-                      alt={`${cloudProvider.shortName} logo`}
-                      className="h-10 w-10 object-contain"
-                    />
-                  </div>
-                  <CardTitle className="text-lg font-semibold">{cloudProvider.shortName}</CardTitle>
-                </CardHeader>
-                <CardContent className="relative pb-6">
-                  <CardDescription className="text-sm leading-relaxed">
-                    {cloudProvider.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ),
-          )}
+                  className={`bg-gradient-to-br ${cloudProvider.color} w-fit rounded-lg p-2.5 shadow-sm`}
+                >
+                  <img
+                    src={cloudProvider.logoUrl}
+                    alt={`${cloudProvider.shortName} logo`}
+                    className="h-10 w-10 object-contain"
+                  />
+                </div>
+                <CardTitle className="text-lg font-semibold">
+                  {cloudProvider.shortName}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative pb-6">
+                <CardDescription className="text-sm leading-relaxed">
+                  {cloudProvider.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
   }
 
   // Step 2: Connect (Form)
-  if (step === 'connect' && provider) {
+  if (step === "connect" && provider) {
     const fields = PROVIDER_FIELDS[provider.id];
 
     return (
-      <div className="mx-auto max-w-7xl flex min-h-[600px] w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
+      <div className="mx-auto flex min-h-[600px] w-full max-w-7xl flex-col gap-6 py-4 md:py-6 lg:py-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -468,14 +506,18 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
                   <Label htmlFor={field.id} className="text-sm font-medium">
                     {field.label}
                   </Label>
-                  {field.type === 'select' && 'options' in field && field.options ? (
+                  {field.type === "select" &&
+                  "options" in field &&
+                  field.options ? (
                     <Select
-                      value={credentials[field.id] || ''}
-                      onValueChange={(value) => handleFieldChange(field.id, value)}
+                      value={credentials[field.id] || ""}
+                      onValueChange={(value) =>
+                        handleFieldChange(field.id, value)
+                      }
                       disabled={isConnecting}
                     >
                       <SelectTrigger
-                        className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
+                        className={`h-11 rounded-lg transition-colors ${errors[field.id] ? "border-destructive focus-visible:ring-destructive" : "focus-visible:ring-primary"}`}
                       >
                         <SelectValue placeholder="Select a region" />
                       </SelectTrigger>
@@ -487,26 +529,32 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
                         ))}
                       </SelectContent>
                     </Select>
-                  ) : field.type === 'textarea' ? (
+                  ) : field.type === "textarea" ? (
                     <textarea
                       id={field.id}
                       placeholder={field.placeholder}
-                      value={credentials[field.id] || ''}
-                      onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                      value={credentials[field.id] || ""}
+                      onChange={(e) =>
+                        handleFieldChange(field.id, e.target.value)
+                      }
                       disabled={isConnecting}
-                      className={`bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-primary flex min-h-[100px] w-full rounded-lg border px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : ''
+                      className={`bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-primary flex min-h-[100px] w-full rounded-lg border px-3 py-2.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+                        errors[field.id]
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
                       }`}
                     />
                   ) : (
                     <Input
                       id={field.id}
-                      type={field.type || 'text'}
+                      type={field.type || "text"}
                       placeholder={field.placeholder}
-                      value={credentials[field.id] || ''}
-                      onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                      value={credentials[field.id] || ""}
+                      onChange={(e) =>
+                        handleFieldChange(field.id, e.target.value)
+                      }
                       disabled={isConnecting}
-                      className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
+                      className={`h-11 rounded-lg transition-colors ${errors[field.id] ? "border-destructive focus-visible:ring-destructive" : "focus-visible:ring-primary"}`}
                     />
                   )}
                   {errors[field.id] && (
@@ -523,7 +571,9 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
               ))}
 
               <Button
-                onClick={selectedProvider === 'aws' ? handleValidateAws : handleConnect}
+                onClick={
+                  selectedProvider === "aws" ? handleValidateAws : handleConnect
+                }
                 disabled={isConnecting}
                 className="mt-6 h-11 w-full rounded-lg text-base font-medium"
                 size="lg"
@@ -531,10 +581,16 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
                 {isConnecting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {selectedProvider === 'aws' ? 'Validating credentials...' : 'Connecting...'}
+                    {selectedProvider === "aws"
+                      ? "Validating credentials..."
+                      : "Connecting..."}
                   </>
                 ) : (
-                  <>{selectedProvider === 'aws' ? 'Continue' : `Connect ${provider.shortName}`}</>
+                  <>
+                    {selectedProvider === "aws"
+                      ? "Continue"
+                      : `Connect ${provider.shortName}`}
+                  </>
                 )}
               </Button>
             </CardContent>
@@ -545,7 +601,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
   }
 
   // Step 3: Success
-  if (step === 'success' && provider) {
+  if (step === "success" && provider) {
     return (
       <div className="container mx-auto flex min-h-[600px] w-full flex-col items-center justify-center gap-8 p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center gap-6 text-center">
@@ -553,16 +609,20 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
             <CheckCircle2 className="text-primary h-16 w-16" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Successfully Connected!</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Successfully Connected!
+            </h1>
             <p className="text-muted-foreground max-w-lg text-lg">
-              {provider.name} is now connected. Your first security scan is running...
+              {provider.name} is now connected. Your first security scan is
+              running...
             </p>
           </div>
           <div className="bg-muted/50 mt-4 rounded-lg border p-6">
             <div className="flex items-center gap-3">
               <Loader2 className="text-primary h-5 w-5 animate-spin" />
               <p className="text-muted-foreground text-sm">
-                This usually takes 1-2 minutes. We'll show results as soon as they're ready.
+                This usually takes 1-2 minutes. We'll show results as soon as
+                they're ready.
               </p>
             </div>
           </div>

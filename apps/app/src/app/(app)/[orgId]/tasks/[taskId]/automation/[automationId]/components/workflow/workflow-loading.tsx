@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { Zap } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { Zap } from "lucide-react";
 
 interface Props {
   className?: string;
@@ -9,19 +9,26 @@ interface Props {
 
 export function WorkflowLoading({ className }: Props) {
   return (
-    <div className={cn('flex flex-col h-full overflow-hidden bg-background', className)}>
+    <div
+      className={cn(
+        "bg-background flex h-full flex-col overflow-hidden",
+        className,
+      )}
+    >
       {/* Header */}
-      <div className="px-6 py-4 border-b border-border">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Zap className="w-4 h-4 text-primary animate-pulse" />
+      <div className="border-border border-b px-6 py-4">
+        <h2 className="text-foreground flex items-center gap-2 text-sm font-semibold">
+          <Zap className="text-primary h-4 w-4 animate-pulse" />
           Generating Workflow
         </h2>
-        <p className="text-xs text-muted-foreground mt-1">Analyzing your automation...</p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Analyzing your automation...
+        </p>
       </div>
 
       {/* Loading Animation */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="space-y-8 max-w-md w-full">
+      <div className="flex flex-1 items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-8">
           {/* Animated Cards */}
           {[0, 1, 2].map((index) => (
             <div
@@ -35,31 +42,31 @@ export function WorkflowLoading({ className }: Props) {
               {/* Connection Line */}
               {index < 2 && (
                 <div
-                  className="absolute left-6 top-14 w-0.5 h-12 bg-border"
+                  className="bg-border absolute top-14 left-6 h-12 w-0.5"
                   style={{
                     animation: `growDown 0.3s ease-out ${index * 0.2 + 0.5}s forwards`,
-                    transformOrigin: 'top',
-                    transform: 'scaleY(0)',
+                    transformOrigin: "top",
+                    transform: "scaleY(0)",
                   }}
                 />
               )}
 
               {/* Card */}
-              <div className="relative p-4 rounded-sm border border-border bg-card">
+              <div className="border-border bg-card relative rounded-sm border p-4">
                 <div className="flex items-start gap-4">
                   {/* Skeleton Icon */}
-                  <div className="p-2.5 rounded-sm bg-muted animate-pulse">
-                    <div className="w-4 h-4 bg-muted-foreground/30 rounded" />
+                  <div className="bg-muted animate-pulse rounded-sm p-2.5">
+                    <div className="bg-muted-foreground/30 h-4 w-4 rounded" />
                   </div>
 
                   {/* Skeleton Content */}
                   <div className="flex-1 space-y-2">
                     <div
-                      className="h-4 bg-muted animate-pulse"
+                      className="bg-muted h-4 animate-pulse"
                       style={{ width: `${60 + index * 10}%` }}
                     />
                     <div
-                      className="h-3 bg-muted/60 rounded animate-pulse"
+                      className="bg-muted/60 h-3 animate-pulse rounded"
                       style={{ width: `${80 - index * 10}%` }}
                     />
                   </div>

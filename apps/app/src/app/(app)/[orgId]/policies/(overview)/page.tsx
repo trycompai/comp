@@ -1,11 +1,13 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { Suspense } from 'react';
-import { PolicyAssigneeChart } from './components/policy-assignee-chart';
-import { PolicyStatusChart } from './components/policy-status-chart';
-import Loading from './loading';
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { PolicyAssigneeChart } from "./components/policy-assignee-chart";
+import { PolicyStatusChart } from "./components/policy-status-chart";
+import Loading from "./loading";
 
 export default async function PoliciesOverview() {
   const overview = await getPoliciesOverview();
@@ -51,14 +53,14 @@ const getPoliciesOverview = async () => {
       tx.policy.count({
         where: {
           organizationId,
-          status: 'published',
+          status: "published",
           isArchived: false,
         },
       }),
       tx.policy.count({
         where: {
           organizationId,
-          status: 'draft',
+          status: "draft",
           isArchived: false,
         },
       }),
@@ -71,12 +73,12 @@ const getPoliciesOverview = async () => {
       tx.policy.count({
         where: {
           organizationId,
-          status: 'needs_review',
+          status: "needs_review",
           isArchived: false,
         },
       }),
       tx.policy.groupBy({
-        by: ['assigneeId'],
+        by: ["assigneeId"],
         _count: true,
         where: {
           organizationId,
@@ -116,7 +118,7 @@ const getPoliciesOverview = async () => {
       if (!policyDataByOwner.has(assigneeId)) {
         policyDataByOwner.set(assigneeId, {
           id: assigneeId,
-          name: policy.assignee.user.name || 'Unknown',
+          name: policy.assignee.user.name || "Unknown",
           total: 0,
           published: 0,
           draft: 0,
@@ -136,9 +138,9 @@ const getPoliciesOverview = async () => {
 
       // Handle each status type explicitly
       const status = policy.status;
-      if (status === 'published') assigneeData.published += 1;
-      else if (status === 'draft') assigneeData.draft += 1;
-      else if (status === 'needs_review') assigneeData.needs_review += 1;
+      if (status === "published") assigneeData.published += 1;
+      else if (status === "draft") assigneeData.draft += 1;
+      else if (status === "needs_review") assigneeData.needs_review += 1;
     }
 
     const assigneeData = Array.from(policyDataByOwner.values());
@@ -157,6 +159,6 @@ const getPoliciesOverview = async () => {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Policies',
+    title: "Policies",
   };
 }

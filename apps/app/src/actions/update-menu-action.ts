@@ -1,15 +1,16 @@
-'use server';
+"use server";
 
-import { Cookies } from '@/utils/constants';
-import { addYears } from 'date-fns';
-import { cookies } from 'next/headers';
-import { authActionClient } from './safe-action';
-import { updaterMenuSchema } from './schema';
+import { cookies } from "next/headers";
+import { Cookies } from "@/utils/constants";
+import { addYears } from "date-fns";
+
+import { authActionClient } from "./safe-action";
+import { updaterMenuSchema } from "./schema";
 
 export const updateMenuAction = authActionClient
   .inputSchema(updaterMenuSchema)
   .metadata({
-    name: 'update-menu',
+    name: "update-menu",
   })
   .action(async ({ parsedInput: value }) => {
     const cookieStore = await cookies();

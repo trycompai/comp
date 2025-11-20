@@ -1,4 +1,3 @@
-'use client';
+"use client";
 
-export { useOnboardingStatus } from '../../../risk/(overview)/hooks/use-onboarding-status';
-
+export { useOnboardingStatus } from "../../../risk/(overview)/hooks/use-onboarding-status";

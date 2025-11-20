@@ -1,7 +1,7 @@
-import { DeviceComplianceChart } from './components/DeviceComplianceChart';
-import { EmployeeDevicesList } from './components/EmployeeDevicesList';
-import { getEmployeeDevices } from './data';
-import type { Host } from './types';
+import type { Host } from "./types";
+import { DeviceComplianceChart } from "./components/DeviceComplianceChart";
+import { EmployeeDevicesList } from "./components/EmployeeDevicesList";
+import { getEmployeeDevices } from "./data";
 
 export default async function EmployeeDevicesPage() {
   let devices: Host[] = [];
@@ -10,7 +10,7 @@ export default async function EmployeeDevicesPage() {
     const fetchedDevices = await getEmployeeDevices();
     devices = fetchedDevices || [];
   } catch (error) {
-    console.error('Error fetching employee devices:', error);
+    console.error("Error fetching employee devices:", error);
     // Return empty array on error to render empty state
     devices = [];
   }

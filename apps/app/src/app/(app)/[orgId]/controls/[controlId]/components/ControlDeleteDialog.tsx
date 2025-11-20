@@ -1,9 +1,17 @@
-'use client';
+"use client";
 
-import { deleteControlAction } from '@/app/(app)/[orgId]/controls/[controlId]/actions/delete-control';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Control } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { deleteControlAction } from "@/app/(app)/[orgId]/controls/[controlId]/actions/delete-control";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Trash2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Control } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,15 +19,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Form } from '@trycompai/ui/form';
-import { Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
+} from "@trycompai/ui/dialog";
+import { Form } from "@trycompai/ui/form";
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -33,25 +34,29 @@ interface ControlDeleteDialogProps {
   control: Control;
 }
 
-export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteDialogProps) {
+export function ControlDeleteDialog({
+  isOpen,
+  onClose,
+  control,
+}: ControlDeleteDialogProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      comment: '',
+      comment: "",
     },
   });
 
   const deleteControl = useAction(deleteControlAction, {
     onSuccess: () => {
-      toast.info('Control deleted! Redirecting to controls list...');
+      toast.info("Control deleted! Redirecting to controls list...");
       onClose();
       router.push(`/${control.organizationId}/controls`);
     },
     onError: () => {
-      toast.error('Failed to delete control.');
+      toast.error("Failed to delete control.");
       setIsSubmitting(false);
     },
   });
@@ -70,16 +75,30 @@ export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteD
         <DialogHeader>
           <DialogTitle>Delete Control</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this control? This action cannot be undone.
+            Are you sure you want to delete this control? This action cannot be
+            undone.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={isSubmitting}
+                className="gap-2"
+              >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />

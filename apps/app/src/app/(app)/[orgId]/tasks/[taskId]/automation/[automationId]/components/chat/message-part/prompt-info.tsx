@@ -1,9 +1,10 @@
-import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { memo, useState } from 'react';
-import { toast } from 'sonner';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+import { memo, useState } from "react";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
+import { Input } from "@trycompai/ui/input";
+import { Label } from "@trycompai/ui/label";
 
 interface FieldInfo {
   name: string;
@@ -17,7 +18,11 @@ interface FieldInfo {
 interface PromptInfoProps {
   input?: any; // Will be the parsed input from the tool
   output?: any;
-  state: 'input-available' | 'output-available' | 'output-error' | 'input-streaming';
+  state:
+    | "input-available"
+    | "output-available"
+    | "output-error"
+    | "input-streaming";
   errorText?: string;
   onInfoProvided?: (info: Record<string, string>) => void;
 }
@@ -33,20 +38,20 @@ export const PromptInfo = memo(function PromptInfo({
   const infoData = input
     ? {
         fields: input.fields || [],
-        reason: input.reason || '',
+        reason: input.reason || "",
       }
     : null;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   // If state is 'output-available', the info was already provided (historical message)
-  const [isComplete, setIsComplete] = useState(state === 'output-available');
+  const [isComplete, setIsComplete] = useState(state === "output-available");
 
   // Initialize values from props only once on mount
   const [values, setValues] = useState<Record<string, string>>(() => {
     if (!infoData?.fields) return {};
     const initial: Record<string, string> = {};
     infoData.fields.forEach((field: FieldInfo) => {
-      initial[field.name] = field.defaultValue || '';
+      initial[field.name] = field.defaultValue || "";
     });
     return initial;
   });
@@ -59,7 +64,7 @@ export const PromptInfo = memo(function PromptInfo({
 
     if (missingFields?.length > 0) {
       toast.error(
-        `Please fill in all required fields: ${missingFields.map((f: FieldInfo) => f.label).join(', ')}`,
+        `Please fill in all required fields: ${missingFields.map((f: FieldInfo) => f.label).join(", ")}`,
       );
       return;
     }
@@ -71,31 +76,31 @@ export const PromptInfo = memo(function PromptInfo({
       onInfoProvided?.(values);
       setIsComplete(true);
     } catch (error) {
-      console.error('Error submitting info:', error);
-      toast.error('Failed to submit information');
+      console.error("Error submitting info:", error);
+      toast.error("Failed to submit information");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (state === 'output-error') {
+  if (state === "output-error") {
     return (
-      <div className="rounded-xs border border-destructive/50 bg-destructive/10 p-4">
+      <div className="border-destructive/50 bg-destructive/10 rounded-xs border p-4">
         <div className="flex gap-2">
-          <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
           <div className="text-sm">
             <p className="font-medium">Error prompting for information</p>
-            <p className="mt-1 text-muted-foreground">{errorText}</p>
+            <p className="text-muted-foreground mt-1">{errorText}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (state === 'input-streaming') {
+  if (state === "input-streaming") {
     return (
-      <div className="rounded-xs border bg-card p-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="bg-card rounded-xs border p-4">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <div className="animate-pulse">Preparing information request...</div>
         </div>
       </div>
@@ -106,10 +111,12 @@ export const PromptInfo = memo(function PromptInfo({
     return (
       <div className="rounded-xs border bg-green-50 p-4">
         <div className="flex gap-2">
-          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="text-sm">
             <p className="font-medium">Information provided successfully</p>
-            <p className="mt-1">The automation can now continue with this information.</p>
+            <p className="mt-1">
+              The automation can now continue with this information.
+            </p>
           </div>
         </div>
       </div>
@@ -117,15 +124,18 @@ export const PromptInfo = memo(function PromptInfo({
   }
 
   return (
-    <div className="rounded-xs border bg-card p-4 space-y-4">
+    <div className="bg-card space-y-4 rounded-xs border p-4">
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-xs bg-primary/10">
-          <Info className="h-4 w-4 text-primary" />
+        <div className="bg-primary/10 rounded-xs p-2">
+          <Info className="text-primary h-4 w-4" />
         </div>
         <div className="flex-1">
-          <h3 className="font-medium text-sm">Additional Information Required</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {infoData?.reason || 'Please provide the following information to continue.'}
+          <h3 className="text-sm font-medium">
+            Additional Information Required
+          </h3>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {infoData?.reason ||
+              "Please provide the following information to continue."}
           </p>
         </div>
       </div>
@@ -135,23 +145,34 @@ export const PromptInfo = memo(function PromptInfo({
           <div key={field.name} className="grid gap-2">
             <Label htmlFor={field.name} className="text-sm">
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <Input
               id={field.name}
-              value={values[field.name] || ''}
-              onChange={(e) => setValues((prev) => ({ ...prev, [field.name]: e.target.value }))}
+              value={values[field.name] || ""}
+              onChange={(e) =>
+                setValues((prev) => ({ ...prev, [field.name]: e.target.value }))
+              }
               placeholder={field.placeholder}
               disabled={isSubmitting}
             />
             {field.description && (
-              <p className="text-xs text-muted-foreground">{field.description}</p>
+              <p className="text-muted-foreground text-xs">
+                {field.description}
+              </p>
             )}
           </div>
         ))}
 
-        <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full" size="sm">
-          {isSubmitting ? 'Submitting...' : 'Continue'}
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="w-full"
+          size="sm"
+        >
+          {isSubmitting ? "Submitting..." : "Continue"}
         </Button>
       </div>
     </div>

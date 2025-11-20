@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import { useComments } from '@/hooks/use-comments-api';
-import { CommentEntityType } from '@trycompai/db';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { CommentForm } from './CommentForm';
-import { CommentList } from './CommentList';
+import { useComments } from "@/hooks/use-comments-api";
+
+import { CommentEntityType } from "@trycompai/db";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+
+import { CommentForm } from "./CommentForm";
+import { CommentList } from "./CommentList";
 
 export type CommentWithAuthor = {
   id: string;
@@ -33,7 +41,7 @@ interface CommentsProps {
   /** Optional custom description */
   description?: string;
   /** Whether to show as a card or just the content */
-  variant?: 'card' | 'inline';
+  variant?: "card" | "inline";
 }
 
 /**
@@ -56,9 +64,9 @@ interface CommentsProps {
 export const Comments = ({
   entityId,
   entityType,
-  title = 'Comments',
+  title = "Comments",
   description,
-  variant = 'card',
+  variant = "card",
 }: CommentsProps) => {
   // Use SWR hooks for real-time comment fetching
   const {
@@ -72,7 +80,8 @@ export const Comments = ({
   const comments = commentsData?.data || [];
 
   // Generate default description if not provided
-  const defaultDescription = description || `Leave a comment on this ${entityType}`;
+  const defaultDescription =
+    description || `Leave a comment on this ${entityType}`;
 
   const content = (
     <div className="space-y-4">
@@ -84,17 +93,17 @@ export const Comments = ({
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card animate-pulse"
+              className="border-border bg-card flex animate-pulse items-start gap-3 rounded-lg border p-4"
             >
-              <div className="h-8 w-8 rounded-full bg-muted/50 flex-shrink-0" />
+              <div className="bg-muted/50 h-8 w-8 flex-shrink-0 rounded-full" />
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="h-3 w-24 bg-muted/50 rounded" />
-                  <div className="h-3 w-16 bg-muted/30 rounded" />
+                  <div className="bg-muted/50 h-3 w-24 rounded" />
+                  <div className="bg-muted/30 h-3 w-16 rounded" />
                 </div>
                 <div className="space-y-1.5">
-                  <div className="h-3 w-full bg-muted/40 rounded" />
-                  <div className="h-3 w-3/4 bg-muted/30 rounded" />
+                  <div className="bg-muted/40 h-3 w-full rounded" />
+                  <div className="bg-muted/30 h-3 w-3/4 rounded" />
                 </div>
               </div>
             </div>
@@ -103,7 +112,9 @@ export const Comments = ({
       )}
 
       {commentsError && (
-        <div className="text-destructive text-sm">Failed to load comments. Please try again.</div>
+        <div className="text-destructive text-sm">
+          Failed to load comments. Please try again.
+        </div>
       )}
 
       {!commentsLoading && !commentsError && (
@@ -112,13 +123,17 @@ export const Comments = ({
     </div>
   );
 
-  if (variant === 'inline') {
+  if (variant === "inline") {
     return (
       <div className="space-y-4">
         {title && (
           <div>
             <h3 className="text-lg font-medium">{title}</h3>
-            {description && <p className="text-muted-foreground text-sm mt-1">{description}</p>}
+            {description && (
+              <p className="text-muted-foreground mt-1 text-sm">
+                {description}
+              </p>
+            )}
           </div>
         )}
         {content}

@@ -8,13 +8,13 @@
  * - Easy to add new integrations category-by-category
  */
 
-import { cloudIntegrations } from './categories/cloud';
-import { communicationIntegrations } from './categories/communication';
-import { developmentIntegrations } from './categories/development';
-import { hrIntegrations } from './categories/hr';
-import { identityIntegrations } from './categories/identity';
-import { infrastructureIntegrations } from './categories/infrastructure';
-import { monitoringIntegrations } from './categories/monitoring';
+import { cloudIntegrations } from "./categories/cloud";
+import { communicationIntegrations } from "./categories/communication";
+import { developmentIntegrations } from "./categories/development";
+import { hrIntegrations } from "./categories/hr";
+import { identityIntegrations } from "./categories/identity";
+import { infrastructureIntegrations } from "./categories/infrastructure";
+import { monitoringIntegrations } from "./categories/monitoring";
 
 export interface Integration {
   id: string;
@@ -28,13 +28,13 @@ export interface Integration {
 }
 
 export type IntegrationCategory =
-  | 'Identity & Access'
-  | 'HR & People'
-  | 'Cloud Security'
-  | 'Development'
-  | 'Communication'
-  | 'Monitoring'
-  | 'Infrastructure';
+  | "Identity & Access"
+  | "HR & People"
+  | "Cloud Security"
+  | "Development"
+  | "Communication"
+  | "Monitoring"
+  | "Infrastructure";
 
 /**
  * All integrations - merged from category files
@@ -51,11 +51,11 @@ export const INTEGRATIONS: Integration[] = [
 ];
 
 export const CATEGORIES: IntegrationCategory[] = [
-  'Identity & Access',
-  'HR & People',
-  'Cloud Security',
-  'Development',
-  'Communication',
-  'Monitoring',
-  'Infrastructure',
+  "Identity & Access",
+  "HR & People",
+  "Cloud Security",
+  "Development",
+  "Communication",
+  "Monitoring",
+  "Infrastructure",
 ];

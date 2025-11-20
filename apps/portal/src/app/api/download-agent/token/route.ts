@@ -1,11 +1,14 @@
-import { auth } from '@/app/lib/auth';
-import { logger } from '@/utils/logger';
-import { client as kv } from '@trycompai/kv';
-import { randomBytes } from 'crypto';
-import { type NextRequest, NextResponse } from 'next/server';
-import { createFleetLabel } from '../fleet-label';
-import type { DownloadAgentRequest, SupportedOS } from '../types';
-import { detectOSFromUserAgent, validateMemberAndOrg } from '../utils';
+import { randomBytes } from "crypto";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { auth } from "@/app/lib/auth";
+import { logger } from "@/utils/logger";
+
+import { client as kv } from "@trycompai/kv";
+
+import type { DownloadAgentRequest, SupportedOS } from "../types";
+import { createFleetLabel } from "../fleet-label";
+import { detectOSFromUserAgent, validateMemberAndOrg } from "../utils";
 
 export async function POST(req: NextRequest) {
   // Authentication
@@ -14,34 +17,36 @@ export async function POST(req: NextRequest) {
   });
 
   if (!session?.user) {
-    return new NextResponse('Unauthorized', { status: 401 });
+    return new NextResponse("Unauthorized", { status: 401 });
   }
 
   // Validate request body
   const { orgId, employeeId }: DownloadAgentRequest = await req.json();
 
   if (!orgId || !employeeId) {
-    return new NextResponse('Missing orgId or employeeId', { status: 400 });
+    return new NextResponse("Missing orgId or employeeId", { status: 400 });
   }
 
   // Validate member and organization
   const member = await validateMemberAndOrg(session.user.id, orgId);
   if (!member) {
-    return new NextResponse('Member not found or organization invalid', { status: 404 });
+    return new NextResponse("Member not found or organization invalid", {
+      status: 404,
+    });
   }
 
   // Auto-detect OS from User-Agent
-  const userAgent = req.headers.get('user-agent');
+  const userAgent = req.headers.get("user-agent");
   const detectedOS = detectOSFromUserAgent(userAgent);
 
   if (!detectedOS) {
     return new NextResponse(
-      'Could not detect OS from User-Agent. Please use a standard browser on macOS or Windows.',
+      "Could not detect OS from User-Agent. Please use a standard browser on macOS or Windows.",
       { status: 400 },
     );
   }
 
-  logger('Token route: Starting fleet label creation', {
+  logger("Token route: Starting fleet label creation", {
     employeeId,
     memberId: member.id,
     os: detectedOS,
@@ -50,8 +55,8 @@ export async function POST(req: NextRequest) {
   });
 
   // Hardcoded device marker paths used by the setup scripts
-  const fleetDevicePathMac = '/Users/Shared/.fleet';
-  const fleetDevicePathWindows = 'C:\\ProgramData\\CompAI\\Fleet';
+  const fleetDevicePathMac = "/Users/Shared/.fleet";
+  const fleetDevicePathWindows = "C:\\ProgramData\\CompAI\\Fleet";
 
   // Create Fleet label
   try {
@@ -63,14 +68,14 @@ export async function POST(req: NextRequest) {
       fleetDevicePathWindows,
     });
 
-    logger('Token route: Fleet label creation completed successfully', {
+    logger("Token route: Fleet label creation completed successfully", {
       employeeId,
       memberId: member.id,
       os: detectedOS,
       orgId,
     });
   } catch (error) {
-    logger('Token route: Error creating fleet label', {
+    logger("Token route: Error creating fleet label", {
       employeeId,
       memberId: member.id,
       os: detectedOS,
@@ -79,15 +84,15 @@ export async function POST(req: NextRequest) {
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return new NextResponse('Failed to create fleet label', { status: 500 });
+    return new NextResponse("Failed to create fleet label", { status: 500 });
   }
 
   // Generate a secure random token
-  logger('Generating download token', { employeeId, os: detectedOS, orgId });
-  const token = randomBytes(32).toString('hex');
+  logger("Generating download token", { employeeId, os: detectedOS, orgId });
+  const token = randomBytes(32).toString("hex");
 
   // Store token with download info in KV store (expires in 5 minutes)
-  logger('Storing download token in KV store', {
+  logger("Storing download token in KV store", {
     employeeId,
     os: detectedOS,
     orgId,
@@ -107,7 +112,7 @@ export async function POST(req: NextRequest) {
     { ex: 300 }, // 5 minutes
   );
 
-  logger('Download token created and stored successfully', {
+  logger("Download token created and stored successfully", {
     employeeId,
     os: detectedOS,
     orgId,

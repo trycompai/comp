@@ -1,7 +1,8 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
     const orgId = session?.session.activeOrganizationId;
 
     if (!orgId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const findings =
@@ -21,7 +22,7 @@ export async function GET() {
           organizationId: orgId,
           integration: {
             integrationId: {
-              in: ['aws', 'gcp', 'azure'],
+              in: ["aws", "gcp", "azure"],
             },
           },
         },
@@ -40,13 +41,16 @@ export async function GET() {
           },
         },
         orderBy: {
-          completedAt: 'desc',
+          completedAt: "desc",
         },
       })) || [];
 
     return NextResponse.json(findings);
   } catch (error) {
-    console.error('Error fetching findings:', error);
-    return NextResponse.json({ error: 'Failed to fetch findings' }, { status: 500 });
+    console.error("Error fetching findings:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch findings" },
+      { status: 500 },
+    );
   }
 }

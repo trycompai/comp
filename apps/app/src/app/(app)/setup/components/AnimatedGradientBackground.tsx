@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
-import * as THREE from 'three';
+import { useEffect, useMemo, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 
 const vertexShader = `
 uniform float u_time;
@@ -279,8 +279,8 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
       mousePosition.current.y = 1.0 - e.clientY / window.innerHeight; // Invert Y
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   // Handle clicks for pulse effect
@@ -293,8 +293,8 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
       }, 100);
     };
 
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
   }, []);
 
   // Handle ESC key for rage mode easter egg
@@ -302,13 +302,15 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't process keyboard events if user is typing in an input
       const target = e.target as HTMLElement;
-      const isInputElement = target.matches('input, textarea, select, [contenteditable="true"]');
+      const isInputElement = target.matches(
+        'input, textarea, select, [contenteditable="true"]',
+      );
 
       if (isInputElement) {
         return; // Skip processing for form inputs
       }
 
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         rageMode.current = !rageMode.current;
 
@@ -333,9 +335,9 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
       if (keyboardTimer.current) {
         clearTimeout(keyboardTimer.current);
       }
@@ -352,8 +354,8 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
       const target = e.target as HTMLElement;
       const isInteractiveElement = target.closest(
         'input, textarea, select, button, [role="combobox"], [role="listbox"], ' +
-          '[data-radix-collection-item], [data-state], .overflow-auto, .overflow-y-auto, ' +
-          '.overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll',
+          "[data-radix-collection-item], [data-state], .overflow-auto, .overflow-y-auto, " +
+          ".overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll",
       );
 
       // Only apply the orb effect if not scrolling on an interactive element
@@ -378,10 +380,10 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
     };
 
     // Use wheel event for better scroll detection
-    window.addEventListener('wheel', handleScroll, { passive: true });
+    window.addEventListener("wheel", handleScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('wheel', handleScroll);
+      window.removeEventListener("wheel", handleScroll);
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
@@ -397,8 +399,10 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
       uniforms.u_scale.value = currentScale.current;
 
       // Smooth mouse position updates
-      uniforms.u_mouse.value.x += (mousePosition.current.x - uniforms.u_mouse.value.x) * 0.05;
-      uniforms.u_mouse.value.y += (mousePosition.current.y - uniforms.u_mouse.value.y) * 0.05;
+      uniforms.u_mouse.value.x +=
+        (mousePosition.current.x - uniforms.u_mouse.value.x) * 0.05;
+      uniforms.u_mouse.value.y +=
+        (mousePosition.current.y - uniforms.u_mouse.value.y) * 0.05;
 
       // Smooth pulse transitions with easing
       const pulseDiff = targetPulse.current - pulseValue.current;
@@ -421,7 +425,8 @@ function AnimatedOrb({ scale = 1 }: AnimatedOrbProps) {
       uniforms.u_rage.value = rageValue.current;
 
       // Smooth scroll rotation with momentum
-      scrollRotation.current += (targetScrollRotation.current - scrollRotation.current) * 0.08;
+      scrollRotation.current +=
+        (targetScrollRotation.current - scrollRotation.current) * 0.08;
 
       // Apply velocity decay for momentum effect
       if (Math.abs(scrollVelocity.current) > 0.001) {
@@ -472,7 +477,9 @@ interface AnimatedGradientBackgroundProps {
   scale?: number;
 }
 
-export function AnimatedGradientBackground({ scale = 1 }: AnimatedGradientBackgroundProps) {
+export function AnimatedGradientBackground({
+  scale = 1,
+}: AnimatedGradientBackgroundProps) {
   return (
     <div className="fixed inset-0 -z-10 opacity-50">
       <Canvas
@@ -483,7 +490,7 @@ export function AnimatedGradientBackground({ scale = 1 }: AnimatedGradientBackgr
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          powerPreference: 'high-performance',
+          powerPreference: "high-performance",
         }}
       >
         <AnimatedOrb scale={scale} />

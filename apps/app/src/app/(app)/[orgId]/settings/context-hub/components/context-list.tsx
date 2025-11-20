@@ -1,7 +1,11 @@
-'use client';
+"use client";
 
-import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
-import type { Context } from '@trycompai/db';
+import { useState } from "react";
+import { deleteContextEntryAction } from "@/actions/context-hub/delete-context-entry-action";
+import { Pencil, Plus } from "lucide-react";
+import { toast } from "sonner";
+
+import type { Context } from "@trycompai/db";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,8 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
+} from "@trycompai/ui/alert-dialog";
+import { Button } from "@trycompai/ui/button";
 import {
   Card,
   CardContent,
@@ -21,7 +25,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
+} from "@trycompai/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -29,15 +33,21 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@trycompai/ui/dialog';
-import { Pencil, Plus } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { ContextForm } from './context-form';
+} from "@trycompai/ui/dialog";
 
-export function ContextList({ entries, locale }: { entries: Context[]; locale: string }) {
+import { ContextForm } from "./context-form";
+
+export function ContextList({
+  entries,
+  locale,
+}: {
+  entries: Context[];
+  locale: string;
+}) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
+  const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const handleEditOpen = (id: string, open: boolean) => {
     setEditDialogOpen((prev) => ({ ...prev, [id]: open }));
@@ -67,7 +77,9 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
               <DialogContent className="w-full max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Add New Entry</DialogTitle>
-                  <DialogDescription>Create a new context entry</DialogDescription>
+                  <DialogDescription>
+                    Create a new context entry
+                  </DialogDescription>
                 </DialogHeader>
                 <ContextForm onSuccess={() => setAddDialogOpen(false)} />
               </DialogContent>
@@ -77,7 +89,9 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
         <CardContent>
           {entries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-muted-foreground mb-6">No context entries yet</p>
+              <p className="text-muted-foreground mb-6">
+                No context entries yet
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -85,7 +99,9 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
                 <Card key={entry.id} className="flex h-full flex-col">
                   <CardHeader className="flex-none pb-2">
                     <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="line-clamp-2 text-base">{entry.question}</CardTitle>
+                      <CardTitle className="line-clamp-2 text-base">
+                        {entry.question}
+                      </CardTitle>
                       <Dialog
                         open={!!editDialogOpen[entry.id]}
                         onOpenChange={(open) => handleEditOpen(entry.id, open)}
@@ -104,7 +120,9 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
                         <DialogContent className="w-full max-w-lg">
                           <DialogHeader>
                             <DialogTitle>Edit Entry</DialogTitle>
-                            <DialogDescription>Update your context entry</DialogDescription>
+                            <DialogDescription>
+                              Update your context entry
+                            </DialogDescription>
                           </DialogHeader>
                           <ContextForm
                             entry={entry}
@@ -139,14 +157,16 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
                             <AlertDialogAction
                               onClick={async () => {
                                 try {
-                                  const result = await deleteContextEntryAction({
-                                    id: entry.id,
-                                  });
+                                  const result = await deleteContextEntryAction(
+                                    {
+                                      id: entry.id,
+                                    },
+                                  );
                                   if (result?.data?.success) {
-                                    toast.success('Context entry deleted');
+                                    toast.success("Context entry deleted");
                                   }
                                 } catch (error) {
-                                  toast.error('Something went wrong');
+                                  toast.error("Something went wrong");
                                 }
                               }}
                             >

@@ -1,6 +1,10 @@
-'use client';
+"use client";
 
-import type { Role } from '@trycompai/db'; // Assuming Role is from prisma
+import { Check } from "lucide-react";
+
+import type { Role } from "@trycompai/db"; // Assuming Role is from prisma
+
+import { cn } from "@trycompai/ui/cn";
 import {
   Command,
   CommandEmpty,
@@ -8,10 +12,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@trycompai/ui/command';
-import { Check } from 'lucide-react';
-
-import { cn } from '@trycompai/ui/cn';
+} from "@trycompai/ui/command";
 
 interface MultiRoleComboboxContentProps {
   searchTerm: string;
@@ -34,16 +35,16 @@ export function MultiRoleComboboxContent({
 }: MultiRoleComboboxContentProps) {
   const getRoleDisplayLabel = (roleValue: Role) => {
     switch (roleValue) {
-      case 'owner':
-        return 'Owner';
-      case 'admin':
-        return 'Admin';
-      case 'auditor':
-        return 'Auditor';
-      case 'employee':
-        return 'Employee';
-      case 'contractor':
-        return 'Contractor';
+      case "owner":
+        return "Owner";
+      case "admin":
+        return "Admin";
+      case "auditor":
+        return "Auditor";
+      case "employee":
+        return "Employee";
+      case "contractor":
+        return "Contractor";
       default:
         return roleValue;
     }
@@ -51,26 +52,30 @@ export function MultiRoleComboboxContent({
 
   const getRoleDescription = (roleValue: Role) => {
     switch (roleValue) {
-      case 'owner':
-        return 'Can manage users, policies, tasks, and settings, and delete organization.';
-      case 'admin':
-        return 'Can manage users, policies, tasks, and settings.';
-      case 'auditor':
-        return 'Read-only access for compliance checks.';
-      case 'employee':
-        return 'Can sign policies and complete training.';
-      case 'contractor':
-        return 'Can sign policies and complete training.';
+      case "owner":
+        return "Can manage users, policies, tasks, and settings, and delete organization.";
+      case "admin":
+        return "Can manage users, policies, tasks, and settings.";
+      case "auditor":
+        return "Read-only access for compliance checks.";
+      case "employee":
+        return "Can sign policies and complete training.";
+      case "contractor":
+        return "Can sign policies and complete training.";
       default:
-        return '';
+        return "";
     }
   };
 
   return (
     <Command>
-      <CommandInput placeholder="Search..." value={searchTerm} onValueChange={setSearchTerm} />
+      <CommandInput
+        placeholder="Search..."
+        value={searchTerm}
+        onValueChange={setSearchTerm}
+      />
       <CommandList>
-        <CommandEmpty>{'No results found'}</CommandEmpty>
+        <CommandEmpty>{"No results found"}</CommandEmpty>
         <CommandGroup>
           {filteredRoles.map((role) => (
             <CommandItem
@@ -83,29 +88,35 @@ export function MultiRoleComboboxContent({
                 onCloseDialog();
               }}
               disabled={
-                role.value === 'owner' || // Always disable the owner role
-                (lockedRoles.includes(role.value) && selectedRoles.includes(role.value)) // Disable any locked roles
+                role.value === "owner" || // Always disable the owner role
+                (lockedRoles.includes(role.value) &&
+                  selectedRoles.includes(role.value)) // Disable any locked roles
               }
               className={cn(
-                'flex cursor-pointer flex-col items-start py-2',
+                "flex cursor-pointer flex-col items-start py-2",
                 lockedRoles.includes(role.value) &&
                   selectedRoles.includes(role.value) &&
-                  'bg-muted/50 text-muted-foreground',
+                  "bg-muted/50 text-muted-foreground",
               )}
             >
               <div className="flex w-full items-center">
                 <Check
                   className={cn(
-                    'mr-2 h-4 w-4 shrink-0',
-                    selectedRoles.includes(role.value) ? 'opacity-100' : 'opacity-0',
+                    "mr-2 h-4 w-4 shrink-0",
+                    selectedRoles.includes(role.value)
+                      ? "opacity-100"
+                      : "opacity-0",
                   )}
                 />
-                <span className="flex-grow">{getRoleDisplayLabel(role.value)}</span>
-                {lockedRoles.includes(role.value) && selectedRoles.includes(role.value) && (
-                  <span className="text-muted-foreground ml-auto shrink-0 pl-2 text-xs">
-                    (Locked)
-                  </span>
-                )}
+                <span className="flex-grow">
+                  {getRoleDisplayLabel(role.value)}
+                </span>
+                {lockedRoles.includes(role.value) &&
+                  selectedRoles.includes(role.value) && (
+                    <span className="text-muted-foreground ml-auto shrink-0 pl-2 text-xs">
+                      (Locked)
+                    </span>
+                  )}
               </div>
               <div className="text-muted-foreground mt-1 ml-6 text-xs">
                 {getRoleDescription(role.value)}

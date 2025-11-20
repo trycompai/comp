@@ -1,23 +1,30 @@
-'use client';
+"use client";
 
-import { createContextEntryAction } from '@/actions/context-hub/create-context-entry-action';
-import { updateContextEntryAction } from '@/actions/context-hub/update-context-entry-action';
-import type { Context } from '@trycompai/db';
+import { useTransition } from "react";
+import { createContextEntryAction } from "@/actions/context-hub/create-context-entry-action";
+import { updateContextEntryAction } from "@/actions/context-hub/update-context-entry-action";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+import type { Context } from "@trycompai/db";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Loader2 } from 'lucide-react';
-import { useTransition } from 'react';
-import { toast } from 'sonner';
+} from "@trycompai/ui/accordion";
+import { Button } from "@trycompai/ui/button";
+import { Input } from "@trycompai/ui/input";
+import { Label } from "@trycompai/ui/label";
+import { Textarea } from "@trycompai/ui/textarea";
 
-export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?: () => void }) {
+export function ContextForm({
+  entry,
+  onSuccess,
+}: {
+  entry?: Context;
+  onSuccess?: () => void;
+}) {
   const [isPending, startTransition] = useTransition();
 
   async function onSubmit(formData: FormData) {
@@ -26,34 +33,34 @@ export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?:
         if (entry) {
           const result = await updateContextEntryAction({
             id: entry.id,
-            question: formData.get('question') as string,
-            answer: formData.get('answer') as string,
+            question: formData.get("question") as string,
+            answer: formData.get("answer") as string,
           });
           if (result?.data) {
-            toast.success('Context entry updated');
+            toast.success("Context entry updated");
             onSuccess?.();
           }
         } else {
           const result = await createContextEntryAction({
-            question: formData.get('question') as string,
-            answer: formData.get('answer') as string,
+            question: formData.get("question") as string,
+            answer: formData.get("answer") as string,
           });
           if (result?.data) {
-            toast.success('Context entry created');
+            toast.success("Context entry created");
             onSuccess?.();
           }
         }
       } catch (error) {
-        toast.error('Something went wrong');
+        toast.error("Something went wrong");
       }
     });
   }
 
   return (
     <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
-      <Accordion type="multiple" defaultValue={['context']}>
+      <Accordion type="multiple" defaultValue={["context"]}>
         <AccordionItem value="context">
-          <AccordionTrigger>{'Context Entry'}</AccordionTrigger>
+          <AccordionTrigger>{"Context Entry"}</AccordionTrigger>
           <AccordionContent>
             <form action={onSubmit} className="flex flex-col gap-4 space-y-4">
               <input type="hidden" name="id" value={entry?.id} />
@@ -81,8 +88,12 @@ export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?:
                   />
                 </div>
               </div>
-              <Button type="submit" disabled={isPending} className="justify-self-end">
-                {entry ? 'Update' : 'Create'}{' '}
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="justify-self-end"
+              >
+                {entry ? "Update" : "Create"}{" "}
                 {isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               </Button>
             </form>

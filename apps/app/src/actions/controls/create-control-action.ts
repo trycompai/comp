@@ -1,17 +1,18 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const createControlSchema = z.object({
   name: z.string().min(1, {
-    message: 'Name is required',
+    message: "Name is required",
   }),
   description: z.string().min(1, {
-    message: 'Description is required',
+    message: "Description is required",
   }),
   policyIds: z.array(z.string()).optional(),
   taskIds: z.array(z.string()).optional(),
@@ -28,21 +29,22 @@ const createControlSchema = z.object({
 export const createControlAction = authActionClient
   .inputSchema(createControlSchema)
   .metadata({
-    name: 'create-control',
+    name: "create-control",
     track: {
-      event: 'create-control',
-      channel: 'server',
+      event: "create-control",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { name, description, policyIds, taskIds, requirementMappings } = parsedInput;
+    const { name, description, policyIds, taskIds, requirementMappings } =
+      parsedInput;
     const {
       session: { activeOrganizationId },
       user,
     } = ctx;
 
     if (!user.id || !activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     try {
@@ -84,8 +86,9 @@ export const createControlAction = authActionClient
 
       // Revalidate the path based on the header
       const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      let path =
+        headersList.get("x-pathname") || headersList.get("referer") || "";
+      path = path.replace(/\/[a-z]{2}\//, "/");
       revalidatePath(path);
 
       return {
@@ -93,10 +96,10 @@ export const createControlAction = authActionClient
         control,
       };
     } catch (error) {
-      console.error('Failed to create control:', error);
+      console.error("Failed to create control:", error);
       return {
         success: false,
-        error: 'Failed to create control',
+        error: "Failed to create control",
       };
     }
   });

@@ -1,19 +1,20 @@
-'use client';
+"use client";
 
-import { JwtTokenManager } from '@/components/auth/jwt-token-manager';
-import { env } from '@/env.mjs';
-import { AnalyticsProvider } from '@trycompai/analytics';
-import { GoogleTagManager } from '@next/third-parties/google';
+import type { ReactNode } from "react";
+import { JwtTokenManager } from "@/components/auth/jwt-token-manager";
+import { env } from "@/env.mjs";
+import { GoogleTagManager } from "@next/third-parties/google";
 import {
   defaultShouldDehydrateQuery,
   QueryClient,
   QueryClientProvider,
-} from '@tanstack/react-query';
-import { Toaster } from '@trycompai/ui/sooner';
-import { Session, User } from 'better-auth';
-import { ThemeProvider } from 'next-themes';
-import type { ReactNode } from 'react';
-import SuperJSON from 'superjson';
+} from "@tanstack/react-query";
+import { Session, User } from "better-auth";
+import { ThemeProvider } from "next-themes";
+import SuperJSON from "superjson";
+
+import { AnalyticsProvider } from "@trycompai/analytics";
+import { Toaster } from "@trycompai/ui/sooner";
 
 type ProviderProps = {
   children: ReactNode;
@@ -26,7 +27,7 @@ type ProviderProps = {
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 
 const getQueryClient = () => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     // Server: always make a new query client
     return createQueryClient();
   } else {
@@ -46,7 +47,8 @@ export const createQueryClient = () =>
       dehydrate: {
         serializeData: SuperJSON.serialize,
         shouldDehydrateQuery: (query) =>
-          defaultShouldDehydrateQuery(query) || query.state.status === 'pending',
+          defaultShouldDehydrateQuery(query) ||
+          query.state.status === "pending",
         shouldRedactErrors: () => {
           // We should not catch Next.js server errors
           // as that's how Next.js detects dynamic pages
@@ -71,14 +73,14 @@ export function Providers({ children, session }: ProviderProps) {
         attribute="class"
         defaultTheme="dark"
         disableTransitionOnChange
-        scriptProps={{ 'data-cfasync': 'false' }}
+        scriptProps={{ "data-cfasync": "false" }}
       >
         {env.NEXT_PUBLIC_GTM_ID && (
           <GoogleTagManager
             gtmId={env.NEXT_PUBLIC_GTM_ID}
             dataLayer={{
-              user_id: session?.user?.id ?? '',
-              user_email: session?.user?.email ?? '',
+              user_id: session?.user?.id ?? "",
+              user_email: session?.user?.email ?? "",
             }}
           />
         )}

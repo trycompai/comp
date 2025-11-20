@@ -1,14 +1,17 @@
-'use client';
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import type { ApiKey } from '@/hooks/use-api-keys';
-import { useDataTable } from '@/hooks/use-data-table';
-import { Button } from '@trycompai/ui/button';
-import { Plus } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import { useMemo } from 'react';
-import { CreateApiKeyDialog } from '../CreateApiKeyDialog';
-import { columns as getColumns } from './ApiKeysColumns';
+"use client";
+
+import type { ApiKey } from "@/hooks/use-api-keys";
+import { useMemo } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { useDataTable } from "@/hooks/use-data-table";
+import { Plus } from "lucide-react";
+import { useQueryState } from "nuqs";
+
+import { Button } from "@trycompai/ui/button";
+
+import { CreateApiKeyDialog } from "../CreateApiKeyDialog";
+import { columns as getColumns } from "./ApiKeysColumns";
 
 export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
   const columns = useMemo(() => getColumns(), []);
@@ -22,19 +25,19 @@ export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
         pageSize: 50,
         pageIndex: 0,
       },
-      sorting: [{ id: 'createdAt', desc: true }],
+      sorting: [{ id: "createdAt", desc: true }],
     },
     shallow: false,
     clearOnDefault: true,
   });
-  const [openSheet, setOpenSheet] = useQueryState('create-api-key-sheet');
+  const [openSheet, setOpenSheet] = useQueryState("create-api-key-sheet");
   return (
     <>
       <DataTable table={table}>
         <DataTableToolbar table={table}>
           <Button
             className="flex items-center gap-1 rounded-sm"
-            onClick={() => setOpenSheet('true')}
+            onClick={() => setOpenSheet("true")}
           >
             <Plus className="h-4 w-4" />
             Add API Key
@@ -43,7 +46,7 @@ export function ApiKeysTable({ apiKeys }: { apiKeys: ApiKey[] }) {
       </DataTable>
       <CreateApiKeyDialog
         open={Boolean(openSheet)}
-        onOpenChange={(open) => setOpenSheet(open ? 'true' : null)}
+        onOpenChange={(open) => setOpenSheet(open ? "true" : null)}
       />
     </>
   );

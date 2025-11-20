@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuestionnaireActions } from './useQuestionnaireActions';
-import { useQuestionnaireAutoAnswer } from './useQuestionnaireAutoAnswer';
-import { useQuestionnaireParse } from './useQuestionnaireParse';
-import { useQuestionnaireSingleAnswer } from './useQuestionnaireSingleAnswer';
-import { useQuestionnaireState } from './useQuestionnaireState';
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useQuestionnaireActions } from "./useQuestionnaireActions";
+import { useQuestionnaireAutoAnswer } from "./useQuestionnaireAutoAnswer";
+import { useQuestionnaireParse } from "./useQuestionnaireParse";
+import { useQuestionnaireSingleAnswer } from "./useQuestionnaireSingleAnswer";
+import { useQuestionnaireState } from "./useQuestionnaireState";
 
 export function useQuestionnaireParser() {
   const state = useQuestionnaireState();
@@ -74,12 +75,12 @@ export function useQuestionnaireParser() {
   });
 
   const isLoading = useMemo(() => {
-    const isUploading = parse.uploadFileAction.status === 'executing';
-    const isParseActionExecuting = parse.parseAction.status === 'executing';
+    const isUploading = parse.uploadFileAction.status === "executing";
+    const isParseActionExecuting = parse.parseAction.status === "executing";
     const isParseRunActive =
-      parse.parseRun?.status === 'EXECUTING' ||
-      parse.parseRun?.status === 'QUEUED' ||
-      parse.parseRun?.status === 'WAITING';
+      parse.parseRun?.status === "EXECUTING" ||
+      parse.parseRun?.status === "QUEUED" ||
+      parse.parseRun?.status === "WAITING";
 
     if (isParseRunActive) {
       return true;
@@ -98,9 +99,9 @@ export function useQuestionnaireParser() {
     }
 
     if (
-      parse.parseRun?.status === 'COMPLETED' ||
-      parse.parseRun?.status === 'FAILED' ||
-      parse.parseRun?.status === 'CANCELED'
+      parse.parseRun?.status === "COMPLETED" ||
+      parse.parseRun?.status === "FAILED" ||
+      parse.parseRun?.status === "CANCELED"
     ) {
       return false;
     }
@@ -131,7 +132,8 @@ export function useQuestionnaireParser() {
   }, [state.results]);
 
   const totalCount = state.results?.length || 0;
-  const progressPercentage = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+  const progressPercentage =
+    totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
 
   const confirmReset = () => {
     state.resetState();
@@ -140,24 +142,24 @@ export function useQuestionnaireParser() {
 
   // Get raw parsing status from actions/task
   const rawParseStatus = useMemo(() => {
-    if (parse.uploadFileAction.status === 'executing') {
-      return 'uploading';
+    if (parse.uploadFileAction.status === "executing") {
+      return "uploading";
     }
-    if (parse.parseAction.status === 'executing') {
-      return 'starting';
+    if (parse.parseAction.status === "executing") {
+      return "starting";
     }
-    if (parse.parseRun?.status === 'QUEUED') {
-      return 'queued';
+    if (parse.parseRun?.status === "QUEUED") {
+      return "queued";
     }
-    if (parse.parseRun?.status === 'EXECUTING') {
-      return 'analyzing';
+    if (parse.parseRun?.status === "EXECUTING") {
+      return "analyzing";
     }
-    if (parse.parseRun?.status === 'WAITING') {
-      return 'processing';
+    if (parse.parseRun?.status === "WAITING") {
+      return "processing";
     }
     // Keep showing status if parsing process started but no run yet
     if (state.isParseProcessStarted && !parse.parseRun) {
-      return 'starting';
+      return "starting";
     }
     return null;
   }, [
@@ -170,7 +172,7 @@ export function useQuestionnaireParser() {
 
   // Throttled status for smooth transitions
   const [parseStatus, setParseStatus] = useState<
-    'uploading' | 'starting' | 'queued' | 'analyzing' | 'processing' | null
+    "uploading" | "starting" | "queued" | "analyzing" | "processing" | null
   >(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastStatusRef = useRef<string | null>(null);
@@ -197,8 +199,8 @@ export function useQuestionnaireParser() {
 
     // If loading but no status at all, show default
     if (isLoading && !rawParseStatus && !parseStatus) {
-      setParseStatus('starting');
-      lastStatusRef.current = 'starting';
+      setParseStatus("starting");
+      lastStatusRef.current = "starting";
       return;
     }
 
@@ -212,15 +214,18 @@ export function useQuestionnaireParser() {
       } else {
         // Check if current status has been visible for minimum duration
         const isEarlyStage =
-          lastStatusRef.current === 'uploading' ||
-          lastStatusRef.current === 'starting' ||
-          lastStatusRef.current === 'queued';
+          lastStatusRef.current === "uploading" ||
+          lastStatusRef.current === "starting" ||
+          lastStatusRef.current === "queued";
         const minDisplayTime = isEarlyStage ? 3000 : 1500; // 3s minimum for early stages, 1.5s for later
 
         const timeSinceStatusStart = statusStartTimeRef.current
           ? Date.now() - statusStartTimeRef.current
           : 0;
-        const remainingTime = Math.max(0, minDisplayTime - timeSinceStatusStart);
+        const remainingTime = Math.max(
+          0,
+          minDisplayTime - timeSinceStatusStart,
+        );
 
         statusTimeoutRef.current = setTimeout(() => {
           setParseStatus(rawParseStatus);
@@ -264,7 +269,7 @@ export function useQuestionnaireParser() {
     hasClickedAutoAnswer: state.hasClickedAutoAnswer,
     isLoading,
     isAutoAnswering: autoAnswer.isAutoAnswering,
-    isExporting: actions.exportAction.status === 'executing',
+    isExporting: actions.exportAction.status === "executing",
     filteredResults,
     answeredCount,
     totalCount,

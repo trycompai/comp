@@ -1,17 +1,23 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Label, Pie, PieChart } from 'recharts';
+import * as React from "react";
+import { Info } from "lucide-react";
+import { Label, Pie, PieChart } from "recharts";
 
-import { Badge } from '@trycompai/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai/ui/card';
+import type { ChartConfig } from "@trycompai/ui/chart";
+import { Badge } from "@trycompai/ui/badge";
 import {
-  type ChartConfig,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
-import { Info } from 'lucide-react';
+} from "@trycompai/ui/chart";
 
 interface PolicyOverviewData {
   totalPolicies: number;
@@ -26,10 +32,10 @@ interface PolicyStatusChartProps {
 }
 
 const CHART_COLORS = {
-  published: 'hsl(var(--chart-positive))', // green
-  draft: 'hsl(var(--chart-neutral))', // yellow
-  archived: 'hsl(var(--chart-warning))', // gray
-  needs_review: 'hsl(var(--chart-destructive))', // red
+  published: "hsl(var(--chart-positive))", // green
+  draft: "hsl(var(--chart-neutral))", // yellow
+  archived: "hsl(var(--chart-warning))", // gray
+  needs_review: "hsl(var(--chart-destructive))", // red
 };
 
 // Custom tooltip component for the pie chart
@@ -53,22 +59,22 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
     if (!data) return [];
     const items = [
       {
-        name: 'Published',
+        name: "Published",
         value: data.publishedPolicies,
         fill: CHART_COLORS.published,
       },
       {
-        name: 'Draft',
+        name: "Draft",
         value: data.draftPolicies,
         fill: CHART_COLORS.draft,
       },
       {
-        name: 'Needs Review',
+        name: "Needs Review",
         value: data.needsReviewPolicies,
         fill: CHART_COLORS.needs_review,
       },
       {
-        name: 'Archived',
+        name: "Archived",
         value: data.archivedPolicies,
         fill: CHART_COLORS.archived,
       },
@@ -79,7 +85,9 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
   // Calculate most common status
   const mostCommonStatus = React.useMemo(() => {
     if (!chartData.length) return null;
-    return chartData.reduce((prev, current) => (prev.value > current.value ? prev : current));
+    return chartData.reduce((prev, current) =>
+      prev.value > current.value ? prev : current,
+    );
   }, [chartData]);
 
   if (!data) {
@@ -87,7 +95,9 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
       <Card className="flex flex-col overflow-hidden border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              {"Policy by Status"}
+            </CardTitle>
             <Badge variant="outline" className="text-xs">
               Overview
             </Badge>
@@ -98,7 +108,9 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
             <div className="text-muted-foreground flex justify-center">
               <Info className="h-10 w-10 opacity-30" />
             </div>
-            <p className="text-muted-foreground text-center text-sm">No policy data available</p>
+            <p className="text-muted-foreground text-center text-sm">
+              No policy data available
+            </p>
           </div>
         </CardContent>
         <CardFooter className="bg-muted/30 border-t py-3">
@@ -110,7 +122,7 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
 
   const chartConfig = {
     value: {
-      label: 'Count',
+      label: "Count",
     },
   } satisfies ChartConfig;
 
@@ -118,7 +130,9 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
     <Card className="flex flex-col overflow-hidden border">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {"Policy by Status"}
+          </CardTitle>
         </div>
 
         <div className="bg-secondary relative mt-2 h-1 w-full overflow-hidden rounded-full">
@@ -131,7 +145,10 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 items-center justify-center">
-        <ChartContainer config={chartConfig} className="mx-auto h-[300px] max-w-[250px]">
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto h-[300px] max-w-[250px]"
+        >
           <PieChart
             width={250}
             height={300}
@@ -158,7 +175,7 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
             >
               <Label
                 content={({ viewBox }) => {
-                  if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                     return (
                       <g>
                         <text
@@ -205,10 +222,15 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
         <div className="flex w-full flex-wrap justify-center gap-4 py-1">
           {chartData.map((entry) => (
             <div key={entry.name} className="flex items-center gap-2">
-              <div className="h-3 w-3" style={{ backgroundColor: entry.fill }} />
+              <div
+                className="h-3 w-3"
+                style={{ backgroundColor: entry.fill }}
+              />
               <span className="text-xs font-medium whitespace-nowrap">
                 {entry.name}
-                <span className="text-muted-foreground ml-1">({entry.value})</span>
+                <span className="text-muted-foreground ml-1">
+                  ({entry.value})
+                </span>
               </span>
             </div>
           ))}

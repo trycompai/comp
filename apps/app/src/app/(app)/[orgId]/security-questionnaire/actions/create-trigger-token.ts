@@ -1,11 +1,16 @@
-'use server';
+"use server";
 
-import { auth as betterAuth } from '@/utils/auth';
-import { auth } from '@trigger.dev/sdk';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { auth as betterAuth } from "@/utils/auth";
+import { auth } from "@trigger.dev/sdk";
 
 // Create trigger token for auto-answer (can trigger and read)
-export const createTriggerToken = async (taskId: 'parse-questionnaire' | 'vendor-questionnaire-orchestrator' | 'answer-question') => {
+export const createTriggerToken = async (
+  taskId:
+    | "parse-questionnaire"
+    | "vendor-questionnaire-orchestrator"
+    | "answer-question",
+) => {
   const session = await betterAuth.api.getSession({
     headers: await headers(),
   });
@@ -13,7 +18,7 @@ export const createTriggerToken = async (taskId: 'parse-questionnaire' | 'vendor
   if (!session) {
     return {
       success: false,
-      error: 'Unauthorized',
+      error: "Unauthorized",
     };
   }
 
@@ -21,14 +26,14 @@ export const createTriggerToken = async (taskId: 'parse-questionnaire' | 'vendor
   if (!orgId) {
     return {
       success: false,
-      error: 'No active organization',
+      error: "No active organization",
     };
   }
 
   try {
     const token = await auth.createTriggerPublicToken(taskId, {
       multipleUse: true,
-      expirationTime: '1hr',
+      expirationTime: "1hr",
     });
 
     return {
@@ -36,10 +41,13 @@ export const createTriggerToken = async (taskId: 'parse-questionnaire' | 'vendor
       token,
     };
   } catch (error) {
-    console.error('Error creating trigger token:', error);
+    console.error("Error creating trigger token:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create trigger token',
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to create trigger token",
     };
   }
 };
@@ -53,7 +61,7 @@ export const createRunReadToken = async (runId: string) => {
   if (!session) {
     return {
       success: false,
-      error: 'Unauthorized',
+      error: "Unauthorized",
     };
   }
 
@@ -64,7 +72,7 @@ export const createRunReadToken = async (runId: string) => {
           runs: [runId],
         },
       },
-      expirationTime: '1hr',
+      expirationTime: "1hr",
     });
 
     return {
@@ -72,11 +80,13 @@ export const createRunReadToken = async (runId: string) => {
       token,
     };
   } catch (error) {
-    console.error('Error creating run read token:', error);
+    console.error("Error creating run read token:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create run read token',
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to create run read token",
     };
   }
 };
-

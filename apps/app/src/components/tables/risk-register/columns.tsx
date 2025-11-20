@@ -1,12 +1,14 @@
-'use client';
-import { AssignedUser } from '@/components/assigned-user';
-import { StatusIndicator } from '@/components/status-indicator';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { Departments, RiskStatus } from '@trycompai/db';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+"use client";
+
+import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { AssignedUser } from "@/components/assigned-user";
+import { StatusIndicator } from "@/components/status-indicator";
+
+import type { Departments, RiskStatus } from "@trycompai/db";
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
 
 export type RiskRegisterType = {
   id: string;
@@ -27,9 +29,9 @@ export function useColumns(): ColumnDef<RiskRegisterType>[] {
 
   return [
     {
-      id: 'name',
-      accessorKey: 'name',
-      header: 'Risk',
+      id: "name",
+      accessorKey: "name",
+      header: "Risk",
       cell: ({ row }) => {
         const status = row.original.status;
 
@@ -48,9 +50,9 @@ export function useColumns(): ColumnDef<RiskRegisterType>[] {
       },
     },
     {
-      id: 'status',
-      accessorKey: 'status',
-      header: () => <span className="hidden md:table-cell">{'Status'}</span>,
+      id: "status",
+      accessorKey: "status",
+      header: () => <span className="hidden md:table-cell">{"Status"}</span>,
       cell: ({ row }) => {
         const status = row.original.status;
 
@@ -62,9 +64,11 @@ export function useColumns(): ColumnDef<RiskRegisterType>[] {
       },
     },
     {
-      id: 'department',
-      accessorKey: 'department',
-      header: () => <span className="hidden md:table-cell">{'Department'}</span>,
+      id: "department",
+      accessorKey: "department",
+      header: () => (
+        <span className="hidden md:table-cell">{"Department"}</span>
+      ),
       cell: ({ row }) => {
         const department = row.original.department;
 
@@ -74,15 +78,17 @@ export function useColumns(): ColumnDef<RiskRegisterType>[] {
 
         return (
           <span className="hidden md:table-cell">
-            <Badge variant="marketing">{department.replace(/_/g, ' ').toUpperCase()}</Badge>
+            <Badge variant="marketing">
+              {department.replace(/_/g, " ").toUpperCase()}
+            </Badge>
           </span>
         );
       },
     },
     {
-      id: 'assigneeId',
-      accessorKey: 'assigneeId',
-      header: () => <span className="hidden md:table-cell">{'Assignee'}</span>,
+      id: "assigneeId",
+      accessorKey: "assigneeId",
+      header: () => <span className="hidden md:table-cell">{"Assignee"}</span>,
       cell: ({ row }) => {
         return (
           <div className="hidden md:table-cell">

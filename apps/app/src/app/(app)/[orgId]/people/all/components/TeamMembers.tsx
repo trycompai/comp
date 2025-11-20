@@ -1,12 +1,14 @@
-'use server';
+"use server";
 
-import { auth } from '@/utils/auth';
-import type { Invitation, Member, User } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { removeMember } from '../actions/removeMember';
-import { revokeInvitation } from '../actions/revokeInvitation';
-import { TeamMembersClient } from './TeamMembersClient';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import type { Invitation, Member, User } from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import { removeMember } from "../actions/removeMember";
+import { revokeInvitation } from "../actions/revokeInvitation";
+import { TeamMembersClient } from "./TeamMembersClient";
 
 export interface MemberWithUser extends Member {
   user: User;
@@ -35,8 +37,11 @@ export async function TeamMembers() {
   });
 
   // Parse roles from comma-separated string and check if user has admin or owner role
-  const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
-  const canManageMembers = currentUserRoles.some((role) => ['owner', 'admin'].includes(role));
+  const currentUserRoles =
+    currentUserMember?.role?.split(",").map((r) => r.trim()) ?? [];
+  const canManageMembers = currentUserRoles.some((role) =>
+    ["owner", "admin"].includes(role),
+  );
 
   let members: MemberWithUser[] = [];
   let pendingInvitations: Invitation[] = [];
@@ -51,7 +56,7 @@ export async function TeamMembers() {
       },
       orderBy: {
         user: {
-          email: 'asc',
+          email: "asc",
         },
       },
     });
@@ -61,10 +66,10 @@ export async function TeamMembers() {
     pendingInvitations = await db.invitation.findMany({
       where: {
         organizationId,
-        status: 'pending',
+        status: "pending",
       },
       orderBy: {
-        email: 'asc',
+        email: "asc",
       },
     });
   }
@@ -77,7 +82,7 @@ export async function TeamMembers() {
   return (
     <TeamMembersClient
       data={data}
-      organizationId={organizationId ?? ''}
+      organizationId={organizationId ?? ""}
       removeMemberAction={removeMember}
       revokeInvitationAction={revokeInvitation}
       canManageMembers={canManageMembers}

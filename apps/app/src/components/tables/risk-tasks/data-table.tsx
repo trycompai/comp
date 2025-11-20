@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Suspense } from 'react';
+import { Suspense } from "react";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 
-import { cn } from '@trycompai/ui/cn';
-import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
-import { type RiskTaskType, useColumns as getColumns } from './columns';
-import { DataTableHeader } from './data-table-header';
-import { DataTablePagination } from './data-table-pagination';
-import { Loading } from './loading';
+import { cn } from "@trycompai/ui/cn";
+import { Table, TableBody, TableCell, TableRow } from "@trycompai/ui/table";
+
+import type { RiskTaskType } from "./columns";
+import { useColumns as getColumns } from "./columns";
+import { DataTableHeader } from "./data-table-header";
+import { DataTablePagination } from "./data-table-pagination";
+import { Loading } from "./loading";
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {
@@ -50,24 +56,34 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
                       className={cn(
-                        cell.column.id === 'assigneeId' && 'hidden sm:table-cell',
-                        cell.column.id === 'dueDate' && 'hidden sm:table-cell',
+                        cell.column.id === "assigneeId" &&
+                          "hidden sm:table-cell",
+                        cell.column.id === "dueDate" && "hidden sm:table-cell",
                       )}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  {'No results found'}
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  {"No results found"}
                 </TableCell>
               </TableRow>
             )}

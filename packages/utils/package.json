@@ -2,19 +2,21 @@
   "name": "@trycompai/utils",
   "version": "1.0.0",
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "@trycompai/tsconfig": "workspace:*",
+    "typescript": "^5.9.3"
   },
   "exports": {
     ".": "./src/index.ts",
     "./envs": "./src/envs.ts",
-    "./format": "./src/format.ts"
+    "./format": "./src/format.ts",
+    "./encryption": "./src/encryption.ts"
   },
   "main": "src/index.ts",
   "private": true,
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
-    "format": "prettier --write .",
-    "lint": "prettier --check .",
+    "format": "eslint . --fix",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "sideEffects": false

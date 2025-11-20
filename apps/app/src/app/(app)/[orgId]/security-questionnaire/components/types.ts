@@ -10,4 +10,3 @@ export interface QuestionAnswer {
   }>;
   failedToGenerate?: boolean; // Track if auto-generation was attempted but failed
 }
-

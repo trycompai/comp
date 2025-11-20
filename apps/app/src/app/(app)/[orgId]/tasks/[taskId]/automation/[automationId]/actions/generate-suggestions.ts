@@ -1,14 +1,16 @@
-'use server';
+"use server";
 
-import { groq } from '@ai-sdk/groq';
-import { db } from '@trycompai/db';
-import { generateObject, NoObjectGeneratedError } from 'ai';
-import { performance } from 'perf_hooks';
-import { z } from 'zod';
+import { performance } from "perf_hooks";
+import { groq } from "@ai-sdk/groq";
+import { generateObject, NoObjectGeneratedError } from "ai";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
+
 import {
   AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT,
   getAutomationSuggestionsPrompt,
-} from './prompts/automation-suggestions';
+} from "./prompts/automation-suggestions";
 
 const SuggestionsSchema = z.object({
   suggestions: z.array(
@@ -24,9 +26,18 @@ const SuggestionsSchema = z.object({
 export async function generateAutomationSuggestions(
   taskDescription: string,
   organizationId: string,
-): Promise<{ title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[]> {
+): Promise<
+  {
+    title: string;
+    prompt: string;
+    vendorName?: string;
+    vendorWebsite?: string;
+  }[]
+> {
   const startTime = performance.now();
-  console.log('[generateAutomationSuggestions] Starting suggestion generation...');
+  console.log(
+    "[generateAutomationSuggestions] Starting suggestion generation...",
+  );
 
   // Get vendors from the Vendor table
   const vendorsStartTime = performance.now();
@@ -63,33 +74,43 @@ export async function generateAutomationSuggestions(
 
   const vendorList =
     vendors.length > 0
-      ? vendors.map((v) => `${v.name}${v.website ? ` (${v.website})` : ''}`).join(', ')
-      : 'No vendors configured yet';
+      ? vendors
+          .map((v) => `${v.name}${v.website ? ` (${v.website})` : ""}`)
+          .join(", ")
+      : "No vendors configured yet";
 
   const contextInfo =
     contextEntries.length > 0
-      ? contextEntries.map((c) => `Q: ${c.question}\nA: ${c.answer}`).join('\n\n')
-      : 'No additional context available';
+      ? contextEntries
+          .map((c) => `Q: ${c.question}\nA: ${c.answer}`)
+          .join("\n\n")
+      : "No additional context available";
 
   const promptLength = getAutomationSuggestionsPrompt(
     taskDescription,
     vendorList,
     contextInfo,
   ).length;
-  console.log(`[generateAutomationSuggestions] Prompt length: ${promptLength} characters`);
+  console.log(
+    `[generateAutomationSuggestions] Prompt length: ${promptLength} characters`,
+  );
 
   // Generate AI suggestions
   const aiStartTime = performance.now();
   try {
     const { object, usage } = await generateObject({
-      model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+      model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
       schema: SuggestionsSchema,
       system: AUTOMATION_SUGGESTIONS_SYSTEM_PROMPT,
-      prompt: getAutomationSuggestionsPrompt(taskDescription, vendorList, contextInfo),
+      prompt: getAutomationSuggestionsPrompt(
+        taskDescription,
+        vendorList,
+        contextInfo,
+      ),
     });
     const aiTime = performance.now() - aiStartTime;
     console.log(
-      `[generateAutomationSuggestions] AI generation completed in ${aiTime.toFixed(2)}ms (total tokens: ${usage?.totalTokens || 'unknown'})`,
+      `[generateAutomationSuggestions] AI generation completed in ${aiTime.toFixed(2)}ms (total tokens: ${usage?.totalTokens || "unknown"})`,
     );
 
     const totalTime = performance.now() - startTime;
@@ -100,7 +121,11 @@ export async function generateAutomationSuggestions(
     // Handle case where model returns single object instead of array
     let suggestions = object.suggestions;
     if (!Array.isArray(suggestions)) {
-      if (suggestions && typeof suggestions === 'object' && 'title' in suggestions) {
+      if (
+        suggestions &&
+        typeof suggestions === "object" &&
+        "title" in suggestions
+      ) {
         suggestions = [suggestions];
       } else {
         suggestions = [];
@@ -110,7 +135,10 @@ export async function generateAutomationSuggestions(
     return suggestions;
   } catch (error) {
     const aiTime = performance.now() - aiStartTime;
-    console.error('[generateAutomationSuggestions] Error generating suggestions:', error);
+    console.error(
+      "[generateAutomationSuggestions] Error generating suggestions:",
+      error,
+    );
     // Try to extract suggestions from error if available
     if (NoObjectGeneratedError.isInstance(error)) {
       try {

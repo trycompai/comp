@@ -1,37 +1,48 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
+import type { z } from "zod";
+import { useRouter } from "next/navigation";
+import { addFrameworksToOrganizationAction } from "@/actions/organization/add-frameworks-to-organization-action";
+import { addFrameworksSchema } from "@/actions/schema";
+import { FrameworkCard } from "@/components/framework-card";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
-import { addFrameworksToOrganizationAction } from '@/actions/organization/add-frameworks-to-organization-action';
-import { addFrameworksSchema } from '@/actions/schema';
-import { FrameworkCard } from '@/components/framework-card';
-import type { FrameworkEditorFramework } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
+import type { FrameworkEditorFramework } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
 import {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+} from "@trycompai/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
 
 type Props = {
   onOpenChange: (isOpen: boolean) => void;
   availableFrameworks: Pick<
     FrameworkEditorFramework,
-    'id' | 'name' | 'description' | 'version' | 'visible'
+    "id" | "name" | "description" | "version" | "visible"
   >[];
   organizationId?: string;
 };
 
-export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizationId }: Props) {
+export function AddFrameworkModal({
+  onOpenChange,
+  availableFrameworks,
+  organizationId,
+}: Props) {
   const router = useRouter();
 
   const form = useForm<z.infer<typeof addFrameworksSchema>>({
@@ -40,30 +51,37 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
       frameworkIds: [],
       organizationId: organizationId,
     },
-    mode: 'onChange',
+    mode: "onChange",
   });
 
-  const { execute, isExecuting } = useAction(addFrameworksToOrganizationAction, {
-    onSuccess: (data) => {
-      toast.success(
-        `Successfully added ${data.data?.frameworksAdded ?? 0} framework${
-          data.data?.frameworksAdded && data.data?.frameworksAdded > 1 ? 's' : ''
-        }`,
-      );
-      onOpenChange(false);
-      router.refresh();
+  const { execute, isExecuting } = useAction(
+    addFrameworksToOrganizationAction,
+    {
+      onSuccess: (data) => {
+        toast.success(
+          `Successfully added ${data.data?.frameworksAdded ?? 0} framework${
+            data.data?.frameworksAdded && data.data?.frameworksAdded > 1
+              ? "s"
+              : ""
+          }`,
+        );
+        onOpenChange(false);
+        router.refresh();
+      },
+      onError: (error) => {
+        if (error.error.serverError) {
+          toast.error(error.error.serverError);
+        } else if (error.error.validationErrors) {
+          const errorMessages = Object.values(error.error.validationErrors)
+            .flat()
+            .join(", ");
+          toast.error(errorMessages || "Validation error occurred");
+        } else {
+          toast.error("Failed to add frameworks");
+        }
+      },
     },
-    onError: (error) => {
-      if (error.error.serverError) {
-        toast.error(error.error.serverError);
-      } else if (error.error.validationErrors) {
-        const errorMessages = Object.values(error.error.validationErrors).flat().join(', ');
-        toast.error(errorMessages || 'Validation error occurred');
-      } else {
-        toast.error('Failed to add frameworks');
-      }
-    },
-  });
+  );
 
   const onSubmit = async (data: z.infer<typeof addFrameworksSchema>) => {
     execute(data);
@@ -77,11 +95,13 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
   return (
     <DialogContent className="max-w-md">
       <DialogHeader className="space-y-2">
-        <DialogTitle className="text-base font-medium">Add Frameworks</DialogTitle>
+        <DialogTitle className="text-base font-medium">
+          Add Frameworks
+        </DialogTitle>
         <DialogDescription className="text-muted-foreground text-sm">
           {availableFrameworks.length > 0
-            ? 'Select the compliance frameworks to add to your organization.'
-            : 'No new frameworks are available to add at this time.'}
+            ? "Select the compliance frameworks to add to your organization."
+            : "No new frameworks are available to add at this time."}
         </DialogDescription>
       </DialogHeader>
 
@@ -93,7 +113,9 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
               name="frameworkIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-normal">Available Frameworks</FormLabel>
+                  <FormLabel className="text-sm font-normal">
+                    Available Frameworks
+                  </FormLabel>
                   <FormControl>
                     <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
                       {availableFrameworks
@@ -106,7 +128,9 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
                             onSelectionChange={(checked) => {
                               const newValue = checked
                                 ? [...field.value, framework.id]
-                                : field.value.filter((id) => id !== framework.id);
+                                : field.value.filter(
+                                    (id) => id !== framework.id,
+                                  );
                               field.onChange(newValue);
                             }}
                           />
@@ -131,9 +155,13 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
               <Button
                 type="submit"
                 size="sm"
-                disabled={isExecuting || form.getValues('frameworkIds').length === 0}
+                disabled={
+                  isExecuting || form.getValues("frameworkIds").length === 0
+                }
               >
-                {isExecuting && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                {isExecuting && (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                )}
                 Add Selected
               </Button>
             </DialogFooter>
@@ -162,7 +190,9 @@ export function AddFrameworkModal({ onOpenChange, availableFrameworks, organizat
       {isExecuting && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-          <span className="text-muted-foreground ml-3 text-sm">Adding frameworks...</span>
+          <span className="text-muted-foreground ml-3 text-sm">
+            Adding frameworks...
+          </span>
         </div>
       )}
     </DialogContent>

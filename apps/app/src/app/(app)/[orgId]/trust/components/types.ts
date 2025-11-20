@@ -7,14 +7,14 @@ export type TrustAccessRequest = {
   purpose?: string | null;
   requestedDurationDays?: number | null;
   requestedScopes: string[];
-  status: 'under_review' | 'approved' | 'denied' | 'canceled';
+  status: "under_review" | "approved" | "denied" | "canceled";
   reviewer?: {
     id: string;
     user: { name: string | null; email: string };
   } | null;
   grant?: {
     id: string;
-    status: 'active' | 'expired' | 'revoked';
+    status: "active" | "expired" | "revoked";
     expiresAt: string | null;
   } | null;
   createdAt: string;
@@ -26,7 +26,7 @@ export type TrustAccessGrant = {
   id: string;
   subjectEmail: string;
   scopes: string[];
-  status: 'active' | 'expired' | 'revoked';
+  status: "active" | "expired" | "revoked";
   expiresAt: string;
   accessRequestId: string;
   revokedAt?: string | null;

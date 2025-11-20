@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 
-export type PolicyTailoringStatus = 'queued' | 'pending' | 'processing' | 'completed';
+export type PolicyTailoringStatus =
+  | "queued"
+  | "pending"
+  | "processing"
+  | "completed";
 
 interface PolicyTailoringContextValue {
   getStatus: (policyId: string) => PolicyTailoringStatus | undefined;
 }
 
-const PolicyTailoringContext = React.createContext<PolicyTailoringContextValue>({
-  getStatus: () => undefined,
-});
+const PolicyTailoringContext = React.createContext<PolicyTailoringContextValue>(
+  {
+    getStatus: () => undefined,
+  },
+);
 
 interface PolicyTailoringProviderProps {
   statuses: Record<string, PolicyTailoringStatus>;
@@ -37,9 +43,10 @@ export function usePolicyTailoringStatus(policyId: string) {
   const context = React.useContext(PolicyTailoringContext);
 
   if (!context) {
-    throw new Error('usePolicyTailoringStatus must be used within a PolicyTailoringProvider');
+    throw new Error(
+      "usePolicyTailoringStatus must be used within a PolicyTailoringProvider",
+    );
   }
 
   return context.getStatus(policyId);
 }
-

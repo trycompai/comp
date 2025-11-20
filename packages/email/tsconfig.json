@@ -1,10 +1,10 @@
 {
-  "extends": "../tsconfig/base.json",
-  "include": ["src"],
-  "exclude": ["node_modules"],
+  "extends": "@trycompai/tsconfig/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
-  }
+    "lib": ["ES2022", "dom", "dom.iterable"],
+    "jsx": "preserve",
+    "rootDir": "."
+  },
+  "include": ["."],
+  "exclude": ["node_modules"]
 }

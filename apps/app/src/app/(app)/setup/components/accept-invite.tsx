@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { completeInvitation } from '@/actions/organization/accept-invitation';
-import { authClient } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { toast } from 'sonner';
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { completeInvitation } from "@/actions/organization/accept-invitation";
+import { authClient } from "@/utils/auth-client";
+import { Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
+import { Icons } from "@trycompai/ui/icons";
 
 export function AcceptInvite({
   inviteCode,
@@ -29,7 +30,7 @@ export function AcceptInvite({
       }
     },
     onError: (error) => {
-      toast.error('Failed to accept invitation');
+      toast.error("Failed to accept invitation");
     },
   });
 
@@ -47,25 +48,30 @@ export function AcceptInvite({
       </div>
 
       <div className="mb-8 space-y-1.5 text-center">
-        <h1 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <h1 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
           You have been invited to join
         </h1>
-        <p className="text-2xl font-semibold tracking-tight line-clamp-1">
-          {organizationName || 'an organization'}
+        <p className="line-clamp-1 text-2xl font-semibold tracking-tight">
+          {organizationName || "an organization"}
         </p>
         <p className="text-muted-foreground text-sm">
           Please accept the invitation to join the organization.
         </p>
       </div>
 
-      <Button onClick={handleAccept} className="w-full" size="sm" disabled={isPending}>
+      <Button
+        onClick={handleAccept}
+        className="w-full"
+        size="sm"
+        disabled={isPending}
+      >
         {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Accepting...
           </>
         ) : (
-          'Accept Invitation'
+          "Accept Invitation"
         )}
       </Button>
     </div>

@@ -1,18 +1,20 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { appErrors, policyDetailsInputSchema } from '../types';
+import { headers } from "next/headers";
+import { authActionClient } from "@/actions/safe-action";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { appErrors, policyDetailsInputSchema } from "../types";
 
 export const getPolicyDetails = authActionClient
   .inputSchema(policyDetailsInputSchema)
   .metadata({
-    name: 'get-policy-details',
+    name: "get-policy-details",
     track: {
-      event: 'get-policy-details',
-      channel: 'server',
+      event: "get-policy-details",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput }) => {
@@ -51,7 +53,7 @@ export const getPolicyDetails = authActionClient
         data: policy,
       };
     } catch (error) {
-      console.error('Error fetching policy details:', error);
+      console.error("Error fetching policy details:", error);
       return {
         success: false,
         error: appErrors.UNEXPECTED_ERROR.message,

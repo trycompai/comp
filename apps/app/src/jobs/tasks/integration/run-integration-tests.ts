@@ -1,19 +1,23 @@
-import { logger, task } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { sendIntegrationResults } from './integration-results';
+import { logger, task } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
+
+import { sendIntegrationResults } from "./integration-results";
 
 export const runIntegrationTests = task({
-  id: 'run-integration-tests',
+  id: "run-integration-tests",
   run: async (payload: { organizationId: string }) => {
     const { organizationId } = payload;
 
-    logger.info(`Running integration tests for organization: ${organizationId}`);
+    logger.info(
+      `Running integration tests for organization: ${organizationId}`,
+    );
 
     const integrations = await db.integration.findMany({
       where: {
         organizationId: organizationId,
         integrationId: {
-          in: ['aws', 'gcp', 'azure'],
+          in: ["aws", "gcp", "azure"],
         },
       },
       select: {
@@ -35,7 +39,7 @@ export const runIntegrationTests = task({
       logger.warn(`No integrations found for organization: ${organizationId}`);
       return {
         success: false,
-        error: 'No integrations found',
+        error: "No integrations found",
         organizationId,
       };
     }
@@ -58,7 +62,8 @@ export const runIntegrationTests = task({
     }));
 
     try {
-      const batchHandle = await sendIntegrationResults.batchTriggerAndWait(batchItems);
+      const batchHandle =
+        await sendIntegrationResults.batchTriggerAndWait(batchItems);
 
       const failedIntegrations: Array<{
         id: string;
@@ -72,20 +77,24 @@ export const runIntegrationTests = task({
 
         if (run.ok) {
           // Check if the task completed but returned success: false
-          const runOutput = run.output as { success?: boolean; error?: string } | undefined;
+          const runOutput = run.output as
+            | { success?: boolean; error?: string }
+            | undefined;
 
           if (runOutput && runOutput.success === false) {
             failedIntegrations.push({
               id: integration.id,
               integrationId: integration.integrationId,
               name: integration.name,
-              error: runOutput.error || 'Integration failed',
+              error: runOutput.error || "Integration failed",
             });
           }
         } else {
           // Task crashed or threw an error
           const errorMessage =
-            run.error instanceof Error ? run.error.message : String(run.error ?? 'Unknown error');
+            run.error instanceof Error
+              ? run.error.message
+              : String(run.error ?? "Unknown error");
 
           failedIntegrations.push({
             id: integration.id,
@@ -97,7 +106,9 @@ export const runIntegrationTests = task({
       });
 
       if (failedIntegrations.length > 0) {
-        const errorMessages = failedIntegrations.map(({ error }) => error).join('; ');
+        const errorMessages = failedIntegrations
+          .map(({ error }) => error)
+          .join("; ");
 
         logger.warn(
           `Integration tests completed with errors for organization ${organizationId}: ${errorMessages}`,
@@ -124,7 +135,8 @@ export const runIntegrationTests = task({
         batchHandleId: batchHandle.id,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
       logger.error(
         `Failed to run integration tests for organization ${organizationId}: ${errorMessage}`,

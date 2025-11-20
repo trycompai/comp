@@ -1,16 +1,19 @@
-import 'server-only';
+import "server-only";
 
-import { auth } from '@/utils/auth';
-import { db, Prisma, type User } from '@trycompai/db';
-import { headers } from 'next/headers';
-import type { GetRiskSchema } from './validations';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import type { User } from "@trycompai/db";
+import { db, Prisma } from "@trycompai/db";
+
+import type { GetRiskSchema } from "./validations";
 
 export async function getRisks(input: GetRiskSchema): Promise<{
   data: (Omit<
     Prisma.RiskGetPayload<{
       include: { assignee: { include: { user: true } } };
     }>,
-    'assignee'
+    "assignee"
   > & { assignee: User | null })[];
   pageCount: number;
 }> {
@@ -26,13 +29,15 @@ export async function getRisks(input: GetRiskSchema): Promise<{
   const { title, page, perPage, sort, filters, joinOperator } = input;
 
   const orderBy = sort.map((s) => ({
-    [s.id]: s.desc ? 'desc' : 'asc',
+    [s.id]: s.desc ? "desc" : "asc",
   }));
 
   const filterConditions: Prisma.RiskWhereInput[] = filters.map((filter) => {
     // Basic handling, assuming 'eq' or 'in' based on value type for now
     // This might need to be more sophisticated based on actual filter operators
-    const value = Array.isArray(filter.value) ? { in: filter.value } : filter.value;
+    const value = Array.isArray(filter.value)
+      ? { in: filter.value }
+      : filter.value;
     return { [filter.id]: value };
   });
 
@@ -63,7 +68,7 @@ export async function getRisks(input: GetRiskSchema): Promise<{
         },
       },
     },
-    orderBy: orderBy.length > 0 ? orderBy : [{ createdAt: 'desc' }],
+    orderBy: orderBy.length > 0 ? orderBy : [{ createdAt: "desc" }],
   });
 
   const totalRisks = await db.risk.count({ where });

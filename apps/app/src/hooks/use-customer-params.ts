@@ -1,4 +1,9 @@
-import { parseAsArrayOf, parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
+import {
+  parseAsArrayOf,
+  parseAsBoolean,
+  parseAsString,
+  useQueryStates,
+} from "nuqs";
 
 export function useCustomerParams(options?: { shallow: boolean }) {
   const [params, setParams] = useQueryStates(

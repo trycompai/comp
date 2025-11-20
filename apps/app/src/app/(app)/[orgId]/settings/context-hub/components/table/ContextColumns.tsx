@@ -1,8 +1,12 @@
-import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { isJSON } from '@/lib/utils';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { Context } from '@trycompai/db';
+import type { ColumnDef } from "@tanstack/react-table";
+import { useState } from "react";
+import { deleteContextEntryAction } from "@/actions/context-hub/delete-context-entry-action";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { isJSON } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+
+import type { Context } from "@trycompai/db";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,11 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
-import { Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
+} from "@trycompai/ui/alert-dialog";
+import { Button } from "@trycompai/ui/button";
 
 // Extract the cell content into a separate component
 function ContextDeleteCell({ context }: { context: Context }) {
@@ -44,17 +45,18 @@ function ContextDeleteCell({ context }: { context: Context }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Entry</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this entry? This action cannot be undone.
+            Are you sure you want to delete this entry? This action cannot be
+            undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => execute({ id: context.id })}
-            disabled={status === 'executing'}
+            disabled={status === "executing"}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {status === 'executing' ? 'Deleting...' : 'Delete'}
+            {status === "executing" ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -64,11 +66,13 @@ function ContextDeleteCell({ context }: { context: Context }) {
 
 export const columns = (): ColumnDef<Context>[] => [
   {
-    id: 'question',
-    accessorKey: 'question',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Question" />,
+    id: "question",
+    accessorKey: "question",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Question" />
+    ),
     cell: ({ row }) => <span>{row.original.question}</span>,
-    meta: { label: 'Question', variant: 'text' },
+    meta: { label: "Question", variant: "text" },
     size: 200,
     minSize: 200,
     maxSize: 200,
@@ -76,9 +80,11 @@ export const columns = (): ColumnDef<Context>[] => [
     enableSorting: true,
   },
   {
-    id: 'answer',
-    accessorKey: 'answer',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Answer" />,
+    id: "answer",
+    accessorKey: "answer",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Answer" />
+    ),
     cell: ({ row }) => {
       if (isJSON(row.original.answer)) {
         return (
@@ -97,7 +103,7 @@ export const columns = (): ColumnDef<Context>[] => [
 
       return <span>{row.original.answer}</span>;
     },
-    meta: { label: 'Answer' },
+    meta: { label: "Answer" },
     enableColumnFilter: true,
     enableSorting: false,
     size: 300,
@@ -105,10 +111,10 @@ export const columns = (): ColumnDef<Context>[] => [
     maxSize: 400,
   },
   {
-    id: 'delete',
+    id: "delete",
     header: () => <span>Delete</span>,
     cell: ({ row }) => <ContextDeleteCell context={row.original} />,
-    meta: { label: 'Delete' },
+    meta: { label: "Delete" },
     enableColumnFilter: false,
     enableSorting: false,
     size: 20,

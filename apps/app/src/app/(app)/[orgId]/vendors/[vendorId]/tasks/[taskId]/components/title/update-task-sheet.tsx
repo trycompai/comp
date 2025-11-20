@@ -1,34 +1,43 @@
-'use client';
+"use client";
 
-import { SelectAssignee } from '@/components/SelectAssignee';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Member, Task, User } from '@trycompai/db';
+import type { z } from "zod";
+import { useParams } from "next/navigation";
+import { SelectAssignee } from "@/components/SelectAssignee";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRightIcon } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useQueryState } from "nuqs";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import type { Member, Task, User } from "@trycompai/db";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
+} from "@trycompai/ui/accordion";
+import { Button } from "@trycompai/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
-import { ArrowRightIcon } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useParams } from 'next/navigation';
-import { useQueryState } from 'nuqs';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
-import { updateVendorTaskSchema } from '../../../../actions/schema';
-import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
+} from "@trycompai/ui/select";
+import { Textarea } from "@trycompai/ui/textarea";
+
+import { updateVendorTaskSchema } from "../../../../actions/schema";
+import { updateVendorTaskAction } from "../../../../actions/task/update-task-action";
 
 interface UpdateTaskSheetProps {
   task: Task & { assignee: { user: User } | null };
@@ -36,16 +45,16 @@ interface UpdateTaskSheetProps {
 }
 
 export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
-  const [_, setTaskOverviewSheet] = useQueryState('task-overview-sheet');
+  const [_, setTaskOverviewSheet] = useQueryState("task-overview-sheet");
   const params = useParams<{ taskId: string }>();
 
   const updateTask = useAction(updateVendorTaskAction, {
     onSuccess: () => {
-      toast.success('Task updated successfully');
+      toast.success("Task updated successfully");
       setTaskOverviewSheet(null);
     },
     onError: () => {
-      toast.error('Failed to update task');
+      toast.error("Failed to update task");
     },
   });
 
@@ -68,23 +77,26 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
   const renderStatus = (status: string) => {
     const getStatusColor = (status: string) => {
       switch (status) {
-        case 'open':
-          return '#ffc107'; // yellow/amber
-        case 'in_progress':
-          return '#0ea5e9'; // blue
-        case 'completed':
-          return '#00DC73'; // green
-        case 'cancelled':
-          return '#64748b'; // gray
+        case "open":
+          return "#ffc107"; // yellow/amber
+        case "in_progress":
+          return "#0ea5e9"; // blue
+        case "completed":
+          return "#00DC73"; // green
+        case "cancelled":
+          return "#64748b"; // gray
         default:
-          return '#64748b';
+          return "#64748b";
       }
     };
 
     return (
       <div className="flex items-center gap-2">
-        <div className="size-2.5" style={{ backgroundColor: getStatusColor(status) }} />
-        <span>{status.replace('_', ' ')}</span>
+        <div
+          className="size-2.5"
+          style={{ backgroundColor: getStatusColor(status) }}
+        />
+        <span>{status.replace("_", " ")}</span>
       </div>
     );
   };
@@ -94,7 +106,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
           <div>
-            <Accordion type="multiple" defaultValue={['task']}>
+            <Accordion type="multiple" defaultValue={["task"]}>
               <AccordionItem value="task">
                 <AccordionTrigger>Task Details</AccordionTrigger>
                 <AccordionContent>
@@ -126,7 +138,11 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                         <FormItem>
                           <FormLabel>Description</FormLabel>
                           <FormControl>
-                            <Textarea {...field} className="mt-3" placeholder="Enter description" />
+                            <Textarea
+                              {...field}
+                              className="mt-3"
+                              placeholder="Enter description"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -153,15 +169,17 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="open">{renderStatus('open')}</SelectItem>
+                                <SelectItem value="open">
+                                  {renderStatus("open")}
+                                </SelectItem>
                                 <SelectItem value="in_progress">
-                                  {renderStatus('in_progress')}
+                                  {renderStatus("in_progress")}
                                 </SelectItem>
                                 <SelectItem value="completed">
-                                  {renderStatus('completed')}
+                                  {renderStatus("completed")}
                                 </SelectItem>
                                 <SelectItem value="cancelled">
-                                  {renderStatus('cancelled')}
+                                  {renderStatus("cancelled")}
                                 </SelectItem>
                               </SelectContent>
                             </Select>
@@ -182,7 +200,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                               assigneeId={field.value}
                               assignees={assignees}
                               onAssigneeChange={field.onChange}
-                              disabled={updateTask.status === 'executing'}
+                              disabled={updateTask.status === "executing"}
                               withTitle={false}
                             />
                           </FormControl>
@@ -197,7 +215,11 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={updateTask.status === "executing"}
+            >
               <div className="flex items-center justify-center">
                 Update
                 <ArrowRightIcon className="ml-2 h-4 w-4" />

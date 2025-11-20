@@ -1,5 +1,8 @@
-import { openai } from '@ai-sdk/openai';
-import { logger, metadata, tasks } from '@trigger.dev/sdk';
+import { openai } from "@ai-sdk/openai";
+import { logger, metadata, tasks } from "@trigger.dev/sdk";
+import { generateObject, generateText, jsonSchema } from "ai";
+import axios from "axios";
+
 import {
   CommentEntityType,
   db,
@@ -12,13 +15,12 @@ import {
   RiskStatus,
   RiskTreatmentType,
   VendorCategory,
-} from '@trycompai/db';
-import { generateObject, generateText, jsonSchema } from 'ai';
-import axios from 'axios';
-import type { researchVendor } from '../scrape/research';
-import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
-import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
-import { updatePolicy } from './update-policy';
+} from "@trycompai/db";
+
+import type { researchVendor } from "../scrape/research";
+import { RISK_MITIGATION_PROMPT } from "./prompts/risk-mitigation";
+import { VENDOR_RISK_ASSESSMENT_PROMPT } from "./prompts/vendor-risk-assessment";
+import { updatePolicy } from "./update-policy";
 
 // Types
 export type ContextItem = {
@@ -53,7 +55,9 @@ export type RiskData = {
   department: Departments;
 };
 
-type OrganizationRecord = NonNullable<Awaited<ReturnType<typeof db.organization.findUnique>>>;
+type OrganizationRecord = NonNullable<
+  Awaited<ReturnType<typeof db.organization.findUnique>>
+>;
 
 type OrganizationContextResult = {
   organization: OrganizationRecord;
@@ -70,9 +74,9 @@ const BASELINE_RISKS: Array<{
   status: RiskStatus;
 }> = [
   {
-    title: 'Intentional Fraud and Misuse',
+    title: "Intentional Fraud and Misuse",
     description:
-      'Intentional misrepresentation or deception by an internal actor (employee, contractor) or by the organization as a whole, for the purpose of achieving an unauthorized or improper gain.',
+      "Intentional misrepresentation or deception by an internal actor (employee, contractor) or by the organization as a whole, for the purpose of achieving an unauthorized or improper gain.",
     category: RiskCategory.governance,
     department: Departments.gov,
     status: RiskStatus.closed,
@@ -83,7 +87,9 @@ const BASELINE_RISKS: Array<{
  * Ensures baseline risks are present for the organization.
  * Creates them if missing. Returns the list of risks that were created.
  */
-export async function ensureBaselineRisks(organizationId: string): Promise<Risk[]> {
+export async function ensureBaselineRisks(
+  organizationId: string,
+): Promise<Risk[]> {
   const created: Risk[] = [];
 
   for (const base of BASELINE_RISKS) {
@@ -116,26 +122,32 @@ export async function ensureBaselineRisks(organizationId: string): Promise<Risk[
 /**
  * Revalidates the organization path for cache busting
  */
-export async function revalidateOrganizationPath(organizationId: string): Promise<void> {
+export async function revalidateOrganizationPath(
+  organizationId: string,
+): Promise<void> {
   try {
-    logger.info(`Revalidating path ${process.env.BETTER_AUTH_URL}/${organizationId}`);
+    logger.info(
+      `Revalidating path ${process.env.BETTER_AUTH_URL}/${organizationId}`,
+    );
     const revalidateResponse = await axios.post(
       `${process.env.BETTER_AUTH_URL}/api/revalidate/path`,
       {
         path: `${process.env.BETTER_AUTH_URL}/${organizationId}`,
         secret: process.env.REVALIDATION_SECRET,
-        type: 'layout',
+        type: "layout",
       },
     );
 
     if (!revalidateResponse.data?.revalidated) {
-      logger.error(`Failed to revalidate path: ${revalidateResponse.statusText}`);
+      logger.error(
+        `Failed to revalidate path: ${revalidateResponse.statusText}`,
+      );
       logger.error(revalidateResponse.data);
     } else {
-      logger.info('Revalidated path successfully');
+      logger.info("Revalidated path successfully");
     }
   } catch (err) {
-    logger.error('Error revalidating path', { err });
+    logger.error("Error revalidating path", { err });
   }
 }
 
@@ -183,43 +195,51 @@ export async function extractVendorsFromContext(
   questionsAndAnswers: ContextItem[],
 ): Promise<VendorData[]> {
   const { object } = await generateObject({
-    model: openai('gpt-4.1-mini'),
-    mode: 'json',
+    model: openai("gpt-4.1-mini"),
+    mode: "json",
     schema: jsonSchema({
-      type: 'object',
+      type: "object",
       properties: {
         vendors: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'object',
+            type: "object",
             properties: {
-              vendor_name: { type: 'string' },
-              vendor_website: { type: 'string' },
-              vendor_description: { type: 'string' },
-              category: { type: 'string', enum: Object.values(VendorCategory) },
-              inherent_probability: { type: 'string', enum: Object.values(Likelihood) },
-              inherent_impact: { type: 'string', enum: Object.values(Impact) },
-              residual_probability: { type: 'string', enum: Object.values(Likelihood) },
-              residual_impact: { type: 'string', enum: Object.values(Impact) },
+              vendor_name: { type: "string" },
+              vendor_website: { type: "string" },
+              vendor_description: { type: "string" },
+              category: { type: "string", enum: Object.values(VendorCategory) },
+              inherent_probability: {
+                type: "string",
+                enum: Object.values(Likelihood),
+              },
+              inherent_impact: { type: "string", enum: Object.values(Impact) },
+              residual_probability: {
+                type: "string",
+                enum: Object.values(Likelihood),
+              },
+              residual_impact: { type: "string", enum: Object.values(Impact) },
             },
             required: [
-              'vendor_name',
-              'vendor_website',
-              'vendor_description',
-              'category',
-              'inherent_probability',
-              'inherent_impact',
-              'residual_probability',
-              'residual_impact',
+              "vendor_name",
+              "vendor_website",
+              "vendor_description",
+              "category",
+              "inherent_probability",
+              "inherent_impact",
+              "residual_probability",
+              "residual_impact",
             ],
           },
         },
       },
-      required: ['vendors'],
+      required: ["vendors"],
     }),
     system:
-      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
-    prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
+      "Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.",
+    prompt: questionsAndAnswers
+      .map((q) => `${q.question}\n${q.answer}`)
+      .join("\n"),
   });
 
   return (object as { vendors: VendorData[] }).vendors;
@@ -237,12 +257,15 @@ export async function createVendorRiskComment(
   const policiesContext =
     policies.length > 0
       ? policies
-          .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
-          .join('\n')
-      : 'No specific policies available - use standard security policy guidance.';
+          .map(
+            (p) =>
+              `- ${p.name}: ${p.description || "No description available"}`,
+          )
+          .join("\n")
+      : "No specific policies available - use standard security policy guidance.";
 
   const riskMitigationComment = await generateText({
-    model: openai('gpt-5-mini'),
+    model: openai("gpt-5-mini"),
     system: VENDOR_RISK_ASSESSMENT_PROMPT,
     prompt: `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
 
@@ -262,7 +285,9 @@ Please perform a comprehensive vendor risk assessment for this vendor using the 
     },
   });
 
-  logger.info(`Created risk mitigation comment for vendor: ${vendor.id} (${vendor.name})`);
+  logger.info(
+    `Created risk mitigation comment for vendor: ${vendor.id} (${vendor.name})`,
+  );
 }
 
 /**
@@ -272,11 +297,11 @@ export async function findCommentAuthor(organizationId: string) {
   return await db.member.findFirst({
     where: {
       organizationId,
-      OR: [{ role: { contains: 'owner' } }, { role: { contains: 'admin' } }],
+      OR: [{ role: { contains: "owner" } }, { role: { contains: "admin" } }],
     },
     orderBy: [
-      { role: 'desc' }, // Prefer owner over admin
-      { createdAt: 'asc' }, // Prefer earlier members
+      { role: "desc" }, // Prefer owner over admin
+      { createdAt: "asc" }, // Prefer earlier members
     ],
   });
 }
@@ -290,7 +315,7 @@ export async function createVendorsFromData(
 ): Promise<any[]> {
   // Mark all vendors as processing before creation
   vendorData.forEach((_, index) => {
-    metadata.set(`vendor_temp_${index}_status`, 'processing');
+    metadata.set(`vendor_temp_${index}_status`, "processing");
   });
 
   // Check for existing vendors and create new ones concurrently
@@ -306,7 +331,7 @@ export async function createVendorsFromData(
       logger.info(`Vendor ${vendor.vendor_name} already exists`);
       // Mark as completed if it already exists
       const existing = existingVendor[0];
-      metadata.set(`vendor_${existing.id}_status`, 'completed');
+      metadata.set(`vendor_${existing.id}_status`, "completed");
       return existing;
     }
 
@@ -333,12 +358,12 @@ export async function createVendorsFromData(
   // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
   createdVendors.forEach((vendor) => {
     const status = metadata.get(`vendor_${vendor.id}_status`);
-    if (status === 'completed') {
+    if (status === "completed") {
       // Already marked as completed (existing vendor)
       return;
     }
     // New vendor, mark as created
-    metadata.set(`vendor_${vendor.id}_status`, 'created');
+    metadata.set(`vendor_${vendor.id}_status`, "created");
   });
 
   // Note: vendorsCompleted is incremented when mitigation is generated, not when created
@@ -351,10 +376,15 @@ export async function createVendorsFromData(
  */
 export async function triggerVendorResearch(vendors: any[]): Promise<void> {
   for (const vendor of vendors) {
-    const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
-      website: vendor.website ?? '',
-    });
-    logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
+    const handle = await tasks.trigger<typeof researchVendor>(
+      "research-vendor",
+      {
+        website: vendor.website ?? "",
+      },
+    );
+    logger.info(
+      `Triggered research for vendor ${vendor.name} with handle ${handle.id}`,
+    );
   }
 }
 
@@ -384,14 +414,17 @@ export async function createRiskMitigationComment(
   const policiesContext =
     policies.length > 0
       ? policies
-          .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
-          .join('\n')
-      : 'No specific policies available - use standard security policy guidance.';
+          .map(
+            (p) =>
+              `- ${p.name}: ${p.description || "No description available"}`,
+          )
+          .join("\n")
+      : "No specific policies available - use standard security policy guidance.";
 
   const mitigation = await generateText({
-    model: openai('gpt-5-mini'),
+    model: openai("gpt-5-mini"),
     system: RISK_MITIGATION_PROMPT,
-    prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
+    prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || "N/A"}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
   });
 
   await db.comment.create({
@@ -404,7 +437,9 @@ export async function createRiskMitigationComment(
     },
   });
 
-  logger.info(`Created risk mitigation comment for risk: ${risk.id} (${risk.title})`);
+  logger.info(
+    `Created risk mitigation comment for risk: ${risk.id} (${risk.title})`,
+  );
 }
 
 /**
@@ -432,7 +467,12 @@ export async function createRiskMitigation(
   const commentAuthor = await findCommentAuthor(organizationId);
 
   if (commentAuthor && risks.length > 0) {
-    await createRiskMitigationComments(risks, policies, organizationId, commentAuthor.id);
+    await createRiskMitigationComments(
+      risks,
+      policies,
+      organizationId,
+      commentAuthor.id,
+    );
   }
 }
 
@@ -445,39 +485,48 @@ export async function extractRisksFromContext(
   existingRisks: { title: string }[],
 ): Promise<RiskData[]> {
   const { object } = await generateObject({
-    model: openai('gpt-4.1-mini'),
-    mode: 'json',
+    model: openai("gpt-4.1-mini"),
+    mode: "json",
     schema: jsonSchema({
-      type: 'object',
+      type: "object",
       properties: {
         risks: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'object',
+            type: "object",
             properties: {
-              risk_name: { type: 'string' },
-              risk_description: { type: 'string' },
-              risk_treatment_strategy: { type: 'string', enum: Object.values(RiskTreatmentType) },
-              risk_treatment_strategy_description: { type: 'string' },
-              risk_residual_probability: { type: 'string', enum: Object.values(Likelihood) },
-              risk_residual_impact: { type: 'string', enum: Object.values(Impact) },
-              category: { type: 'string', enum: Object.values(RiskCategory) },
-              department: { type: 'string', enum: Object.values(Departments) },
+              risk_name: { type: "string" },
+              risk_description: { type: "string" },
+              risk_treatment_strategy: {
+                type: "string",
+                enum: Object.values(RiskTreatmentType),
+              },
+              risk_treatment_strategy_description: { type: "string" },
+              risk_residual_probability: {
+                type: "string",
+                enum: Object.values(Likelihood),
+              },
+              risk_residual_impact: {
+                type: "string",
+                enum: Object.values(Impact),
+              },
+              category: { type: "string", enum: Object.values(RiskCategory) },
+              department: { type: "string", enum: Object.values(Departments) },
             },
             required: [
-              'risk_name',
-              'risk_description',
-              'risk_treatment_strategy',
-              'risk_treatment_strategy_description',
-              'risk_residual_probability',
-              'risk_residual_impact',
-              'category',
-              'department',
+              "risk_name",
+              "risk_description",
+              "risk_treatment_strategy",
+              "risk_treatment_strategy_description",
+              "risk_residual_probability",
+              "risk_residual_impact",
+              "category",
+              "department",
             ],
           },
         },
       },
-      required: ['risks'],
+      required: ["risks"],
     }),
     system: `Create a list of 8-12 risks that are relevant to the organization. Use action-oriented language, assume reviewers understand basic termilology - skip definitions.
           Your mandate is to propose risks that satisfy both ISO 27001:2022 clause 6.1 (risk management) and SOC 2 trust services criteria CC3 and CC4.
@@ -486,10 +535,10 @@ export async function extractRisksFromContext(
           The organization is ${organizationName}.
 
           Do not propose risks that are already in the database:
-          ${existingRisks.map((r) => r.title).join('\n')}
+          ${existingRisks.map((r) => r.title).join("\n")}
 
           The questions and answers are:
-          ${questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n')}
+          ${questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join("\n")}
           `,
   });
 
@@ -515,7 +564,7 @@ export async function createRisksFromData(
 ): Promise<Risk[]> {
   // Mark all risks as processing before creation
   riskData.forEach((_, index) => {
-    metadata.set(`risk_temp_${index}_status`, 'processing');
+    metadata.set(`risk_temp_${index}_status`, "processing");
   });
 
   // Create all risks concurrently
@@ -539,7 +588,7 @@ export async function createRisksFromData(
 
   // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
   createdRisks.forEach((createdRisk) => {
-    metadata.set(`risk_${createdRisk.id}_status`, 'created');
+    metadata.set(`risk_${createdRisk.id}_status`, "created");
     logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
   });
 
@@ -562,7 +611,7 @@ async function createRisksFromDataWithBaseline(
 ): Promise<Risk[]> {
   // Mark all risks as processing before creation
   allRisksToCreate.forEach((_, index) => {
-    metadata.set(`risk_temp_${index}_status`, 'processing');
+    metadata.set(`risk_temp_${index}_status`, "processing");
   });
 
   // Create all risks concurrently (baseline + AI-generated)
@@ -588,19 +637,20 @@ async function createRisksFromDataWithBaseline(
           likelihood: risk.riskData.risk_residual_probability,
           impact: risk.riskData.risk_residual_impact,
           treatmentStrategy: risk.riskData.risk_treatment_strategy,
-          treatmentStrategyDescription: risk.riskData.risk_treatment_strategy_description,
+          treatmentStrategyDescription:
+            risk.riskData.risk_treatment_strategy_description,
           organizationId,
         },
       });
     }
-    throw new Error('Invalid risk data');
+    throw new Error("Invalid risk data");
   });
 
   const createdRisks = await Promise.all(createPromises);
 
   // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
   createdRisks.forEach((createdRisk) => {
-    metadata.set(`risk_${createdRisk.id}_status`, 'created');
+    metadata.set(`risk_${createdRisk.id}_status`, "created");
     logger.info(`Created risk: ${createdRisk.id} (${createdRisk.title})`);
   });
 
@@ -631,19 +681,19 @@ export async function triggerPolicyUpdates(
 
   if (policies.length > 0) {
     // Initialize policy progress tracking in parent metadata
-    metadata.set('policiesTotal', policies.length);
-    metadata.set('policiesCompleted', 0);
-    metadata.set('policiesRemaining', policies.length);
+    metadata.set("policiesTotal", policies.length);
+    metadata.set("policiesCompleted", 0);
+    metadata.set("policiesRemaining", policies.length);
     // Store policy info for tracking individual policies
     metadata.set(
-      'policiesInfo',
+      "policiesInfo",
       policies.map((p) => ({ id: p.id, name: p.name })),
     );
 
     // Initialize individual policy statuses - all start as 'queued'
     // Each policy gets its own metadata key: policy_{id}_status
     policies.forEach((policy) => {
-      metadata.set(`policy_${policy.id}_status`, 'queued');
+      metadata.set(`policy_${policy.id}_status`, "queued");
     });
 
     await updatePolicy.batchTriggerAndWait(
@@ -651,7 +701,9 @@ export async function triggerPolicyUpdates(
         payload: {
           organizationId,
           policyId: policy.id,
-          contextHub: questionsAndAnswers.map((c) => `${c.question}\n${c.answer}`).join('\n'),
+          contextHub: questionsAndAnswers
+            .map((c) => `${c.question}\n${c.answer}`)
+            .join("\n"),
           frameworks,
         },
         concurrencyKey: organizationId,
@@ -671,10 +723,14 @@ export async function createVendors(
   vendorData?: VendorData[],
 ): Promise<any[]> {
   // Extract vendors using AI if not provided
-  const vendorsToCreate = vendorData || (await extractVendorsFromContext(questionsAndAnswers));
+  const vendorsToCreate =
+    vendorData || (await extractVendorsFromContext(questionsAndAnswers));
 
   // Create vendor records in database
-  const createdVendors = await createVendorsFromData(vendorsToCreate, organizationId);
+  const createdVendors = await createVendorsFromData(
+    vendorsToCreate,
+    organizationId,
+  );
 
   // Trigger background research for each vendor
   await triggerVendorResearch(createdVendors);
@@ -693,7 +749,12 @@ export async function createVendorRiskMitigation(
   const commentAuthor = await findCommentAuthor(organizationId);
 
   if (commentAuthor && vendors.length > 0) {
-    await createVendorRiskComments(vendors, policies, organizationId, commentAuthor.id);
+    await createVendorRiskComments(
+      vendors,
+      policies,
+      organizationId,
+      commentAuthor.id,
+    );
   }
 }
 
@@ -734,12 +795,12 @@ export async function createRisks(
 
   // Track all risks immediately as "pending" before creation
   if (allRisksToCreate.length > 0) {
-    metadata.set('risksTotal', allRisksToCreate.length);
-    metadata.set('risksCompleted', 0);
-    metadata.set('risksRemaining', allRisksToCreate.length);
+    metadata.set("risksTotal", allRisksToCreate.length);
+    metadata.set("risksCompleted", 0);
+    metadata.set("risksRemaining", allRisksToCreate.length);
     // Use temporary IDs based on index until we have real IDs
     metadata.set(
-      'risksInfo',
+      "risksInfo",
       allRisksToCreate.map((r, index) => ({
         id: `temp_${index}`,
         name: r.isBaseline ? r.baselineData!.title : r.riskData!.risk_name,
@@ -747,17 +808,20 @@ export async function createRisks(
     );
     // Mark all as pending initially
     allRisksToCreate.forEach((_, index) => {
-      metadata.set(`risk_temp_${index}_status`, 'pending');
+      metadata.set(`risk_temp_${index}_status`, "pending");
     });
   }
 
   // Create all risks together (baseline + AI-generated) in one batch
-  const createdRisks = await createRisksFromDataWithBaseline(allRisksToCreate, organizationId);
+  const createdRisks = await createRisksFromDataWithBaseline(
+    allRisksToCreate,
+    organizationId,
+  );
 
   // Update tracking with real risk IDs
   if (createdRisks.length > 0) {
     metadata.set(
-      'risksInfo',
+      "risksInfo",
       createdRisks.map((r) => ({ id: r.id, name: r.title })),
     );
   }

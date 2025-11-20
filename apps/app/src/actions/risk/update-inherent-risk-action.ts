@@ -1,17 +1,19 @@
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { updateInherentRiskSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { updateInherentRiskSchema } from "../schema";
 
 export const updateInherentRiskAction = authActionClient
   .inputSchema(updateInherentRiskSchema)
   .metadata({
-    name: 'update-inherent-risk',
+    name: "update-inherent-risk",
     track: {
-      event: 'update-inherent-risk',
-      channel: 'server',
+      event: "update-inherent-risk",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -19,7 +21,7 @@ export const updateInherentRiskAction = authActionClient
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      throw new Error('Invalid organization');
+      throw new Error("Invalid organization");
     }
 
     try {
@@ -37,13 +39,13 @@ export const updateInherentRiskAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/register`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}`);
-      revalidateTag('risks', { expire: 0 });
+      revalidateTag("risks", { expire: 0 });
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Error updating inherent risk:', error);
+      console.error("Error updating inherent risk:", error);
       return {
         success: false,
       };

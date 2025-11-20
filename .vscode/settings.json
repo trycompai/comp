@@ -1,28 +1,28 @@
 {
-  "prisma.fileWatcher": true,
-  "[prisma]": {
-    "editor.defaultFormatter": "Prisma.prisma"
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.tabSize": 4,
-  "editor.detectIndentation": true,
-  "[yaml]": {
-    "editor.tabSize": 4
+  "[typescript,typescriptreact]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
-  "[dockercompose]": {
-    "editor.tabSize": 4
+  "eslint.rules.customizations": [{ "rule": "*", "severity": "warn" }],
+  "eslint.runtime": "node",
+  "eslint.workingDirectories": [
+    { "pattern": "apps/*/" },
+    { "pattern": "packages/*/" },
+    { "pattern": "toolings/*/" },
+  ],
+  "files.associations": {
+    "*.css": "tailwindcss"
   },
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "typescript.tsserver.experimental.enableProjectDiagnostics": true
+  "prettier.ignorePath": ".gitignore",
+  "tailwindCSS.classFunctions": ["cva", "cx", "cn"],
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.autoImportFileExcludePatterns": [
+    "next/router.d.ts",
+    "next/dist/client/router.d.ts"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

@@ -1,3 +1,9 @@
+// ============================================================================
+// Store Types
+// ============================================================================
+
+import type { ChatStatus } from "ai";
+
 /**
  * Task Automation Types
  * Centralized type definitions for the task automation system
@@ -36,12 +42,12 @@ export interface TaskAutomationExecutionResult {
   taskId?: string;
   modelName?: string;
   summary?: string;
-  evaluationStatus?: 'pass' | 'fail';
+  evaluationStatus?: "pass" | "fail";
   evaluationReason?: string;
 }
 
 export interface TaskAutomationTestResult {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   data?: any;
   error?: string;
@@ -52,18 +58,18 @@ export interface TaskAutomationTestResult {
 // Analyze Types
 // ============================================================================
 
-export type AnalyzeStepType = 'trigger' | 'action' | 'condition' | 'output';
+export type AnalyzeStepType = "trigger" | "action" | "condition" | "output";
 
 export type AnalyzeIconType =
-  | 'start'
-  | 'fetch'
-  | 'login'
-  | 'check'
-  | 'process'
-  | 'filter'
-  | 'notify'
-  | 'complete'
-  | 'error';
+  | "start"
+  | "fetch"
+  | "login"
+  | "check"
+  | "process"
+  | "filter"
+  | "notify"
+  | "complete"
+  | "error";
 
 export interface TaskAutomationAnalyzeStep {
   id: string;
@@ -109,13 +115,7 @@ export interface TaskAutomationExecuteRequest {
   automationId: string;
 }
 
-// ============================================================================
-// Store Types
-// ============================================================================
-
-import type { ChatStatus } from 'ai';
-
-export type ViewMode = 'visual' | 'code';
+export type ViewMode = "visual" | "code";
 
 export interface TaskAutomationStoreState {
   chatStatus: ChatStatus;

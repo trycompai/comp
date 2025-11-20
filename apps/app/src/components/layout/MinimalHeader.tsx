@@ -1,25 +1,26 @@
-'use client';
+"use client";
 
-import { changeOrganizationAction } from '@/actions/change-organization';
-import { Logo } from '@/app/(app)/setup/components/Logo';
-import type { Organization } from '@trycompai/db';
-import type { User } from 'better-auth';
-import { useAction } from 'next-safe-action/hooks';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import type { User } from "better-auth";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { changeOrganizationAction } from "@/actions/change-organization";
+import { Logo } from "@/app/(app)/setup/components/Logo";
+import { useAction } from "next-safe-action/hooks";
+
+import type { Organization } from "@trycompai/db";
 
 interface MinimalHeaderProps {
   user: User;
   organizations: Organization[];
   currentOrganization: Organization | null;
-  variant?: 'setup' | 'upgrade' | 'onboarding';
+  variant?: "setup" | "upgrade" | "onboarding";
 }
 
 export function MinimalHeader({
   user,
   organizations,
   currentOrganization,
-  variant = 'upgrade',
+  variant = "upgrade",
 }: MinimalHeaderProps) {
   const router = useRouter();
 
@@ -35,7 +36,7 @@ export function MinimalHeader({
   const hasExistingOrgs = organizations.length > 0;
 
   return (
-    <header className="sticky top-0 z-10 bg-background flex items-center h-[90px] w-full px-4  md:px-18">
+    <header className="bg-background sticky top-0 z-10 flex h-[90px] w-full items-center px-4 md:px-18">
       <Link href="/" className="flex items-center">
         <Logo />
       </Link>

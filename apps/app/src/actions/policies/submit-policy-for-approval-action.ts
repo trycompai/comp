@@ -1,30 +1,39 @@
-'use server';
+"use server";
 
-import { db, PolicyStatus } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { updatePolicyFormSchema } from '../schema';
+import { revalidatePath } from "next/cache";
+
+import { db, PolicyStatus } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { updatePolicyFormSchema } from "../schema";
 
 export const submitPolicyForApprovalAction = authActionClient
   .inputSchema(updatePolicyFormSchema)
   .metadata({
-    name: 'submit-policy-for-approval',
+    name: "submit-policy-for-approval",
     track: {
-      event: 'submit-policy-for-approval',
-      description: 'Submit Policy for Approval',
-      channel: 'server',
+      event: "submit-policy-for-approval",
+      description: "Submit Policy for Approval",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id, assigneeId, department, review_frequency, review_date, approverId } = parsedInput;
+    const {
+      id,
+      assigneeId,
+      department,
+      review_frequency,
+      review_date,
+      approverId,
+    } = parsedInput;
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     if (!approverId) {
-      throw new Error('Approver is required');
+      throw new Error("Approver is required");
     }
 
     try {
@@ -51,7 +60,7 @@ export const submitPolicyForApprovalAction = authActionClient
         success: true,
       };
     } catch (error) {
-      console.error('Error submitting policy for approval:', error);
+      console.error("Error submitting policy for approval:", error);
 
       return {
         success: false,

@@ -1,28 +1,44 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Departments, Member, User } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Form } from '@trycompai/ui/form';
-import { Save } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
-import { updateEmployee } from '../actions/update-employee';
-import { Department } from './Fields/Department';
-import { Email } from './Fields/Email';
-import { JoinDate } from './Fields/JoinDate';
-import { Name } from './Fields/Name';
-import { Status } from './Fields/Status';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Save } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import type { Departments, Member, User } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+import { Form } from "@trycompai/ui/form";
+
+import { updateEmployee } from "../actions/update-employee";
+import { Department } from "./Fields/Department";
+import { Email } from "./Fields/Email";
+import { JoinDate } from "./Fields/JoinDate";
+import { Name } from "./Fields/Name";
+import { Status } from "./Fields/Status";
 
 // Define form schema with Zod
 const employeeFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
-  department: z.enum(['admin', 'gov', 'hr', 'it', 'itsm', 'qms', 'none'] as const),
-  status: z.enum(['active', 'inactive'] as const),
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  department: z.enum([
+    "admin",
+    "gov",
+    "hr",
+    "it",
+    "itsm",
+    "qms",
+    "none",
+  ] as const),
+  status: z.enum(["active", "inactive"] as const),
   createdAt: z.date(),
 });
 
@@ -40,25 +56,29 @@ export const EmployeeDetails = ({
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
-      name: employee.user.name ?? '',
-      email: employee.user.email ?? '',
+      name: employee.user.name ?? "",
+      email: employee.user.email ?? "",
       department: employee.department as Departments,
-      status: employee.isActive ? 'active' : 'inactive',
+      status: employee.isActive ? "active" : "inactive",
       createdAt: new Date(employee.createdAt),
     },
-    mode: 'onChange',
+    mode: "onChange",
   });
 
   const { execute, status: actionStatus } = useAction(updateEmployee, {
     onSuccess: (res) => {
       if (!res?.data?.success) {
-        toast.error(res?.data?.error?.message || 'Failed to update employee details');
+        toast.error(
+          res?.data?.error?.message || "Failed to update employee details",
+        );
         return;
       }
-      toast.success('Employee details updated successfully');
+      toast.success("Employee details updated successfully");
     },
     onError: (error) => {
-      toast.error(error?.error?.serverError || 'Failed to update employee details');
+      toast.error(
+        error?.error?.serverError || "Failed to update employee details",
+      );
     },
   });
 
@@ -83,11 +103,14 @@ export const EmployeeDetails = ({
     if (values.department !== employee.department) {
       updateData.department = values.department;
     }
-    if (values.createdAt && values.createdAt.toISOString() !== employee.createdAt.toISOString()) {
+    if (
+      values.createdAt &&
+      values.createdAt.toISOString() !== employee.createdAt.toISOString()
+    ) {
       updateData.createdAt = values.createdAt;
     }
 
-    const isActive = values.status === 'active';
+    const isActive = values.status === "active";
     if (isActive !== employee.isActive) {
       updateData.isActive = isActive;
     }
@@ -97,14 +120,16 @@ export const EmployeeDetails = ({
       await execute(updateData);
     } else {
       // No changes were made
-      toast.info('No changes to save');
+      toast.info("No changes to save");
     }
   };
 
   return (
     <Card className="p-6">
       <CardHeader className="px-0 pt-0 pb-6">
-        <CardTitle className="text-2xl font-semibold">Employee Details</CardTitle>
+        <CardTitle className="text-2xl font-semibold">
+          Employee Details
+        </CardTitle>
         <p className="text-muted-foreground">
           Manage employee information and department assignment
         </p>
@@ -126,13 +151,15 @@ export const EmployeeDetails = ({
               disabled={
                 !form.formState.isDirty ||
                 form.formState.isSubmitting ||
-                actionStatus === 'executing'
+                actionStatus === "executing"
               }
             >
-              {!(form.formState.isSubmitting || actionStatus === 'executing') && (
-                <Save className="h-4 w-4" />
-              )}
-              {form.formState.isSubmitting || actionStatus === 'executing' ? 'Saving...' : 'Save'}
+              {!(
+                form.formState.isSubmitting || actionStatus === "executing"
+              ) && <Save className="h-4 w-4" />}
+              {form.formState.isSubmitting || actionStatus === "executing"
+                ? "Saving..."
+                : "Save"}
             </Button>
           </CardFooter>
         </form>

@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { Editor, type JSONContent } from '@trycompai/ui/editor';
+import type { JSONContent } from "@trycompai/ui/editor";
+import { Editor } from "@trycompai/ui/editor";
 
 interface AdvancedEditorProps {
   initialContent?: JSONContent | JSONContent[];
@@ -20,7 +21,7 @@ const AdvancedEditor = ({ initialContent }: AdvancedEditorProps) => {
       showWordCount={false}
       showToolbar={false}
       minHeight="500px"
-      className="max-w-screen-lg mx-auto sm:mb-[calc(20vh)]"
+      className="mx-auto max-w-screen-lg sm:mb-[calc(20vh)]"
     />
   );
 };

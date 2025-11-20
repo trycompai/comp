@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
-import type { vendorQuestionnaireOrchestratorTask } from '@/jobs/tasks/vendors/vendor-questionnaire-orchestrator';
-import { useEffect, useMemo, useRef } from 'react';
-import { toast } from 'sonner';
-import type { QuestionAnswer } from '../components/types';
+import type { vendorQuestionnaireOrchestratorTask } from "@/jobs/tasks/vendors/vendor-questionnaire-orchestrator";
+import { useEffect, useMemo, useRef } from "react";
+import { useRealtimeTaskTrigger } from "@trigger.dev/react-hooks";
+import { toast } from "sonner";
+
+import type { QuestionAnswer } from "../components/types";
 
 interface UseQuestionnaireAutoAnswerProps {
   autoAnswerToken: string | null;
@@ -15,7 +16,7 @@ interface UseQuestionnaireAutoAnswerProps {
   setIsAutoAnswerProcessStarted: (started: boolean) => void;
   setResults: React.Dispatch<React.SetStateAction<QuestionAnswer[] | null>>;
   setQuestionStatuses: React.Dispatch<
-    React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    React.SetStateAction<Map<number, "pending" | "processing" | "completed">>
   >;
   setAnsweringQuestionIndex: (index: number | null) => void;
 }
@@ -37,13 +38,16 @@ export function useQuestionnaireAutoAnswer({
     run: autoAnswerRun,
     error: autoAnswerError,
     isLoading: isAutoAnswerTriggering,
-  } = useRealtimeTaskTrigger<typeof vendorQuestionnaireOrchestratorTask>('vendor-questionnaire-orchestrator', {
-    accessToken: autoAnswerToken || undefined,
-    enabled: !!autoAnswerToken,
-  });
+  } = useRealtimeTaskTrigger<typeof vendorQuestionnaireOrchestratorTask>(
+    "vendor-questionnaire-orchestrator",
+    {
+      accessToken: autoAnswerToken || undefined,
+      enabled: !!autoAnswerToken,
+    },
+  );
 
   // Track processed metadata to avoid infinite loops
-  const processedMetadataRef = useRef<string>('');
+  const processedMetadataRef = useRef<string>("");
   // Track which run ID we're currently processing for single questions
   const currentRunIdRef = useRef<string | null>(null);
   // Use ref to access latest results without causing dependency issues
@@ -56,7 +60,7 @@ export function useQuestionnaireAutoAnswer({
   useEffect(() => {
     if (answeringQuestionIndex !== null && autoAnswerRun?.id) {
       currentRunIdRef.current = autoAnswerRun.id;
-      processedMetadataRef.current = ''; // Clear processed metadata for new run
+      processedMetadataRef.current = ""; // Clear processed metadata for new run
     } else if (answeringQuestionIndex === null) {
       currentRunIdRef.current = null; // Clear when no single question is active
     }
@@ -72,29 +76,42 @@ export function useQuestionnaireAutoAnswer({
     // For single question operations, only process metadata from the current run
     // This prevents metadata from previous runs (like "Auto Answer All") from interfering
     if (answeringQuestionIndex !== null) {
-      if (currentRunIdRef.current && autoAnswerRun.id !== currentRunIdRef.current) {
+      if (
+        currentRunIdRef.current &&
+        autoAnswerRun.id !== currentRunIdRef.current
+      ) {
         return; // Skip metadata from different runs
       }
     }
 
     const meta = autoAnswerRun.metadata as Record<string, unknown>;
-    
+
     // Create a hash of current metadata values to detect actual changes
     // Include both keys and values to catch when metadata content changes
-    const answerKeys = Object.keys(meta).filter((key) => key.startsWith('answer_')).sort();
-    const statusKeys = Object.keys(meta).filter((key) => key.startsWith('question_') && key.endsWith('_status')).sort();
-    
+    const answerKeys = Object.keys(meta)
+      .filter((key) => key.startsWith("answer_"))
+      .sort();
+    const statusKeys = Object.keys(meta)
+      .filter((key) => key.startsWith("question_") && key.endsWith("_status"))
+      .sort();
+
     // Build hash from actual values, not just keys
-    const answerValues = answerKeys.map((key) => {
-      const answer = meta[key] as { questionIndex?: number; answer?: string | null } | undefined;
-      return answer ? `${answer.questionIndex}:${answer.answer ? 'has-answer' : 'no-answer'}` : null;
-    }).filter(Boolean);
-    
+    const answerValues = answerKeys
+      .map((key) => {
+        const answer = meta[key] as
+          | { questionIndex?: number; answer?: string | null }
+          | undefined;
+        return answer
+          ? `${answer.questionIndex}:${answer.answer ? "has-answer" : "no-answer"}`
+          : null;
+      })
+      .filter(Boolean);
+
     const statusValues = statusKeys.map((key) => {
       const status = meta[key];
       return `${key}:${status}`;
     });
-    
+
     const metadataHash = JSON.stringify({
       answerCount: answerKeys.length,
       answerValues,
@@ -107,29 +124,33 @@ export function useQuestionnaireAutoAnswer({
     processedMetadataRef.current = metadataHash;
 
     const isSingleQuestion = answeringQuestionIndex !== null;
-    
+
     // Build status map from individual status keys
     // For single question operations, only process status for that specific question
-    const statusMap = new Map<number, 'pending' | 'processing' | 'completed'>();
+    const statusMap = new Map<number, "pending" | "processing" | "completed">();
     statusKeys.forEach((key) => {
       const match = key.match(/^question_(\d+)_status$/);
       if (match) {
         const questionIndex = parseInt(match[1], 10);
-        
+
         // If this is a single question operation, only process status for that question
         if (isSingleQuestion && answeringQuestionIndex !== null) {
           if (questionIndex !== answeringQuestionIndex) {
             return; // Skip status updates for other questions
           }
         }
-        
-        const status = meta[key] as 'pending' | 'processing' | 'completed' | undefined;
+
+        const status = meta[key] as
+          | "pending"
+          | "processing"
+          | "completed"
+          | undefined;
         if (status) {
           statusMap.set(questionIndex, status);
         }
       }
     });
-    
+
     // Update question statuses from metadata (individual spinners start at different times)
     if (statusMap.size > 0) {
       setQuestionStatuses((prev) => {
@@ -144,24 +165,29 @@ export function useQuestionnaireAutoAnswer({
         return hasChanges ? newStatuses : prev;
       });
     }
-    
+
     // Extract and update answers (reuse answerKeys from above)
     if (answerKeys.length > 0) {
       const answers = answerKeys
         .map((key) => {
-          const answerData = meta[key] as {
-            questionIndex: number;
-            question: string;
-            answer: string | null;
-            sources?: Array<{
-              sourceType: string;
-              sourceName?: string;
-              score: number;
-            }>;
-          } | undefined;
+          const answerData = meta[key] as
+            | {
+                questionIndex: number;
+                question: string;
+                answer: string | null;
+                sources?: Array<{
+                  sourceType: string;
+                  sourceName?: string;
+                  score: number;
+                }>;
+              }
+            | undefined;
           return answerData;
         })
-        .filter((answer): answer is NonNullable<typeof answer> => answer !== undefined)
+        .filter(
+          (answer): answer is NonNullable<typeof answer> =>
+            answer !== undefined,
+        )
         .sort((a, b) => a.questionIndex - b.questionIndex);
 
       if (answers.length > 0) {
@@ -179,14 +205,14 @@ export function useQuestionnaireAutoAnswer({
                 return; // Skip answers for other questions
               }
             }
-            
+
             const targetIndex = answer.questionIndex;
-            
+
             // Verify we're updating the correct question
             // For single question operations, double-check the index matches
             if (isSingleQuestion && answeringQuestionIndex !== null) {
               if (targetIndex !== answeringQuestionIndex) {
-                console.warn('Index mismatch in single question update:', {
+                console.warn("Index mismatch in single question update:", {
                   targetIndex,
                   answeringQuestionIndex,
                   answerQuestionIndex: answer.questionIndex,
@@ -197,7 +223,7 @@ export function useQuestionnaireAutoAnswer({
 
             // Safety check: ensure targetIndex is valid
             if (targetIndex < 0 || targetIndex >= updatedResults.length) {
-              console.warn('Invalid questionIndex in answer update:', {
+              console.warn("Invalid questionIndex in answer update:", {
                 targetIndex,
                 resultsLength: updatedResults.length,
                 answerQuestionIndex: answer.questionIndex,
@@ -207,30 +233,37 @@ export function useQuestionnaireAutoAnswer({
 
             const currentAnswer = updatedResults[targetIndex]?.answer;
             const originalQuestion = updatedResults[targetIndex]?.question;
-            
+
             // Verify we're updating the correct question by checking question text matches
             // This is an extra safety check to prevent updating wrong questions
             if (originalQuestion && answer.question) {
               // For single question operations, verify question text matches
               if (isSingleQuestion && answeringQuestionIndex !== null) {
-                const expectedQuestion = resultsRef.current?.[answeringQuestionIndex]?.question;
-                if (expectedQuestion && answer.question.trim() !== expectedQuestion.trim()) {
-                  console.warn('Question text mismatch in single question update:', {
-                    targetIndex,
-                    answeringQuestionIndex,
-                    expectedQuestion: expectedQuestion.substring(0, 50),
-                    answerQuestion: answer.question.substring(0, 50),
-                  });
+                const expectedQuestion =
+                  resultsRef.current?.[answeringQuestionIndex]?.question;
+                if (
+                  expectedQuestion &&
+                  answer.question.trim() !== expectedQuestion.trim()
+                ) {
+                  console.warn(
+                    "Question text mismatch in single question update:",
+                    {
+                      targetIndex,
+                      answeringQuestionIndex,
+                      expectedQuestion: expectedQuestion.substring(0, 50),
+                      answerQuestion: answer.question.substring(0, 50),
+                    },
+                  );
                   // Still update if indices match - question text might be slightly different
                   // But log for debugging
                 }
               }
             }
-            
+
             // Always preserve the original question text from the results array
             // Don't use answer.question as it might be formatted differently or from a different question
             // This prevents question text from being overwritten incorrectly
-            
+
             if (answer.answer) {
               if (currentAnswer !== answer.answer) {
                 updatedResults[targetIndex] = {
@@ -269,7 +302,7 @@ export function useQuestionnaireAutoAnswer({
   // Handle final completion (for toast notifications and cleanup only)
   // UI updates are handled by the metadata watcher above
   useEffect(() => {
-    if (autoAnswerRun?.status === 'COMPLETED' && autoAnswerRun.output) {
+    if (autoAnswerRun?.status === "COMPLETED" && autoAnswerRun.output) {
       const answers = autoAnswerRun.output.answers as
         | Array<{
             questionIndex: number;
@@ -295,15 +328,15 @@ export function useQuestionnaireAutoAnswer({
             if (isSingleQuestion && answeringQuestionIndex !== null) {
               // Single question: only mark that question as completed
               const currentStatus = prev.get(answeringQuestionIndex);
-              if (currentStatus === 'processing') {
-              newStatuses.set(answeringQuestionIndex, 'completed');
+              if (currentStatus === "processing") {
+                newStatuses.set(answeringQuestionIndex, "completed");
               }
-        } else {
+            } else {
               // Batch operation: mark all processing questions as completed
               results.forEach((qa, index) => {
                 const currentStatus = prev.get(index);
-                if (currentStatus === 'processing') {
-                  newStatuses.set(index, 'completed');
+                if (currentStatus === "processing") {
+                  newStatuses.set(index, "completed");
                 }
               });
             }
@@ -311,17 +344,17 @@ export function useQuestionnaireAutoAnswer({
           });
         }
 
-            // Cleanup: mark process as finished
+        // Cleanup: mark process as finished
         if (!isSingleQuestion) {
           isAutoAnswerProcessStartedRef.current = false;
           setIsAutoAnswerProcessStarted(false);
         }
 
-            // Reset answering index and run ID for single questions
-            if (isSingleQuestion) {
-              setAnsweringQuestionIndex(null);
-              currentRunIdRef.current = null; // Clear run ID when operation completes
-            }
+        // Reset answering index and run ID for single questions
+        if (isSingleQuestion) {
+          setAnsweringQuestionIndex(null);
+          currentRunIdRef.current = null; // Clear run ID when operation completes
+        }
 
         // Show final toast notification
         const totalQuestions = answers.length;
@@ -330,18 +363,20 @@ export function useQuestionnaireAutoAnswer({
 
         if (isSingleQuestion) {
           if (answeredQuestions > 0) {
-            toast.success('Answer generated successfully');
+            toast.success("Answer generated successfully");
           } else {
-            toast.warning('Could not find relevant information in your policies for this question.');
+            toast.warning(
+              "Could not find relevant information in your policies for this question.",
+            );
           }
         } else {
           if (answeredQuestions > 0) {
             toast.success(
-              `Answered ${answeredQuestions} of ${totalQuestions} question${totalQuestions > 1 ? 's' : ''}${noAnswerQuestions > 0 ? `. ${noAnswerQuestions} had insufficient information.` : '.'}`,
+              `Answered ${answeredQuestions} of ${totalQuestions} question${totalQuestions > 1 ? "s" : ""}${noAnswerQuestions > 0 ? `. ${noAnswerQuestions} had insufficient information.` : "."}`,
             );
           } else {
             toast.warning(
-              `Could not find relevant information in your policies. Try adding more detail about ${answers[0]?.question.split(' ').slice(0, 5).join(' ')}...`,
+              `Could not find relevant information in your policies. Try adding more detail about ${answers[0]?.question.split(" ").slice(0, 5).join(" ")}...`,
             );
           }
         }
@@ -367,8 +402,8 @@ export function useQuestionnaireAutoAnswer({
       setQuestionStatuses((prev) => {
         const newStatuses = new Map(prev);
         prev.forEach((status, index) => {
-          if (status === 'processing') {
-            newStatuses.set(index, 'completed');
+          if (status === "processing") {
+            newStatuses.set(index, "completed");
           }
         });
         return newStatuses;
@@ -388,41 +423,52 @@ export function useQuestionnaireAutoAnswer({
   // Only set global process started for batch operations (when answeringQuestionIndex is null)
   useEffect(() => {
     const isBatchOp = answeringQuestionIndex === null;
-    
+
     // For single question operations, track the run ID
     if (!isBatchOp && autoAnswerRun?.id && answeringQuestionIndex !== null) {
       currentRunIdRef.current = autoAnswerRun.id;
     }
-    
+
     if (
-      (autoAnswerRun?.status === 'EXECUTING' || autoAnswerRun?.status === 'QUEUED') &&
+      (autoAnswerRun?.status === "EXECUTING" ||
+        autoAnswerRun?.status === "QUEUED") &&
       !isAutoAnswerProcessStarted &&
       isBatchOp
     ) {
       isAutoAnswerProcessStartedRef.current = true;
       setIsAutoAnswerProcessStarted(true);
     }
-  }, [autoAnswerRun?.status, autoAnswerRun?.id, isAutoAnswerProcessStarted, setIsAutoAnswerProcessStarted, isAutoAnswerProcessStartedRef, answeringQuestionIndex]);
+  }, [
+    autoAnswerRun?.status,
+    autoAnswerRun?.id,
+    isAutoAnswerProcessStarted,
+    setIsAutoAnswerProcessStarted,
+    isAutoAnswerProcessStartedRef,
+    answeringQuestionIndex,
+  ]);
 
   // Handle task failures and cancellations
   useEffect(() => {
-    if (autoAnswerRun?.status === 'FAILED' || autoAnswerRun?.status === 'CANCELED') {
+    if (
+      autoAnswerRun?.status === "FAILED" ||
+      autoAnswerRun?.status === "CANCELED"
+    ) {
       isAutoAnswerProcessStartedRef.current = false;
       setIsAutoAnswerProcessStarted(false);
       const errorMessage =
         autoAnswerRun.error instanceof Error
           ? autoAnswerRun.error.message
-          : typeof autoAnswerRun.error === 'string'
+          : typeof autoAnswerRun.error === "string"
             ? autoAnswerRun.error
-            : 'Task failed or was canceled';
+            : "Task failed or was canceled";
       toast.error(`Failed to generate answer: ${errorMessage}`);
 
       // Mark all processing questions as completed on failure
       setQuestionStatuses((prev) => {
         const newStatuses = new Map(prev);
         prev.forEach((status, index) => {
-          if (status === 'processing') {
-            newStatuses.set(index, 'completed');
+          if (status === "processing") {
+            newStatuses.set(index, "completed");
           }
         });
         return newStatuses;
@@ -453,13 +499,14 @@ export function useQuestionnaireAutoAnswer({
       return false;
     }
 
-    const processStarted = isAutoAnswerProcessStartedRef.current || isAutoAnswerProcessStarted;
+    const processStarted =
+      isAutoAnswerProcessStartedRef.current || isAutoAnswerProcessStarted;
 
     if (processStarted) {
       if (
-        autoAnswerRun?.status === 'COMPLETED' ||
-        autoAnswerRun?.status === 'FAILED' ||
-        autoAnswerRun?.status === 'CANCELED'
+        autoAnswerRun?.status === "COMPLETED" ||
+        autoAnswerRun?.status === "FAILED" ||
+        autoAnswerRun?.status === "CANCELED"
       ) {
         return false;
       }
@@ -467,9 +514,9 @@ export function useQuestionnaireAutoAnswer({
     }
 
     const isRunActive =
-      autoAnswerRun?.status === 'EXECUTING' ||
-      autoAnswerRun?.status === 'QUEUED' ||
-      autoAnswerRun?.status === 'WAITING';
+      autoAnswerRun?.status === "EXECUTING" ||
+      autoAnswerRun?.status === "QUEUED" ||
+      autoAnswerRun?.status === "WAITING";
 
     if (isRunActive) {
       return true;
@@ -480,15 +527,22 @@ export function useQuestionnaireAutoAnswer({
     }
 
     if (
-      autoAnswerRun?.status === 'COMPLETED' ||
-      autoAnswerRun?.status === 'FAILED' ||
-      autoAnswerRun?.status === 'CANCELED'
+      autoAnswerRun?.status === "COMPLETED" ||
+      autoAnswerRun?.status === "FAILED" ||
+      autoAnswerRun?.status === "CANCELED"
     ) {
       return false;
     }
 
     return false;
-  }, [isAutoAnswerTriggering, autoAnswerRun?.status, isAutoAnswerProcessStarted, autoAnswerRun, isAutoAnswerProcessStartedRef, isBatchOperation]);
+  }, [
+    isAutoAnswerTriggering,
+    autoAnswerRun?.status,
+    isAutoAnswerProcessStarted,
+    autoAnswerRun,
+    isAutoAnswerProcessStartedRef,
+    isBatchOperation,
+  ]);
 
   return {
     triggerAutoAnswer,
@@ -498,4 +552,3 @@ export function useQuestionnaireAutoAnswer({
     isAutoAnswering,
   };
 }
-

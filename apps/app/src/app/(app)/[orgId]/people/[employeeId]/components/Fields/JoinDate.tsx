@@ -1,12 +1,20 @@
-import { Button } from '@trycompai/ui/button';
-import { Calendar } from '@trycompai/ui/calendar';
-import { cn } from '@trycompai/ui/cn';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import type { Control } from 'react-hook-form';
-import type { EmployeeFormValues } from '../EmployeeDetails';
+import type { Control } from "react-hook-form";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
+import { Calendar } from "@trycompai/ui/calendar";
+import { cn } from "@trycompai/ui/cn";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@trycompai/ui/popover";
+
+import type { EmployeeFormValues } from "../EmployeeDetails";
 
 export const JoinDate = ({
   control,
@@ -28,13 +36,17 @@ export const JoinDate = ({
             <PopoverTrigger asChild disabled={disabled}>
               <FormControl>
                 <Button
-                  variant={'outline'}
+                  variant={"outline"}
                   className={cn(
-                    'h-10 pl-3 text-left font-normal', // Use h-10 for consistency
-                    !field.value && 'text-muted-foreground',
+                    "h-10 pl-3 text-left font-normal", // Use h-10 for consistency
+                    !field.value && "text-muted-foreground",
                   )}
                 >
-                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                  {field.value ? (
+                    format(field.value, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </FormControl>

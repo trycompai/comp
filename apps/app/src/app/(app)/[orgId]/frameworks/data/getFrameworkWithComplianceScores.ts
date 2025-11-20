@@ -1,9 +1,11 @@
-'use server';
+"use server";
 
-import { Control, type Task } from '@trycompai/db';
-import { FrameworkInstanceWithComplianceScore } from '../components/types';
-import { computeFrameworkStats } from '../lib/compute';
-import { FrameworkInstanceWithControls } from '../types';
+import type { Task } from "@trycompai/db";
+import { Control } from "@trycompai/db";
+
+import { FrameworkInstanceWithComplianceScore } from "../components/types";
+import { computeFrameworkStats } from "../lib/compute";
+import { FrameworkInstanceWithControls } from "../types";
 
 /**
  * Gets all framework instances for an organization with compliance calculations
@@ -17,14 +19,19 @@ export async function getFrameworkWithComplianceScores({
   frameworksWithControls: FrameworkInstanceWithControls[];
   tasks: (Task & { controls: Control[] })[];
 }): Promise<FrameworkInstanceWithComplianceScore[]> {
-  const frameworksWithComplianceScores = frameworksWithControls.map((frameworkInstance) => {
-    const { complianceScore } = computeFrameworkStats(frameworkInstance, tasks);
+  const frameworksWithComplianceScores = frameworksWithControls.map(
+    (frameworkInstance) => {
+      const { complianceScore } = computeFrameworkStats(
+        frameworkInstance,
+        tasks,
+      );
 
-    return {
-      frameworkInstance,
-      complianceScore: complianceScore,
-    };
-  });
+      return {
+        frameworkInstance,
+        complianceScore: complianceScore,
+      };
+    },
+  );
 
   return frameworksWithComplianceScores;
 }

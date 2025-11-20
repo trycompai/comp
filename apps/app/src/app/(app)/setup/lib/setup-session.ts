@@ -1,6 +1,6 @@
-'use server';
+"use server";
 
-import { client } from '@trycompai/kv';
+import { client } from "@trycompai/kv";
 
 // Generate URL-safe unique IDs using Math.random and Date.now
 const generateSetupId = (): string => {
@@ -21,7 +21,7 @@ export interface SetupSession {
 }
 
 const SETUP_SESSION_TTL = 60 * 60 * 24; // 24 hours in seconds
-const SETUP_SESSION_PREFIX = 'setup:session:';
+const SETUP_SESSION_PREFIX = "setup:session:";
 
 export async function createSetupSession(
   userId: string,
@@ -34,7 +34,7 @@ export async function createSetupSession(
     id,
     userId,
     completedSteps: [],
-    currentStep: 'start',
+    currentStep: "start",
     formData: {},
     createdAt: now,
     expiresAt: now + SETUP_SESSION_TTL * 1000,
@@ -49,7 +49,9 @@ export async function createSetupSession(
   return session;
 }
 
-export async function getSetupSession(setupId: string): Promise<SetupSession | null> {
+export async function getSetupSession(
+  setupId: string,
+): Promise<SetupSession | null> {
   const session = await client.get(`${SETUP_SESSION_PREFIX}${setupId}`);
 
   if (!session) {

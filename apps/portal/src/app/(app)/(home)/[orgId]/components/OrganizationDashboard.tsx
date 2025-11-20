@@ -1,8 +1,9 @@
-import type { Member, Organization, User } from '@db';
-import { db } from '@db';
-import { NoAccessMessage } from '../../components/NoAccessMessage';
-import type { FleetPolicy, Host } from '../types';
-import { EmployeeTasksList } from './EmployeeTasksList';
+import type { Member, Organization, User } from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import { NoAccessMessage } from "../../components/NoAccessMessage";
+import type { FleetPolicy, Host } from "../types";
+import { EmployeeTasksList } from "./EmployeeTasksList";
 
 // Define the type for the member prop passed from Overview
 interface MemberWithUserOrg extends Member {
@@ -28,7 +29,7 @@ export async function OrganizationDashboard({
     where: {
       organizationId: organizationId,
       isRequiredToSign: true, // Keep original logic for required policies
-      status: 'published',
+      status: "published",
     },
   });
 
@@ -45,7 +46,7 @@ export async function OrganizationDashboard({
     // include: { trainingVideo: true }
   });
 
-  console.log('[OrganizationDashboard] Training videos fetched:', {
+  console.log("[OrganizationDashboard] Training videos fetched:", {
     memberId: member.id,
     count: trainingVideos.length,
     videos: trainingVideos.map((v) => ({

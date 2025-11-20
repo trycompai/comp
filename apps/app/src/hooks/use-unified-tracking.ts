@@ -1,11 +1,13 @@
+import type {
+  TrackingEventName,
+  TrackingEventParameters,
+} from "@/utils/tracking";
+import { useCallback } from "react";
 import {
   trackEvent,
   trackOnboardingEvent,
   trackPurchaseEvent,
-  type TrackingEventName,
-  type TrackingEventParameters,
-} from '@/utils/tracking';
-import { useCallback } from 'react';
+} from "@/utils/tracking";
 
 /**
  * React hook for unified tracking across Google Tag Manager, LinkedIn, and PostHog
@@ -19,7 +21,11 @@ export function useUnifiedTracking() {
   );
 
   const trackOnboarding = useCallback(
-    (step: string, stepNumber?: number, additionalData?: Record<string, any>) => {
+    (
+      step: string,
+      stepNumber?: number,
+      additionalData?: Record<string, any>,
+    ) => {
       trackOnboardingEvent(step, stepNumber, additionalData);
     },
     [],
@@ -29,10 +35,13 @@ export function useUnifiedTracking() {
     (
       eventName: Extract<
         TrackingEventName,
-        'upgrade_started' | 'upgrade_completed' | 'checkout_started' | 'purchase_completed'
+        | "upgrade_started"
+        | "upgrade_completed"
+        | "checkout_started"
+        | "purchase_completed"
       >,
       value?: number,
-      currency: string = 'USD',
+      currency: string = "USD",
     ) => {
       trackPurchaseEvent(eventName, value, currency);
     },

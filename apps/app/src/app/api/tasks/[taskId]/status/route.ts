@@ -1,6 +1,6 @@
-import { auth } from '@/utils/auth';
-import { runs } from '@trigger.dev/sdk';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/utils/auth";
+import { runs } from "@trigger.dev/sdk";
 
 export async function GET(
   req: NextRequest,
@@ -12,13 +12,16 @@ export async function GET(
     });
 
     if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { taskId } = await params;
 
     if (!taskId) {
-      return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Task ID is required" },
+        { status: 400 },
+      );
     }
 
     // Use runs API from Trigger.dev SDK to get run status
@@ -26,14 +29,14 @@ export async function GET(
     const run = await runs.retrieve(taskId);
 
     if (!run) {
-      return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+      return NextResponse.json({ error: "Run not found" }, { status: 404 });
     }
 
     return NextResponse.json({
       status: run.status,
       output: run.output,
       error: run.error
-        ? typeof run.error === 'string'
+        ? typeof run.error === "string"
           ? run.error
           : run.error instanceof Error
             ? run.error.message
@@ -41,20 +44,27 @@ export async function GET(
         : undefined,
     });
   } catch (error) {
-    console.error('Error retrieving run status:', error);
-    
+    console.error("Error retrieving run status:", error);
+
     // Handle specific error cases
     if (error instanceof Error) {
       // Check if it's a 404 error from Trigger.dev
-      if (error.message.includes('not found') || error.message.includes('404')) {
-        return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+      if (
+        error.message.includes("not found") ||
+        error.message.includes("404")
+      ) {
+        return NextResponse.json({ error: "Run not found" }, { status: 404 });
       }
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to retrieve run status' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to retrieve run status",
+      },
       { status: 500 },
     );
   }
 }
-

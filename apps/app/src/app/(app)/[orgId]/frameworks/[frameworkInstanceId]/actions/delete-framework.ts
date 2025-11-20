@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { z } from 'zod';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const deleteFrameworkSchema = z.object({
   id: z.string(),
@@ -13,11 +14,11 @@ const deleteFrameworkSchema = z.object({
 export const deleteFrameworkAction = authActionClient
   .inputSchema(deleteFrameworkSchema)
   .metadata({
-    name: 'delete-framework',
+    name: "delete-framework",
     track: {
-      event: 'delete-framework',
-      description: 'Delete Framework Instance',
-      channel: 'server',
+      event: "delete-framework",
+      description: "Delete Framework Instance",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -27,7 +28,7 @@ export const deleteFrameworkAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -42,7 +43,7 @@ export const deleteFrameworkAction = authActionClient
       if (!frameworkInstance) {
         return {
           success: false,
-          error: 'Framework instance not found',
+          error: "Framework instance not found",
         };
       }
 
@@ -53,7 +54,7 @@ export const deleteFrameworkAction = authActionClient
 
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/frameworks`);
-      revalidateTag('frameworks', { expire: 0 });
+      revalidateTag("frameworks", { expire: 0 });
 
       return {
         success: true,
@@ -62,7 +63,7 @@ export const deleteFrameworkAction = authActionClient
       console.error(error);
       return {
         success: false,
-        error: 'Failed to delete framework instance',
+        error: "Failed to delete framework instance",
       };
     }
   });

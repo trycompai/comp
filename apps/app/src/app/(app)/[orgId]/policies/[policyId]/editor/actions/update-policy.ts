@@ -1,11 +1,13 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import type { ActionResponse } from '@/actions/types';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { appErrors, updatePolicySchema } from '../types';
+import type { ActionResponse } from "@/actions/types";
+import { headers } from "next/headers";
+import { authActionClient } from "@/actions/safe-action";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { appErrors, updatePolicySchema } from "../types";
 
 // Helper function to clean the content by removing function references
 function cleanContent(content: any): any {
@@ -15,11 +17,11 @@ function cleanContent(content: any): any {
     return content.map((item) => cleanContent(item));
   }
 
-  if (typeof content === 'object') {
+  if (typeof content === "object") {
     const cleaned: any = {};
     for (const [key, value] of Object.entries(content)) {
       // Skip function properties
-      if (typeof value === 'function') continue;
+      if (typeof value === "function") continue;
       cleaned[key] = cleanContent(value);
     }
     return cleaned;
@@ -31,10 +33,10 @@ function cleanContent(content: any): any {
 export const updatePolicy = authActionClient
   .inputSchema(updatePolicySchema)
   .metadata({
-    name: 'update-policy',
+    name: "update-policy",
     track: {
-      event: 'update-policy',
-      channel: 'server',
+      event: "update-policy",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput }): Promise<ActionResponse> => {
@@ -74,11 +76,11 @@ export const updatePolicy = authActionClient
         // Clean the content before processing
         const cleanedContent = cleanContent(content);
 
-        if (typeof cleanedContent === 'object' && cleanedContent !== null) {
+        if (typeof cleanedContent === "object" && cleanedContent !== null) {
           if (
-            'type' in cleanedContent &&
-            cleanedContent.type === 'doc' &&
-            'content' in cleanedContent &&
+            "type" in cleanedContent &&
+            cleanedContent.type === "doc" &&
+            "content" in cleanedContent &&
             Array.isArray(cleanedContent.content)
           ) {
             updateData.content = cleanedContent.content;
@@ -123,7 +125,7 @@ export const updatePolicy = authActionClient
         data: updatedPolicy,
       };
     } catch (error) {
-      console.error('Error updating policy:', error);
+      console.error("Error updating policy:", error);
       return {
         success: false,
         error: appErrors.UNEXPECTED_ERROR.message,

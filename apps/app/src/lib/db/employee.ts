@@ -1,11 +1,13 @@
-import { env } from '@/env.mjs';
-import { trainingVideos } from '@/lib/data/training-videos';
-import { db, type Departments, type Member, type Role } from '@trycompai/db';
-import { InvitePortalEmail, sendEmail } from '@trycompai/email';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath } from "next/cache";
+import { env } from "@/env.mjs";
+import { trainingVideos } from "@/lib/data/training-videos";
+
+import type { Departments, Member, Role } from "@trycompai/db";
+import { db } from "@trycompai/db";
+import { InvitePortalEmail, sendEmail } from "@trycompai/email";
 
 if (!env.NEXT_PUBLIC_PORTAL_URL) {
-  throw new Error('NEXT_PUBLIC_PORTAL_URL is not set');
+  throw new Error("NEXT_PUBLIC_PORTAL_URL is not set");
 }
 
 /**
@@ -29,7 +31,7 @@ export async function completeEmployeeCreation(params: {
     where: {
       email: {
         equals: email,
-        mode: 'insensitive',
+        mode: "insensitive",
       },
     },
   });
@@ -93,7 +95,7 @@ async function inviteEmployeeToPortal({
 
   await sendEmail({
     to: email,
-    subject: `You've been invited to join ${organizationName || 'an organization'} on Comp AI`,
+    subject: `You've been invited to join ${organizationName || "an organization"} on Comp AI`,
     react: InvitePortalEmail({
       email,
       organizationName,
@@ -120,7 +122,9 @@ export async function createTrainingVideoEntries(memberId: string) {
     skipDuplicates: true,
   });
 
-  console.log(`Created ${result.count} training video entries for member ${memberId}`);
+  console.log(
+    `Created ${result.count} training video entries for member ${memberId}`,
+  );
 
   return result;
 }
@@ -147,12 +151,14 @@ async function handleExistingUser({
 
   if (!existingMember) {
     // Create a new member record if they're not already in the organization
-    console.log(`[EXISTING_USER] Creating new member for existing user ${userId}`);
+    console.log(
+      `[EXISTING_USER] Creating new member for existing user ${userId}`,
+    );
     const newMember = await db.member.create({
       data: {
         userId,
         organizationId,
-        role: 'employee',
+        role: "employee",
         department,
         isActive: true,
       },
@@ -162,27 +168,31 @@ async function handleExistingUser({
   }
 
   // User is already a member, check if they have any role
-  const existingMemberRoles = existingMember.role.split(',') as (
-    | 'admin'
-    | 'auditor'
-    | 'employee'
-    | 'owner'
+  const existingMemberRoles = existingMember.role.split(",") as (
+    | "admin"
+    | "auditor"
+    | "employee"
+    | "owner"
   )[];
 
-  console.log(`[EXISTING_USER] Current roles for user: ${existingMemberRoles.join(', ')}`);
+  console.log(
+    `[EXISTING_USER] Current roles for user: ${existingMemberRoles.join(", ")}`,
+  );
 
   // If they already have any role, we can't add them as an employee
   if (existingMemberRoles.length > 0) {
     console.log(
-      `[EXISTING_USER] User already has role(s): ${existingMemberRoles.join(', ')}. Cannot add as employee.`,
+      `[EXISTING_USER] User already has role(s): ${existingMemberRoles.join(", ")}. Cannot add as employee.`,
     );
     throw new Error(
-      `User already has role(s): ${existingMemberRoles.join(', ')}. Each person can only have one role.`,
+      `User already has role(s): ${existingMemberRoles.join(", ")}. Each person can only have one role.`,
     );
   }
 
   // If they have no role (this shouldn't happen but just in case), assign employee role
-  console.log(`[EXISTING_USER] Adding employee role to member ${existingMember.id}`);
+  console.log(
+    `[EXISTING_USER] Adding employee role to member ${existingMember.id}`,
+  );
 
   // Instead of using auth.api, update the member record directly
   try {
@@ -191,21 +201,28 @@ async function handleExistingUser({
         id: existingMember.id,
       },
       data: {
-        role: 'employee' as Role,
+        role: "employee" as Role,
         department,
         isActive: true,
       },
     });
 
     if (!updatedMember) {
-      console.error('[EXISTING_USER] Failed to update member role - no member returned');
-      throw new Error('Failed to update member role');
+      console.error(
+        "[EXISTING_USER] Failed to update member role - no member returned",
+      );
+      throw new Error("Failed to update member role");
     }
 
-    console.log(`[EXISTING_USER] Successfully updated member role to: ${updatedMember.role}`);
+    console.log(
+      `[EXISTING_USER] Successfully updated member role to: ${updatedMember.role}`,
+    );
     return updatedMember;
   } catch (dbError) {
-    console.error('[EXISTING_USER] Database error when updating member role:', dbError);
+    console.error(
+      "[EXISTING_USER] Database error when updating member role:",
+      dbError,
+    );
     throw new Error(
       `Failed to update member role: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
     );
@@ -240,14 +257,14 @@ async function createNewUser({
     data: {
       userId: user.id,
       organizationId,
-      role: 'employee',
+      role: "employee",
       department,
       isActive: true,
     },
   });
 
   if (!newMember) {
-    throw new Error('Failed to add employee to organization');
+    throw new Error("Failed to add employee to organization");
   }
 
   return newMember;

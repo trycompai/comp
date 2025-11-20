@@ -1,12 +1,16 @@
-'use client';
+"use client";
 
-import { EvidenceAutomationRun, EvidenceAutomationRunStatus } from '@trycompai/db';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { formatDistanceToNow } from 'date-fns';
-import { Activity, ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Activity, ChevronDown } from "lucide-react";
+
+import {
+  EvidenceAutomationRun,
+  EvidenceAutomationRunStatus,
+} from "@trycompai/db";
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 
 type AutomationRunWithName = EvidenceAutomationRun & {
   evidenceAutomation: {
@@ -27,10 +31,10 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
     const groups: Record<string, AutomationRunWithName[]> = {};
 
     runs?.forEach((run) => {
-      const date = new Date(run.createdAt).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+      const date = new Date(run.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       });
       if (!groups[date]) {
         groups[date] = [];
@@ -44,18 +48,20 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
   if (!runs || runs.length === 0) {
     return (
       <Card className="overflow-hidden">
-        <CardHeader className="pb-4 bg-gradient-to-br from-muted/30 to-transparent">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <div className="p-1.5 rounded-xs bg-primary/10">
-              <Activity className="h-3.5 w-3.5 text-primary" />
+        <CardHeader className="from-muted/30 bg-gradient-to-br to-transparent pb-4">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <div className="bg-primary/10 rounded-xs p-1.5">
+              <Activity className="text-primary h-3.5 w-3.5" />
             </div>
             Automation History
           </CardTitle>
         </CardHeader>
         <CardContent className="py-8">
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">No automation runs yet</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="space-y-2 text-center">
+            <p className="text-muted-foreground text-sm">
+              No automation runs yet
+            </p>
+            <p className="text-muted-foreground text-xs">
               Runs will appear here once automations are executed
             </p>
           </div>
@@ -73,45 +79,45 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
 
   const getStatusStyles = (status: EvidenceAutomationRunStatus) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return {
-          dot: 'bg-chart-positive shadow-[0_0_8px_rgba(0,76,58,0.4)]',
-          text: 'text-chart-positive',
-          bg: 'bg-chart-positive/5',
+          dot: "bg-chart-positive shadow-[0_0_8px_rgba(0,76,58,0.4)]",
+          text: "text-chart-positive",
+          bg: "bg-chart-positive/5",
         };
-      case 'failed':
+      case "failed":
         return {
-          dot: 'bg-chart-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]',
-          text: 'text-chart-destructive',
-          bg: 'bg-chart-destructive/5',
+          dot: "bg-chart-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]",
+          text: "text-chart-destructive",
+          bg: "bg-chart-destructive/5",
         };
-      case 'running':
+      case "running":
         return {
-          dot: 'bg-chart-other animate-pulse shadow-[0_0_8px_rgba(32,128,141,0.4)]',
-          text: 'text-chart-other',
-          bg: 'bg-chart-other/5',
+          dot: "bg-chart-other animate-pulse shadow-[0_0_8px_rgba(32,128,141,0.4)]",
+          text: "text-chart-other",
+          bg: "bg-chart-other/5",
         };
-      case 'pending':
+      case "pending":
         return {
-          dot: 'bg-chart-neutral shadow-[0_0_6px_rgba(255,192,7,0.3)]',
-          text: 'text-chart-neutral',
-          bg: 'bg-chart-neutral/5',
+          dot: "bg-chart-neutral shadow-[0_0_6px_rgba(255,192,7,0.3)]",
+          text: "text-chart-neutral",
+          bg: "bg-chart-neutral/5",
         };
-      case 'cancelled':
+      case "cancelled":
         return {
-          dot: 'bg-chart-warning',
-          text: 'text-chart-warning',
-          bg: 'bg-chart-warning/5',
+          dot: "bg-chart-warning",
+          text: "text-chart-warning",
+          bg: "bg-chart-warning/5",
         };
     }
   };
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-4 bg-gradient-to-br from-muted/30 to-transparent">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <div className="p-1.5 rounded-xs bg-primary/10">
-            <Activity className="h-3.5 w-3.5 text-primary" />
+      <CardHeader className="from-muted/30 bg-gradient-to-br to-transparent pb-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+          <div className="bg-primary/10 rounded-xs p-1.5">
+            <Activity className="text-primary h-3.5 w-3.5" />
           </div>
           Automation History
         </CardTitle>
@@ -122,12 +128,16 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
 
           return (
             <div key={date} className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">{date}</p>
+              <p className="text-muted-foreground text-sm font-medium">
+                {date}
+              </p>
               <div className="space-y-1">
                 {visibleRuns.map((run, index) => {
-                  const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
+                  const timeAgo = formatDistanceToNow(new Date(run.createdAt), {
+                    addSuffix: true,
+                  });
                   const styles = getStatusStyles(run.status);
-                  const isFailed = run.status === 'failed';
+                  const isFailed = run.status === "failed";
                   const isFirst = index === 0;
                   const isExpanded = expandedId === run.id;
                   const hasDetails = !!(run.logs || run.output);
@@ -137,61 +147,74 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                       key={run.id}
                       className={`group relative rounded-xs border transition-all duration-300 ${styles.bg} ${
                         isFirst
-                          ? 'border-primary/20 shadow-sm hover:shadow-md hover:border-primary/30'
-                          : 'border-border/50 hover:border-border hover:shadow-sm'
+                          ? "border-primary/20 hover:border-primary/30 shadow-sm hover:shadow-md"
+                          : "border-border/50 hover:border-border hover:shadow-sm"
                       }`}
                     >
                       <button
-                        onClick={() => setExpandedId(isExpanded ? null : run.id)}
+                        onClick={() =>
+                          setExpandedId(isExpanded ? null : run.id)
+                        }
                         className="w-full text-left"
                         disabled={!hasDetails}
                       >
                         <div className="flex items-start gap-3 px-4 py-3">
                           {/* Status indicator dot with glow */}
                           <div
-                            className={`h-2 w-2 rounded-full flex-shrink-0 mt-1.5 ${styles.dot}`}
+                            className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${styles.dot}`}
                           />
 
                           {/* Content */}
-                          <div className="flex-1 min-w-0 space-y-1">
+                          <div className="min-w-0 flex-1 space-y-1">
                             <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <p className="text-sm text-foreground font-medium truncate">
+                              <div className="flex min-w-0 flex-1 items-center gap-2">
+                                <p className="text-foreground truncate text-sm font-medium">
                                   {run.evidenceAutomation.name}
                                 </p>
                                 {run.version ? (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  <Badge
+                                    variant="secondary"
+                                    className="px-1.5 py-0 text-[10px]"
+                                  >
                                     v{run.version}
                                   </Badge>
                                 ) : (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  <Badge
+                                    variant="outline"
+                                    className="px-1.5 py-0 text-[10px]"
+                                  >
                                     draft
                                   </Badge>
                                 )}
                               </div>
                               {hasDetails && (
                                 <ChevronDown
-                                  className={`h-4 w-4 text-muted-foreground transition-transform duration-700 ease-in-out ${
-                                    isExpanded ? 'rotate-180' : ''
+                                  className={`text-muted-foreground h-4 w-4 transition-transform duration-700 ease-in-out ${
+                                    isExpanded ? "rotate-180" : ""
                                   }`}
                                 />
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="text-muted-foreground flex items-center gap-2 text-xs">
                               <span className={`font-medium ${styles.text}`}>
-                                {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
+                                {run.status.charAt(0).toUpperCase() +
+                                  run.status.slice(1)}
                               </span>
                               {run.evaluationStatus && (
                                 <>
                                   <span className="text-[10px]">•</span>
                                   <Badge
                                     variant={
-                                      run.evaluationStatus === 'pass' ? 'default' : 'destructive'
+                                      run.evaluationStatus === "pass"
+                                        ? "default"
+                                        : "destructive"
                                     }
-                                    className="text-[10px] px-1.5 py-0"
+                                    className="px-1.5 py-0 text-[10px]"
                                   >
-                                    {run.evaluationStatus === 'pass' ? '✓ Pass' : '✗ Fail'}
+                                    {run.evaluationStatus === "pass"
+                                      ? "✓ Pass"
+                                      : "✗ Fail"}
                                   </Badge>
                                 </>
                               )}
@@ -200,7 +223,9 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                               {run.triggeredBy && (
                                 <>
                                   <span className="text-[10px]">•</span>
-                                  <span className="capitalize font-medium">{run.triggeredBy}</span>
+                                  <span className="font-medium capitalize">
+                                    {run.triggeredBy}
+                                  </span>
                                 </>
                               )}
                             </div>
@@ -211,18 +236,20 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                       {/* Expandable details with CSS grid animation */}
                       <div
                         className={`grid transition-all duration-700 ease-in-out ${
-                          isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                         }`}
                       >
                         <div className="overflow-hidden">
-                          <div className="px-4 pb-3 pt-3 space-y-3 border-t border-border/50">
+                          <div className="border-border/50 space-y-3 border-t px-4 pt-3 pb-3">
                             {/* Evaluation Reason */}
                             {run.evaluationReason && (
                               <div className="space-y-1.5">
                                 <div className="flex items-center">
-                                  <p className="text-xs font-medium">Evaluation</p>
+                                  <p className="text-xs font-medium">
+                                    Evaluation
+                                  </p>
                                 </div>
-                                <p className="text-xs text-foreground leading-relaxed">
+                                <p className="text-foreground text-xs leading-relaxed">
                                   {run.evaluationReason}
                                 </p>
                               </div>
@@ -231,9 +258,11 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                             {/* Logs */}
                             {run.logs && (
                               <div className="space-y-1">
-                                <p className="text-xs font-medium text-muted-foreground">Logs</p>
-                                <pre className="text-xs bg-muted/50 p-2 rounded-xs overflow-x-auto max-h-40 overflow-y-auto font-mono">
-                                  {typeof run.logs === 'string'
+                                <p className="text-muted-foreground text-xs font-medium">
+                                  Logs
+                                </p>
+                                <pre className="bg-muted/50 max-h-40 overflow-x-auto overflow-y-auto rounded-xs p-2 font-mono text-xs">
+                                  {typeof run.logs === "string"
                                     ? run.logs
                                     : JSON.stringify(run.logs, null, 2)}
                                 </pre>
@@ -243,9 +272,11 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                             {/* Output */}
                             {run.output && (
                               <div className="space-y-1">
-                                <p className="text-xs font-medium text-muted-foreground">Output</p>
-                                <pre className="text-xs bg-muted/50 p-2 rounded-xs overflow-x-auto max-h-40 overflow-y-auto font-mono">
-                                  {typeof run.output === 'string'
+                                <p className="text-muted-foreground text-xs font-medium">
+                                  Output
+                                </p>
+                                <pre className="bg-muted/50 max-h-40 overflow-x-auto overflow-y-auto rounded-xs p-2 font-mono text-xs">
+                                  {typeof run.output === "string"
                                     ? run.output
                                     : JSON.stringify(run.output, null, 2)}
                                 </pre>
@@ -254,8 +285,10 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
 
                             {/* Error message if failed */}
                             {isFailed && run.error && (
-                              <div className="px-2 py-1.5 rounded-xs bg-chart-destructive/10 border border-chart-destructive/20">
-                                <p className="text-xs text-chart-destructive/90">{run.error}</p>
+                              <div className="bg-chart-destructive/10 border-chart-destructive/20 rounded-xs border px-2 py-1.5">
+                                <p className="text-chart-destructive/90 text-xs">
+                                  {run.error}
+                                </p>
                               </div>
                             )}
                           </div>
@@ -277,7 +310,7 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
               onClick={() => setShowAll(!showAll)}
               className="w-full text-xs"
             >
-              {showAll ? 'Show less' : `Show ${runs.length - 3} more`}
+              {showAll ? "Show less" : `Show ${runs.length - 3} more`}
             </Button>
           </div>
         )}

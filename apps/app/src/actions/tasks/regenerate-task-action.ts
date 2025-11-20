@@ -1,10 +1,11 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 export const regenerateTaskAction = authActionClient
   .inputSchema(
@@ -13,10 +14,10 @@ export const regenerateTaskAction = authActionClient
     }),
   )
   .metadata({
-    name: 'regenerate-task',
+    name: "regenerate-task",
     track: {
-      event: 'regenerate-task',
-      channel: 'server',
+      event: "regenerate-task",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -24,7 +25,7 @@ export const regenerateTaskAction = authActionClient
     const { session } = ctx;
 
     if (!session?.activeOrganizationId) {
-      throw new Error('No active organization');
+      throw new Error("No active organization");
     }
 
     // Get the task with its template
@@ -39,11 +40,11 @@ export const regenerateTaskAction = authActionClient
     });
 
     if (!task) {
-      throw new Error('Task not found');
+      throw new Error("Task not found");
     }
 
     if (!task.taskTemplate) {
-      throw new Error('Task has no associated template to regenerate from');
+      throw new Error("Task has no associated template to regenerate from");
     }
 
     // Update the task with the template's current title and description
@@ -57,8 +58,9 @@ export const regenerateTaskAction = authActionClient
 
     // Revalidate the path based on the header
     const headersList = await headers();
-    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-    path = path.replace(/\/[a-z]{2}\//, '/');
+    let path =
+      headersList.get("x-pathname") || headersList.get("referer") || "";
+    path = path.replace(/\/[a-z]{2}\//, "/");
     revalidatePath(path);
 
     return { success: true };

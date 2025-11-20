@@ -1,6 +1,7 @@
-import { db } from '@trycompai/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import type { CSSProperties } from 'react';
+import type { CSSProperties } from "react";
+
+import { db } from "@trycompai/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 
 interface Props {
   organizationId: string;
@@ -33,9 +34,9 @@ interface UserData {
 }
 
 const testStatus = {
-  passed: 'bg-[var(--chart-closed)]',
-  failed: 'bg-[hsl(var(--destructive))]',
-  unsupported: 'bg-[hsl(var(--muted-foreground))]',
+  passed: "bg-[var(--chart-closed)]",
+  failed: "bg-[hsl(var(--destructive))]",
+  unsupported: "bg-[hsl(var(--muted-foreground))]",
 };
 
 export async function TestsByAssignee({ organizationId }: Props) {
@@ -50,13 +51,13 @@ export async function TestsByAssignee({ organizationId }: Props) {
     },
     totalTests: user.integrationResults.length,
     passedTests: user.integrationResults.filter(
-      (test) => test.status.toUpperCase() === 'passed'.toUpperCase(),
+      (test) => test.status.toUpperCase() === "passed".toUpperCase(),
     ).length,
     failedTests: user.integrationResults.filter(
-      (test) => test.status.toUpperCase() === 'failed'.toUpperCase(),
+      (test) => test.status.toUpperCase() === "failed".toUpperCase(),
     ).length,
     unsupportedTests: user.integrationResults.filter(
-      (test) => test.status.toUpperCase() === 'unsupported'.toUpperCase(),
+      (test) => test.status.toUpperCase() === "unsupported".toUpperCase(),
     ).length,
   }));
 
@@ -65,15 +66,19 @@ export async function TestsByAssignee({ organizationId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Tests by Assignee'}</CardTitle>
+        <CardTitle>{"Tests by Assignee"}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
           {stats.map((stat) => (
             <div key={stat.user.id} className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm">{stat.user.name || stat.user.email || 'Unknown User'}</p>
-                <span className="text-muted-foreground text-sm">{stat.totalTests} Tests</span>
+                <p className="text-sm">
+                  {stat.user.name || stat.user.email || "Unknown User"}
+                </p>
+                <span className="text-muted-foreground text-sm">
+                  {stat.totalTests} Tests
+                </span>
               </div>
 
               <TestBarChart stat={stat} />
@@ -82,13 +87,13 @@ export async function TestsByAssignee({ organizationId }: Props) {
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[var(--chart-success)]" />
                   <span>
-                    {'Passed'} ({stat.passedTests})
+                    {"Passed"} ({stat.passedTests})
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="size-2 bg-[hsl(var(--destructive))]" />
                   <span>
-                    {'Failed'} ({stat.failedTests})
+                    {"Failed"} ({stat.failedTests})
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -109,30 +114,30 @@ function TestBarChart({ stat }: { stat: UserTestStats }) {
     ...(stat.passedTests > 0
       ? [
           {
-            key: 'passed',
+            key: "passed",
             value: stat.passedTests,
             color: testStatus.passed,
-            label: 'passed',
+            label: "passed",
           },
         ]
       : []),
     ...(stat.failedTests > 0
       ? [
           {
-            key: 'failed',
+            key: "failed",
             value: stat.failedTests,
             color: testStatus.failed,
-            label: 'failed',
+            label: "failed",
           },
         ]
       : []),
     ...(stat.unsupportedTests > 0
       ? [
           {
-            key: 'unsupported',
+            key: "unsupported",
             value: stat.unsupportedTests,
             color: testStatus.unsupported,
-            label: 'unsupported',
+            label: "unsupported",
           },
         ]
       : []),
@@ -154,11 +159,11 @@ function TestBarChart({ stat }: { stat: UserTestStats }) {
       className="relative h-[var(--height)]"
       style={
         {
-          '--marginTop': '0px',
-          '--marginRight': '0px',
-          '--marginBottom': '0px',
-          '--marginLeft': '0px',
-          '--height': `${barHeight}px`,
+          "--marginTop": "0px",
+          "--marginRight": "0px",
+          "--marginBottom": "0px",
+          "--marginLeft": "0px",
+          "--height": `${barHeight}px`,
         } as CSSProperties
       }
     >
@@ -176,14 +181,14 @@ function TestBarChart({ stat }: { stat: UserTestStats }) {
                 width: `${barWidth}%`,
                 height: `${barHeight}px`,
                 left: `${xPosition}%`,
-                position: 'absolute',
+                position: "absolute",
               }}
             >
               <div
                 className={`bg-gradient-to-b ${d.color}`}
                 style={{
-                  width: '100%',
-                  height: '100%',
+                  width: "100%",
+                  height: "100%",
                   borderRadius: `${cornerRadius}px`,
                 }}
                 title={`${d.label}: ${d.value}`}
@@ -241,7 +246,7 @@ const userData = async (organizationId: string): Promise<UserData[]> => {
         resultsByUser.set(result.assignedUserId, []);
       }
       resultsByUser.get(result.assignedUserId)?.push({
-        status: result.status || '',
+        status: result.status || "",
         assignedUserId: result.assignedUserId,
       });
     }

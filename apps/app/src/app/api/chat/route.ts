@@ -1,16 +1,20 @@
-import { tools } from '@/data/tools';
-import { env } from '@/env.mjs';
-import { auth } from '@/utils/auth';
-import { openai } from '@ai-sdk/openai';
-import { type UIMessage, convertToModelMessages, streamText } from 'ai';
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+import type { UIMessage } from "ai";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { tools } from "@/data/tools";
+import { env } from "@/env.mjs";
+import { auth } from "@/utils/auth";
+import { openai } from "@ai-sdk/openai";
+import { convertToModelMessages, streamText } from "ai";
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   if (!env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: 'No API key provided.' }, { status: 500 });
+    return NextResponse.json(
+      { error: "No API key provided." },
+      { status: 500 },
+    );
   }
 
   const { messages }: { messages: UIMessage[] } = await req.json();
@@ -20,7 +24,7 @@ export async function POST(req: Request) {
   });
 
   if (!session?.session.activeOrganizationId) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   const systemPrompt = `
@@ -36,7 +40,7 @@ export async function POST(req: Request) {
 `;
 
   const result = streamText({
-    model: openai('gpt-5'),
+    model: openai("gpt-5"),
     system: systemPrompt,
     messages: convertToModelMessages(messages),
     tools,

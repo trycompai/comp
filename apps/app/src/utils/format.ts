@@ -1,16 +1,22 @@
-import type { TZDate } from '@date-fns/tz';
-import { differenceInDays, differenceInMonths, format, isSameYear, startOfDay } from 'date-fns';
+import type { TZDate } from "@date-fns/tz";
+import {
+  differenceInDays,
+  differenceInMonths,
+  format,
+  isSameYear,
+  startOfDay,
+} from "date-fns";
 
 export function formatSize(bytes: number): string {
-  const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'];
+  const units = ["byte", "kilobyte", "megabyte", "gigabyte", "terabyte"];
 
   const unitIndex = Math.max(
     0,
     Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1),
   );
 
-  return Intl.NumberFormat('en-US', {
-    style: 'unit',
+  return Intl.NumberFormat("en-US", {
+    style: "unit",
     unit: units[unitIndex],
   }).format(+Math.round(bytes / 1024 ** unitIndex));
 }
@@ -26,7 +32,7 @@ type FormatAmountParams = {
 export function formatAmount({
   currency,
   amount,
-  locale = 'en-US',
+  locale = "en-US",
   minimumFractionDigits,
   maximumFractionDigits,
 }: FormatAmountParams) {
@@ -35,7 +41,7 @@ export function formatAmount({
   }
 
   return Intl.NumberFormat(locale, {
-    style: 'currency',
+    style: "currency",
     currency,
     minimumFractionDigits,
     maximumFractionDigits,
@@ -47,7 +53,7 @@ export function secondsToHoursAndMinutes(seconds: number) {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   if (hours && minutes) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}h`;
+    return `${hours}:${minutes.toString().padStart(2, "0")}h`;
   }
 
   if (hours) {
@@ -58,7 +64,7 @@ export function secondsToHoursAndMinutes(seconds: number) {
     return `${minutes}m`;
   }
 
-  return '0h';
+  return "0h";
 }
 
 type BurnRateData = {
@@ -76,16 +82,16 @@ export function calculateAvgBurnRate(data: BurnRateData[] | null) {
 
 export function formatDate(date: string, dateFormat?: string) {
   if (isSameYear(new Date(), new Date(date))) {
-    return format(new Date(date), 'MMM dd, yyyy');
+    return format(new Date(date), "MMM dd, yyyy");
   }
 
-  return format(new Date(date), dateFormat ?? 'P');
+  return format(new Date(date), dateFormat ?? "P");
 }
 
 export function getInitials(value: string) {
-  const formatted = value.toUpperCase().replace(/[\s.-]/g, '');
+  const formatted = value.toUpperCase().replace(/[\s.-]/g, "");
 
-  if (formatted.split(' ').length > 1) {
+  if (formatted.split(" ").length > 1) {
     return `${formatted.charAt(0)}${formatted.charAt(1)}`;
   }
 
@@ -96,7 +102,13 @@ export function getInitials(value: string) {
   return formatted.charAt(0);
 }
 
-export function formatAccountName({ name, currency }: { name?: string; currency?: string }) {
+export function formatAccountName({
+  name,
+  currency,
+}: {
+  name?: string;
+  currency?: string;
+}) {
   if (currency) {
     return `${name} (${currency})`;
   }
@@ -105,10 +117,10 @@ export function formatAccountName({ name, currency }: { name?: string; currency?
 }
 
 export function formatDateRange(dates: TZDate[]): string {
-  if (!dates.length) return '';
+  if (!dates.length) return "";
 
-  const formatFullDate = (date: TZDate) => format(date, 'MMM d');
-  const formatDay = (date: TZDate) => format(date, 'd');
+  const formatFullDate = (date: TZDate) => format(date, "MMM d");
+  const formatDay = (date: TZDate) => format(date, "d");
 
   if (dates.length === 1 || dates[0]?.getTime() === dates[1]?.getTime()) {
     return formatFullDate(dates[0]!);
@@ -117,11 +129,11 @@ export function formatDateRange(dates: TZDate[]): string {
   const startDate = dates[0];
   const endDate = dates[1];
 
-  if (!startDate || !endDate) return '';
+  if (!startDate || !endDate) return "";
 
   if (startDate.getMonth() === endDate.getMonth()) {
     // Same month
-    return `${format(startDate, 'MMM')} ${formatDay(startDate)} - ${formatDay(endDate)}`;
+    return `${format(startDate, "MMM")} ${formatDay(startDate)} - ${formatDay(endDate)}`;
   }
   // Different months
   return `${formatFullDate(startDate)} - ${formatFullDate(endDate)}`;
@@ -138,34 +150,35 @@ export function getDueDateStatus(dueDate: string): string {
   const diffDays = differenceInDays(dueDay, nowDay);
   const diffMonths = differenceInMonths(dueDay, nowDay);
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays === -1) return "Yesterday";
 
   if (diffDays > 0) {
     if (diffMonths < 1) return `in ${diffDays} days`;
-    return `in ${diffMonths} month${diffMonths === 1 ? '' : 's'}`;
+    return `in ${diffMonths} month${diffMonths === 1 ? "" : "s"}`;
   }
 
-  if (diffMonths < 1) return `${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
-  return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`;
+  if (diffMonths < 1)
+    return `${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"} ago`;
+  return `${diffMonths} month${diffMonths === 1 ? "" : "s"} ago`;
 }
 
 export function formatRelativeTime(date: Date | string): string {
   const now = new Date();
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const dateObj = typeof date === "string" ? new Date(date) : date;
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return 'just now';
+    return "just now";
   }
 
   const intervals = [
-    { label: 'y', seconds: 31536000 },
-    { label: 'mo', seconds: 2592000 },
-    { label: 'd', seconds: 86400 },
-    { label: 'h', seconds: 3600 },
-    { label: 'm', seconds: 60 },
+    { label: "y", seconds: 31536000 },
+    { label: "mo", seconds: 2592000 },
+    { label: "d", seconds: 86400 },
+    { label: "h", seconds: 3600 },
+    { label: "m", seconds: 60 },
   ] as const;
 
   for (const interval of intervals) {
@@ -175,5 +188,5 @@ export function formatRelativeTime(date: Date | string): string {
     }
   }
 
-  return 'just now';
+  return "just now";
 }

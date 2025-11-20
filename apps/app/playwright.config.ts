@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Read environment variables from file.
@@ -10,7 +10,7 @@ import { defineConfig, devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './e2e',
+  testDir: "./e2e",
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -26,31 +26,31 @@ export default defineConfig({
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI
     ? [
-        ['list'],
+        ["list"],
         [
-          'html',
+          "html",
           {
-            open: 'never',
-            outputFolder: 'playwright-report',
+            open: "never",
+            outputFolder: "playwright-report",
           },
         ],
-        ['json', { outputFile: 'test-results/results.json' }],
-        ['junit', { outputFile: 'test-results/junit.xml' }],
+        ["json", { outputFile: "test-results/results.json" }],
+        ["junit", { outputFile: "test-results/junit.xml" }],
       ]
-    : [['list'], ['html', { open: 'on-failure' }]],
+    : [["list"], ["html", { open: "on-failure" }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
 
     /* Take screenshot on failure */
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
 
     /* Record video on failure */
-    video: 'retain-on-failure',
+    video: "retain-on-failure",
 
     /* Reduce default navigation timeout */
     navigationTimeout: 15000, // 15 seconds instead of 30
@@ -60,28 +60,28 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
 
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
     },
 
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
 
     /* Test against mobile viewports. */
     {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 7'] },
+      name: "Mobile Chrome",
+      use: { ...devices["Pixel 7"] },
     },
     {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 14'] },
+      name: "Mobile Safari",
+      use: { ...devices["iPhone 14"] },
     },
 
     /* Test against branded browsers. */
@@ -99,12 +99,12 @@ export default defineConfig({
   webServer: process.env.CI
     ? undefined
     : {
-        command: 'E2E_TEST_MODE=true bun run dev',
-        url: 'http://localhost:3000',
+        command: "E2E_TEST_MODE=true bun run dev",
+        url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
         env: {
-          E2E_TEST_MODE: 'true',
+          E2E_TEST_MODE: "true",
         },
       },
 });

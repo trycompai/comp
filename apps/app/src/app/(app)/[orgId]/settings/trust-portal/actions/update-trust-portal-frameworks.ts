@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
 
 interface UpdateTrustPortalFrameworksParams {
   orgId: string;
@@ -15,14 +16,14 @@ interface UpdateTrustPortalFrameworksParams {
   hipaa?: boolean;
   pcidss?: boolean;
   nen7510?: boolean;
-  soc2type1Status?: 'started' | 'in_progress' | 'compliant';
-  soc2type2Status?: 'started' | 'in_progress' | 'compliant';
-  iso27001Status?: 'started' | 'in_progress' | 'compliant';
-  iso42001Status?: 'started' | 'in_progress' | 'compliant';
-  gdprStatus?: 'started' | 'in_progress' | 'compliant';
-  hipaaStatus?: 'started' | 'in_progress' | 'compliant';
-  pcidssStatus?: 'started' | 'in_progress' | 'compliant';
-  nen7510Status?: 'started' | 'in_progress' | 'compliant';
+  soc2type1Status?: "started" | "in_progress" | "compliant";
+  soc2type2Status?: "started" | "in_progress" | "compliant";
+  iso27001Status?: "started" | "in_progress" | "compliant";
+  iso42001Status?: "started" | "in_progress" | "compliant";
+  gdprStatus?: "started" | "in_progress" | "compliant";
+  hipaaStatus?: "started" | "in_progress" | "compliant";
+  pcidssStatus?: "started" | "in_progress" | "compliant";
+  nen7510Status?: "started" | "in_progress" | "compliant";
 }
 
 export async function updateTrustPortalFrameworks({
@@ -49,7 +50,7 @@ export async function updateTrustPortalFrameworks({
   });
 
   if (!session?.session.activeOrganizationId) {
-    throw new Error('Not authenticated');
+    throw new Error("Not authenticated");
   }
 
   const trustPortal = await db.trust.findUnique({
@@ -59,7 +60,7 @@ export async function updateTrustPortalFrameworks({
   });
 
   if (!trustPortal) {
-    throw new Error('Trust portal not found');
+    throw new Error("Trust portal not found");
   }
 
   await db.trust.update({

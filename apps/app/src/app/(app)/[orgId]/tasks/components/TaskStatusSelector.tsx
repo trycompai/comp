@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import type { Task, TaskStatus } from '@trycompai/db';
-import { TaskStatusIndicator } from './TaskStatusIndicator';
+import type { Task, TaskStatus } from "@trycompai/db";
+
+import { TaskStatusIndicator } from "./TaskStatusIndicator";
 
 interface TaskStatusSelectorProps {
   task: Task;

@@ -1,24 +1,29 @@
 // update-policy-form-action.ts
 
-'use server';
+"use server";
 
-import { db, PolicyStatus } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { updatePolicyFormSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import { db, PolicyStatus } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { updatePolicyFormSchema } from "../schema";
 
 // Helper function to calculate next review date based on frequency
-function calculateNextReviewDate(frequency: string, baseDate: Date = new Date()): Date {
+function calculateNextReviewDate(
+  frequency: string,
+  baseDate: Date = new Date(),
+): Date {
   const nextDate = new Date(baseDate);
 
   switch (frequency) {
-    case 'monthly':
+    case "monthly":
       nextDate.setMonth(nextDate.getMonth() + 1);
       break;
-    case 'quarterly':
+    case "quarterly":
       nextDate.setMonth(nextDate.getMonth() + 3);
       break;
-    case 'yearly':
+    case "yearly":
       nextDate.setFullYear(nextDate.getFullYear() + 1);
       break;
     default:
@@ -32,19 +37,26 @@ function calculateNextReviewDate(frequency: string, baseDate: Date = new Date())
 export const updatePolicyFormAction = authActionClient
   .inputSchema(updatePolicyFormSchema)
   .metadata({
-    name: 'update-policy-form',
+    name: "update-policy-form",
     track: {
-      event: 'update-policy-form',
-      description: 'Update Policy',
-      channel: 'server',
+      event: "update-policy-form",
+      description: "Update Policy",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id, status, assigneeId, department, review_frequency, review_date } = parsedInput;
+    const {
+      id,
+      status,
+      assigneeId,
+      department,
+      review_frequency,
+      review_date,
+    } = parsedInput;
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     try {
@@ -64,7 +76,10 @@ export const updatePolicyFormAction = authActionClient
       let lastPublishedAt = undefined;
 
       // If status is changing to 'published', calculate next review date based on frequency
-      if (status === PolicyStatus.published && currentPolicy?.status !== PolicyStatus.published) {
+      if (
+        status === PolicyStatus.published &&
+        currentPolicy?.status !== PolicyStatus.published
+      ) {
         reviewDate = calculateNextReviewDate(review_frequency);
         lastPublishedAt = new Date(); // Set lastPublishedAt to now when publishing
       }
@@ -86,13 +101,13 @@ export const updatePolicyFormAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies', { expire: 0 });
+      revalidateTag("policies", { expire: 0 });
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Error updating policy:', error);
+      console.error("Error updating policy:", error);
 
       return {
         success: false,

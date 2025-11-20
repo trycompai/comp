@@ -85,10 +85,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     }
                   }
@@ -119,9 +116,7 @@
           }
         ],
         "summary": "Get organization information",
-        "tags": [
-          "Organization"
-        ]
+        "tags": ["Organization"]
       },
       "patch": {
         "description": "Partially updates the authenticated organization. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -265,10 +260,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     }
                   }
@@ -331,9 +323,7 @@
           }
         ],
         "summary": "Update organization",
-        "tags": [
-          "Organization"
-        ]
+        "tags": ["Organization"]
       },
       "delete": {
         "description": "Permanently deletes the authenticated organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -379,10 +369,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     }
                   }
@@ -429,9 +416,7 @@
           }
         ],
         "summary": "Delete organization",
-        "tags": [
-          "Organization"
-        ]
+        "tags": ["Organization"]
       }
     },
     "/v1/people": {
@@ -470,10 +455,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -581,9 +563,7 @@
           }
         ],
         "summary": "Get all people",
-        "tags": [
-          "People"
-        ]
+        "tags": ["People"]
       },
       "post": {
         "description": "Adds a new member to the authenticated organization. The user must already exist in the system. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -712,9 +692,7 @@
           }
         ],
         "summary": "Create a new member",
-        "tags": [
-          "People"
-        ]
+        "tags": ["People"]
       }
     },
     "/v1/people/bulk": {
@@ -804,10 +782,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -942,9 +917,7 @@
           }
         ],
         "summary": "Add multiple members to organization",
-        "tags": [
-          "People"
-        ]
+        "tags": ["People"]
       }
     },
     "/v1/people/{id}": {
@@ -1058,9 +1031,7 @@
           }
         ],
         "summary": "Get person by ID",
-        "tags": [
-          "People"
-        ]
+        "tags": ["People"]
       },
       "patch": {
         "description": "Partially updates a member. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -1199,9 +1170,7 @@
           }
         ],
         "summary": "Update member",
-        "tags": [
-          "People"
-        ]
+        "tags": ["People"]
       },
       "delete": {
         "description": "Permanently removes a member from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -1262,10 +1231,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     }
                   }
@@ -1328,9 +1294,7 @@
           }
         ],
         "summary": "Delete member",
-        "tags": [
-          "People"
-        ]
+        "tags": ["People"]
       }
     },
     "/v1/risks": {
@@ -1394,12 +1358,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "open",
-                              "pending",
-                              "closed",
-                              "archived"
-                            ],
+                            "enum": ["open", "pending", "closed", "archived"],
                             "example": "open"
                           },
                           "likelihood": {
@@ -1426,12 +1385,7 @@
                           },
                           "treatmentStrategy": {
                             "type": "string",
-                            "enum": [
-                              "accept",
-                              "avoid",
-                              "mitigate",
-                              "transfer"
-                            ],
+                            "enum": ["accept", "avoid", "mitigate", "transfer"],
                             "example": "mitigate"
                           },
                           "assigneeId": {
@@ -1460,10 +1414,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -1540,9 +1491,7 @@
           }
         ],
         "summary": "Get all risks",
-        "tags": [
-          "Risks"
-        ]
+        "tags": ["Risks"]
       },
       "post": {
         "description": "Creates a new risk for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -1624,12 +1573,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "open",
-                        "pending",
-                        "closed",
-                        "archived"
-                      ],
+                      "enum": ["open", "pending", "closed", "archived"],
                       "example": "open"
                     },
                     "likelihood": {
@@ -1683,12 +1627,7 @@
                     },
                     "treatmentStrategy": {
                       "type": "string",
-                      "enum": [
-                        "accept",
-                        "avoid",
-                        "mitigate",
-                        "transfer"
-                      ],
+                      "enum": ["accept", "avoid", "mitigate", "transfer"],
                       "example": "mitigate"
                     },
                     "organizationId": {
@@ -1713,10 +1652,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -1824,9 +1760,7 @@
           }
         ],
         "summary": "Create a new risk",
-        "tags": [
-          "Risks"
-        ]
+        "tags": ["Risks"]
       }
     },
     "/v1/risks/{id}": {
@@ -1909,12 +1843,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "open",
-                        "pending",
-                        "closed",
-                        "archived"
-                      ],
+                      "enum": ["open", "pending", "closed", "archived"],
                       "example": "open"
                     },
                     "likelihood": {
@@ -1968,12 +1897,7 @@
                     },
                     "treatmentStrategy": {
                       "type": "string",
-                      "enum": [
-                        "accept",
-                        "avoid",
-                        "mitigate",
-                        "transfer"
-                      ],
+                      "enum": ["accept", "avoid", "mitigate", "transfer"],
                       "example": "mitigate"
                     },
                     "organizationId": {
@@ -1998,10 +1922,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -2078,9 +1999,7 @@
           }
         ],
         "summary": "Get risk by ID",
-        "tags": [
-          "Risks"
-        ]
+        "tags": ["Risks"]
       },
       "patch": {
         "description": "Partially updates a risk. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -2172,12 +2091,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "open",
-                        "pending",
-                        "closed",
-                        "archived"
-                      ],
+                      "enum": ["open", "pending", "closed", "archived"],
                       "example": "open"
                     },
                     "likelihood": {
@@ -2231,12 +2145,7 @@
                     },
                     "treatmentStrategy": {
                       "type": "string",
-                      "enum": [
-                        "accept",
-                        "avoid",
-                        "mitigate",
-                        "transfer"
-                      ],
+                      "enum": ["accept", "avoid", "mitigate", "transfer"],
                       "example": "mitigate"
                     },
                     "organizationId": {
@@ -2261,10 +2170,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -2372,9 +2278,7 @@
           }
         ],
         "summary": "Update risk",
-        "tags": [
-          "Risks"
-        ]
+        "tags": ["Risks"]
       },
       "delete": {
         "description": "Permanently removes a risk from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -2429,10 +2333,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -2509,9 +2410,7 @@
           }
         ],
         "summary": "Delete risk",
-        "tags": [
-          "Risks"
-        ]
+        "tags": ["Risks"]
       }
     },
     "/v1/vendors": {
@@ -2573,11 +2472,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "not_assessed",
-                              "in_progress",
-                              "assessed"
-                            ],
+                            "enum": ["not_assessed", "in_progress", "assessed"],
                             "example": "not_assessed"
                           },
                           "inherentProbability": {
@@ -2655,10 +2550,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -2735,9 +2627,7 @@
           }
         ],
         "summary": "Get all vendors",
-        "tags": [
-          "Vendors"
-        ]
+        "tags": ["Vendors"]
       },
       "post": {
         "description": "Creates a new vendor for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -2803,11 +2693,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "not_assessed",
-                        "in_progress",
-                        "assessed"
-                      ],
+                      "enum": ["not_assessed", "in_progress", "assessed"],
                       "example": "not_assessed"
                     },
                     "inherentProbability": {
@@ -2881,10 +2767,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -2993,9 +2876,7 @@
           }
         ],
         "summary": "Create a new vendor",
-        "tags": [
-          "Vendors"
-        ]
+        "tags": ["Vendors"]
       }
     },
     "/v1/vendors/{id}": {
@@ -3062,11 +2943,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "not_assessed",
-                        "in_progress",
-                        "assessed"
-                      ],
+                      "enum": ["not_assessed", "in_progress", "assessed"],
                       "example": "not_assessed"
                     },
                     "inherentProbability": {
@@ -3140,10 +3017,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -3220,9 +3094,7 @@
           }
         ],
         "summary": "Get vendor by ID",
-        "tags": [
-          "Vendors"
-        ]
+        "tags": ["Vendors"]
       },
       "patch": {
         "description": "Partially updates a vendor. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -3298,11 +3170,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "not_assessed",
-                        "in_progress",
-                        "assessed"
-                      ],
+                      "enum": ["not_assessed", "in_progress", "assessed"],
                       "example": "assessed"
                     },
                     "inherentProbability": {
@@ -3376,10 +3244,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -3488,9 +3353,7 @@
           }
         ],
         "summary": "Update vendor",
-        "tags": [
-          "Vendors"
-        ]
+        "tags": ["Vendors"]
       },
       "delete": {
         "description": "Permanently removes a vendor from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -3545,10 +3408,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -3625,9 +3485,7 @@
           }
         ],
         "summary": "Delete vendor",
-        "tags": [
-          "Vendors"
-        ]
+        "tags": ["Vendors"]
       }
     },
     "/v1/context": {
@@ -3692,10 +3550,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ]
+                      "enum": ["api-key", "session"]
                     }
                   }
                 },
@@ -3706,12 +3561,7 @@
                       "organizationId": "org_xyz789uvw012",
                       "question": "How do we handle user authentication in our application?",
                       "answer": "We use a hybrid authentication system supporting both API keys and session-based authentication.",
-                      "tags": [
-                        "authentication",
-                        "security",
-                        "api",
-                        "sessions"
-                      ],
+                      "tags": ["authentication", "security", "api", "sessions"],
                       "createdAt": "2024-01-15T10:30:00.000Z",
                       "updatedAt": "2024-01-15T14:20:00.000Z"
                     },
@@ -3812,9 +3662,7 @@
           }
         ],
         "summary": "Get all context entries",
-        "tags": [
-          "Context"
-        ]
+        "tags": ["Context"]
       },
       "post": {
         "description": "Creates a new context entry for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -3843,24 +3691,14 @@
                   "value": {
                     "question": "How do we handle user authentication in our application?",
                     "answer": "We use a hybrid authentication system supporting both API keys and session-based authentication. API keys are used for programmatic access while sessions are used for web interface interactions.",
-                    "tags": [
-                      "authentication",
-                      "security",
-                      "api",
-                      "sessions"
-                    ]
+                    "tags": ["authentication", "security", "api", "sessions"]
                   }
                 },
                 "Database Context": {
                   "value": {
                     "question": "What database do we use and why?",
                     "answer": "We use PostgreSQL as our primary database with Prisma as the ORM. PostgreSQL provides excellent performance, ACID compliance, and supports advanced features like JSON columns and full-text search.",
-                    "tags": [
-                      "database",
-                      "postgresql",
-                      "prisma",
-                      "architecture"
-                    ]
+                    "tags": ["database", "postgresql", "prisma", "architecture"]
                   }
                 }
               }
@@ -3903,10 +3741,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ]
+                      "enum": ["api-key", "session"]
                     }
                   }
                 },
@@ -3915,12 +3750,7 @@
                   "organizationId": "org_xyz789uvw012",
                   "question": "How do we handle user authentication in our application?",
                   "answer": "We use a hybrid authentication system supporting both API keys and session-based authentication.",
-                  "tags": [
-                    "authentication",
-                    "security",
-                    "api",
-                    "sessions"
-                  ],
+                  "tags": ["authentication", "security", "api", "sessions"],
                   "createdAt": "2024-01-15T10:30:00.000Z",
                   "updatedAt": "2024-01-15T10:30:00.000Z",
                   "authType": "apikey"
@@ -4036,9 +3866,7 @@
           }
         ],
         "summary": "Create a new context entry",
-        "tags": [
-          "Context"
-        ]
+        "tags": ["Context"]
       }
     },
     "/v1/context/{id}": {
@@ -4093,10 +3921,7 @@
                       "items": {
                         "type": "string"
                       },
-                      "example": [
-                        "authentication",
-                        "security"
-                      ]
+                      "example": ["authentication", "security"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -4108,10 +3933,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ]
+                      "enum": ["api-key", "session"]
                     }
                   }
                 },
@@ -4120,12 +3942,7 @@
                   "organizationId": "org_xyz789uvw012",
                   "question": "How do we handle user authentication in our application?",
                   "answer": "We use a hybrid authentication system supporting both API keys and session-based authentication.",
-                  "tags": [
-                    "authentication",
-                    "security",
-                    "api",
-                    "sessions"
-                  ],
+                  "tags": ["authentication", "security", "api", "sessions"],
                   "createdAt": "2024-01-15T10:30:00.000Z",
                   "updatedAt": "2024-01-15T14:20:00.000Z",
                   "authType": "apikey"
@@ -4210,9 +4027,7 @@
           }
         ],
         "summary": "Get context entry by ID",
-        "tags": [
-          "Context"
-        ]
+        "tags": ["Context"]
       },
       "patch": {
         "description": "Partially updates a context entry. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -4296,9 +4111,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "message": [
-                    "tags must be an array of strings"
-                  ],
+                  "message": ["tags must be an array of strings"],
                   "error": "Bad Request",
                   "statusCode": 400
                 }
@@ -4345,9 +4158,7 @@
           }
         ],
         "summary": "Update context entry",
-        "tags": [
-          "Context"
-        ]
+        "tags": ["Context"]
       },
       "delete": {
         "description": "Permanently removes a context entry from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -4397,10 +4208,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ]
+                      "enum": ["api-key", "session"]
                     }
                   }
                 },
@@ -4491,9 +4299,7 @@
           }
         ],
         "summary": "Delete context entry",
-        "tags": [
-          "Context"
-        ]
+        "tags": ["Context"]
       }
     },
     "/v1/devices": {
@@ -4532,10 +4338,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     },
                     "authenticatedUser": {
@@ -4613,9 +4416,7 @@
           }
         ],
         "summary": "Get all devices",
-        "tags": [
-          "Devices"
-        ]
+        "tags": ["Devices"]
       }
     },
     "/v1/devices/member/{memberId}": {
@@ -4696,9 +4497,7 @@
           }
         ],
         "summary": "Get devices by member ID",
-        "tags": [
-          "Devices"
-        ]
+        "tags": ["Devices"]
       }
     },
     "/v1/policies": {
@@ -4776,9 +4575,7 @@
           }
         ],
         "summary": "Get all policies",
-        "tags": [
-          "Policies"
-        ]
+        "tags": ["Policies"]
       },
       "post": {
         "description": "Creates a new policy for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -4883,9 +4680,7 @@
           }
         ],
         "summary": "Create a new policy",
-        "tags": [
-          "Policies"
-        ]
+        "tags": ["Policies"]
       }
     },
     "/v1/policies/{id}": {
@@ -4984,9 +4779,7 @@
           }
         ],
         "summary": "Get policy by ID",
-        "tags": [
-          "Policies"
-        ]
+        "tags": ["Policies"]
       },
       "patch": {
         "description": "Partially updates a policy. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -5053,9 +4846,7 @@
                   "frequency": "yearly",
                   "department": "it",
                   "isRequiredToSign": true,
-                  "signedBy": [
-                    "usr_123"
-                  ],
+                  "signedBy": ["usr_123"],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
                   "createdAt": "2024-01-01T00:00:00.000Z",
@@ -5122,9 +4913,7 @@
           }
         ],
         "summary": "Update policy",
-        "tags": [
-          "Policies"
-        ]
+        "tags": ["Policies"]
       },
       "delete": {
         "description": "Permanently deletes a policy. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -5180,10 +4969,7 @@
                     },
                     "authType": {
                       "type": "string",
-                      "enum": [
-                        "api-key",
-                        "session"
-                      ],
+                      "enum": ["api-key", "session"],
                       "description": "How the request was authenticated"
                     }
                   }
@@ -5230,9 +5016,7 @@
           }
         ],
         "summary": "Delete policy",
-        "tags": [
-          "Policies"
-        ]
+        "tags": ["Policies"]
       }
     },
     "/v1/device-agent/mac": {
@@ -5286,9 +5070,7 @@
           }
         ],
         "summary": "Download macOS Device Agent",
-        "tags": [
-          "Device Agent"
-        ]
+        "tags": ["Device Agent"]
       }
     },
     "/v1/device-agent/windows": {
@@ -5342,9 +5124,7 @@
           }
         ],
         "summary": "Download Windows Device Agent ZIP",
-        "tags": [
-          "Device Agent"
-        ]
+        "tags": ["Device Agent"]
       }
     },
     "/v1/attachments/{attachmentId}/download": {
@@ -5402,9 +5182,7 @@
           }
         ],
         "summary": "Get attachment download URL",
-        "tags": [
-          "Attachments"
-        ]
+        "tags": ["Attachments"]
       }
     },
     "/v1/tasks": {
@@ -5469,9 +5247,7 @@
           }
         ],
         "summary": "Get all tasks",
-        "tags": [
-          "Tasks"
-        ]
+        "tags": ["Tasks"]
       }
     },
     "/v1/tasks/{taskId}": {
@@ -5541,9 +5317,7 @@
           }
         ],
         "summary": "Get task by ID",
-        "tags": [
-          "Tasks"
-        ]
+        "tags": ["Tasks"]
       }
     },
     "/v1/tasks/{taskId}/attachments": {
@@ -5634,9 +5408,7 @@
           }
         ],
         "summary": "Get task attachments",
-        "tags": [
-          "Tasks"
-        ]
+        "tags": ["Tasks"]
       },
       "post": {
         "description": "Upload a file attachment to a specific task",
@@ -5748,9 +5520,7 @@
           }
         ],
         "summary": "Upload attachment to task",
-        "tags": [
-          "Tasks"
-        ]
+        "tags": ["Tasks"]
       }
     },
     "/v1/tasks/{taskId}/attachments/{attachmentId}/download": {
@@ -5850,9 +5620,7 @@
           }
         ],
         "summary": "Get attachment download URL",
-        "tags": [
-          "Tasks"
-        ]
+        "tags": ["Tasks"]
       }
     },
     "/v1/tasks/{taskId}/attachments/{attachmentId}": {
@@ -5954,9 +5722,7 @@
           }
         ],
         "summary": "Delete task attachment",
-        "tags": [
-          "Tasks"
-        ]
+        "tags": ["Tasks"]
       }
     },
     "/v1/tasks/{taskId}/automations": {
@@ -5995,9 +5761,7 @@
           }
         ],
         "summary": "Get all automations for a task",
-        "tags": [
-          "Task Automations"
-        ]
+        "tags": ["Task Automations"]
       },
       "post": {
         "description": "Create an automation for collecting evidence for a specific task",
@@ -6108,9 +5872,7 @@
           }
         ],
         "summary": "Create a new evidence automation",
-        "tags": [
-          "Task Automations"
-        ]
+        "tags": ["Task Automations"]
       }
     },
     "/v1/tasks/{taskId}/automations/{automationId}": {
@@ -6159,9 +5921,7 @@
           }
         ],
         "summary": "Get automation details",
-        "tags": [
-          "Task Automations"
-        ]
+        "tags": ["Task Automations"]
       },
       "patch": {
         "description": "Update the name or description of an existing automation",
@@ -6296,9 +6056,7 @@
           }
         ],
         "summary": "Update an existing automation",
-        "tags": [
-          "Task Automations"
-        ]
+        "tags": ["Task Automations"]
       },
       "delete": {
         "description": "Delete a specific automation and all its associated data",
@@ -6345,9 +6103,7 @@
           }
         ],
         "summary": "Delete an automation",
-        "tags": [
-          "Task Automations"
-        ]
+        "tags": ["Task Automations"]
       }
     },
     "/v1/tasks/{taskId}/automations/{automationId}/versions": {
@@ -6451,9 +6207,7 @@
           }
         ],
         "summary": "Get all versions for an automation",
-        "tags": [
-          "Task Automations"
-        ]
+        "tags": ["Task Automations"]
       }
     },
     "/v1/tasks/{taskId}/automations/runs": {
@@ -6497,20 +6251,11 @@
                       },
                       "status": {
                         "type": "string",
-                        "enum": [
-                          "PENDING",
-                          "RUNNING",
-                          "COMPLETED",
-                          "FAILED"
-                        ]
+                        "enum": ["PENDING", "RUNNING", "COMPLETED", "FAILED"]
                       },
                       "trigger": {
                         "type": "string",
-                        "enum": [
-                          "MANUAL",
-                          "SCHEDULED",
-                          "EVENT"
-                        ]
+                        "enum": ["MANUAL", "SCHEDULED", "EVENT"]
                       },
                       "createdAt": {
                         "type": "string",
@@ -6538,9 +6283,7 @@
           }
         ],
         "summary": "Get all automation runs for a task",
-        "tags": [
-          "Task Automations"
-        ]
+        "tags": ["Task Automations"]
       }
     },
     "/v1/comments": {
@@ -6573,12 +6316,7 @@
             "in": "query",
             "description": "Type of entity",
             "schema": {
-              "enum": [
-                "task",
-                "vendor",
-                "risk",
-                "policy"
-              ],
+              "enum": ["task", "vendor", "risk", "policy"],
               "type": "string"
             }
           }
@@ -6604,9 +6342,7 @@
           }
         ],
         "summary": "Get comments for an entity",
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       },
       "post": {
         "description": "Create a comment on an entity with optional file attachments",
@@ -6650,9 +6386,7 @@
           }
         ],
         "summary": "Create a new comment",
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       }
     },
     "/v1/comments/{commentId}": {
@@ -6708,9 +6442,7 @@
           }
         ],
         "summary": "Update a comment",
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       },
       "delete": {
         "description": "Delete a comment and all its attachments (author only)",
@@ -6800,9 +6532,7 @@
           }
         ],
         "summary": "Delete a comment",
-        "tags": [
-          "Comments"
-        ]
+        "tags": ["Comments"]
       }
     },
     "/v1/health": {
@@ -6841,9 +6571,7 @@
           }
         },
         "summary": "Health check",
-        "tags": [
-          "Health"
-        ]
+        "tags": ["Health"]
       }
     },
     "/v1/trust-portal/domain/status": {
@@ -6895,9 +6623,7 @@
           }
         ],
         "summary": "Get domain verification status",
-        "tags": [
-          "Trust Portal"
-        ]
+        "tags": ["Trust Portal"]
       }
     },
     "/v1/trust-access/{friendlyUrl}/requests": {
@@ -6930,9 +6656,7 @@
           }
         },
         "summary": "Submit data access request",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/requests": {
@@ -6946,12 +6670,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": [
-                "under_review",
-                "approved",
-                "denied",
-                "canceled"
-              ]
+              "enum": ["under_review", "approved", "denied", "canceled"]
             }
           },
           {
@@ -6975,9 +6694,7 @@
           }
         ],
         "summary": "List access requests",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/requests/{id}": {
@@ -7014,9 +6731,7 @@
           }
         ],
         "summary": "Get access request details",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/requests/{id}/approve": {
@@ -7063,9 +6778,7 @@
           }
         ],
         "summary": "Approve access request",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/requests/{id}/deny": {
@@ -7112,9 +6825,7 @@
           }
         ],
         "summary": "Deny access request",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/grants": {
@@ -7143,9 +6854,7 @@
           }
         ],
         "summary": "List access grants",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/grants/{id}/revoke": {
@@ -7192,9 +6901,7 @@
           }
         ],
         "summary": "Revoke access grant",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/nda/{token}": {
@@ -7217,9 +6924,7 @@
           }
         },
         "summary": "Get NDA details by token",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/nda/{token}/preview-nda": {
@@ -7242,9 +6947,7 @@
           }
         },
         "summary": "Preview NDA by token",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/nda/{token}/sign": {
@@ -7277,9 +6980,7 @@
           }
         },
         "summary": "Sign NDA",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/requests/{id}/resend-nda": {
@@ -7316,9 +7017,7 @@
           }
         ],
         "summary": "Resend NDA email",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/admin/requests/{id}/preview-nda": {
@@ -7355,9 +7054,7 @@
           }
         ],
         "summary": "Preview NDA PDF",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/{friendlyUrl}/reclaim": {
@@ -7390,9 +7087,7 @@
           }
         },
         "summary": "Reclaim access",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/access/{token}": {
@@ -7415,9 +7110,7 @@
           }
         },
         "summary": "Get grant data by access token",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/access/{token}/policies": {
@@ -7440,9 +7133,7 @@
           }
         },
         "summary": "List policies by access token",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/trust-access/access/{token}/policies/download-all": {
@@ -7465,9 +7156,7 @@
           }
         },
         "summary": "Download all policies as watermarked PDF",
-        "tags": [
-          "Trust Access"
-        ]
+        "tags": ["Trust Access"]
       }
     },
     "/v1/framework-editor/task-template": {
@@ -7547,9 +7236,7 @@
           }
         ],
         "summary": "Get all framework editor task templates",
-        "tags": [
-          "Framework Editor Task Templates"
-        ]
+        "tags": ["Framework Editor Task Templates"]
       }
     },
     "/v1/framework-editor/task-template/{id}": {
@@ -7647,9 +7334,7 @@
           }
         ],
         "summary": "Get framework editor task template by ID",
-        "tags": [
-          "Framework Editor Task Templates"
-        ]
+        "tags": ["Framework Editor Task Templates"]
       },
       "patch": {
         "description": "Update a framework editor task template by ID",
@@ -7769,9 +7454,7 @@
           }
         ],
         "summary": "Update framework editor task template",
-        "tags": [
-          "Framework Editor Task Templates"
-        ]
+        "tags": ["Framework Editor Task Templates"]
       },
       "delete": {
         "description": "Delete a framework editor task template by ID",
@@ -7865,9 +7548,7 @@
           }
         ],
         "summary": "Delete framework editor task template",
-        "tags": [
-          "Framework Editor Task Templates"
-        ]
+        "tags": ["Framework Editor Task Templates"]
       }
     }
   },
@@ -7985,15 +7666,7 @@
           "department": {
             "type": "string",
             "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           },
           "isActive": {
@@ -8044,15 +7717,7 @@
           "department": {
             "type": "string",
             "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           },
           "isActive": {
@@ -8066,10 +7731,7 @@
             "example": 123
           }
         },
-        "required": [
-          "userId",
-          "role"
-        ]
+        "required": ["userId", "role"]
       },
       "BulkCreatePeopleDto": {
         "type": "object",
@@ -8097,9 +7759,7 @@
             }
           }
         },
-        "required": [
-          "members"
-        ]
+        "required": ["members"]
       },
       "UpdatePeopleDto": {
         "type": "object",
@@ -8117,15 +7777,7 @@
           "department": {
             "type": "string",
             "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           },
           "isActive": {
@@ -8174,26 +7826,13 @@
           "department": {
             "type": "string",
             "description": "Department responsible for the risk",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           },
           "status": {
             "type": "string",
             "description": "Current status of the risk",
-            "enum": [
-              "open",
-              "pending",
-              "closed",
-              "archived"
-            ],
+            "enum": ["open", "pending", "closed", "archived"],
             "default": "open",
             "example": "open"
           },
@@ -8213,13 +7852,7 @@
           "impact": {
             "type": "string",
             "description": "Impact if the risk materializes",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "major"
           },
@@ -8239,13 +7872,7 @@
           "residualImpact": {
             "type": "string",
             "description": "Residual impact after treatment",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "minor"
           },
@@ -8257,12 +7884,7 @@
           "treatmentStrategy": {
             "type": "string",
             "description": "Risk treatment strategy",
-            "enum": [
-              "accept",
-              "avoid",
-              "mitigate",
-              "transfer"
-            ],
+            "enum": ["accept", "avoid", "mitigate", "transfer"],
             "default": "accept",
             "example": "mitigate"
           },
@@ -8318,26 +7940,13 @@
           "department": {
             "type": "string",
             "description": "Department responsible for the risk",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           },
           "status": {
             "type": "string",
             "description": "Current status of the risk",
-            "enum": [
-              "open",
-              "pending",
-              "closed",
-              "archived"
-            ],
+            "enum": ["open", "pending", "closed", "archived"],
             "default": "open",
             "example": "open"
           },
@@ -8357,13 +7966,7 @@
           "impact": {
             "type": "string",
             "description": "Impact if the risk materializes",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "major"
           },
@@ -8383,13 +7986,7 @@
           "residualImpact": {
             "type": "string",
             "description": "Residual impact after treatment",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "minor"
           },
@@ -8401,12 +7998,7 @@
           "treatmentStrategy": {
             "type": "string",
             "description": "Risk treatment strategy",
-            "enum": [
-              "accept",
-              "avoid",
-              "mitigate",
-              "transfer"
-            ],
+            "enum": ["accept", "avoid", "mitigate", "transfer"],
             "default": "accept",
             "example": "mitigate"
           },
@@ -8449,11 +8041,7 @@
           "status": {
             "type": "string",
             "description": "Assessment status of the vendor",
-            "enum": [
-              "not_assessed",
-              "in_progress",
-              "assessed"
-            ],
+            "enum": ["not_assessed", "in_progress", "assessed"],
             "default": "not_assessed",
             "example": "not_assessed"
           },
@@ -8473,13 +8061,7 @@
           "inherentImpact": {
             "type": "string",
             "description": "Inherent impact of risk before controls",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "moderate"
           },
@@ -8499,13 +8081,7 @@
           "residualImpact": {
             "type": "string",
             "description": "Residual impact after controls are applied",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "minor"
           },
@@ -8563,11 +8139,7 @@
           "status": {
             "type": "string",
             "description": "Assessment status of the vendor",
-            "enum": [
-              "not_assessed",
-              "in_progress",
-              "assessed"
-            ],
+            "enum": ["not_assessed", "in_progress", "assessed"],
             "default": "not_assessed",
             "example": "not_assessed"
           },
@@ -8587,13 +8159,7 @@
           "inherentImpact": {
             "type": "string",
             "description": "Inherent impact of risk before controls",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "moderate"
           },
@@ -8613,13 +8179,7 @@
           "residualImpact": {
             "type": "string",
             "description": "Residual impact after controls are applied",
-            "enum": [
-              "insignificant",
-              "minor",
-              "moderate",
-              "major",
-              "severe"
-            ],
+            "enum": ["insignificant", "minor", "moderate", "major", "severe"],
             "default": "insignificant",
             "example": "minor"
           },
@@ -8650,22 +8210,14 @@
           },
           "tags": {
             "description": "Tags to categorize and help search this context entry",
-            "example": [
-              "authentication",
-              "security",
-              "api",
-              "sessions"
-            ],
+            "example": ["authentication", "security", "api", "sessions"],
             "type": "array",
             "items": {
               "type": "string"
             }
           }
         },
-        "required": [
-          "question",
-          "answer"
-        ]
+        "required": ["question", "answer"]
       },
       "UpdateContextDto": {
         "type": "object",
@@ -8682,12 +8234,7 @@
           },
           "tags": {
             "description": "Tags to categorize and help search this context entry",
-            "example": [
-              "authentication",
-              "security",
-              "api",
-              "sessions"
-            ],
+            "example": ["authentication", "security", "api", "sessions"],
             "type": "array",
             "items": {
               "type": "string"
@@ -9275,10 +8822,7 @@
           "authType": {
             "type": "string",
             "description": "How the request was authenticated",
-            "enum": [
-              "api-key",
-              "session"
-            ],
+            "enum": ["api-key", "session"],
             "example": "api-key"
           },
           "authenticatedUser": {
@@ -9290,12 +8834,7 @@
             }
           }
         },
-        "required": [
-          "data",
-          "count",
-          "member",
-          "authType"
-        ]
+        "required": ["data", "count", "member", "authType"]
       },
       "PolicyResponseDto": {
         "type": "object",
@@ -9319,11 +8858,7 @@
           "status": {
             "type": "string",
             "description": "Status of the policy",
-            "enum": [
-              "draft",
-              "published",
-              "needs_review"
-            ],
+            "enum": ["draft", "published", "needs_review"],
             "example": "draft"
           },
           "content": {
@@ -9364,26 +8899,14 @@
           "frequency": {
             "type": "string",
             "description": "Review frequency of the policy",
-            "enum": [
-              "monthly",
-              "quarterly",
-              "yearly"
-            ],
+            "enum": ["monthly", "quarterly", "yearly"],
             "example": "yearly",
             "nullable": true
           },
           "department": {
             "type": "string",
             "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it",
             "nullable": true
           },
@@ -9395,10 +8918,7 @@
           "signedBy": {
             "type": "array",
             "description": "List of user IDs who have signed this policy",
-            "example": [
-              "usr_123",
-              "usr_456"
-            ],
+            "example": ["usr_123", "usr_456"],
             "items": {
               "type": "string"
             }
@@ -9503,11 +9023,7 @@
           "status": {
             "type": "string",
             "description": "Status of the policy",
-            "enum": [
-              "draft",
-              "published",
-              "needs_review"
-            ],
+            "enum": ["draft", "published", "needs_review"],
             "example": "draft"
           },
           "content": {
@@ -9548,25 +9064,13 @@
           "frequency": {
             "type": "string",
             "description": "Review frequency of the policy",
-            "enum": [
-              "monthly",
-              "quarterly",
-              "yearly"
-            ],
+            "enum": ["monthly", "quarterly", "yearly"],
             "example": "yearly"
           },
           "department": {
             "type": "string",
             "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           },
           "isRequiredToSign": {
@@ -9597,19 +9101,13 @@
           "signedBy": {
             "type": "array",
             "description": "List of user IDs who have signed this policy",
-            "example": [
-              "usr_123",
-              "usr_456"
-            ],
+            "example": ["usr_123", "usr_456"],
             "items": {
               "type": "string"
             }
           }
         },
-        "required": [
-          "name",
-          "content"
-        ]
+        "required": ["name", "content"]
       },
       "UpdatePolicyDto": {
         "type": "object",
@@ -9627,11 +9125,7 @@
           "status": {
             "type": "string",
             "description": "Status of the policy",
-            "enum": [
-              "draft",
-              "published",
-              "needs_review"
-            ],
+            "enum": ["draft", "published", "needs_review"],
             "example": "draft"
           },
           "content": {
@@ -9672,25 +9166,13 @@
           "frequency": {
             "type": "string",
             "description": "Review frequency of the policy",
-            "enum": [
-              "monthly",
-              "quarterly",
-              "yearly"
-            ],
+            "enum": ["monthly", "quarterly", "yearly"],
             "example": "yearly"
           },
           "department": {
             "type": "string",
             "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           },
           "isRequiredToSign": {
@@ -9721,10 +9203,7 @@
           "signedBy": {
             "type": "array",
             "description": "List of user IDs who have signed this policy",
-            "example": [
-              "usr_123",
-              "usr_456"
-            ],
+            "example": ["usr_123", "usr_456"],
             "items": {
               "type": "string"
             }
@@ -9758,12 +9237,7 @@
             "type": "string",
             "description": "Task status",
             "example": "in_progress",
-            "enum": [
-              "todo",
-              "in_progress",
-              "done",
-              "blocked"
-            ]
+            "enum": ["todo", "in_progress", "done", "blocked"]
           },
           "createdAt": {
             "format": "date-time",
@@ -9784,13 +9258,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "id",
-          "title",
-          "status",
-          "createdAt",
-          "updatedAt"
-        ]
+        "required": ["id", "title", "status", "createdAt", "updatedAt"]
       },
       "AttachmentResponseDto": {
         "type": "object",
@@ -9827,14 +9295,7 @@
             "example": "2024-01-15T10:30:00Z"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "type",
-          "size",
-          "downloadUrl",
-          "createdAt"
-        ]
+        "required": ["id", "name", "type", "size", "downloadUrl", "createdAt"]
       },
       "UploadAttachmentDto": {
         "type": "object",
@@ -9874,11 +9335,7 @@
             "maxLength": 500
           }
         },
-        "required": [
-          "fileName",
-          "fileType",
-          "fileData"
-        ]
+        "required": ["fileName", "fileType", "fileData"]
       },
       "UpdateAutomationDto": {
         "type": "object",
@@ -9920,12 +9377,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "id",
-          "name",
-          "email",
-          "image"
-        ]
+        "required": ["id", "name", "email", "image"]
       },
       "AttachmentMetadataDto": {
         "type": "object",
@@ -9952,12 +9404,7 @@
             "example": "2024-01-15T10:30:00Z"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "type",
-          "createdAt"
-        ]
+        "required": ["id", "name", "type", "createdAt"]
       },
       "CommentResponseDto": {
         "type": "object",
@@ -9994,13 +9441,7 @@
             "example": "2024-01-15T10:30:00Z"
           }
         },
-        "required": [
-          "id",
-          "content",
-          "author",
-          "attachments",
-          "createdAt"
-        ]
+        "required": ["id", "content", "author", "attachments", "createdAt"]
       },
       "CreateCommentDto": {
         "type": "object",
@@ -10019,12 +9460,7 @@
           "entityType": {
             "type": "string",
             "description": "Type of entity being commented on",
-            "enum": [
-              "task",
-              "vendor",
-              "risk",
-              "policy"
-            ],
+            "enum": ["task", "vendor", "risk", "policy"],
             "example": "task"
           },
           "attachments": {
@@ -10035,11 +9471,7 @@
             }
           }
         },
-        "required": [
-          "content",
-          "entityId",
-          "entityType"
-        ]
+        "required": ["content", "entityId", "entityType"]
       },
       "UpdateCommentDto": {
         "type": "object",
@@ -10051,9 +9483,7 @@
             "maxLength": 2000
           }
         },
-        "required": [
-          "content"
-        ]
+        "required": ["content"]
       },
       "DomainVerificationDto": {
         "type": "object",
@@ -10075,11 +9505,7 @@
             "description": "Reason for verification status"
           }
         },
-        "required": [
-          "type",
-          "domain",
-          "value"
-        ]
+        "required": ["type", "domain", "value"]
       },
       "DomainStatusResponseDto": {
         "type": "object",
@@ -10100,10 +9526,7 @@
             }
           }
         },
-        "required": [
-          "domain",
-          "verified"
-        ]
+        "required": ["domain", "verified"]
       },
       "CreateAccessRequestDto": {
         "type": "object",
@@ -10128,10 +9551,7 @@
             "minimum": 1
           }
         },
-        "required": [
-          "name",
-          "email"
-        ]
+        "required": ["name", "email"]
       },
       "ApproveAccessRequestDto": {
         "type": "object",
@@ -10149,9 +9569,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "reason"
-        ]
+        "required": ["reason"]
       },
       "RevokeGrantDto": {
         "type": "object",
@@ -10160,9 +9578,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "reason"
-        ]
+        "required": ["reason"]
       },
       "SignNdaDto": {
         "type": "object",
@@ -10177,11 +9593,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "name",
-          "email",
-          "accept"
-        ]
+        "required": ["name", "email", "accept"]
       },
       "ReclaimAccessDto": {
         "type": "object",
@@ -10190,9 +9602,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "email"
-        ]
+        "required": ["email"]
       },
       "UpdateTaskTemplateDto": {
         "type": "object",
@@ -10210,25 +9620,13 @@
           "frequency": {
             "type": "string",
             "description": "Frequency of the task",
-            "enum": [
-              "monthly",
-              "quarterly",
-              "yearly"
-            ],
+            "enum": ["monthly", "quarterly", "yearly"],
             "example": "monthly"
           },
           "department": {
             "type": "string",
             "description": "Department responsible for the task",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "enum": ["none", "admin", "gov", "hr", "it", "itsm", "qms"],
             "example": "it"
           }
         }

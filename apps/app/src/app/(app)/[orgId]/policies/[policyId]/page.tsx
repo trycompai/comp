@@ -1,8 +1,14 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import type { Metadata } from 'next';
-import { PolicyHeaderActions } from './components/PolicyHeaderActions';
-import PolicyPage from './components/PolicyPage';
-import { getAssignees, getLogsForPolicy, getPolicy, getPolicyControlMappingInfo } from './data';
+import type { Metadata } from "next";
+import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+
+import { PolicyHeaderActions } from "./components/PolicyHeaderActions";
+import PolicyPage from "./components/PolicyPage";
+import {
+  getAssignees,
+  getLogsForPolicy,
+  getPolicy,
+  getPolicyControlMappingInfo,
+} from "./data";
 
 export default async function PolicyDetails({
   params,
@@ -13,7 +19,8 @@ export default async function PolicyDetails({
 
   const policy = await getPolicy(policyId);
   const assignees = await getAssignees();
-  const { mappedControls, allControls } = await getPolicyControlMappingInfo(policyId);
+  const { mappedControls, allControls } =
+    await getPolicyControlMappingInfo(policyId);
   const logs = await getLogsForPolicy(policyId);
 
   const isPendingApproval = !!policy?.approverId;
@@ -21,8 +28,8 @@ export default async function PolicyDetails({
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Policies', href: `/${orgId}/policies/all` },
-        { label: policy?.name ?? 'Policy', current: true },
+        { label: "Policies", href: `/${orgId}/policies/all` },
+        { label: policy?.name ?? "Policy", current: true },
       ]}
       headerRight={<PolicyHeaderActions policy={policy} logs={logs} />}
     >
@@ -41,6 +48,6 @@ export default async function PolicyDetails({
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Policy Overview',
+    title: "Policy Overview",
   };
 }

@@ -1,25 +1,26 @@
-'use client';
+"use client";
 
-import type { Column } from '@tanstack/react-table';
-import { CalendarIcon, XCircle } from 'lucide-react';
-import * as React from 'react';
-import type { DateRange } from 'react-day-picker';
+import type { Column } from "@tanstack/react-table";
+import type { DateRange } from "react-day-picker";
+import * as React from "react";
+import { formatDate } from "@/lib/format";
+import { CalendarIcon, XCircle } from "lucide-react";
 
-import { formatDate } from '@/lib/format';
-import { Button } from '@trycompai/ui/button';
-import { Calendar } from '@trycompai/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Separator } from '@trycompai/ui/separator';
+import { Button } from "@trycompai/ui/button";
+import { Calendar } from "@trycompai/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@trycompai/ui/popover";
+import { Separator } from "@trycompai/ui/separator";
 
 type DateSelection = Date[] | DateRange;
 
 function getIsDateRange(value: DateSelection): value is DateRange {
-  return value && typeof value === 'object' && !Array.isArray(value);
+  return value && typeof value === "object" && !Array.isArray(value);
 }
 
 function parseAsDate(timestamp: number | string | undefined): Date | undefined {
   if (!timestamp) return undefined;
-  const numericTimestamp = typeof timestamp === 'string' ? Number(timestamp) : timestamp;
+  const numericTimestamp =
+    typeof timestamp === "string" ? Number(timestamp) : timestamp;
   const date = new Date(numericTimestamp);
   return !Number.isNaN(date.getTime()) ? date : undefined;
 }
@@ -31,14 +32,14 @@ function parseColumnFilterValue(value: unknown) {
 
   if (Array.isArray(value)) {
     return value.map((item) => {
-      if (typeof item === 'number' || typeof item === 'string') {
+      if (typeof item === "number" || typeof item === "string") {
         return item;
       }
       return undefined;
     });
   }
 
-  if (typeof value === 'string' || typeof value === 'number') {
+  if (typeof value === "string" || typeof value === "number") {
     return [value];
   }
 
@@ -83,11 +84,11 @@ export function DataTableDateFilter<TData>({
         return;
       }
 
-      if (multiple && !('getTime' in date)) {
+      if (multiple && !("getTime" in date)) {
         const from = date.from?.getTime();
         const to = date.to?.getTime();
         column.setFilterValue(from || to ? [from, to] : undefined);
-      } else if (!multiple && 'getTime' in date) {
+      } else if (!multiple && "getTime" in date) {
         column.setFilterValue(date.getTime());
       }
     },
@@ -112,7 +113,7 @@ export function DataTableDateFilter<TData>({
   }, [multiple, selectedDates]);
 
   const formatDateRange = React.useCallback((range: DateRange) => {
-    if (!range.from && !range.to) return '';
+    if (!range.from && !range.to) return "";
     if (range.from && range.to) {
       return `${formatDate(range.from)} - ${formatDate(range.to)}`;
     }
@@ -124,7 +125,9 @@ export function DataTableDateFilter<TData>({
       if (!getIsDateRange(selectedDates)) return null;
 
       const hasSelectedDates = selectedDates.from || selectedDates.to;
-      const dateText = hasSelectedDates ? formatDateRange(selectedDates) : 'Select date range';
+      const dateText = hasSelectedDates
+        ? formatDateRange(selectedDates)
+        : "Select date range";
 
       return (
         <span className="flex items-center gap-2">
@@ -145,14 +148,19 @@ export function DataTableDateFilter<TData>({
     if (getIsDateRange(selectedDates)) return null;
 
     const hasSelectedDate = selectedDates.length > 0;
-    const dateText = hasSelectedDate ? formatDate(selectedDates[0]) : 'Select date';
+    const dateText = hasSelectedDate
+      ? formatDate(selectedDates[0])
+      : "Select date";
 
     return (
       <span className="flex items-center gap-2">
         <span>{title}</span>
         {hasSelectedDate && (
           <>
-            <Separator orientation="vertical" className="mx-0.5 data-[orientation=vertical]:h-4" />
+            <Separator
+              orientation="vertical"
+              className="mx-0.5 data-[orientation=vertical]:h-4"
+            />
             <span>{dateText}</span>
           </>
         )}
@@ -184,7 +192,9 @@ export function DataTableDateFilter<TData>({
             initialFocus
             mode="range"
             selected={
-              getIsDateRange(selectedDates) ? selectedDates : { from: undefined, to: undefined }
+              getIsDateRange(selectedDates)
+                ? selectedDates
+                : { from: undefined, to: undefined }
             }
             onSelect={onSelect}
           />
@@ -192,7 +202,9 @@ export function DataTableDateFilter<TData>({
           <Calendar
             initialFocus
             mode="single"
-            selected={!getIsDateRange(selectedDates) ? selectedDates[0] : undefined}
+            selected={
+              !getIsDateRange(selectedDates) ? selectedDates[0] : undefined
+            }
             onSelect={onSelect}
           />
         )}

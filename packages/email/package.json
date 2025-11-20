@@ -4,35 +4,36 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@react-email/components": "^0.0.41",
-    "@react-email/render": "^1.1.2",
-    "@react-email/tailwind": "1.0.5",
+    "@react-email/components": "^1.0.1",
+    "@react-email/render": "^2.0.0",
+    "@react-email/tailwind": "^2.0.1",
     "@trycompai/ui": "workspace:*",
     "@trycompai/utils": "workspace:*",
     "date-fns": "^4.1.0",
     "next": "^16.0.3",
-    "react-email": "^4.0.15",
-    "resend": "^6.4.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-email": "^5.0.4",
+    "resend": "^6.5.2",
     "responsive-react-email": "^0.0.5"
   },
   "devDependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.2"
+    "@react-email/preview-server": "5.0.4",
+    "@trycompai/eslint-config": "workspace:*",
+    "@types/react": "^19.2.6",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
+      "default": "./index.ts"
     },
     "./emails/*": {
-      "types": "./dist/emails/*.d.mts",
-      "import": "./dist/emails/*.mjs"
+      "default": "./emails/*.tsx"
     },
     "./lib/*": {
-      "types": "./dist/lib/*.d.mts",
-      "import": "./dist/lib/*.mjs"
+      "default": "./lib/*.ts"
     }
   },
   "files": [
@@ -45,12 +46,6 @@
     "react-email"
   ],
   "license": "MIT",
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
-  "peerDependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.0"
-  },
   "publishConfig": {
     "access": "public"
   },
@@ -60,12 +55,10 @@
     "directory": "packages/email"
   },
   "scripts": {
-    "build": "tsdown",
     "clean": "rm -rf .turbo node_modules dist",
-    "dev": "tsdown --watch",
-    "format": "prettier --write .",
-    "lint": "prettier --check .",
+    "dev": "email dev",
+    "format": "eslint . --fix",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
-  },
-  "types": "./dist/index.d.mts"
+  }
 }

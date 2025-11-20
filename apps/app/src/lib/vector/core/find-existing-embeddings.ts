@@ -1,13 +1,14 @@
-import 'server-only';
+import "server-only";
 
-import { vectorIndex } from './client';
-import { generateEmbedding } from './generate-embedding';
-import { logger } from '@/utils/logger';
+import { logger } from "@/utils/logger";
+
+import { vectorIndex } from "./client";
+import { generateEmbedding } from "./generate-embedding";
 
 export interface ExistingEmbedding {
   id: string;
   sourceId: string;
-  sourceType: 'policy' | 'context';
+  sourceType: "policy" | "context";
   updatedAt?: string;
 }
 
@@ -18,7 +19,7 @@ export interface ExistingEmbedding {
  */
 export async function findEmbeddingsForSource(
   sourceId: string,
-  sourceType: 'policy' | 'context',
+  sourceType: "policy" | "context",
   organizationId: string,
 ): Promise<ExistingEmbedding[]> {
   if (!vectorIndex) {
@@ -32,12 +33,13 @@ export async function findEmbeddingsForSource(
   try {
     // Create a specific query that will match this source
     // Using sourceId in the query helps find exact matches
-    const queryText = sourceType === 'policy' 
-      ? `policy ${sourceId} security compliance`
-      : `context ${sourceId} question answer`;
-    
+    const queryText =
+      sourceType === "policy"
+        ? `policy ${sourceId} security compliance`
+        : `context ${sourceId} question answer`;
+
     const queryEmbedding = await generateEmbedding(queryText);
-    
+
     // Use smaller topK since we're looking for specific source
     // Upstash Vector limit is 1000, but we only need a few results
     const results = await vectorIndex.query({
@@ -60,19 +62,19 @@ export async function findEmbeddingsForSource(
         const metadata = result.metadata as any;
         return {
           id: String(result.id),
-          sourceId: metadata?.sourceId || '',
-          sourceType: metadata?.sourceType as 'policy' | 'context',
+          sourceId: metadata?.sourceId || "",
+          sourceType: metadata?.sourceType as "policy" | "context",
           updatedAt: metadata?.updatedAt,
         };
       });
 
     return matchingEmbeddings;
   } catch (error) {
-    logger.warn('Failed to find embeddings for source', {
+    logger.warn("Failed to find embeddings for source", {
       sourceId,
       sourceType,
       organizationId,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     return [];
   }
@@ -87,7 +89,7 @@ export async function findAllOrganizationEmbeddings(
   organizationId: string,
 ): Promise<Map<string, ExistingEmbedding[]>> {
   if (!vectorIndex) {
-    logger.warn('Upstash Vector is not configured, returning empty map');
+    logger.warn("Upstash Vector is not configured, returning empty map");
     return new Map();
   }
 
@@ -97,11 +99,11 @@ export async function findAllOrganizationEmbeddings(
 
   try {
     const allEmbeddings: ExistingEmbedding[] = [];
-    
+
     // Use organizationId as query to find all embeddings for this org
     // This is more specific than generic queries
     const queryEmbedding = await generateEmbedding(organizationId);
-    
+
     // Respect Upstash Vector limit of 1000
     const results = await vectorIndex.query({
       vector: queryEmbedding,
@@ -115,16 +117,17 @@ export async function findAllOrganizationEmbeddings(
         const metadata = result.metadata as any;
         return (
           metadata?.organizationId === organizationId &&
-          metadata?.sourceType !== 'questionnaire' &&
-          (metadata?.sourceType === 'policy' || metadata?.sourceType === 'context')
+          metadata?.sourceType !== "questionnaire" &&
+          (metadata?.sourceType === "policy" ||
+            metadata?.sourceType === "context")
         );
       })
       .map((result) => {
         const metadata = result.metadata as any;
         return {
           id: String(result.id),
-          sourceId: metadata?.sourceId || '',
-          sourceType: metadata?.sourceType as 'policy' | 'context',
+          sourceId: metadata?.sourceId || "",
+          sourceType: metadata?.sourceType as "policy" | "context",
           updatedAt: metadata?.updatedAt,
         };
       });
@@ -133,14 +136,14 @@ export async function findAllOrganizationEmbeddings(
 
     // Group by sourceId (policy/context ID)
     const groupedBySourceId = new Map<string, ExistingEmbedding[]>();
-    
+
     for (const embedding of allEmbeddings) {
       const existing = groupedBySourceId.get(embedding.sourceId) || [];
       existing.push(embedding);
       groupedBySourceId.set(embedding.sourceId, existing);
     }
 
-    logger.info('Found existing embeddings for organization', {
+    logger.info("Found existing embeddings for organization", {
       organizationId,
       totalEmbeddings: allEmbeddings.length,
       uniqueSources: groupedBySourceId.size,
@@ -148,11 +151,10 @@ export async function findAllOrganizationEmbeddings(
 
     return groupedBySourceId;
   } catch (error) {
-    logger.error('Failed to find existing embeddings', {
+    logger.error("Failed to find existing embeddings", {
       organizationId,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     return new Map();
   }
 }
-

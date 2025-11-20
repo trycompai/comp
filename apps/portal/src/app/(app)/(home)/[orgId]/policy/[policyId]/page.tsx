@@ -1,5 +1,10 @@
-import { auth } from '@/app/lib/auth';
-import { db } from '@db';
+import { auth } from "@/app/lib/auth";
+import { db } from "@trycompai/db";
+import { ArrowLeft, Check } from "lucide-react";
+import { headers } from "next/headers";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
 import {
   Card,
   CardContent,
@@ -7,13 +12,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
-import { ArrowLeft, Check } from 'lucide-react';
-import { headers } from 'next/headers';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { PolicyAcceptButton } from './PolicyAcceptButton';
-import PolicyViewer from './PolicyViewer';
+} from "@trycompai/ui/card";
+
+import { PolicyAcceptButton } from "./PolicyAcceptButton";
+import PolicyViewer from "./PolicyViewer";
 
 export default async function PolicyPage({
   params,
@@ -27,7 +29,7 @@ export default async function PolicyPage({
   });
 
   if (!session?.user) {
-    redirect('/auth');
+    redirect("/auth");
   }
 
   const policy = await db.policy.findUnique({
@@ -47,7 +49,7 @@ export default async function PolicyPage({
   });
 
   if (!member) {
-    redirect('/');
+    redirect("/");
   }
 
   const isAccepted = policy.signedBy.includes(member.id);
@@ -55,7 +57,10 @@ export default async function PolicyPage({
   return (
     <div className="mx-auto max-w-6xl">
       <div>
-        <Link href={`/${orgId}`} className="mb-4 inline-flex items-center gap-2 text-sm">
+        <Link
+          href={`/${orgId}`}
+          className="mb-4 inline-flex items-center gap-2 text-sm"
+        >
           <ArrowLeft className="h-4 w-4" />
           Back to Overview
         </Link>
@@ -63,9 +68,9 @@ export default async function PolicyPage({
 
       <Card className="shadow-md">
         {isAccepted && (
-          <div className="bg-green-50 border-green-200 mb-4 flex items-center gap-2 rounded-t-xs border p-3">
-            <Check className="text-green-600 h-5 w-5" />
-            <span className="text-green-800 text-sm font-medium">
+          <div className="mb-4 flex items-center gap-2 rounded-t-xs border border-green-200 bg-green-50 p-3">
+            <Check className="h-5 w-5 text-green-600" />
+            <span className="text-sm font-medium text-green-800">
               You have accepted this policy
             </span>
           </div>

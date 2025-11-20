@@ -1,11 +1,13 @@
-'use client';
+"use client";
 
-import { Card, CardContent } from '@trycompai/ui/card';
-import { FileText, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { getPolicyPdfUrl } from '../../../actions/getPolicyPdfUrl';
+import { useEffect, useState } from "react";
+import { FileText, Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+
+import { Card, CardContent } from "@trycompai/ui/card";
+
+import { getPolicyPdfUrl } from "../../../actions/getPolicyPdfUrl";
 
 interface PortalPdfViewerProps {
   policyId: string;
@@ -23,10 +25,10 @@ export function PortalPdfViewer({ policyId, s3Key }: PortalPdfViewerProps) {
         setSignedUrl(url);
       } else {
         setSignedUrl(null);
-        toast.error('Could not load the policy document.');
+        toast.error("Could not load the policy document.");
       }
     },
-    onError: () => toast.error('An error occurred while loading the policy.'),
+    onError: () => toast.error("An error occurred while loading the policy."),
     onSettled: () => setIsLoading(false),
   });
 
@@ -41,7 +43,7 @@ export function PortalPdfViewer({ policyId, s3Key }: PortalPdfViewerProps) {
   if (isLoading) {
     return (
       <div className="flex h-[500px] w-full items-center justify-center rounded-md border">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -61,9 +63,9 @@ export function PortalPdfViewer({ policyId, s3Key }: PortalPdfViewerProps) {
   return (
     <Card className="flex h-[500px] w-full flex-col items-center justify-center">
       <CardContent className="text-center">
-        <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+        <FileText className="text-muted-foreground mx-auto h-12 w-12" />
         <p className="mt-4 font-semibold">PDF Document Not Available</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           This policy is stored as a PDF, but it could not be loaded.
         </p>
       </CardContent>

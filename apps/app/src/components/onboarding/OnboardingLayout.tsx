@@ -1,21 +1,22 @@
-'use server';
+"use server";
 
-import { getOrganizations } from '@/data/getOrganizations';
-import { auth } from '@/utils/auth';
-import type { Organization } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { getOrganizations } from "@/data/getOrganizations";
+import { auth } from "@/utils/auth";
+
+import type { Organization } from "@trycompai/db";
 
 interface OnboardingLayoutProps {
   children: ReactNode;
-  variant?: 'setup' | 'onboarding';
+  variant?: "setup" | "onboarding";
   currentOrganization?: Organization | null;
 }
 
 export async function OnboardingLayout({
   children,
-  variant = 'setup',
+  variant = "setup",
   currentOrganization = null,
 }: OnboardingLayoutProps) {
   const session = await auth.api.getSession({
@@ -23,7 +24,7 @@ export async function OnboardingLayout({
   });
 
   if (!session?.user?.id) {
-    redirect('/auth');
+    redirect("/auth");
   }
 
   const { organizations } = await getOrganizations();

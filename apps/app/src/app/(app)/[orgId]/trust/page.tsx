@@ -1,8 +1,13 @@
-import PageCore from '@/components/pages/PageCore.tsx';
-import type { Metadata } from 'next';
-import { TrustAccessRequestsClient } from './components/trust-access-request-client';
+import type { Metadata } from "next";
+import PageCore from "@/components/pages/PageCore.tsx";
 
-export default async function TrustAccessPage({ params }: { params: Promise<{ orgId: string }> }) {
+import { TrustAccessRequestsClient } from "./components/trust-access-request-client";
+
+export default async function TrustAccessPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
   const { orgId } = await params;
   return (
     <PageCore className="border-0">
@@ -21,6 +26,6 @@ export default async function TrustAccessPage({ params }: { params: Promise<{ or
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Trust Access Management',
+    title: "Trust Access Management",
   };
 }

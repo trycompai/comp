@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@trycompai/ui/table";
 
 interface Finding {
   id: string;
@@ -21,18 +29,18 @@ interface FindingsTableProps {
 }
 
 const severityVariant = {
-  critical: 'destructive',
-  high: 'destructive',
-  medium: 'warning',
-  low: 'default',
-  info: 'secondary',
+  critical: "destructive",
+  high: "destructive",
+  medium: "warning",
+  low: "default",
+  info: "secondary",
 } as const;
 
 const statusVariant = {
-  failed: 'destructive',
-  passed: 'default',
-  new: 'warning',
-  active: 'warning',
+  failed: "destructive",
+  passed: "default",
+  new: "warning",
+  active: "warning",
 } as const;
 
 export function FindingsTable({ findings }: FindingsTableProps) {
@@ -73,14 +81,16 @@ export function FindingsTable({ findings }: FindingsTableProps) {
         <TableBody>
           {findings.map((finding) => {
             const isExpanded = expandedRows.has(finding.id);
-            const severityKey = finding.severity?.toLowerCase() as keyof typeof severityVariant;
-            const statusKey = finding.status?.toLowerCase() as keyof typeof statusVariant;
+            const severityKey =
+              finding.severity?.toLowerCase() as keyof typeof severityVariant;
+            const statusKey =
+              finding.status?.toLowerCase() as keyof typeof statusVariant;
 
             return (
               <>
                 <TableRow
                   key={finding.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="hover:bg-muted/50 cursor-pointer"
                   onClick={() => toggleRow(finding.id)}
                 >
                   <TableCell>
@@ -93,20 +103,22 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                     </Button>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={severityVariant[severityKey] || 'default'}>
-                      {finding.severity || 'Unknown'}
+                    <Badge variant={severityVariant[severityKey] || "default"}>
+                      {finding.severity || "Unknown"}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">
-                    {finding.title || 'Untitled Finding'}
+                    {finding.title || "Untitled Finding"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[statusKey] || 'secondary'}>
-                      {finding.status || 'Unknown'}
+                    <Badge variant={statusVariant[statusKey] || "secondary"}>
+                      {finding.status || "Unknown"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {finding.completedAt ? new Date(finding.completedAt).toLocaleString() : 'Never'}
+                    {finding.completedAt
+                      ? new Date(finding.completedAt).toLocaleString()
+                      : "Never"}
                   </TableCell>
                 </TableRow>
                 {isExpanded && (
@@ -116,28 +128,32 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                         {finding.description && (
                           <div>
                             <h4 className="mb-2 font-semibold">Description</h4>
-                            <p className="text-muted-foreground text-sm">{finding.description}</p>
+                            <p className="text-muted-foreground text-sm">
+                              {finding.description}
+                            </p>
                           </div>
                         )}
                         {finding.remediation && (
                           <div>
                             <h4 className="mb-2 font-semibold">Remediation</h4>
                             <div className="text-muted-foreground text-sm">
-                              {finding.remediation.split(/\b(https?:\/\/\S+)\b/).map((part, i) => {
-                                return /^https?:\/\/\S+$/.test(part) ? (
-                                  <a
-                                    key={i}
-                                    href={part}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline"
-                                  >
-                                    {part}
-                                  </a>
-                                ) : (
-                                  <span key={i}>{part}</span>
-                                );
-                              })}
+                              {finding.remediation
+                                .split(/\b(https?:\/\/\S+)\b/)
+                                .map((part, i) => {
+                                  return /^https?:\/\/\S+$/.test(part) ? (
+                                    <a
+                                      key={i}
+                                      href={part}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline"
+                                    >
+                                      {part}
+                                    </a>
+                                  ) : (
+                                    <span key={i}>{part}</span>
+                                  );
+                                })}
                             </div>
                           </div>
                         )}

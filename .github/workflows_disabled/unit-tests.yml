@@ -12,9 +12,9 @@ on:
       - main # Feature branches -> main
       - release # main -> release (production)
     paths:
-      - 'apps/**'
-      - 'packages/**'
-      - '!**/*.md'
+      - "apps/**"
+      - "packages/**"
+      - "!**/*.md"
   push: # Also runs AFTER merge to main/release
     branches:
       - main

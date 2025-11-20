@@ -1,4 +1,4 @@
-import type { ScriptConfig } from '../types';
+import type { ScriptConfig } from "../types";
 
 export function generateMacScript(config: ScriptConfig): string {
   const { orgId, employeeId, fleetDevicePath } = config;

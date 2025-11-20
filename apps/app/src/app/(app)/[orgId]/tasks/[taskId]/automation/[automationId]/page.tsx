@@ -1,9 +1,11 @@
-import { db } from '@trycompai/db';
-import { redirect } from 'next/navigation';
-import { loadChatHistory } from './actions/task-automation-actions';
-import { AutomationLayoutWrapper } from './automation-layout-wrapper';
-import { AutomationPageClient } from './components/AutomationPageClient';
-import { ChatProvider } from './lib/chat-context';
+import { redirect } from "next/navigation";
+
+import { db } from "@trycompai/db";
+
+import { loadChatHistory } from "./actions/task-automation-actions";
+import { AutomationLayoutWrapper } from "./automation-layout-wrapper";
+import { AutomationPageClient } from "./components/AutomationPageClient";
+import { ChatProvider } from "./lib/chat-context";
 
 export default async function Page({
   params,
@@ -20,14 +22,14 @@ export default async function Page({
   });
 
   if (!task) {
-    redirect('/tasks');
+    redirect("/tasks");
   }
 
   const taskName = task.title;
 
   // Load chat history server-side (skip for ephemeral 'new' automations)
   let initialMessages = [];
-  if (automationId !== 'new') {
+  if (automationId !== "new") {
     const historyResult = await loadChatHistory(automationId);
     if (historyResult.success && historyResult.data?.messages) {
       // Deduplicate messages by ID (in case of concurrent save/load race conditions)
@@ -54,7 +56,9 @@ export default async function Page({
             taskId={taskId}
             automationId={automationId}
             taskName={taskName}
-            taskDescription={automationId === 'new' ? taskDescription : undefined}
+            taskDescription={
+              automationId === "new" ? taskDescription : undefined
+            }
           />
         </div>
       </AutomationLayoutWrapper>

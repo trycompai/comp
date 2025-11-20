@@ -1,3 +1,7 @@
-export default function IntegrationsLayout({ children }: { children: React.ReactNode }) {
+export default function IntegrationsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return children;
 }

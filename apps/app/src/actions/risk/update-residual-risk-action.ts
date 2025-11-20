@@ -1,9 +1,11 @@
-'use server';
+"use server";
 
-import { db, Impact, Likelihood } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { updateResidualRiskSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import { db, Impact, Likelihood } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { updateResidualRiskSchema } from "../schema";
 
 function mapNumericToImpact(value: number): Impact {
   if (value <= 2) return Impact.insignificant;
@@ -24,10 +26,10 @@ function mapNumericToLikelihood(value: number): Likelihood {
 export const updateResidualRiskAction = authActionClient
   .inputSchema(updateResidualRiskSchema)
   .metadata({
-    name: 'update-residual-risk',
+    name: "update-residual-risk",
     track: {
-      event: 'update-residual-risk',
-      channel: 'server',
+      event: "update-residual-risk",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -35,7 +37,7 @@ export const updateResidualRiskAction = authActionClient
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      throw new Error('Invalid organization');
+      throw new Error("Invalid organization");
     }
 
     try {
@@ -53,13 +55,13 @@ export const updateResidualRiskAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/register`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}`);
-      revalidateTag('risks', { expire: 0 });
+      revalidateTag("risks", { expire: 0 });
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Error updating residual risk:', error);
+      console.error("Error updating residual risk:", error);
       return {
         success: false,
       };

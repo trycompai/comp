@@ -1,11 +1,13 @@
-'use server';
+"use server";
 
-import { sendNewPolicyEmail } from '@/jobs/tasks/email/new-policy-email';
-import { tasks } from '@trigger.dev/sdk';
-import { db, PolicyStatus } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { z } from 'zod';
-import { authActionClient } from '../safe-action';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { sendNewPolicyEmail } from "@/jobs/tasks/email/new-policy-email";
+import { tasks } from "@trigger.dev/sdk";
+import { z } from "zod";
+
+import { db, PolicyStatus } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
 
 const acceptRequestedPolicyChangesSchema = z.object({
   id: z.string(),
@@ -17,11 +19,11 @@ const acceptRequestedPolicyChangesSchema = z.object({
 export const acceptRequestedPolicyChangesAction = authActionClient
   .inputSchema(acceptRequestedPolicyChangesSchema)
   .metadata({
-    name: 'accept-requested-policy-changes',
+    name: "accept-requested-policy-changes",
     track: {
-      event: 'accept-requested-policy-changes',
-      description: 'Accept Policy Changes',
-      channel: 'server',
+      event: "accept-requested-policy-changes",
+      description: "Accept Policy Changes",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -29,11 +31,11 @@ export const acceptRequestedPolicyChangesAction = authActionClient
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     if (!approverId) {
-      throw new Error('Approver is required');
+      throw new Error("Approver is required");
     }
 
     try {
@@ -52,11 +54,11 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       });
 
       if (!policy) {
-        throw new Error('Policy not found');
+        throw new Error("Policy not found");
       }
 
       if (policy.approverId !== approverId) {
-        throw new Error('Approver is not the same');
+        throw new Error("Approver is not the same");
       }
 
       // Check if there were previous signers to determine notification type
@@ -90,29 +92,31 @@ export const acceptRequestedPolicyChangesAction = authActionClient
 
       // Filter to get only employees and contractors
       const employeeMembers = employees.filter((member) => {
-        const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-        return roles.includes('employee') || roles.includes('contractor');
+        const roles = member.role.includes(",")
+          ? member.role.split(",")
+          : [member.role];
+        return roles.includes("employee") || roles.includes("contractor");
       });
 
       // Prepare the events array for the API
       const events = employeeMembers
         .filter((employee) => employee.user.email)
         .map((employee) => {
-          let notificationType: 'new' | 're-acceptance' | 'updated';
+          let notificationType: "new" | "re-acceptance" | "updated";
           const wasAlreadySigned = policy.signedBy.includes(employee.id);
           if (isNewPolicy) {
-            notificationType = 'new';
+            notificationType = "new";
           } else if (wasAlreadySigned) {
-            notificationType = 're-acceptance';
+            notificationType = "re-acceptance";
           } else {
-            notificationType = 'updated';
+            notificationType = "updated";
           }
 
           return {
             email: employee.user.email,
-            userName: employee.user.name || employee.user.email || 'Employee',
+            userName: employee.user.name || employee.user.email || "Employee",
             policyName: policy.name,
-            organizationId: session.activeOrganizationId || '',
+            organizationId: session.activeOrganizationId || "",
             organizationName: policy.organization.name,
             notificationType,
           };
@@ -121,12 +125,15 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       // Call the API route to send the emails
       await Promise.all(
         events.map((event) =>
-          tasks.trigger<typeof sendNewPolicyEmail>('send-new-policy-email', event),
+          tasks.trigger<typeof sendNewPolicyEmail>(
+            "send-new-policy-email",
+            event,
+          ),
         ),
       );
 
       // If a comment was provided, create a comment
-      if (comment && comment.trim() !== '') {
+      if (comment && comment.trim() !== "") {
         const member = await db.member.findFirst({
           where: {
             userId: user.id,
@@ -139,7 +146,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
             data: {
               content: `Policy changes accepted: ${comment}`,
               entityId: id,
-              entityType: 'policy',
+              entityType: "policy",
               organizationId: session.activeOrganizationId,
               authorId: member.id,
             },
@@ -149,13 +156,13 @@ export const acceptRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies', { expire: 0 });
+      revalidateTag("policies", { expire: 0 });
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Error submitting policy for approval:', error);
+      console.error("Error submitting policy for approval:", error);
 
       return {
         success: false,

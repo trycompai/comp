@@ -1,6 +1,7 @@
-import { EvidenceAutomationRun } from '@trycompai/db';
-import { useParams } from 'next/navigation';
-import useSWR from 'swr';
+import { useParams } from "next/navigation";
+import useSWR from "swr";
+
+import { EvidenceAutomationRun } from "@trycompai/db";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -9,14 +10,12 @@ export function useAutomationRuns() {
     automationId: string;
   }>();
 
-  const { data, error, isLoading, mutate } = useSWR<{ runs: EvidenceAutomationRun[] }>(
-    `/api/automations/${automationId}/runs`,
-    fetcher,
-    {
-      refreshInterval: 3000, // Poll every 3 seconds
-      revalidateOnFocus: true,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR<{
+    runs: EvidenceAutomationRun[];
+  }>(`/api/automations/${automationId}/runs`, fetcher, {
+    refreshInterval: 3000, // Poll every 3 seconds
+    revalidateOnFocus: true,
+  });
 
   return {
     runs: data?.runs,

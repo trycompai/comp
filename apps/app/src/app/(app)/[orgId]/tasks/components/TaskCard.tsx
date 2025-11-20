@@ -1,20 +1,27 @@
-'use client';
+"use client";
 
-import type { Member, Task, User } from '@trycompai/db';
-import { format } from 'date-fns';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
-import { TaskStatusSelector } from './TaskStatusSelector';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { useDrag, useDrop } from "react-dnd";
+
+import type { Member, Task, User } from "@trycompai/db";
+
+import { TaskStatusSelector } from "./TaskStatusSelector";
 
 // DnD Item Type identifier for tasks.
 export const ItemTypes = {
-  TASK: 'task',
+  TASK: "task",
 };
 
 // Type representing valid task status IDs.
-export type StatusId = 'todo' | 'in_progress' | 'done' | 'failed' | 'not_relevant';
+export type StatusId =
+  | "todo"
+  | "in_progress"
+  | "done"
+  | "failed"
+  | "not_relevant";
 
 // Interface for the data transferred during drag operations.
 export interface DragItem {
@@ -31,7 +38,11 @@ interface TaskCardProps {
   isLast: boolean; // Indicates if this is the last card in its group.
   index: number; // Current index within its rendered group.
   onDropReorder: (dragIndex: number, hoverIndex: number) => void; // Callback when dropped for reordering.
-  handleDropTaskInternal: (item: DragItem, targetStatus: StatusId, hoverIndex: number) => void;
+  handleDropTaskInternal: (
+    item: DragItem,
+    targetStatus: StatusId,
+    hoverIndex: number,
+  ) => void;
 }
 
 /**
@@ -52,8 +63,8 @@ export function TaskCard({
 
   // State for indicator: type ('reorder' or 'move') and position ('top' or 'bottom')
   const [indicator, setIndicator] = useState<{
-    type: 'reorder' | 'move';
-    position: 'top' | 'bottom';
+    type: "reorder" | "move";
+    position: "top" | "bottom";
   } | null>(null);
 
   // react-dnd setup for making the card draggable.
@@ -90,12 +101,13 @@ export function TaskCard({
       if (!clientOffset) return;
 
       const hoverBoundingRect = dropRef.current.getBoundingClientRect();
-      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const hoverMiddleY =
+        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-      const position = hoverClientY < hoverMiddleY ? 'top' : 'bottom';
+      const position = hoverClientY < hoverMiddleY ? "top" : "bottom";
 
       // Determine indicator type based on whether status matches
-      const type = item.status === task.status ? 'reorder' : 'move';
+      const type = item.status === task.status ? "reorder" : "move";
       setIndicator({ type, position });
     },
     // Logic executed when a draggable item is dropped onto this card.
@@ -159,25 +171,25 @@ export function TaskCard({
   return (
     <div
       ref={setRefs}
-      className={`group relative flex w-full items-center pr-2 ${!isLast ? 'border-border border-b' : ''} ${
-        isDragging ? 'bg-muted opacity-30' : 'hover:bg-muted/50 opacity-100'
+      className={`group relative flex w-full items-center pr-2 ${!isLast ? "border-border border-b" : ""} ${
+        isDragging ? "bg-muted opacity-30" : "hover:bg-muted/50 opacity-100"
       }`}
     >
       {/* Reorder Indicator (Solid Line) */}
-      {indicator?.type === 'reorder' && indicator.position === 'top' && (
+      {indicator?.type === "reorder" && indicator.position === "top" && (
         <div className="bg-primary absolute top-0 right-0 left-0 z-10 h-0.5" />
       )}
-      {indicator?.type === 'reorder' && indicator.position === 'bottom' && (
+      {indicator?.type === "reorder" && indicator.position === "bottom" && (
         <div className="bg-primary absolute right-0 bottom-0 left-0 z-10 h-0.5" />
       )}
 
       {/* Move Indicator (Dashed Line) */}
-      {indicator?.type === 'move' && indicator.position === 'top' && (
+      {indicator?.type === "move" && indicator.position === "top" && (
         <div className="absolute top-[-1px] right-2 left-2 z-10 h-[2px]">
           <div className="border-primary h-full w-full border-t-2 border-dashed" />
         </div>
       )}
-      {indicator?.type === 'move' && indicator.position === 'bottom' && (
+      {indicator?.type === "move" && indicator.position === "bottom" && (
         <div className="absolute right-2 bottom-[-1px] left-2 z-10 h-[2px]">
           <div className="border-primary h-full w-full border-b-2 border-dashed" />
         </div>
@@ -192,26 +204,30 @@ export function TaskCard({
       </div>
 
       <div
-        className="flex flex-grow items-center h-full min-w-0 cursor-pointer"
+        className="flex h-full min-w-0 flex-grow cursor-pointer items-center"
         onClick={handleNavigate}
       >
-        <span className="min-w-0 flex-grow truncate py-2 text-sm">{task.title}</span>
+        <span className="min-w-0 flex-grow truncate py-2 text-sm">
+          {task.title}
+        </span>
         <div className="ml-auto flex shrink-0 items-center space-x-3 pl-2">
           <span className="text-muted-foreground text-xs whitespace-nowrap">
-            {task.createdAt ? format(new Date(task.createdAt), 'MMM d, yyyy') : ''}
+            {task.createdAt
+              ? format(new Date(task.createdAt), "MMM d, yyyy")
+              : ""}
           </span>
           <div className="bg-muted flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border">
             {assignedMember?.user?.image ? (
               <Image
                 src={assignedMember.user.image}
-                alt={assignedMember.user.name ?? 'Assignee'}
+                alt={assignedMember.user.name ?? "Assignee"}
                 width={20}
                 height={20}
                 className="object-cover"
               />
             ) : (
               <span className="text-muted-foreground text-[10px]">
-                {assignedMember?.user?.name?.charAt(0) ?? '?'}
+                {assignedMember?.user?.name?.charAt(0) ?? "?"}
               </span>
             )}
           </div>

@@ -1,25 +1,29 @@
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { StatusIndicator } from '@/components/status-indicator';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
-import { Badge } from '@trycompai/ui/badge';
-import { Loader2, UserIcon } from 'lucide-react';
-import Link from 'next/link';
-import { RiskRow } from '../../RisksTable';
-import { useRiskOnboardingStatus } from '../risk-onboarding-context';
+import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { StatusIndicator } from "@/components/status-indicator";
+import { Loader2, UserIcon } from "lucide-react";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@trycompai/ui/avatar";
+import { Badge } from "@trycompai/ui/badge";
+
+import { RiskRow } from "../../RisksTable";
+import { useRiskOnboardingStatus } from "../risk-onboarding-context";
 
 export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
   {
-    id: 'title',
-    accessorKey: 'title',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Risk" />,
+    id: "title",
+    accessorKey: "title",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Risk" />
+    ),
     cell: ({ row }) => {
       return <RiskNameCell row={row} orgId={orgId} />;
     },
     meta: {
-      label: 'Risk',
-      placeholder: 'Search for a risk...',
-      variant: 'text',
+      label: "Risk",
+      placeholder: "Search for a risk...",
+      variant: "text",
     },
     size: 250,
     minSize: 200,
@@ -28,22 +32,26 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
     enableSorting: true,
   },
   {
-    id: 'status',
-    accessorKey: 'status',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    id: "status",
+    accessorKey: "status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
     cell: ({ row }) => {
       return <RiskStatusCell row={row} />;
     },
     meta: {
-      label: 'Status',
+      label: "Status",
     },
     enableColumnFilter: true,
     enableSorting: true,
   },
   {
-    id: 'department',
-    accessorKey: 'department',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
+    id: "department",
+    accessorKey: "department",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Department" />
+    ),
     cell: ({ row }) => {
       return (
         <Badge variant="marketing" className="w-fit uppercase">
@@ -52,15 +60,17 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
       );
     },
     meta: {
-      label: 'Department',
+      label: "Department",
     },
     enableColumnFilter: true,
     enableSorting: true,
   },
   {
-    id: 'assignee',
-    accessorKey: 'assignee.name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Assignee" />,
+    id: "assignee",
+    accessorKey: "assignee.name",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Assignee" />
+    ),
     enableSorting: false,
     cell: ({ row }) => {
       if (!row.original.assignee) {
@@ -79,12 +89,14 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
           <Avatar className="h-8 w-8">
             <AvatarImage
               src={row.original.assignee.image || undefined}
-              alt={row.original.assignee.name || row.original.assignee.email || ''}
+              alt={
+                row.original.assignee.name || row.original.assignee.email || ""
+              }
             />
             <AvatarFallback>
               {row.original.assignee.name?.charAt(0) ||
                 row.original.assignee.email?.charAt(0).toUpperCase() ||
-                '?'}
+                "?"}
             </AvatarFallback>
           </Avatar>
           <p className="text-sm font-medium">
@@ -94,29 +106,35 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
       );
     },
     meta: {
-      label: 'Assignee',
+      label: "Assignee",
     },
     enableColumnFilter: true,
   },
 ];
 
-function RiskNameCell({ row, orgId }: { row: { original: RiskRow }; orgId: string }) {
+function RiskNameCell({
+  row,
+  orgId,
+}: {
+  row: { original: RiskRow };
+  orgId: string;
+}) {
   const risk = row.original;
   const status = useRiskOnboardingStatus(risk.id);
   const isPending = risk.isPending;
   // Don't show active status if risk is already closed (mitigated)
-  const isResolved = risk.status === 'closed';
+  const isResolved = risk.status === "closed";
   const isActive =
     !isResolved &&
-    (status === 'pending' ||
-      status === 'processing' ||
-      status === 'created' ||
-      status === 'assessing');
+    (status === "pending" ||
+      status === "processing" ||
+      status === "created" ||
+      status === "assessing");
 
   if (isPending || isActive) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+      <div className="text-muted-foreground flex items-center gap-2">
+        <Loader2 className="text-primary h-4 w-4 animate-spin" />
         <span className="line-clamp-1 capitalize">{risk.title}</span>
       </div>
     );
@@ -133,27 +151,28 @@ function RiskStatusCell({ row }: { row: { original: RiskRow } }) {
   const risk = row.original;
   const status = useRiskOnboardingStatus(risk.id);
   const isPending = risk.isPending;
-  const isResolved = risk.status === 'closed';
+  const isResolved = risk.status === "closed";
   // Don't show assessing if risk is already resolved
-  const isAssessing = !isResolved && (risk.isAssessing || status === 'assessing');
+  const isAssessing =
+    !isResolved && (risk.isAssessing || status === "assessing");
   const isActive =
     !isResolved &&
-    (status === 'pending' ||
-      status === 'processing' ||
-      status === 'created' ||
-      status === 'assessing');
+    (status === "pending" ||
+      status === "processing" ||
+      status === "created" ||
+      status === "assessing");
 
   if (isPending || isActive) {
     const statusText =
-      status === 'pending' || status === 'processing' || isPending
-        ? 'Creating...'
-        : status === 'assessing' || isAssessing
-          ? 'Assessing...'
-          : 'Processing...';
+      status === "pending" || status === "processing" || isPending
+        ? "Creating..."
+        : status === "assessing" || isAssessing
+          ? "Assessing..."
+          : "Processing...";
 
     return (
       <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <Loader2 className="text-primary h-4 w-4 animate-spin" />
         <span className="text-muted-foreground text-sm">{statusText}</span>
       </div>
     );

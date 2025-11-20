@@ -1,11 +1,12 @@
-'use server';
+"use server";
 
-import { appErrors } from '@/lib/errors';
-import type { ActionResponse } from '@/types/actions';
-import { db, Impact, Likelihood } from '@trycompai/db';
-import { createSafeActionClient } from 'next-safe-action';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
+import type { ActionResponse } from "@/types/actions";
+import { revalidatePath } from "next/cache";
+import { appErrors } from "@/lib/errors";
+import { createSafeActionClient } from "next-safe-action";
+import { z } from "zod";
+
+import { db, Impact, Likelihood } from "@trycompai/db";
 
 const schema = z.object({
   vendorId: z.string(),
@@ -31,7 +32,8 @@ export const updateVendorInherentRisk = createSafeActionClient()
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : appErrors.UNEXPECTED_ERROR,
+        error:
+          error instanceof Error ? error.message : appErrors.UNEXPECTED_ERROR,
       };
     }
   });

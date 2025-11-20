@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { ClientTooltip } from '@trycompai/ui/chart-tooltip';
-import { format, max, scaleBand, scaleLinear } from 'd3';
-import { type CSSProperties } from 'react';
+import { type CSSProperties } from "react";
+import { format, max, scaleBand, scaleLinear } from "d3";
+
+import { ClientTooltip } from "@trycompai/ui/chart-tooltip";
 
 const STATUS_COLORS = {
-  open: 'bg-[var(--chart-open)]',
-  pending: 'bg-[var(--chart-pending)]',
-  closed: 'bg-[var(--chart-closed)]',
-  archived: 'bg-[var(--chart-archived)]',
+  open: "bg-[var(--chart-open)]",
+  pending: "bg-[var(--chart-pending)]",
+  closed: "bg-[var(--chart-closed)]",
+  archived: "bg-[var(--chart-archived)]",
 };
 
 interface StatusData {
@@ -26,7 +27,8 @@ export function StatusChart({ data }: StatusChartProps) {
     // First, capitalize all existing status names
     const result = inputData.map((item) => ({
       ...item,
-      name: item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase(),
+      name:
+        item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase(),
     }));
 
     const statusNames = Object.keys(STATUS_COLORS);
@@ -42,7 +44,9 @@ export function StatusChart({ data }: StatusChartProps) {
     return result;
   };
 
-  const sortedData = [...ensureAllStatuses(data)].sort((a, b) => b.value - a.value);
+  const sortedData = [...ensureAllStatuses(data)].sort(
+    (a, b) => b.value - a.value,
+  );
 
   if (sortedData.length === 0) {
     return (
@@ -80,12 +84,15 @@ export function StatusChart({ data }: StatusChartProps) {
   const getBarKey = (item: StatusData) => `bar-${item.name}-${item.value}`;
   const getTickKey = (value: number) => `tick-${value}`;
   const getGridKey = (value: number, position = 0) =>
-    `grid-${value.toString().replace('.', '-')}-${position}`;
+    `grid-${value.toString().replace(".", "-")}-${position}`;
   const getLabelKey = (item: StatusData) => `label-${item.name}`;
 
   const getStatusColor = (statusName: string) => {
     const normalizedName = statusName.toLowerCase();
-    return STATUS_COLORS[normalizedName as keyof typeof STATUS_COLORS] || 'bg-gray-400';
+    return (
+      STATUS_COLORS[normalizedName as keyof typeof STATUS_COLORS] ||
+      "bg-gray-400"
+    );
   };
 
   // Generate appropriate tick values based on max value
@@ -110,10 +117,10 @@ export function StatusChart({ data }: StatusChartProps) {
         style={
           {
             height: `${chartHeight}px`,
-            '--marginTop': '0px',
-            '--marginRight': `${marginRight}px`,
-            '--marginBottom': `${marginBottom}px`,
-            '--marginLeft': `${marginLeft}px`,
+            "--marginTop": "0px",
+            "--marginRight": `${marginRight}px`,
+            "--marginBottom": `${marginBottom}px`,
+            "--marginLeft": `${marginLeft}px`,
           } as CSSProperties
         }
       >
@@ -132,17 +139,21 @@ export function StatusChart({ data }: StatusChartProps) {
               <div
                 key={getBarKey(d)}
                 style={{
-                  left: '0',
+                  left: "0",
                   top: `${barTopPosition}%`,
                   width: `${barWidth}%`,
                   height: `${fixedBarHeightPercentage}%`,
                 }}
-                className={`absolute ${getStatusColor(d.name)} ${d.value === 0 ? 'opacity-40' : ''} dark:opacity-90`}
+                className={`absolute ${getStatusColor(d.name)} ${d.value === 0 ? "opacity-40" : ""} dark:opacity-90`}
                 data-tip={`${d.name}: ${d.value}`}
               />
             );
           })}
-          <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <svg
+            className="h-full w-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
             {tickValues.map((value, position) => {
               const uniqueKey = getGridKey(value, position);
               return (
@@ -169,11 +180,11 @@ export function StatusChart({ data }: StatusChartProps) {
               key={getTickKey(value)}
               style={{
                 left: `${xScale(value)}%`,
-                top: '100%',
+                top: "100%",
               }}
               className="text-muted-foreground absolute -translate-x-1/2 text-xs tabular-nums"
             >
-              {Number.isInteger(value) ? format(',')(value) : value.toFixed(2)}
+              {Number.isInteger(value) ? format(",")(value) : value.toFixed(2)}
             </div>
           ))}
         </div>
@@ -183,7 +194,7 @@ export function StatusChart({ data }: StatusChartProps) {
             <span
               key={getLabelKey(entry)}
               style={{
-                left: '0',
+                left: "0",
                 top: `${yScale(entry.name)! + yScale.bandwidth() / 2}%`,
                 width: `${marginLeft - 2}px`,
               }}

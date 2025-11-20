@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { AnalyticsProvider } from '@comp/analytics';
-import { Session, User } from 'better-auth';
-import { ThemeProvider } from 'next-themes';
-import type { ReactNode } from 'react';
+import { AnalyticsProvider } from "@trycompai/analytics";
+import { Session, User } from "better-auth";
+import { ThemeProvider } from "next-themes";
+import type { ReactNode } from "react";
 
 type ProviderProps = {
   children: ReactNode;
@@ -15,7 +15,12 @@ type ProviderProps = {
 
 export function Providers({ children, session }: ProviderProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       <AnalyticsProvider
         userId={session?.user?.id ?? undefined}
         userEmail={session?.user?.email ?? undefined}

@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import { auth } from '@/utils/auth';
-import { db, Task } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db, Task } from "@trycompai/db";
 
 export const updateTask = async (input: Partial<Task>) => {
   const session = await auth.api.getSession({
@@ -14,7 +15,7 @@ export const updateTask = async (input: Partial<Task>) => {
   if (!session?.session?.activeOrganizationId) {
     return {
       success: false,
-      error: 'Not authorized - no organization found',
+      error: "Not authorized - no organization found",
     };
   }
 
@@ -37,10 +38,10 @@ export const updateTask = async (input: Partial<Task>) => {
       task,
     };
   } catch (error) {
-    console.error('Failed to update task:', error);
+    console.error("Failed to update task:", error);
     return {
       success: false,
-      error: 'Failed to update task',
+      error: "Failed to update task",
     };
   }
 };

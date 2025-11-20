@@ -1,20 +1,22 @@
 // update-task-action.ts
 
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import type { TaskStatus } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { updateVendorTaskSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+
+import type { TaskStatus } from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import { updateVendorTaskSchema } from "../schema";
 
 export const updateVendorTaskAction = authActionClient
   .inputSchema(updateVendorTaskSchema)
   .metadata({
-    name: 'update-vendor-task',
+    name: "update-vendor-task",
     track: {
-      event: 'update-vendor-task',
-      channel: 'server',
+      event: "update-vendor-task",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -22,11 +24,11 @@ export const updateVendorTaskAction = authActionClient
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     if (!assigneeId) {
-      throw new Error('Assignee ID is required');
+      throw new Error("Assignee ID is required");
     }
 
     try {
@@ -43,7 +45,7 @@ export const updateVendorTaskAction = authActionClient
         },
       });
       if (!task) {
-        throw new Error('Task not found');
+        throw new Error("Task not found");
       }
 
       await db.task.update({
@@ -59,8 +61,12 @@ export const updateVendorTaskAction = authActionClient
         },
       });
 
-      revalidatePath(`/${session.activeOrganizationId}/vendors/${task.vendors[0].id}`);
-      revalidatePath(`/${session.activeOrganizationId}/vendors/${task.vendors[0].id}/tasks/${id}`);
+      revalidatePath(
+        `/${session.activeOrganizationId}/vendors/${task.vendors[0].id}`,
+      );
+      revalidatePath(
+        `/${session.activeOrganizationId}/vendors/${task.vendors[0].id}/tasks/${id}`,
+      );
       revalidateTag(`vendor_${session.activeOrganizationId}`, { expire: 0 });
 
       return { success: true };

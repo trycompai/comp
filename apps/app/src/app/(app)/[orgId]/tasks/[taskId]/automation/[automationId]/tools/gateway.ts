@@ -1,7 +1,7 @@
-import { createGatewayProvider } from '@ai-sdk/gateway';
-import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { JSONValue } from 'ai';
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
+import type { LanguageModelV2 } from "@ai-sdk/provider";
+import type { JSONValue } from "ai";
+import { createGatewayProvider } from "@ai-sdk/gateway";
 
 export async function getAvailableModels() {
   const gateway = gatewayInstance();
@@ -17,7 +17,7 @@ export interface ModelOptions {
 
 export function getModelOptions(
   modelId: string,
-  options?: { reasoningEffort?: 'minimal' | 'low' | 'medium' },
+  options?: { reasoningEffort?: "minimal" | "low" | "medium" },
 ): ModelOptions {
   const gateway = gatewayInstance();
 
@@ -25,10 +25,10 @@ export function getModelOptions(
     model: gateway(modelId),
     providerOptions: {
       openai: {
-        include: ['reasoning.encrypted_content'],
-        reasoningEffort: options?.reasoningEffort ?? 'low',
-        reasoningSummary: 'auto',
-        serviceTier: 'priority',
+        include: ["reasoning.encrypted_content"],
+        reasoningEffort: options?.reasoningEffort ?? "low",
+        reasoningSummary: "auto",
+        serviceTier: "priority",
       } satisfies OpenAIResponsesProviderOptions,
     },
   };

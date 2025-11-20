@@ -13,5 +13,3 @@ export type IntegrationRunOutput = {
   errors?: string[];
   failedIntegrations?: FailedIntegration[];
 };
-
-

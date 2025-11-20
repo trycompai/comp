@@ -1,6 +1,8 @@
-import { Icons } from '@trycompai/ui/icons';
-import Link from 'next/link';
-import { MainMenu } from './main-menu';
+import Link from "next/link";
+
+import { Icons } from "@trycompai/ui/icons";
+
+import { MainMenu } from "./main-menu";
 
 export async function Sidebar() {
   return (

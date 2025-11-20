@@ -1,8 +1,9 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { z } from 'zod';
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const isFriendlyAvailableSchema = z.object({
   friendlyUrl: z.string(),
@@ -12,17 +13,17 @@ const isFriendlyAvailableSchema = z.object({
 export const isFriendlyAvailable = authActionClient
   .inputSchema(isFriendlyAvailableSchema)
   .metadata({
-    name: 'check-friendly-url',
+    name: "check-friendly-url",
     track: {
-      event: 'check-friendly-url',
-      channel: 'server',
+      event: "check-friendly-url",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
     const { friendlyUrl, orgId } = parsedInput;
 
     if (!ctx.session.activeOrganizationId) {
-      throw new Error('No active organization');
+      throw new Error("No active organization");
     }
 
     const url = await db.trust.findUnique({

@@ -1,33 +1,44 @@
-'use client';
+"use client";
 
-import { api } from '@/lib/api-client';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { api } from "@/lib/api-client";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  Plug,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Skeleton } from '@trycompai/ui/skeleton';
-import { ArrowRight, CheckCircle2, Loader2, Plug, Sparkles, Zap } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { getRelevantTasksForIntegration } from '../actions/get-relevant-tasks';
-import {
-  CATEGORIES,
-  INTEGRATIONS,
-  type Integration,
-  type IntegrationCategory,
-} from '../data/integrations';
-import { SearchInput } from './SearchInput';
+} from "@trycompai/ui/dialog";
+import { Skeleton } from "@trycompai/ui/skeleton";
 
-const LOGO_TOKEN = 'pk_AZatYxV5QDSfWpRDaBxzRQ';
+import type { Integration, IntegrationCategory } from "../data/integrations";
+import { getRelevantTasksForIntegration } from "../actions/get-relevant-tasks";
+import { CATEGORIES, INTEGRATIONS } from "../data/integrations";
+import { SearchInput } from "./SearchInput";
+
+const LOGO_TOKEN = "pk_AZatYxV5QDSfWpRDaBxzRQ";
 
 interface RelevantTask {
   taskTemplateId: string;
@@ -42,24 +53,26 @@ function TaskCard({ task, orgId }: { task: RelevantTask; orgId: string }) {
 
   const handleCardClick = async () => {
     setIsNavigating(true);
-    toast.loading('Opening task automation...', { id: 'navigating' });
+    toast.loading("Opening task automation...", { id: "navigating" });
 
     try {
       // Fetch all tasks and find one with matching template ID
-      const response = await api.get<Array<{ id: string; taskTemplateId: string | null }>>(
-        '/v1/tasks',
-        orgId,
-      );
+      const response = await api.get<
+        Array<{ id: string; taskTemplateId: string | null }>
+      >("/v1/tasks", orgId);
 
       if (response.error || !response.data) {
-        throw new Error(response.error || 'Failed to fetch tasks');
+        throw new Error(response.error || "Failed to fetch tasks");
       }
 
       // Debug logging
-      console.log('Looking for taskTemplateId:', task.taskTemplateId);
+      console.log("Looking for taskTemplateId:", task.taskTemplateId);
       console.log(
-        'Available tasks:',
-        response.data.map((t) => ({ id: t.id, taskTemplateId: t.taskTemplateId })),
+        "Available tasks:",
+        response.data.map((t) => ({
+          id: t.id,
+          taskTemplateId: t.taskTemplateId,
+        })),
       );
 
       const matchingTask = response.data.find(
@@ -67,23 +80,25 @@ function TaskCard({ task, orgId }: { task: RelevantTask; orgId: string }) {
       );
 
       if (!matchingTask) {
-        toast.dismiss('navigating');
-        toast.error(`Task "${task.taskName}" not found. Please create it first.`);
+        toast.dismiss("navigating");
+        toast.error(
+          `Task "${task.taskName}" not found. Please create it first.`,
+        );
         setIsNavigating(false);
         await router.push(`/${orgId}/tasks`);
         return;
       }
 
       const url = `/${orgId}/tasks/${matchingTask.id}/automation/new?prompt=${encodeURIComponent(task.prompt)}`;
-      toast.dismiss('navigating');
-      toast.success('Redirecting...', { duration: 1000 });
+      toast.dismiss("navigating");
+      toast.success("Redirecting...", { duration: 1000 });
 
       // Use window.location for immediate navigation
       window.location.href = url;
     } catch (error) {
-      console.error('Error finding task:', error);
-      toast.dismiss('navigating');
-      toast.error('Failed to find task');
+      console.error("Error finding task:", error);
+      toast.dismiss("navigating");
+      toast.error("Failed to find task");
       setIsNavigating(false);
     }
   };
@@ -91,34 +106,36 @@ function TaskCard({ task, orgId }: { task: RelevantTask; orgId: string }) {
   return (
     <div
       onClick={handleCardClick}
-      className="group/task relative block p-5 rounded-xl bg-gradient-to-br from-background to-muted/20 border border-border/60 hover:border-primary/40 hover:shadow-md transition-all duration-200 h-full overflow-hidden cursor-pointer"
+      className="group/task from-background to-muted/20 border-border/60 hover:border-primary/40 relative block h-full cursor-pointer overflow-hidden rounded-xl border bg-gradient-to-br p-5 transition-all duration-200 hover:shadow-md"
     >
       {isNavigating && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3 rounded-xl">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <div className="text-center space-y-1">
-            <p className="text-sm font-medium text-foreground">Opening task...</p>
-            <p className="text-xs text-muted-foreground">
+        <div className="bg-background/80 absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl backdrop-blur-sm">
+          <Loader2 className="text-primary h-6 w-6 animate-spin" />
+          <div className="space-y-1 text-center">
+            <p className="text-foreground text-sm font-medium">
+              Opening task...
+            </p>
+            <p className="text-muted-foreground text-xs">
               Redirecting to automation with prompt pre-filled
             </p>
           </div>
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-primary/5 opacity-0 group-hover/task:opacity-100 transition-opacity duration-200" />
-      <div className="relative flex flex-col h-full">
+      <div className="from-primary/0 via-primary/0 to-primary/5 absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-200 group-hover/task:opacity-100" />
+      <div className="relative flex h-full flex-col">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-2 mb-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary/40 mt-1.5 flex-shrink-0 group-hover/task:bg-primary transition-colors" />
-              <p className="text-sm font-semibold text-foreground group-hover/task:text-primary transition-colors">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-start gap-2">
+              <div className="bg-primary/40 group-hover/task:bg-primary mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full transition-colors" />
+              <p className="text-foreground group-hover/task:text-primary text-sm font-semibold transition-colors">
                 {task.taskName}
               </p>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 pl-3.5">
+            <p className="text-muted-foreground line-clamp-2 pl-3.5 text-xs leading-relaxed">
               {task.reason}
             </p>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover/task:text-primary group-hover/task:translate-x-0.5 transition-all flex-shrink-0 mt-0.5" />
+          <ArrowRight className="text-muted-foreground group-hover/task:text-primary mt-0.5 h-4 w-4 flex-shrink-0 transition-all group-hover/task:translate-x-0.5" />
         </div>
       </div>
     </div>
@@ -131,9 +148,12 @@ export function IntegrationsGrid({
   taskTemplates: Array<{ id: string; name: string; description: string }>;
 }) {
   const { orgId } = useParams<{ orgId: string }>();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<IntegrationCategory | 'All'>('All');
-  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<
+    IntegrationCategory | "All"
+  >("All");
+  const [selectedIntegration, setSelectedIntegration] =
+    useState<Integration | null>(null);
   const [relevantTasks, setRelevantTasks] = useState<RelevantTask[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
 
@@ -142,18 +162,18 @@ export function IntegrationsGrid({
     let filtered = INTEGRATIONS;
 
     // Filter by category
-    if (selectedCategory !== 'All') {
+    if (selectedCategory !== "All") {
       filtered = filtered.filter((i) => i.category === selectedCategory);
     }
 
     // Fuzzy search - more flexible matching
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      const terms = query.split(' ').filter(Boolean);
+      const terms = query.split(" ").filter(Boolean);
 
       filtered = filtered.filter((i) => {
         const searchText =
-          `${i.name} ${i.description} ${i.category} ${i.examplePrompts.join(' ')}`.toLowerCase();
+          `${i.name} ${i.description} ${i.category} ${i.examplePrompts.join(" ")}`.toLowerCase();
         // Match if ANY search term is found
         return terms.some((term) => searchText.includes(term));
       });
@@ -164,7 +184,7 @@ export function IntegrationsGrid({
 
   const handleCopyPrompt = (prompt: string) => {
     navigator.clipboard.writeText(prompt);
-    toast.success('Prompt copied to clipboard!');
+    toast.success("Prompt copied to clipboard!");
   };
 
   useEffect(() => {
@@ -179,7 +199,7 @@ export function IntegrationsGrid({
           setRelevantTasks(tasks);
         })
         .catch((error) => {
-          console.error('Error fetching relevant tasks:', error);
+          console.error("Error fetching relevant tasks:", error);
           setRelevantTasks([]);
         })
         .finally(() => {
@@ -203,12 +223,12 @@ export function IntegrationsGrid({
         />
 
         {/* Category Filters - Horizontal scroll on mobile */}
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:overflow-x-visible sm:flex-wrap sm:pb-0 sm:mx-0 sm:px-0 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="scrollbar-hide -mx-1 flex gap-2 overflow-x-auto px-1 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
           <Button
             size="sm"
-            variant={selectedCategory === 'All' ? 'default' : 'outline'}
-            onClick={() => setSelectedCategory('All')}
-            className="flex-shrink-0 whitespace-nowrap min-w-fit px-4"
+            variant={selectedCategory === "All" ? "default" : "outline"}
+            onClick={() => setSelectedCategory("All")}
+            className="min-w-fit flex-shrink-0 px-4 whitespace-nowrap"
           >
             All
           </Button>
@@ -216,9 +236,9 @@ export function IntegrationsGrid({
             <Button
               key={category}
               size="sm"
-              variant={selectedCategory === category ? 'default' : 'outline'}
+              variant={selectedCategory === category ? "default" : "outline"}
               onClick={() => setSelectedCategory(category)}
-              className="flex-shrink-0 whitespace-nowrap min-w-fit px-4"
+              className="min-w-fit flex-shrink-0 px-4 whitespace-nowrap"
             >
               {category}
             </Button>
@@ -228,55 +248,61 @@ export function IntegrationsGrid({
 
       <div className="space-y-2">
         {/* Integration Cards */}
-        {(searchQuery || selectedCategory !== 'All') && filteredIntegrations.length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredIntegrations.length}{' '}
-            {filteredIntegrations.length === 1 ? 'match' : 'matches'}
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {(searchQuery || selectedCategory !== "All") &&
+          filteredIntegrations.length > 0 && (
+            <div className="text-muted-foreground text-sm">
+              Showing {filteredIntegrations.length}{" "}
+              {filteredIntegrations.length === 1 ? "match" : "matches"}
+            </div>
+          )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Results info - only show when filtering */}
           {filteredIntegrations.map((integration) => (
             <Card
               key={integration.id}
-              className="group relative overflow-hidden hover:shadow-md transition-all hover:border-primary/30 cursor-pointer"
+              className="group hover:border-primary/30 relative cursor-pointer overflow-hidden transition-all hover:shadow-md"
               onClick={() => setSelectedIntegration(integration)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-background border border-border flex items-center justify-center overflow-hidden">
+                    <div className="bg-background border-border flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border">
                       <Image
                         src={`https://img.logo.dev/${integration.domain}?token=${LOGO_TOKEN}`}
                         alt={`${integration.name} logo`}
                         width={32}
                         height={32}
                         unoptimized
-                        className="object-contain rounded-md"
+                        className="rounded-md object-contain"
                       />
                     </div>
                     <div>
-                      <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         {integration.name}
                         {integration.popular && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          <Badge
+                            variant="secondary"
+                            className="px-1.5 py-0 text-[10px]"
+                          >
                             Popular
                           </Badge>
                         )}
                       </CardTitle>
-                      <p className="text-xs text-muted-foreground mt-0.5">{integration.category}</p>
+                      <p className="text-muted-foreground mt-0.5 text-xs">
+                        {integration.category}
+                      </p>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-sm leading-relaxed line-clamp-2">
+                <CardDescription className="line-clamp-2 text-sm leading-relaxed">
                   {integration.description}
                 </CardDescription>
               </CardContent>
 
               {/* Hover overlay */}
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div className="bg-primary/5 pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100" />
             </Card>
           ))}
         </div>
@@ -284,73 +310,81 @@ export function IntegrationsGrid({
 
       {/* Empty state - opportunity, not limitation */}
       {filteredIntegrations.length === 0 && (
-        <div className="text-center py-16">
-          <div className="max-w-xl mx-auto space-y-6">
+        <div className="py-16 text-center">
+          <div className="mx-auto max-w-xl space-y-6">
             <div className="space-y-3">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
-                <Sparkles className="w-8 h-8 text-primary" />
+              <div className="bg-primary/10 inline-flex h-16 w-16 items-center justify-center rounded-2xl">
+                <Sparkles className="text-primary h-8 w-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-foreground">Just ask the agent</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                <h3 className="text-foreground text-xl font-semibold">
+                  Just ask the agent
+                </h3>
+                <p className="text-muted-foreground mx-auto max-w-md text-sm leading-relaxed">
                   {searchQuery ? (
                     <>
-                      "{searchQuery}" isn't in our directory, but the agent can connect to it
-                      anyway. Describe what you need in natural language.
+                      "{searchQuery}" isn't in our directory, but the agent can
+                      connect to it anyway. Describe what you need in natural
+                      language.
                     </>
                   ) : (
                     <>
-                      The agent can integrate with any system—you're not limited to this directory.
+                      The agent can integrate with any system—you're not limited
+                      to this directory.
                     </>
                   )}
                 </p>
               </div>
             </div>
 
-            <div className="p-5 rounded-xl bg-background border border-border text-left space-y-3">
-              <p className="text-sm font-medium text-foreground">Example for your search:</p>
+            <div className="bg-background border-border space-y-3 rounded-xl border p-5 text-left">
+              <p className="text-foreground text-sm font-medium">
+                Example for your search:
+              </p>
               <div className="space-y-2">
                 <button
                   onClick={() =>
                     handleCopyPrompt(
-                      `Connect to ${searchQuery || 'our system'} and check security settings`,
+                      `Connect to ${searchQuery || "our system"} and check security settings`,
                     )
                   }
-                  className="w-full p-3 rounded-lg bg-muted/50 border border-border hover:border-primary/30 transition-colors text-left group"
+                  className="bg-muted/50 border-border hover:border-primary/30 group w-full rounded-lg border p-3 text-left transition-colors"
                 >
-                  <p className="text-sm text-foreground/80 group-hover:text-foreground">
-                    "Connect to {searchQuery || 'our system'} and check security settings"
+                  <p className="text-foreground/80 group-hover:text-foreground text-sm">
+                    "Connect to {searchQuery || "our system"} and check security
+                    settings"
                   </p>
                 </button>
                 <button
                   onClick={() =>
                     handleCopyPrompt(
-                      `Pull compliance data from ${searchQuery || 'our internal tool'}`,
+                      `Pull compliance data from ${searchQuery || "our internal tool"}`,
                     )
                   }
-                  className="w-full p-3 rounded-lg bg-muted/50 border border-border hover:border-primary/30 transition-colors text-left group"
+                  className="bg-muted/50 border-border hover:border-primary/30 group w-full rounded-lg border p-3 text-left transition-colors"
                 >
-                  <p className="text-sm text-foreground/80 group-hover:text-foreground">
-                    "Pull compliance data from {searchQuery || 'our internal tool'}"
+                  <p className="text-foreground/80 group-hover:text-foreground text-sm">
+                    "Pull compliance data from{" "}
+                    {searchQuery || "our internal tool"}"
                   </p>
                 </button>
               </div>
               <Link
                 href={`/${orgId}/tasks`}
-                className="flex items-center justify-center gap-2 text-sm text-primary hover:text-primary/80 font-medium pt-2"
+                className="text-primary hover:text-primary/80 flex items-center justify-center gap-2 pt-2 text-sm font-medium"
               >
                 Go to Tasks to get started
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {searchQuery && (
               <button
                 onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('All');
+                  setSearchQuery("");
+                  setSelectedCategory("All");
                 }}
-                className="text-sm text-muted-foreground hover:text-foreground font-medium"
+                className="text-muted-foreground hover:text-foreground text-sm font-medium"
               >
                 ← Browse common integrations
               </button>
@@ -361,14 +395,17 @@ export function IntegrationsGrid({
 
       {/* Integration Detail Modal */}
       {selectedIntegration && (
-        <Dialog open={!!selectedIntegration} onOpenChange={() => setSelectedIntegration(null)}>
-          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <Dialog
+          open={!!selectedIntegration}
+          onOpenChange={() => setSelectedIntegration(null)}
+        >
+          <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-4xl">
             <div className="relative overflow-hidden">
               {/* Header with gradient background */}
-              <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-background border-b border-border/50 p-6">
+              <div className="from-primary/5 via-primary/3 to-background border-border/50 border-b bg-gradient-to-br p-6">
                 <DialogHeader className="pb-0">
-                  <div className="flex items-start gap-4 mb-3">
-                    <div className="w-14 h-14 rounded-2xl bg-background border-2 border-border shadow-sm flex items-center justify-center overflow-hidden ring-2 ring-primary/10">
+                  <div className="mb-3 flex items-start gap-4">
+                    <div className="bg-background border-border ring-primary/10 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border-2 shadow-sm ring-2">
                       <Image
                         src={`https://img.logo.dev/${selectedIntegration.domain}?token=${LOGO_TOKEN}`}
                         alt={`${selectedIntegration.name} logo`}
@@ -379,52 +416,62 @@ export function IntegrationsGrid({
                       />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="mb-1 flex items-center gap-2">
                         <DialogTitle className="text-2xl font-bold">
                           {selectedIntegration.name}
                         </DialogTitle>
                         {selectedIntegration.popular && (
-                          <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                          <Badge
+                            variant="secondary"
+                            className="px-2 py-0.5 text-[10px]"
+                          >
                             Popular
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-primary">
+                        <span className="text-primary text-xs font-medium">
                           {selectedIntegration.category}
                         </span>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-xs text-muted-foreground">Integration</span>
+                        <span className="text-muted-foreground text-xs">•</span>
+                        <span className="text-muted-foreground text-xs">
+                          Integration
+                        </span>
                       </div>
                     </div>
                   </div>
-                  <DialogDescription className="text-sm leading-relaxed text-foreground/80 mt-2">
+                  <DialogDescription className="text-foreground/80 mt-2 text-sm leading-relaxed">
                     {selectedIntegration.description}
                   </DialogDescription>
                 </DialogHeader>
               </div>
 
-              <div className="p-6 space-y-8">
+              <div className="space-y-8 p-6">
                 {/* Setup Instructions */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Plug className="w-4 h-4 text-primary" />
+                    <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
+                      <Plug className="text-primary h-4 w-4" />
                     </div>
-                    <h4 className="text-base font-semibold text-foreground">How to Connect</h4>
+                    <h4 className="text-foreground text-base font-semibold">
+                      How to Connect
+                    </h4>
                   </div>
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-muted/80 to-muted/40 border border-border/50 shadow-sm space-y-3">
-                    <p className="text-sm text-foreground leading-relaxed">
-                      Click on any relevant task below to create an automation with{' '}
-                      {selectedIntegration.name}. The automation will be pre-configured with a
-                      prompt tailored to that task. The agent will ask you for the necessary
-                      permissions and API keys if required.
+                  <div className="from-muted/80 to-muted/40 border-border/50 space-y-3 rounded-xl border bg-gradient-to-br p-5 shadow-sm">
+                    <p className="text-foreground text-sm leading-relaxed">
+                      Click on any relevant task below to create an automation
+                      with {selectedIntegration.name}. The automation will be
+                      pre-configured with a prompt tailored to that task. The
+                      agent will ask you for the necessary permissions and API
+                      keys if required.
                     </p>
                     {selectedIntegration.setupHint && (
-                      <div className="flex items-start gap-2 pt-2 border-t border-border/50">
-                        <CheckCircle2 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-muted-foreground">
-                          <span className="font-medium text-foreground">Typically requires:</span>{' '}
+                      <div className="border-border/50 flex items-start gap-2 border-t pt-2">
+                        <CheckCircle2 className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <p className="text-muted-foreground text-xs">
+                          <span className="text-foreground font-medium">
+                            Typically requires:
+                          </span>{" "}
                           {selectedIntegration.setupHint}
                         </p>
                       </div>
@@ -435,44 +482,50 @@ export function IntegrationsGrid({
                 {/* Relevant Tasks */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Zap className="w-4 h-4 text-primary" />
+                    <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
+                      <Zap className="text-primary h-4 w-4" />
                     </div>
-                    <h4 className="text-base font-semibold text-foreground">Relevant Tasks</h4>
+                    <h4 className="text-foreground text-base font-semibold">
+                      Relevant Tasks
+                    </h4>
                   </div>
                   {isLoadingTasks ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       {[...Array(4)].map((_, index) => (
                         <div
                           key={index}
-                          className="p-5 rounded-xl bg-gradient-to-br from-muted/40 to-muted/20 border-2 border-dashed border-muted-foreground/20 h-full animate-pulse"
+                          className="from-muted/40 to-muted/20 border-muted-foreground/20 h-full animate-pulse rounded-xl border-2 border-dashed bg-gradient-to-br p-5"
                         >
-                          <div className="flex items-start justify-between gap-3 h-full">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start gap-2 mb-3">
-                                <Skeleton className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 bg-muted-foreground/30" />
-                                <Skeleton className="h-4 w-32 bg-muted-foreground/30" />
+                          <div className="flex h-full items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-3 flex items-start gap-2">
+                                <Skeleton className="bg-muted-foreground/30 mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" />
+                                <Skeleton className="bg-muted-foreground/30 h-4 w-32" />
                               </div>
-                              <div className="pl-4 space-y-2.5">
-                                <Skeleton className="h-3 w-full bg-muted-foreground/25" />
-                                <Skeleton className="h-3 w-5/6 bg-muted-foreground/25" />
-                                <Skeleton className="h-3 w-4/6 bg-muted-foreground/25" />
+                              <div className="space-y-2.5 pl-4">
+                                <Skeleton className="bg-muted-foreground/25 h-3 w-full" />
+                                <Skeleton className="bg-muted-foreground/25 h-3 w-5/6" />
+                                <Skeleton className="bg-muted-foreground/25 h-3 w-4/6" />
                               </div>
                             </div>
-                            <Skeleton className="w-4 h-4 rounded-full bg-muted-foreground/30 mt-0.5 flex-shrink-0" />
+                            <Skeleton className="bg-muted-foreground/30 mt-0.5 h-4 w-4 flex-shrink-0 rounded-full" />
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : relevantTasks.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       {relevantTasks.map((task) => (
-                        <TaskCard key={task.taskTemplateId} task={task} orgId={orgId} />
+                        <TaskCard
+                          key={task.taskTemplateId}
+                          task={task}
+                          orgId={orgId}
+                        />
                       ))}
                     </div>
                   ) : (
-                    <div className="p-5 rounded-xl bg-muted/50 border border-border/50">
-                      <p className="text-sm text-muted-foreground text-center">
+                    <div className="bg-muted/50 border-border/50 rounded-xl border p-5">
+                      <p className="text-muted-foreground text-center text-sm">
                         No relevant tasks found for this integration.
                       </p>
                     </div>

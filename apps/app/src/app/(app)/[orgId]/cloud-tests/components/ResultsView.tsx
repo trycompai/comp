@@ -1,17 +1,26 @@
-'use client';
+"use client";
 
-import type { AnyRealtimeRun } from '@trigger.dev/sdk';
-import { Button } from '@trycompai/ui/button';
+import type { AnyRealtimeRun } from "@trigger.dev/sdk";
+import { useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Loader2,
+  RefreshCw,
+  X,
+} from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { FindingsTable } from './FindingsTable';
+} from "@trycompai/ui/select";
+
+import { FindingsTable } from "./FindingsTable";
 
 interface Finding {
   id: string;
@@ -32,20 +41,25 @@ interface ResultsViewProps {
 
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 
-export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsViewProps) {
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
+export function ResultsView({
+  findings,
+  onRunScan,
+  isScanning,
+  run,
+}: ResultsViewProps) {
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
 
-  const isCompleted = run?.status === 'COMPLETED';
+  const isCompleted = run?.status === "COMPLETED";
   const isFailed =
-    run?.status === 'FAILED' ||
-    run?.status === 'CRASHED' ||
-    run?.status === 'SYSTEM_FAILURE' ||
-    run?.status === 'TIMED_OUT' ||
-    run?.status === 'CANCELED';
+    run?.status === "FAILED" ||
+    run?.status === "CRASHED" ||
+    run?.status === "SYSTEM_FAILURE" ||
+    run?.status === "TIMED_OUT" ||
+    run?.status === "CANCELED";
 
   const runOutput =
-    run?.output && typeof run.output === 'object' && 'success' in run.output
+    run?.output && typeof run.output === "object" && "success" in run.output
       ? (run.output as {
           success: boolean;
           errors?: string[];
@@ -55,7 +69,9 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
 
   const hasOutputErrors = runOutput && !runOutput.success;
   const outputErrorMessages = hasOutputErrors
-    ? (runOutput.errors ?? runOutput.failedIntegrations?.map((i) => `${i.name}: ${i.error}`) ?? [])
+    ? (runOutput.errors ??
+      runOutput.failedIntegrations?.map((i) => `${i.name}: ${i.error}`) ??
+      [])
     : [];
 
   const uniqueStatuses = Array.from(
@@ -66,8 +82,10 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
   );
 
   const filteredFindings = findings.filter((finding) => {
-    const matchesStatus = selectedStatus === 'all' || finding.status === selectedStatus;
-    const matchesSeverity = selectedSeverity === 'all' || finding.severity === selectedSeverity;
+    const matchesStatus =
+      selectedStatus === "all" || finding.status === selectedStatus;
+    const matchesSeverity =
+      selectedSeverity === "all" || finding.severity === selectedSeverity;
     return matchesStatus && matchesSeverity;
   });
 
@@ -75,10 +93,14 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
     () =>
       [...filteredFindings].sort((a, b) => {
         const severityA = a.severity
-          ? (severityOrder[a.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
+          ? (severityOrder[
+              a.severity.toLowerCase() as keyof typeof severityOrder
+            ] ?? 999)
           : 999;
         const severityB = b.severity
-          ? (severityOrder[b.severity.toLowerCase() as keyof typeof severityOrder] ?? 999)
+          ? (severityOrder[
+              b.severity.toLowerCase() as keyof typeof severityOrder
+            ] ?? 999)
           : 999;
         return severityA - severityB;
       }),
@@ -88,10 +110,12 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
   return (
     <div className="flex flex-col gap-6">
       {isScanning && (
-        <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
-          <Loader2 className="text-primary h-5 w-5 animate-spin flex-shrink-0" />
+        <div className="bg-primary/10 border-primary/20 flex items-center gap-3 rounded-lg border p-4">
+          <Loader2 className="text-primary h-5 w-5 flex-shrink-0 animate-spin" />
           <div className="flex-1">
-            <p className="text-primary text-sm font-medium">Scanning in progress...</p>
+            <p className="text-primary text-sm font-medium">
+              Scanning in progress...
+            </p>
             <p className="text-muted-foreground text-xs">
               Checking your cloud infrastructure for security issues
             </p>
@@ -100,26 +124,33 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
       )}
 
       {isCompleted && !isScanning && !hasOutputErrors && (
-        <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
+        <div className="bg-primary/10 border-primary/20 flex items-center gap-3 rounded-lg border p-4">
           <CheckCircle2 className="text-primary h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-primary text-sm font-medium">Scan completed</p>
-            <p className="text-muted-foreground text-xs">Results updated successfully</p>
+            <p className="text-muted-foreground text-xs">
+              Results updated successfully
+            </p>
           </div>
         </div>
       )}
 
       {hasOutputErrors && !isScanning && (
-        <div className="bg-destructive/10 flex items-start gap-3 rounded-lg border border-destructive/20 p-4">
+        <div className="bg-destructive/10 border-destructive/20 flex items-start gap-3 rounded-lg border p-4">
           <AlertTriangle className="text-destructive h-5 w-5 flex-shrink-0" />
           <div className="flex-1 space-y-1">
-            <p className="text-destructive text-sm font-medium">Scan completed with errors</p>
+            <p className="text-destructive text-sm font-medium">
+              Scan completed with errors
+            </p>
             <ul className="text-muted-foreground text-xs leading-relaxed">
               {outputErrorMessages.slice(0, 5).map((message, index) => (
                 <li key={index}>• {message}</li>
               ))}
               {outputErrorMessages.length === 0 && (
-                <li>Encountered an unknown error while processing integration results.</li>
+                <li>
+                  Encountered an unknown error while processing integration
+                  results.
+                </li>
               )}
             </ul>
           </div>
@@ -127,38 +158,46 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
       )}
 
       {isFailed && !isScanning && (
-        <div className="bg-destructive/10 flex items-center gap-3 rounded-lg border border-destructive/20 p-4">
+        <div className="bg-destructive/10 border-destructive/20 flex items-center gap-3 rounded-lg border p-4">
           <X className="text-destructive h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-destructive text-sm font-medium">Scan failed</p>
             <p className="text-muted-foreground text-xs">
-              {typeof run?.error === 'object' && run.error && 'message' in run.error
+              {typeof run?.error === "object" &&
+              run.error &&
+              "message" in run.error
                 ? String(run.error.message)
-                : 'An error occurred during the scan. Please try again.'}
+                : "An error occurred during the scan. Please try again."}
             </p>
           </div>
         </div>
       )}
 
-      {isCompleted && findings.length === 0 && !isScanning && !hasOutputErrors && (
-        <div className="bg-blue-50 dark:bg-blue-950/20 flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900 p-4">
-          <Info className="text-blue-600 dark:text-blue-400 h-5 w-5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">
-              Initial scan complete
-            </p>
-            <p className="text-muted-foreground text-xs">
-              Security findings may take 24-48 hours to appear after enabling cloud security
-              services. Check back later.
-            </p>
+      {isCompleted &&
+        findings.length === 0 &&
+        !isScanning &&
+        !hasOutputErrors && (
+          <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+            <Info className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Initial scan complete
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Security findings may take 24-48 hours to appear after enabling
+                cloud security services. Check back later.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div className="flex items-center justify-between">
         {findings.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={selectedSeverity} onValueChange={setSelectedSeverity}>
+            <Select
+              value={selectedSeverity}
+              onValueChange={setSelectedSeverity}
+            >
               <SelectTrigger className="h-9 w-[160px] rounded-lg border-dashed">
                 <SelectValue placeholder="All Severities" />
               </SelectTrigger>
@@ -186,7 +225,7 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
               </SelectContent>
             </Select>
 
-            {(selectedSeverity !== 'all' || selectedStatus !== 'all') && (
+            {(selectedSeverity !== "all" || selectedStatus !== "all") && (
               <p className="text-muted-foreground ml-2 text-sm">
                 {sortedFindings.length} of {findings.length} findings
               </p>
@@ -196,7 +235,11 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
           <div />
         )}
 
-        <Button onClick={onRunScan} disabled={isScanning} className="gap-2 rounded-lg">
+        <Button
+          onClick={onRunScan}
+          disabled={isScanning}
+          className="gap-2 rounded-lg"
+        >
           <RefreshCw className="h-4 w-4" />
           Run Scan
         </Button>

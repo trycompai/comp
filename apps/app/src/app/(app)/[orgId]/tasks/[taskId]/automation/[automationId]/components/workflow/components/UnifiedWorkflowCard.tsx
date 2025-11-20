@@ -1,28 +1,30 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Loader2, Play, Zap } from 'lucide-react';
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
-import { useTaskAutomation } from '../../../hooks/use-task-automation';
-import { useSharedChatContext } from '../../../lib/chat-context';
-import { EvaluationCriteriaCard } from '../../evaluation/EvaluationCriteriaCard';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Loader2, Play, Zap } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+
+import { useTaskAutomation } from "../../../hooks/use-task-automation";
+import { useSharedChatContext } from "../../../lib/chat-context";
+import { EvaluationCriteriaCard } from "../../evaluation/EvaluationCriteriaCard";
 
 interface WorkflowStep {
   id: string;
   title: string;
   description: string;
-  type: 'trigger' | 'action' | 'condition' | 'output';
+  type: "trigger" | "action" | "condition" | "output";
   iconType:
-    | 'start'
-    | 'fetch'
-    | 'login'
-    | 'check'
-    | 'process'
-    | 'filter'
-    | 'notify'
-    | 'complete'
-    | 'error';
+    | "start"
+    | "fetch"
+    | "login"
+    | "check"
+    | "process"
+    | "filter"
+    | "notify"
+    | "complete"
+    | "error";
 }
 
 interface Props {
@@ -49,7 +51,7 @@ export function UnifiedWorkflowCard({
 
   // Use the real automation ID from ref (not "new")
   const realAutomationId =
-    automationIdRef.current !== 'new' ? automationIdRef.current : automationId;
+    automationIdRef.current !== "new" ? automationIdRef.current : automationId;
 
   // Fetch automation data with the correct ID
   const { automation } = useTaskAutomation(realAutomationId);
@@ -69,12 +71,14 @@ export function UnifiedWorkflowCard({
   }, [steps.length]);
 
   return (
-    <Card className="w-full min-w-md max-w-md mx-auto bg-background border border-border shadow-md rounded-2xl overflow-hidden flex flex-col flex-1 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out">
+    <Card className="bg-background border-border animate-in fade-in slide-in-from-bottom-4 mx-auto flex w-full max-w-md min-w-md flex-1 flex-col overflow-hidden rounded-2xl border shadow-md duration-1000 ease-out">
       {/* Header with integration icons */}
       <CardHeader className="p-4">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="mb-4 flex items-center gap-2">
           {integrationsUsed?.map((integration) => (
-            <div key={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}>
+            <div
+              key={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
+            >
               <Image
                 src={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
                 alt={integration.link}
@@ -86,18 +90,20 @@ export function UnifiedWorkflowCard({
           ))}
         </div>
 
-        <CardTitle className="text-lg font-semibold text-foreground">{title}</CardTitle>
+        <CardTitle className="text-foreground text-lg font-semibold">
+          {title}
+        </CardTitle>
       </CardHeader>
 
       {/* Steps Section - Pure CSS Animation */}
-      <CardContent className="p-0 m-0">
+      <CardContent className="m-0 p-0">
         <Card
-          className="bg-background rounded-2xl border border-border border-b-0 border-x-0 rounded-bl-none rounded-br-none w-full"
+          className="bg-background border-border w-full rounded-2xl rounded-br-none rounded-bl-none border border-x-0 border-b-0"
           style={
             {
-              animation: 'expand-height 1s ease-out 1.5s forwards',
-              maxHeight: '0px',
-              '--final-height': `${steps.length * 90}px`,
+              animation: "expand-height 1s ease-out 1.5s forwards",
+              maxHeight: "0px",
+              "--final-height": `${steps.length * 90}px`,
             } as React.CSSProperties
           }
         >
@@ -115,18 +121,18 @@ export function UnifiedWorkflowCard({
                   {/* Icon column with connection */}
                   <div className="flex flex-col items-center">
                     <div
-                      className="w-5 h-5 rounded-md bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 flex items-center justify-center shadow-sm"
+                      className="from-primary/20 to-primary/10 border-primary/30 flex h-5 w-5 items-center justify-center rounded-md border bg-gradient-to-br shadow-sm"
                       style={{
                         animation: `zoom-icon 0.5s ease-out ${2.2 + index * 1.2}s forwards`,
-                        transform: 'scale(0)',
+                        transform: "scale(0)",
                       }}
                     >
-                      <Zap className="w-3 h-3 text-primary" />
+                      <Zap className="text-primary h-3 w-3" />
                     </div>
                     {/* Connection line - only show if not last step */}
                     {index < steps.length - 1 && (
                       <div
-                        className="w-px h-4 bg-gradient-to-b from-border to-border/50 mt-2"
+                        className="from-border to-border/50 mt-2 h-4 w-px bg-gradient-to-b"
                         style={{
                           animation: `reveal-step 0.6s ease-out ${2.4 + index * 1.2}s forwards`,
                           opacity: 0,
@@ -136,12 +142,12 @@ export function UnifiedWorkflowCard({
                   </div>
 
                   {/* Content column */}
-                  <div className="flex-1 items-start justify-start flex flex-col">
-                    <span className="text-sm leading-none font-medium text-foreground">
+                  <div className="flex flex-1 flex-col items-start justify-start">
+                    <span className="text-foreground text-sm leading-none font-medium">
                       {step.title}
                     </span>
                     {step.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
                         {step.description}
                       </p>
                     )}
@@ -154,27 +160,29 @@ export function UnifiedWorkflowCard({
       </CardContent>
 
       {/* Evaluation Criteria Section - Show after animation */}
-      {realAutomationId && realAutomationId !== 'new' && isAnimationComplete && (
-        <div className="px-4 pb-4 pt-2 animate-in fade-in duration-500">
-          <div className="max-w-[650px] mx-auto">
-            <EvaluationCriteriaCard
-              automationId={realAutomationId}
-              initialCriteria={liveCriteria}
-              isAiGenerated={!!liveCriteria}
-            />
+      {realAutomationId &&
+        realAutomationId !== "new" &&
+        isAnimationComplete && (
+          <div className="animate-in fade-in px-4 pt-2 pb-4 duration-500">
+            <div className="mx-auto max-w-[650px]">
+              <EvaluationCriteriaCard
+                automationId={realAutomationId}
+                initialCriteria={liveCriteria}
+                isAiGenerated={!!liveCriteria}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div
-        className={`rounded-b-xl p-4 w-full border-0 border-t border-border transition-colors duration-500 ${
-          !isAnimationComplete ? 'bg-blue-100' : 'bg-secondary'
+        className={`border-border w-full rounded-b-xl border-0 border-t p-4 transition-colors duration-500 ${
+          !isAnimationComplete ? "bg-blue-100" : "bg-secondary"
         }`}
       >
         {!isAnimationComplete ? (
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
             </div>
             <span className="text-sm text-blue-500">Building integration</span>
           </div>
@@ -186,9 +194,9 @@ export function UnifiedWorkflowCard({
               e.stopPropagation();
               onTest?.();
             }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors animate-in fade-in duration-500"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 animate-in fade-in flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors duration-500"
           >
-            <Play className="w-4 h-4" />
+            <Play className="h-4 w-4" />
             Test Integration
           </button>
         )}

@@ -1,13 +1,17 @@
-'use client';
+"use client";
 
-import { type Task } from '@trycompai/db';
-import { TaskBody } from './TaskBody';
+import { type Task } from "@trycompai/db";
+
+import { TaskBody } from "./TaskBody";
 
 interface TaskMainContentProps {
   task: Task & { fileUrls?: string[] };
   showComments?: boolean;
 }
 
-export function TaskMainContent({ task, showComments = true }: TaskMainContentProps) {
+export function TaskMainContent({
+  task,
+  showComments = true,
+}: TaskMainContentProps) {
   return <TaskBody taskId={task.id} />;
 }

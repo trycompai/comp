@@ -1,9 +1,14 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { useChat } from '@ai-sdk/react';
-import { EvidenceAutomationVersion } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { useChat } from "@ai-sdk/react";
+import { Code, Loader2, RotateCcw, Upload, Zap } from "lucide-react";
+import { toast } from "sonner";
+
+import { EvidenceAutomationVersion } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +16,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from "@trycompai/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,24 +24,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
-import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { restoreVersion } from '../../actions/task-automation-actions';
+} from "@trycompai/ui/dropdown-menu";
+
+import type { ChatUIMessage } from "../chat/types";
+import type { TestResult } from "./types";
+import { restoreVersion } from "../../actions/task-automation-actions";
 import {
   useTaskAutomation,
   useTaskAutomationAnalyze,
   useTaskAutomationExecution,
   useTaskAutomationScript,
-} from '../../hooks';
-import { useAutomationVersions } from '../../hooks/use-automation-versions';
-import { useSharedChatContext } from '../../lib/chat-context';
-import { useTaskAutomationStore } from '../../lib/task-automation-store';
-import type { ChatUIMessage } from '../chat/types';
-import { Panel, PanelHeader } from '../panels/panels';
-import { PublishDialog } from '../PublishDialog';
+} from "../../hooks";
+import { useAutomationVersions } from "../../hooks/use-automation-versions";
+import { useSharedChatContext } from "../../lib/chat-context";
+import { useTaskAutomationStore } from "../../lib/task-automation-store";
+import { Panel, PanelHeader } from "../panels/panels";
+import { PublishDialog } from "../PublishDialog";
 import {
   CodeViewer,
   EmptyState,
@@ -44,15 +47,15 @@ import {
   UnifiedWorkflowCard,
   ViewModeSwitch,
   WorkflowSkeleton,
-} from './components';
-import type { TestResult } from './types';
+} from "./components";
 
 interface Props {
   className?: string;
 }
 
 export function WorkflowVisualizerSimple({ className }: Props) {
-  const { scriptGenerated, viewMode, setViewMode, setScriptUrl } = useTaskAutomationStore();
+  const { scriptGenerated, viewMode, setViewMode, setScriptUrl } =
+    useTaskAutomationStore();
   const { orgId, taskId, automationId } = useParams<{
     orgId: string;
     taskId: string;
@@ -62,7 +65,8 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   const { sendMessage } = useChat<ChatUIMessage>({ chat });
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);
+  const [confirmRestore, setConfirmRestore] =
+    useState<EvidenceAutomationVersion | null>(null);
   const {
     automation,
     mutate: mutateAutomation,
@@ -71,7 +75,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   const { versions } = useAutomationVersions();
 
   // Update shared ref when automation is loaded from hook
-  if (automation?.id && automationIdRef.current === 'new') {
+  if (automation?.id && automationIdRef.current === "new") {
     automationIdRef.current = automation.id;
   }
 
@@ -83,17 +87,22 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     orgId: orgId,
     taskId: taskId,
     automationId: automationIdRef.current,
-    enabled: !!orgId && !!taskId && automationIdRef.current !== 'new',
+    enabled: !!orgId && !!taskId && automationIdRef.current !== "new",
   });
 
   const handleRestoreVersion = async (version: EvidenceAutomationVersion) => {
     setIsRestoring(true);
 
     try {
-      const result = await restoreVersion(orgId, taskId, automationIdRef.current, version.version);
+      const result = await restoreVersion(
+        orgId,
+        taskId,
+        automationIdRef.current,
+        version.version,
+      );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to restore version');
+        throw new Error(result.error || "Failed to restore version");
       }
 
       toast.success(`Draft overwritten with version ${version.version}`);
@@ -102,7 +111,9 @@ export function WorkflowVisualizerSimple({ className }: Props) {
       // Refresh the script to show the restored content
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to restore version');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to restore version",
+      );
     } finally {
       setIsRestoring(false);
     }
@@ -117,17 +128,27 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     const handleCriteriaUpdated = () => {
       mutateAutomation();
     };
-    window.addEventListener('task-automation:script-saved', handleScriptSaved);
-    window.addEventListener('task-automation:criteria-updated', handleCriteriaUpdated);
+    window.addEventListener("task-automation:script-saved", handleScriptSaved);
+    window.addEventListener(
+      "task-automation:criteria-updated",
+      handleCriteriaUpdated,
+    );
     return () => {
-      window.removeEventListener('task-automation:script-saved', handleScriptSaved);
-      window.removeEventListener('task-automation:criteria-updated', handleCriteriaUpdated);
+      window.removeEventListener(
+        "task-automation:script-saved",
+        handleScriptSaved,
+      );
+      window.removeEventListener(
+        "task-automation:criteria-updated",
+        handleCriteriaUpdated,
+      );
     };
   }, [refresh, mutateAutomation]);
 
   useEffect(() => {
     if (script && !scriptGenerated) {
-      const setScriptGenerated = useTaskAutomationStore.getState().setScriptGenerated;
+      const setScriptGenerated =
+        useTaskAutomationStore.getState().setScriptGenerated;
       setScriptGenerated(true, script.key);
     }
   }, [script, scriptGenerated]);
@@ -145,31 +166,36 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     reset: resetExecution,
   } = useTaskAutomationExecution();
 
-  const { steps, isAnalyzing, integrationsUsed, title } = useTaskAutomationAnalyze({
-    scriptContent: script?.content,
-    enabled: !!script?.content,
-  });
+  const { steps, isAnalyzing, integrationsUsed, title } =
+    useTaskAutomationAnalyze({
+      scriptContent: script?.content,
+      enabled: !!script?.content,
+    });
 
   const testResult = useMemo<TestResult | null>(() => {
     if (!executionResult && !executionError) return null;
-    if (executionError) return { status: 'error', error: executionError.message };
+    if (executionError)
+      return { status: "error", error: executionError.message };
     if (executionResult) {
       // Check if the function returned an error response
       const hasErrorInData =
         executionResult.data &&
-        typeof executionResult.data === 'object' &&
-        'ok' in executionResult.data &&
+        typeof executionResult.data === "object" &&
+        "ok" in executionResult.data &&
         executionResult.data.ok === false;
 
       return {
-        status: executionResult.success && !hasErrorInData ? 'success' : 'error',
+        status:
+          executionResult.success && !hasErrorInData ? "success" : "error",
         message:
           executionResult.success && !hasErrorInData
-            ? 'Automation executed successfully'
+            ? "Automation executed successfully"
             : undefined,
         data: executionResult.data,
         logs: executionResult.logs,
-        error: executionResult.error || (hasErrorInData ? executionResult.data.error : undefined),
+        error:
+          executionResult.error ||
+          (hasErrorInData ? executionResult.data.error : undefined),
         summary: (executionResult as any).summary,
         evaluationStatus: executionResult.evaluationStatus,
         evaluationReason: executionResult.evaluationReason,
@@ -179,33 +205,33 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   }, [executionResult, executionError]);
 
   const handleTest = async () => {
-    if (!orgId || !taskId || automationIdRef.current === 'new') {
-      console.warn('Cannot test ephemeral automation');
+    if (!orgId || !taskId || automationIdRef.current === "new") {
+      console.warn("Cannot test ephemeral automation");
       return;
     }
     await execute();
   };
 
   const handleLetAIFix = () => {
-    if (!testResult || testResult.status !== 'error') return;
+    if (!testResult || testResult.status !== "error") return;
 
     // Create a detailed error message for the AI
     const errorMessage = `The automation script failed with the following error:
 
-Error: ${testResult.error || testResult.message || 'Unknown error'}
+Error: ${testResult.error || testResult.message || "Unknown error"}
 
 ${
   testResult.data
     ? `Function returned:
 ${JSON.stringify(testResult.data, null, 2)}`
-    : ''
+    : ""
 }
 
 ${
   testResult.logs && testResult.logs.length > 0
     ? `Execution Logs:
-${testResult.logs.join('\n')}`
-    : ''
+${testResult.logs.join("\n")}`
+    : ""
 }
 
 Please fix the automation script to resolve this error.`;
@@ -215,8 +241,8 @@ Please fix the automation script to resolve this error.`;
       { text: errorMessage },
       {
         body: {
-          modelId: 'openai/gpt-5-mini',
-          reasoningEffort: 'medium',
+          modelId: "openai/gpt-5-mini",
+          reasoningEffort: "medium",
           orgId,
           taskId,
           automationId,
@@ -233,12 +259,14 @@ Please fix the automation script to resolve this error.`;
 
   if (showEmptyState) {
     return (
-      <Panel className={cn('flex flex-col border-t-0 rounded-t-none', className)}>
+      <Panel
+        className={cn("flex flex-col rounded-t-none border-t-0", className)}
+      >
         <PanelHeader>
-          <div className="flex items-center justify-between w-full">
+          <div className="flex w-full items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary" />
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
+                <Zap className="text-primary h-4 w-4" />
                 Integration Builder
               </h2>
             </div>
@@ -251,12 +279,14 @@ Please fix the automation script to resolve this error.`;
   }
 
   return (
-    <Panel className={cn('flex flex-col border-t-0 rounded-t-none', className)}>
-      <PanelHeader className="border-b border-border">
-        <div className="flex items-center justify-between w-full">
+    <Panel className={cn("flex flex-col rounded-t-none border-t-0", className)}>
+      <PanelHeader className="border-border border-b">
+        <div className="flex w-full items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Code className={`w-4 h-4 text-primary ${isAnalyzing ? 'animate-pulse' : ''}`} />
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <Code
+                className={`text-primary h-4 w-4 ${isAnalyzing ? "animate-pulse" : ""}`}
+              />
               Integration Builder
             </h2>
           </div>
@@ -277,7 +307,9 @@ Please fix the automation script to resolve this error.`;
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Overwrite draft with version</DropdownMenuLabel>
+                      <DropdownMenuLabel>
+                        Overwrite draft with version
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       {versions.map((version) => (
                         <DropdownMenuItem
@@ -286,9 +318,11 @@ Please fix the automation script to resolve this error.`;
                           className="cursor-pointer"
                         >
                           <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium">Version {version.version}</span>
+                            <span className="text-sm font-medium">
+                              Version {version.version}
+                            </span>
                             {version.changelog && (
-                              <span className="text-xs text-muted-foreground line-clamp-1">
+                              <span className="text-muted-foreground line-clamp-1 text-xs">
                                 {version.changelog}
                               </span>
                             )}
@@ -299,7 +333,7 @@ Please fix the automation script to resolve this error.`;
                   </DropdownMenu>
                 )}
                 <Button size="sm" onClick={() => setPublishDialogOpen(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="mr-2 h-4 w-4" />
                   Publish
                 </Button>
               </>
@@ -308,7 +342,7 @@ Please fix the automation script to resolve this error.`;
         </div>
       </PanelHeader>
 
-      <div className="flex-1 overflow-auto bg-secondary">
+      <div className="bg-secondary flex-1 overflow-auto">
         {/* Show Test Results Panel INSTEAD of regular content when testing/results available */}
         {isExecuting || testResult ? (
           <TestResultsPanel
@@ -322,25 +356,26 @@ Please fix the automation script to resolve this error.`;
           /* Regular Content - Only show when NOT testing */
           <div
             className={cn(
-              'h-full',
-              viewMode === 'visual' && 'p-8 flex justify-center items-center',
+              "h-full",
+              viewMode === "visual" && "flex items-center justify-center p-8",
             )}
           >
             <div
               className={cn(
-                viewMode === 'visual' && 'max-w-3xl mx-auto w-full flex flex-col gap-6',
+                viewMode === "visual" &&
+                  "mx-auto flex w-full max-w-3xl flex-col gap-6",
               )}
             >
-              {viewMode === 'visual' ? (
+              {viewMode === "visual" ? (
                 // Visual Mode
                 <>
                   {showLoading ? (
                     <WorkflowSkeleton />
                   ) : steps.length > 0 ? (
                     <UnifiedWorkflowCard
-                      key={`workflow-${automation?.id}-${automation?.evaluationCriteria ? 'with-criteria' : 'no-criteria'}`}
+                      key={`workflow-${automation?.id}-${automation?.evaluationCriteria ? "with-criteria" : "no-criteria"}`}
                       steps={steps}
-                      title={title || 'Automation Workflow'}
+                      title={title || "Automation Workflow"}
                       onTest={handleTest}
                       integrationsUsed={integrationsUsed || []}
                       evaluationCriteria={automation?.evaluationCriteria}
@@ -353,7 +388,10 @@ Please fix the automation script to resolve this error.`;
               ) : (
                 // Code Mode
                 <div className="h-full">
-                  <CodeViewer content={script?.content || ''} isLoading={showLoading} />
+                  <CodeViewer
+                    content={script?.content || ""}
+                    isLoading={showLoading}
+                  />
                 </div>
               )}
             </div>
@@ -361,16 +399,24 @@ Please fix the automation script to resolve this error.`;
         )}
       </div>
 
-      <PublishDialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen} />
+      <PublishDialog
+        open={publishDialogOpen}
+        onOpenChange={setPublishDialogOpen}
+      />
 
-      <Dialog open={!!confirmRestore} onOpenChange={(open) => !open && setConfirmRestore(null)}>
+      <Dialog
+        open={!!confirmRestore}
+        onOpenChange={(open) => !open && setConfirmRestore(null)}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Overwrite Draft with Version {confirmRestore?.version}?</DialogTitle>
+            <DialogTitle>
+              Overwrite Draft with Version {confirmRestore?.version}?
+            </DialogTitle>
             <DialogDescription>
-              This will replace your current draft with the script from version{' '}
-              {confirmRestore?.version}. This action is irreversible - your current draft will be
-              permanently lost.
+              This will replace your current draft with the script from version{" "}
+              {confirmRestore?.version}. This action is irreversible - your
+              current draft will be permanently lost.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -378,12 +424,14 @@ Please fix the automation script to resolve this error.`;
               Cancel
             </Button>
             <Button
-              onClick={() => confirmRestore && handleRestoreVersion(confirmRestore)}
+              onClick={() =>
+                confirmRestore && handleRestoreVersion(confirmRestore)
+              }
               variant="destructive"
               disabled={isRestoring}
             >
-              {isRestoring && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isRestoring ? 'Overwriting...' : 'Overwrite Draft'}
+              {isRestoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isRestoring ? "Overwriting..." : "Overwrite Draft"}
             </Button>
           </DialogFooter>
         </DialogContent>

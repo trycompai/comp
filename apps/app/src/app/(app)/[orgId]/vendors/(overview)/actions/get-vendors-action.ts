@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
-import { getVendors } from '../data/queries';
-import type { GetVendorsSchema } from '../data/validations';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import type { GetVendorsSchema } from "../data/validations";
+import { getVendors } from "../data/queries";
 
 export async function getVendorsAction(input: GetVendorsSchema) {
   const session = await auth.api.getSession({
@@ -16,4 +17,3 @@ export async function getVendorsAction(input: GetVendorsSchema) {
 
   return await getVendors(session.session.activeOrganizationId, input);
 }
-

@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect } from "react";
+import Link from "next/link";
+
+import { Button } from "@trycompai/ui/button";
 
 export default function ErrorPage({
   reset,
@@ -12,7 +13,7 @@ export default function ErrorPage({
   error: Error & { digest?: string };
 }) {
   useEffect(() => {
-    console.error('app/(app)/(dashboard)/[orgId]/error.tsx', error);
+    console.error("app/(app)/(dashboard)/[orgId]/error.tsx", error);
   }, [error]);
 
   return (

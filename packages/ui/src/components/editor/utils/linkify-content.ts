@@ -1,15 +1,15 @@
-import type { JSONContent } from '@tiptap/react';
+import type { JSONContent } from "@tiptap/react";
 
 const URL_REGEX = /\b(https?:\/\/[^\s)]+|www\.[^\s)]+)\b/gi;
 
 function createLinkMark(href: string) {
-  const normalized = href.startsWith('http') ? href : `https://${href}`;
+  const normalized = href.startsWith("http") ? href : `https://${href}`;
   return {
-    type: 'link',
+    type: "link",
     attrs: {
       href: normalized,
-      target: '_blank',
-      rel: 'noopener noreferrer',
+      target: "_blank",
+      rel: "noopener noreferrer",
     },
   };
 }
@@ -25,21 +25,25 @@ function linkifyText(text: string): JSONContent[] {
     const end = start + raw.length;
 
     if (start > lastIndex) {
-      parts.push({ type: 'text', text: text.slice(lastIndex, start) });
+      parts.push({ type: "text", text: text.slice(lastIndex, start) });
     }
-    parts.push({ type: 'text', text: raw, marks: [createLinkMark(raw) as any] });
+    parts.push({
+      type: "text",
+      text: raw,
+      marks: [createLinkMark(raw) as any],
+    });
     lastIndex = end;
   }
 
   if (lastIndex < text.length) {
-    parts.push({ type: 'text', text: text.slice(lastIndex) });
+    parts.push({ type: "text", text: text.slice(lastIndex) });
   }
 
   return parts;
 }
 
 export function linkifyContent(doc: JSONContent): JSONContent {
-  if (!doc || typeof doc !== 'object') return doc;
+  if (!doc || typeof doc !== "object") return doc;
 
   const recurse = (node: JSONContent): JSONContent => {
     if (!node) return node;
@@ -48,8 +52,10 @@ export function linkifyContent(doc: JSONContent): JSONContent {
       const newChildren: JSONContent[] = [];
       for (const child of node.content) {
         // Only transform plain text nodes here to avoid complex wrapping
-        if (child && child.type === 'text' && typeof child.text === 'string') {
-          const hasLink = Array.isArray(child.marks) && child.marks.some((m) => m.type === 'link');
+        if (child && child.type === "text" && typeof child.text === "string") {
+          const hasLink =
+            Array.isArray(child.marks) &&
+            child.marks.some((m) => m.type === "link");
           if (hasLink) {
             newChildren.push(child);
           } else {

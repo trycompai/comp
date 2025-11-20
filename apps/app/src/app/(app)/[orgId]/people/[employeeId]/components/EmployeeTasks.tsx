@@ -1,11 +1,17 @@
-import type { TrainingVideo } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@trycompai/db';
+import type { TrainingVideo } from "@/lib/data/training-videos";
+import { cn } from "@/lib/utils";
+import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
-import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
-import type { FleetPolicy, Host } from '../../devices/types';
+import type {
+  EmployeeTrainingVideoCompletion,
+  Member,
+  Policy,
+  User,
+} from "@trycompai/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@trycompai/ui/tabs";
+
+import type { FleetPolicy, Host } from "../../devices/types";
 
 export const EmployeeTasks = ({
   employee,
@@ -57,11 +63,11 @@ export const EmployeeTasks = ({
                   return (
                     <div
                       key={policy.id}
-                      className="flex items-center justify-between gap-2 border p-3 rounded-md"
+                      className="flex items-center justify-between gap-2 rounded-md border p-3"
                     >
                       <h2 className="flex items-center gap-2">
                         {isCompleted ? (
-                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <CheckCircle2 className="text-primary h-4 w-4" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-red-500" />
                         )}
@@ -87,13 +93,13 @@ export const EmployeeTasks = ({
                   return (
                     <div
                       key={video.id}
-                      className="flex items-center justify-between gap-2 border p-3 rounded-md"
+                      className="flex items-center justify-between gap-2 rounded-md border p-3"
                     >
                       <h2 className="flex flex-col items-center">
                         <div className="flex items-center gap-2">
                           {isCompleted ? (
                             <div className="flex items-center gap-1">
-                              <CheckCircle2 className="h-4 w-4 text-primary" />
+                              <CheckCircle2 className="text-primary h-4 w-4" />
                             </div>
                           ) : (
                             <AlertCircle className="h-4 w-4 text-red-500" />
@@ -102,8 +108,9 @@ export const EmployeeTasks = ({
                         </div>
                         {isCompleted && (
                           <span className="text-muted-foreground self-start text-xs">
-                            Completed -{' '}
-                            {video.completedAt && new Date(video.completedAt).toLocaleDateString()}
+                            Completed -{" "}
+                            {video.completedAt &&
+                              new Date(video.completedAt).toLocaleDateString()}
                           </span>
                         )}
                       </h2>
@@ -125,13 +132,15 @@ export const EmployeeTasks = ({
                     <div
                       key={policy.id}
                       className={cn(
-                        'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                        policy.response === 'pass' ? 'border-l-primary' : 'border-l-red-500',
+                        "hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors",
+                        policy.response === "pass"
+                          ? "border-l-primary"
+                          : "border-l-red-500",
                       )}
                     >
                       <p className="font-medium">{policy.name}</p>
-                      {policy.response === 'pass' ? (
-                        <div className="flex items-center gap-1 text-primary">
+                      {policy.response === "pass" ? (
+                        <div className="text-primary flex items-center gap-1">
                           <CheckCircle2 size={16} />
                           <span>Pass</span>
                         </div>

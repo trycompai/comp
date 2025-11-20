@@ -1,15 +1,16 @@
-import { db, VendorCategory } from '@trycompai/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { VendorCategoryChart } from './category-chart';
+import { db, VendorCategory } from "@trycompai/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+
+import { VendorCategoryChart } from "./category-chart";
 
 const VENDOR_CATEGORIES = Object.values(VendorCategory);
 
 const CHART_COLORS = [
-  'bg-chart-positive',
-  'bg-chart-neutral',
-  'bg-chart-warning',
-  'bg-chart-destructive',
-  'bg-chart-other',
+  "bg-chart-positive",
+  "bg-chart-neutral",
+  "bg-chart-warning",
+  "bg-chart-destructive",
+  "bg-chart-other",
 ];
 
 interface Props {
@@ -21,16 +22,20 @@ export async function VendorsByCategory({ organizationId }: Props) {
 
   const data = VENDOR_CATEGORIES.map((category, index) => {
     const found = vendors.find(
-      (vendor) => (vendor.category || 'other').toLowerCase() === category.toLowerCase(),
+      (vendor) =>
+        (vendor.category || "other").toLowerCase() === category.toLowerCase(),
     );
 
     const formattedName =
-      category === 'other'
-        ? 'Other'
+      category === "other"
+        ? "Other"
         : category
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
+            .split("_")
+            .map(
+              (word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+            )
+            .join(" ");
 
     return {
       name: formattedName,
@@ -48,16 +53,22 @@ export async function VendorsByCategory({ organizationId }: Props) {
 
   // If we have fewer than 4 categories with values, show up to 2 categories with no values
   if (categoriesWithValues.length < 4 && categoriesWithoutValues.length > 0) {
-    categoriesToShow = [...categoriesWithValues, ...categoriesWithoutValues.slice(0, 2)];
+    categoriesToShow = [
+      ...categoriesWithValues,
+      ...categoriesWithoutValues.slice(0, 2),
+    ];
   }
 
   return (
     <Card className="h-full w-full">
       <CardHeader>
-        <CardTitle>{'Vendors by Category'}</CardTitle>
+        <CardTitle>{"Vendors by Category"}</CardTitle>
       </CardHeader>
       <CardContent className="w-full">
-        <VendorCategoryChart data={categoriesToShow} showEmptyDepartments={true} />
+        <VendorCategoryChart
+          data={categoriesToShow}
+          showEmptyDepartments={true}
+        />
       </CardContent>
     </Card>
   );
@@ -65,7 +76,7 @@ export async function VendorsByCategory({ organizationId }: Props) {
 
 const getVendorsByCategory = async (organizationId: string) => {
   const vendorsByCategory = await db.vendor.groupBy({
-    by: ['category'],
+    by: ["category"],
     where: { organizationId },
     _count: true,
   });

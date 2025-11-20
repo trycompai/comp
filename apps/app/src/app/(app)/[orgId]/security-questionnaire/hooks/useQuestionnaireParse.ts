@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import type { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useAction } from 'next-safe-action/hooks';
-import { useEffect } from 'react';
-import { toast } from 'sonner';
-import { createRunReadToken, createTriggerToken } from '../actions/create-trigger-token';
-import { parseQuestionnaireAI } from '../actions/parse-questionnaire-ai';
-import { uploadQuestionnaireFile } from '../actions/upload-questionnaire-file';
-import type { QuestionAnswer } from '../components/types';
+import type { parseQuestionnaireTask } from "@/jobs/tasks/vendors/parse-questionnaire";
+import { useEffect } from "react";
+import { useRealtimeRun } from "@trigger.dev/react-hooks";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+
+import type { QuestionAnswer } from "../components/types";
+import {
+  createRunReadToken,
+  createTriggerToken,
+} from "../actions/create-trigger-token";
+import { parseQuestionnaireAI } from "../actions/parse-questionnaire-ai";
+import { uploadQuestionnaireFile } from "../actions/upload-questionnaire-file";
 
 interface UseQuestionnaireParseProps {
   parseTaskId: string | null;
@@ -23,7 +27,7 @@ interface UseQuestionnaireParseProps {
   setResults: (results: QuestionAnswer[] | null) => void;
   setExtractedContent: (content: string | null) => void;
   setQuestionStatuses: React.Dispatch<
-    React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    React.SetStateAction<Map<number, "pending" | "processing" | "completed">>
   >;
   setHasClickedAutoAnswer: (clicked: boolean) => void;
 }
@@ -46,7 +50,9 @@ export function useQuestionnaireParse({
   // Get trigger token for auto-answer (can trigger and read)
   useEffect(() => {
     async function getAutoAnswerToken() {
-      const result = await createTriggerToken('vendor-questionnaire-orchestrator');
+      const result = await createTriggerToken(
+        "vendor-questionnaire-orchestrator",
+      );
       if (result.success && result.token) {
         setAutoAnswerToken(result.token);
       }
@@ -59,7 +65,7 @@ export function useQuestionnaireParse({
   // Get trigger token for single answer (can trigger and read)
   useEffect(() => {
     async function getSingleAnswerToken() {
-      const result = await createTriggerToken('answer-question');
+      const result = await createTriggerToken("answer-question");
       if (result.success && result.token) {
         setSingleAnswerToken(result.token);
       }
@@ -70,42 +76,43 @@ export function useQuestionnaireParse({
   }, [singleAnswerToken, setSingleAnswerToken]);
 
   // Track parse task with realtime hook
-  const { run: parseRun, error: parseError } = useRealtimeRun<typeof parseQuestionnaireTask>(
-    parseTaskId || '',
-    {
-      accessToken: parseToken || undefined,
-      enabled: !!parseTaskId && !!parseToken,
-      onComplete: (run) => {
-        setIsParseProcessStarted(false);
+  const { run: parseRun, error: parseError } = useRealtimeRun<
+    typeof parseQuestionnaireTask
+  >(parseTaskId || "", {
+    accessToken: parseToken || undefined,
+    enabled: !!parseTaskId && !!parseToken,
+    onComplete: (run) => {
+      setIsParseProcessStarted(false);
 
-        if (run.output) {
-          const questionsAndAnswers = run.output.questionsAndAnswers as
-            | Array<{
-                question: string;
-                answer: string | null;
-              }>
-            | undefined;
-          const extractedContent = run.output.extractedContent as string | undefined;
+      if (run.output) {
+        const questionsAndAnswers = run.output.questionsAndAnswers as
+          | Array<{
+              question: string;
+              answer: string | null;
+            }>
+          | undefined;
+        const extractedContent = run.output.extractedContent as
+          | string
+          | undefined;
 
-          if (questionsAndAnswers && Array.isArray(questionsAndAnswers)) {
-            const initializedResults = questionsAndAnswers.map((qa) => ({
-              ...qa,
-              failedToGenerate: false,
-            }));
-            setResults(initializedResults);
-            setExtractedContent(extractedContent || null);
-            setQuestionStatuses(new Map());
-            setHasClickedAutoAnswer(false);
-            toast.success(
-              `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
-            );
-          } else {
-            toast.error('Parsed data is missing questions');
-          }
+        if (questionsAndAnswers && Array.isArray(questionsAndAnswers)) {
+          const initializedResults = questionsAndAnswers.map((qa) => ({
+            ...qa,
+            failedToGenerate: false,
+          }));
+          setResults(initializedResults);
+          setExtractedContent(extractedContent || null);
+          setQuestionStatuses(new Map());
+          setHasClickedAutoAnswer(false);
+          toast.success(
+            `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
+          );
+        } else {
+          toast.error("Parsed data is missing questions");
         }
-      },
+      }
     },
-  );
+  });
 
   // Handle parse errors
   useEffect(() => {
@@ -116,14 +123,14 @@ export function useQuestionnaireParse({
 
   // Handle parse task completion/failure
   useEffect(() => {
-    if (parseRun?.status === 'FAILED' || parseRun?.status === 'CANCELED') {
+    if (parseRun?.status === "FAILED" || parseRun?.status === "CANCELED") {
       setIsParseProcessStarted(false);
       const errorMessage =
         parseRun.error instanceof Error
           ? parseRun.error.message
-          : typeof parseRun.error === 'string'
+          : typeof parseRun.error === "string"
             ? parseRun.error
-            : 'Task failed or was canceled';
+            : "Task failed or was canceled";
       toast.error(`Failed to parse questionnaire: ${errorMessage}`);
     }
   }, [parseRun?.status, parseRun?.error, setIsParseProcessStarted]);
@@ -135,7 +142,7 @@ export function useQuestionnaireParse({
 
       if (!taskId) {
         setIsParseProcessStarted(false);
-        toast.error('Failed to start parse task');
+        toast.error("Failed to start parse task");
         return;
       }
 
@@ -148,13 +155,13 @@ export function useQuestionnaireParse({
         setParseToken(tokenResult.token);
       } else {
         setIsParseProcessStarted(false);
-        toast.error('Failed to create read token for parse task');
+        toast.error("Failed to create read token for parse task");
       }
     },
     onError: ({ error }) => {
       setIsParseProcessStarted(false);
-      console.error('Parse action error:', error);
-      toast.error(error.serverError || 'Failed to start parse questionnaire');
+      console.error("Parse action error:", error);
+      toast.error(error.serverError || "Failed to start parse questionnaire");
     },
   });
 
@@ -167,18 +174,18 @@ export function useQuestionnaireParse({
 
       if (s3Key && fileType) {
         parseAction.execute({
-          inputType: 's3',
+          inputType: "s3",
           s3Key,
           fileName,
           fileType,
         });
       } else {
-        toast.error('Failed to get S3 key after upload');
+        toast.error("Failed to get S3 key after upload");
       }
     },
     onError: ({ error }) => {
-      console.error('Upload action error:', error);
-      toast.error(error.serverError || 'Failed to upload file');
+      console.error("Upload action error:", error);
+      toast.error(error.serverError || "Failed to upload file");
     },
   });
 

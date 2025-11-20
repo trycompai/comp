@@ -1,15 +1,20 @@
-'use server';
+"use server";
 
-import { auth } from '@/app/lib/auth';
-import { getFleetInstance } from '@/utils/fleet';
-import type { Member } from '@db';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { OrganizationDashboard } from './components/OrganizationDashboard';
-import type { FleetPolicy, Host } from './types';
+import { auth } from "@/app/lib/auth";
+import { getFleetInstance } from "@/utils/fleet";
+import type { Member } from "@trycompai/db";
+import { db } from "@trycompai/db";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default async function OrganizationPage({ params }: { params: Promise<{ orgId: string }> }) {
+import { OrganizationDashboard } from "./components/OrganizationDashboard";
+import type { FleetPolicy, Host } from "./types";
+
+export default async function OrganizationPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
   try {
     const { orgId } = await params;
 
@@ -18,7 +23,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     });
 
     if (!session?.user) {
-      return redirect('/auth');
+      return redirect("/auth");
     }
 
     let member = null;
@@ -35,13 +40,13 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
         },
       });
     } catch (error) {
-      console.error('Error fetching member:', error);
+      console.error("Error fetching member:", error);
       // Return a fallback UI or redirect to error page
-      return redirect('/');
+      return redirect("/");
     }
 
     if (!member) {
-      return redirect('/'); // Or appropriate login/auth route
+      return redirect("/"); // Or appropriate login/auth route
     }
 
     // Only fetch fleet policies if fleet is enabled
@@ -62,20 +67,20 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
       />
     );
   } catch (error) {
-    console.error('Error in OrganizationPage:', { error });
+    console.error("Error in OrganizationPage:", { error });
     // Redirect to a safe page if there's an unexpected error
-    return redirect('/');
+    return redirect("/");
   }
 }
 
 const getFleetPolicies = async (
-  member: Member,
+  member: Member
 ): Promise<{ fleetPolicies: FleetPolicy[]; device: Host | null }> => {
   const deviceLabelId = member.fleetDmLabelId;
 
   // Return early if no deviceLabelId
   if (!deviceLabelId) {
-    console.log('No fleet device label ID found for member');
+    console.log("No fleet device label ID found for member");
     return { fleetPolicies: [], device: null };
   }
 
@@ -90,14 +95,15 @@ const getFleetPolicies = async (
     }
 
     const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
-    const fleetPolicies: FleetPolicy[] = deviceWithPolicies.data.host.policies || [];
+    const fleetPolicies: FleetPolicy[] =
+      deviceWithPolicies.data.host.policies || [];
     return { fleetPolicies, device };
   } catch (error: any) {
     // Log more details about the error
     if (error.response?.status === 404) {
       console.log(`Fleet endpoint not found for label ID: ${deviceLabelId}`);
     } else {
-      console.error('Error fetching fleet policies:', error.message || error);
+      console.error("Error fetching fleet policies:", error.message || error);
     }
     return { fleetPolicies: [], device: null };
   }

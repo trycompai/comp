@@ -1,16 +1,18 @@
-'use client';
+"use client";
 
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import { useEffect, useState } from "react";
 import {
-  type ColumnDef,
-  type SortingState,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+} from "@tanstack/react-table";
+import { Filter, Search, X } from "lucide-react";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import { cn } from "@trycompai/ui/cn";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -18,14 +20,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Input } from '@trycompai/ui/input';
-import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
-import { Filter, Search, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { DataTableHeader } from './DataTableHeader';
-import { DataTablePagination } from './DataTablePagination';
-import { DataTableSkeleton } from './DataTableSkeleton';
+} from "@trycompai/ui/dropdown-menu";
+import { Input } from "@trycompai/ui/input";
+import { Table, TableBody, TableCell, TableRow } from "@trycompai/ui/table";
+
+import { DataTableHeader } from "./DataTableHeader";
+import { DataTablePagination } from "./DataTablePagination";
+import { DataTableSkeleton } from "./DataTableSkeleton";
 
 interface FilterItem {
   label: string;
@@ -81,7 +82,7 @@ export function DataTable<TData>({
   columns,
   onRowClick,
   className,
-  emptyMessage = 'No data found.',
+  emptyMessage = "No data found.",
   isLoading = false,
   pagination,
   onPageChange,
@@ -91,7 +92,7 @@ export function DataTable<TData>({
   ctaButton,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [searchValue, setSearchValue] = useState(search?.value || '');
+  const [searchValue, setSearchValue] = useState(search?.value || "");
 
   // Internal debounced search
   useEffect(() => {
@@ -110,7 +111,7 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableColumnResizing: true,
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     defaultColumn: {
       minSize: 40,
       size: 150,
@@ -122,7 +123,8 @@ export function DataTable<TData>({
   });
 
   // Only show pagination when we have valid data and total count
-  const showPagination = pagination && data.length > 0 && pagination.totalCount > 0;
+  const showPagination =
+    pagination && data.length > 0 && pagination.totalCount > 0;
 
   return (
     <div className="space-y-4">
@@ -133,7 +135,7 @@ export function DataTable<TData>({
               <div className="relative">
                 <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
                 <Input
-                  placeholder={search.placeholder || 'Search...'}
+                  placeholder={search.placeholder || "Search..."}
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   className="pr-8 pl-8"
@@ -143,7 +145,7 @@ export function DataTable<TData>({
                     variant="ghost"
                     size="icon"
                     className="absolute top-0 right-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setSearchValue('')}
+                    onClick={() => setSearchValue("")}
                   >
                     <X className="text-muted-foreground h-4 w-4" />
                   </Button>
@@ -157,7 +159,10 @@ export function DataTable<TData>({
                 <Button
                   variant="outline"
                   size="sm"
-                  className={cn('h-9 px-3', filters.hasActiveFilters && 'border-primary')}
+                  className={cn(
+                    "h-9 px-3",
+                    filters.hasActiveFilters && "border-primary",
+                  )}
                 >
                   <Filter className="mr-2 h-4 w-4" />
                   Filters
@@ -168,16 +173,19 @@ export function DataTable<TData>({
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[500px] max-w-[90vw]">
+              <DropdownMenuContent
+                align="end"
+                className="w-[500px] max-w-[90vw]"
+              >
                 <div className="grid grid-cols-2 gap-4 p-2">
                   {filters.categories.map((category, index) => (
                     <div key={category.label}>
                       <DropdownMenuLabel>{category.label}</DropdownMenuLabel>
                       <div
                         className={cn(
-                          'space-y-1',
-                          category.maxHeight && 'overflow-y-auto',
-                          index < filters.categories.length - 1 && 'mb-3',
+                          "space-y-1",
+                          category.maxHeight && "overflow-y-auto",
+                          index < filters.categories.length - 1 && "mb-3",
                         )}
                         style={
                           category.maxHeight
@@ -225,7 +233,10 @@ export function DataTable<TData>({
             </DropdownMenu>
           )}
           {ctaButton && (
-            <Button className="ml-auto flex flex-row gap-2" onClick={ctaButton.onClick}>
+            <Button
+              className="ml-auto flex flex-row gap-2"
+              onClick={ctaButton.onClick}
+            >
               {ctaButton.icon}
               {ctaButton.label}
             </Button>
@@ -233,8 +244,11 @@ export function DataTable<TData>({
         </div>
       )}
 
-      <div className={cn('relative w-full', className)}>
-        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className={cn("relative w-full", className)}>
+        <div
+          className="overflow-x-auto"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
           <Table>
             <DataTableHeader table={table} />
             <TableBody>
@@ -248,8 +262,11 @@ export function DataTable<TData>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                    className={cn('hover:bg-muted/50', onRowClick && 'cursor-pointer')}
+                    data-state={row.getIsSelected() && "selected"}
+                    className={cn(
+                      "hover:bg-muted/50",
+                      onRowClick && "cursor-pointer",
+                    )}
                     onClick={() => onRowClick?.(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -260,12 +277,18 @@ export function DataTable<TData>({
                           width: cell.column.getSize(),
                         }}
                       >
-                        <div>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+                        <div>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </div>
                         <div
                           className={`bg-border absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none hover:opacity-100 ${
-                            table.getState().columnSizingInfo.isResizingColumn === cell.column.id
-                              ? 'bg-primary opacity-100'
-                              : ''
+                            table.getState().columnSizingInfo
+                              .isResizingColumn === cell.column.id
+                              ? "bg-primary opacity-100"
+                              : ""
                           }`}
                           onClick={(e) => {
                             // Stop propagation to prevent row click when resizing
@@ -278,7 +301,10 @@ export function DataTable<TData>({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
                     {emptyMessage}
                   </TableCell>
                 </TableRow>

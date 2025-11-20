@@ -1,6 +1,8 @@
-import { db } from '@trycompai/db';
-import { redirect } from 'next/navigation';
-import { SingleTask } from './components/SingleTask';
+import { redirect } from "next/navigation";
+
+import { db } from "@trycompai/db";
+
+import { SingleTask } from "./components/SingleTask";
 
 export default async function TaskPage({
   params,
@@ -21,7 +23,7 @@ export default async function TaskPage({
 
 const getTask = async (taskId: string) => {
   if (!taskId) {
-    console.warn('Could not determine active organization ID in getTask');
+    console.warn("Could not determine active organization ID in getTask");
     return null;
   }
 
@@ -37,14 +39,14 @@ const getTask = async (taskId: string) => {
 
     return task;
   } catch (error) {
-    console.error('[getTask] Database query failed:', error);
+    console.error("[getTask] Database query failed:", error);
     throw error;
   }
 };
 
 const getAutomations = async (taskId: string) => {
   if (!taskId) {
-    console.warn('Could not determine task ID in getAutomations');
+    console.warn("Could not determine task ID in getAutomations");
     return [];
   }
 
@@ -55,13 +57,13 @@ const getAutomations = async (taskId: string) => {
     include: {
       runs: {
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
         take: 1,
       },
     },
     orderBy: {
-      createdAt: 'asc',
+      createdAt: "asc",
     },
   });
 

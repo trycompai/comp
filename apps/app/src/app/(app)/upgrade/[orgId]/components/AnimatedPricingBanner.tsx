@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { AnimatedGradientBackground } from '@/app/(app)/setup/components/AnimatedGradientBackground';
-import { Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import { AnimatedGradientBackground } from "@/app/(app)/setup/components/AnimatedGradientBackground";
+import { Sparkles } from "lucide-react";
 
 export function AnimatedPricingBanner() {
   const [mounted, setMounted] = useState(false);
@@ -12,10 +12,10 @@ export function AnimatedPricingBanner() {
   }, []);
 
   const messages = [
-    'AI is analyzing your compliance needs',
-    'Customizing your security framework',
-    'Building your compliance roadmap',
-    'Optimizing for your industry requirements',
+    "AI is analyzing your compliance needs",
+    "Customizing your security framework",
+    "Building your compliance roadmap",
+    "Optimizing for your industry requirements",
   ];
 
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -33,44 +33,44 @@ export function AnimatedPricingBanner() {
   if (!mounted) return null;
 
   return (
-    <div className="sticky top-[49px] z-[9] w-full h-10 overflow-hidden select-none">
+    <div className="sticky top-[49px] z-[9] h-10 w-full overflow-hidden select-none">
       {/* Background with gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 backdrop-blur-md" />
+      <div className="from-primary/10 via-primary/5 to-primary/10 absolute inset-0 bg-gradient-to-r backdrop-blur-md" />
 
       {/* Clipped animated background */}
       <div className="absolute inset-0 overflow-hidden opacity-70">
-        <div className="absolute inset-0 scale-[3] translate-y-1/2">
+        <div className="absolute inset-0 translate-y-1/2 scale-[3]">
           <AnimatedGradientBackground scale={2} />
         </div>
       </div>
 
       {/* Shimmer effect overlay */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 -translate-x-full animate-[shimmer_3s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
+        <div className="via-primary/10 absolute inset-0 -translate-x-full animate-[shimmer_3s_ease-in-out_infinite] bg-gradient-to-r from-transparent to-transparent" />
       </div>
 
       {/* Top border for depth when sticky */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 transition-opacity duration-300 group-[.scrolled]:opacity-100" />
+      <div className="via-primary/20 absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent opacity-0 transition-opacity duration-300 group-[.scrolled]:opacity-100" />
 
       {/* Bottom border with glow */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <div className="via-primary/50 absolute right-0 bottom-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent" />
 
       {/* Content */}
-      <div className="relative h-full flex items-center justify-center px-4">
+      <div className="relative flex h-full items-center justify-center px-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <div className="absolute inset-0 blur-sm bg-primary/50 animate-pulse" />
+            <Sparkles className="text-primary h-4 w-4" />
+            <div className="bg-primary/50 absolute inset-0 animate-pulse blur-sm" />
           </div>
 
-          <span className="text-sm font-medium text-foreground/90 transition-all duration-500 ease-in-out">
+          <span className="text-foreground/90 text-sm font-medium transition-all duration-500 ease-in-out">
             {messages[currentMessageIndex]}
           </span>
 
-          <div className="flex gap-1 ml-1">
-            <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-pulse" />
-            <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-pulse [animation-delay:150ms]" />
-            <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-pulse [animation-delay:300ms]" />
+          <div className="ml-1 flex gap-1">
+            <span className="bg-primary/70 h-1.5 w-1.5 animate-pulse rounded-full" />
+            <span className="bg-primary/70 h-1.5 w-1.5 animate-pulse rounded-full [animation-delay:150ms]" />
+            <span className="bg-primary/70 h-1.5 w-1.5 animate-pulse rounded-full [animation-delay:300ms]" />
           </div>
         </div>
       </div>

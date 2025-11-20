@@ -1,10 +1,11 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { updatePolicy } from '@/jobs/tasks/onboarding/update-policy';
-import { tasks } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { z } from 'zod';
+import { authActionClient } from "@/actions/safe-action";
+import { updatePolicy } from "@/jobs/tasks/onboarding/update-policy";
+import { tasks } from "@trigger.dev/sdk";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 export const regeneratePolicyAction = authActionClient
   .inputSchema(
@@ -13,10 +14,10 @@ export const regeneratePolicyAction = authActionClient
     }),
   )
   .metadata({
-    name: 'regenerate-policy',
+    name: "regenerate-policy",
     track: {
-      event: 'regenerate-policy',
-      channel: 'server',
+      event: "regenerate-policy",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -24,7 +25,7 @@ export const regeneratePolicyAction = authActionClient
     const { session } = ctx;
 
     if (!session?.activeOrganizationId) {
-      throw new Error('No active organization');
+      throw new Error("No active organization");
     }
 
     // Load frameworks associated to this organization via instances
@@ -50,11 +51,13 @@ export const regeneratePolicyAction = authActionClient
     // Build contextHub string from context table Q&A
     const contextEntries = await db.context.findMany({
       where: { organizationId: session.activeOrganizationId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
-    const contextHub = contextEntries.map((c) => `${c.question}\n${c.answer}`).join('\n');
+    const contextHub = contextEntries
+      .map((c) => `${c.question}\n${c.answer}`)
+      .join("\n");
 
-    await tasks.trigger<typeof updatePolicy>('update-policy', {
+    await tasks.trigger<typeof updatePolicy>("update-policy", {
       organizationId: session.activeOrganizationId,
       policyId,
       contextHub,

@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { VERTICAL_COOKIE } from './sizing';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+
+import { VERTICAL_COOKIE } from "./sizing";
 
 interface HProps {
   left: React.ReactNode;
@@ -11,9 +12,9 @@ interface HProps {
 
 export function Horizontal({ defaultLayout, left, right }: HProps) {
   return (
-    <div className="h-full w-full flex">
-      <div className="w-1/2 h-full flex-shrink-0">{left}</div>
-      <div className="w-1/2 h-full flex-shrink-0">{right}</div>
+    <div className="flex h-full w-full">
+      <div className="h-full w-1/2 flex-shrink-0">{left}</div>
+      <div className="h-full w-1/2 flex-shrink-0">{right}</div>
     </div>
   );
 }

@@ -1,9 +1,12 @@
-import { Toaster } from '@trycompai/ui/sonner';
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import type { ReactNode } from 'react';
-import { Suspense } from 'react';
+import type { ReactNode } from "react";
+import { Suspense } from "react";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+import { Toaster } from "@trycompai/ui/sonner";
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   return (
     <>
       <Suspense fallback={null}>

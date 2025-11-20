@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { useDataTable } from '@/hooks/use-data-table';
-import { ColumnDef } from '@tanstack/react-table';
-import type { FrameworkEditorRequirement } from '@trycompai/db';
-import { useParams } from 'next/navigation';
-import { useMemo } from 'react';
-import type { FrameworkInstanceWithControls } from '../../types';
+import { useMemo } from "react";
+import { useParams } from "next/navigation";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { useDataTable } from "@/hooks/use-data-table";
+import { ColumnDef } from "@tanstack/react-table";
+
+import type { FrameworkEditorRequirement } from "@trycompai/db";
+
+import type { FrameworkInstanceWithControls } from "../../types";
 
 interface RequirementItem extends FrameworkEditorRequirement {
   mappedControlsCount: number;
@@ -30,7 +32,9 @@ export function FrameworkRequirements({
     return requirementDefinitions.map((def) => {
       const mappedControlsCount = frameworkInstanceWithControls.controls.filter(
         (control) =>
-          control.requirementsMapped?.some((reqMap) => reqMap.requirementId === def.id) ?? false,
+          control.requirementsMapped?.some(
+            (reqMap) => reqMap.requirementId === def.id,
+          ) ?? false,
       ).length;
 
       return {
@@ -43,27 +47,35 @@ export function FrameworkRequirements({
   const columns = useMemo<ColumnDef<RequirementItem>[]>(
     () => [
       {
-        accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Name'} />,
+        accessorKey: "name",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={"Name"} />
+        ),
         cell: ({ row }) => (
-          <span className="line-clamp-2 max-w-[300px] truncate">{row.original.name}</span>
+          <span className="line-clamp-2 max-w-[300px] truncate">
+            {row.original.name}
+          </span>
         ),
         enableSorting: true,
         size: 200,
         minSize: 150,
         maxSize: 250,
         meta: {
-          label: 'Requirement Name',
-          placeholder: 'Search...',
-          variant: 'text',
+          label: "Requirement Name",
+          placeholder: "Search...",
+          variant: "text",
         },
         enableColumnFilter: true,
       },
       {
-        accessorKey: 'description',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Description'} />,
+        accessorKey: "description",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={"Description"} />
+        ),
         cell: ({ row }) => (
-          <span className="line-clamp-2 max-w-[300px] truncate">{row.original.description}</span>
+          <span className="line-clamp-2 max-w-[300px] truncate">
+            {row.original.description}
+          </span>
         ),
         enableSorting: true,
         size: 500,
@@ -72,10 +84,14 @@ export function FrameworkRequirements({
         enableResizing: true,
       },
       {
-        accessorKey: 'mappedControlsCount',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Controls'} />,
+        accessorKey: "mappedControlsCount",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={"Controls"} />
+        ),
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">{row.original.mappedControlsCount}</span>
+          <span className="text-muted-foreground text-sm">
+            {row.original.mappedControlsCount}
+          </span>
         ),
         size: 25,
         minSize: 25,
@@ -94,7 +110,7 @@ export function FrameworkRequirements({
     shallow: false,
     getRowId: (row) => row.id,
     initialState: {
-      sorting: [{ id: 'name', desc: false }],
+      sorting: [{ id: "name", desc: false }],
     },
   });
 

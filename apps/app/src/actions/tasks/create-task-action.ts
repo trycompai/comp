@@ -1,17 +1,18 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db, Departments, TaskFrequency } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db, Departments, TaskFrequency } from "@trycompai/db";
 
 const createTaskSchema = z.object({
   title: z.string().min(1, {
-    message: 'Title is required',
+    message: "Title is required",
   }),
   description: z.string().min(1, {
-    message: 'Description is required',
+    message: "Description is required",
   }),
   assigneeId: z.string().nullable().optional(),
   frequency: z.nativeEnum(TaskFrequency).nullable().optional(),
@@ -23,22 +24,29 @@ const createTaskSchema = z.object({
 export const createTaskAction = authActionClient
   .inputSchema(createTaskSchema)
   .metadata({
-    name: 'create-task',
+    name: "create-task",
     track: {
-      event: 'create-task',
-      channel: 'server',
+      event: "create-task",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { title, description, assigneeId, frequency, department, controlIds, taskTemplateId } =
-      parsedInput;
+    const {
+      title,
+      description,
+      assigneeId,
+      frequency,
+      department,
+      controlIds,
+      taskTemplateId,
+    } = parsedInput;
     const {
       session: { activeOrganizationId },
       user,
     } = ctx;
 
     if (!user.id || !activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     try {
@@ -48,7 +56,7 @@ export const createTaskAction = authActionClient
           description,
           assigneeId: assigneeId || null,
           organizationId: activeOrganizationId,
-          status: 'todo',
+          status: "todo",
           order: 0,
           frequency: frequency || null,
           department: department || null,
@@ -64,8 +72,9 @@ export const createTaskAction = authActionClient
 
       // Revalidate the path based on the header
       const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      let path =
+        headersList.get("x-pathname") || headersList.get("referer") || "";
+      path = path.replace(/\/[a-z]{2}\//, "/");
       revalidatePath(path);
 
       return {
@@ -73,10 +82,10 @@ export const createTaskAction = authActionClient
         task,
       };
     } catch (error) {
-      console.error('Failed to create task:', error);
+      console.error("Failed to create task:", error);
       return {
         success: false,
-        error: 'Failed to create task',
+        error: "Failed to create task",
       };
     }
   });

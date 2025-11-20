@@ -1,13 +1,14 @@
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
 /**
  * Server actions for task automation
  * These actions securely call the enterprise API with server-side license key
  */
 
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+
+import { db } from "@trycompai/db";
 
 interface EnterpriseApiResponse<T = any> {
   success: boolean;
@@ -22,7 +23,7 @@ class EnterpriseApiError extends Error {
     public status?: number,
   ) {
     super(message);
-    this.name = 'EnterpriseApiError';
+    this.name = "EnterpriseApiError";
   }
 }
 
@@ -30,11 +31,12 @@ class EnterpriseApiError extends Error {
  * Get enterprise API configuration
  */
 function getEnterpriseConfig() {
-  const enterpriseApiUrl = process.env.NEXT_PUBLIC_ENTERPRISE_API_URL || 'http://localhost:3006';
+  const enterpriseApiUrl =
+    process.env.NEXT_PUBLIC_ENTERPRISE_API_URL || "http://localhost:3006";
   const enterpriseApiKey = process.env.ENTERPRISE_API_SECRET;
 
   if (!enterpriseApiKey) {
-    throw new Error('Not authorized to access enterprise API');
+    throw new Error("Not authorized to access enterprise API");
   }
 
   return { enterpriseApiUrl, enterpriseApiKey };
@@ -46,7 +48,7 @@ function getEnterpriseConfig() {
 async function callEnterpriseApi<T>(
   endpoint: string,
   options: {
-    method?: 'GET' | 'POST';
+    method?: "GET" | "POST";
     body?: any;
     params?: Record<string, string>;
   } = {},
@@ -61,15 +63,15 @@ async function callEnterpriseApi<T>(
     });
   }
 
-  console.log('url', url.toString());
+  console.log("url", url.toString());
 
-  const method = options.method || 'GET';
+  const method = options.method || "GET";
 
   const response = await fetch(url.toString(), {
     method,
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-secret': enterpriseApiKey,
+      "Content-Type": "application/json",
+      "x-api-secret": enterpriseApiKey,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
@@ -97,8 +99,8 @@ async function callEnterpriseApi<T>(
  */
 async function revalidateCurrentPath() {
   const headersList = await headers();
-  let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-  path = path.replace(/\/[a-z]{2}\//, '/');
+  let path = headersList.get("x-pathname") || headersList.get("referer") || "";
+  path = path.replace(/\/[a-z]{2}\//, "/");
   revalidatePath(path);
 }
 
@@ -112,8 +114,8 @@ export async function uploadAutomationScript(data: {
   type?: string;
 }) {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/s3/upload', {
-      method: 'POST',
+    const result = await callEnterpriseApi("/api/tasks-automations/s3/upload", {
+      method: "POST",
       body: data,
     });
 
@@ -122,7 +124,10 @@ export async function uploadAutomationScript(data: {
   } catch (error) {
     return {
       success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to upload script',
+      error:
+        error instanceof EnterpriseApiError
+          ? error.message
+          : "Failed to upload script",
     };
   }
 }
@@ -132,7 +137,7 @@ export async function uploadAutomationScript(data: {
  */
 export async function getAutomationScript(key: string) {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/s3/get', {
+    const result = await callEnterpriseApi("/api/tasks-automations/s3/get", {
       params: { key },
     });
 
@@ -140,7 +145,10 @@ export async function getAutomationScript(key: string) {
   } catch (error) {
     return {
       success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to get script',
+      error:
+        error instanceof EnterpriseApiError
+          ? error.message
+          : "Failed to get script",
     };
   }
 }
@@ -150,7 +158,7 @@ export async function getAutomationScript(key: string) {
  */
 export async function listAutomationScripts(orgId: string) {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/s3/list', {
+    const result = await callEnterpriseApi("/api/tasks-automations/s3/list", {
       params: { orgId },
     });
 
@@ -161,20 +169,23 @@ export async function listAutomationScripts(orgId: string) {
     if (typedError.status === 401) {
       return {
         success: false,
-        error: 'Unauthorized. Please contact your administrator.',
+        error: "Unauthorized. Please contact your administrator.",
       };
     }
 
     if (typedError.status === 404) {
       return {
         success: false,
-        error: 'Files not found.',
+        error: "Files not found.",
       };
     }
 
     return {
       success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to list scripts',
+      error:
+        error instanceof EnterpriseApiError
+          ? error.message
+          : "Failed to list scripts",
     };
   }
 }
@@ -189,10 +200,13 @@ export async function executeAutomationScript(data: {
   version?: number; // Optional: test specific version
 }) {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/trigger/execute', {
-      method: 'POST',
-      body: data,
-    });
+    const result = await callEnterpriseApi(
+      "/api/tasks-automations/trigger/execute",
+      {
+        method: "POST",
+        body: data,
+      },
+    );
 
     // Don't revalidate - causes page refresh. Test results are handled via polling/state.
     return { success: true, data: result };
@@ -202,13 +216,16 @@ export async function executeAutomationScript(data: {
     if (typedError.status === 401) {
       return {
         success: false,
-        error: 'Unauthorized. Please contact your administrator.',
+        error: "Unauthorized. Please contact your administrator.",
       };
     }
 
     return {
       success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to execute script',
+      error:
+        error instanceof EnterpriseApiError
+          ? error.message
+          : "Failed to execute script",
     };
   }
 }
@@ -218,10 +235,13 @@ export async function executeAutomationScript(data: {
  */
 export async function analyzeAutomationWorkflow(scriptContent: string) {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/workflow/analyze', {
-      method: 'POST',
-      body: { scriptContent },
-    });
+    const result = await callEnterpriseApi(
+      "/api/tasks-automations/workflow/analyze",
+      {
+        method: "POST",
+        body: { scriptContent },
+      },
+    );
 
     return { success: true, data: result };
   } catch (error) {
@@ -230,22 +250,28 @@ export async function analyzeAutomationWorkflow(scriptContent: string) {
     if (typedError.status === 401) {
       return {
         success: false,
-        error: 'Unauthorized. Please contact your administrator.',
+        error: "Unauthorized. Please contact your administrator.",
       };
     }
 
     return {
       success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to analyze workflow',
+      error:
+        error instanceof EnterpriseApiError
+          ? error.message
+          : "Failed to analyze workflow",
     };
   }
 }
 
 export const getAutomationRunStatus = async (runId: string) => {
   try {
-    const result = await callEnterpriseApi('/api/tasks-automations/runs/${runId}', {
-      params: { runId },
-    });
+    const result = await callEnterpriseApi(
+      "/api/tasks-automations/runs/${runId}",
+      {
+        params: { runId },
+      },
+    );
 
     return {
       success: true,
@@ -257,13 +283,16 @@ export const getAutomationRunStatus = async (runId: string) => {
     if (typedError.status === 401) {
       return {
         success: false,
-        error: 'Unauthorized. Please contact your administrator.',
+        error: "Unauthorized. Please contact your administrator.",
       };
     }
 
     return {
       success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to get run status',
+      error:
+        error instanceof EnterpriseApiError
+          ? error.message
+          : "Failed to get run status",
     };
   }
 };
@@ -271,14 +300,18 @@ export const getAutomationRunStatus = async (runId: string) => {
 /**
  * Load chat history for an automation
  */
-export async function loadChatHistory(automationId: string, offset = 0, limit = 50) {
+export async function loadChatHistory(
+  automationId: string,
+  offset = 0,
+  limit = 50,
+) {
   try {
     const response = await callEnterpriseApi<{
       messages: any[];
       total: number;
       hasMore: boolean;
-    }>('/api/tasks-automations/chat/history', {
-      method: 'GET',
+    }>("/api/tasks-automations/chat/history", {
+      method: "GET",
       params: {
         automationId,
         offset: offset.toString(),
@@ -291,10 +324,11 @@ export async function loadChatHistory(automationId: string, offset = 0, limit = 
       data: response,
     };
   } catch (error) {
-    console.error('[loadChatHistory] Failed:', error);
+    console.error("[loadChatHistory] Failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to load chat history',
+      error:
+        error instanceof Error ? error.message : "Failed to load chat history",
     };
   }
 }
@@ -304,8 +338,8 @@ export async function loadChatHistory(automationId: string, offset = 0, limit = 
  */
 export async function saveChatHistory(automationId: string, messages: any[]) {
   try {
-    await callEnterpriseApi('/api/tasks-automations/chat/save', {
-      method: 'POST',
+    await callEnterpriseApi("/api/tasks-automations/chat/save", {
+      method: "POST",
       body: {
         automationId,
         messages,
@@ -316,10 +350,11 @@ export async function saveChatHistory(automationId: string, messages: any[]) {
       success: true,
     };
   } catch (error) {
-    console.error('[saveChatHistory] Failed:', error);
+    console.error("[saveChatHistory] Failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to save chat history',
+      error:
+        error instanceof Error ? error.message : "Failed to save chat history",
     };
   }
 }
@@ -339,8 +374,8 @@ export async function publishAutomation(
       success: boolean;
       version: number;
       scriptKey: string;
-    }>('/api/tasks-automations/publish', {
-      method: 'POST',
+    }>("/api/tasks-automations/publish", {
+      method: "POST",
       body: {
         orgId,
         taskId,
@@ -349,7 +384,7 @@ export async function publishAutomation(
     });
 
     if (!response.success) {
-      throw new Error('Enterprise API failed to publish');
+      throw new Error("Enterprise API failed to publish");
     }
 
     // Save version record to database
@@ -373,10 +408,11 @@ export async function publishAutomation(
       version,
     };
   } catch (error) {
-    console.error('[publishAutomation] Failed:', error);
+    console.error("[publishAutomation] Failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to publish automation',
+      error:
+        error instanceof Error ? error.message : "Failed to publish automation",
     };
   }
 }
@@ -392,9 +428,9 @@ export async function restoreVersion(
 ) {
   try {
     const response = await callEnterpriseApi<{ success: boolean }>(
-      '/api/tasks-automations/restore-version',
+      "/api/tasks-automations/restore-version",
       {
-        method: 'POST',
+        method: "POST",
         body: {
           orgId,
           taskId,
@@ -405,17 +441,18 @@ export async function restoreVersion(
     );
 
     if (!response.success) {
-      throw new Error('Enterprise API failed to restore version');
+      throw new Error("Enterprise API failed to restore version");
     }
 
     return {
       success: true,
     };
   } catch (error) {
-    console.error('[restoreVersion] Failed:', error);
+    console.error("[restoreVersion] Failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to restore version',
+      error:
+        error instanceof Error ? error.message : "Failed to restore version",
     };
   }
 }
@@ -423,7 +460,10 @@ export async function restoreVersion(
 /**
  * Update evaluation criteria for an automation
  */
-export async function updateEvaluationCriteria(automationId: string, evaluationCriteria: string) {
+export async function updateEvaluationCriteria(
+  automationId: string,
+  evaluationCriteria: string,
+) {
   try {
     await db.evidenceAutomation.update({
       where: { id: automationId },
@@ -436,10 +476,13 @@ export async function updateEvaluationCriteria(automationId: string, evaluationC
       success: true,
     };
   } catch (error) {
-    console.error('[updateEvaluationCriteria] Failed:', error);
+    console.error("[updateEvaluationCriteria] Failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update evaluation criteria',
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to update evaluation criteria",
     };
   }
 }
@@ -447,7 +490,10 @@ export async function updateEvaluationCriteria(automationId: string, evaluationC
 /**
  * Toggle automation enabled state
  */
-export async function toggleAutomationEnabled(automationId: string, isEnabled: boolean) {
+export async function toggleAutomationEnabled(
+  automationId: string,
+  isEnabled: boolean,
+) {
   try {
     await db.evidenceAutomation.update({
       where: { id: automationId },
@@ -460,10 +506,11 @@ export async function toggleAutomationEnabled(automationId: string, isEnabled: b
       success: true,
     };
   } catch (error) {
-    console.error('[toggleAutomationEnabled] Failed:', error);
+    console.error("[toggleAutomationEnabled] Failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to toggle automation',
+      error:
+        error instanceof Error ? error.message : "Failed to toggle automation",
     };
   }
 }

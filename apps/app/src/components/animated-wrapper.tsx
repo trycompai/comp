@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { cn } from '@trycompai/ui/cn';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+
+import { cn } from "@trycompai/ui/cn";
 
 interface AnimatedWrapperProps {
   children: React.ReactNode;
   delay?: number;
-  direction?: 'up' | 'down' | 'left' | 'right';
+  direction?: "up" | "down" | "left" | "right";
   className?: string;
   duration?: number;
   animationKey?: string | number; // Use animationKey instead of key
@@ -15,7 +16,7 @@ interface AnimatedWrapperProps {
 export function AnimatedWrapper({
   children,
   delay = 0,
-  direction = 'up',
+  direction = "up",
   className,
   duration = 500,
   animationKey,
@@ -33,27 +34,27 @@ export function AnimatedWrapper({
   const getTransformClass = () => {
     if (!isVisible) {
       switch (direction) {
-        case 'up':
-          return 'translate-y-4';
-        case 'down':
-          return '-translate-y-4';
-        case 'left':
-          return 'translate-x-4';
-        case 'right':
-          return '-translate-x-4';
+        case "up":
+          return "translate-y-4";
+        case "down":
+          return "-translate-y-4";
+        case "left":
+          return "translate-x-4";
+        case "right":
+          return "-translate-x-4";
         default:
-          return 'translate-y-4';
+          return "translate-y-4";
       }
     }
-    return 'translate-y-0 translate-x-0';
+    return "translate-y-0 translate-x-0";
   };
 
   return (
     <div
       className={cn(
-        'transition-all ease-out',
+        "transition-all ease-out",
         `duration-${duration}`,
-        isVisible ? 'opacity-100' : 'opacity-0',
+        isVisible ? "opacity-100" : "opacity-0",
         getTransformClass(),
         className,
       )}

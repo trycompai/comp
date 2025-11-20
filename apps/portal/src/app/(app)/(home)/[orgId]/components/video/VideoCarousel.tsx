@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import { trainingVideos } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion } from '@db';
-import { useAction } from 'next-safe-action/hooks';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { markVideoAsCompleted } from '../../../actions/markVideoAsCompleted';
-import { CarouselControls } from './CarouselControls';
-import { YoutubeEmbed } from './YoutubeEmbed';
+import { trainingVideos } from "@/lib/data/training-videos";
+import type { EmployeeTrainingVideoCompletion } from "@trycompai/db";
+import { useAction } from "next-safe-action/hooks";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { markVideoAsCompleted } from "../../../actions/markVideoAsCompleted";
+import { CarouselControls } from "./CarouselControls";
+import { YoutubeEmbed } from "./YoutubeEmbed";
 
 interface VideoCarouselProps {
   videos: EmployeeTrainingVideoCompletion[];
@@ -16,7 +17,9 @@ interface VideoCarouselProps {
 export function VideoCarousel({ videos }: VideoCarouselProps) {
   // Create a map of completion records by their videoId for efficient lookup
   // videoId in the DB record corresponds to the id in the metadata
-  const completionRecordsMap = new Map(videos.map((record) => [record.videoId, record]));
+  const completionRecordsMap = new Map(
+    videos.map((record) => [record.videoId, record])
+  );
   const { orgId } = useParams<{ orgId: string }>();
 
   // Create our merged videos array by enriching metadata with completion status
@@ -40,45 +43,56 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
       .map((item) => item.index);
 
     // Default to the first video (index 0) if none are completed
-    return completedIndices.length > 0 ? completedIndices[completedIndices.length - 1] : 0;
+    return completedIndices.length > 0
+      ? completedIndices[completedIndices.length - 1]
+      : 0;
   })();
 
   const [currentIndex, setCurrentIndex] = useState(lastCompletedIndex);
 
   // Local state to track completed videos in the UI (using metadata IDs)
   const initialCompletedVideoIds = new Set(
-    mergedVideos.filter((video) => video.isCompleted).map((video) => video.id), // Use metadata id
+    mergedVideos.filter((video) => video.isCompleted).map((video) => video.id) // Use metadata id
   );
 
-  const [completedVideoIds, setCompletedVideoIds] = useState<Set<string>>(initialCompletedVideoIds);
+  const [completedVideoIds, setCompletedVideoIds] = useState<Set<string>>(
+    initialCompletedVideoIds
+  );
 
-  const { execute: executeMarkComplete, isExecuting } = useAction(markVideoAsCompleted, {
-    onSuccess: (data) => {
-      // Update local UI state immediately upon successful action
-      const completedMetadataId = mergedVideos[currentIndex].id;
-      setCompletedVideoIds((prev) => new Set([...prev, completedMetadataId]));
+  const { execute: executeMarkComplete, isExecuting } = useAction(
+    markVideoAsCompleted,
+    {
+      onSuccess: (data) => {
+        // Update local UI state immediately upon successful action
+        const completedMetadataId = mergedVideos[currentIndex].id;
+        setCompletedVideoIds((prev) => new Set([...prev, completedMetadataId]));
 
-      // If a new record was created, update our completion records map
-      if (data.data && !completionRecordsMap.get(completedMetadataId)) {
-        const newMap = new Map(completionRecordsMap);
-        newMap.set(completedMetadataId, data.data);
-        // Note: We're not updating the map state because it's not stateful
-        // The next page refresh will have the updated records
-      }
-    },
-    onError: (error) => {
-      console.error('Failed to mark video as completed:', error);
-      // TODO: Consider showing a user-facing toast notification
-    },
-  });
+        // If a new record was created, update our completion records map
+        if (data.data && !completionRecordsMap.get(completedMetadataId)) {
+          const newMap = new Map(completionRecordsMap);
+          newMap.set(completedMetadataId, data.data);
+          // Note: We're not updating the map state because it's not stateful
+          // The next page refresh will have the updated records
+        }
+      },
+      onError: (error) => {
+        console.error("Failed to mark video as completed:", error);
+        // TODO: Consider showing a user-facing toast notification
+      },
+    }
+  );
 
   // Effect to synchronize local UI state with changes in DB records (props)
   useEffect(() => {
-    const newCompletionRecordsMap = new Map(videos.map((record) => [record.videoId, record]));
+    const newCompletionRecordsMap = new Map(
+      videos.map((record) => [record.videoId, record])
+    );
     const newCompletedVideoIds = new Set(
       trainingVideos
-        .filter((metadata) => !!newCompletionRecordsMap.get(metadata.id)?.completedAt)
-        .map((metadata) => metadata.id), // Use metadata id
+        .filter(
+          (metadata) => !!newCompletionRecordsMap.get(metadata.id)?.completedAt
+        )
+        .map((metadata) => metadata.id) // Use metadata id
     );
     setCompletedVideoIds(newCompletedVideoIds);
   }, [videos]); // Depend only on the DB records prop
@@ -113,16 +127,22 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
   };
 
   // Determine completion based on the local UI state (using metadata ID)
-  const isCurrentVideoCompleted = completedVideoIds.has(mergedVideos[currentIndex].id);
+  const isCurrentVideoCompleted = completedVideoIds.has(
+    mergedVideos[currentIndex].id
+  );
   const hasNextVideo = currentIndex < mergedVideos.length - 1;
   // Determine if all videos are complete based on local UI state
-  const allVideosCompleted = trainingVideos.every((metadata) => completedVideoIds.has(metadata.id));
+  const allVideosCompleted = trainingVideos.every((metadata) =>
+    completedVideoIds.has(metadata.id)
+  );
 
   return (
     <div className="space-y-4">
       {allVideosCompleted && (
         <div className="flex w-full flex-col items-center justify-center space-y-2 py-8">
-          <h2 className="text-2xl font-semibold">All Training Videos Completed!</h2>
+          <h2 className="text-2xl font-semibold">
+            All Training Videos Completed!
+          </h2>
           <p className="text-muted-foreground text-center">
             You're all done, now your manager won't pester you!
           </p>
@@ -135,7 +155,9 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
             isCompleted={isCurrentVideoCompleted} // Use local state for UI
             onComplete={handleVideoComplete}
             isMarkingComplete={isExecuting}
-            onNext={isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined}
+            onNext={
+              isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined
+            }
             allVideosCompleted={allVideosCompleted} // Use local state for UI
             onWatchAgain={() => {
               // Reset the rewatching state if needed inside YoutubeEmbed
@@ -146,7 +168,9 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
             currentIndex={currentIndex}
             total={mergedVideos.length}
             onPrevious={goToPrevious}
-            onNext={isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined}
+            onNext={
+              isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined
+            }
           />
         </>
       )}

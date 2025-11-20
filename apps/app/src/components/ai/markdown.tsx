@@ -1,5 +1,7 @@
-import { type FC, memo } from 'react';
-import ReactMarkdown, { type Options } from 'react-markdown';
+import type { FC } from "react";
+import type { Options } from "react-markdown";
+import { memo } from "react";
+import ReactMarkdown from "react-markdown";
 
 export const MemoizedReactMarkdown: FC<Options> = memo(
   ReactMarkdown,

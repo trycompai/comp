@@ -1,11 +1,13 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
-import { CompassIcon, RefreshCwIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { BarLoader } from 'react-spinners';
-import { Panel, PanelHeader } from '../../components/panels/panels';
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import { CompassIcon, RefreshCwIcon } from "lucide-react";
+import { BarLoader } from "react-spinners";
+
+import { ScrollArea } from "@trycompai/ui/scroll-area";
+
+import { Panel, PanelHeader } from "../../components/panels/panels";
 
 interface Props {
   className?: string;
@@ -16,14 +18,14 @@ interface Props {
 export function Preview({ className, disabled, url }: Props) {
   const [currentUrl, setCurrentUrl] = useState(url);
   const [error, setError] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState(url || '');
+  const [inputValue, setInputValue] = useState(url || "");
   const [isLoading, setIsLoading] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const loadStartTime = useRef<number | null>(null);
 
   useEffect(() => {
     setCurrentUrl(url);
-    setInputValue(url || '');
+    setInputValue(url || "");
   }, [url]);
 
   const refreshIframe = () => {
@@ -31,7 +33,7 @@ export function Preview({ className, disabled, url }: Props) {
       setIsLoading(true);
       setError(null);
       loadStartTime.current = Date.now();
-      iframeRef.current.src = '';
+      iframeRef.current.src = "";
       setTimeout(() => {
         if (iframeRef.current) {
           iframeRef.current.src = currentUrl;
@@ -60,7 +62,7 @@ export function Preview({ className, disabled, url }: Props) {
 
   const handleIframeError = () => {
     setIsLoading(false);
-    setError('Failed to load the page');
+    setError("Failed to load the page");
   };
 
   return (
@@ -73,8 +75,8 @@ export function Preview({ className, disabled, url }: Props) {
           <button
             onClick={refreshIframe}
             type="button"
-            className={cn('cursor-pointer px-1', {
-              'animate-spin': isLoading,
+            className={cn("cursor-pointer px-1", {
+              "animate-spin": isLoading,
             })}
           >
             <RefreshCwIcon className="w-4" />
@@ -85,11 +87,11 @@ export function Preview({ className, disabled, url }: Props) {
           {url && (
             <input
               type="text"
-              className="font-mono text-xs h-6 border border-gray-200 px-4 bg-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[300px]"
+              className="h-6 min-w-[300px] rounded border border-gray-200 bg-white px-4 font-mono text-xs focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
               onChange={(event) => setInputValue(event.target.value)}
               onClick={(event) => event.currentTarget.select()}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') {
+                if (event.key === "Enter") {
                   event.currentTarget.blur();
                   loadNewUrl();
                 }
@@ -100,14 +102,14 @@ export function Preview({ className, disabled, url }: Props) {
         </div>
       </PanelHeader>
 
-      <div className="flex h-[calc(100%-2rem-1px)] relative">
+      <div className="relative flex h-[calc(100%-2rem-1px)]">
         {currentUrl && !disabled && (
           <>
             <ScrollArea className="w-full">
               <iframe
                 ref={iframeRef}
                 src={currentUrl}
-                className="w-full h-full"
+                className="h-full w-full"
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
                 title="Browser content"
@@ -115,24 +117,26 @@ export function Preview({ className, disabled, url }: Props) {
             </ScrollArea>
 
             {isLoading && !error && (
-              <div className="absolute inset-0 bg-background/90 flex items-center justify-center flex-col gap-2">
+              <div className="bg-background/90 absolute inset-0 flex flex-col items-center justify-center gap-2">
                 <BarLoader color="hsl(var(--muted-foreground))" />
-                <span className="text-muted-foreground text-xs">Loading...</span>
+                <span className="text-muted-foreground text-xs">
+                  Loading...
+                </span>
               </div>
             )}
 
             {error && (
-              <div className="absolute inset-0 bg-background flex items-center justify-center flex-col gap-2">
+              <div className="bg-background absolute inset-0 flex flex-col items-center justify-center gap-2">
                 <span className="text-destructive">Failed to load page</span>
                 <button
-                  className="text-primary hover:underline text-sm"
+                  className="text-primary text-sm hover:underline"
                   type="button"
                   onClick={() => {
                     if (currentUrl) {
                       setIsLoading(true);
                       setError(null);
                       const newUrl = new URL(currentUrl);
-                      newUrl.searchParams.set('t', Date.now().toString());
+                      newUrl.searchParams.set("t", Date.now().toString());
                       setCurrentUrl(newUrl.toString());
                     }
                   }}

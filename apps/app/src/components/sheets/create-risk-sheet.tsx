@@ -1,22 +1,33 @@
-'use client';
+"use client";
 
-import { Member, User } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
-import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import { CreateRisk } from '../forms/risks/create-risk-form';
+import { X } from "lucide-react";
+import { useQueryState } from "nuqs";
 
-export function CreateRiskSheet({ assignees }: { assignees: (Member & { user: User })[] }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('create-risk-sheet');
+import { Member, User } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Drawer, DrawerContent, DrawerTitle } from "@trycompai/ui/drawer";
+import { useMediaQuery } from "@trycompai/ui/hooks";
+import { ScrollArea } from "@trycompai/ui/scroll-area";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@trycompai/ui/sheet";
+
+import { CreateRisk } from "../forms/risks/create-risk-form";
+
+export function CreateRiskSheet({
+  assignees,
+}: {
+  assignees: (Member & { user: User })[];
+}) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [open, setOpen] = useQueryState("create-risk-sheet");
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
+    setOpen(open ? "true" : null);
   };
 
   if (isDesktop) {
@@ -24,7 +35,7 @@ export function CreateRiskSheet({ assignees }: { assignees: (Member & { user: Us
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent stack>
           <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{'Create New Risk'}</SheetTitle>
+            <SheetTitle>{"Create New Risk"}</SheetTitle>
             <Button
               size="icon"
               variant="ghost"
@@ -45,7 +56,7 @@ export function CreateRiskSheet({ assignees }: { assignees: (Member & { user: Us
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Create New Risk'}</DrawerTitle>
+      <DrawerTitle hidden>{"Create New Risk"}</DrawerTitle>
       <DrawerContent className="p-6">
         <CreateRisk assignees={assignees} />
       </DrawerContent>

@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 // Create a mock database client structure that matches Prisma client
 export const mockDb = {

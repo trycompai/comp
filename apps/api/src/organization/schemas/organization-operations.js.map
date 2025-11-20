@@ -1,0 +1,1 @@
+{"version":3,"file":"organization-operations.js","sourceRoot":"","sources":["organization-operations.ts"],"names":[],"mappings":";;;AAEa,QAAA,uBAAuB,GAAwC;IAC1E,eAAe,EAAE;QACf,OAAO,EAAE,8BAA8B;QACvC,WAAW,EACT,6LAA6L;KAChM;IACD,kBAAkB,EAAE;QAClB,OAAO,EAAE,qBAAqB;QAC9B,WAAW,EACT,kNAAkN;KACrN;IACD,kBAAkB,EAAE;QAClB,OAAO,EAAE,qBAAqB;QAC9B,WAAW,EACT,4MAA4M;KAC/M;CACF,CAAC"}

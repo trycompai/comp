@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { ClientTooltip } from '@trycompai/ui/chart-tooltip';
-import { format, max, scaleBand, scaleLinear } from 'd3';
-import { type CSSProperties } from 'react';
+import { type CSSProperties } from "react";
+import { format, max, scaleBand, scaleLinear } from "d3";
+
+import { ClientTooltip } from "@trycompai/ui/chart-tooltip";
 
 interface CategoryData {
   name: string;
@@ -19,7 +20,9 @@ export function VendorCategoryChart({
   showEmptyDepartments = false,
 }: VendorCategoryChartProps) {
   // Filter out departments with zero values if not showing empty departments
-  const filteredData = showEmptyDepartments ? data : data.filter((d) => d.value > 0);
+  const filteredData = showEmptyDepartments
+    ? data
+    : data.filter((d) => d.value > 0);
 
   const sortedData = [...filteredData].sort((a, b) => b.value - a.value);
 
@@ -67,7 +70,7 @@ export function VendorCategoryChart({
   const getBarKey = (item: CategoryData) => `bar-${item.name}-${item.value}`;
   const getTickKey = (value: number) => `tick-${value}`;
   const getGridKey = (value: number, position = 0) =>
-    `grid-${value.toString().replace('.', '-')}-${position}`;
+    `grid-${value.toString().replace(".", "-")}-${position}`;
   const getLabelKey = (item: CategoryData) => `label-${item.name}`;
 
   // Generate appropriate tick values based on max value
@@ -92,10 +95,10 @@ export function VendorCategoryChart({
         style={
           {
             height: `${chartHeight}px`,
-            '--marginTop': '0px',
-            '--marginRight': `${marginRight}px`,
-            '--marginBottom': `${marginBottom}px`,
-            '--marginLeft': `${marginLeft}px`,
+            "--marginTop": "0px",
+            "--marginRight": `${marginRight}px`,
+            "--marginBottom": `${marginBottom}px`,
+            "--marginLeft": `${marginLeft}px`,
           } as CSSProperties
         }
       >
@@ -114,17 +117,21 @@ export function VendorCategoryChart({
               <div
                 key={getBarKey(d)}
                 style={{
-                  left: '0',
+                  left: "0",
                   top: `${barTopPosition}%`,
                   width: `${barWidth}%`,
                   height: `${fixedBarHeightPercentage}%`,
                 }}
-                className={`bg-primary absolute ${d.value === 0 ? 'opacity-40' : ''} rounded-sm dark:opacity-90`}
+                className={`bg-primary absolute ${d.value === 0 ? "opacity-40" : ""} rounded-sm dark:opacity-90`}
                 data-tip={`${d.name}: ${allZeros ? 0 : d.value}`}
               />
             );
           })}
-          <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <svg
+            className="h-full w-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
             {tickValues.map((value, position) => {
               const uniqueKey = getGridKey(value, position);
               return (
@@ -151,11 +158,11 @@ export function VendorCategoryChart({
               key={getTickKey(value)}
               style={{
                 left: `${xScale(value)}%`,
-                top: '100%',
+                top: "100%",
               }}
               className="text-muted-foreground absolute -translate-x-1/2 text-xs tabular-nums"
             >
-              {Number.isInteger(value) ? format(',')(value) : value.toFixed(2)}
+              {Number.isInteger(value) ? format(",")(value) : value.toFixed(2)}
             </div>
           ))}
         </div>
@@ -165,7 +172,7 @@ export function VendorCategoryChart({
             <span
               key={getLabelKey(entry)}
               style={{
-                left: '0',
+                left: "0",
                 top: `${yScale(entry.name)! + yScale.bandwidth() / 2}%`,
                 width: `${marginLeft - 10}px`,
               }}

@@ -1,426 +1,394 @@
 ## [1.59.3](https://github.com/trycompai/comp/compare/v1.59.2...v1.59.3) (2025-11-18)
 
-
 ### Bug Fixes
 
-* **api:** update buildspec and Dockerfile to prepare workspace packag… ([#1775](https://github.com/trycompai/comp/issues/1775)) ([22fb0eb](https://github.com/trycompai/comp/commit/22fb0eb434250333ff7758d393f8d24bf13a0168))
-* **portal:** update module to download executable device agent file for windows ([#1766](https://github.com/trycompai/comp/issues/1766)) ([70ff9c7](https://github.com/trycompai/comp/commit/70ff9c7a6951c9558bc91a2ab25de886ec0c3fae))
+- **api:** update buildspec and Dockerfile to prepare workspace packag… ([#1775](https://github.com/trycompai/comp/issues/1775)) ([22fb0eb](https://github.com/trycompai/comp/commit/22fb0eb434250333ff7758d393f8d24bf13a0168))
+- **portal:** update module to download executable device agent file for windows ([#1766](https://github.com/trycompai/comp/issues/1766)) ([70ff9c7](https://github.com/trycompai/comp/commit/70ff9c7a6951c9558bc91a2ab25de886ec0c3fae))
 
 ## [1.59.2](https://github.com/trycompai/comp/compare/v1.59.1...v1.59.2) (2025-11-18)
 
-
 ### Bug Fixes
 
-* **tasks:** include 'not_relevant' status in task completion checks ([#1770](https://github.com/trycompai/comp/issues/1770)) ([b5dd9c8](https://github.com/trycompai/comp/commit/b5dd9c8d4976facff39badf5dab19139b581ffde))
+- **tasks:** include 'not_relevant' status in task completion checks ([#1770](https://github.com/trycompai/comp/issues/1770)) ([b5dd9c8](https://github.com/trycompai/comp/commit/b5dd9c8d4976facff39badf5dab19139b581ffde))
 
 ## [1.59.1](https://github.com/trycompai/comp/compare/v1.59.0...v1.59.1) (2025-11-17)
 
-
 ### Bug Fixes
 
-* **tasks:** increase maxAttempts for answer-question and vendor orchestrator tasks ([#1763](https://github.com/trycompai/comp/issues/1763)) ([ecaadd5](https://github.com/trycompai/comp/commit/ecaadd55ae01cf1c94aa33540aeab7686fff995b))
+- **tasks:** increase maxAttempts for answer-question and vendor orchestrator tasks ([#1763](https://github.com/trycompai/comp/issues/1763)) ([ecaadd5](https://github.com/trycompai/comp/commit/ecaadd55ae01cf1c94aa33540aeab7686fff995b))
 
 # [1.59.0](https://github.com/trycompai/comp/compare/v1.58.0...v1.59.0) (2025-11-17)
 
-
 ### Features
 
-* **questionnaire:** add security questionnaire feature with AI parsing and auto-answering ([#1755](https://github.com/trycompai/comp/issues/1755)) ([dd4f86c](https://github.com/trycompai/comp/commit/dd4f86c512f40a03b175434877ba6f48059b1bc5))
-* **questionnaire:** enhance S3 client creation on parse action ([#1760](https://github.com/trycompai/comp/issues/1760)) ([4079b73](https://github.com/trycompai/comp/commit/4079b7315af6651c353d5f1d9dff9924a36269a6))
-* **security-questionnaire:** add AI-powered questionnaire parsing an… ([#1751](https://github.com/trycompai/comp/issues/1751)) ([e06bb15](https://github.com/trycompai/comp/commit/e06bb1522a0251b10bfdb00f6b7580c8dc46c6a0))
-* **security-questionnaire:** add support for questionnaire file uploads to S3 ([#1758](https://github.com/trycompai/comp/issues/1758)) ([1ba8866](https://github.com/trycompai/comp/commit/1ba886635839b3e3e9a60cdc34648bee2f60ec13))
-* **security-questionnaire:** add tooltip and disable CTA for unpublished policies ([#1761](https://github.com/trycompai/comp/issues/1761)) ([849966e](https://github.com/trycompai/comp/commit/849966eb4329a17771148add8e970f55c8a2ec95))
-* **tasks:** enhance task management with automation features and UI improvements ([#1752](https://github.com/trycompai/comp/issues/1752)) ([60dfb28](https://github.com/trycompai/comp/commit/60dfb28e6c1727c677571bc3736333fce57b7944))
-* **trust-access:** implement trust access request management system ([#1739](https://github.com/trycompai/comp/issues/1739)) ([2ba3d5d](https://github.com/trycompai/comp/commit/2ba3d5d64591a566c24cc443540bc4e853d9a350))
+- **questionnaire:** add security questionnaire feature with AI parsing and auto-answering ([#1755](https://github.com/trycompai/comp/issues/1755)) ([dd4f86c](https://github.com/trycompai/comp/commit/dd4f86c512f40a03b175434877ba6f48059b1bc5))
+- **questionnaire:** enhance S3 client creation on parse action ([#1760](https://github.com/trycompai/comp/issues/1760)) ([4079b73](https://github.com/trycompai/comp/commit/4079b7315af6651c353d5f1d9dff9924a36269a6))
+- **security-questionnaire:** add AI-powered questionnaire parsing an… ([#1751](https://github.com/trycompai/comp/issues/1751)) ([e06bb15](https://github.com/trycompai/comp/commit/e06bb1522a0251b10bfdb00f6b7580c8dc46c6a0))
+- **security-questionnaire:** add support for questionnaire file uploads to S3 ([#1758](https://github.com/trycompai/comp/issues/1758)) ([1ba8866](https://github.com/trycompai/comp/commit/1ba886635839b3e3e9a60cdc34648bee2f60ec13))
+- **security-questionnaire:** add tooltip and disable CTA for unpublished policies ([#1761](https://github.com/trycompai/comp/issues/1761)) ([849966e](https://github.com/trycompai/comp/commit/849966eb4329a17771148add8e970f55c8a2ec95))
+- **tasks:** enhance task management with automation features and UI improvements ([#1752](https://github.com/trycompai/comp/issues/1752)) ([60dfb28](https://github.com/trycompai/comp/commit/60dfb28e6c1727c677571bc3736333fce57b7944))
+- **trust-access:** implement trust access request management system ([#1739](https://github.com/trycompai/comp/issues/1739)) ([2ba3d5d](https://github.com/trycompai/comp/commit/2ba3d5d64591a566c24cc443540bc4e853d9a350))
 
 # [1.58.0](https://github.com/trycompai/comp/compare/v1.57.1...v1.58.0) (2025-11-13)
 
-
 ### Features
 
-* **onboarding:** add individual tracking for vendors and risks with auto-expand ([#1748](https://github.com/trycompai/comp/issues/1748)) ([7a85be8](https://github.com/trycompai/comp/commit/7a85be80f4c27da0cef485ad09e7152222dc8c48))
+- **onboarding:** add individual tracking for vendors and risks with auto-expand ([#1748](https://github.com/trycompai/comp/issues/1748)) ([7a85be8](https://github.com/trycompai/comp/commit/7a85be80f4c27da0cef485ad09e7152222dc8c48))
 
 ## [1.57.1](https://github.com/trycompai/comp/compare/v1.57.0...v1.57.1) (2025-11-13)
 
-
 ### Bug Fixes
 
-* **tasks:** show all task statuses and sort alphabetically ([#1743](https://github.com/trycompai/comp/issues/1743)) ([413b14c](https://github.com/trycompai/comp/commit/413b14ca95d5490a086aecb418a3305c2099534a))
+- **tasks:** show all task statuses and sort alphabetically ([#1743](https://github.com/trycompai/comp/issues/1743)) ([413b14c](https://github.com/trycompai/comp/commit/413b14ca95d5490a086aecb418a3305c2099534a))
 
 # [1.57.0](https://github.com/trycompai/comp/compare/v1.56.7...v1.57.0) (2025-11-11)
 
-
 ### Features
 
-* add contractor role ([#1735](https://github.com/trycompai/comp/issues/1735)) ([2d87914](https://github.com/trycompai/comp/commit/2d87914a25ef5edad2cee3f033e9583dc30b04d2))
+- add contractor role ([#1735](https://github.com/trycompai/comp/issues/1735)) ([2d87914](https://github.com/trycompai/comp/commit/2d87914a25ef5edad2cee3f033e9583dc30b04d2))
 
 ## [1.56.7](https://github.com/trycompai/comp/compare/v1.56.6...v1.56.7) (2025-11-07)
 
-
 ### Bug Fixes
 
-* **portal:** remove Ubuntu support help ([#1715](https://github.com/trycompai/comp/issues/1715)) ([b604b18](https://github.com/trycompai/comp/commit/b604b18a5c16db2f9b58be64f2262d70fca66d34))
-* **portal:** update macOS version requirements ([#1716](https://github.com/trycompai/comp/issues/1716)) ([21c259b](https://github.com/trycompai/comp/commit/21c259bb5c20fd3798df9c2bca3ef0883863b901))
+- **portal:** remove Ubuntu support help ([#1715](https://github.com/trycompai/comp/issues/1715)) ([b604b18](https://github.com/trycompai/comp/commit/b604b18a5c16db2f9b58be64f2262d70fca66d34))
+- **portal:** update macOS version requirements ([#1716](https://github.com/trycompai/comp/issues/1716)) ([21c259b](https://github.com/trycompai/comp/commit/21c259bb5c20fd3798df9c2bca3ef0883863b901))
 
 ## [1.56.6](https://github.com/trycompai/comp/compare/v1.56.5...v1.56.6) (2025-10-31)
 
-
 ### Bug Fixes
 
-* **app:** send emails to employees when all policies are published ([#1707](https://github.com/trycompai/comp/issues/1707)) ([df7a461](https://github.com/trycompai/comp/commit/df7a4617e008174624c02bc89905af389f7c478d))
+- **app:** send emails to employees when all policies are published ([#1707](https://github.com/trycompai/comp/issues/1707)) ([df7a461](https://github.com/trycompai/comp/commit/df7a4617e008174624c02bc89905af389f7c478d))
 
 ## [1.56.5](https://github.com/trycompai/comp/compare/v1.56.4...v1.56.5) (2025-10-30)
 
-
 ### Bug Fixes
 
-* **cloud-tests:** improve error messages and user feedback ([#1703](https://github.com/trycompai/comp/issues/1703)) ([9abfc4a](https://github.com/trycompai/comp/commit/9abfc4a2bd0b320d1e804f9b3cf4a714f52d1002))
+- **cloud-tests:** improve error messages and user feedback ([#1703](https://github.com/trycompai/comp/issues/1703)) ([9abfc4a](https://github.com/trycompai/comp/commit/9abfc4a2bd0b320d1e804f9b3cf4a714f52d1002))
 
 ## [1.56.4](https://github.com/trycompai/comp/compare/v1.56.3...v1.56.4) (2025-10-29)
 
-
 ### Bug Fixes
 
-* **cloud-tests:** display integration scan errors in UI ([#1698](https://github.com/trycompai/comp/issues/1698)) ([a27b3ba](https://github.com/trycompai/comp/commit/a27b3bab8cb4d01c3516db583f9963955cb57164)), closes [#1695](https://github.com/trycompai/comp/issues/1695)
+- **cloud-tests:** display integration scan errors in UI ([#1698](https://github.com/trycompai/comp/issues/1698)) ([a27b3ba](https://github.com/trycompai/comp/commit/a27b3bab8cb4d01c3516db583f9963955cb57164)), closes [#1695](https://github.com/trycompai/comp/issues/1695)
 
 ## [1.56.3](https://github.com/trycompai/comp/compare/v1.56.2...v1.56.3) (2025-10-23)
 
-
 ### Bug Fixes
 
-* **api:** allow uploading excel documents for task ([#1677](https://github.com/trycompai/comp/issues/1677)) ([8c7f955](https://github.com/trycompai/comp/commit/8c7f9550755090d8aa780fc8fbcd2ebadf1e7fb8))
+- **api:** allow uploading excel documents for task ([#1677](https://github.com/trycompai/comp/issues/1677)) ([8c7f955](https://github.com/trycompai/comp/commit/8c7f9550755090d8aa780fc8fbcd2ebadf1e7fb8))
 
 ## [1.56.2](https://github.com/trycompai/comp/compare/v1.56.1...v1.56.2) (2025-10-21)
 
-
 ### Bug Fixes
 
-* **app:** auto-approve the org creation on staging ([#1676](https://github.com/trycompai/comp/issues/1676)) ([dbb149e](https://github.com/trycompai/comp/commit/dbb149ea2eecc32b9d470112fd293f72b91e6eaa))
+- **app:** auto-approve the org creation on staging ([#1676](https://github.com/trycompai/comp/issues/1676)) ([dbb149e](https://github.com/trycompai/comp/commit/dbb149ea2eecc32b9d470112fd293f72b91e6eaa))
 
 ## [1.56.1](https://github.com/trycompai/comp/compare/v1.56.0...v1.56.1) (2025-10-17)
 
-
 ### Bug Fixes
 
-* **app:** show device list of only employees ([#1646](https://github.com/trycompai/comp/issues/1646)) ([f5fc56e](https://github.com/trycompai/comp/commit/f5fc56e696968110bfe66e5c533cbc7f3790f847))
-* **portal:** fixed the issue that the Posthog didn't identify people on the portal ([#1668](https://github.com/trycompai/comp/issues/1668)) ([5614d62](https://github.com/trycompai/comp/commit/5614d620135e86fa2c40862d439a67ebd856d747))
+- **app:** show device list of only employees ([#1646](https://github.com/trycompai/comp/issues/1646)) ([f5fc56e](https://github.com/trycompai/comp/commit/f5fc56e696968110bfe66e5c533cbc7f3790f847))
+- **portal:** fixed the issue that the Posthog didn't identify people on the portal ([#1668](https://github.com/trycompai/comp/issues/1668)) ([5614d62](https://github.com/trycompai/comp/commit/5614d620135e86fa2c40862d439a67ebd856d747))
 
 # [1.56.0](https://github.com/trycompai/comp/compare/v1.55.2...v1.56.0) (2025-10-08)
 
-
 ### Bug Fixes
 
-* **app:** add ConditionalOnboardingTracker component and update layout ([#1618](https://github.com/trycompai/comp/issues/1618)) ([af4977c](https://github.com/trycompai/comp/commit/af4977c439794bb79f8f86f41c129c7599cd4284))
-* **app:** show the image on onboarding section by setting unoptimized ([#1619](https://github.com/trycompai/comp/issues/1619)) ([1f4639f](https://github.com/trycompai/comp/commit/1f4639ff0a3149e5ba446083c58391e616913789))
-* **app:** task dates should be creation date instead of defaults ([#1620](https://github.com/trycompai/comp/issues/1620)) ([12e5e15](https://github.com/trycompai/comp/commit/12e5e15b52cc85dfb007b026d762231c603a1a16))
-
+- **app:** add ConditionalOnboardingTracker component and update layout ([#1618](https://github.com/trycompai/comp/issues/1618)) ([af4977c](https://github.com/trycompai/comp/commit/af4977c439794bb79f8f86f41c129c7599cd4284))
+- **app:** show the image on onboarding section by setting unoptimized ([#1619](https://github.com/trycompai/comp/issues/1619)) ([1f4639f](https://github.com/trycompai/comp/commit/1f4639ff0a3149e5ba446083c58391e616913789))
+- **app:** task dates should be creation date instead of defaults ([#1620](https://github.com/trycompai/comp/issues/1620)) ([12e5e15](https://github.com/trycompai/comp/commit/12e5e15b52cc85dfb007b026d762231c603a1a16))
 
 ### Features
 
-* **db:** add Fraud to RiskCategory ([#1615](https://github.com/trycompai/comp/issues/1615)) ([cc265e6](https://github.com/trycompai/comp/commit/cc265e65ddc171cbd5b09d125ae6a6933528896c))
+- **db:** add Fraud to RiskCategory ([#1615](https://github.com/trycompai/comp/issues/1615)) ([cc265e6](https://github.com/trycompai/comp/commit/cc265e65ddc171cbd5b09d125ae6a6933528896c))
 
 ## [1.55.2](https://github.com/trycompai/comp/compare/v1.55.1...v1.55.2) (2025-10-07)
 
-
 ### Bug Fixes
 
-* **app:** handle potential null for integrationsUsed in UnifiedWorkflowCard ([#1612](https://github.com/trycompai/comp/issues/1612)) ([561d9b1](https://github.com/trycompai/comp/commit/561d9b18f60d280d8a6627d6ebbdc552ecc8efff))
-* **app:** set portal url to new-policy-email sent to employees ([#1614](https://github.com/trycompai/comp/issues/1614)) ([5264c76](https://github.com/trycompai/comp/commit/5264c76690ae3ec27bb7d66b13c497fda8dc6d5e))
+- **app:** handle potential null for integrationsUsed in UnifiedWorkflowCard ([#1612](https://github.com/trycompai/comp/issues/1612)) ([561d9b1](https://github.com/trycompai/comp/commit/561d9b18f60d280d8a6627d6ebbdc552ecc8efff))
+- **app:** set portal url to new-policy-email sent to employees ([#1614](https://github.com/trycompai/comp/issues/1614)) ([5264c76](https://github.com/trycompai/comp/commit/5264c76690ae3ec27bb7d66b13c497fda8dc6d5e))
 
 ## [1.55.1](https://github.com/trycompai/comp/compare/v1.55.0...v1.55.1) (2025-10-06)
 
-
 ### Bug Fixes
 
-* **app:** fix AWS cloud test error caused by improper usage of batchTriggerAndWait ([#1608](https://github.com/trycompai/comp/issues/1608)) ([0cddf49](https://github.com/trycompai/comp/commit/0cddf49a7373a538c25eae13239b2eff5bbbdf55))
-* **app:** make reviewDate readonly and update it once policy is published ([#1603](https://github.com/trycompai/comp/issues/1603)) ([c966652](https://github.com/trycompai/comp/commit/c966652189c15506fc01caea1bdfdf3b175ce20d))
-* **app:** onboarding flow being overriden ([#1595](https://github.com/trycompai/comp/issues/1595)) ([572003f](https://github.com/trycompai/comp/commit/572003fba63662f7c92ef9efb69afbbda527f1d3))
-* **auth:** improve OTP error handling with specific user messages ([#1596](https://github.com/trycompai/comp/issues/1596)) ([0bb7b2b](https://github.com/trycompai/comp/commit/0bb7b2b8c5e6cb0f3809ffcd9574b121707ec5ae))
-* **portal:** fix build error to add AUTH_SECRET env to portal ([#1590](https://github.com/trycompai/comp/issues/1590)) ([3596376](https://github.com/trycompai/comp/commit/3596376014660ce688d5ee13efed9bae880a18ee))
+- **app:** fix AWS cloud test error caused by improper usage of batchTriggerAndWait ([#1608](https://github.com/trycompai/comp/issues/1608)) ([0cddf49](https://github.com/trycompai/comp/commit/0cddf49a7373a538c25eae13239b2eff5bbbdf55))
+- **app:** make reviewDate readonly and update it once policy is published ([#1603](https://github.com/trycompai/comp/issues/1603)) ([c966652](https://github.com/trycompai/comp/commit/c966652189c15506fc01caea1bdfdf3b175ce20d))
+- **app:** onboarding flow being overriden ([#1595](https://github.com/trycompai/comp/issues/1595)) ([572003f](https://github.com/trycompai/comp/commit/572003fba63662f7c92ef9efb69afbbda527f1d3))
+- **auth:** improve OTP error handling with specific user messages ([#1596](https://github.com/trycompai/comp/issues/1596)) ([0bb7b2b](https://github.com/trycompai/comp/commit/0bb7b2b8c5e6cb0f3809ffcd9574b121707ec5ae))
+- **portal:** fix build error to add AUTH_SECRET env to portal ([#1590](https://github.com/trycompai/comp/issues/1590)) ([3596376](https://github.com/trycompai/comp/commit/3596376014660ce688d5ee13efed9bae880a18ee))
 
 # [1.55.0](https://github.com/trycompai/comp/compare/v1.54.0...v1.55.0) (2025-09-30)
 
-
 ### Features
 
-* **app:** implement automated tasks ([#1550](https://github.com/trycompai/comp/issues/1550)) ([56f019d](https://github.com/trycompai/comp/commit/56f019d7508c19f24fc3fd31113d9c0fa788fb81))
-* **portal:** add gmail signin ([#1587](https://github.com/trycompai/comp/issues/1587)) ([f8d6af4](https://github.com/trycompai/comp/commit/f8d6af4e8723b4c79a7ae7c508ad8ac34892db84))
-* **portal:** display policies with PDF format ([#1559](https://github.com/trycompai/comp/issues/1559)) ([3d7ee5f](https://github.com/trycompai/comp/commit/3d7ee5fd37f40258b11615a48d57e330567ae7fc))
-* **secrets:** fix secrets ([b3af710](https://github.com/trycompai/comp/commit/b3af710412ff76200eefb87ac8fc6ccd6774b455))
+- **app:** implement automated tasks ([#1550](https://github.com/trycompai/comp/issues/1550)) ([56f019d](https://github.com/trycompai/comp/commit/56f019d7508c19f24fc3fd31113d9c0fa788fb81))
+- **portal:** add gmail signin ([#1587](https://github.com/trycompai/comp/issues/1587)) ([f8d6af4](https://github.com/trycompai/comp/commit/f8d6af4e8723b4c79a7ae7c508ad8ac34892db84))
+- **portal:** display policies with PDF format ([#1559](https://github.com/trycompai/comp/issues/1559)) ([3d7ee5f](https://github.com/trycompai/comp/commit/3d7ee5fd37f40258b11615a48d57e330567ae7fc))
+- **secrets:** fix secrets ([b3af710](https://github.com/trycompai/comp/commit/b3af710412ff76200eefb87ac8fc6ccd6774b455))
 
 # [1.54.0](https://github.com/trycompai/comp/compare/v1.53.0...v1.54.0) (2025-09-19)
 
-
 ### Bug Fixes
 
-* **app:** show only published policies on Employee Tasks ([#1547](https://github.com/trycompai/comp/issues/1547)) ([92b2dc9](https://github.com/trycompai/comp/commit/92b2dc9312c183e54c09e86e85706dbe01942196))
-
+- **app:** show only published policies on Employee Tasks ([#1547](https://github.com/trycompai/comp/issues/1547)) ([92b2dc9](https://github.com/trycompai/comp/commit/92b2dc9312c183e54c09e86e85706dbe01942196))
 
 ### Features
 
-* **app:** Add support for ISO 42001 ([#1549](https://github.com/trycompai/comp/issues/1549)) ([1a9d57b](https://github.com/trycompai/comp/commit/1a9d57b8dc748016ab1a5389041017984455de5b))
-* **app:** Auto mark tasks as todo when review period starts ([#1546](https://github.com/trycompai/comp/issues/1546)) ([777c0db](https://github.com/trycompai/comp/commit/777c0db8473c464d909ebce5ea6e0c2c3f72e31f))
+- **app:** Add support for ISO 42001 ([#1549](https://github.com/trycompai/comp/issues/1549)) ([1a9d57b](https://github.com/trycompai/comp/commit/1a9d57b8dc748016ab1a5389041017984455de5b))
+- **app:** Auto mark tasks as todo when review period starts ([#1546](https://github.com/trycompai/comp/issues/1546)) ([777c0db](https://github.com/trycompai/comp/commit/777c0db8473c464d909ebce5ea6e0c2c3f72e31f))
 
 # [1.53.0](https://github.com/trycompai/comp/compare/v1.52.1...v1.53.0) (2025-09-18)
 
-
 ### Features
 
-* **app:** Add reviewDate column to Task table ([#1541](https://github.com/trycompai/comp/issues/1541)) ([68e0e42](https://github.com/trycompai/comp/commit/68e0e42fe26ac5391afa696a1cd15ae3148aadd3))
-* **app:** Create a scheduled task for Recurring policy ([#1540](https://github.com/trycompai/comp/issues/1540)) ([1eb9623](https://github.com/trycompai/comp/commit/1eb9623c05a88b8c04b303ac505d32ae0c13baeb))
+- **app:** Add reviewDate column to Task table ([#1541](https://github.com/trycompai/comp/issues/1541)) ([68e0e42](https://github.com/trycompai/comp/commit/68e0e42fe26ac5391afa696a1cd15ae3148aadd3))
+- **app:** Create a scheduled task for Recurring policy ([#1540](https://github.com/trycompai/comp/issues/1540)) ([1eb9623](https://github.com/trycompai/comp/commit/1eb9623c05a88b8c04b303ac505d32ae0c13baeb))
 
 ## [1.52.1](https://github.com/trycompai/comp/compare/v1.52.0...v1.52.1) (2025-09-17)
 
-
 ### Bug Fixes
 
-* force version bump past v1.52.0 ([d7c58c0](https://github.com/trycompai/comp/commit/d7c58c0411d0d467cdc99a4211d197c86cae1f06))
+- force version bump past v1.52.0 ([d7c58c0](https://github.com/trycompai/comp/commit/d7c58c0411d0d467cdc99a4211d197c86cae1f06))
 
 # [1.52.0](https://github.com/trycompai/comp/compare/v1.51.0...v1.52.0) (2025-09-17)
 
-
 ### Bug Fixes
 
-* **app:** only show owner/admin users on Task UI ([#1524](https://github.com/trycompai/comp/issues/1524)) ([151ccc6](https://github.com/trycompai/comp/commit/151ccc6acc914ff86c304e14abc50b19c96d13af))
-* **portal:** show only published policies on portal ([#1520](https://github.com/trycompai/comp/issues/1520)) ([ceb99d7](https://github.com/trycompai/comp/commit/ceb99d786644bc86ed8968a71502e25a35ffca1f))
-
+- **app:** only show owner/admin users on Task UI ([#1524](https://github.com/trycompai/comp/issues/1524)) ([151ccc6](https://github.com/trycompai/comp/commit/151ccc6acc914ff86c304e14abc50b19c96d13af))
+- **portal:** show only published policies on portal ([#1520](https://github.com/trycompai/comp/issues/1520)) ([ceb99d7](https://github.com/trycompai/comp/commit/ceb99d786644bc86ed8968a71502e25a35ffca1f))
 
 ### Features
 
-* **portal:** Whenever the policy is published, signedBy field should be cleared and send email to only previous singers to let them accept it again. ([#1532](https://github.com/trycompai/comp/issues/1532)) ([8c1b525](https://github.com/trycompai/comp/commit/8c1b525ead980181cd3e8f57e72961c1b82b7e4f))
+- **portal:** Whenever the policy is published, signedBy field should be cleared and send email to only previous singers to let them accept it again. ([#1532](https://github.com/trycompai/comp/issues/1532)) ([8c1b525](https://github.com/trycompai/comp/commit/8c1b525ead980181cd3e8f57e72961c1b82b7e4f))
 
 # [1.52.0](https://github.com/trycompai/comp/compare/v1.51.0...v1.52.0) (2025-09-17)
 
-
 ### Bug Fixes
 
-* **app:** only show owner/admin users on Task UI ([#1524](https://github.com/trycompai/comp/issues/1524)) ([151ccc6](https://github.com/trycompai/comp/commit/151ccc6acc914ff86c304e14abc50b19c96d13af))
-* **portal:** show only published policies on portal ([#1520](https://github.com/trycompai/comp/issues/1520)) ([ceb99d7](https://github.com/trycompai/comp/commit/ceb99d786644bc86ed8968a71502e25a35ffca1f))
-
+- **app:** only show owner/admin users on Task UI ([#1524](https://github.com/trycompai/comp/issues/1524)) ([151ccc6](https://github.com/trycompai/comp/commit/151ccc6acc914ff86c304e14abc50b19c96d13af))
+- **portal:** show only published policies on portal ([#1520](https://github.com/trycompai/comp/issues/1520)) ([ceb99d7](https://github.com/trycompai/comp/commit/ceb99d786644bc86ed8968a71502e25a35ffca1f))
 
 ### Features
 
-* **portal:** Whenever the policy is published, signedBy field should be cleared and send email to only previous singers to let them accept it again. ([#1532](https://github.com/trycompai/comp/issues/1532)) ([8c1b525](https://github.com/trycompai/comp/commit/8c1b525ead980181cd3e8f57e72961c1b82b7e4f))
+- **portal:** Whenever the policy is published, signedBy field should be cleared and send email to only previous singers to let them accept it again. ([#1532](https://github.com/trycompai/comp/issues/1532)) ([8c1b525](https://github.com/trycompai/comp/commit/8c1b525ead980181cd3e8f57e72961c1b82b7e4f))
 
 ## [1.51.1](https://github.com/trycompai/comp/compare/v1.51.0...v1.51.1) (2025-09-16)
 
-
 ### Bug Fixes
 
-* **portal:** show only published policies on portal ([#1520](https://github.com/trycompai/comp/issues/1520)) ([ceb99d7](https://github.com/trycompai/comp/commit/ceb99d786644bc86ed8968a71502e25a35ffca1f))
+- **portal:** show only published policies on portal ([#1520](https://github.com/trycompai/comp/issues/1520)) ([ceb99d7](https://github.com/trycompai/comp/commit/ceb99d786644bc86ed8968a71502e25a35ffca1f))
 
 # [1.51.0](https://github.com/trycompai/comp/compare/v1.50.0...v1.51.0) (2025-09-16)
 
-
 ### Bug Fixes
 
-* add DEQUEUED state handling in OnboardingTracker component ([74d7151](https://github.com/trycompai/comp/commit/74d71518a53e7de404eb321dd9c778d7ab1ce57a))
-* add missing newlines in package.json and index.ts files for consistency ([f33bb34](https://github.com/trycompai/comp/commit/f33bb348cfb5d8919468f397965417489824a6e1))
-* add missing port number to database connection string ([bafbb27](https://github.com/trycompai/comp/commit/bafbb27affac170251a68f0a79038bc9c97851a1))
-* add newline at end of package.json for proper formatting ([fb91918](https://github.com/trycompai/comp/commit/fb91918aac91b456b8b61eac01e542b95a5542e3))
-* add persistent cmd session support in Windows script ([bfad924](https://github.com/trycompai/comp/commit/bfad924a7ecf8149f978c4545524c98a93a77573))
-* add robust database connectivity rules for CodeBuild ([50c9a7e](https://github.com/trycompai/comp/commit/50c9a7eac5ea4994eb94d5cbd82b002bdb059246))
-* add verification for public directory in buildspec.yml ([b8e2064](https://github.com/trycompai/comp/commit/b8e20645333547842e7731deef05c0fc53c7732c))
-* Added Control property to task sidebar ([8cc503b](https://github.com/trycompai/comp/commit/8cc503b70f02e3a0bb448fa0b4179f8601811017))
-* Allow access to auditor role ([1553400](https://github.com/trycompai/comp/commit/155340017c62a09dcfd03709011e25df89a85863))
-* **auth:** rename email parameter for invite function to improve clarity ([95bb6c9](https://github.com/trycompai/comp/commit/95bb6c9c8c12f6543cfa4e4a3e4862c8471845e6))
-* **buildspec, Dockerfile:** update Node.js version and adjust Prisma client generation path ([2d677d0](https://github.com/trycompai/comp/commit/2d677d05f54d9cc84c0def4369c1e07ed46bd511))
-* **buildspec:** adjust working directory for dependency installation ([0774214](https://github.com/trycompai/comp/commit/0774214ef2aba48215acb24d4739884f578ff753))
-* **buildspec:** enhance type checking step with optional script handling ([f151692](https://github.com/trycompai/comp/commit/f151692672559c3ee2d9b00586befb0a3964b375))
-* comprehensive Prisma deployment fix for Vercel monorepo ([6ef5033](https://github.com/trycompai/comp/commit/6ef50339a5ef29931cc1991241e0ca777db21f7b))
-* **config:** update Vercel environment check for standalone output ([39f3710](https://github.com/trycompai/comp/commit/39f3710cda9cf6ba57f3aa0308ee5f19868acff9))
-* copy Prisma binary to locations where runtime is searching ([7c3af89](https://github.com/trycompai/comp/commit/7c3af894a75439a2df512e79d834e83cd7ca7a9f))
-* correct Docker entry point for monorepo structure ([bb3aecb](https://github.com/trycompai/comp/commit/bb3aecb58c407592a76afa6ca3c197ccd538d56b))
-* correct environment variable assignment for Prisma query engine in Next.js config ([1ccaae1](https://github.com/trycompai/comp/commit/1ccaae1279b80e9410283f52fb6d183c2121d92f))
-* correct indentation in package.json scripts section ([f3ed25a](https://github.com/trycompai/comp/commit/f3ed25a85ae44a585633f309ada466b896df1ae8))
-* correct static file paths for next.js standalone monorepo structure ([55442ab](https://github.com/trycompai/comp/commit/55442ab2f4f96b25be5d919be43580cd32bdb733))
-* correct static file paths for next.js standalone monorepo structure ([12adfa6](https://github.com/trycompai/comp/commit/12adfa621f5ed8b6ebae8227fb07fc4055a63ee5))
-* correct Windows path formatting in fleet label creation script ([f34610f](https://github.com/trycompai/comp/commit/f34610fcfcc46a157d80c36204be40147679da7f))
-* **deploy:** ensure pulumi update completes before starting build ([d47e9b5](https://github.com/trycompai/comp/commit/d47e9b5b5b3eff8e36c1006f12f4a108506575bb))
-* **docs:** Broken contributing guide link in PR template ([7c8f509](https://github.com/trycompai/comp/commit/7c8f509a594183c1bd41a187271f4aeba7065573))
-* Enforce role-based access control in app ([8a81f42](https://github.com/trycompai/comp/commit/8a81f42b22da29a7a39e2b4698e94421a6a329fd))
-* enhance directory and marker file handling in Windows script ([49e3ec4](https://github.com/trycompai/comp/commit/49e3ec4f51bdee8647aa3c1684abcef041d376df))
-* enhance elevation and error handling in Windows script ([1a67177](https://github.com/trycompai/comp/commit/1a67177a638a87576c662dafefaad39158ef0884))
-* enhance elevation process in Windows script for better user experience ([9b4aeee](https://github.com/trycompai/comp/commit/9b4aeee2cfca20766bc6d457ef83f465dc52f700))
-* enhance logging and error handling in Windows script ([9c54eb0](https://github.com/trycompai/comp/commit/9c54eb09fba40a63b4d5a641526f7cd4292f61e3))
-* enhance session token retrieval in middleware ([27a7254](https://github.com/trycompai/comp/commit/27a72549959ea8f367bf0cff86ae6faf75a5ed01))
-* enhance structure and logging in Windows script ([e27a003](https://github.com/trycompai/comp/commit/e27a0038e1bcb63cca12411cd3cfac0b6867a05b))
-* ensure consistent newline handling in Prisma client and exports ([b5ce5f1](https://github.com/trycompai/comp/commit/b5ce5f11d108cf41259c5125b5768e974daf551e))
-* ensure Prisma binaries are included in Vercel deployment ([fa43f5e](https://github.com/trycompai/comp/commit/fa43f5eb9c75aba50fa232bbc8db8fe84f823a82))
-* ensure Prisma binaries are included in Vercel deployment with custom output path ([e877714](https://github.com/trycompai/comp/commit/e877714c77c2cb3ce6a238518cfc4e0de162cd25))
-* ensure Prisma client is generated during Next.js build for deployment ([a9ee09a](https://github.com/trycompai/comp/commit/a9ee09aebc52ed2f8766e90c526a81909495228c))
-* ensure Prisma query engine binary is properly copied in Trigger.dev deployment ([8d2fe33](https://github.com/trycompai/comp/commit/8d2fe332c99b5b65505c728ea9ac5e307fa87bd3))
-* fixed search ([36e12f1](https://github.com/trycompai/comp/commit/36e12f12cf3aae097ded63c33dc803b9596bcddd))
-* improve directory creation logic in Windows script ([71858ec](https://github.com/trycompai/comp/commit/71858ec19bcbce3b8e624e84d71a9420e62b668c))
-* improve directory selection logic in Windows script ([b2da074](https://github.com/trycompai/comp/commit/b2da0741cf3148966bc5800f335023f8af43a3b9))
-* improve Docker entry point detection for Next.js standalone build ([4e11649](https://github.com/trycompai/comp/commit/4e11649476f44cbe425c6a5446557083d83d2f9c))
-* improve error handling in file upload processes ([af52289](https://github.com/trycompai/comp/commit/af52289e4bb71752f915d96f74f542ada14ea293))
-* improve error handling in ToDoOverview component ([d4dd686](https://github.com/trycompai/comp/commit/d4dd686f8997002d569cde201ca65f2f1a134ee1))
-* improve PowerShell command in Windows script for better execution ([a313739](https://github.com/trycompai/comp/commit/a313739b3ff8c6481342ef4872fec4b2698886c8))
-* improve variable handling and logging in Windows script ([042db43](https://github.com/trycompai/comp/commit/042db43cd4e45087aaa1e881c4ca59d88947050f))
-* **infra:** correct echo command syntax in buildspec for database URL check ([1140eba](https://github.com/trycompai/comp/commit/1140ebae1b1230eca4b6b3554f7a37cc388c92c1))
-* **infra:** correct secrets manager syntax for codebuild and container ([7ada508](https://github.com/trycompai/comp/commit/7ada5083c13a632a3ade97f3c7d453271adfa191))
-* **infra:** correctly resolve database connection string for codebuild ([093bcb3](https://github.com/trycompai/comp/commit/093bcb3f5ba310ac4fc17be6d1c751fe71c56827))
-* **infra:** update health check configuration in container module ([c9b41a6](https://github.com/trycompai/comp/commit/c9b41a6acf20a8caa94a2b01c4c0271acb638013))
-* **infra:** update health check endpoint in container configuration ([5f3f4a2](https://github.com/trycompai/comp/commit/5f3f4a23a3386374b7a8a389f3eb3da4a5af2757))
-* Keep the `getRowId` and `rowClickBasePath` optional ([544afdc](https://github.com/trycompai/comp/commit/544afdcbd4885c501d2a2d9985e409f053020c53))
-* Member edit only for owner/admin ([1a2b9d2](https://github.com/trycompai/comp/commit/1a2b9d28d476f030a55761e30f2b9143df70ca87))
-* Move role checks on org level ([a4056bf](https://github.com/trycompai/comp/commit/a4056bf4d904baf450fd07c4e7ce0f83100e3504))
-* prevent build failure when metadata service is inaccessible ([951f462](https://github.com/trycompai/comp/commit/951f4622985044669503ca60a21388cc5f9207f5))
-* prevent infinite loop in TrustPortalSwitch by updating useEffect dependencies ([5f28201](https://github.com/trycompai/comp/commit/5f282018f3c9bee323a92503ff6a20406306a5ec))
-* Prisma seed command in `packages/db` ([a9957cd](https://github.com/trycompai/comp/commit/a9957cd3daf9d15430d1c47c45ae4e6139e47b92))
-* properly separate app env vars from infra env vars ([55aa5d6](https://github.com/trycompai/comp/commit/55aa5d607a1f33acec59bf1008e8b7a2604e6957))
-* refine directory creation logic in Windows script ([bfbfca0](https://github.com/trycompai/comp/commit/bfbfca0466d37452bc3aa70116d4eb96adeaa03c))
-* refine directory existence checks and logging in Windows script ([37ea28b](https://github.com/trycompai/comp/commit/37ea28b5a3362a1e678e9d23105cb16a00e715c3))
-* refine directory handling and logging in Windows script ([3982150](https://github.com/trycompai/comp/commit/3982150f3ea620097a535d80c7c315b3d7df76c3))
-* remove duplicate dependsOn key ([#1426](https://github.com/trycompai/comp/issues/1426)) ([9035238](https://github.com/trycompai/comp/commit/90352385bf358b6e4d30f0345ab715652b3dc3f7))
-* remove duplicate import of HealthModule in app.module.ts ([e02a51c](https://github.com/trycompai/comp/commit/e02a51c6c6330fe3bbb4b0097bf20492c47787a0))
-* resolve CodeBuild database connectivity issues ([04b1555](https://github.com/trycompai/comp/commit/04b155568619dfcbdce12bf6aa234df1c77229a2))
-* resolve YAML syntax error in buildspec.yml ([a458015](https://github.com/trycompai/comp/commit/a458015cf0bb5656f383c6371987b0c88474027f))
-* restore import of environment variables in Next.js config ([1e01ae4](https://github.com/trycompai/comp/commit/1e01ae418cdca30e722b35e8c0a32791379aef04))
-* restore prebuild script in package.json for Prisma client generation ([4850e68](https://github.com/trycompai/comp/commit/4850e6863a31cda497de1ef01cb96c47c9e1a475))
-* Restrict member management actions to Owner/Admin roles ([260131d](https://github.com/trycompai/comp/commit/260131d8fd8fc51c9564ce78b92381218740b0a9))
-* set controller versioning to VERSION_NEUTRAL for API consistency ([9ede4e8](https://github.com/trycompai/comp/commit/9ede4e824bf28bb4332bcb38d9cbdf47e73f6433))
-* simplify Prisma extension to copy generated client to correct location ([556bd17](https://github.com/trycompai/comp/commit/556bd1721eada7513e50e46d6acd72e60b61b610))
-* streamline elevation process in Windows script for clarity ([2705540](https://github.com/trycompai/comp/commit/2705540a6c21cffc581c546ee1d4f7eab7e9e1ce))
-* streamline script structure and enhance logging in Windows script ([e9a5afd](https://github.com/trycompai/comp/commit/e9a5afd978b4c0473bfb5ad803aba61f0eba019f))
-* Type errors ([ec77b2f](https://github.com/trycompai/comp/commit/ec77b2fb4b605386001af047dc16404f8b3cbad3))
-* **ui:** Align Employee breadcrumb and highlight People tab ([97c353b](https://github.com/trycompai/comp/commit/97c353b0e9dd3849bf5b63a6f4a0054159adf450))
-* update assetPrefix configuration to ensure proper URL handling in production ([3487041](https://github.com/trycompai/comp/commit/348704157cda7822eb867811d885275806f43ae5))
-* update BINARY_TARGET for Prisma extension ([639ac5e](https://github.com/trycompai/comp/commit/639ac5e658383550e2a217733d97141b09a4435f))
-* update Dockerfile to remove unnecessary bunfig.toml copy ([05193c1](https://github.com/trycompai/comp/commit/05193c1409d7cead8e71f378844a29dbb277eca9))
-* update invitation email domain configuration ([04579b0](https://github.com/trycompai/comp/commit/04579b075ad2976a7a91f3de9891f9170c58a131))
-* update marker file handling in Windows script ([fe37a73](https://github.com/trycompai/comp/commit/fe37a738822d0ec16437652724e76280224e13ca))
-* Update member role check ([3848a65](https://github.com/trycompai/comp/commit/3848a656a2b9da5c990b37f3bc214e8524f687e8))
-* update OpenAI model in onboarding and policy helpers for consistency ([fcb070f](https://github.com/trycompai/comp/commit/fcb070f69e54d33d507d6019563f7f2d1a5cda2c))
-* update Prisma extension to properly handle generated client location in Trigger.dev deployment ([a53cb42](https://github.com/trycompai/comp/commit/a53cb42d5c6212df3931bd04f76afd9061f0a3eb))
-* update registry path formatting in Windows script ([d48ea60](https://github.com/trycompai/comp/commit/d48ea605084f4a4de1d45c59fb9e384167dda0d3))
-* update role query in onboard-organization to use 'contains' for owner ([af9f1c3](https://github.com/trycompai/comp/commit/af9f1c35303664bca65f0ecf5b84fec14e9b5c6d))
-* update role validation in InviteMembersModal to prevent admin and employee overlap ([#1485](https://github.com/trycompai/comp/issues/1485)) ([18f3440](https://github.com/trycompai/comp/commit/18f34409af196add1b501a0d1eb6e85f6be34d5c))
-* update S3 bucket name environment variable ([1cc4fb2](https://github.com/trycompai/comp/commit/1cc4fb283735f12b091f62938b36af07629535f6))
-* update S3 bucket name environment variable ([74b98bc](https://github.com/trycompai/comp/commit/74b98bc267fd2709f7132c59d2a51fe4292bcb4c))
-* update typecheck:ci filters to correct package names ([dc8f93b](https://github.com/trycompai/comp/commit/dc8f93b90bddff281bbdfc916910243560d8139c))
-* use dynamic port variable for database connection strings ([f1f6030](https://github.com/trycompai/comp/commit/f1f60304efe352a8865f762415544592a970dd5e))
-* Validate user role for adding employee ([194b462](https://github.com/trycompai/comp/commit/194b462fe1b46233206a52062187fa6ce5f5614a))
-* Validate user role when revoking invitation ([7263791](https://github.com/trycompai/comp/commit/7263791df25c020cd6e0c34c809c92e19bcf0d58))
-
+- add DEQUEUED state handling in OnboardingTracker component ([74d7151](https://github.com/trycompai/comp/commit/74d71518a53e7de404eb321dd9c778d7ab1ce57a))
+- add missing newlines in package.json and index.ts files for consistency ([f33bb34](https://github.com/trycompai/comp/commit/f33bb348cfb5d8919468f397965417489824a6e1))
+- add missing port number to database connection string ([bafbb27](https://github.com/trycompai/comp/commit/bafbb27affac170251a68f0a79038bc9c97851a1))
+- add newline at end of package.json for proper formatting ([fb91918](https://github.com/trycompai/comp/commit/fb91918aac91b456b8b61eac01e542b95a5542e3))
+- add persistent cmd session support in Windows script ([bfad924](https://github.com/trycompai/comp/commit/bfad924a7ecf8149f978c4545524c98a93a77573))
+- add robust database connectivity rules for CodeBuild ([50c9a7e](https://github.com/trycompai/comp/commit/50c9a7eac5ea4994eb94d5cbd82b002bdb059246))
+- add verification for public directory in buildspec.yml ([b8e2064](https://github.com/trycompai/comp/commit/b8e20645333547842e7731deef05c0fc53c7732c))
+- Added Control property to task sidebar ([8cc503b](https://github.com/trycompai/comp/commit/8cc503b70f02e3a0bb448fa0b4179f8601811017))
+- Allow access to auditor role ([1553400](https://github.com/trycompai/comp/commit/155340017c62a09dcfd03709011e25df89a85863))
+- **auth:** rename email parameter for invite function to improve clarity ([95bb6c9](https://github.com/trycompai/comp/commit/95bb6c9c8c12f6543cfa4e4a3e4862c8471845e6))
+- **buildspec, Dockerfile:** update Node.js version and adjust Prisma client generation path ([2d677d0](https://github.com/trycompai/comp/commit/2d677d05f54d9cc84c0def4369c1e07ed46bd511))
+- **buildspec:** adjust working directory for dependency installation ([0774214](https://github.com/trycompai/comp/commit/0774214ef2aba48215acb24d4739884f578ff753))
+- **buildspec:** enhance type checking step with optional script handling ([f151692](https://github.com/trycompai/comp/commit/f151692672559c3ee2d9b00586befb0a3964b375))
+- comprehensive Prisma deployment fix for Vercel monorepo ([6ef5033](https://github.com/trycompai/comp/commit/6ef50339a5ef29931cc1991241e0ca777db21f7b))
+- **config:** update Vercel environment check for standalone output ([39f3710](https://github.com/trycompai/comp/commit/39f3710cda9cf6ba57f3aa0308ee5f19868acff9))
+- copy Prisma binary to locations where runtime is searching ([7c3af89](https://github.com/trycompai/comp/commit/7c3af894a75439a2df512e79d834e83cd7ca7a9f))
+- correct Docker entry point for monorepo structure ([bb3aecb](https://github.com/trycompai/comp/commit/bb3aecb58c407592a76afa6ca3c197ccd538d56b))
+- correct environment variable assignment for Prisma query engine in Next.js config ([1ccaae1](https://github.com/trycompai/comp/commit/1ccaae1279b80e9410283f52fb6d183c2121d92f))
+- correct indentation in package.json scripts section ([f3ed25a](https://github.com/trycompai/comp/commit/f3ed25a85ae44a585633f309ada466b896df1ae8))
+- correct static file paths for next.js standalone monorepo structure ([55442ab](https://github.com/trycompai/comp/commit/55442ab2f4f96b25be5d919be43580cd32bdb733))
+- correct static file paths for next.js standalone monorepo structure ([12adfa6](https://github.com/trycompai/comp/commit/12adfa621f5ed8b6ebae8227fb07fc4055a63ee5))
+- correct Windows path formatting in fleet label creation script ([f34610f](https://github.com/trycompai/comp/commit/f34610fcfcc46a157d80c36204be40147679da7f))
+- **deploy:** ensure pulumi update completes before starting build ([d47e9b5](https://github.com/trycompai/comp/commit/d47e9b5b5b3eff8e36c1006f12f4a108506575bb))
+- **docs:** Broken contributing guide link in PR template ([7c8f509](https://github.com/trycompai/comp/commit/7c8f509a594183c1bd41a187271f4aeba7065573))
+- Enforce role-based access control in app ([8a81f42](https://github.com/trycompai/comp/commit/8a81f42b22da29a7a39e2b4698e94421a6a329fd))
+- enhance directory and marker file handling in Windows script ([49e3ec4](https://github.com/trycompai/comp/commit/49e3ec4f51bdee8647aa3c1684abcef041d376df))
+- enhance elevation and error handling in Windows script ([1a67177](https://github.com/trycompai/comp/commit/1a67177a638a87576c662dafefaad39158ef0884))
+- enhance elevation process in Windows script for better user experience ([9b4aeee](https://github.com/trycompai/comp/commit/9b4aeee2cfca20766bc6d457ef83f465dc52f700))
+- enhance logging and error handling in Windows script ([9c54eb0](https://github.com/trycompai/comp/commit/9c54eb09fba40a63b4d5a641526f7cd4292f61e3))
+- enhance session token retrieval in middleware ([27a7254](https://github.com/trycompai/comp/commit/27a72549959ea8f367bf0cff86ae6faf75a5ed01))
+- enhance structure and logging in Windows script ([e27a003](https://github.com/trycompai/comp/commit/e27a0038e1bcb63cca12411cd3cfac0b6867a05b))
+- ensure consistent newline handling in Prisma client and exports ([b5ce5f1](https://github.com/trycompai/comp/commit/b5ce5f11d108cf41259c5125b5768e974daf551e))
+- ensure Prisma binaries are included in Vercel deployment ([fa43f5e](https://github.com/trycompai/comp/commit/fa43f5eb9c75aba50fa232bbc8db8fe84f823a82))
+- ensure Prisma binaries are included in Vercel deployment with custom output path ([e877714](https://github.com/trycompai/comp/commit/e877714c77c2cb3ce6a238518cfc4e0de162cd25))
+- ensure Prisma client is generated during Next.js build for deployment ([a9ee09a](https://github.com/trycompai/comp/commit/a9ee09aebc52ed2f8766e90c526a81909495228c))
+- ensure Prisma query engine binary is properly copied in Trigger.dev deployment ([8d2fe33](https://github.com/trycompai/comp/commit/8d2fe332c99b5b65505c728ea9ac5e307fa87bd3))
+- fixed search ([36e12f1](https://github.com/trycompai/comp/commit/36e12f12cf3aae097ded63c33dc803b9596bcddd))
+- improve directory creation logic in Windows script ([71858ec](https://github.com/trycompai/comp/commit/71858ec19bcbce3b8e624e84d71a9420e62b668c))
+- improve directory selection logic in Windows script ([b2da074](https://github.com/trycompai/comp/commit/b2da0741cf3148966bc5800f335023f8af43a3b9))
+- improve Docker entry point detection for Next.js standalone build ([4e11649](https://github.com/trycompai/comp/commit/4e11649476f44cbe425c6a5446557083d83d2f9c))
+- improve error handling in file upload processes ([af52289](https://github.com/trycompai/comp/commit/af52289e4bb71752f915d96f74f542ada14ea293))
+- improve error handling in ToDoOverview component ([d4dd686](https://github.com/trycompai/comp/commit/d4dd686f8997002d569cde201ca65f2f1a134ee1))
+- improve PowerShell command in Windows script for better execution ([a313739](https://github.com/trycompai/comp/commit/a313739b3ff8c6481342ef4872fec4b2698886c8))
+- improve variable handling and logging in Windows script ([042db43](https://github.com/trycompai/comp/commit/042db43cd4e45087aaa1e881c4ca59d88947050f))
+- **infra:** correct echo command syntax in buildspec for database URL check ([1140eba](https://github.com/trycompai/comp/commit/1140ebae1b1230eca4b6b3554f7a37cc388c92c1))
+- **infra:** correct secrets manager syntax for codebuild and container ([7ada508](https://github.com/trycompai/comp/commit/7ada5083c13a632a3ade97f3c7d453271adfa191))
+- **infra:** correctly resolve database connection string for codebuild ([093bcb3](https://github.com/trycompai/comp/commit/093bcb3f5ba310ac4fc17be6d1c751fe71c56827))
+- **infra:** update health check configuration in container module ([c9b41a6](https://github.com/trycompai/comp/commit/c9b41a6acf20a8caa94a2b01c4c0271acb638013))
+- **infra:** update health check endpoint in container configuration ([5f3f4a2](https://github.com/trycompai/comp/commit/5f3f4a23a3386374b7a8a389f3eb3da4a5af2757))
+- Keep the `getRowId` and `rowClickBasePath` optional ([544afdc](https://github.com/trycompai/comp/commit/544afdcbd4885c501d2a2d9985e409f053020c53))
+- Member edit only for owner/admin ([1a2b9d2](https://github.com/trycompai/comp/commit/1a2b9d28d476f030a55761e30f2b9143df70ca87))
+- Move role checks on org level ([a4056bf](https://github.com/trycompai/comp/commit/a4056bf4d904baf450fd07c4e7ce0f83100e3504))
+- prevent build failure when metadata service is inaccessible ([951f462](https://github.com/trycompai/comp/commit/951f4622985044669503ca60a21388cc5f9207f5))
+- prevent infinite loop in TrustPortalSwitch by updating useEffect dependencies ([5f28201](https://github.com/trycompai/comp/commit/5f282018f3c9bee323a92503ff6a20406306a5ec))
+- Prisma seed command in `packages/db` ([a9957cd](https://github.com/trycompai/comp/commit/a9957cd3daf9d15430d1c47c45ae4e6139e47b92))
+- properly separate app env vars from infra env vars ([55aa5d6](https://github.com/trycompai/comp/commit/55aa5d607a1f33acec59bf1008e8b7a2604e6957))
+- refine directory creation logic in Windows script ([bfbfca0](https://github.com/trycompai/comp/commit/bfbfca0466d37452bc3aa70116d4eb96adeaa03c))
+- refine directory existence checks and logging in Windows script ([37ea28b](https://github.com/trycompai/comp/commit/37ea28b5a3362a1e678e9d23105cb16a00e715c3))
+- refine directory handling and logging in Windows script ([3982150](https://github.com/trycompai/comp/commit/3982150f3ea620097a535d80c7c315b3d7df76c3))
+- remove duplicate dependsOn key ([#1426](https://github.com/trycompai/comp/issues/1426)) ([9035238](https://github.com/trycompai/comp/commit/90352385bf358b6e4d30f0345ab715652b3dc3f7))
+- remove duplicate import of HealthModule in app.module.ts ([e02a51c](https://github.com/trycompai/comp/commit/e02a51c6c6330fe3bbb4b0097bf20492c47787a0))
+- resolve CodeBuild database connectivity issues ([04b1555](https://github.com/trycompai/comp/commit/04b155568619dfcbdce12bf6aa234df1c77229a2))
+- resolve YAML syntax error in buildspec.yml ([a458015](https://github.com/trycompai/comp/commit/a458015cf0bb5656f383c6371987b0c88474027f))
+- restore import of environment variables in Next.js config ([1e01ae4](https://github.com/trycompai/comp/commit/1e01ae418cdca30e722b35e8c0a32791379aef04))
+- restore prebuild script in package.json for Prisma client generation ([4850e68](https://github.com/trycompai/comp/commit/4850e6863a31cda497de1ef01cb96c47c9e1a475))
+- Restrict member management actions to Owner/Admin roles ([260131d](https://github.com/trycompai/comp/commit/260131d8fd8fc51c9564ce78b92381218740b0a9))
+- set controller versioning to VERSION_NEUTRAL for API consistency ([9ede4e8](https://github.com/trycompai/comp/commit/9ede4e824bf28bb4332bcb38d9cbdf47e73f6433))
+- simplify Prisma extension to copy generated client to correct location ([556bd17](https://github.com/trycompai/comp/commit/556bd1721eada7513e50e46d6acd72e60b61b610))
+- streamline elevation process in Windows script for clarity ([2705540](https://github.com/trycompai/comp/commit/2705540a6c21cffc581c546ee1d4f7eab7e9e1ce))
+- streamline script structure and enhance logging in Windows script ([e9a5afd](https://github.com/trycompai/comp/commit/e9a5afd978b4c0473bfb5ad803aba61f0eba019f))
+- Type errors ([ec77b2f](https://github.com/trycompai/comp/commit/ec77b2fb4b605386001af047dc16404f8b3cbad3))
+- **ui:** Align Employee breadcrumb and highlight People tab ([97c353b](https://github.com/trycompai/comp/commit/97c353b0e9dd3849bf5b63a6f4a0054159adf450))
+- update assetPrefix configuration to ensure proper URL handling in production ([3487041](https://github.com/trycompai/comp/commit/348704157cda7822eb867811d885275806f43ae5))
+- update BINARY_TARGET for Prisma extension ([639ac5e](https://github.com/trycompai/comp/commit/639ac5e658383550e2a217733d97141b09a4435f))
+- update Dockerfile to remove unnecessary bunfig.toml copy ([05193c1](https://github.com/trycompai/comp/commit/05193c1409d7cead8e71f378844a29dbb277eca9))
+- update invitation email domain configuration ([04579b0](https://github.com/trycompai/comp/commit/04579b075ad2976a7a91f3de9891f9170c58a131))
+- update marker file handling in Windows script ([fe37a73](https://github.com/trycompai/comp/commit/fe37a738822d0ec16437652724e76280224e13ca))
+- Update member role check ([3848a65](https://github.com/trycompai/comp/commit/3848a656a2b9da5c990b37f3bc214e8524f687e8))
+- update OpenAI model in onboarding and policy helpers for consistency ([fcb070f](https://github.com/trycompai/comp/commit/fcb070f69e54d33d507d6019563f7f2d1a5cda2c))
+- update Prisma extension to properly handle generated client location in Trigger.dev deployment ([a53cb42](https://github.com/trycompai/comp/commit/a53cb42d5c6212df3931bd04f76afd9061f0a3eb))
+- update registry path formatting in Windows script ([d48ea60](https://github.com/trycompai/comp/commit/d48ea605084f4a4de1d45c59fb9e384167dda0d3))
+- update role query in onboard-organization to use 'contains' for owner ([af9f1c3](https://github.com/trycompai/comp/commit/af9f1c35303664bca65f0ecf5b84fec14e9b5c6d))
+- update role validation in InviteMembersModal to prevent admin and employee overlap ([#1485](https://github.com/trycompai/comp/issues/1485)) ([18f3440](https://github.com/trycompai/comp/commit/18f34409af196add1b501a0d1eb6e85f6be34d5c))
+- update S3 bucket name environment variable ([1cc4fb2](https://github.com/trycompai/comp/commit/1cc4fb283735f12b091f62938b36af07629535f6))
+- update S3 bucket name environment variable ([74b98bc](https://github.com/trycompai/comp/commit/74b98bc267fd2709f7132c59d2a51fe4292bcb4c))
+- update typecheck:ci filters to correct package names ([dc8f93b](https://github.com/trycompai/comp/commit/dc8f93b90bddff281bbdfc916910243560d8139c))
+- use dynamic port variable for database connection strings ([f1f6030](https://github.com/trycompai/comp/commit/f1f60304efe352a8865f762415544592a970dd5e))
+- Validate user role for adding employee ([194b462](https://github.com/trycompai/comp/commit/194b462fe1b46233206a52062187fa6ce5f5614a))
+- Validate user role when revoking invitation ([7263791](https://github.com/trycompai/comp/commit/7263791df25c020cd6e0c34c809c92e19bcf0d58))
 
 ### Features
 
-* add @ai-sdk/rsc package and update imports ([15d7d66](https://github.com/trycompai/comp/commit/15d7d667556a71a2f8702c0ff88a5c331b0224ff))
-* add advanced mode functionality for organizations ([#1503](https://github.com/trycompai/comp/issues/1503)) ([04a9e26](https://github.com/trycompai/comp/commit/04a9e26ad0693bae058175c04f37fcb77b145b32))
-* add API endpoint to approve organizations for QA team ([3b526b4](https://github.com/trycompai/comp/commit/3b526b4bd8e47817981f7ea8f8734a19b75e8f24))
-* add API endpoint to delete users for QA team ([89a6d16](https://github.com/trycompai/comp/commit/89a6d16daef5e7b67dcc9496c1d2d0e70f865661))
-* add BETTER_AUTH_URL to environment variables and buildspec validation ([a767884](https://github.com/trycompai/comp/commit/a76788479d7bb08504a95bae30edebec7595130a))
-* add buildspec and deployment scripts for application ([1722e2e](https://github.com/trycompai/comp/commit/1722e2eb260dc4eabf3917abc32bf4851d9dc64b))
-* add debug scripts for ECS and CodeBuild log retrieval ([02b7df5](https://github.com/trycompai/comp/commit/02b7df520866a210f4bbb612f3d9f003c1d2f6c3))
-* add delete confirmation dialog to CommentItem component ([a94ecd7](https://github.com/trycompai/comp/commit/a94ecd7abd8c3c046ea9840c94b433305d2b0684))
-* add department column to policies table ([#1499](https://github.com/trycompai/comp/issues/1499)) ([cff6bc9](https://github.com/trycompai/comp/commit/cff6bc96437c638adf0a7e4d07675a9f881252a6))
-* add deployment verification script for ECS ([eee55f6](https://github.com/trycompai/comp/commit/eee55f6e1fbfdf4c1afbf09b9c947ee8bd9dcd62))
-* add Dockerfiles for app and portal services ([98efb51](https://github.com/trycompai/comp/commit/98efb51dd67b26b77c32b1797600c3725347ede2))
-* add E2E and unit testing workflows ([e1f0f7b](https://github.com/trycompai/comp/commit/e1f0f7ba037909e7282b562f8a9fac8dec7e9387))
-* add Font components to email templates for improved typography ([e2059a6](https://github.com/trycompai/comp/commit/e2059a67bdb39459debc1e235874fef104ed67c5))
-* add geo field to onboarding process ([fd74000](https://github.com/trycompai/comp/commit/fd740003667abb4bcc4385f44045c3c140b750e2))
-* add header value sanitization for S3 metadata ([d582d40](https://github.com/trycompai/comp/commit/d582d40ab80d1af5063fd51401fcdb359ea34c92))
-* add Husky hooks for commit message validation and pre-push checks ([99fffad](https://github.com/trycompai/comp/commit/99fffad46c012b6967c12df6c0ddf35faefc7059))
-* add migration for JWKS table to support JWT authentication ([9cc1f88](https://github.com/trycompai/comp/commit/9cc1f8895bf096f3461d6665cafb8b95cbddd662))
-* add NEXT_PUBLIC_API_URL environment variable ([f31ee34](https://github.com/trycompai/comp/commit/f31ee344dd02061f30952915928c3af70b0f5125))
-* Add PDF view for policies ([#1451](https://github.com/trycompai/comp/issues/1451)) ([c4e52fc](https://github.com/trycompai/comp/commit/c4e52fc25642145142ef3d45f716e4fb3be468cf))
-* add Prisma client generation task and update build dependencies ([e0061c0](https://github.com/trycompai/comp/commit/e0061c02384a2a344e91ac09baec6f719d8d410e))
-* add progress bars to ComplianceOverview for improved visibility ([d84daeb](https://github.com/trycompai/comp/commit/d84daeba7cfedf50ba6f912f5b669282fd869607))
-* add required Next.js environment variables with proper validation ([3d10913](https://github.com/trycompai/comp/commit/3d10913a1469af86df9b633d11596bd06462fb2d))
-* add risk and vendor action components and regeneration functionality ([6b7d3a4](https://github.com/trycompai/comp/commit/6b7d3a4a2e3663c8e3a1bb0fb7655a7ee98cd2cb))
-* add shouldGenerateTypes option to PrismaExtensionOptions ([cbc1d36](https://github.com/trycompai/comp/commit/cbc1d3680b438f07de3b9725bb96456b35833a96))
-* Add sorting options for organization list ([bcf4434](https://github.com/trycompai/comp/commit/bcf4434ff0513e40554e7d548d68ccfded55826f))
-* add TCP connectivity debugging to buildspec ([804bcb3](https://github.com/trycompai/comp/commit/804bcb3e0f6b6a5d85c7dbd613caf7c65d4bc3a3))
-* add TipTap content validation utilities for AI-generated content ([9d0437e](https://github.com/trycompai/comp/commit/9d0437e073c85d830af0f43e45233a28d7354429))
-* enable cross-subdomain cookies for authentication ([e7d8521](https://github.com/trycompai/comp/commit/e7d8521e565a2a1104d0eec1dac737d6eb4c7357))
-* enable dynamic rendering and set revalidation for layout component ([27f2555](https://github.com/trycompai/comp/commit/27f255523d6ee0f5ccf4ff71f71e7570c7d3b2d7))
-* enhance content validation by removing empty text nodes ([ba735e4](https://github.com/trycompai/comp/commit/ba735e4dce27cf8a0fc5db4ba6e611b9c95085b2))
-* enhance control status logic and onboarding process ([4e00985](https://github.com/trycompai/comp/commit/4e00985999991de4a6354722b088598c722ed150))
-* enhance delete user API to require email for user deletion ([4548a0c](https://github.com/trycompai/comp/commit/4548a0c6694f6ab6f7ad0332a13da36de9797ba0))
-* enhance DeviceAgentAccordionItem for macOS support and update download handling ([ebff53e](https://github.com/trycompai/comp/commit/ebff53ec48ad07f7bc21ec220ee7c4bdfbf0b148))
-* enhance download agent with improved error handling and configuration ([900d99a](https://github.com/trycompai/comp/commit/900d99a7be390e19036c82a7ccd27ef71f5228bf))
-* enhance editor functionality with linkification and configurable extensions ([5bb1f94](https://github.com/trycompai/comp/commit/5bb1f94d3d8d6762d625eead0e423fe7bfb85807))
-* enhance Fleet label creation and error handling ([8f84460](https://github.com/trycompai/comp/commit/8f84460d8ea49e4b747523ccdacde175870e0908))
-* enhance framework compliance tracking and UI ([c566a01](https://github.com/trycompai/comp/commit/c566a01a86beb32b91e4ae3fd87dca57860d90a0))
-* enhance GitHub OIDC module to support existing provider usage ([9212589](https://github.com/trycompai/comp/commit/92125894b5ad1637ac2a137690382fe99f0175b2))
-* enhance HybridAuthGuard and update authentication interfaces ([3868a3e](https://github.com/trycompai/comp/commit/3868a3e7b287150068ef3500d62b5a0b03941a56))
-* enhance invitation handling and user redirection ([e3fb7d3](https://github.com/trycompai/comp/commit/e3fb7d3686b5338680995fc05afbb0dd7e5b25b9))
-* enhance MemberRow component and onboarding task updates ([41f8006](https://github.com/trycompai/comp/commit/41f80062b3f6be20d4fa85802852966ce56bd13f))
-* enhance onboarding process with local development support ([a7fab14](https://github.com/trycompai/comp/commit/a7fab14af21cb534778eed5f686e543e04633062))
-* enhance onboarding tasks with increased concurrency and retry logic ([362cef8](https://github.com/trycompai/comp/commit/362cef81c3757858e1ea989d092c7549195019cd))
-* Enhance PDF handling in policy viewer ([#1476](https://github.com/trycompai/comp/issues/1476)) ([c005b3e](https://github.com/trycompai/comp/commit/c005b3e54ce0381c7c9886e7683ea7460644407f))
-* enhance policy management with regeneration and UI improvements ([c4b4c0d](https://github.com/trycompai/comp/commit/c4b4c0dfe957116776a1e04b394540578d5df014))
-* enhance Prisma client generation and application secrets management ([d44cfa3](https://github.com/trycompai/comp/commit/d44cfa364b214fa1457a428123fa3a776526b3ca))
-* enhance Prisma client generation process with detailed logging ([a9210a8](https://github.com/trycompai/comp/commit/a9210a80a02826dbc8d08566a30567d0a3298a83))
-* enhance Prisma exports and update db:generate script ([2d6195d](https://github.com/trycompai/comp/commit/2d6195d8f776096e518f3982732e47d8685dcd18))
-* enhance PrismaExtension to resolve and copy schema from @trycompai/db package ([8bd0263](https://github.com/trycompai/comp/commit/8bd02634731ba32f1f933a84dfd204e85a73bdab))
-* enhance schema resolution in PrismaExtension for monorepo support ([c413f6f](https://github.com/trycompai/comp/commit/c413f6fc51332f9057653c1929034ac5823fc52d))
-* enhance ToDoOverview component with dynamic tab selection ([e03f402](https://github.com/trycompai/comp/commit/e03f4024753fe6e193f27e3f72200e4f838fd00d))
-* implement attachment download functionality and metadata retrieval ([dde6d48](https://github.com/trycompai/comp/commit/dde6d486cde5d91163d948f127200238e5e33f93))
-* implement auto-resizing for TaskBody textarea ([758cbb2](https://github.com/trycompai/comp/commit/758cbb2624aa6609586f747c1cf471e6b7f1d0db))
-* implement comments and attachments functionality in API ([51162ac](https://github.com/trycompai/comp/commit/51162ac03463ea66415e7a7c33e2e1421f04d64a))
-* implement control creation functionality with UI integration ([#1497](https://github.com/trycompai/comp/issues/1497)) ([943a7d3](https://github.com/trycompai/comp/commit/943a7d3a1e808ed8a5ec6e518c888a387b2cab8d))
-* implement CORS and security headers for API routes ([35aaeb1](https://github.com/trycompai/comp/commit/35aaeb1bd725c3af74444ea8651bd60402bbe2ee))
-* implement DynamicMinHeight component for responsive layout ([09f52cf](https://github.com/trycompai/comp/commit/09f52cffd704e0c1bbe26c9a2885f9e19e521154))
-* implement JWT authentication and update related components ([2786ef6](https://github.com/trycompai/comp/commit/2786ef6f6d6f677ea017dac812c9268bbdd986ce))
-* implement optimistic updates for comments and task attachments ([7fe5669](https://github.com/trycompai/comp/commit/7fe5669da23f5733a0de23889e9ac389eb5763b2))
-* implement publish all policies action and UI components ([52afe86](https://github.com/trycompai/comp/commit/52afe8665dd8a87e24cb9c7d1abfe52087c0ef3d))
-* implement risk and vendor mitigation tasks ([da94ecc](https://github.com/trycompai/comp/commit/da94ecccd22650a166f1353d90ef4a798e0ceb6d))
-* implement session-based JWT retrieval in ApiClient ([33af882](https://github.com/trycompai/comp/commit/33af8822c6251b789f0d0d8ec03ec6ec13662550))
-* implement TriggerTokenProvider for access token management ([6812f39](https://github.com/trycompai/comp/commit/6812f39f425023b07df19bb59919546b360dfc51))
-* improve invite page handling and user feedback ([eb9bcab](https://github.com/trycompai/comp/commit/eb9bcab5bdf84e670103544297438e1619b3b7f8))
-* **infra:** add NEXT_PUBLIC_PORTAL_URL to applications configuration ([bdd5f5f](https://github.com/trycompai/comp/commit/bdd5f5fdd5380a77d4b2e77932a38c73a8f2378e))
-* **infra:** add source version to build system configuration ([424f6ad](https://github.com/trycompai/comp/commit/424f6ad684cd41f5ce9a343c96b234ef6db0d79f))
-* **infra:** add STS VPC endpoint for IAM role assumption ([b5a70c4](https://github.com/trycompai/comp/commit/b5a70c4895a2d0a13e50899e13cfe5cd42b0f6b9))
-* **infra:** enhance application container to support dynamic secret management ([b5a7ee7](https://github.com/trycompai/comp/commit/b5a7ee714ae6d5fb4850d282a9c7656f56e705ab))
-* **infra:** enhance build and deployment configurations for applications ([67fc172](https://github.com/trycompai/comp/commit/67fc172794f65552ed3bde57c633e4a51e2520e7))
-* **infra:** enhance build system to include required secrets from AWS Secrets Manager ([7de1d6c](https://github.com/trycompai/comp/commit/7de1d6ca8000e020e44994317871ba8d1d06d9df))
-* **infra:** implement SSL certificate management and DNS validation ([da41e90](https://github.com/trycompai/comp/commit/da41e909d4beae6ce462dc63a6e3c3edb7058d79))
-* **infra:** refactor application secrets management to support individual secrets ([72b00d4](https://github.com/trycompai/comp/commit/72b00d4da3a9a10c3e9ac469fd1aaa923a8a89db))
-* **infra:** refactor build system to improve environment variable handling ([cc53704](https://github.com/trycompai/comp/commit/cc53704188f96af17076b0353b23d75564746a93))
-* initialize API module with NestJS structure and essential configurations ([2ea50d2](https://github.com/trycompai/comp/commit/2ea50d28525396a8aba2b3f50d6fd4f484241f74))
-* initialize Pulumi infrastructure for Pathfinder app ([3cc14fa](https://github.com/trycompai/comp/commit/3cc14fa681a8c1c4bc5d97dbe5ad73e59cf98a1c))
-* integrate Prisma client and update database schema handling ([81c4c3a](https://github.com/trycompai/comp/commit/81c4c3a68334200a31826735e4ed07d4665f2712))
-* integrate Prisma client generation and update imports for local usage ([e7cbc8f](https://github.com/trycompai/comp/commit/e7cbc8f7e71caf188a55e9437bf977ca7371ec90))
-* introduce custom PrismaExtension for enhanced schema handling ([856f869](https://github.com/trycompai/comp/commit/856f869804913ae0a6b6b72cda4d50feb04671e8))
-* New & improved dashboard ([38ce071](https://github.com/trycompai/comp/commit/38ce071d7cf5da9eb5bf94d5061fa6ed55608a1b))
-* optimize build process with parallel processing and enhanced caching ([7276586](https://github.com/trycompai/comp/commit/7276586d25dda1ed91e2d665213e921b2ea348b8))
-* optimize width calculation in ToDoOverview component ([6e55979](https://github.com/trycompai/comp/commit/6e55979c4c20980ee47516f8500b9ebde63743db))
-* read app environment variables from apps/app/.env ([b49fb1c](https://github.com/trycompai/comp/commit/b49fb1c352f20ad62dece108ad79308fbac6020e))
-* simplify Prisma exports and update db:generate script ([b6f9757](https://github.com/trycompai/comp/commit/b6f97571f437ba3c49d32ccbc00a2dd38381e299))
-* streamline policy generation by directly producing TipTap JSON ([1c799e2](https://github.com/trycompai/comp/commit/1c799e2a687c759aa23a2e6d6eda13c5d6a8cbb3))
-* Support opening policy in new tab for easier navigation ([42c2626](https://github.com/trycompai/comp/commit/42c2626b61d5e81d92fe032236b87da29f3a2475))
-* support protocol-less links in comments ([a5f124b](https://github.com/trycompai/comp/commit/a5f124b5b29032e371e86ed1b653d882fe4dcdc3))
-* update AddFrameworkModal to make organizationId optional ([d742463](https://github.com/trycompai/comp/commit/d742463c715548da5f8fad16198a3fc173967110))
-* update API client and auth utility to use Bearer token authentication ([1d95394](https://github.com/trycompai/comp/commit/1d95394c95078708b786a28b4d2e603f29c79cb2))
-* update auto-pr-to-main workflow to include new chas/* path ([861eb35](https://github.com/trycompai/comp/commit/861eb35f1243f01e49f3aa7dfad36f1561b15e50))
-* update dependencies and enhance onboarding process ([59db96d](https://github.com/trycompai/comp/commit/59db96df9c744b43c45558a7c6ae95acbc8aa05e))
-* update DeviceAgentAccordionItem to enhance user guidance for macOS and Windows ([ec1876c](https://github.com/trycompai/comp/commit/ec1876c9157f465bcba741f0e797aaffe1f1f4db))
-* update OpenAI model and enhance TipTap JSON schema for policy updates ([79c5f2a](https://github.com/trycompai/comp/commit/79c5f2a56985a9505bf0029862ed555f4d5d797a))
-* update policy signature requirement and dependencies ([bfdbb15](https://github.com/trycompai/comp/commit/bfdbb15a70d8f41ae1352733eb5fe214ca27c7e9))
-* update publishAllPoliciesAction to use parsedInput for organizationId ([67741b4](https://github.com/trycompai/comp/commit/67741b4bf9c5065e0d4c98efaa368eebf081fc6f))
-* update S3 key handling for fleet agent downloads ([9a5ab4f](https://github.com/trycompai/comp/commit/9a5ab4f62f263de183e0cdde3d6d7bb7aed08072))
-* update SingleControl component and enhance control status logic ([4287fec](https://github.com/trycompai/comp/commit/4287fecd47cbe4f2c232dc2cf9635ba6e13fc34e))
-* Update tasks on top level ([3cb06d6](https://github.com/trycompai/comp/commit/3cb06d670fb288300b18214737f39c412966fd19))
-* update Trust Portal to include HIPAA compliance framework ([bde32c4](https://github.com/trycompai/comp/commit/bde32c4ef4c39e0325b5bfa32d1d65ffacc3a1e2))
-* use PULUMI_PROJECT_NAME as environment identifier ([29fed1e](https://github.com/trycompai/comp/commit/29fed1eca43895f2bf85144df1ec98be531de4cd))
-* Vendor delete button ([e98926a](https://github.com/trycompai/comp/commit/e98926afd4dee2dd13e7f111b08e4bcd0288670a))
+- add @ai-sdk/rsc package and update imports ([15d7d66](https://github.com/trycompai/comp/commit/15d7d667556a71a2f8702c0ff88a5c331b0224ff))
+- add advanced mode functionality for organizations ([#1503](https://github.com/trycompai/comp/issues/1503)) ([04a9e26](https://github.com/trycompai/comp/commit/04a9e26ad0693bae058175c04f37fcb77b145b32))
+- add API endpoint to approve organizations for QA team ([3b526b4](https://github.com/trycompai/comp/commit/3b526b4bd8e47817981f7ea8f8734a19b75e8f24))
+- add API endpoint to delete users for QA team ([89a6d16](https://github.com/trycompai/comp/commit/89a6d16daef5e7b67dcc9496c1d2d0e70f865661))
+- add BETTER_AUTH_URL to environment variables and buildspec validation ([a767884](https://github.com/trycompai/comp/commit/a76788479d7bb08504a95bae30edebec7595130a))
+- add buildspec and deployment scripts for application ([1722e2e](https://github.com/trycompai/comp/commit/1722e2eb260dc4eabf3917abc32bf4851d9dc64b))
+- add debug scripts for ECS and CodeBuild log retrieval ([02b7df5](https://github.com/trycompai/comp/commit/02b7df520866a210f4bbb612f3d9f003c1d2f6c3))
+- add delete confirmation dialog to CommentItem component ([a94ecd7](https://github.com/trycompai/comp/commit/a94ecd7abd8c3c046ea9840c94b433305d2b0684))
+- add department column to policies table ([#1499](https://github.com/trycompai/comp/issues/1499)) ([cff6bc9](https://github.com/trycompai/comp/commit/cff6bc96437c638adf0a7e4d07675a9f881252a6))
+- add deployment verification script for ECS ([eee55f6](https://github.com/trycompai/comp/commit/eee55f6e1fbfdf4c1afbf09b9c947ee8bd9dcd62))
+- add Dockerfiles for app and portal services ([98efb51](https://github.com/trycompai/comp/commit/98efb51dd67b26b77c32b1797600c3725347ede2))
+- add E2E and unit testing workflows ([e1f0f7b](https://github.com/trycompai/comp/commit/e1f0f7ba037909e7282b562f8a9fac8dec7e9387))
+- add Font components to email templates for improved typography ([e2059a6](https://github.com/trycompai/comp/commit/e2059a67bdb39459debc1e235874fef104ed67c5))
+- add geo field to onboarding process ([fd74000](https://github.com/trycompai/comp/commit/fd740003667abb4bcc4385f44045c3c140b750e2))
+- add header value sanitization for S3 metadata ([d582d40](https://github.com/trycompai/comp/commit/d582d40ab80d1af5063fd51401fcdb359ea34c92))
+- add Husky hooks for commit message validation and pre-push checks ([99fffad](https://github.com/trycompai/comp/commit/99fffad46c012b6967c12df6c0ddf35faefc7059))
+- add migration for JWKS table to support JWT authentication ([9cc1f88](https://github.com/trycompai/comp/commit/9cc1f8895bf096f3461d6665cafb8b95cbddd662))
+- add NEXT_PUBLIC_API_URL environment variable ([f31ee34](https://github.com/trycompai/comp/commit/f31ee344dd02061f30952915928c3af70b0f5125))
+- Add PDF view for policies ([#1451](https://github.com/trycompai/comp/issues/1451)) ([c4e52fc](https://github.com/trycompai/comp/commit/c4e52fc25642145142ef3d45f716e4fb3be468cf))
+- add Prisma client generation task and update build dependencies ([e0061c0](https://github.com/trycompai/comp/commit/e0061c02384a2a344e91ac09baec6f719d8d410e))
+- add progress bars to ComplianceOverview for improved visibility ([d84daeb](https://github.com/trycompai/comp/commit/d84daeba7cfedf50ba6f912f5b669282fd869607))
+- add required Next.js environment variables with proper validation ([3d10913](https://github.com/trycompai/comp/commit/3d10913a1469af86df9b633d11596bd06462fb2d))
+- add risk and vendor action components and regeneration functionality ([6b7d3a4](https://github.com/trycompai/comp/commit/6b7d3a4a2e3663c8e3a1bb0fb7655a7ee98cd2cb))
+- add shouldGenerateTypes option to PrismaExtensionOptions ([cbc1d36](https://github.com/trycompai/comp/commit/cbc1d3680b438f07de3b9725bb96456b35833a96))
+- Add sorting options for organization list ([bcf4434](https://github.com/trycompai/comp/commit/bcf4434ff0513e40554e7d548d68ccfded55826f))
+- add TCP connectivity debugging to buildspec ([804bcb3](https://github.com/trycompai/comp/commit/804bcb3e0f6b6a5d85c7dbd613caf7c65d4bc3a3))
+- add TipTap content validation utilities for AI-generated content ([9d0437e](https://github.com/trycompai/comp/commit/9d0437e073c85d830af0f43e45233a28d7354429))
+- enable cross-subdomain cookies for authentication ([e7d8521](https://github.com/trycompai/comp/commit/e7d8521e565a2a1104d0eec1dac737d6eb4c7357))
+- enable dynamic rendering and set revalidation for layout component ([27f2555](https://github.com/trycompai/comp/commit/27f255523d6ee0f5ccf4ff71f71e7570c7d3b2d7))
+- enhance content validation by removing empty text nodes ([ba735e4](https://github.com/trycompai/comp/commit/ba735e4dce27cf8a0fc5db4ba6e611b9c95085b2))
+- enhance control status logic and onboarding process ([4e00985](https://github.com/trycompai/comp/commit/4e00985999991de4a6354722b088598c722ed150))
+- enhance delete user API to require email for user deletion ([4548a0c](https://github.com/trycompai/comp/commit/4548a0c6694f6ab6f7ad0332a13da36de9797ba0))
+- enhance DeviceAgentAccordionItem for macOS support and update download handling ([ebff53e](https://github.com/trycompai/comp/commit/ebff53ec48ad07f7bc21ec220ee7c4bdfbf0b148))
+- enhance download agent with improved error handling and configuration ([900d99a](https://github.com/trycompai/comp/commit/900d99a7be390e19036c82a7ccd27ef71f5228bf))
+- enhance editor functionality with linkification and configurable extensions ([5bb1f94](https://github.com/trycompai/comp/commit/5bb1f94d3d8d6762d625eead0e423fe7bfb85807))
+- enhance Fleet label creation and error handling ([8f84460](https://github.com/trycompai/comp/commit/8f84460d8ea49e4b747523ccdacde175870e0908))
+- enhance framework compliance tracking and UI ([c566a01](https://github.com/trycompai/comp/commit/c566a01a86beb32b91e4ae3fd87dca57860d90a0))
+- enhance GitHub OIDC module to support existing provider usage ([9212589](https://github.com/trycompai/comp/commit/92125894b5ad1637ac2a137690382fe99f0175b2))
+- enhance HybridAuthGuard and update authentication interfaces ([3868a3e](https://github.com/trycompai/comp/commit/3868a3e7b287150068ef3500d62b5a0b03941a56))
+- enhance invitation handling and user redirection ([e3fb7d3](https://github.com/trycompai/comp/commit/e3fb7d3686b5338680995fc05afbb0dd7e5b25b9))
+- enhance MemberRow component and onboarding task updates ([41f8006](https://github.com/trycompai/comp/commit/41f80062b3f6be20d4fa85802852966ce56bd13f))
+- enhance onboarding process with local development support ([a7fab14](https://github.com/trycompai/comp/commit/a7fab14af21cb534778eed5f686e543e04633062))
+- enhance onboarding tasks with increased concurrency and retry logic ([362cef8](https://github.com/trycompai/comp/commit/362cef81c3757858e1ea989d092c7549195019cd))
+- Enhance PDF handling in policy viewer ([#1476](https://github.com/trycompai/comp/issues/1476)) ([c005b3e](https://github.com/trycompai/comp/commit/c005b3e54ce0381c7c9886e7683ea7460644407f))
+- enhance policy management with regeneration and UI improvements ([c4b4c0d](https://github.com/trycompai/comp/commit/c4b4c0dfe957116776a1e04b394540578d5df014))
+- enhance Prisma client generation and application secrets management ([d44cfa3](https://github.com/trycompai/comp/commit/d44cfa364b214fa1457a428123fa3a776526b3ca))
+- enhance Prisma client generation process with detailed logging ([a9210a8](https://github.com/trycompai/comp/commit/a9210a80a02826dbc8d08566a30567d0a3298a83))
+- enhance Prisma exports and update db:generate script ([2d6195d](https://github.com/trycompai/comp/commit/2d6195d8f776096e518f3982732e47d8685dcd18))
+- enhance PrismaExtension to resolve and copy schema from @trycompai/db package ([8bd0263](https://github.com/trycompai/comp/commit/8bd02634731ba32f1f933a84dfd204e85a73bdab))
+- enhance schema resolution in PrismaExtension for monorepo support ([c413f6f](https://github.com/trycompai/comp/commit/c413f6fc51332f9057653c1929034ac5823fc52d))
+- enhance ToDoOverview component with dynamic tab selection ([e03f402](https://github.com/trycompai/comp/commit/e03f4024753fe6e193f27e3f72200e4f838fd00d))
+- implement attachment download functionality and metadata retrieval ([dde6d48](https://github.com/trycompai/comp/commit/dde6d486cde5d91163d948f127200238e5e33f93))
+- implement auto-resizing for TaskBody textarea ([758cbb2](https://github.com/trycompai/comp/commit/758cbb2624aa6609586f747c1cf471e6b7f1d0db))
+- implement comments and attachments functionality in API ([51162ac](https://github.com/trycompai/comp/commit/51162ac03463ea66415e7a7c33e2e1421f04d64a))
+- implement control creation functionality with UI integration ([#1497](https://github.com/trycompai/comp/issues/1497)) ([943a7d3](https://github.com/trycompai/comp/commit/943a7d3a1e808ed8a5ec6e518c888a387b2cab8d))
+- implement CORS and security headers for API routes ([35aaeb1](https://github.com/trycompai/comp/commit/35aaeb1bd725c3af74444ea8651bd60402bbe2ee))
+- implement DynamicMinHeight component for responsive layout ([09f52cf](https://github.com/trycompai/comp/commit/09f52cffd704e0c1bbe26c9a2885f9e19e521154))
+- implement JWT authentication and update related components ([2786ef6](https://github.com/trycompai/comp/commit/2786ef6f6d6f677ea017dac812c9268bbdd986ce))
+- implement optimistic updates for comments and task attachments ([7fe5669](https://github.com/trycompai/comp/commit/7fe5669da23f5733a0de23889e9ac389eb5763b2))
+- implement publish all policies action and UI components ([52afe86](https://github.com/trycompai/comp/commit/52afe8665dd8a87e24cb9c7d1abfe52087c0ef3d))
+- implement risk and vendor mitigation tasks ([da94ecc](https://github.com/trycompai/comp/commit/da94ecccd22650a166f1353d90ef4a798e0ceb6d))
+- implement session-based JWT retrieval in ApiClient ([33af882](https://github.com/trycompai/comp/commit/33af8822c6251b789f0d0d8ec03ec6ec13662550))
+- implement TriggerTokenProvider for access token management ([6812f39](https://github.com/trycompai/comp/commit/6812f39f425023b07df19bb59919546b360dfc51))
+- improve invite page handling and user feedback ([eb9bcab](https://github.com/trycompai/comp/commit/eb9bcab5bdf84e670103544297438e1619b3b7f8))
+- **infra:** add NEXT_PUBLIC_PORTAL_URL to applications configuration ([bdd5f5f](https://github.com/trycompai/comp/commit/bdd5f5fdd5380a77d4b2e77932a38c73a8f2378e))
+- **infra:** add source version to build system configuration ([424f6ad](https://github.com/trycompai/comp/commit/424f6ad684cd41f5ce9a343c96b234ef6db0d79f))
+- **infra:** add STS VPC endpoint for IAM role assumption ([b5a70c4](https://github.com/trycompai/comp/commit/b5a70c4895a2d0a13e50899e13cfe5cd42b0f6b9))
+- **infra:** enhance application container to support dynamic secret management ([b5a7ee7](https://github.com/trycompai/comp/commit/b5a7ee714ae6d5fb4850d282a9c7656f56e705ab))
+- **infra:** enhance build and deployment configurations for applications ([67fc172](https://github.com/trycompai/comp/commit/67fc172794f65552ed3bde57c633e4a51e2520e7))
+- **infra:** enhance build system to include required secrets from AWS Secrets Manager ([7de1d6c](https://github.com/trycompai/comp/commit/7de1d6ca8000e020e44994317871ba8d1d06d9df))
+- **infra:** implement SSL certificate management and DNS validation ([da41e90](https://github.com/trycompai/comp/commit/da41e909d4beae6ce462dc63a6e3c3edb7058d79))
+- **infra:** refactor application secrets management to support individual secrets ([72b00d4](https://github.com/trycompai/comp/commit/72b00d4da3a9a10c3e9ac469fd1aaa923a8a89db))
+- **infra:** refactor build system to improve environment variable handling ([cc53704](https://github.com/trycompai/comp/commit/cc53704188f96af17076b0353b23d75564746a93))
+- initialize API module with NestJS structure and essential configurations ([2ea50d2](https://github.com/trycompai/comp/commit/2ea50d28525396a8aba2b3f50d6fd4f484241f74))
+- initialize Pulumi infrastructure for Pathfinder app ([3cc14fa](https://github.com/trycompai/comp/commit/3cc14fa681a8c1c4bc5d97dbe5ad73e59cf98a1c))
+- integrate Prisma client and update database schema handling ([81c4c3a](https://github.com/trycompai/comp/commit/81c4c3a68334200a31826735e4ed07d4665f2712))
+- integrate Prisma client generation and update imports for local usage ([e7cbc8f](https://github.com/trycompai/comp/commit/e7cbc8f7e71caf188a55e9437bf977ca7371ec90))
+- introduce custom PrismaExtension for enhanced schema handling ([856f869](https://github.com/trycompai/comp/commit/856f869804913ae0a6b6b72cda4d50feb04671e8))
+- New & improved dashboard ([38ce071](https://github.com/trycompai/comp/commit/38ce071d7cf5da9eb5bf94d5061fa6ed55608a1b))
+- optimize build process with parallel processing and enhanced caching ([7276586](https://github.com/trycompai/comp/commit/7276586d25dda1ed91e2d665213e921b2ea348b8))
+- optimize width calculation in ToDoOverview component ([6e55979](https://github.com/trycompai/comp/commit/6e55979c4c20980ee47516f8500b9ebde63743db))
+- read app environment variables from apps/app/.env ([b49fb1c](https://github.com/trycompai/comp/commit/b49fb1c352f20ad62dece108ad79308fbac6020e))
+- simplify Prisma exports and update db:generate script ([b6f9757](https://github.com/trycompai/comp/commit/b6f97571f437ba3c49d32ccbc00a2dd38381e299))
+- streamline policy generation by directly producing TipTap JSON ([1c799e2](https://github.com/trycompai/comp/commit/1c799e2a687c759aa23a2e6d6eda13c5d6a8cbb3))
+- Support opening policy in new tab for easier navigation ([42c2626](https://github.com/trycompai/comp/commit/42c2626b61d5e81d92fe032236b87da29f3a2475))
+- support protocol-less links in comments ([a5f124b](https://github.com/trycompai/comp/commit/a5f124b5b29032e371e86ed1b653d882fe4dcdc3))
+- update AddFrameworkModal to make organizationId optional ([d742463](https://github.com/trycompai/comp/commit/d742463c715548da5f8fad16198a3fc173967110))
+- update API client and auth utility to use Bearer token authentication ([1d95394](https://github.com/trycompai/comp/commit/1d95394c95078708b786a28b4d2e603f29c79cb2))
+- update auto-pr-to-main workflow to include new chas/\* path ([861eb35](https://github.com/trycompai/comp/commit/861eb35f1243f01e49f3aa7dfad36f1561b15e50))
+- update dependencies and enhance onboarding process ([59db96d](https://github.com/trycompai/comp/commit/59db96df9c744b43c45558a7c6ae95acbc8aa05e))
+- update DeviceAgentAccordionItem to enhance user guidance for macOS and Windows ([ec1876c](https://github.com/trycompai/comp/commit/ec1876c9157f465bcba741f0e797aaffe1f1f4db))
+- update OpenAI model and enhance TipTap JSON schema for policy updates ([79c5f2a](https://github.com/trycompai/comp/commit/79c5f2a56985a9505bf0029862ed555f4d5d797a))
+- update policy signature requirement and dependencies ([bfdbb15](https://github.com/trycompai/comp/commit/bfdbb15a70d8f41ae1352733eb5fe214ca27c7e9))
+- update publishAllPoliciesAction to use parsedInput for organizationId ([67741b4](https://github.com/trycompai/comp/commit/67741b4bf9c5065e0d4c98efaa368eebf081fc6f))
+- update S3 key handling for fleet agent downloads ([9a5ab4f](https://github.com/trycompai/comp/commit/9a5ab4f62f263de183e0cdde3d6d7bb7aed08072))
+- update SingleControl component and enhance control status logic ([4287fec](https://github.com/trycompai/comp/commit/4287fecd47cbe4f2c232dc2cf9635ba6e13fc34e))
+- Update tasks on top level ([3cb06d6](https://github.com/trycompai/comp/commit/3cb06d670fb288300b18214737f39c412966fd19))
+- update Trust Portal to include HIPAA compliance framework ([bde32c4](https://github.com/trycompai/comp/commit/bde32c4ef4c39e0325b5bfa32d1d65ffacc3a1e2))
+- use PULUMI_PROJECT_NAME as environment identifier ([29fed1e](https://github.com/trycompai/comp/commit/29fed1eca43895f2bf85144df1ec98be531de4cd))
+- Vendor delete button ([e98926a](https://github.com/trycompai/comp/commit/e98926afd4dee2dd13e7f111b08e4bcd0288670a))
 
 # [1.50.0](https://github.com/trycompai/comp/compare/v1.49.0...v1.50.0) (2025-07-11)
 
-
 ### Bug Fixes
 
-* standardize plan type casing in PricingCard component ([6a2b48f](https://github.com/trycompai/comp/commit/6a2b48f275a03203394d3cc68e7f206876f8c0b8))
-* update subscription handling in checkout hook ([3175ddd](https://github.com/trycompai/comp/commit/3175ddd52fb43f2dfec9f073da43ad86cdf212fe))
-
+- standardize plan type casing in PricingCard component ([6a2b48f](https://github.com/trycompai/comp/commit/6a2b48f275a03203394d3cc68e7f206876f8c0b8))
+- update subscription handling in checkout hook ([3175ddd](https://github.com/trycompai/comp/commit/3175ddd52fb43f2dfec9f073da43ad86cdf212fe))
 
 ### Features
 
-* enhance upgrade flow with subscription type handling ([5650623](https://github.com/trycompai/comp/commit/56506235a37d9b795207f001766e14a859d390db))
-* integrate HubSpot API for user and company management ([0ab2560](https://github.com/trycompai/comp/commit/0ab2560c124e2b77c5b1bcc2d4969f7bce7079b8))
+- enhance upgrade flow with subscription type handling ([5650623](https://github.com/trycompai/comp/commit/56506235a37d9b795207f001766e14a859d390db))
+- integrate HubSpot API for user and company management ([0ab2560](https://github.com/trycompai/comp/commit/0ab2560c124e2b77c5b1bcc2d4969f7bce7079b8))
 
 # [1.49.0](https://github.com/trycompai/comp/compare/v1.48.1...v1.49.0) (2025-07-03)
 

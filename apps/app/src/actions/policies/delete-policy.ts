@@ -1,9 +1,11 @@
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { z } from 'zod';
-import { authActionClient } from '../safe-action';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
 
 const deletePolicySchema = z.object({
   id: z.string(),
@@ -13,11 +15,11 @@ const deletePolicySchema = z.object({
 export const deletePolicyAction = authActionClient
   .inputSchema(deletePolicySchema)
   .metadata({
-    name: 'delete-policy',
+    name: "delete-policy",
     track: {
-      event: 'delete-policy',
-      description: 'Delete Policy',
-      channel: 'server',
+      event: "delete-policy",
+      description: "Delete Policy",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -27,7 +29,7 @@ export const deletePolicyAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -42,7 +44,7 @@ export const deletePolicyAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: 'Policy not found',
+          error: "Policy not found",
         };
       }
 
@@ -53,12 +55,12 @@ export const deletePolicyAction = authActionClient
 
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/policies/all`);
-      revalidateTag('policies', { expire: 0 });
+      revalidateTag("policies", { expire: 0 });
     } catch (error) {
       console.error(error);
       return {
         success: false,
-        error: 'Failed to delete policy',
+        error: "Failed to delete policy",
       };
     }
   });

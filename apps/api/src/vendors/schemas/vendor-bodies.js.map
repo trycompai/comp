@@ -1,0 +1,1 @@
+{"version":3,"file":"vendor-bodies.js","sourceRoot":"","sources":["vendor-bodies.ts"],"names":[],"mappings":";;;AACA,gEAA2D;AAC3D,gEAA2D;AAE9C,QAAA,aAAa,GAAmC;IAC3D,YAAY,EAAE;QACZ,WAAW,EAAE,sBAAsB;QACnC,IAAI,EAAE,mCAAe;KACtB;IACD,YAAY,EAAE;QACZ,WAAW,EAAE,oBAAoB;QACjC,IAAI,EAAE,mCAAe;KACtB;CACF,CAAC"}

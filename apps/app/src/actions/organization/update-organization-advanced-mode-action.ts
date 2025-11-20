@@ -1,18 +1,20 @@
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
-import { authActionClient } from '../safe-action';
-import { organizationAdvancedModeSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { headers } from "next/headers";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { organizationAdvancedModeSchema } from "../schema";
 
 export const updateOrganizationAdvancedModeAction = authActionClient
   .inputSchema(organizationAdvancedModeSchema)
   .metadata({
-    name: 'update-organization-advanced-mode',
+    name: "update-organization-advanced-mode",
     track: {
-      event: 'update-organization-advanced-mode',
-      channel: 'server',
+      event: "update-organization-advanced-mode",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -20,7 +22,7 @@ export const updateOrganizationAdvancedModeAction = authActionClient
     const { activeOrganizationId } = ctx.session;
 
     if (!activeOrganizationId) {
-      throw new Error('No active organization');
+      throw new Error("No active organization");
     }
 
     try {
@@ -32,8 +34,9 @@ export const updateOrganizationAdvancedModeAction = authActionClient
       });
 
       const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      let path =
+        headersList.get("x-pathname") || headersList.get("referer") || "";
+      path = path.replace(/\/[a-z]{2}\//, "/");
 
       revalidatePath(path);
       revalidateTag(`organization_${activeOrganizationId}`, { expire: 0 });
@@ -43,6 +46,6 @@ export const updateOrganizationAdvancedModeAction = authActionClient
       };
     } catch (error) {
       console.error(error);
-      throw new Error('Failed to update advanced mode setting');
+      throw new Error("Failed to update advanced mode setting");
     }
   });

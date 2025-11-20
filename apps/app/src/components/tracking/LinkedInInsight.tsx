@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import Script from 'next/script';
+import Script from "next/script";
 
 interface LinkedInInsightProps {
   partnerId: string;

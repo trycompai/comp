@@ -1,5 +1,10 @@
-import type { Control } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import { X } from "lucide-react";
+import { toast } from "sonner";
+
+import type { Control } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,30 +13,33 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@trycompai/ui/dialog';
-import { X } from 'lucide-react';
-import { useParams } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { unmapPolicyFromControl } from '../actions/unmapPolicyFromControl';
+} from "@trycompai/ui/dialog";
 
-export const PolicyControlMappingConfirmDeleteModal = ({ control }: { control: Control }) => {
+import { unmapPolicyFromControl } from "../actions/unmapPolicyFromControl";
+
+export const PolicyControlMappingConfirmDeleteModal = ({
+  control,
+}: {
+  control: Control;
+}) => {
   const { policyId } = useParams<{ policyId: string }>();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleUnmap = async () => {
-    console.log('Unmapping control', control.id, 'from policy', policyId);
+    console.log("Unmapping control", control.id, "from policy", policyId);
     try {
       setLoading(true);
       await unmapPolicyFromControl({
         policyId,
         controlId: control.id,
       });
-      toast.success(`Control: ${control.name} unmapped successfully from policy ${policyId}`);
+      toast.success(
+        `Control: ${control.name} unmapped successfully from policy ${policyId}`,
+      );
     } catch (error) {
       console.error(error);
-      toast.error('Failed to unlink control');
+      toast.error("Failed to unlink control");
     } finally {
       setLoading(false);
       setOpen(false);
@@ -48,12 +56,16 @@ export const PolicyControlMappingConfirmDeleteModal = ({ control }: { control: C
           <DialogTitle>Confirm Unlink</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Are you sure you want to unlink{' '}
-          <span className="text-foreground font-semibold">{control.name}</span> from this policy?{' '}
-          {'\n'} You can link it back again later.
+          Are you sure you want to unlink{" "}
+          <span className="text-foreground font-semibold">{control.name}</span>{" "}
+          from this policy? {"\n"} You can link it back again later.
         </DialogDescription>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
           <Button onClick={handleUnmap} disabled={loading}>

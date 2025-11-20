@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import Link from 'next/link';
+import Link from "next/link";
+
+import { Button } from "@trycompai/ui/button";
+import { Icons } from "@trycompai/ui/icons";
 
 export function InviteStatusCard({
   title,
@@ -22,7 +23,7 @@ export function InviteStatusCard({
       <div className="flex flex-col items-center gap-6 text-center">
         <Icons.Logo />
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="mx-auto max-w-[48ch] text-base leading-relaxed text-muted-foreground">
+        <p className="text-muted-foreground mx-auto max-w-[48ch] text-base leading-relaxed">
           {description}
         </p>
         {children}

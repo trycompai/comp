@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { apiClient, ApiResponse } from '@/lib/api-client';
-import { useActiveOrganization } from '@/utils/auth-client';
-import { useMemo } from 'react';
-import useSWR, { SWRConfiguration, SWRResponse } from 'swr';
+import { useMemo } from "react";
+import { apiClient, ApiResponse } from "@/lib/api-client";
+import { useActiveOrganization } from "@/utils/auth-client";
+import useSWR, { SWRConfiguration, SWRResponse } from "swr";
 
 export interface UseApiSWROptions<T> extends SWRConfiguration<ApiResponse<T>> {
   organizationId?: string;
@@ -21,7 +21,11 @@ export function useApiSWR<T = unknown>(
   organizationId?: string;
 } {
   const activeOrg = useActiveOrganization();
-  const { organizationId: explicitOrgId, enabled = true, ...swrOptions } = options;
+  const {
+    organizationId: explicitOrgId,
+    enabled = true,
+    ...swrOptions
+  } = options;
 
   // Determine organization context
   const organizationId = explicitOrgId || activeOrg.data?.id;
@@ -35,7 +39,9 @@ export function useApiSWR<T = unknown>(
   }, [endpoint, organizationId, enabled]);
 
   // SWR fetcher function
-  const fetcher = async ([url, orgId]: readonly [string, string]): Promise<ApiResponse<T>> => {
+  const fetcher = async ([url, orgId]: readonly [string, string]): Promise<
+    ApiResponse<T>
+  > => {
     return apiClient.get<T>(url, orgId);
   };
 
@@ -62,7 +68,7 @@ export function useOrganization(
   organizationId?: string,
   options: UseApiSWROptions<{ id: string; name: string; slug: string }> = {},
 ) {
-  return useApiSWR('/v1/organization', {
+  return useApiSWR("/v1/organization", {
     ...options,
     organizationId,
   });
@@ -73,9 +79,11 @@ export function useOrganization(
  */
 export function useTasks(
   organizationId?: string,
-  options: UseApiSWROptions<Array<{ id: string; title: string; status: string }>> = {},
+  options: UseApiSWROptions<
+    Array<{ id: string; title: string; status: string }>
+  > = {},
 ) {
-  return useApiSWR('/v1/tasks', {
+  return useApiSWR("/v1/tasks", {
     ...options,
     organizationId,
     // Refresh tasks every 30 seconds

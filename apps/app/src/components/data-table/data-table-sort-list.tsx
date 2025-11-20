@@ -1,21 +1,26 @@
-'use client';
+"use client";
 
-import type { ColumnSort, SortDirection, Table } from '@tanstack/react-table';
-import { ArrowDownUp, ChevronsUpDown, GripVertical, Trash2 } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import * as React from 'react';
-
+import type { ColumnSort, SortDirection, Table } from "@tanstack/react-table";
+import * as React from "react";
 import {
   Sortable,
   SortableContent,
   SortableItem,
   SortableItemHandle,
   SortableOverlay,
-} from '@/components/data-table/sortable';
-import { dataTableConfig } from '@/lib/data-table-config';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+} from "@/components/data-table/sortable";
+import { dataTableConfig } from "@/lib/data-table-config";
+import {
+  ArrowDownUp,
+  ChevronsUpDown,
+  GripVertical,
+  Trash2,
+} from "lucide-react";
+import { useQueryState } from "nuqs";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import { cn } from "@trycompai/ui/cn";
 import {
   Command,
   CommandEmpty,
@@ -23,20 +28,21 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@trycompai/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+} from "@trycompai/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@trycompai/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
+} from "@trycompai/ui/select";
 
-const OPEN_MENU_SHORTCUT = 's';
-const REMOVE_SORT_SHORTCUTS = ['backspace', 'delete'];
+const OPEN_MENU_SHORTCUT = "s";
+const REMOVE_SORT_SHORTCUTS = ["backspace", "delete"];
 
-interface DataTableSortListProps<TData> extends React.ComponentProps<typeof PopoverContent> {
+interface DataTableSortListProps<TData>
+  extends React.ComponentProps<typeof PopoverContent> {
   table: Table<TData>;
   tableId?: string;
 }
@@ -52,7 +58,7 @@ export function DataTableSortList<TData>({
   const [open, setOpen] = React.useState(false);
   const addButtonRef = React.useRef<HTMLButtonElement>(null);
 
-  const sortParam = tableId ? `${tableId}_sort` : 'sort';
+  const sortParam = tableId ? `${tableId}_sort` : "sort";
   const [urlSorting, setUrlSorting] = useQueryState(sortParam);
 
   // Parse the URL sorting state
@@ -61,16 +67,16 @@ export function DataTableSortList<TData>({
       if (!urlSorting) return [];
 
       // Check if urlSorting is already an object (this can happen with nuqs)
-      if (typeof urlSorting === 'object' && urlSorting !== null) {
+      if (typeof urlSorting === "object" && urlSorting !== null) {
         // If it's already an array, validate its structure
         if (Array.isArray(urlSorting)) {
           const sortArray = urlSorting as unknown[];
           return sortArray.every(
             (item: unknown) =>
-              typeof item === 'object' &&
+              typeof item === "object" &&
               item !== null &&
-              'id' in (item as object) &&
-              'desc' in (item as object),
+              "id" in (item as object) &&
+              "desc" in (item as object),
           )
             ? (sortArray as ColumnSort[])
             : [];
@@ -79,18 +85,18 @@ export function DataTableSortList<TData>({
       }
 
       // Parse the string if it's a string
-      if (typeof urlSorting === 'string') {
+      if (typeof urlSorting === "string") {
         const parsed = JSON.parse(urlSorting);
         // Validate that we have a proper array of ColumnSort objects
         if (
           Array.isArray(parsed) &&
           parsed.every(
             (item) =>
-              typeof item === 'object' &&
+              typeof item === "object" &&
               item !== null &&
-              'id' in item &&
-              'desc' in item &&
-              typeof item.id === 'string',
+              "id" in item &&
+              "desc" in item &&
+              typeof item.id === "string",
           )
         ) {
           return parsed as ColumnSort[];
@@ -99,14 +105,16 @@ export function DataTableSortList<TData>({
 
       return [];
     } catch (e) {
-      console.error('Error parsing sort state:', e);
+      console.error("Error parsing sort state:", e);
       return [];
     }
   }, [urlSorting]);
 
   // Use URL sorting if available, otherwise use table state
   const sorting = React.useMemo(() => {
-    return parsedSorting.length > 0 ? parsedSorting : table.getState().sorting || [];
+    return parsedSorting.length > 0
+      ? parsedSorting
+      : table.getState().sorting || [];
   }, [parsedSorting, table]);
 
   // Custom sorting change handler that updates both table and URL
@@ -116,7 +124,8 @@ export function DataTableSortList<TData>({
       table.setSorting(updater);
 
       // Update URL sorting
-      const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
 
       // Only set URL if there's something to save
       if (newSorting.length > 0) {
@@ -125,7 +134,7 @@ export function DataTableSortList<TData>({
           const stringified = JSON.stringify(newSorting);
           setUrlSorting(stringified);
         } catch (e) {
-          console.error('Error stringifying sort state:', e);
+          console.error("Error stringifying sort state:", e);
           setUrlSorting(null);
         }
       } else {
@@ -166,14 +175,19 @@ export function DataTableSortList<TData>({
     const firstColumn = columns[0];
     if (!firstColumn) return;
 
-    onSortingChange((prevSorting) => [...prevSorting, { id: firstColumn.id, desc: false }]);
+    onSortingChange((prevSorting) => [
+      ...prevSorting,
+      { id: firstColumn.id, desc: false },
+    ]);
   }, [columns, onSortingChange]);
 
   const onSortUpdate = React.useCallback(
     (sortId: string, updates: Partial<ColumnSort>) => {
       onSortingChange((prevSorting) => {
         if (!prevSorting.length) return prevSorting;
-        return prevSorting.map((sort) => (sort.id === sortId ? { ...sort, ...updates } : sort));
+        return prevSorting.map((sort) =>
+          sort.id === sortId ? { ...sort, ...updates } : sort,
+        );
       });
     },
     [onSortingChange],
@@ -181,7 +195,9 @@ export function DataTableSortList<TData>({
 
   const onSortRemove = React.useCallback(
     (sortId: string) => {
-      onSortingChange((prevSorting) => prevSorting.filter((item) => item.id !== sortId));
+      onSortingChange((prevSorting) =>
+        prevSorting.filter((item) => item.id !== sortId),
+      );
     },
     [onSortingChange],
   );
@@ -204,7 +220,10 @@ export function DataTableSortList<TData>({
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
@@ -218,19 +237,26 @@ export function DataTableSortList<TData>({
         setOpen(true);
       }
 
-      if (event.key.toLowerCase() === OPEN_MENU_SHORTCUT && event.shiftKey && sorting.length > 0) {
+      if (
+        event.key.toLowerCase() === OPEN_MENU_SHORTCUT &&
+        event.shiftKey &&
+        sorting.length > 0
+      ) {
         event.preventDefault();
         onSortingReset();
       }
     }
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [sorting.length, onSortingReset]);
 
   const onTriggerKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLButtonElement>) => {
-      if (REMOVE_SORT_SHORTCUTS.includes(event.key.toLowerCase()) && sorting.length > 0) {
+      if (
+        REMOVE_SORT_SHORTCUTS.includes(event.key.toLowerCase()) &&
+        sorting.length > 0
+      ) {
         event.preventDefault();
         onSortingReset();
       }
@@ -239,7 +265,11 @@ export function DataTableSortList<TData>({
   );
 
   return (
-    <Sortable value={sorting} onValueChange={onSortingChange} getItemValue={(item) => item.id}>
+    <Sortable
+      value={sorting}
+      onValueChange={onSortingChange}
+      getItemValue={(item) => item.id}
+    >
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -268,15 +298,18 @@ export function DataTableSortList<TData>({
         >
           <div className="relative flex flex-col gap-1">
             <h4 id={labelId} className="leading-none font-medium">
-              {sorting.length > 0 ? 'Sort by' : 'No sorting applied'}
+              {sorting.length > 0 ? "Sort by" : "No sorting applied"}
             </h4>
             <p
               id={descriptionId}
-              className={cn('text-muted-foreground text-sm', sorting.length > 0 && 'sr-only')}
+              className={cn(
+                "text-muted-foreground text-sm",
+                sorting.length > 0 && "sr-only",
+              )}
             >
               {sorting.length > 0
-                ? 'Modify sorting to organize your rows.'
-                : 'Add sorting to organize your rows.'}
+                ? "Modify sorting to organize your rows."
+                : "Add sorting to organize your rows."}
             </p>
           </div>
           {sorting.length > 0 && (
@@ -347,11 +380,15 @@ function DataTableSortItem({
   const directionListboxId = `${sortItemId}-direction-listbox`;
 
   const [showFieldSelector, setShowFieldSelector] = React.useState(false);
-  const [showDirectionSelector, setShowDirectionSelector] = React.useState(false);
+  const [showDirectionSelector, setShowDirectionSelector] =
+    React.useState(false);
 
   const onItemKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
@@ -385,7 +422,7 @@ function DataTableSortItem({
               className="w-44 justify-between font-normal"
             >
               <span className="truncate">
-                {columnLabels.get(sort.id) || sort.id || 'Unknown column'}
+                {columnLabels.get(sort.id) || sort.id || "Unknown column"}
               </span>
               <ChevronsUpDown className="opacity-50" />
             </Button>
@@ -420,12 +457,15 @@ function DataTableSortItem({
         <Select
           open={showDirectionSelector}
           onOpenChange={setShowDirectionSelector}
-          value={sort.desc ? 'desc' : 'asc'}
+          value={sort.desc ? "desc" : "asc"}
           onValueChange={(value: SortDirection) =>
-            onSortUpdate(sort.id, { desc: value === 'desc' })
+            onSortUpdate(sort.id, { desc: value === "desc" })
           }
         >
-          <SelectTrigger aria-controls={directionListboxId} className="h-8 w-24 [&[data-size]]:h-8">
+          <SelectTrigger
+            aria-controls={directionListboxId}
+            className="h-8 w-24 [&[data-size]]:h-8"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent

@@ -1,14 +1,17 @@
-import { trainingVideos } from '@/lib/data/training-videos';
-import { logger, task } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
+import { trainingVideos } from "@/lib/data/training-videos";
+import { logger, task } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
 
 export const backfillTrainingVideosForOrg = task({
-  id: 'backfill-training-videos-for-org',
+  id: "backfill-training-videos-for-org",
   retry: {
     maxAttempts: 3,
   },
   run: async (payload: { organizationId: string }) => {
-    logger.info(`Starting training video backfill for organization ${payload.organizationId}`);
+    logger.info(
+      `Starting training video backfill for organization ${payload.organizationId}`,
+    );
 
     try {
       // Get all members for this organization
@@ -26,10 +29,14 @@ export const backfillTrainingVideosForOrg = task({
         },
       });
 
-      logger.info(`Found ${members.length} members in organization ${payload.organizationId}`);
+      logger.info(
+        `Found ${members.length} members in organization ${payload.organizationId}`,
+      );
 
       if (members.length === 0) {
-        logger.info(`No members found for organization ${payload.organizationId}, skipping`);
+        logger.info(
+          `No members found for organization ${payload.organizationId}, skipping`,
+        );
         return {
           success: true,
           organizationId: payload.organizationId,
@@ -49,17 +56,18 @@ export const backfillTrainingVideosForOrg = task({
 
           // Check if this member already has any training video completion records
           // (including old video IDs like sat-1, sat-2, etc.)
-          const existingRecords = await db.employeeTrainingVideoCompletion.findMany({
-            where: {
-              memberId: member.id,
-            },
-            select: {
-              videoId: true,
-            },
-          });
+          const existingRecords =
+            await db.employeeTrainingVideoCompletion.findMany({
+              where: {
+                memberId: member.id,
+              },
+              select: {
+                videoId: true,
+              },
+            });
 
           if (existingRecords.length > 0) {
-            const videoIds = existingRecords.map((r) => r.videoId).join(', ');
+            const videoIds = existingRecords.map((r) => r.videoId).join(", ");
             logger.info(
               `Member ${member.id} already has ${existingRecords.length} training video completion records (${videoIds}), skipping`,
             );

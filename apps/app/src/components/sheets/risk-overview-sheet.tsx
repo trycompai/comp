@@ -1,29 +1,30 @@
-'use client';
+"use client";
 
-import type { Risk } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
+import { X } from "lucide-react";
+import { useQueryState } from "nuqs";
+
+import type { Risk } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Drawer, DrawerContent, DrawerTitle } from "@trycompai/ui/drawer";
+import { useMediaQuery } from "@trycompai/ui/hooks";
+import { ScrollArea } from "@trycompai/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@trycompai/ui/sheet';
-import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+} from "@trycompai/ui/sheet";
 
-import { UpdateRiskForm } from '../forms/risks/update-risk-form';
+import { UpdateRiskForm } from "../forms/risks/update-risk-form";
 
 export function RiskOverviewSheet({ risk }: { risk: Risk }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('risk-overview-sheet');
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [open, setOpen] = useQueryState("risk-overview-sheet");
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
+    setOpen(open ? "true" : null);
   };
 
   if (isDesktop) {
@@ -32,7 +33,7 @@ export function RiskOverviewSheet({ risk }: { risk: Risk }) {
         <SheetContent stack>
           <SheetHeader className="mb-8">
             <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{'Update Risk'}</SheetTitle>
+              <SheetTitle>{"Update Risk"}</SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -41,8 +42,10 @@ export function RiskOverviewSheet({ risk }: { risk: Risk }) {
               >
                 <X className="h-5 w-5" />
               </Button>
-            </div>{' '}
-            <SheetDescription>{'Update risk details and metadata'}</SheetDescription>
+            </div>{" "}
+            <SheetDescription>
+              {"Update risk details and metadata"}
+            </SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
@@ -55,7 +58,7 @@ export function RiskOverviewSheet({ risk }: { risk: Risk }) {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Update Risk'}</DrawerTitle>
+      <DrawerTitle hidden>{"Update Risk"}</DrawerTitle>
       <DrawerContent className="p-6">
         <UpdateRiskForm risk={risk} />
       </DrawerContent>

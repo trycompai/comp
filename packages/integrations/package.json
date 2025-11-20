@@ -10,30 +10,31 @@
     "build": "tsdown",
     "clean": "rm -rf .turbo node_modules dist",
     "dev": "tsdown --watch",
-    "format": "prettier --write .",
-    "lint": "prettier --check .",
+    "format": "eslint . --fix",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.65",
-    "@aws-sdk/client-securityhub": "^3.0.0",
-    "@aws-sdk/client-sts": "^3.808.0",
-    "@azure/identity": "^4.10.0",
-    "@slack/bolt": "^3.22.0",
-    "@slack/web-api": "^7.8.0",
-    "@trycompai/crypto": "workspace:*",
-    "ai": "^5.0.93",
+    "@ai-sdk/openai": "^2.0.69",
+    "@aws-sdk/client-securityhub": "^3.936.0",
+    "@aws-sdk/client-sts": "^3.936.0",
+    "@azure/identity": "^4.13.0",
+    "@slack/bolt": "^4.6.0",
+    "@slack/web-api": "^7.12.0",
+    "@trycompai/utils": "workspace:*",
+    "ai": "^5.0.97",
     "jsonwebtoken": "^9.0.2",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^2.7.0",
     "react": "^19.2.0",
-    "sharp": "^0.34.2",
+    "sharp": "^0.34.5",
     "stoppable": "^1.1.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@trycompai/tsconfig": "workspace:*",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.2.0",
-    "@types/node-fetch": "^2.6.2",
-    "typescript": "^5.9.2"
+    "@types/node": "^24.10.1",
+    "@types/node-fetch": "^2.6.13",
+    "typescript": "^5.9.3"
   }
 }

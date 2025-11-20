@@ -1,10 +1,14 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@trycompai/tsconfig/base.json",
   "compilerOptions": {
     "composite": true,
     "outDir": "dist",
-    "baseUrl": "."
+    "baseUrl": ".", 
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "target": "ES2023",
+    "strict": true,
+    "esModuleInterop": true
   },
   "include": ["src", "prisma/generated"],
   "exclude": ["node_modules", "dist"]

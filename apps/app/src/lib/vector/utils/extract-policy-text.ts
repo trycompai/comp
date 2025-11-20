@@ -1,4 +1,4 @@
-import type { Policy } from '@trycompai/db';
+import type { Policy } from "@trycompai/db";
 
 /**
  * Extracts plain text from a TipTap JSON policy content
@@ -8,7 +8,7 @@ import type { Policy } from '@trycompai/db';
  */
 export function extractTextFromPolicy(policy: Policy): string {
   if (!policy.content || !Array.isArray(policy.content)) {
-    return '';
+    return "";
   }
 
   const textParts: string[] = [];
@@ -23,35 +23,39 @@ export function extractTextFromPolicy(policy: Policy): string {
 
   // Process TipTap JSON content
   const processNode = (node: any): string => {
-    if (!node || typeof node !== 'object') {
-      return '';
+    if (!node || typeof node !== "object") {
+      return "";
     }
 
     const parts: string[] = [];
 
     // Handle text nodes
-    if (node.type === 'text' && node.text) {
+    if (node.type === "text" && node.text) {
       return node.text;
     }
 
     // Handle headings
-    if (node.type === 'heading' && node.content) {
-      const headingText = node.content.map((child: any) => processNode(child)).join('');
+    if (node.type === "heading" && node.content) {
+      const headingText = node.content
+        .map((child: any) => processNode(child))
+        .join("");
       parts.push(headingText);
     }
 
     // Handle paragraphs
-    if (node.type === 'paragraph' && node.content) {
-      const paraText = node.content.map((child: any) => processNode(child)).join('');
+    if (node.type === "paragraph" && node.content) {
+      const paraText = node.content
+        .map((child: any) => processNode(child))
+        .join("");
       if (paraText.trim()) {
         parts.push(paraText);
       }
     }
 
     // Handle bullet lists
-    if (node.type === 'bulletList' && node.content) {
+    if (node.type === "bulletList" && node.content) {
       node.content.forEach((listItem: any) => {
-        if (listItem.type === 'listItem' && listItem.content) {
+        if (listItem.type === "listItem" && listItem.content) {
           listItem.content.forEach((itemContent: any) => {
             const itemText = processNode(itemContent);
             if (itemText.trim()) {
@@ -63,10 +67,10 @@ export function extractTextFromPolicy(policy: Policy): string {
     }
 
     // Handle ordered lists
-    if (node.type === 'orderedList' && node.content) {
+    if (node.type === "orderedList" && node.content) {
       let index = 1;
       node.content.forEach((listItem: any) => {
-        if (listItem.type === 'listItem' && listItem.content) {
+        if (listItem.type === "listItem" && listItem.content) {
           listItem.content.forEach((itemContent: any) => {
             const itemText = processNode(itemContent);
             if (itemText.trim()) {
@@ -88,7 +92,7 @@ export function extractTextFromPolicy(policy: Policy): string {
       });
     }
 
-    return parts.join('\n');
+    return parts.join("\n");
   };
 
   // Process all content nodes
@@ -99,5 +103,5 @@ export function extractTextFromPolicy(policy: Policy): string {
     }
   });
 
-  return textParts.join('\n\n');
+  return textParts.join("\n\n");
 }

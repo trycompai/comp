@@ -1,5 +1,6 @@
-import { db } from '@trycompai/db';
-import { IntegrationsGrid } from './components/IntegrationsGrid';
+import { db } from "@trycompai/db";
+
+import { IntegrationsGrid } from "./components/IntegrationsGrid";
 
 export default async function IntegrationsPage() {
   // Fetch task templates server-side
@@ -10,7 +11,7 @@ export default async function IntegrationsPage() {
       description: true,
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 
@@ -20,11 +21,14 @@ export default async function IntegrationsPage() {
       <div className="space-y-2">
         <div className="flex items-baseline gap-3">
           <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
-          <span className="text-2xl text-muted-foreground/40 font-light">∞</span>
+          <span className="text-muted-foreground/40 text-2xl font-light">
+            ∞
+          </span>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
-          Connect to any system through the AI agent. This directory shows common patterns—the agent
-          can integrate with anything that has an API or web interface.
+          Connect to any system through the AI agent. This directory shows
+          common patterns—the agent can integrate with anything that has an API
+          or web interface.
         </p>
       </div>
 

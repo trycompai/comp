@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import type { ActionResponse } from '@/actions/types';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
+import type { ActionResponse } from "@/actions/types";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
 
 export const getApiKeysAction = async (): Promise<
   ActionResponse<
@@ -26,8 +27,8 @@ export const getApiKeysAction = async (): Promise<
       return {
         success: false,
         error: {
-          code: 'UNAUTHORIZED',
-          message: 'You must be logged in to perform this action',
+          code: "UNAUTHORIZED",
+          message: "You must be logged in to perform this action",
         },
       };
     }
@@ -46,7 +47,7 @@ export const getApiKeysAction = async (): Promise<
         isActive: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
@@ -60,12 +61,12 @@ export const getApiKeysAction = async (): Promise<
       })),
     };
   } catch (error) {
-    console.error('Error fetching API keys:', error);
+    console.error("Error fetching API keys:", error);
     return {
       success: false,
       error: {
-        code: 'INTERNAL_ERROR',
-        message: 'An error occurred while fetching API keys',
+        code: "INTERNAL_ERROR",
+        message: "An error occurred while fetching API keys",
       },
     };
   }

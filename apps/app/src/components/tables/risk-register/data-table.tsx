@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { cn } from '@trycompai/ui/cn';
-import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
-import { type RiskRegisterType, useColumns as getColumns } from './columns';
-import { DataTableHeader } from './data-table-header';
-import { DataTablePagination } from './data-table-pagination';
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+
+import { cn } from "@trycompai/ui/cn";
+import { Table, TableBody, TableCell, TableRow } from "@trycompai/ui/table";
+
+import type { RiskRegisterType } from "./columns";
+import { useColumns as getColumns } from "./columns";
+import { DataTableHeader } from "./data-table-header";
+import { DataTablePagination } from "./data-table-pagination";
 
 interface DataTableProps<TData, TValue> {
   columnHeaders: {
@@ -47,16 +54,19 @@ export function DataTable<TData, TValue>({
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
                     className={cn(
-                      (cell.column.id === 'department' ||
-                        cell.column.id === 'assigneeId' ||
-                        cell.column.id === 'assignedTo' ||
-                        cell.column.id === 'status') &&
-                        'hidden md:table-cell',
+                      (cell.column.id === "department" ||
+                        cell.column.id === "assigneeId" ||
+                        cell.column.id === "assignedTo" ||
+                        cell.column.id === "status") &&
+                        "hidden md:table-cell",
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

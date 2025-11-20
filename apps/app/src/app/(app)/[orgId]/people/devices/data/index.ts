@@ -1,10 +1,12 @@
-'use server';
+"use server";
 
-import { getFleetInstance } from '@/lib/fleet';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import type { Host } from '../types';
+import { headers } from "next/headers";
+import { getFleetInstance } from "@/lib/fleet";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import type { Host } from "../types";
 
 export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   const session = await auth.api.getSession({
@@ -36,7 +38,9 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   );
 
   // Get all devices by id. in parallel
-  const devices = await Promise.all(allIds.map((id: number) => fleet.get(`/hosts/${id}`)));
+  const devices = await Promise.all(
+    allIds.map((id: number) => fleet.get(`/hosts/${id}`)),
+  );
 
   return devices.map((device: { data: { host: Host } }) => device.data.host);
 };

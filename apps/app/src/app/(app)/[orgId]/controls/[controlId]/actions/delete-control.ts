@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { z } from 'zod';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const deleteControlSchema = z.object({
   id: z.string(),
@@ -13,11 +14,11 @@ const deleteControlSchema = z.object({
 export const deleteControlAction = authActionClient
   .inputSchema(deleteControlSchema)
   .metadata({
-    name: 'delete-control',
+    name: "delete-control",
     track: {
-      event: 'delete-control',
-      description: 'Delete Control',
-      channel: 'server',
+      event: "delete-control",
+      description: "Delete Control",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -27,7 +28,7 @@ export const deleteControlAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -42,7 +43,7 @@ export const deleteControlAction = authActionClient
       if (!control) {
         return {
           success: false,
-          error: 'Control not found',
+          error: "Control not found",
         };
       }
 
@@ -54,7 +55,7 @@ export const deleteControlAction = authActionClient
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/controls/all`);
       revalidatePath(`/${activeOrganizationId}/controls`);
-      revalidateTag('controls', { expire: 0 });
+      revalidateTag("controls", { expire: 0 });
 
       return {
         success: true,
@@ -63,7 +64,7 @@ export const deleteControlAction = authActionClient
       console.error(error);
       return {
         success: false,
-        error: 'Failed to delete control',
+        error: "Failed to delete control",
       };
     }
   });

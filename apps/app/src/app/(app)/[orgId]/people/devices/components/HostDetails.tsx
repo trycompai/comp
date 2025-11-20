@@ -1,20 +1,31 @@
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { cn } from '@trycompai/ui/cn';
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
-import { useMemo } from 'react';
-import type { Host } from '../types';
+import { useMemo } from "react";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 
-export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void }) => {
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+import { cn } from "@trycompai/ui/cn";
+
+import type { Host } from "../types";
+
+export const HostDetails = ({
+  host,
+  onClose,
+}: {
+  host: Host;
+  onClose: () => void;
+}) => {
   const isMacOS = useMemo(() => {
-    return host.cpu_type && (host.cpu_type.includes('arm64') || host.cpu_type.includes('intel'));
+    return (
+      host.cpu_type &&
+      (host.cpu_type.includes("arm64") || host.cpu_type.includes("intel"))
+    );
   }, [host]);
 
   const mdmEnabledStatus = useMemo(() => {
     return {
-      id: 'mdm',
-      response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
-      name: 'MDM Enabled',
+      id: "mdm",
+      response: host?.mdm.connected_to_fleet ? "pass" : "fail",
+      name: "MDM Enabled",
     };
   }, [host]);
 
@@ -35,13 +46,15 @@ export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void
                 <div
                   key={policy.id}
                   className={cn(
-                    'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                    policy.response === 'pass' ? 'border-l-primary' : 'border-l-red-500',
+                    "hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors",
+                    policy.response === "pass"
+                      ? "border-l-primary"
+                      : "border-l-red-500",
                   )}
                 >
                   <p className="font-medium">{policy.name}</p>
-                  {policy.response === 'pass' ? (
-                    <div className="flex items-center gap-1 text-primary">
+                  {policy.response === "pass" ? (
+                    <div className="text-primary flex items-center gap-1">
                       <CheckCircle2 size={16} />
                       <span>Pass</span>
                     </div>
@@ -57,13 +70,15 @@ export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void
                 <div
                   key={mdmEnabledStatus.id}
                   className={cn(
-                    'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                    mdmEnabledStatus.response === 'pass' ? 'border-l-primary' : 'border-l-red-500',
+                    "hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors",
+                    mdmEnabledStatus.response === "pass"
+                      ? "border-l-primary"
+                      : "border-l-red-500",
                   )}
                 >
                   <p className="font-medium">{mdmEnabledStatus.name}</p>
-                  {mdmEnabledStatus.response === 'pass' ? (
-                    <div className="flex items-center gap-1 text-primary">
+                  {mdmEnabledStatus.response === "pass" ? (
+                    <div className="text-primary flex items-center gap-1">
                       <CheckCircle2 size={16} />
                       <span>Pass</span>
                     </div>
@@ -77,7 +92,9 @@ export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void
               )}
             </>
           ) : (
-            <p className="text-muted-foreground">No policies found for this device.</p>
+            <p className="text-muted-foreground">
+              No policies found for this device.
+            </p>
           )}
         </CardContent>
       </Card>

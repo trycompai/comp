@@ -1,7 +1,8 @@
-import { researchJobCore } from '@/jobs/lib/research';
-import { schemaTask } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { z } from 'zod';
+import { researchJobCore } from "@/jobs/lib/research";
+import { schemaTask } from "@trigger.dev/sdk";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const firecrawlDataSchema = z.object({
   company_name: z.string().optional().nullable(),
@@ -9,23 +10,23 @@ const firecrawlDataSchema = z.object({
   company_description: z.string().optional().nullable(),
   company_hq_address: z.string().optional().nullable(),
   privacy_policy_url: z
-    .union([z.string().url(), z.literal('')])
+    .union([z.string().url(), z.literal("")])
     .optional()
     .nullable(),
   terms_of_service_url: z
-    .union([z.string().url(), z.literal('')])
+    .union([z.string().url(), z.literal("")])
     .optional()
     .nullable(),
   service_level_agreement_url: z
-    .union([z.string().url(), z.literal('')])
+    .union([z.string().url(), z.literal("")])
     .optional()
     .nullable(),
   security_overview_url: z
-    .union([z.string().url(), z.literal('')])
+    .union([z.string().url(), z.literal("")])
     .optional()
     .nullable(),
   trust_portal_url: z
-    .union([z.string().url(), z.literal('')])
+    .union([z.string().url(), z.literal("")])
     .optional()
     .nullable(),
   certified_security_frameworks: z.array(z.string()).optional().nullable(),
@@ -34,7 +35,7 @@ const firecrawlDataSchema = z.object({
 });
 
 export const researchVendor = schemaTask({
-  id: 'research-vendor',
+  id: "research-vendor",
   schema: z.object({
     website: z.string().url(),
   }),
@@ -48,7 +49,7 @@ export const researchVendor = schemaTask({
           {
             company_name: {
               equals: payload.website,
-              mode: 'insensitive',
+              mode: "insensitive",
             },
           },
         ],
@@ -57,7 +58,7 @@ export const researchVendor = schemaTask({
 
     if (existingVendor) {
       return {
-        message: 'Vendor already exists in database',
+        message: "Vendor already exists in database",
         existingVendor,
       };
     }
@@ -66,31 +67,32 @@ export const researchVendor = schemaTask({
       website: payload.website,
       prompt: "You're a cyber security researcher, researching a vendor.",
       schema: {
-        type: 'object',
+        type: "object",
         properties: {
-          company_name: { type: 'string' },
-          legal_name: { type: 'string' },
-          company_description: { type: 'string' },
-          company_hq_address: { type: 'string' },
-          privacy_policy_url: { type: 'string' },
-          terms_of_service_url: { type: 'string' },
-          service_level_agreement_url: { type: 'string' },
-          security_overview_url: { type: 'string' },
-          trust_portal_url: { type: 'string' },
+          company_name: { type: "string" },
+          legal_name: { type: "string" },
+          company_description: { type: "string" },
+          company_hq_address: { type: "string" },
+          privacy_policy_url: { type: "string" },
+          terms_of_service_url: { type: "string" },
+          service_level_agreement_url: { type: "string" },
+          security_overview_url: { type: "string" },
+          trust_portal_url: { type: "string" },
           certified_security_frameworks: {
-            type: 'array',
-            items: { type: 'string' },
+            type: "array",
+            items: { type: "string" },
           },
           subprocessors: {
-            type: 'array',
-            items: { type: 'string' },
+            type: "array",
+            items: { type: "string" },
           },
-          type_of_company: { type: 'string' },
+          type_of_company: { type: "string" },
         },
       },
       zodSchema: firecrawlDataSchema,
       dbSave: async (data) => {
-        const security_certifications = data.certified_security_frameworks ?? [];
+        const security_certifications =
+          data.certified_security_frameworks ?? [];
         const subprocessors = data.subprocessors ?? [];
         await db.globalVendors.upsert({
           where: {

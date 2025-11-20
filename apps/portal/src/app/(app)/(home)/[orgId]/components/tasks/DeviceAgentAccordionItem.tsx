@@ -1,28 +1,42 @@
-'use client';
+"use client";
 
-import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
-import type { Member } from '@db';
+import { detectOSFromUserAgent, SupportedOS } from "@/utils/os";
+import type { Member } from "@trycompai/db";
+import {
+  CheckCircle2,
+  Circle,
+  Download,
+  HelpCircle,
+  Loader2,
+  XCircle,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { cn } from '@trycompai/ui/cn';
+} from "@trycompai/ui/accordion";
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+import { cn } from "@trycompai/ui/cn";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import { CheckCircle2, Circle, Download, HelpCircle, Loader2, XCircle } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import type { FleetPolicy, Host } from '../../types';
+} from "@trycompai/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@trycompai/ui/tooltip";
+
+import type { FleetPolicy, Host } from "../../types";
 
 interface DeviceAgentAccordionItemProps {
   member: Member;
@@ -39,23 +53,23 @@ export function DeviceAgentAccordionItem({
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
 
   const isMacOS = useMemo(
-    () => detectedOS === 'macos' || detectedOS === 'macos-intel',
-    [detectedOS],
+    () => detectedOS === "macos" || detectedOS === "macos-intel",
+    [detectedOS]
   );
 
   const mdmEnabledStatus = useMemo(() => {
     return {
-      id: 'mdm',
-      response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
-      name: 'MDM Enabled',
+      id: "mdm",
+      response: host?.mdm.connected_to_fleet ? "pass" : "fail",
+      name: "MDM Enabled",
     };
   }, [host]);
 
   const hasInstalledAgent = host !== null;
   const failedPoliciesCount = useMemo(() => {
     return (
-      fleetPolicies.filter((policy) => policy.response !== 'pass').length +
-      (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1)
+      fleetPolicies.filter((policy) => policy.response !== "pass").length +
+      (!isMacOS || mdmEnabledStatus.response === "pass" ? 0 : 1)
     );
   }, [fleetPolicies, mdmEnabledStatus, isMacOS]);
 
@@ -66,9 +80,9 @@ export function DeviceAgentAccordionItem({
 
     try {
       // First, we need to get a download token/session from the API
-      const tokenResponse = await fetch('/api/download-agent/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const tokenResponse = await fetch("/api/download-agent/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orgId: member.organizationId,
           employeeId: member.id,
@@ -77,7 +91,7 @@ export function DeviceAgentAccordionItem({
 
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
-        throw new Error(errorText || 'Failed to prepare download.');
+        throw new Error(errorText || "Failed to prepare download.");
       }
 
       const { token } = await tokenResponse.json();
@@ -87,27 +101,29 @@ export function DeviceAgentAccordionItem({
       const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}&os=${detectedOS}`;
 
       // Method 1: Using a temporary link (most reliable)
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = downloadUrl;
 
       // Set filename based on OS and architecture
       if (isMacOS) {
         a.download =
-          detectedOS === 'macos'
-            ? 'Comp AI Agent-1.0.0-arm64.dmg'
-            : 'Comp AI Agent-1.0.0-intel.dmg';
+          detectedOS === "macos"
+            ? "Comp AI Agent-1.0.0-arm64.dmg"
+            : "Comp AI Agent-1.0.0-intel.dmg";
       } else {
-        a.download = 'Comp AI Agent 1.0.0.exe';
+        a.download = "Comp AI Agent 1.0.0.exe";
       }
 
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
 
-      toast.success('Download started! Check your downloads folder.');
+      toast.success("Download started! Check your downloads folder.");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : 'Failed to download agent.');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to download agent."
+      );
     } finally {
       // Reset after a short delay to allow download to start
       setTimeout(() => {
@@ -143,19 +159,24 @@ export function DeviceAgentAccordionItem({
   }, []);
 
   return (
-    <AccordionItem value="device-agent" className="border rounded-xs">
+    <AccordionItem value="device-agent" className="rounded-xs border">
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {isCompleted ? (
-            <CheckCircle2 className="text-green-600 dark:text-green-400 h-5 w-5" />
+            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
           ) : (
             <Circle className="text-muted-foreground h-5 w-5" />
           )}
-          <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
+          <span
+            className={cn(
+              "text-base",
+              isCompleted && "text-muted-foreground line-through"
+            )}
+          >
             Download and install Comp AI Device Agent
           </span>
           {hasInstalledAgent && failedPoliciesCount > 0 && (
-            <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
+            <span className="ml-auto text-xs text-amber-600 dark:text-amber-400">
               {failedPoliciesCount} policies failing
             </span>
           )}
@@ -164,8 +185,8 @@ export function DeviceAgentAccordionItem({
       <AccordionContent className="px-4 pb-4">
         <div className="space-y-4">
           <p className="text-sm">
-            Installing Comp AI Device Agent helps you and your security administrator keep your
-            device protected against security threats.
+            Installing Comp AI Device Agent helps you and your security
+            administrator keep your device protected against security threats.
           </p>
 
           {!hasInstalledAgent ? (
@@ -174,13 +195,16 @@ export function DeviceAgentAccordionItem({
                 <li>
                   <strong>Download the Device Agent installer.</strong>
                   <p className="mt-1">
-                    Click the download button below to get the Device Agent installer.
+                    Click the download button below to get the Device Agent
+                    installer.
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="mt-2 flex items-center gap-2">
                     {isMacOS && !hasInstalledAgent && (
                       <Select
-                        value={detectedOS || 'macos'}
-                        onValueChange={(value: 'macos' | 'macos-intel') => setDetectedOS(value)}
+                        value={detectedOS || "macos"}
+                        onValueChange={(value: "macos" | "macos-intel") =>
+                          setDetectedOS(value)
+                        }
                       >
                         <SelectTrigger className="w-[136px]">
                           <SelectValue />
@@ -206,16 +230,17 @@ export function DeviceAgentAccordionItem({
                   <strong>Install the Comp AI Device Agent</strong>
                   <p className="mt-1">
                     {isMacOS
-                      ? 'Double-click the downloaded DMG file and follow the installation instructions.'
-                      : 'Double-click the downloaded EXE file and follow the installation instructions.'}
+                      ? "Double-click the downloaded DMG file and follow the installation instructions."
+                      : "Double-click the downloaded EXE file and follow the installation instructions."}
                   </p>
                 </li>
                 {isMacOS ? (
                   <li>
                     <strong>Login with your work email</strong>
                     <p className="mt-1">
-                      After installation, login with your work email, select your organization and
-                      then click "Link Device" and "Install Agent".
+                      After installation, login with your work email, select
+                      your organization and then click "Link Device" and
+                      "Install Agent".
                     </p>
                   </li>
                 ) : (
@@ -223,17 +248,18 @@ export function DeviceAgentAccordionItem({
                     <strong>Enable MDM</strong>
                     <div className="space-y-2">
                       <p>
-                        Find the Fleet Desktop app in your system tray (bottom right corner). Click
-                        on it and click My Device.
+                        Find the Fleet Desktop app in your system tray (bottom
+                        right corner). Click on it and click My Device.
                       </p>
                       <p>
-                        You should see a banner that asks you to enable MDM. Click the button and
-                        follow the instructions.
+                        You should see a banner that asks you to enable MDM.
+                        Click the button and follow the instructions.
                       </p>
                       <p>
-                        After you've enabled MDM, if you refresh the page, the banner will
-                        disappear. Now your computer will automatically enable the necessary
-                        settings on your computer in order to be compliant.
+                        After you've enabled MDM, if you refresh the page, the
+                        banner will disappear. Now your computer will
+                        automatically enable the necessary settings on your
+                        computer in order to be compliant.
                       </p>
                     </div>
                   </li>
@@ -252,12 +278,14 @@ export function DeviceAgentAccordionItem({
                       <div
                         key={policy.id}
                         className={cn(
-                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                          "hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors",
+                          policy.response === "pass"
+                            ? "border-l-green-500"
+                            : "border-l-red-500"
                         )}
                       >
                         <p className="text-sm font-medium">{policy.name}</p>
-                        {policy.response === 'pass' ? (
+                        {policy.response === "pass" ? (
                           <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                             <CheckCircle2 size={16} />
                             <span className="text-sm">Pass</span>
@@ -273,15 +301,17 @@ export function DeviceAgentAccordionItem({
                     {isMacOS && (
                       <div
                         className={cn(
-                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                          mdmEnabledStatus.response === 'pass'
-                            ? 'border-l-green-500'
-                            : 'border-l-red-500',
+                          "hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors",
+                          mdmEnabledStatus.response === "pass"
+                            ? "border-l-green-500"
+                            : "border-l-red-500"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
-                          {mdmEnabledStatus.response === 'fail' && host?.id && (
+                          <p className="text-sm font-medium">
+                            {mdmEnabledStatus.name}
+                          </p>
+                          {mdmEnabledStatus.response === "fail" && host?.id && (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -294,12 +324,13 @@ export function DeviceAgentAccordionItem({
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
                                   <p>
-                                    There are additional steps required to enable MDM. Please check{' '}
+                                    There are additional steps required to
+                                    enable MDM. Please check{" "}
                                     <a
                                       href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                                      className="text-blue-600 hover:underline dark:text-blue-400"
                                     >
                                       this documentation
                                     </a>
@@ -310,7 +341,7 @@ export function DeviceAgentAccordionItem({
                             </TooltipProvider>
                           )}
                         </div>
-                        {mdmEnabledStatus.response === 'pass' ? (
+                        {mdmEnabledStatus.response === "pass" ? (
                           <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                             <CheckCircle2 size={16} />
                             <span className="text-sm">Pass</span>
@@ -337,7 +368,10 @@ export function DeviceAgentAccordionItem({
         <div className="mt-4 space-y-2">
           <Accordion type="single" collapsible>
             {/* System Requirements */}
-            <AccordionItem value="system-requirements" className="border rounded-xs mt-4">
+            <AccordionItem
+              value="system-requirements"
+              className="mt-4 rounded-xs border"
+            >
               <AccordionTrigger className="px-4 hover:no-underline">
                 <span className="text-base">System Requirements</span>
               </AccordionTrigger>
@@ -359,25 +393,29 @@ export function DeviceAgentAccordionItem({
 
           <Accordion type="single" collapsible>
             {/* About Comp AI Device Monitor */}
-            <AccordionItem value="about" className="border rounded-xs">
+            <AccordionItem value="about" className="rounded-xs border">
               <AccordionTrigger className="px-4 hover:no-underline">
                 <span className="text-base">About Comp AI Device Monitor</span>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="text-muted-foreground space-y-2 text-sm">
                   <p>
-                    Comp AI Device Monitor is a lightweight agent that helps ensure your device
-                    meets security compliance requirements.
+                    Comp AI Device Monitor is a lightweight agent that helps
+                    ensure your device meets security compliance requirements.
                   </p>
                   <p>
-                    It monitors device configuration, installed software, and security settings to
-                    help maintain a secure work environment.
+                    It monitors device configuration, installed software, and
+                    security settings to help maintain a secure work
+                    environment.
                   </p>
                   <p>
-                    <strong>Security powered by Comp AI:</strong> Your organization uses Comp AI to
-                    maintain security and compliance standards.
+                    <strong>Security powered by Comp AI:</strong> Your
+                    organization uses Comp AI to maintain security and
+                    compliance standards.
                   </p>
-                  <p className="text-xs">If you have questions, contact your IT administrator.</p>
+                  <p className="text-xs">
+                    If you have questions, contact your IT administrator.
+                  </p>
                 </div>
               </AccordionContent>
             </AccordionItem>

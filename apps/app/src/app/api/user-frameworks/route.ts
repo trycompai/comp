@@ -1,17 +1,25 @@
-import { db } from '@trycompai/db';
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+
+import { db } from "@trycompai/db";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get("authorization");
   const secretKey = process.env.SECRET_KEY;
 
   if (!secretKey) {
-    console.error('SECRET_KEY environment variable is not set');
-    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    console.error("SECRET_KEY environment variable is not set");
+    return NextResponse.json(
+      { error: "Server configuration error" },
+      { status: 500 },
+    );
   }
 
-  if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== secretKey) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (
+    !authHeader ||
+    !authHeader.startsWith("Bearer ") ||
+    authHeader.slice(7) !== secretKey
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -48,7 +56,7 @@ export async function GET(request: Request) {
         },
       },
       orderBy: {
-        email: 'asc',
+        email: "asc",
       },
     });
 
@@ -57,7 +65,9 @@ export async function GET(request: Request) {
       frameworks: [
         ...new Set(
           user.members.flatMap((membership) =>
-            membership.organization.frameworkInstances.map((fi) => fi.framework.name),
+            membership.organization.frameworkInstances.map(
+              (fi) => fi.framework.name,
+            ),
           ),
         ),
       ],
@@ -67,7 +77,10 @@ export async function GET(request: Request) {
       userFrameworks,
     });
   } catch (error) {
-    console.error('Error fetching user frameworks:', error);
-    return NextResponse.json({ error: 'Failed to fetch user frameworks' }, { status: 500 });
+    console.error("Error fetching user frameworks:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch user frameworks" },
+      { status: 500 },
+    );
   }
 }

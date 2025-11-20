@@ -1,6 +1,8 @@
-import { db } from '@trycompai/db';
-import { redirect } from 'next/navigation';
-import { AutomationOverview } from './components/AutomationOverview';
+import { redirect } from "next/navigation";
+
+import { db } from "@trycompai/db";
+
+import { AutomationOverview } from "./components/AutomationOverview";
 
 export default async function AutomationOverviewPage({
   params,
@@ -42,7 +44,7 @@ const getTask = async (taskId: string) => {
 
     return task;
   } catch (error) {
-    console.error('[getTask] Database query failed:', error);
+    console.error("[getTask] Database query failed:", error);
     throw error;
   }
 };
@@ -57,7 +59,7 @@ const getAutomation = async (automationId: string) => {
 
     return automation;
   } catch (error) {
-    console.error('[getAutomation] Database query failed:', error);
+    console.error("[getAutomation] Database query failed:", error);
     throw error;
   }
 };
@@ -75,7 +77,7 @@ const getAutomationRuns = async (automationId: string) => {
       },
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
   });
 
@@ -88,7 +90,7 @@ const getAutomationVersions = async (automationId: string) => {
       evidenceAutomationId: automationId,
     },
     orderBy: {
-      version: 'desc',
+      version: "desc",
     },
     take: 10,
   });

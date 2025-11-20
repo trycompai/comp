@@ -1,16 +1,21 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { ExternalLink, Search } from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import type { CSSProperties } from 'react';
-import * as React from 'react';
-
+import type { CSSProperties } from "react";
+import * as React from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 // Use correct types from the database
-import { TrainingVideo } from '@/lib/data/training-videos';
-import { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@trycompai/db';
+import { TrainingVideo } from "@/lib/data/training-videos";
+import { ExternalLink, Search } from "lucide-react";
+
+import {
+  EmployeeTrainingVideoCompletion,
+  Member,
+  Policy,
+  User,
+} from "@trycompai/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+import { Input } from "@trycompai/ui/input";
 
 interface EmployeeCompletionChartProps {
   employees: (Member & {
@@ -25,8 +30,8 @@ interface EmployeeCompletionChartProps {
 
 // Define colors for the chart
 const taskColors = {
-  completed: 'bg-primary', // Green/Blue
-  incomplete: 'bg-[var(--chart-open)]', // Yellow
+  completed: "bg-primary", // Green/Blue
+  incomplete: "bg-[var(--chart-open)]", // Yellow
 };
 
 interface EmployeeTaskStats {
@@ -51,7 +56,7 @@ export function EmployeeCompletionChart({
 }: EmployeeCompletionChartProps) {
   const params = useParams();
   const orgId = params.orgId as string;
-  const [searchTerm, setSearchTerm] = React.useState('');
+  const [searchTerm, setSearchTerm] = React.useState("");
   const [displayedItems, setDisplayedItems] = React.useState(showAll ? 20 : 5);
   const [isLoading, setIsLoading] = React.useState(false);
   // Calculate completion data for each employee
@@ -86,7 +91,8 @@ export function EmployeeCompletionChart({
 
       // Calculate total completion percentage
       const totalItems = policies.length + trainingVideosTotal;
-      const totalCompletedItems = policiesCompletedCount + trainingsCompletedCount;
+      const totalCompletedItems =
+        policiesCompletedCount + trainingsCompletedCount;
 
       const overallPercentage = totalItems
         ? Math.round((totalCompletedItems / totalItems) * 100)
@@ -94,7 +100,7 @@ export function EmployeeCompletionChart({
 
       return {
         id: employee.id,
-        name: employee.user.name || employee.user.email.split('@')[0],
+        name: employee.user.name || employee.user.email.split("@")[0],
         email: employee.user.email,
         totalTasks: totalItems,
         policiesCompleted: policiesCompletedCount,
@@ -121,7 +127,9 @@ export function EmployeeCompletionChart({
 
   // Sort and limit employees
   const sortedStats = React.useMemo(() => {
-    const sorted = [...filteredStats].sort((a, b) => b.overallPercentage - a.overallPercentage);
+    const sorted = [...filteredStats].sort(
+      (a, b) => b.overallPercentage - a.overallPercentage,
+    );
     return showAll ? sorted.slice(0, displayedItems) : sorted.slice(0, 5);
   }, [filteredStats, displayedItems, showAll]);
 
@@ -149,8 +157,8 @@ export function EmployeeCompletionChart({
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [loadMore, showAll]);
 
   // Check for empty data scenarios
@@ -158,11 +166,11 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{'Employee Task Completion'}</CardTitle>
+          <CardTitle>{"Employee Task Completion"}</CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
-            {'No employee data available'}
+            {"No employee data available"}
           </p>
         </CardContent>
       </Card>
@@ -174,11 +182,11 @@ export function EmployeeCompletionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{'Employee Task Completion'}</CardTitle>
+          <CardTitle>{"Employee Task Completion"}</CardTitle>
         </CardHeader>
         <CardContent className="flex h-[300px] items-center justify-center">
           <p className="text-muted-foreground text-center text-sm">
-            {'No tasks available to complete'}
+            {"No tasks available to complete"}
           </p>
         </CardContent>
       </Card>
@@ -188,7 +196,7 @@ export function EmployeeCompletionChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Employee Task Completion'}</CardTitle>
+        <CardTitle>{"Employee Task Completion"}</CardTitle>
         {showAll && (
           <div className="mt-4">
             <Input
@@ -204,7 +212,9 @@ export function EmployeeCompletionChart({
         {filteredStats.length === 0 ? (
           <div className="flex h-[200px] items-center justify-center">
             <p className="text-muted-foreground text-center text-sm">
-              {searchTerm ? 'No employees found matching your search' : 'No employees available'}
+              {searchTerm
+                ? "No employees found matching your search"
+                : "No employees available"}
             </p>
           </div>
         ) : (
@@ -226,14 +236,17 @@ export function EmployeeCompletionChart({
                           <ExternalLink className="h-3 w-3" />
                         </Link>
                       </div>
-                      <p className="text-muted-foreground text-xs">{stat.email}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {stat.email}
+                      </p>
                     </div>
                     <div className="text-muted-foreground text-right text-xs">
                       <div>
-                        {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} tasks
+                        {stat.policiesCompleted + stat.trainingsCompleted} /{" "}
+                        {stat.totalTasks} tasks
                       </div>
                       <div className="text-xs">
-                        {stat.policiesCompleted}/{stat.policiesTotal} policies •{' '}
+                        {stat.policiesCompleted}/{stat.policiesTotal} policies •{" "}
                         {stat.trainingsCompleted}/{stat.trainingsTotal} training
                       </div>
                     </div>
@@ -244,11 +257,11 @@ export function EmployeeCompletionChart({
                   <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
                     <div className="flex items-center gap-1">
                       <div className="bg-primary size-2 rounded-xs" />
-                      <span>{'Completed'}</span>
+                      <span>{"Completed"}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="size-2 rounded-xs bg-[var(--chart-open)]" />
-                      <span>{'Not Completed'}</span>
+                      <span>{"Not Completed"}</span>
                     </div>
                   </div>
                 </div>
@@ -258,7 +271,9 @@ export function EmployeeCompletionChart({
             {showAll && sortedStats.length < filteredStats.length && (
               <div className="mt-8 flex justify-center">
                 {isLoading ? (
-                  <div className="text-muted-foreground text-sm">Loading more employees...</div>
+                  <div className="text-muted-foreground text-sm">
+                    Loading more employees...
+                  </div>
                 ) : (
                   <button
                     onClick={loadMore}
@@ -271,7 +286,7 @@ export function EmployeeCompletionChart({
             )}
 
             {showAll && (
-              <div className="mt-4 text-center text-muted-foreground text-xs">
+              <div className="text-muted-foreground mt-4 text-center text-xs">
                 Showing {sortedStats.length} of {filteredStats.length} employees
               </div>
             )}
@@ -295,7 +310,7 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
   return (
     <div
       className="relative h-[var(--height)]"
-      style={{ '--height': `${barHeight}px` } as CSSProperties}
+      style={{ "--height": `${barHeight}px` } as CSSProperties}
     >
       <div className="absolute inset-0 h-full w-full overflow-visible">
         {/* Completed segment */}
@@ -305,14 +320,14 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
             style={{
               width: `${(totalCompleted / stat.totalTasks) * 100}%`,
               height: `${barHeight}px`,
-              left: '0%',
+              left: "0%",
             }}
           >
             <div
               className={taskColors.completed}
               style={{
-                width: '100%',
-                height: '100%',
+                width: "100%",
+                height: "100%",
               }}
               title={`Completed: ${totalCompleted}`}
             />
@@ -332,8 +347,8 @@ function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
             <div
               className={taskColors.incomplete}
               style={{
-                width: '100%',
-                height: '100%',
+                width: "100%",
+                height: "100%",
               }}
               title={`Incomplete: ${totalIncomplete}`}
             />

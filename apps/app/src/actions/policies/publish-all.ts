@@ -1,10 +1,12 @@
-'use server';
+"use server";
 
-import { sendPublishAllPoliciesEmail } from '@/jobs/tasks/email/publish-all-policies-email';
-import { db, PolicyStatus, Role } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { authActionClient } from '../safe-action';
+import { revalidatePath } from "next/cache";
+import { sendPublishAllPoliciesEmail } from "@/jobs/tasks/email/publish-all-policies-email";
+import { z } from "zod";
+
+import { db, PolicyStatus, Role } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
 
 const publishAllPoliciesSchema = z.object({
   organizationId: z.string(),
@@ -13,11 +15,11 @@ const publishAllPoliciesSchema = z.object({
 export const publishAllPoliciesAction = authActionClient
   .inputSchema(publishAllPoliciesSchema)
   .metadata({
-    name: 'publish-all-policies',
+    name: "publish-all-policies",
     track: {
-      event: 'publish-all-policies',
-      description: 'Publish All Policies',
-      channel: 'server',
+      event: "publish-all-policies",
+      description: "Publish All Policies",
+      channel: "server",
     },
   })
   .action(async ({ ctx, parsedInput }) => {
@@ -26,14 +28,14 @@ export const publishAllPoliciesAction = authActionClient
     if (!user) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
     if (!session.activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -47,28 +49,31 @@ export const publishAllPoliciesAction = authActionClient
     if (!member) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
     // Check if user is an owner
-    if (!member.role.includes('owner')) {
-      console.log('[publish-all-policies] User is not an owner');
+    if (!member.role.includes("owner")) {
+      console.log("[publish-all-policies] User is not an owner");
       return {
         success: false,
-        error: 'Only organization owners can publish all policies',
+        error: "Only organization owners can publish all policies",
       };
     }
 
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId: parsedInput.organizationId, status: PolicyStatus.draft },
+        where: {
+          organizationId: parsedInput.organizationId,
+          status: PolicyStatus.draft,
+        },
       });
 
       if (!policies || policies.length === 0) {
         return {
           success: false,
-          error: 'No policies found',
+          error: "No policies found",
         };
       }
 
@@ -79,17 +84,22 @@ export const publishAllPoliciesAction = authActionClient
             data: {
               status: PolicyStatus.published,
               assigneeId: member.id,
-              reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
+              reviewDate: new Date(
+                new Date().setDate(new Date().getDate() + 90),
+              ),
             },
           });
         } catch (policyError) {
-          console.error(`[publish-all-policies] Failed to update policy ${policy.id}:`, {
-            error: policyError,
-            policyId: policy.id,
-            policyName: policy.name,
-            memberId: member.id,
-            organizationId: parsedInput.organizationId,
-          });
+          console.error(
+            `[publish-all-policies] Failed to update policy ${policy.id}:`,
+            {
+              error: policyError,
+              policyId: policy.id,
+              policyName: policy.name,
+              memberId: member.id,
+              organizationId: parsedInput.organizationId,
+            },
+          );
           throw policyError; // Re-throw to be caught by outer catch block
         }
       }
@@ -104,7 +114,10 @@ export const publishAllPoliciesAction = authActionClient
         where: {
           organizationId: parsedInput.organizationId,
           isActive: true,
-          OR: [{ role: { contains: Role.employee } }, { role: { contains: Role.contractor } }],
+          OR: [
+            { role: { contains: Role.employee } },
+            { role: { contains: Role.contractor } },
+          ],
         },
         include: {
           user: {
@@ -122,8 +135,8 @@ export const publishAllPoliciesAction = authActionClient
         .map((orgMember) => ({
           payload: {
             email: orgMember.user.email,
-            userName: orgMember.user.name || 'there',
-            organizationName: organization?.name || 'Your organization',
+            userName: orgMember.user.name || "there",
+            organizationName: organization?.name || "Your organization",
             organizationId: parsedInput.organizationId,
           },
         }));
@@ -132,7 +145,10 @@ export const publishAllPoliciesAction = authActionClient
         try {
           await sendPublishAllPoliciesEmail.batchTrigger(emailPayloads);
         } catch (emailError) {
-          console.error('[publish-all-policies] Failed to trigger bulk emails:', emailError);
+          console.error(
+            "[publish-all-policies] Failed to trigger bulk emails:",
+            emailError,
+          );
           // Don't throw - the policies are published successfully
         }
       }
@@ -143,18 +159,22 @@ export const publishAllPoliciesAction = authActionClient
         success: true,
       };
     } catch (error) {
-      console.error('[publish-all-policies] Error in publish all policies action:', {
-        error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined,
-        userId: user?.id,
-        memberId: member?.id,
-        organizationId: parsedInput.organizationId,
-      });
+      console.error(
+        "[publish-all-policies] Error in publish all policies action:",
+        {
+          error,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          errorStack: error instanceof Error ? error.stack : undefined,
+          userId: user?.id,
+          memberId: member?.id,
+          organizationId: parsedInput.organizationId,
+        },
+      );
 
       return {
         success: false,
-        error: 'Failed to publish all policies',
+        error: "Failed to publish all policies",
       };
     }
   });

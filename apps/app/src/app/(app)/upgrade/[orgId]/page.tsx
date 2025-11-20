@@ -1,9 +1,11 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { BookingStep } from './components/booking-step';
-import { UpgradePageTracking } from './UpgradePageTracking';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { BookingStep } from "./components/booking-step";
+import { UpgradePageTracking } from "./UpgradePageTracking";
 
 interface PageProps {
   params: Promise<{
@@ -20,7 +22,7 @@ export default async function UpgradePage({ params }: PageProps) {
   });
 
   if (!authSession?.user?.id) {
-    redirect('/sign-in');
+    redirect("/sign-in");
   }
 
   // Verify user has access to this org
@@ -35,7 +37,7 @@ export default async function UpgradePage({ params }: PageProps) {
   });
 
   if (!member) {
-    redirect('/');
+    redirect("/");
   }
 
   const hasAccess = member.organization.hasAccess;
@@ -60,13 +62,13 @@ export default async function UpgradePage({ params }: PageProps) {
   });
 
   const complianceFrameworks = frameworkInstances.map((framework) =>
-    framework.framework.name.toLowerCase().replaceAll(' ', ''),
+    framework.framework.name.toLowerCase().replaceAll(" ", ""),
   );
 
   return (
     <>
       <UpgradePageTracking />
-      <div className="mx-auto px-4 max-w-7xl my-auto min-h-[calc(100vh-10rem)] flex items-center justify-center">
+      <div className="mx-auto my-auto flex min-h-[calc(100vh-10rem)] max-w-7xl items-center justify-center px-4">
         <BookingStep
           email={authSession.user.email}
           name={authSession.user.name}

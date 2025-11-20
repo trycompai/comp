@@ -1,17 +1,19 @@
-import { auth } from '@/utils/auth';
-import { db, Role } from '@trycompai/db';
-import { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { TaskList } from './components/TaskList';
+import { Metadata } from "next";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db, Role } from "@trycompai/db";
+
+import { TaskList } from "./components/TaskList";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Tasks',
+    title: "Tasks",
   };
 }
 
 // Force dynamic rendering to ensure searchParams are always fresh
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Use cached versions of data fetching functions
 export default async function TasksPage({
@@ -64,7 +66,7 @@ const getTasks = async () => {
           name: true,
           runs: {
             orderBy: {
-              createdAt: 'desc',
+              createdAt: "desc",
             },
             take: 3,
             select: {
@@ -79,7 +81,7 @@ const getTasks = async () => {
         },
       },
     },
-    orderBy: [{ status: 'asc' }, { title: 'asc' }],
+    orderBy: [{ status: "asc" }, { title: "asc" }],
   });
   return tasks;
 };
@@ -130,7 +132,7 @@ const getControls = async () => {
       name: true,
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 

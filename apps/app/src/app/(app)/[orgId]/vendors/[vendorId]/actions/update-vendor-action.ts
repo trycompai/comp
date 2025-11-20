@@ -1,19 +1,21 @@
 // update-risk-action.ts
 
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { updateVendorSchema } from './schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+
+import { db } from "@trycompai/db";
+
+import { updateVendorSchema } from "./schema";
 
 export const updateVendorAction = authActionClient
   .inputSchema(updateVendorSchema)
   .metadata({
-    name: 'update-vendor',
+    name: "update-vendor",
     track: {
-      event: 'update-vendor',
-      channel: 'server',
+      event: "update-vendor",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -21,7 +23,7 @@ export const updateVendorAction = authActionClient
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     try {
@@ -42,13 +44,13 @@ export const updateVendorAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/vendors`);
       revalidatePath(`/${session.activeOrganizationId}/vendors/register`);
       revalidatePath(`/${session.activeOrganizationId}/vendors/${id}`);
-      revalidateTag('vendors', { expire: 0 });
+      revalidateTag("vendors", { expire: 0 });
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Error updating vendor:', error);
+      console.error("Error updating vendor:", error);
 
       return {
         success: false,

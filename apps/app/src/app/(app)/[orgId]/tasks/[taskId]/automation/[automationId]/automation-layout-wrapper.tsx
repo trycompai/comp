@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect } from "react";
 
 interface Props {
   children: React.ReactNode;
@@ -9,8 +9,10 @@ interface Props {
 export function AutomationLayoutWrapper({ children }: Props) {
   useLayoutEffect(() => {
     // Find the DynamicMinHeight wrapper and header
-    const dynamicMinHeight = document.querySelector('[style*="min-height"]') as HTMLElement;
-    const header = document.querySelector('header.sticky') as HTMLElement;
+    const dynamicMinHeight = document.querySelector(
+      '[style*="min-height"]',
+    ) as HTMLElement;
+    const header = document.querySelector("header.sticky") as HTMLElement;
     const parentContainer = dynamicMinHeight?.parentElement;
 
     if (dynamicMinHeight && header && parentContainer) {
@@ -28,36 +30,38 @@ export function AutomationLayoutWrapper({ children }: Props) {
       };
 
       // Apply automation-specific styles
-      dynamicMinHeight.style.minHeight = '0';
+      dynamicMinHeight.style.minHeight = "0";
       dynamicMinHeight.className = dynamicMinHeight.className
-        .replace(/mx-auto|px-4|py-4/g, '')
+        .replace(/mx-auto|px-4|py-4/g, "")
         .trim();
 
       // Make parent container flex column full height
-      parentContainer.style.display = 'flex';
-      parentContainer.style.flexDirection = 'column';
-      parentContainer.style.height = '100vh';
+      parentContainer.style.display = "flex";
+      parentContainer.style.flexDirection = "column";
+      parentContainer.style.height = "100vh";
 
       // Make the dynamic min height container flex-1
-      dynamicMinHeight.style.flex = '1';
-      dynamicMinHeight.style.minHeight = '0';
-      dynamicMinHeight.style.display = 'flex';
-      dynamicMinHeight.style.flexDirection = 'column';
+      dynamicMinHeight.style.flex = "1";
+      dynamicMinHeight.style.minHeight = "0";
+      dynamicMinHeight.style.display = "flex";
+      dynamicMinHeight.style.flexDirection = "column";
 
       // Cleanup function to restore original styles
       return () => {
-        dynamicMinHeight.style.minHeight = originalStyles.dynamicMinHeight.minHeight;
+        dynamicMinHeight.style.minHeight =
+          originalStyles.dynamicMinHeight.minHeight;
         dynamicMinHeight.className = originalStyles.dynamicMinHeight.className;
-        dynamicMinHeight.style.flex = '';
-        dynamicMinHeight.style.display = '';
-        dynamicMinHeight.style.flexDirection = '';
+        dynamicMinHeight.style.flex = "";
+        dynamicMinHeight.style.display = "";
+        dynamicMinHeight.style.flexDirection = "";
 
         parentContainer.style.display = originalStyles.parentContainer.display;
-        parentContainer.style.flexDirection = originalStyles.parentContainer.flexDirection;
+        parentContainer.style.flexDirection =
+          originalStyles.parentContainer.flexDirection;
         parentContainer.style.height = originalStyles.parentContainer.height;
       };
     }
   }, []);
 
-  return <div className="flex flex-col h-full">{children}</div>;
+  return <div className="flex h-full flex-col">{children}</div>;
 }

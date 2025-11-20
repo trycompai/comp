@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
+import { useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,22 +15,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+} from "@trycompai/ui/dialog";
+import { Input } from "@trycompai/ui/input";
+import { Label } from "@trycompai/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
+} from "@trycompai/ui/select";
+import { Textarea } from "@trycompai/ui/textarea";
 
 interface EditSecretDialogProps {
   secret: {
@@ -41,9 +42,12 @@ interface EditSecretDialogProps {
 const editSecretSchema = z.object({
   name: z
     .string()
-    .min(1, 'Name is required')
-    .max(100, 'Name is too long')
-    .regex(/^[A-Z0-9_]+$/, 'Name must be uppercase letters, numbers, and underscores only'),
+    .min(1, "Name is required")
+    .max(100, "Name is too long")
+    .regex(
+      /^[A-Z0-9_]+$/,
+      "Name must be uppercase letters, numbers, and underscores only",
+    ),
   value: z.string().optional(),
   description: z.string().optional(),
   category: z.string().optional(),
@@ -68,26 +72,26 @@ export function EditSecretDialog({
     resolver: zodResolver(editSecretSchema),
     defaultValues: {
       name: secret.name,
-      value: '',
-      description: secret.description || '',
-      category: secret.category || '',
+      value: "",
+      description: secret.description || "",
+      category: secret.category || "",
     },
-    mode: 'onChange',
+    mode: "onChange",
   });
 
   // Reset form when secret changes
   useEffect(() => {
     reset({
       name: secret.name,
-      value: '',
-      description: secret.description || '',
-      category: secret.category || '',
+      value: "",
+      description: secret.description || "",
+      category: secret.category || "",
     });
   }, [secret, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     // Get organizationId from the URL path
-    const pathSegments = window.location.pathname.split('/');
+    const pathSegments = window.location.pathname.split("/");
     const orgId = pathSegments[1];
 
     try {
@@ -99,11 +103,12 @@ export function EditSecretDialog({
       if (values.value) updateData.value = values.value;
       if (values.description !== secret.description)
         updateData.description = values.description || null;
-      if (values.category !== secret.category) updateData.category = values.category || null;
+      if (values.category !== secret.category)
+        updateData.category = values.category || null;
 
       const response = await fetch(`/api/secrets/${secret.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
       });
 
@@ -113,26 +118,30 @@ export function EditSecretDialog({
         if (Array.isArray(error.details)) {
           let handled = false;
           for (const issue of error.details) {
-            const field = issue?.path?.[0] as keyof EditSecretFormValues | undefined;
+            const field = issue?.path?.[0] as
+              | keyof EditSecretFormValues
+              | undefined;
             if (field) {
-              setError(field, { type: 'server', message: issue.message });
+              setError(field, { type: "server", message: issue.message });
               handled = true;
             }
           }
           if (handled) return;
         }
-        throw new Error(error.error || 'Failed to update secret');
+        throw new Error(error.error || "Failed to update secret");
       }
 
-      toast.success('Secret updated successfully');
+      toast.success("Secret updated successfully");
       onOpenChange(false);
       reset();
 
       if (onSecretUpdated) onSecretUpdated();
       else window.location.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update secret');
-      console.error('Error updating secret:', err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update secret",
+      );
+      console.error("Error updating secret:", err);
     }
   });
 
@@ -143,7 +152,8 @@ export function EditSecretDialog({
           <DialogHeader>
             <DialogTitle>Edit Secret</DialogTitle>
             <DialogDescription>
-              Update the secret details. Leave value empty to keep the existing value.
+              Update the secret details. Leave value empty to keep the existing
+              value.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -152,12 +162,14 @@ export function EditSecretDialog({
               <Input
                 id="edit-name"
                 placeholder="e.g., GITHUB_TOKEN, OPENAI_API_KEY"
-                {...register('name')}
+                {...register("name")}
               />
               {errors.name?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.name.message}
+                </p>
               ) : null}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Use uppercase with underscores for naming convention
               </p>
             </div>
@@ -167,12 +179,14 @@ export function EditSecretDialog({
                 id="edit-value"
                 type="password"
                 placeholder="Leave empty to keep existing value"
-                {...register('value')}
+                {...register("value")}
               />
               {errors.value?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.value.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.value.message}
+                </p>
               ) : null}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Only provide a value if you want to update it
               </p>
             </div>
@@ -189,7 +203,9 @@ export function EditSecretDialog({
                     <SelectContent>
                       <SelectItem value="api_keys">API Keys</SelectItem>
                       <SelectItem value="database">Database</SelectItem>
-                      <SelectItem value="authentication">Authentication</SelectItem>
+                      <SelectItem value="authentication">
+                        Authentication
+                      </SelectItem>
                       <SelectItem value="integration">Integration</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
@@ -197,7 +213,9 @@ export function EditSecretDialog({
                 )}
               />
               {errors.category?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.category.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.category.message}
+                </p>
               ) : null}
             </div>
             <div className="grid gap-2">
@@ -206,15 +224,21 @@ export function EditSecretDialog({
                 id="edit-description"
                 placeholder="Describe what this secret is used for"
                 rows={3}
-                {...register('description')}
+                {...register("description")}
               />
               {errors.description?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.description.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.description.message}
+                </p>
               ) : null}
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -224,7 +248,7 @@ export function EditSecretDialog({
                   Updating...
                 </>
               ) : (
-                'Update Secret'
+                "Update Secret"
               )}
             </Button>
           </DialogFooter>

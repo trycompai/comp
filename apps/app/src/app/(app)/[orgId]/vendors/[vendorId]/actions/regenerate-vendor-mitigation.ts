@@ -1,14 +1,13 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { generateVendorMitigation } from '@/jobs/tasks/onboarding/generate-vendor-mitigation';
-import {
-  findCommentAuthor,
-  type PolicyContext,
-} from '@/jobs/tasks/onboarding/onboard-organization-helpers';
-import { tasks } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { z } from 'zod';
+import type { PolicyContext } from "@/jobs/tasks/onboarding/onboard-organization-helpers";
+import { authActionClient } from "@/actions/safe-action";
+import { generateVendorMitigation } from "@/jobs/tasks/onboarding/generate-vendor-mitigation";
+import { findCommentAuthor } from "@/jobs/tasks/onboarding/onboard-organization-helpers";
+import { tasks } from "@trigger.dev/sdk";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 export const regenerateVendorMitigationAction = authActionClient
   .inputSchema(
@@ -17,10 +16,10 @@ export const regenerateVendorMitigationAction = authActionClient
     }),
   )
   .metadata({
-    name: 'regenerate-vendor-mitigation',
+    name: "regenerate-vendor-mitigation",
     track: {
-      event: 'regenerate-vendor-mitigation',
-      channel: 'server',
+      event: "regenerate-vendor-mitigation",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -28,7 +27,7 @@ export const regenerateVendorMitigationAction = authActionClient
     const { session } = ctx;
 
     if (!session?.activeOrganizationId) {
-      throw new Error('No active organization');
+      throw new Error("No active organization");
     }
 
     const organizationId = session.activeOrganizationId;
@@ -42,7 +41,7 @@ export const regenerateVendorMitigationAction = authActionClient
     ]);
 
     if (!author) {
-      throw new Error('No eligible author found to regenerate the mitigation');
+      throw new Error("No eligible author found to regenerate the mitigation");
     }
 
     const policies: PolicyContext[] = policyRows.map((policy) => ({
@@ -50,12 +49,15 @@ export const regenerateVendorMitigationAction = authActionClient
       description: policy.description,
     }));
 
-    await tasks.trigger<typeof generateVendorMitigation>('generate-vendor-mitigation', {
-      organizationId,
-      vendorId,
-      authorId: author.id,
-      policies,
-    });
+    await tasks.trigger<typeof generateVendorMitigation>(
+      "generate-vendor-mitigation",
+      {
+        organizationId,
+        vendorId,
+        authorId: author.id,
+        policies,
+      },
+    );
 
     return { success: true };
   });

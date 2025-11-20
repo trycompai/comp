@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { cn } from '@trycompai/ui/cn';
-import { Plus, X } from 'lucide-react';
+import { Plus, X } from "lucide-react";
+
+import { cn } from "@trycompai/ui/cn";
 
 type SelectablePillProps = {
   label: string;
@@ -26,11 +27,11 @@ export function SelectablePill({
       onClick={() => !disabled && onSelectionChange(!isSelected)}
       disabled={disabled}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200',
-        'disabled:cursor-not-allowed disabled:opacity-50 hover:shadow-sm',
+        "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200",
+        "hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50",
         isSelected
-          ? 'bg-primary/10 text-foreground border border-primary shadow-sm'
-          : 'border border-border text-foreground hover:bg-muted/30',
+          ? "bg-primary/10 text-foreground border-primary border shadow-sm"
+          : "border-border text-foreground hover:bg-muted/30 border",
         className,
       )}
     >
@@ -40,7 +41,7 @@ export function SelectablePill({
           {isSelected ? (
             <X className="h-3 w-3" />
           ) : (
-            <div className="flex items-center justify-center w-5 h-5 rounded-full border">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full border">
               <Plus className="h-3 w-3 text-black" />
             </div>
           )}

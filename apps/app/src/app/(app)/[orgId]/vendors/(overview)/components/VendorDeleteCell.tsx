@@ -1,3 +1,7 @@
+import * as React from "react";
+import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -7,25 +11,27 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
-import { Trash2 } from 'lucide-react';
-import * as React from 'react';
-import { toast } from 'sonner';
-import { deleteVendor } from '../actions/deleteVendor';
-import type { GetVendorsResult } from '../data/queries';
+} from "@trycompai/ui/alert-dialog";
+import { Button } from "@trycompai/ui/button";
 
-type VendorRow = GetVendorsResult['data'][number];
+import type { GetVendorsResult } from "../data/queries";
+import { deleteVendor } from "../actions/deleteVendor";
+
+type VendorRow = GetVendorsResult["data"][number];
 
 interface VendorDeleteCellProps {
   vendor: VendorRow;
 }
 
-export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) => {
+export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({
+  vendor,
+}) => {
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const handleDeleteClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleDeleteClick = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     event.stopPropagation();
     setIsDeleting(true);
 
@@ -35,7 +41,7 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
       toast.success(`Vendor "${vendor.name}" has been deleted.`);
       setIsRemoveAlertOpen(false);
     } else {
-      toast.error(String(response?.data?.error) || 'Failed to delete vendor.');
+      toast.error(String(response?.data?.error) || "Failed to delete vendor.");
     }
 
     setIsDeleting(false);
@@ -61,14 +67,17 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{vendor.name}</strong>? This action cannot be
-              undone.
+              Are you sure you want to delete <strong>{vendor.name}</strong>?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteClick} disabled={isDeleting}>
-              {isDeleting ? 'Deleting...' : 'Delete'}
+            <AlertDialogAction
+              onClick={handleDeleteClick}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

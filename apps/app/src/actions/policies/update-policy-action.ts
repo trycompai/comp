@@ -1,10 +1,12 @@
-'use server';
+"use server";
 
-import { logger } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { updatePolicySchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { logger } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { updatePolicySchema } from "../schema";
 
 interface ContentNode {
   type: string;
@@ -16,7 +18,9 @@ interface ContentNode {
 }
 
 // Simplified content processor that creates a new plain object
-function processContent(content: ContentNode | ContentNode[]): ContentNode | ContentNode[] {
+function processContent(
+  content: ContentNode | ContentNode[],
+): ContentNode | ContentNode[] {
   if (!content) return content;
 
   // Handle arrays
@@ -54,11 +58,11 @@ function processContent(content: ContentNode | ContentNode[]): ContentNode | Con
 export const updatePolicyAction = authActionClient
   .inputSchema(updatePolicySchema)
   .metadata({
-    name: 'update-policy',
+    name: "update-policy",
     track: {
-      event: 'update-policy',
-      description: 'Update Policy',
-      channel: 'server',
+      event: "update-policy",
+      description: "Update Policy",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -69,14 +73,14 @@ export const updatePolicyAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
     if (!user) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -88,12 +92,14 @@ export const updatePolicyAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: 'Policy not found',
+          error: "Policy not found",
         };
       }
 
       // Create a new plain object from the content
-      const processedContent = JSON.parse(JSON.stringify(processContent(content as ContentNode)));
+      const processedContent = JSON.parse(
+        JSON.stringify(processContent(content as ContentNode)),
+      );
 
       await db.policy.update({
         where: { id },
@@ -108,14 +114,15 @@ export const updatePolicyAction = authActionClient
         success: true,
       };
     } catch (error) {
-      logger.error('Error updating policy:', {
+      logger.error("Error updating policy:", {
         error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
         errorStack: error instanceof Error ? error.stack : undefined,
       });
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to update policy',
+        error:
+          error instanceof Error ? error.message : "Failed to update policy",
       };
     }
   });

@@ -1,7 +1,8 @@
-import { api } from '@/lib/api-client';
-import { Control, Task } from '@trycompai/db';
-import { useParams } from 'next/navigation';
-import useSWR from 'swr';
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import useSWR from "swr";
+
+import { Control, Task } from "@trycompai/db";
 
 interface TaskData extends Task {
   fileUrls?: string[];
@@ -32,7 +33,7 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
     async () => {
       // Guard clause - should not happen due to key check, but extra safety
       if (!orgId || !taskId) {
-        throw new Error('Organization ID and Task ID are required');
+        throw new Error("Organization ID and Task ID are required");
       }
 
       const response = await api.get<TaskData>(`/v1/tasks/${taskId}`, orgId);
@@ -42,7 +43,7 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
       }
 
       if (!response.data) {
-        throw new Error('Failed to fetch task');
+        throw new Error("Failed to fetch task");
       }
 
       return response.data;

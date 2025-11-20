@@ -1,4 +1,4 @@
-import { LogoSpinner } from '@/components/logo-spinner';
+import { LogoSpinner } from "@/components/logo-spinner";
 
 const Loader = () => {
   return (

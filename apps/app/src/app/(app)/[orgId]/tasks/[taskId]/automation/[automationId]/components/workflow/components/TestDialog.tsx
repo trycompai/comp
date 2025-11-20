@@ -1,11 +1,20 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { Dialog, DialogContent } from '@trycompai/ui/dialog';
-import { AlertCircle, Bug, CheckCircle2, Loader2, Sparkles, Terminal } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import type { TestResult } from '../types';
-import { ConfettiEffect } from './ConfettiEffect';
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import {
+  AlertCircle,
+  Bug,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  Terminal,
+} from "lucide-react";
+
+import { Dialog, DialogContent } from "@trycompai/ui/dialog";
+
+import type { TestResult } from "../types";
+import { ConfettiEffect } from "./ConfettiEffect";
 
 interface Props {
   open: boolean;
@@ -15,7 +24,13 @@ interface Props {
   onLetAIFix: () => void;
 }
 
-export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: Props) {
+export function TestDialog({
+  open,
+  isExecuting,
+  result,
+  onClose,
+  onLetAIFix,
+}: Props) {
   const [showLogs, setShowLogs] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [animateSuccess, setAnimateSuccess] = useState(false);
@@ -32,7 +47,7 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
   }, [open, result, isExecuting]);
 
   useEffect(() => {
-    if (displayResult?.status === 'success') {
+    if (displayResult?.status === "success") {
       setAnimateSuccess(true);
       // Wait for bounce animation to complete (bounce animation is typically 1s)
       const timer = setTimeout(() => setAnimateSuccess(false), 2000);
@@ -52,25 +67,26 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
   return (
     <Dialog open={open} onOpenChange={onClose}>
       {/* Confetti Effect */}
-      <ConfettiEffect trigger={displayResult?.status === 'success' && open} />
-      <DialogContent className="w-[720px] max-w-[720px] h-[560px] overflow-hidden flex flex-col p-0">
+      <ConfettiEffect trigger={displayResult?.status === "success" && open} />
+      <DialogContent className="flex h-[560px] w-[720px] max-w-[720px] flex-col overflow-hidden p-0">
         {displayIsExecuting && !displayResult ? (
-          <div className="flex-1 flex flex-col">
-            <div className="h-1.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40 animate-pulse" />
-            <div className="flex-1 flex flex-col items-center justify-center px-8">
+          <div className="flex flex-1 flex-col">
+            <div className="from-primary/40 via-primary to-primary/40 h-1.5 animate-pulse bg-gradient-to-r" />
+            <div className="flex flex-1 flex-col items-center justify-center px-8">
               <div className="relative">
                 <div className="absolute inset-0 animate-ping">
-                  <div className="w-20 h-20 rounded-full bg-primary/30" />
+                  <div className="bg-primary/30 h-20 w-20 rounded-full" />
                 </div>
-                <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 backdrop-blur ring-2 ring-primary/20">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="from-primary/20 to-primary/10 ring-primary/20 relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br ring-2 backdrop-blur">
+                  <Loader2 className="text-primary h-8 w-8 animate-spin" />
                 </div>
               </div>
-              <h3 className="mt-6 text-lg font-semibold text-foreground">
+              <h3 className="text-foreground mt-6 text-lg font-semibold">
                 Running your automation
               </h3>
-              <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-                We're testing your script in a secure environment. This usually takes 15-30 seconds.
+              <p className="text-muted-foreground mt-2 max-w-sm text-center text-sm">
+                We're testing your script in a secure environment. This usually
+                takes 15-30 seconds.
               </p>
             </div>
           </div>
@@ -78,102 +94,108 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
           <>
             <div
               className={cn(
-                'relative overflow-hidden border-b',
-                displayResult?.status === 'success'
-                  ? 'bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-primary/20'
-                  : 'bg-gradient-to-br from-destructive/5 via-destructive/10 to-destructive/5 border-destructive/20',
+                "relative overflow-hidden border-b",
+                displayResult?.status === "success"
+                  ? "from-primary/5 via-primary/10 to-primary/5 border-primary/20 bg-gradient-to-br"
+                  : "from-destructive/5 via-destructive/10 to-destructive/5 border-destructive/20 bg-gradient-to-br",
               )}
             >
-              {displayResult?.status === 'success' && (
+              {displayResult?.status === "success" && (
                 <div className="absolute inset-0 overflow-hidden">
                   <div
                     className={cn(
-                      'absolute -top-20 -right-20 w-40 h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 blur-3xl',
-                      animateSuccess && 'animate-pulse',
+                      "from-primary/20 to-primary/10 absolute -top-20 -right-20 h-40 w-40 rounded-full bg-gradient-to-br blur-3xl",
+                      animateSuccess && "animate-pulse",
                     )}
                   />
-                  <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-gradient-to-tr from-primary/10 to-primary/20 blur-3xl" />
+                  <div className="from-primary/10 to-primary/20 absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-gradient-to-tr blur-3xl" />
                 </div>
               )}
               <div className="relative px-8 py-6">
                 <div className="flex items-center gap-4">
                   <div
                     className={cn(
-                      'relative transition-transform duration-500',
-                      animateSuccess && 'animate-[bounce_1.5s_ease-in-out]',
+                      "relative transition-transform duration-500",
+                      animateSuccess && "animate-[bounce_1.5s_ease-in-out]",
                     )}
                   >
-                    {displayResult?.status === 'success' ? (
+                    {displayResult?.status === "success" ? (
                       <div className="relative">
-                        <div className="absolute inset-0 bg-primary rounded-full blur-md opacity-20" />
-                        <div className="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-                          <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
+                        <div className="bg-primary absolute inset-0 rounded-full opacity-20 blur-md" />
+                        <div className="from-primary to-primary/80 relative inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br shadow-lg">
+                          <CheckCircle2 className="text-primary-foreground h-6 w-6" />
                         </div>
                       </div>
                     ) : (
                       <div className="relative">
-                        <div className="absolute inset-0 bg-destructive rounded-full blur-md opacity-20" />
-                        <div className="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-destructive to-destructive/80 shadow-lg">
-                          <AlertCircle className="w-6 h-6 text-destructive-foreground" />
+                        <div className="bg-destructive absolute inset-0 rounded-full opacity-20 blur-md" />
+                        <div className="from-destructive to-destructive/80 relative inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br shadow-lg">
+                          <AlertCircle className="text-destructive-foreground h-6 w-6" />
                         </div>
                       </div>
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-foreground">
-                      {displayResult?.status === 'success' ? '🎉 Success!' : '🚨 Error!'}
+                    <h3 className="text-foreground text-xl font-semibold">
+                      {displayResult?.status === "success"
+                        ? "🎉 Success!"
+                        : "🚨 Error!"}
                     </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {displayResult?.status === 'success'
-                        ? 'Your automation ran successfully without any errors.'
-                        : 'There was an issue running your automation. Please check the output and logs below to understand what went wrong.'}
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      {displayResult?.status === "success"
+                        ? "Your automation ran successfully without any errors."
+                        : "There was an issue running your automation. Please check the output and logs below to understand what went wrong."}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 bg-muted/10 overflow-hidden flex flex-col">
+            <div className="bg-muted/10 flex flex-1 flex-col overflow-hidden">
               {/* Default Summary View */}
               {!showOutput && !showLogs && (
-                <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
-                  <div className="text-center max-w-md">
-                    <h3 className="text-lg font-semibold mb-4">
-                      {displayResult?.status === 'success'
-                        ? 'Test completed successfully'
-                        : 'Test failed'}
+                <div className="flex flex-1 flex-col items-center justify-center px-8 py-12">
+                  <div className="max-w-md text-center">
+                    <h3 className="mb-4 text-lg font-semibold">
+                      {displayResult?.status === "success"
+                        ? "Test completed successfully"
+                        : "Test failed"}
                     </h3>
 
                     {/* Show summary or error here if available */}
                     {(displayResult?.summary || displayResult?.error) && (
-                      <div className="mb-6 p-4 bg-muted/50 rounded-lg text-sm">
+                      <div className="bg-muted/50 mb-6 rounded-lg p-4 text-sm">
                         {displayResult?.summary || displayResult?.error}
                       </div>
                     )}
 
-                    <p className="text-sm text-muted-foreground mb-8">
-                      {displayResult?.status === 'success'
-                        ? 'View the output to see the results.'
-                        : 'Check the output and logs below to understand what went wrong.'}
+                    <p className="text-muted-foreground mb-8 text-sm">
+                      {displayResult?.status === "success"
+                        ? "View the output to see the results."
+                        : "Check the output and logs below to understand what went wrong."}
                     </p>
 
                     {/* Quick Actions */}
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex justify-center gap-2">
                       <button
                         onClick={() => setShowOutput(true)}
-                        className="group flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30"
+                        className="group bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 flex items-center gap-2 rounded-lg border px-4 py-2.5 transition-all"
                       >
-                        <Terminal className="w-4 h-4 text-primary/70 group-hover:text-primary transition-colors" />
-                        <span className="text-sm font-medium text-primary">View Output</span>
+                        <Terminal className="text-primary/70 group-hover:text-primary h-4 w-4 transition-colors" />
+                        <span className="text-primary text-sm font-medium">
+                          View Output
+                        </span>
                       </button>
 
                       {displayResult?.logs && displayResult.logs.length > 0 && (
                         <button
                           onClick={() => setShowLogs(true)}
-                          className="group flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30"
+                          className="group bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 flex items-center gap-2 rounded-lg border px-4 py-2.5 transition-all"
                         >
-                          <Bug className="w-4 h-4 text-primary/70 group-hover:text-primary transition-colors" />
-                          <span className="text-sm font-medium text-primary">View Logs</span>
+                          <Bug className="text-primary/70 group-hover:text-primary h-4 w-4 transition-colors" />
+                          <span className="text-primary text-sm font-medium">
+                            View Logs
+                          </span>
                         </button>
                       )}
                     </div>
@@ -183,14 +205,14 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
 
               {/* Tab Navigation - Always visible */}
               {(showOutput || showLogs) && (
-                <div className="flex-shrink-0 border-b bg-background/50 px-6 py-2">
+                <div className="bg-background/50 flex-shrink-0 border-b px-6 py-2">
                   <div className="flex gap-1">
                     <button
                       onClick={() => {
                         setShowOutput(false);
                         setShowLogs(false);
                       }}
-                      className="px-4 py-2 text-sm font-medium rounded-t-lg transition-all text-muted-foreground hover:text-primary hover:bg-primary/5"
+                      className="text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-t-lg px-4 py-2 text-sm font-medium transition-all"
                     >
                       Summary
                     </button>
@@ -200,10 +222,10 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                         setShowLogs(false);
                       }}
                       className={cn(
-                        'px-4 py-2 text-sm font-medium rounded-t-lg transition-all',
+                        "rounded-t-lg px-4 py-2 text-sm font-medium transition-all",
                         showOutput
-                          ? 'bg-primary/10 text-primary border-t border-x border-primary/20'
-                          : 'text-muted-foreground hover:text-primary hover:bg-primary/5',
+                          ? "bg-primary/10 text-primary border-primary/20 border-x border-t"
+                          : "text-muted-foreground hover:text-primary hover:bg-primary/5",
                       )}
                     >
                       Output
@@ -215,10 +237,10 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                           setShowLogs(true);
                         }}
                         className={cn(
-                          'px-4 py-2 text-sm font-medium rounded-t-lg transition-all',
+                          "rounded-t-lg px-4 py-2 text-sm font-medium transition-all",
                           showLogs
-                            ? 'bg-primary/10 text-primary border-t border-x border-primary/20'
-                            : 'text-muted-foreground hover:text-primary hover:bg-primary/5',
+                            ? "bg-primary/10 text-primary border-primary/20 border-x border-t"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/5",
                         )}
                       >
                         Logs
@@ -234,43 +256,46 @@ export function TestDialog({ open, isExecuting, result, onClose, onLetAIFix }: P
                   {/* Output Tab */}
                   {showOutput && (
                     <div className="space-y-4">
-                      <h4 className="text-sm font-semibold flex items-center gap-2">
-                        <Terminal className="w-4 h-4 text-primary" />
+                      <h4 className="flex items-center gap-2 text-sm font-semibold">
+                        <Terminal className="text-primary h-4 w-4" />
                         Execution Output
                       </h4>
-                      <pre className="p-4 bg-primary/5 rounded-lg text-xs leading-relaxed overflow-x-auto font-mono border border-primary/10">
-                        {displayResult?.data !== undefined && displayResult?.data !== null
+                      <pre className="bg-primary/5 border-primary/10 overflow-x-auto rounded-lg border p-4 font-mono text-xs leading-relaxed">
+                        {displayResult?.data !== undefined &&
+                        displayResult?.data !== null
                           ? JSON.stringify(displayResult.data, null, 2)
-                          : displayResult?.status === 'success'
-                            ? '// No output returned'
-                            : '// Execution failed'}
+                          : displayResult?.status === "success"
+                            ? "// No output returned"
+                            : "// Execution failed"}
                       </pre>
                     </div>
                   )}
 
                   {/* Logs Tab */}
-                  {showLogs && displayResult?.logs && displayResult.logs.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-semibold flex items-center gap-2">
-                        <Bug className="w-4 h-4 text-primary" />
-                        System Logs
-                      </h4>
-                      <pre className="p-4 bg-primary/5 rounded-lg text-xs leading-relaxed overflow-x-auto font-mono text-muted-foreground border border-primary/10">
-                        {displayResult.logs.join('\n')}
-                      </pre>
-                    </div>
-                  )}
+                  {showLogs &&
+                    displayResult?.logs &&
+                    displayResult.logs.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold">
+                          <Bug className="text-primary h-4 w-4" />
+                          System Logs
+                        </h4>
+                        <pre className="bg-primary/5 text-muted-foreground border-primary/10 overflow-x-auto rounded-lg border p-4 font-mono text-xs leading-relaxed">
+                          {displayResult.logs.join("\n")}
+                        </pre>
+                      </div>
+                    )}
                 </div>
               )}
             </div>
 
-            {displayResult?.status === 'error' && (
-              <div className="px-8 pb-6 pt-2">
+            {displayResult?.status === "error" && (
+              <div className="px-8 pt-2 pb-6">
                 <button
                   onClick={onLetAIFix}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-medium shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="from-primary to-primary/80 text-primary-foreground flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r px-6 py-3 font-medium shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="h-4 w-4" />
                   Let AI Fix This
                 </button>
               </div>

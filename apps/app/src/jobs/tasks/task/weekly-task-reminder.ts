@@ -1,13 +1,15 @@
-import { logger, schedules } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { sendWeeklyTaskDigestEmailTask } from '../email/weekly-task-digest-email';
+import { logger, schedules } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
+
+import { sendWeeklyTaskDigestEmailTask } from "../email/weekly-task-digest-email";
 
 export const weeklyTaskReminder = schedules.task({
-  id: 'weekly-task-reminder',
-  cron: '0 9 * * 1', // Every Monday at 9:00 AM UTC
+  id: "weekly-task-reminder",
+  cron: "0 9 * * 1", // Every Monday at 9:00 AM UTC
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
-    logger.info('Starting weekly task reminder job');
+    logger.info("Starting weekly task reminder job");
 
     // Get all organizations
     const organizations = await db.organization.findMany({
@@ -16,7 +18,10 @@ export const weeklyTaskReminder = schedules.task({
         name: true,
         members: {
           where: {
-            OR: [{ role: { contains: 'owner' } }, { role: { contains: 'admin' } }],
+            OR: [
+              { role: { contains: "owner" } },
+              { role: { contains: "admin" } },
+            ],
           },
           select: {
             id: true,
@@ -44,14 +49,14 @@ export const weeklyTaskReminder = schedules.task({
       const todoTasks = await db.task.findMany({
         where: {
           organizationId: org.id,
-          status: 'todo',
+          status: "todo",
         },
         select: {
           id: true,
           title: true,
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       });
 
@@ -61,7 +66,9 @@ export const weeklyTaskReminder = schedules.task({
         continue;
       }
 
-      logger.info(`Found ${todoTasks.length} TODO tasks for organization ${org.name}`);
+      logger.info(
+        `Found ${todoTasks.length} TODO tasks for organization ${org.name}`,
+      );
 
       // Build payload for each admin/owner
       for (const member of org.members) {
@@ -71,7 +78,7 @@ export const weeklyTaskReminder = schedules.task({
         }
 
         // Skip internal trycomp.ai emails
-        if (member.user.email.includes('@trycomp.ai')) {
+        if (member.user.email.includes("@trycomp.ai")) {
           logger.info(`Skipping internal email: ${member.user.email}`);
           continue;
         }
@@ -98,7 +105,9 @@ export const weeklyTaskReminder = schedules.task({
         batches.push(emailPayloads.slice(i, i + BATCH_SIZE));
       }
 
-      logger.info(`Triggering ${emailPayloads.length} emails in ${batches.length} batch(es)`);
+      logger.info(
+        `Triggering ${emailPayloads.length} emails in ${batches.length} batch(es)`,
+      );
 
       try {
         for (const batch of batches) {
@@ -106,7 +115,9 @@ export const weeklyTaskReminder = schedules.task({
           logger.info(`Triggered batch of ${batch.length} emails`);
         }
 
-        logger.info(`Successfully triggered all ${emailPayloads.length} weekly task digest emails`);
+        logger.info(
+          `Successfully triggered all ${emailPayloads.length} weekly task digest emails`,
+        );
       } catch (error) {
         logger.error(`Failed to trigger batch email sends: ${error}`);
 
@@ -127,7 +138,7 @@ export const weeklyTaskReminder = schedules.task({
       emailsTriggered: emailPayloads.length,
     };
 
-    logger.info('Weekly task reminder job completed', summary);
+    logger.info("Weekly task reminder job completed", summary);
 
     return summary;
   },

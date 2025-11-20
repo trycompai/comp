@@ -1,17 +1,19 @@
-'use server';
+"use server";
 
-import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { z } from 'zod';
-import { authActionClientWithoutOrg } from '../safe-action';
-import type { ActionResponse } from '../types';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { redirect } from "next/navigation";
+import { createTrainingVideoEntries } from "@/lib/db/employee";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
+
+import type { ActionResponse } from "../types";
+import { authActionClientWithoutOrg } from "../safe-action";
 
 async function validateInviteCode(inviteCode: string, invitedEmail: string) {
   const pendingInvitation = await db.invitation.findFirst({
     where: {
-      status: 'pending',
+      status: "pending",
       email: invitedEmail,
       id: inviteCode,
     },
@@ -34,10 +36,10 @@ const completeInvitationSchema = z.object({
 
 export const completeInvitation = authActionClientWithoutOrg
   .metadata({
-    name: 'complete-invitation',
+    name: "complete-invitation",
     track: {
-      event: 'complete_invitation',
-      channel: 'organization',
+      event: "complete_invitation",
+      channel: "organization",
     },
   })
   .inputSchema(completeInvitationSchema)
@@ -55,14 +57,14 @@ export const completeInvitation = authActionClientWithoutOrg
       const user = ctx.user;
 
       if (!user || !user.email) {
-        throw new Error('Unauthorized');
+        throw new Error("Unauthorized");
       }
 
       try {
         const invitation = await validateInviteCode(inviteCode, user.email);
 
         if (!invitation) {
-          throw new Error('Invitation either used or expired');
+          throw new Error("Invitation either used or expired");
         }
 
         const existingMembership = await db.member.findFirst({
@@ -85,7 +87,7 @@ export const completeInvitation = authActionClientWithoutOrg
           await db.invitation.update({
             where: { id: invitation.id },
             data: {
-              status: 'accepted',
+              status: "accepted",
             },
           });
 
@@ -94,7 +96,7 @@ export const completeInvitation = authActionClientWithoutOrg
         }
 
         if (!invitation.role) {
-          throw new Error('Invitation role is required');
+          throw new Error("Invitation role is required");
         }
 
         const newMember = await db.member.create({
@@ -102,7 +104,7 @@ export const completeInvitation = authActionClientWithoutOrg
             userId: user.id,
             organizationId: invitation.organizationId,
             role: invitation.role,
-            department: 'none',
+            department: "none",
           },
         });
 
@@ -114,7 +116,7 @@ export const completeInvitation = authActionClientWithoutOrg
             id: invitation.id,
           },
           data: {
-            status: 'accepted',
+            status: "accepted",
           },
         });
 
@@ -134,7 +136,7 @@ export const completeInvitation = authActionClientWithoutOrg
         // Server redirect to the organization's root
         redirect(`/${invitation.organizationId}/`);
       } catch (error) {
-        console.error('Error accepting invitation:', error);
+        console.error("Error accepting invitation:", error);
         throw new Error(error as string);
       }
     },

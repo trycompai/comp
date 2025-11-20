@@ -102,12 +102,12 @@ e2e/
 ### Basic Test Structure
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 
-test.describe('Feature Name', () => {
-  test('should do something', async ({ page }) => {
-    await page.goto('/');
-    await expect(page).toHaveTitle('My App');
+test.describe("Feature Name", () => {
+  test("should do something", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveTitle("My App");
   });
 });
 ```
@@ -115,24 +115,24 @@ test.describe('Feature Name', () => {
 ### Using Helper Functions
 
 ```typescript
-import { fillFormField, clickAndWait, expectToast } from '../utils/helpers';
+import { clickAndWait, expectToast, fillFormField } from "../utils/helpers";
 
-test('create organization', async ({ page }) => {
-  await fillFormField(page, '[name="name"]', 'My Organization');
+test("create organization", async ({ page }) => {
+  await fillFormField(page, '[name="name"]', "My Organization");
   await clickAndWait(page, 'button[type="submit"]');
-  await expectToast(page, 'Organization created successfully');
+  await expectToast(page, "Organization created successfully");
 });
 ```
 
 ### Using Authentication Fixture
 
 ```typescript
-import { test, expect } from '../fixtures/auth';
+import { expect, test } from "../fixtures/auth";
 
-test('authenticated user flow', async ({ authenticatedPage }) => {
+test("authenticated user flow", async ({ authenticatedPage }) => {
   // authenticatedPage is already logged in
-  await authenticatedPage.goto('/dashboard');
-  await expect(authenticatedPage).toHaveURL('/dashboard');
+  await authenticatedPage.goto("/dashboard");
+  await expect(authenticatedPage).toHaveURL("/dashboard");
 });
 ```
 

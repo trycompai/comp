@@ -1,7 +1,8 @@
-import { api } from '@/lib/api-client';
-import { Member, User } from '@trycompai/db';
-import { useParams } from 'next/navigation';
-import useSWR from 'swr';
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import useSWR from "swr";
+
+import { Member, User } from "@trycompai/db";
 
 interface MemberData extends Member {
   user: User;
@@ -30,7 +31,7 @@ export function useOrganizationMembers({
     orgId ? [`organization-members-${orgId}`, orgId] : null,
     async () => {
       if (!orgId) {
-        throw new Error('Organization ID is required');
+        throw new Error("Organization ID is required");
       }
 
       const { data } = await api.get<{
@@ -40,8 +41,11 @@ export function useOrganizationMembers({
       }>(`/v1/people`, orgId);
 
       if (!data?.data) {
-        console.error('[useOrganizationMembers] Failed to fetch organization members', data?.error);
-        throw new Error(data?.error || 'Failed to fetch organization members');
+        console.error(
+          "[useOrganizationMembers] Failed to fetch organization members",
+          data?.error,
+        );
+        throw new Error(data?.error || "Failed to fetch organization members");
       }
 
       return data?.data || [];

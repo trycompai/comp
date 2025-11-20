@@ -1,5 +1,7 @@
-import { db } from '@trycompai/db';
-import { type NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+import { db } from "@trycompai/db";
 
 /**
  * POST /api/qa/delete-user
@@ -21,27 +23,27 @@ import { type NextRequest, NextResponse } from 'next/server';
  * - 500: { success: false, error: "Failed to delete user" }
  */
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get("authorization");
   const qaSecret = process.env.QA_SECRET;
 
   if (!qaSecret) {
-    console.error('QA_SECRET is not set in environment variables.');
+    console.error("QA_SECRET is not set in environment variables.");
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server configuration error.',
+        error: "Internal server configuration error.",
       },
       { status: 500 },
     );
   }
 
-  const token = authHeader?.split(' ')[1];
+  const token = authHeader?.split(" ")[1];
 
   if (!token || token !== qaSecret) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Unauthorized',
+        error: "Unauthorized",
       },
       { status: 401 },
     );
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Invalid JSON in request body',
+        error: "Invalid JSON in request body",
       },
       { status: 400 },
     );
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Missing userId or email in request body',
+        error: "Missing userId or email in request body",
       },
       { status: 400 },
     );
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to delete user',
+          error: "Failed to delete user",
         },
         { status: 500 },
       );
@@ -103,15 +105,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'User deleted successfully',
+      message: "User deleted successfully",
       userId: userId,
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error("Error deleting user:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to delete user',
+        error: "Failed to delete user",
       },
       { status: 500 },
     );

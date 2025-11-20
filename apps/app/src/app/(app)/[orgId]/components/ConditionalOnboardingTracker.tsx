@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import type { Onboarding } from '@trycompai/db';
-import { usePathname } from 'next/navigation';
-import { OnboardingTracker } from './OnboardingTracker';
+import { usePathname } from "next/navigation";
+
+import type { Onboarding } from "@trycompai/db";
+
+import { OnboardingTracker } from "./OnboardingTracker";
 
 interface Props {
   onboarding: Onboarding;
@@ -10,7 +12,7 @@ interface Props {
 
 export function ConditionalOnboardingTracker({ onboarding }: Props) {
   const pathname = usePathname();
-  const isAutomationRoute = pathname.includes('/automation');
+  const isAutomationRoute = pathname.includes("/automation");
 
   // Don't render the OnboardingTracker if we're on an automation route
   if (isAutomationRoute) {

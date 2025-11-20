@@ -1,5 +1,7 @@
-import { db } from '@trycompai/db';
-import { type NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+import { db } from "@trycompai/db";
 
 /**
  * POST /api/qa/approve-organization
@@ -21,27 +23,27 @@ import { type NextRequest, NextResponse } from 'next/server';
  * - 500: { success: false, error: "Failed to approve organization" }
  */
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get("authorization");
   const qaSecret = process.env.QA_SECRET;
 
   if (!qaSecret) {
-    console.error('QA_SECRET is not set in environment variables.');
+    console.error("QA_SECRET is not set in environment variables.");
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server configuration error.',
+        error: "Internal server configuration error.",
       },
       { status: 500 },
     );
   }
 
-  const token = authHeader?.split(' ')[1];
+  const token = authHeader?.split(" ")[1];
 
   if (!token || token !== qaSecret) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Unauthorized',
+        error: "Unauthorized",
       },
       { status: 401 },
     );
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Invalid JSON in request body',
+        error: "Invalid JSON in request body",
       },
       { status: 400 },
     );
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Missing organizationId in request body',
+        error: "Missing organizationId in request body",
       },
       { status: 400 },
     );
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Organization not found',
+          error: "Organization not found",
         },
         { status: 404 },
       );
@@ -98,17 +100,17 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Organization approved successfully',
+      message: "Organization approved successfully",
       organizationId: updatedOrg.id,
       hasAccess: updatedOrg.hasAccess,
     });
   } catch (error) {
-    console.error('Error approving organization:', error);
+    console.error("Error approving organization:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to approve organization',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to approve organization",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
     );

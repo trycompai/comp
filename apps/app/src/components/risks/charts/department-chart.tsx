@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import { ClientTooltip } from '@trycompai/ui/chart-tooltip';
-import { format, max, scaleBand, scaleLinear } from 'd3';
-import { type CSSProperties } from 'react';
+import { type CSSProperties } from "react";
+import { format, max, scaleBand, scaleLinear } from "d3";
+
+import { ClientTooltip } from "@trycompai/ui/chart-tooltip";
 
 const DEPARTMENT_COLORS = {
-  none: 'bg-[var(--chart-open)]',
-  admin: 'bg-[var(--chart-pending)]',
-  gov: 'bg-[var(--chart-closed)]',
-  hr: 'bg-[var(--chart-open)]',
-  it: 'bg-[var(--chart-pending)]',
-  itsm: 'bg-[var(--chart-closed)]',
-  qms: 'bg-[var(--chart-open)]',
+  none: "bg-[var(--chart-open)]",
+  admin: "bg-[var(--chart-pending)]",
+  gov: "bg-[var(--chart-closed)]",
+  hr: "bg-[var(--chart-open)]",
+  it: "bg-[var(--chart-pending)]",
+  itsm: "bg-[var(--chart-closed)]",
+  qms: "bg-[var(--chart-open)]",
 };
 
 interface DepartmentData {
@@ -24,9 +25,14 @@ interface DepartmentChartProps {
   showEmptyDepartments?: boolean;
 }
 
-export function DepartmentChart({ data, showEmptyDepartments = true }: DepartmentChartProps) {
+export function DepartmentChart({
+  data,
+  showEmptyDepartments = true,
+}: DepartmentChartProps) {
   // Filter out departments with no risks if showEmptyDepartments is false
-  const filteredData = showEmptyDepartments ? data : data.filter((dept) => dept.value > 0);
+  const filteredData = showEmptyDepartments
+    ? data
+    : data.filter((dept) => dept.value > 0);
 
   const sortedData = [...filteredData].sort((a, b) => b.value - a.value);
 
@@ -68,12 +74,15 @@ export function DepartmentChart({ data, showEmptyDepartments = true }: Departmen
   const getBarKey = (item: DepartmentData) => `bar-${item.name}-${item.value}`;
   const getTickKey = (value: number) => `tick-${value}`;
   const getGridKey = (value: number, position = 0) =>
-    `grid-${value.toString().replace('.', '-')}-${position}`;
+    `grid-${value.toString().replace(".", "-")}-${position}`;
   const getLabelKey = (item: DepartmentData) => `label-${item.name}`;
 
   const getDepartmentColor = (deptName: string) => {
     const normalizedName = deptName.toLowerCase();
-    return DEPARTMENT_COLORS[normalizedName as keyof typeof DEPARTMENT_COLORS] || 'bg-gray-400';
+    return (
+      DEPARTMENT_COLORS[normalizedName as keyof typeof DEPARTMENT_COLORS] ||
+      "bg-gray-400"
+    );
   };
 
   // Generate appropriate tick values based on max value
@@ -98,10 +107,10 @@ export function DepartmentChart({ data, showEmptyDepartments = true }: Departmen
         style={
           {
             height: `${chartHeight}px`,
-            '--marginTop': '0px',
-            '--marginRight': `${marginRight}px`,
-            '--marginBottom': `${marginBottom}px`,
-            '--marginLeft': `${marginLeft}px`,
+            "--marginTop": "0px",
+            "--marginRight": `${marginRight}px`,
+            "--marginBottom": `${marginBottom}px`,
+            "--marginLeft": `${marginLeft}px`,
           } as CSSProperties
         }
       >
@@ -120,17 +129,21 @@ export function DepartmentChart({ data, showEmptyDepartments = true }: Departmen
               <div
                 key={getBarKey(d)}
                 style={{
-                  left: '0',
+                  left: "0",
                   top: `${barTopPosition}%`,
                   width: `${barWidth}%`,
                   height: `${fixedBarHeightPercentage}%`,
                 }}
-                className={`absolute ${getDepartmentColor(d.name)} ${d.value === 0 ? 'opacity-40' : ''} dark:opacity-90`}
+                className={`absolute ${getDepartmentColor(d.name)} ${d.value === 0 ? "opacity-40" : ""} dark:opacity-90`}
                 data-tip={`${d.name}: ${d.value}`}
               />
             );
           })}
-          <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <svg
+            className="h-full w-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
             {tickValues.map((value, position) => {
               const uniqueKey = getGridKey(value, position);
               return (
@@ -157,11 +170,11 @@ export function DepartmentChart({ data, showEmptyDepartments = true }: Departmen
               key={getTickKey(value)}
               style={{
                 left: `${xScale(value)}%`,
-                top: '100%',
+                top: "100%",
               }}
               className="text-muted-foreground absolute -translate-x-1/2 text-xs tabular-nums"
             >
-              {Number.isInteger(value) ? format(',')(value) : value.toFixed(2)}
+              {Number.isInteger(value) ? format(",")(value) : value.toFixed(2)}
             </div>
           ))}
         </div>
@@ -171,7 +184,7 @@ export function DepartmentChart({ data, showEmptyDepartments = true }: Departmen
             <span
               key={getLabelKey(entry)}
               style={{
-                left: '0',
+                left: "0",
                 top: `${yScale(entry.name)! + yScale.bandwidth() / 2}%`,
                 width: `${marginLeft - 2}px`,
               }}

@@ -1,9 +1,11 @@
-'use client';
+"use client";
 
-import type { JSONContent } from '@tiptap/react';
-import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
-import { useState } from 'react';
-import AdvancedEditor from './advanced-editor';
+import type { JSONContent } from "@tiptap/react";
+import { useState } from "react";
+
+import { validateAndFixTipTapContent } from "@trycompai/ui/editor";
+
+import AdvancedEditor from "./advanced-editor";
 
 interface PolicyEditorProps {
   content: JSONContent[];
@@ -11,11 +13,15 @@ interface PolicyEditorProps {
   onSave?: (content: JSONContent[]) => Promise<void>;
 }
 
-export function PolicyEditor({ content, readOnly = false, onSave }: PolicyEditorProps) {
+export function PolicyEditor({
+  content,
+  readOnly = false,
+  onSave,
+}: PolicyEditorProps) {
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
 
   const documentContent = validateAndFixTipTapContent({
-    type: 'doc',
+    type: "doc",
     content: Array.isArray(content) && content.length > 0 ? content : [],
   });
 
@@ -31,7 +37,7 @@ export function PolicyEditor({ content, readOnly = false, onSave }: PolicyEditor
       const contentArray = (fixed.content || []) as JSONContent[];
       await onSave(contentArray);
     } catch (error) {
-      console.error('Error saving policy:', error);
+      console.error("Error saving policy:", error);
       throw error;
     }
   };

@@ -1,6 +1,6 @@
-import { getOrganizationUsersAction } from '@/actions/organization/get-organization-users-action';
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { getOrganizationUsersAction } from "@/actions/organization/get-organization-users-action";
+import { auth } from "@/utils/auth";
 
 export async function MembersTable() {
   const session = await auth.api.getSession({

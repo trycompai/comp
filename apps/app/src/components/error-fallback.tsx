@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
+
+import { Button } from "@trycompai/ui/button";
 
 export function ErrorFallback() {
   const router = useRouter();

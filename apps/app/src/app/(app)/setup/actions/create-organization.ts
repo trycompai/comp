@@ -1,24 +1,26 @@
-'use server';
+"use server";
 
-import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
-import { authActionClientWithoutOrg } from '@/actions/safe-action';
-import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
-import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
-import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { auth } from '@/utils/auth';
-import { tasks } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
-import { companyDetailsSchema, steps } from '../lib/constants';
+import { revalidatePath } from "next/cache";
+import { cookies, headers } from "next/headers";
+import { initializeOrganization } from "@/actions/organization/lib/initialize-organization";
+import { authActionClientWithoutOrg } from "@/actions/safe-action";
+import { createFleetLabelForOrg } from "@/jobs/tasks/device/create-fleet-label-for-org";
+import { onboardOrganization as onboardOrganizationTask } from "@/jobs/tasks/onboarding/onboard-organization";
+import { createTrainingVideoEntries } from "@/lib/db/employee";
+import { auth } from "@/utils/auth";
+import { tasks } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
+
+import { companyDetailsSchema, steps } from "../lib/constants";
 
 export const createOrganization = authActionClientWithoutOrg
   .inputSchema(companyDetailsSchema)
   .metadata({
-    name: 'create-organization',
+    name: "create-organization",
     track: {
-      event: 'create-organization',
-      channel: 'server',
+      event: "create-organization",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -30,41 +32,49 @@ export const createOrganization = authActionClientWithoutOrg
       if (!session) {
         return {
           success: false,
-          error: 'Not authorized.',
+          error: "Not authorized.",
         };
       }
 
       // Check if user email domain is trycomp.ai
       const userEmail = session.user.email;
-      const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
+      const isTryCompEmail = userEmail?.endsWith("@trycomp.ai") ?? false;
 
       // Create a new organization directly in the database
-      const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
+      const randomSuffix = Math.floor(
+        100000 + Math.random() * 900000,
+      ).toString();
 
       const newOrg = await db.organization.create({
         data: {
           name: parsedInput.organizationName,
           website: parsedInput.website,
           // Auto-enable for trycomp.ai emails or local development
-          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' || isTryCompEmail) && {
+          ...((process.env.NEXT_PUBLIC_APP_ENV !== "production" ||
+            isTryCompEmail) && {
             hasAccess: true,
           }),
           members: {
             create: {
               userId: session.user.id,
-              role: 'owner',
+              role: "owner",
             },
           },
           context: {
             create: steps
-              .filter((step) => step.key !== 'organizationName' && step.key !== 'website')
+              .filter(
+                (step) =>
+                  step.key !== "organizationName" && step.key !== "website",
+              )
               .map((step) => ({
                 question: step.question,
                 answer:
-                  step.key === 'frameworkIds'
-                    ? parsedInput.frameworkIds.join(', ')
-                    : (parsedInput[step.key as keyof typeof parsedInput] as string),
-                tags: ['onboarding'],
+                  step.key === "frameworkIds"
+                    ? parsedInput.frameworkIds.join(", ")
+                    : (parsedInput[
+                        step.key as keyof typeof parsedInput
+                      ] as string),
+                tags: ["onboarding"],
               })),
           },
         },
@@ -122,9 +132,12 @@ export const createOrganization = authActionClientWithoutOrg
         revalidatePath(`/${org.organizationId}`);
       }
 
-      const handle = await tasks.trigger<typeof onboardOrganizationTask>('onboard-organization', {
-        organizationId: orgId,
-      });
+      const handle = await tasks.trigger<typeof onboardOrganizationTask>(
+        "onboard-organization",
+        {
+          organizationId: orgId,
+        },
+      );
 
       // Set triggerJobId to signal that the job is running.
       await db.onboarding.update({
@@ -134,16 +147,19 @@ export const createOrganization = authActionClientWithoutOrg
         data: { triggerJobId: handle.id },
       });
 
-      revalidatePath('/');
+      revalidatePath("/");
       revalidatePath(`/${orgId}`);
-      revalidatePath('/setup');
+      revalidatePath("/setup");
 
-      (await cookies()).set('publicAccessToken', handle.publicAccessToken);
+      (await cookies()).set("publicAccessToken", handle.publicAccessToken);
 
       // Create Fleet Label.
-      await tasks.trigger<typeof createFleetLabelForOrg>('create-fleet-label-for-org', {
-        organizationId: orgId,
-      });
+      await tasks.trigger<typeof createFleetLabelForOrg>(
+        "create-fleet-label-for-org",
+        {
+          organizationId: orgId,
+        },
+      );
 
       return {
         success: true,
@@ -152,7 +168,7 @@ export const createOrganization = authActionClientWithoutOrg
         organizationId: orgId,
       };
     } catch (error) {
-      console.error('Error during organization creation/update:', error);
+      console.error("Error during organization creation/update:", error);
 
       // Return the actual error message for debugging
       if (error instanceof Error) {
@@ -164,7 +180,7 @@ export const createOrganization = authActionClientWithoutOrg
 
       return {
         success: false,
-        error: 'Failed to create or update organization structure',
+        error: "Failed to create or update organization structure",
       };
     }
   });

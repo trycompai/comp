@@ -1,7 +1,14 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare } from "lucide-react";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
 
 export function ChatPlaceholder() {
   return (

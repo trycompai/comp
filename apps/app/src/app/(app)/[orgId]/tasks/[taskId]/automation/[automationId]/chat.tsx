@@ -1,7 +1,11 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { useChat } from '@ai-sdk/react';
+import { useCallback, useEffect } from "react";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { useChat } from "@ai-sdk/react";
+
 import {
   PromptInput,
   PromptInputBody,
@@ -11,24 +15,22 @@ import {
   PromptInputTextarea,
   PromptInputTools,
   usePromptInputController,
-} from '@trycompai/ui/ai-elements/prompt-input';
-import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+} from "@trycompai/ui/ai-elements/prompt-input";
+
+import type { ChatUIMessage } from "./components/chat/types";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from './components/ai-elements/conversation';
-import { ChatBreadcrumb } from './components/chat/ChatBreadcrumb';
-import { EmptyState } from './components/chat/EmptyState';
-import { Message } from './components/chat/message';
-import type { ChatUIMessage } from './components/chat/types';
-import { PanelHeader } from './components/panels/panels';
-import { useChatHandlers } from './hooks/use-chat-handlers';
-import { useTaskAutomation } from './hooks/use-task-automation';
-import { useSharedChatContext } from './lib/chat-context';
-import { useTaskAutomationStore } from './lib/task-automation-store';
+} from "./components/ai-elements/conversation";
+import { ChatBreadcrumb } from "./components/chat/ChatBreadcrumb";
+import { EmptyState } from "./components/chat/EmptyState";
+import { Message } from "./components/chat/message";
+import { PanelHeader } from "./components/panels/panels";
+import { useChatHandlers } from "./hooks/use-chat-handlers";
+import { useTaskAutomation } from "./hooks/use-task-automation";
+import { useSharedChatContext } from "./lib/chat-context";
+import { useTaskAutomationStore } from "./lib/task-automation-store";
 
 interface Props {
   className: string;
@@ -37,7 +39,12 @@ interface Props {
   taskId: string;
   taskName?: string;
   automationId: string;
-  suggestions?: { title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[];
+  suggestions?: {
+    title: string;
+    prompt: string;
+    vendorName?: string;
+    vendorWebsite?: string;
+  }[];
   isLoadingSuggestions?: boolean;
 }
 
@@ -51,7 +58,7 @@ function ChatInput({
   const { textInput } = usePromptInputController();
 
   return (
-    <div className="py-6 px-4">
+    <div className="px-4 py-6">
       <PromptInput
         onSubmit={async ({ text }) => {
           validateAndSubmitMessage(text);
@@ -60,15 +67,23 @@ function ChatInput({
         <PromptInputBody>
           <PromptInputTextarea
             placeholder="Ask me to create an automation..."
-            disabled={status === 'streaming' || status === 'submitted'}
-            className="min-h-[80px] max-h-[400px]"
+            disabled={status === "streaming" || status === "submitted"}
+            className="max-h-[400px] min-h-[80px]"
           />
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools />
           <PromptInputSubmit
-            status={status === 'streaming' || status === 'submitted' ? 'submitted' : undefined}
-            disabled={!textInput.value.trim() || status === 'streaming' || status === 'submitted'}
+            status={
+              status === "streaming" || status === "submitted"
+                ? "submitted"
+                : undefined
+            }
+            disabled={
+              !textInput.value.trim() ||
+              status === "streaming" ||
+              status === "submitted"
+            }
           />
         </PromptInputFooter>
       </PromptInput>
@@ -96,7 +111,12 @@ function ChatContent({
   handleInfoProvided: (info: Record<string, string>) => void;
   validateAndSubmitMessage: (text: string) => void;
   status: string;
-  suggestions?: { title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[];
+  suggestions?: {
+    title: string;
+    prompt: string;
+    vendorName?: string;
+    vendorWebsite?: string;
+  }[];
   isLoadingSuggestions?: boolean;
 }) {
   const { textInput } = usePromptInputController();
@@ -110,7 +130,12 @@ function ChatContent({
 
   if (!hasMessages) {
     return (
-      <div className={cn('flex flex-col w-full h-full px-58 z-20', scriptUrl && 'px-8 pb-4')}>
+      <div
+        className={cn(
+          "z-20 flex h-full w-full flex-col px-58",
+          scriptUrl && "px-8 pb-4",
+        )}
+      >
         <EmptyState
           onExampleClick={handleExampleClick}
           status={status}
@@ -123,9 +148,9 @@ function ChatContent({
   }
 
   return (
-    <div className="flex flex-col h-full relative z-20">
-      <Conversation className="flex-1 min-h-0">
-        <ConversationContent className="space-y-4 chat-scrollbar">
+    <div className="relative z-20 flex h-full flex-col">
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent className="chat-scrollbar space-y-4">
           {messages.map((message) => (
             <Message
               key={message.id}
@@ -139,7 +164,10 @@ function ChatContent({
         <ConversationScrollButton />
       </Conversation>
 
-      <ChatInput validateAndSubmitMessage={validateAndSubmitMessage} status={status} />
+      <ChatInput
+        validateAndSubmitMessage={validateAndSubmitMessage}
+        status={status}
+      />
     </div>
   );
 }
@@ -154,7 +182,7 @@ export function Chat({
   isLoadingSuggestions = false,
 }: Props) {
   const searchParams = useSearchParams();
-  const initialPrompt = searchParams.get('prompt') || '';
+  const initialPrompt = searchParams.get("prompt") || "";
   const { chat, updateAutomationId, automationIdRef } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     chat,
@@ -163,23 +191,24 @@ export function Chat({
   const { automation } = useTaskAutomation();
 
   // Update shared ref when automation is loaded from hook
-  if (automation?.id && automationIdRef.current === 'new') {
+  if (automation?.id && automationIdRef.current === "new") {
     automationIdRef.current = automation.id;
   }
 
   // Ephemeral mode - automation not created yet
   // Check the shared ref, not the URL param
-  const isEphemeral = automationIdRef.current === 'new';
+  const isEphemeral = automationIdRef.current === "new";
 
-  const { validateAndSubmitMessage, handleSecretAdded, handleInfoProvided } = useChatHandlers({
-    sendMessage,
-    setInput: () => {}, // Not needed with PromptInputProvider
-    orgId,
-    taskId,
-    automationId: automationIdRef.current,
-    isEphemeral,
-    updateAutomationId,
-  });
+  const { validateAndSubmitMessage, handleSecretAdded, handleInfoProvided } =
+    useChatHandlers({
+      sendMessage,
+      setInput: () => {}, // Not needed with PromptInputProvider
+      orgId,
+      taskId,
+      automationId: automationIdRef.current,
+      isEphemeral,
+      updateAutomationId,
+    });
 
   useEffect(() => {
     setChatStatus(status);
@@ -189,19 +218,22 @@ export function Chat({
 
   return (
     <div
-      className={cn(className, 'selection:bg-primary selection:text-white relative')}
-      style={{ height: 'calc(100vh - 6em)' }}
+      className={cn(
+        className,
+        "selection:bg-primary relative selection:text-white",
+      )}
+      style={{ height: "calc(100vh - 6em)" }}
     >
       <Image
         src="/automation-bg.svg"
         alt="Automation"
         width={538}
         height={561}
-        className="absolute top-0 right-0 z-10 pointer-events-none opacity-50"
+        className="pointer-events-none absolute top-0 right-0 z-10 opacity-50"
       />
 
-      <PanelHeader className="shrink-0 relative z-20">
-        <div className="flex items-center justify-between w-full">
+      <PanelHeader className="relative z-20 shrink-0">
+        <div className="flex w-full items-center justify-between">
           <ChatBreadcrumb
             orgId={orgId}
             taskId={taskId}

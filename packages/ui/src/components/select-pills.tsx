@@ -1,13 +1,13 @@
-'use client';
-import { useRef, useState, type FC } from 'react';
+"use client";
 
-import { cn } from '../utils/cn';
+import type { FC } from "react";
+import { useRef, useState } from "react";
+import { X } from "lucide-react";
 
-import { Badge } from './badge';
-import { Input } from './input';
-import { Popover, PopoverAnchor, PopoverContent } from './popover';
-
-import { X } from 'lucide-react';
+import { cn } from "../utils/cn";
+import { Badge } from "./badge";
+import { Input } from "./input";
+import { Popover, PopoverAnchor, PopoverContent } from "./popover";
 
 interface DataItem {
   id?: string;
@@ -22,7 +22,7 @@ interface SelectPillsProps {
   onValueChange?: (selectedValues: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
-  'data-testid'?: string;
+  "data-testid"?: string;
 }
 
 export const SelectPills: FC<SelectPillsProps> = ({
@@ -30,12 +30,14 @@ export const SelectPills: FC<SelectPillsProps> = ({
   defaultValue = [],
   value,
   onValueChange,
-  placeholder = 'Type to search...',
+  placeholder = "Type to search...",
   disabled = false,
-  'data-testid': dataTestId,
+  "data-testid": dataTestId,
 }) => {
-  const [inputValue, setInputValue] = useState<string>('');
-  const [selectedPills, setSelectedPills] = useState<string[]>(value || defaultValue);
+  const [inputValue, setInputValue] = useState<string>("");
+  const [selectedPills, setSelectedPills] = useState<string[]>(
+    value || defaultValue,
+  );
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -57,7 +59,9 @@ export const SelectPills: FC<SelectPillsProps> = ({
       setIsOpen(true);
     } else {
       // Only show dropdown if there are unselected items when input is empty
-      const hasUnselectedItems = data.some((item) => !(value || selectedPills).includes(item.name));
+      const hasUnselectedItems = data.some(
+        (item) => !(value || selectedPills).includes(item.name),
+      );
       setIsOpen(hasUnselectedItems);
     }
 
@@ -69,7 +73,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     switch (e.key) {
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (inputValue.trim()) {
           // Add custom value
@@ -77,7 +81,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
           handleItemSelect(customItem);
         }
         break;
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         if (isOpen && filteredItems.length > 0) {
           // Move focus to first radio button
@@ -88,15 +92,18 @@ export const SelectPills: FC<SelectPillsProps> = ({
           setHighlightedIndex(0);
         }
         break;
-      case 'Escape':
+      case "Escape":
         setIsOpen(false);
         break;
     }
   };
 
-  const handleRadioKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, index: number) => {
+  const handleRadioKeyDown = (
+    e: React.KeyboardEvent<HTMLDivElement>,
+    index: number,
+  ) => {
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         if (index < filteredItems.length - 1) {
           setHighlightedIndex(index + 1);
@@ -105,13 +112,13 @@ export const SelectPills: FC<SelectPillsProps> = ({
           ) as HTMLElement;
           if (nextItem) {
             nextItem.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
+              behavior: "smooth",
+              block: "nearest",
             });
           }
         }
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
         if (index > 0) {
           setHighlightedIndex(index - 1);
@@ -120,8 +127,8 @@ export const SelectPills: FC<SelectPillsProps> = ({
           ) as HTMLElement;
           if (prevItem) {
             prevItem.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
+              behavior: "smooth",
+              block: "nearest",
             });
           }
         } else {
@@ -129,7 +136,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
           setHighlightedIndex(-1);
         }
         break;
-      case 'Enter': {
+      case "Enter": {
         e.preventDefault();
         const itemToSelect = filteredItems[index];
         if (itemToSelect) {
@@ -137,7 +144,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
         }
         break;
       }
-      case 'Escape':
+      case "Escape":
         e.preventDefault();
         setIsOpen(false);
         inputRef.current?.focus();
@@ -148,7 +155,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
   const handleItemSelect = (item: DataItem) => {
     const newSelectedPills = [...selectedPills, item.name];
     setSelectedPills(newSelectedPills);
-    setInputValue('');
+    setInputValue("");
     setIsOpen(false);
     setHighlightedIndex(-1);
     if (onValueChange) {
@@ -160,7 +167,9 @@ export const SelectPills: FC<SelectPillsProps> = ({
   };
 
   const handlePillRemove = (pillToRemove: string) => {
-    const newSelectedPills = selectedPills.filter((pill) => pill !== pillToRemove);
+    const newSelectedPills = selectedPills.filter(
+      (pill) => pill !== pillToRemove,
+    );
     setSelectedPills(newSelectedPills);
     if (onValueChange) {
       onValueChange(newSelectedPills);
@@ -185,8 +194,8 @@ export const SelectPills: FC<SelectPillsProps> = ({
             variant="secondary"
             onClick={() => !disabled && handlePillRemove(pill)}
             className={cn(
-              'group gap-1 hover:cursor-pointer',
-              disabled && 'cursor-not-allowed opacity-50',
+              "group gap-1 hover:cursor-pointer",
+              disabled && "cursor-not-allowed opacity-50",
             )}
           >
             {pill}
@@ -218,7 +227,9 @@ export const SelectPills: FC<SelectPillsProps> = ({
               }
             }}
             placeholder={
-              isOpen && !inputValue ? 'Type to search or press Enter to add custom...' : placeholder
+              isOpen && !inputValue
+                ? "Type to search or press Enter to add custom..."
+                : placeholder
             }
             disabled={disabled}
             data-testid={dataTestId}
@@ -244,11 +255,11 @@ export const SelectPills: FC<SelectPillsProps> = ({
                 <div
                   key={item.id || item.value || item.name}
                   className={cn(
-                    'hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-pointer items-center gap-2 rounded-sm text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
-                    highlightedIndex === index && 'bg-accent',
+                    "hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground relative flex cursor-pointer items-center gap-2 rounded-sm text-sm outline-hidden transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
+                    highlightedIndex === index && "bg-accent",
                   )}
                   onClick={() => handleItemSelect(item)}
-                  data-testid={`${dataTestId}-option-${item.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                  data-testid={`${dataTestId}-option-${item.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
                 >
                   <input
                     type="radio"
@@ -274,18 +285,18 @@ export const SelectPills: FC<SelectPillsProps> = ({
           {/* Show custom value hint when typing with no matches */}
           {inputValue.trim() && filteredItems.length === 0 && (
             <div
-              className="border-t px-3 py-2 cursor-pointer hover:bg-accent/50 transition-colors"
+              className="hover:bg-accent/50 cursor-pointer border-t px-3 py-2 transition-colors"
               onClick={() => {
                 if (inputValue.trim()) {
                   handleItemSelect({ name: inputValue.trim() });
                 }
               }}
             >
-              <p className="text-xs text-muted-foreground">
-                Press{' '}
-                <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-[10px] font-medium">
+              <p className="text-muted-foreground text-xs">
+                Press{" "}
+                <kbd className="bg-muted inline-flex h-4 items-center rounded border px-1 font-mono text-[10px] font-medium select-none">
                   Enter
-                </kbd>{' '}
+                </kbd>{" "}
                 to add "{inputValue.trim()}"
               </p>
             </div>
@@ -294,11 +305,11 @@ export const SelectPills: FC<SelectPillsProps> = ({
           {/* Show hint at bottom when there are matches */}
           {inputValue.trim() && filteredItems.length > 0 && (
             <div className="border-t px-3 py-2">
-              <p className="text-xs text-muted-foreground">
-                Press{' '}
-                <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-[10px] font-medium">
+              <p className="text-muted-foreground text-xs">
+                Press{" "}
+                <kbd className="bg-muted inline-flex h-4 items-center rounded border px-1 font-mono text-[10px] font-medium select-none">
                   Enter
-                </kbd>{' '}
+                </kbd>{" "}
                 to add "{inputValue.trim()}"
               </p>
             </div>
@@ -306,7 +317,7 @@ export const SelectPills: FC<SelectPillsProps> = ({
 
           {/* Show empty state */}
           {!inputValue.trim() && filteredItems.length === 0 && (
-            <div className="p-3 text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground p-3 text-center text-sm">
               Type to search or add custom values
             </div>
           )}

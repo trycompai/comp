@@ -1,8 +1,13 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 
-export type RiskOnboardingStatus = 'pending' | 'processing' | 'created' | 'assessing' | 'completed';
+export type RiskOnboardingStatus =
+  | "pending"
+  | "processing"
+  | "created"
+  | "assessing"
+  | "completed";
 
 interface RiskOnboardingContextValue {
   getStatus: (riskId: string) => RiskOnboardingStatus | undefined;
@@ -37,9 +42,10 @@ export function useRiskOnboardingStatus(riskId: string) {
   const context = React.useContext(RiskOnboardingContext);
 
   if (!context) {
-    throw new Error('useRiskOnboardingStatus must be used within a RiskOnboardingProvider');
+    throw new Error(
+      "useRiskOnboardingStatus must be used within a RiskOnboardingProvider",
+    );
   }
 
   return context.getStatus(riskId);
 }
-

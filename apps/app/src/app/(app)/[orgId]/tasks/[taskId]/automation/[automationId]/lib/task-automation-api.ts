@@ -5,6 +5,10 @@
  * Uses server actions to securely call enterprise API with license key.
  */
 
+import type {
+  TaskAutomationExecuteRequest,
+  TaskAutomationUploadRequest,
+} from "./types";
 import {
   analyzeAutomationWorkflow,
   executeAutomationScript,
@@ -12,8 +16,7 @@ import {
   getAutomationScript,
   listAutomationScripts,
   uploadAutomationScript,
-} from '../actions/task-automation-actions';
-import type { TaskAutomationExecuteRequest, TaskAutomationUploadRequest } from './types';
+} from "../actions/task-automation-actions";
 
 /**
  * Task Automation API
@@ -32,7 +35,7 @@ export const taskAutomationApi = {
     getScript: async (key: string) => {
       const result = await getAutomationScript(key);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to get script');
+        throw new Error(result.error || "Failed to get script");
       }
       return result.data;
     },
@@ -44,7 +47,7 @@ export const taskAutomationApi = {
     listScripts: async (orgId: string) => {
       const result = await listAutomationScripts(orgId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to list scripts');
+        throw new Error(result.error || "Failed to list scripts");
       }
       return result.data;
     },
@@ -56,7 +59,7 @@ export const taskAutomationApi = {
     uploadScript: async (data: TaskAutomationUploadRequest) => {
       const result = await uploadAutomationScript(data);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to upload script');
+        throw new Error(result.error || "Failed to upload script");
       }
       return result.data;
     },
@@ -73,7 +76,7 @@ export const taskAutomationApi = {
     executeScript: async (data: TaskAutomationExecuteRequest) => {
       const result = await executeAutomationScript(data);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to execute script');
+        throw new Error(result.error || "Failed to execute script");
       }
       return result.data;
     },
@@ -85,7 +88,7 @@ export const taskAutomationApi = {
     getRunStatus: async (runId: string) => {
       const result = await getAutomationRunStatus(runId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to get run status');
+        throw new Error(result.error || "Failed to get run status");
       }
       return result.data;
     },
@@ -102,7 +105,7 @@ export const taskAutomationApi = {
     analyzeWorkflow: async (scriptContent: string) => {
       const result = await analyzeAutomationWorkflow(scriptContent);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to analyze workflow');
+        throw new Error(result.error || "Failed to analyze workflow");
       }
       return result.data;
     },

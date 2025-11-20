@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from "@trycompai/ui/dialog";
 
 interface ConfirmActionDialogProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ interface ConfirmActionDialogProps {
   description: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: 'default' | 'destructive';
+  variant?: "default" | "destructive";
   isLoading?: boolean;
 }
 
@@ -28,9 +28,9 @@ export function ConfirmActionDialog({
   onConfirm,
   title,
   description,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  variant = 'default',
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  variant = "default",
   isLoading = false,
 }: ConfirmActionDialogProps) {
   const handleConfirm = () => {
@@ -49,8 +49,12 @@ export function ConfirmActionDialog({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             {cancelText}
           </Button>
-          <Button variant={variant} onClick={handleConfirm} disabled={isLoading}>
-            {isLoading ? 'Loading...' : confirmText}
+          <Button
+            variant={variant}
+            onClick={handleConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? "Loading..." : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

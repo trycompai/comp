@@ -5,13 +5,14 @@
  * Only includes tools necessary for creating and storing automation scripts.
  */
 
-import type { InferUITools, UIMessage, UIMessageStreamWriter } from 'ai';
-import type { DataPart } from '../lib/types/data-parts';
-import { exaSearchTool } from './exa-search';
-import { firecrawlTool } from './firecrawl';
-import { promptForInfoTool } from './prompt-for-info';
-import { promptForSecretTool } from './prompt-for-secret';
-import { storeToS3 } from './store-to-s3';
+import type { InferUITools, UIMessage, UIMessageStreamWriter } from "ai";
+
+import type { DataPart } from "../lib/types/data-parts";
+import { exaSearchTool } from "./exa-search";
+import { firecrawlTool } from "./firecrawl";
+import { promptForInfoTool } from "./prompt-for-info";
+import { promptForSecretTool } from "./prompt-for-secret";
+import { storeToS3 } from "./store-to-s3";
 
 interface Params {
   modelId: string;
@@ -37,4 +38,6 @@ export function getTaskAutomationTools() {
   };
 }
 
-export type TaskAutomationToolSet = InferUITools<ReturnType<typeof getTaskAutomationTools>>;
+export type TaskAutomationToolSet = InferUITools<
+  ReturnType<typeof getTaskAutomationTools>
+>;

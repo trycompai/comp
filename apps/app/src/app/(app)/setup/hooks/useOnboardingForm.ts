@@ -1,19 +1,20 @@
-'use client';
+"use client";
 
-import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { sendGTMEvent } from '@next/third-parties/google';
-import { useAction } from 'next-safe-action/hooks';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
-import { createOrganizationMinimal } from '../actions/create-organization-minimal';
-import type { OnboardingFormFields } from '../components/OnboardingStepInput';
-import { companyDetailsSchema, steps } from '../lib/constants';
-import { updateSetupSession } from '../lib/setup-session';
-import type { CompanyDetails } from '../lib/types';
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { trackEvent, trackOnboardingEvent } from "@/utils/tracking";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { sendGTMEvent } from "@next/third-parties/google";
+import { useAction } from "next-safe-action/hooks";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import type { OnboardingFormFields } from "../components/OnboardingStepInput";
+import type { CompanyDetails } from "../lib/types";
+import { createOrganizationMinimal } from "../actions/create-organization-minimal";
+import { companyDetailsSchema, steps } from "../lib/constants";
+import { updateSetupSession } from "../lib/setup-session";
 
 interface UseOnboardingFormProps {
   setupId?: string;
@@ -33,7 +34,10 @@ export function useOnboardingForm({
   const searchParams = useSearchParams();
 
   // Helper to build URL with search params
-  const buildUrlWithParams = (path: string, params?: Record<string, string>) => {
+  const buildUrlWithParams = (
+    path: string,
+    params?: Record<string, string>,
+  ) => {
     const urlParams = new URLSearchParams();
 
     // First add the params from the response if any
@@ -74,8 +78,8 @@ export function useOnboardingForm({
   // Track when user starts onboarding
   useEffect(() => {
     if (mounted && stepIndex === 0 && !savedAnswers.frameworkIds) {
-      trackEvent('onboarding_started', {
-        event_category: 'onboarding',
+      trackEvent("onboarding_started", {
+        event_category: "onboarding",
         setup_id: setupId,
       });
     }
@@ -99,26 +103,26 @@ export function useOnboardingForm({
 
   const form = useForm<OnboardingFormFields>({
     resolver: zodResolver(stepSchema),
-    mode: 'onSubmit',
-    defaultValues: { [step.key]: savedAnswers[step.key] || '' },
+    mode: "onSubmit",
+    defaultValues: { [step.key]: savedAnswers[step.key] || "" },
   });
 
   // Reset form defaultValues when stepIndex or savedAnswers change for the current step
   useEffect(() => {
-    form.reset({ [step.key]: savedAnswers[step.key] || '' });
+    form.reset({ [step.key]: savedAnswers[step.key] || "" });
   }, [savedAnswers, step.key, form]);
 
   const createOrganizationAction = useAction(createOrganizationMinimal, {
     onSuccess: async ({ data }) => {
       if (data?.success && data?.organizationId) {
         setIsFinalizing(true);
-        sendGTMEvent({ event: 'conversion' });
+        sendGTMEvent({ event: "conversion" });
 
         // Track organization created
-        trackEvent('organization_created', {
-          event_category: 'onboarding',
+        trackEvent("organization_created", {
+          event_category: "onboarding",
           organization_id: data.organizationId,
-          flow_type: 'pre_payment',
+          flow_type: "pre_payment",
         });
 
         // Organization created, now redirect to plans page with search params
@@ -127,13 +131,13 @@ export function useOnboardingForm({
         // Clear answers after successful creation
         setSavedAnswers({});
       } else {
-        toast.error('Failed to create organization');
+        toast.error("Failed to create organization");
         setIsFinalizing(false);
         setIsOnboarding(false);
       }
     },
     onError: () => {
-      toast.error('Failed to create organization');
+      toast.error("Failed to create organization");
       setIsFinalizing(false);
       setIsOnboarding(false);
     },
@@ -142,12 +146,14 @@ export function useOnboardingForm({
     },
   });
 
-  const handleCreateOrganizationAction = (currentAnswers: Partial<CompanyDetails>) => {
+  const handleCreateOrganizationAction = (
+    currentAnswers: Partial<CompanyDetails>,
+  ) => {
     // Only pass the first 3 fields to the minimal action
     createOrganizationAction.execute({
       frameworkIds: currentAnswers.frameworkIds || [],
-      organizationName: currentAnswers.organizationName || '',
-      website: currentAnswers.website || '',
+      organizationName: currentAnswers.organizationName || "",
+      website: currentAnswers.website || "",
     });
   };
 
@@ -155,17 +161,25 @@ export function useOnboardingForm({
     const newAnswers: OnboardingFormFields = { ...savedAnswers, ...data };
 
     for (const key of Object.keys(newAnswers)) {
-      if (step.options && step.key === key && key !== 'frameworkIds' && key !== 'shipping') {
-        const customValue = newAnswers[`${key}Other`] || '';
-        const values = (newAnswers[key] || '').split(',').filter(Boolean);
+      if (
+        step.options &&
+        step.key === key &&
+        key !== "frameworkIds" &&
+        key !== "shipping"
+      ) {
+        const customValue = newAnswers[`${key}Other`] || "";
+        const values = (newAnswers[key] || "").split(",").filter(Boolean);
 
         if (customValue) {
           values.push(customValue);
         }
 
         newAnswers[key] = values
-          .filter((v: string, i: number, arr: string[]) => arr.indexOf(v) === i && v !== '')
-          .join(',');
+          .filter(
+            (v: string, i: number, arr: string[]) =>
+              arr.indexOf(v) === i && v !== "",
+          )
+          .join(",");
         delete newAnswers[`${key}Other`];
       }
     }
@@ -178,9 +192,9 @@ export function useOnboardingForm({
     });
 
     // Track framework selection specifically
-    if (step.key === 'frameworkIds' && data.frameworkIds) {
-      trackEvent('framework_selected', {
-        event_category: 'onboarding',
+    if (step.key === "frameworkIds" && data.frameworkIds) {
+      trackEvent("framework_selected", {
+        event_category: "onboarding",
         frameworks: data.frameworkIds,
         framework_count: data.frameworkIds.length,
       });
@@ -198,7 +212,10 @@ export function useOnboardingForm({
       // Save current form values before going back
       const currentValues = form.getValues();
       if (currentValues[step.key]) {
-        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key] });
+        setSavedAnswers({
+          ...savedAnswers,
+          [step.key]: currentValues[step.key],
+        });
       }
 
       // Clear form errors
@@ -213,11 +230,13 @@ export function useOnboardingForm({
   const handlePrefillAll = async () => {
     try {
       // Fetch frameworks to get valid IDs
-      const response = await fetch('/api/frameworks');
-      if (!response.ok) throw new Error('Failed to fetch frameworks');
+      const response = await fetch("/api/frameworks");
+      if (!response.ok) throw new Error("Failed to fetch frameworks");
       const data = await response.json();
-      const visibleFrameworks = data.frameworks.filter((f: { visible: boolean }) => f.visible);
-      
+      const visibleFrameworks = data.frameworks.filter(
+        (f: { visible: boolean }) => f.visible,
+      );
+
       // Use first two visible frameworks, or just the first one if only one exists
       const frameworkIds = visibleFrameworks
         .slice(0, 2)
@@ -225,21 +244,24 @@ export function useOnboardingForm({
 
       const prefilledAnswers: Partial<CompanyDetails> = {
         frameworkIds: frameworkIds.length > 0 ? frameworkIds : [],
-        organizationName: 'Test Company',
-        website: 'https://example.com',
+        organizationName: "Test Company",
+        website: "https://example.com",
       };
 
       // Set all answers at once
       setSavedAnswers(prefilledAnswers);
 
       // Fill current step form
-      form.reset({ [step.key]: prefilledAnswers[step.key as keyof typeof prefilledAnswers] || '' });
+      form.reset({
+        [step.key]:
+          prefilledAnswers[step.key as keyof typeof prefilledAnswers] || "",
+      });
 
       // Submit with all prefilled answers
       handleCreateOrganizationAction(prefilledAnswers);
     } catch (error) {
-      console.error('Error pre-filling answers:', error);
-      toast.error('Failed to pre-fill answers');
+      console.error("Error pre-filling answers:", error);
+      toast.error("Failed to pre-fill answers");
     }
   };
 

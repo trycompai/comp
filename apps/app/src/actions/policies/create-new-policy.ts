@@ -1,18 +1,20 @@
-'use server';
+"use server";
 
-import { db, Departments, Frequency } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { createPolicySchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import { db, Departments, Frequency } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { createPolicySchema } from "../schema";
 
 export const createPolicyAction = authActionClient
   .inputSchema(createPolicySchema)
   .metadata({
-    name: 'create-policy',
+    name: "create-policy",
     track: {
-      event: 'create-policy',
-      description: 'Create New Policy',
-      channel: 'server',
+      event: "create-policy",
+      description: "Create New Policy",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -23,14 +25,14 @@ export const createPolicyAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
     if (!user) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -45,7 +47,7 @@ export const createPolicyAction = authActionClient
     if (!member) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -61,8 +63,8 @@ export const createPolicyAction = authActionClient
           frequency: Frequency.monthly,
           content: [
             {
-              type: 'paragraph',
-              content: [{ type: 'text', text: '' }],
+              type: "paragraph",
+              content: [{ type: "text", text: "" }],
             },
           ],
           ...(controlIds &&
@@ -105,7 +107,7 @@ export const createPolicyAction = authActionClient
 
       revalidatePath(`/${activeOrganizationId}/policies/all`);
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidateTag('policies', { expire: 0 });
+      revalidateTag("policies", { expire: 0 });
 
       return {
         success: true,
@@ -116,7 +118,7 @@ export const createPolicyAction = authActionClient
 
       return {
         success: false,
-        error: 'Failed to create policy',
+        error: "Failed to create policy",
       };
     }
   });

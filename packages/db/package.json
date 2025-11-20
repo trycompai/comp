@@ -1,27 +1,25 @@
 {
   "name": "@trycompai/db",
   "description": "Database package with Prisma client and schema for Comp AI",
-  "version": "1.3.17",
+  "version": "2.0.0",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
-    },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "default": "./src/*.ts"
+      "types": "./dist/index.d.mts",
+      "default": "./src/index.mjs"
     }
   },
   "dependencies": {
-    "@prisma/client": "^6.19.0",
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "@prisma/client-runtime-utils": "^7.0.0",
     "dotenv": "^17.2.3",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@trycompai/tsconfig": "workspace:*",
-    "@types/node": "^24.2.0",
-    "prisma": "^6.19.0",
-    "typescript": "^5.9.2"
+    "@types/node": "^24.10.1",
+    "prisma": "^7.0.0",
+    "typescript": "^5.9.3"
   },
   "files": [
     "dist",
@@ -40,15 +38,15 @@
     "build": "tsdown",
     "clean": "rm -rf dist .turbo node_modules",
     "typecheck": "tsc --noEmit",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "push": "prisma db push",
+    "studio": "prisma studio",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
     "db:seed": "bun prisma/seed/seed.ts",
     "docker:clean": "docker compose down -v",
     "docker:down": "docker compose down",
     "docker:up": "docker compose up -d",
-    "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
+    "lint": "eslint .",
     "prepublishOnly": "bun run build"
   }
 }

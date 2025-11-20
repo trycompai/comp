@@ -1,22 +1,24 @@
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { z } from 'zod';
-import { authActionClient } from '../../../../../actions/safe-action';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../../../../../actions/safe-action";
 
 const disconnectCloudSchema = z.object({
-  cloudProvider: z.enum(['aws', 'gcp', 'azure']),
+  cloudProvider: z.enum(["aws", "gcp", "azure"]),
 });
 
 export const disconnectCloudAction = authActionClient
   .inputSchema(disconnectCloudSchema)
   .metadata({
-    name: 'disconnect-cloud',
+    name: "disconnect-cloud",
     track: {
-      event: 'disconnect-cloud',
-      channel: 'cloud-tests',
+      event: "disconnect-cloud",
+      channel: "cloud-tests",
     },
   })
   .action(async ({ parsedInput: { cloudProvider }, ctx: { session } }) => {
@@ -24,7 +26,7 @@ export const disconnectCloudAction = authActionClient
       if (!session.activeOrganizationId) {
         return {
           success: false,
-          error: 'No active organization found',
+          error: "No active organization found",
         };
       }
 
@@ -39,7 +41,7 @@ export const disconnectCloudAction = authActionClient
       if (!integration) {
         return {
           success: false,
-          error: 'Cloud provider not found',
+          error: "Cloud provider not found",
         };
       }
 
@@ -50,18 +52,22 @@ export const disconnectCloudAction = authActionClient
 
       // Revalidate the path
       const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      let path =
+        headersList.get("x-pathname") || headersList.get("referer") || "";
+      path = path.replace(/\/[a-z]{2}\//, "/");
       revalidatePath(path);
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Failed to disconnect cloud provider:', error);
+      console.error("Failed to disconnect cloud provider:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to disconnect cloud provider',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to disconnect cloud provider",
       };
     }
   });

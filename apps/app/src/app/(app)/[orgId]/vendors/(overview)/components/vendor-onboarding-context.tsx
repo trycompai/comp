@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { createContext, useContext } from 'react';
-import type { OnboardingItemStatus } from '../../../risk/(overview)/hooks/use-onboarding-status';
+import { createContext, useContext } from "react";
+
+import type { OnboardingItemStatus } from "../../../risk/(overview)/hooks/use-onboarding-status";
 
 export type VendorOnboardingStatus = Record<string, OnboardingItemStatus>;
 
@@ -9,7 +10,9 @@ interface VendorOnboardingContextValue {
   statuses: VendorOnboardingStatus;
 }
 
-const VendorOnboardingContext = createContext<VendorOnboardingContextValue | undefined>(undefined);
+const VendorOnboardingContext = createContext<
+  VendorOnboardingContextValue | undefined
+>(undefined);
 
 export function VendorOnboardingProvider({
   children,
@@ -32,4 +35,3 @@ export function useVendorOnboardingStatus() {
   }
   return context.statuses;
 }
-

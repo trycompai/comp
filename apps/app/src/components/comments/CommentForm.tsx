@@ -1,15 +1,19 @@
-'use client';
+"use client";
 
-import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
-import { authClient } from '@/utils/auth-client';
-import type { CommentEntityType } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Textarea } from '@trycompai/ui/textarea';
-import { FileIcon, Loader2, Paperclip, X } from 'lucide-react';
-import { useParams } from 'next/navigation';
-import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import {
+  useComments,
+  useCommentWithAttachments,
+} from "@/hooks/use-comments-api";
+import { authClient } from "@/utils/auth-client";
+import { FileIcon, Loader2, Paperclip, X } from "lucide-react";
+import { toast } from "sonner";
+
+import type { CommentEntityType } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Textarea } from "@trycompai/ui/textarea";
 
 interface CommentFormProps {
   entityId: string;
@@ -21,7 +25,7 @@ interface CommentFormProps {
 export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const session = authClient.useSession();
   const params = useParams();
-  const [newComment, setNewComment] = useState('');
+  const [newComment, setNewComment] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,42 +43,49 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
 
-    const newFiles = Array.from(files);
+      const newFiles = Array.from(files);
 
-    // Validate file sizes
-    const MAX_FILE_SIZE_MB = 10;
-    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+      // Validate file sizes
+      const MAX_FILE_SIZE_MB = 10;
+      const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-    for (const file of newFiles) {
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
-        return;
+      for (const file of newFiles) {
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          toast.error(
+            `File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
+          );
+          return;
+        }
       }
-    }
 
-    // Add files to pending list
-    setPendingFiles((prev) => [...prev, ...newFiles]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+      // Add files to pending list
+      setPendingFiles((prev) => [...prev, ...newFiles]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
 
-    newFiles.forEach((file) => {
-      toast.success(`File "${file.name}" ready for attachment.`);
-    });
-  }, []);
+      newFiles.forEach((file) => {
+        toast.success(`File "${file.name}" ready for attachment.`);
+      });
+    },
+    [],
+  );
 
   const handleRemovePendingFile = (fileIndexToRemove: number) => {
-    setPendingFiles((prev) => prev.filter((_, index) => index !== fileIndexToRemove));
-    toast.info('File removed from comment draft.');
+    setPendingFiles((prev) =>
+      prev.filter((_, index) => index !== fileIndexToRemove),
+    );
+    toast.info("File removed from comment draft.");
   };
 
   const handlePendingFileClick = (fileIndex: number) => {
     const file = pendingFiles[fileIndex];
     if (!file) {
-      console.error('Could not find pending file for index:', fileIndex);
-      toast.error('Could not find file data.');
+      console.error("Could not find pending file for index:", fileIndex);
+      toast.error("Could not find file data.");
       return;
     }
 
@@ -82,7 +93,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     const url = URL.createObjectURL(file);
 
     // Open in new tab
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(url, "_blank", "noopener,noreferrer");
 
     // Clean up the object URL after a short delay
     setTimeout(() => URL.revokeObjectURL(url), 100);
@@ -95,19 +106,26 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
 
     try {
       // Use direct API call instead of server action
-      await createCommentWithFiles(newComment, entityId, entityType, pendingFiles);
+      await createCommentWithFiles(
+        newComment,
+        entityId,
+        entityType,
+        pendingFiles,
+      );
 
-      toast.success('Comment added!');
+      toast.success("Comment added!");
 
       // Refresh comments via SWR
       refreshComments();
 
       // Reset form
-      setNewComment('');
+      setNewComment("");
       setPendingFiles([]);
     } catch (error) {
-      console.error('Error creating comment:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to add comment');
+      console.error("Error creating comment:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add comment",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -119,7 +137,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
       (event.metaKey || event.ctrlKey) &&
-      event.key === 'Enter' &&
+      event.key === "Enter" &&
       !isSubmitting &&
       (newComment.trim() || pendingFiles.length > 0)
     ) {
@@ -129,7 +147,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-muted/10">
+    <div className="border-border bg-muted/10 rounded-lg border">
       <div className="flex items-start gap-3">
         <input
           type="file"
@@ -142,11 +160,11 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
         <div className="flex-1 space-y-3">
           <Textarea
             placeholder="Leave a comment..."
-            className="resize-none border-0 bg-transparent p-4 placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="placeholder:text-muted-foreground resize-none border-0 bg-transparent p-4 focus-visible:ring-0 focus-visible:ring-offset-0"
             value={newComment}
-            onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
-              setNewComment(e.target.value)
-            }
+            onChange={(e: {
+              target: { value: React.SetStateAction<string> };
+            }) => setNewComment(e.target.value)}
             disabled={isSubmitting}
             onKeyDown={handleKeyDown}
             rows={3}
@@ -158,16 +176,16 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
                 {pendingFiles.map((file, index) => (
                   <div
                     key={`${file.name}-${index}`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md text-sm group"
+                    className="bg-muted/50 group inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm"
                   >
-                    <FileIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    <span className="truncate max-w-[150px]" title={file.name}>
+                    <FileIcon className="text-muted-foreground h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="max-w-[150px] truncate" title={file.name}>
                       {file.name}
                     </span>
                     <button
                       onClick={() => handleRemovePendingFile(index)}
                       disabled={isSubmitting}
-                      className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                      className="text-muted-foreground hover:text-destructive flex-shrink-0 transition-colors"
                       aria-label={`Remove ${file.name}`}
                     >
                       <X className="h-3 w-3" />
@@ -193,11 +211,18 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
             <Button
               size="sm"
               onClick={handleCommentSubmit}
-              disabled={isSubmitting || (!newComment.trim() && pendingFiles.length === 0)}
+              disabled={
+                isSubmitting ||
+                (!newComment.trim() && pendingFiles.length === 0)
+              }
               aria-label="Submit comment"
-              className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3"
             >
-              {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Comment'}
+              {isSubmitting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                "Comment"
+              )}
             </Button>
           </div>
         </div>

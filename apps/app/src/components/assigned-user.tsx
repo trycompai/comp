@@ -1,5 +1,6 @@
-import { Avatar } from '@trycompai/ui/avatar';
-import Image from 'next/image';
+import Image from "next/image";
+
+import { Avatar } from "@trycompai/ui/avatar";
 
 type Props = {
   avatarUrl?: string | null;
@@ -14,7 +15,7 @@ export function AssignedUser({ avatarUrl, fullName, date }: Props) {
         <Avatar className="h-6 w-6">
           <Image
             src={avatarUrl}
-            alt={fullName ?? ''}
+            alt={fullName ?? ""}
             width={24}
             height={24}
             className="rounded-full object-cover"
@@ -23,7 +24,11 @@ export function AssignedUser({ avatarUrl, fullName, date }: Props) {
       )}
       <div className="flex flex-col">
         <span className="text-foreground text-sm font-medium">{fullName}</span>
-        {date && <span className="text-muted-foreground text-xs leading-tight">{date}</span>}
+        {date && (
+          <span className="text-muted-foreground text-xs leading-tight">
+            {date}
+          </span>
+        )}
       </div>
     </div>
   );

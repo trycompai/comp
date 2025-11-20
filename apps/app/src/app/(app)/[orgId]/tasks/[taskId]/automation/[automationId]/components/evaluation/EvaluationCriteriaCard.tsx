@@ -1,12 +1,14 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Save } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { updateEvaluationCriteria } from '../../actions/task-automation-actions';
-import { useTaskAutomation } from '../../hooks/use-task-automation';
+import { useEffect, useState } from "react";
+import { Save } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
+import { Textarea } from "@trycompai/ui/textarea";
+
+import { updateEvaluationCriteria } from "../../actions/task-automation-actions";
+import { useTaskAutomation } from "../../hooks/use-task-automation";
 
 interface EvaluationCriteriaCardProps {
   automationId: string;
@@ -20,7 +22,7 @@ export function EvaluationCriteriaCard({
 }: EvaluationCriteriaCardProps) {
   const { automation } = useTaskAutomation();
   const [isEditing, setIsEditing] = useState(false);
-  const [criteria, setCriteria] = useState(initialCriteria || '');
+  const [criteria, setCriteria] = useState(initialCriteria || "");
   const [isSaving, setIsSaving] = useState(false);
 
   // Update local state when automation data changes
@@ -37,15 +39,17 @@ export function EvaluationCriteriaCard({
     try {
       const result = await updateEvaluationCriteria(automationId, criteria);
       if (result.success) {
-        toast.success('Success criteria updated');
+        toast.success("Success criteria updated");
         setIsEditing(false);
         // Emit event to trigger refresh across the app
-        window.dispatchEvent(new CustomEvent('task-automation:criteria-updated'));
+        window.dispatchEvent(
+          new CustomEvent("task-automation:criteria-updated"),
+        );
       } else {
-        toast.error(result.error || 'Failed to update criteria');
+        toast.error(result.error || "Failed to update criteria");
       }
     } catch (error) {
-      toast.error('Failed to update criteria');
+      toast.error("Failed to update criteria");
     } finally {
       setIsSaving(false);
     }
@@ -54,7 +58,7 @@ export function EvaluationCriteriaCard({
   const handleCancel = (e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
-    setCriteria(initialCriteria || '');
+    setCriteria(initialCriteria || "");
     setIsEditing(false);
   };
 
@@ -62,12 +66,12 @@ export function EvaluationCriteriaCard({
   const formatCriteriaText = (text: string) => {
     const parts = text.split(/(`[^`]+`)/g);
     return parts.map((part, index) => {
-      if (part.startsWith('`') && part.endsWith('`')) {
+      if (part.startsWith("`") && part.endsWith("`")) {
         const code = part.slice(1, -1);
         return (
           <code
             key={index}
-            className="inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-primary/10 text-[13px] font-mono text-foreground border border-primary/20"
+            className="bg-primary/10 text-foreground border-primary/20 mx-0.5 inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-[13px]"
           >
             {code}
           </code>
@@ -80,8 +84,10 @@ export function EvaluationCriteriaCard({
   // Parse pass/fail conditions
   const parseConditions = (text: string) => {
     const lowerText = text.toLowerCase();
-    const hasPassCondition = lowerText.includes('pass') && lowerText.includes('if');
-    const hasFailCondition = lowerText.includes('fail') && lowerText.includes('if');
+    const hasPassCondition =
+      lowerText.includes("pass") && lowerText.includes("if");
+    const hasFailCondition =
+      lowerText.includes("fail") && lowerText.includes("if");
 
     if (hasPassCondition || hasFailCondition) {
       return { formatted: formatCriteriaText(text), hasStructure: true };
@@ -94,18 +100,20 @@ export function EvaluationCriteriaCard({
     : { formatted: null, hasStructure: false };
 
   return (
-    <div className="relative group">
+    <div className="group relative">
       {/* Main Card with subtle tint */}
-      <div className="rounded-xl bg-primary/5 border border-primary/10 p-5 transition-all hover:border-primary/20 hover:bg-primary/[0.07]">
+      <div className="bg-primary/5 border-primary/10 hover:border-primary/20 hover:bg-primary/[0.07] rounded-xl border p-5 transition-all">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">Success Criteria</h3>
+            <h3 className="text-foreground text-sm font-semibold">
+              Success Criteria
+            </h3>
           </div>
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+              className="text-primary hover:text-primary/80 text-xs font-medium transition-colors"
             >
               Edit criteria
             </button>
@@ -119,7 +127,7 @@ export function EvaluationCriteriaCard({
               value={criteria}
               onChange={(e) => setCriteria(e.target.value)}
               placeholder="Define when this automation passes or fails, e.g., 'dependabot is enabled'"
-              className="leading-relaxed text-sm bg-background"
+              className="bg-background text-sm leading-relaxed"
               rows={4}
               disabled={isSaving}
             />
@@ -141,7 +149,7 @@ export function EvaluationCriteriaCard({
                 disabled={isSaving}
                 className="h-8"
               >
-                <Save className="w-3.5 h-3.5 mr-1.5" />
+                <Save className="mr-1.5 h-3.5 w-3.5" />
                 Save
               </Button>
             </div>
@@ -151,13 +159,16 @@ export function EvaluationCriteriaCard({
             {criteria ? (
               <div className="space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <p className="text-sm leading-relaxed text-foreground flex-1">{formatted}</p>
+                  <p className="text-foreground flex-1 text-sm leading-relaxed">
+                    {formatted}
+                  </p>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No success criteria defined yet. Click{' '}
-                <span className="text-primary font-medium">Edit criteria</span> to add one.
+              <p className="text-muted-foreground text-sm">
+                No success criteria defined yet. Click{" "}
+                <span className="text-primary font-medium">Edit criteria</span>{" "}
+                to add one.
               </p>
             )}
           </div>

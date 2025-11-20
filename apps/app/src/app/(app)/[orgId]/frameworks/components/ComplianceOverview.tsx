@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { FrameworkInstance } from '@trycompai/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Progress } from '@trycompai/ui/progress';
-import { ComplianceProgressChart } from './ComplianceProgressChart';
-import { PoliciesChart } from './PoliciesChart';
-import { TasksChart } from './TasksChart';
+import { FrameworkInstance } from "@trycompai/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+import { Progress } from "@trycompai/ui/progress";
+
+import { ComplianceProgressChart } from "./ComplianceProgressChart";
+import { PoliciesChart } from "./PoliciesChart";
+import { TasksChart } from "./TasksChart";
 
 export function ComplianceOverview({
   frameworks,
@@ -27,14 +28,20 @@ export function ComplianceOverview({
     totalTasks,
   );
 
-  const policiesPercentage = Math.round((publishedPolicies / Math.max(totalPolicies, 1)) * 100);
-  const tasksPercentage = Math.round((doneTasks / Math.max(totalTasks, 1)) * 100);
+  const policiesPercentage = Math.round(
+    (publishedPolicies / Math.max(totalPolicies, 1)) * 100,
+  );
+  const tasksPercentage = Math.round(
+    (doneTasks / Math.max(totalTasks, 1)) * 100,
+  );
 
   return (
-    <Card className="flex flex-col overflow-hidden border h-full">
+    <Card className="flex h-full flex-col overflow-hidden border">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">{'Overall Compliance Progress'}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {"Overall Compliance Progress"}
+          </CardTitle>
         </div>
 
         <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
@@ -48,15 +55,17 @@ export function ComplianceOverview({
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {/* Progress bars for smaller screens */}
-        <div className="space-y-4 lg:hidden mt-4">
+        <div className="mt-4 space-y-4 lg:hidden">
           {/* Overall Compliance Progress Bar */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary"></div>
+                <div className="bg-primary h-2 w-2 rounded-full"></div>
                 <span className="text-sm">Overall Compliance</span>
               </div>
-              <span className="font-medium text-sm tabular-nums">{compliancePercentage}%</span>
+              <span className="text-sm font-medium tabular-nums">
+                {compliancePercentage}%
+              </span>
             </div>
             <Progress value={compliancePercentage} className="h-1" />
           </div>
@@ -68,7 +77,9 @@ export function ComplianceOverview({
                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                 <span className="text-sm">Policies Published</span>
               </div>
-              <span className="font-medium text-sm tabular-nums">{policiesPercentage}%</span>
+              <span className="text-sm font-medium tabular-nums">
+                {policiesPercentage}%
+              </span>
             </div>
             <Progress value={policiesPercentage} className="h-1" />
           </div>
@@ -80,7 +91,9 @@ export function ComplianceOverview({
                 <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
                 <span className="text-sm">Tasks Completed</span>
               </div>
-              <span className="font-medium text-sm tabular-nums">{tasksPercentage}%</span>
+              <span className="text-sm font-medium tabular-nums">
+                {tasksPercentage}%
+              </span>
             </div>
             <Progress value={tasksPercentage} className="h-1" />
           </div>
@@ -89,18 +102,26 @@ export function ComplianceOverview({
         {/* Charts for larger screens */}
         <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center">
           <ComplianceProgressChart
-            data={{ score: compliancePercentage, remaining: 100 - compliancePercentage }}
+            data={{
+              score: compliancePercentage,
+              remaining: 100 - compliancePercentage,
+            }}
           />
         </div>
 
-        <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:gap-3 lg:flex-row lg:gap-6">
+        <div className="hidden lg:flex lg:flex-col lg:flex-row lg:items-center lg:justify-center lg:gap-3 lg:gap-6">
           <div className="flex flex-col items-center justify-center">
             <PoliciesChart
-              data={{ published: policiesPercentage, draft: 100 - policiesPercentage }}
+              data={{
+                published: policiesPercentage,
+                draft: 100 - policiesPercentage,
+              }}
             />
           </div>
           <div className="flex flex-col items-center justify-center">
-            <TasksChart data={{ done: tasksPercentage, remaining: 100 - tasksPercentage }} />
+            <TasksChart
+              data={{ done: tasksPercentage, remaining: 100 - tasksPercentage }}
+            />
           </div>
         </div>
       </CardContent>

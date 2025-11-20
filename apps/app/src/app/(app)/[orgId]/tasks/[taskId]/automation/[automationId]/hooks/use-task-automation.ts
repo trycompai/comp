@@ -1,6 +1,6 @@
-import { api } from '@/lib/api-client';
-import { useParams } from 'next/navigation';
-import useSWR from 'swr';
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import useSWR from "swr";
 
 interface TaskAutomationData {
   id: string;
@@ -23,7 +23,9 @@ interface UseTaskAutomationReturn {
   mutate: () => Promise<any>;
 }
 
-export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomationReturn {
+export function useTaskAutomation(
+  overrideAutomationId?: string,
+): UseTaskAutomationReturn {
   const {
     orgId,
     taskId,
@@ -38,10 +40,12 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
   const automationId = overrideAutomationId || paramsAutomationId;
 
   // Skip fetching if automationId is "new"
-  const shouldFetch = automationId && automationId !== 'new';
+  const shouldFetch = automationId && automationId !== "new";
 
   const { data, error, isLoading, mutate } = useSWR(
-    shouldFetch ? [`automation-${automationId}`, orgId, taskId, automationId] : null,
+    shouldFetch
+      ? [`automation-${automationId}`, orgId, taskId, automationId]
+      : null,
     async () => {
       const response = await api.get<{
         success: boolean;
@@ -49,16 +53,16 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
       }>(`/v1/tasks/${taskId}/automations/${automationId}`, orgId);
 
       if (response.error) {
-        console.log('failed to fetch automation', response.error);
+        console.log("failed to fetch automation", response.error);
         throw new Error(response.error);
       }
 
       if (!response.data?.success) {
-        console.log('failed to fetch automation', response.data);
-        throw new Error('Failed to fetch automation');
+        console.log("failed to fetch automation", response.data);
+        throw new Error("Failed to fetch automation");
       }
 
-      console.log('response.data.automation', response.data.automation);
+      console.log("response.data.automation", response.data.automation);
 
       return response.data.automation;
     },
@@ -69,7 +73,7 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
       dedupingInterval: 2000,
       shouldRetryOnError: (error) => {
         // Don't retry on 404s
-        return !error?.message?.includes('404');
+        return !error?.message?.includes("404");
       },
     },
   );

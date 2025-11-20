@@ -1,13 +1,25 @@
-'use client';
+"use client";
 
-import { trainingVideos } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@db';
-import { Accordion } from '@trycompai/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import type { FleetPolicy, Host } from '../types';
-import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
-import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
-import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
+import { trainingVideos } from "@/lib/data/training-videos";
+import type {
+  EmployeeTrainingVideoCompletion,
+  Member,
+  Policy,
+} from "@trycompai/db";
+
+import { Accordion } from "@trycompai/ui/accordion";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+
+import type { FleetPolicy, Host } from "../types";
+import { DeviceAgentAccordionItem } from "./tasks/DeviceAgentAccordionItem";
+import { GeneralTrainingAccordionItem } from "./tasks/GeneralTrainingAccordionItem";
+import { PoliciesAccordionItem } from "./tasks/PoliciesAccordionItem";
 
 interface EmployeeTasksListProps {
   policies: Policy[];
@@ -26,20 +38,23 @@ export const EmployeeTasksList = ({
 }: EmployeeTasksListProps) => {
   // Check completion status
   const hasAcceptedPolicies =
-    policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
+    policies.length === 0 ||
+    policies.every((p) => p.signedBy.includes(member.id));
   const hasInstalledAgent = host !== null;
   const allFleetPoliciesPass =
-    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
+    fleetPolicies.length === 0 ||
+    fleetPolicies.every((policy) => policy.response === "pass");
   const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
 
   // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
   const generalTrainingVideoIds = trainingVideos
-    .filter((video) => video.id.startsWith('sat-'))
+    .filter((video) => video.id.startsWith("sat-"))
     .map((video) => video.id);
 
   const completedGeneralTrainingCount = trainingVideoCompletions.filter(
     (completion) =>
-      generalTrainingVideoIds.includes(completion.videoId) && completion.completedAt !== null,
+      generalTrainingVideoIds.includes(completion.videoId) &&
+      completion.completedAt !== null
   ).length;
 
   const hasCompletedGeneralTraining =
@@ -53,18 +68,26 @@ export const EmployeeTasksList = ({
 
   const accordionItems = [
     {
-      title: 'Accept security policies',
+      title: "Accept security policies",
       content: <PoliciesAccordionItem policies={policies} member={member} />,
     },
     {
-      title: 'Download and install Comp AI Device Agent',
+      title: "Download and install Comp AI Device Agent",
       content: (
-        <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
+        <DeviceAgentAccordionItem
+          member={member}
+          host={host}
+          fleetPolicies={fleetPolicies}
+        />
       ),
     },
     {
-      title: 'Complete general security awareness training',
-      content: <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />,
+      title: "Complete general security awareness training",
+      content: (
+        <GeneralTrainingAccordionItem
+          trainingVideoCompletions={trainingVideoCompletions}
+        />
+      ),
     },
   ];
 
@@ -83,10 +106,12 @@ export const EmployeeTasksList = ({
             <div className="text-muted-foreground text-sm">
               {completedCount} of {accordionItems.length} tasks completed
             </div>
-            <div className="w-full bg-muted rounded-full h-2.5">
+            <div className="bg-muted h-2.5 w-full rounded-full">
               <div
                 className="bg-primary h-full rounded-full"
-                style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
+                style={{
+                  width: `${(completedCount / accordionItems.length) * 100}%`,
+                }}
               ></div>
             </div>
           </div>

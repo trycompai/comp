@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { RefObject, useEffect, useRef } from 'react';
+import { RefObject, useEffect, useRef } from "react";
 
 // Confetti particle class
 class Particle {
@@ -19,7 +19,7 @@ class Particle {
     this.vx = (Math.random() - 0.5) * 12;
     this.vy = Math.random() * -15 - 10;
     this.size = Math.random() * 6 + 2;
-    this.color = ['#10b981', '#22c55e', '#6ee7b7', '#34d399', '#86efac'][
+    this.color = ["#10b981", "#22c55e", "#6ee7b7", "#34d399", "#86efac"][
       Math.floor(Math.random() * 5)
     ];
     this.alpha = 1;
@@ -63,7 +63,7 @@ export function ConfettiEffect({
   useEffect(() => {
     if (trigger && canvasRef.current) {
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
       // Set canvas size
@@ -116,8 +116,8 @@ export function ConfettiEffect({
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[100]"
-      style={{ width: '100vw', height: '100vh' }}
+      className="pointer-events-none fixed inset-0 z-[100]"
+      style={{ width: "100vw", height: "100vh" }}
     />
   );
 }

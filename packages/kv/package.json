@@ -3,12 +3,14 @@
   "description": "Key-value store utilities using Upstash Redis for Comp AI",
   "version": "1.0.0",
   "dependencies": {
-    "@upstash/redis": "^1.34.2",
+    "@upstash/redis": "^1.35.6",
     "server-only": "0.0.1"
   },
   "devDependencies": {
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.2"
+    "@trycompai/eslint-config": "workspace:*",
+    "@trycompai/tsconfig": "workspace:*",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3"
   },
   "exports": {
     ".": {
@@ -43,8 +45,8 @@
     "build": "tsdown",
     "clean": "rm -rf .turbo node_modules dist",
     "dev": "tsdown --watch",
-    "format": "prettier --write .",
-    "lint": "prettier --check .",
+    "format": "eslint . --fix",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   }
 }

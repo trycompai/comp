@@ -1,14 +1,16 @@
-import { auth } from '@/utils/auth';
-import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { Avatar, AvatarFallback, AvatarImageNext } from "@trycompai/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { headers } from 'next/headers';
-import { SignOut } from './sign-out';
+} from "@trycompai/ui/dropdown-menu";
+
+import { SignOut } from "./sign-out";
 
 export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
   const session = await auth.api.getSession({
@@ -17,11 +19,11 @@ export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-8 w-8 cursor-pointer rounded-full ">
+        <Avatar className="h-8 w-8 cursor-pointer rounded-full">
           {session?.user?.image && (
             <AvatarImageNext
               src={session?.user?.image}
-              alt={session?.user?.name ?? session?.user?.email ?? ''}
+              alt={session?.user?.name ?? session?.user?.email ?? ""}
               width={32}
               height={32}
             />

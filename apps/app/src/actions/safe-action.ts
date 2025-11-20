@@ -1,20 +1,24 @@
-import { track } from '@/app/posthog';
-import { env } from '@/env.mjs';
-import { auth } from '@/utils/auth';
-import { logger } from '@/utils/logger';
-import { AuditLogEntityType, db } from '@trycompai/db';
-import { client } from '@trycompai/kv';
-import { Ratelimit } from '@upstash/ratelimit';
-import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from 'next-safe-action';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { track } from "@/app/posthog";
+import { env } from "@/env.mjs";
+import { auth } from "@/utils/auth";
+import { logger } from "@/utils/logger";
+import { Ratelimit } from "@upstash/ratelimit";
+import {
+  createSafeActionClient,
+  DEFAULT_SERVER_ERROR_MESSAGE,
+} from "next-safe-action";
+import { z } from "zod";
+
+import { AuditLogEntityType, db } from "@trycompai/db";
+import { client } from "@trycompai/kv";
 
 let ratelimit: Ratelimit | undefined;
 
 if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
   ratelimit = new Ratelimit({
-    limiter: Ratelimit.fixedWindow(10, '10s'),
+    limiter: Ratelimit.fixedWindow(10, "10s"),
     redis: client,
   });
 }
@@ -22,7 +26,7 @@ if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
 export const actionClientWithMeta = createSafeActionClient({
   handleServerError(e) {
     // Log the error for debugging
-    logger.error('Server error:', e);
+    logger.error("Server error:", e);
 
     // Throw the error instead of returning it
     if (e instanceof Error) {
@@ -58,7 +62,7 @@ export const authActionClient = actionClientWithMeta
     const { session, user } = response ?? {};
 
     if (!session) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     const result = await next({
@@ -69,12 +73,15 @@ export const authActionClient = actionClientWithMeta
     });
 
     const { fileData: _, ...inputForLog } = clientInput as any;
-    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
-    logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    logger.info("Input ->", JSON.stringify(inputForLog, null, 2));
+    logger.info("Result ->", JSON.stringify(result.data, null, 2));
 
     // Also log validation errors if they exist
     if (result.validationErrors) {
-      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+      logger.warn(
+        "Validation Errors ->",
+        JSON.stringify(result.validationErrors, null, 2),
+      );
     }
 
     return result;
@@ -85,11 +92,11 @@ export const authActionClient = actionClientWithMeta
 
     if (ratelimit) {
       const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
-        `${headersList.get('x-forwarded-for')}-${metadata.name}`,
+        `${headersList.get("x-forwarded-for")}-${metadata.name}`,
       );
 
       if (!success) {
-        throw new Error('Too many requests');
+        throw new Error("Too many requests");
       }
 
       remaining = rateLimitRemaining;
@@ -97,8 +104,8 @@ export const authActionClient = actionClientWithMeta
 
     return next({
       ctx: {
-        ip: headersList.get('x-forwarded-for'),
-        userAgent: headersList.get('user-agent'),
+        ip: headersList.get("x-forwarded-for"),
+        userAgent: headersList.get("user-agent"),
         ratelimit: {
           remaining: remaining ?? 0,
         },
@@ -111,7 +118,7 @@ export const authActionClient = actionClientWithMeta
     });
 
     if (!session) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     if (metadata.track) {
@@ -136,11 +143,11 @@ export const authActionClient = actionClientWithMeta
     });
 
     if (!session) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     if (!session.session.activeOrganizationId) {
-      throw new Error('Organization not found');
+      throw new Error("Organization not found");
     }
 
     const member = await db.member.findFirst({
@@ -151,7 +158,7 @@ export const authActionClient = actionClientWithMeta
     });
 
     if (!member) {
-      throw new Error('Member not found');
+      throw new Error("Member not found");
     }
 
     const { fileData: _, ...inputForAuditLog } = clientInput as any;
@@ -163,8 +170,8 @@ export const authActionClient = actionClientWithMeta
       organizationId: session.session.activeOrganizationId,
       action: metadata.name,
       input: inputForAuditLog,
-      ipAddress: headersList.get('x-forwarded-for') || null,
-      userAgent: headersList.get('user-agent') || null,
+      ipAddress: headersList.get("x-forwarded-for") || null,
+      userAgent: headersList.get("user-agent") || null,
     };
 
     const entityId = (clientInput as { entityId: string })?.entityId || null;
@@ -189,13 +196,14 @@ export const authActionClient = actionClientWithMeta
     };
 
     if (entityId) {
-      const parts = entityId.split('_');
+      const parts = entityId.split("_");
       const prefix = `${parts[0]}_`;
 
       // Handle special case prefixes with multiple parts
       if (parts.length > 2) {
         const complexPrefix = `${prefix}${parts[1]}_`;
-        entityType = mapEntityType[complexPrefix] || mapEntityType[prefix] || null;
+        entityType =
+          mapEntityType[complexPrefix] || mapEntityType[prefix] || null;
       } else {
         entityType = mapEntityType[prefix] || null;
       }
@@ -214,12 +222,13 @@ export const authActionClient = actionClientWithMeta
         },
       });
     } catch (error) {
-      logger.error('Audit log error:', error);
+      logger.error("Audit log error:", error);
     }
 
     // Add revalidation logic based on the cursor rules
-    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-    path = path.replace(/\/[a-z]{2}\//, '/');
+    let path =
+      headersList.get("x-pathname") || headersList.get("referer") || "";
+    path = path.replace(/\/[a-z]{2}\//, "/");
 
     revalidatePath(path);
 
@@ -227,33 +236,36 @@ export const authActionClient = actionClientWithMeta
   });
 
 // New action client that includes organization access check
-export const authWithOrgAccessClient = authActionClient.use(async ({ next, clientInput, ctx }) => {
-  // Extract organizationId from the input
-  const organizationId = (clientInput as { organizationId?: string })?.organizationId;
+export const authWithOrgAccessClient = authActionClient.use(
+  async ({ next, clientInput, ctx }) => {
+    // Extract organizationId from the input
+    const organizationId = (clientInput as { organizationId?: string })
+      ?.organizationId;
 
-  if (!organizationId) {
-    throw new Error('Organization ID is required');
-  }
+    if (!organizationId) {
+      throw new Error("Organization ID is required");
+    }
 
-  // Check if user is a member of the organization
-  const member = await db.member.findFirst({
-    where: {
-      userId: ctx.user.id,
-      organizationId,
-    },
-  });
+    // Check if user is a member of the organization
+    const member = await db.member.findFirst({
+      where: {
+        userId: ctx.user.id,
+        organizationId,
+      },
+    });
 
-  if (!member) {
-    throw new Error('You do not have access to this organization');
-  }
+    if (!member) {
+      throw new Error("You do not have access to this organization");
+    }
 
-  return next({
-    ctx: {
-      member,
-      organizationId,
-    },
-  });
-});
+    return next({
+      ctx: {
+        member,
+        organizationId,
+      },
+    });
+  },
+);
 
 // New action client that requires auth but not an active organization
 export const authActionClientWithoutOrg = actionClientWithMeta
@@ -265,7 +277,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     const { session, user } = response ?? {};
 
     if (!session) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     const result = await next({
@@ -276,12 +288,15 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     });
 
     const { fileData: _, ...inputForLog } = clientInput as any;
-    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
-    logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    logger.info("Input ->", JSON.stringify(inputForLog, null, 2));
+    logger.info("Result ->", JSON.stringify(result.data, null, 2));
 
     // Also log validation errors if they exist
     if (result.validationErrors) {
-      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+      logger.warn(
+        "Validation Errors ->",
+        JSON.stringify(result.validationErrors, null, 2),
+      );
     }
 
     return result;
@@ -292,11 +307,11 @@ export const authActionClientWithoutOrg = actionClientWithMeta
 
     if (ratelimit) {
       const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
-        `${headersList.get('x-forwarded-for')}-${metadata.name}`,
+        `${headersList.get("x-forwarded-for")}-${metadata.name}`,
       );
 
       if (!success) {
-        throw new Error('Too many requests');
+        throw new Error("Too many requests");
       }
 
       remaining = rateLimitRemaining;
@@ -304,8 +319,8 @@ export const authActionClientWithoutOrg = actionClientWithMeta
 
     return next({
       ctx: {
-        ip: headersList.get('x-forwarded-for'),
-        userAgent: headersList.get('user-agent'),
+        ip: headersList.get("x-forwarded-for"),
+        userAgent: headersList.get("user-agent"),
         ratelimit: {
           remaining: remaining ?? 0,
         },
@@ -318,7 +333,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     });
 
     if (!session) {
-      throw new Error('Unauthorized');
+      throw new Error("Unauthorized");
     }
 
     if (metadata.track) {

@@ -1,8 +1,5 @@
-'use client';
+"use client";
 
-import { cn } from '@trycompai/ui/cn';
-import { Progress } from '@trycompai/ui/progress';
-import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
   CheckCircle2,
@@ -12,91 +9,106 @@ import {
   Search,
   Shield,
   Sparkles,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { MiniDataStream } from './mini-data-stream';
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
+
+import { cn } from "@trycompai/ui/cn";
+import { Progress } from "@trycompai/ui/progress";
+
+import { MiniDataStream } from "./mini-data-stream";
 
 interface WorkItem {
   id: string;
   title: string;
-  type: 'policy' | 'vendor' | 'risk' | 'control' | 'evidence';
-  status: 'waiting' | 'processing' | 'complete' | 'error';
+  type: "policy" | "vendor" | "risk" | "control" | "evidence";
+  status: "waiting" | "processing" | "complete" | "error";
   progress: number;
   subtitle?: string;
 }
 
 const WORK_ITEMS: WorkItem[] = [
   {
-    id: '1',
-    title: 'Analyzing your tech stack',
-    subtitle: 'AWS, GitHub, Stripe detected',
-    type: 'evidence',
-    status: 'waiting' as const,
+    id: "1",
+    title: "Analyzing your tech stack",
+    subtitle: "AWS, GitHub, Stripe detected",
+    type: "evidence",
+    status: "waiting" as const,
     progress: 0,
   },
   {
-    id: '2',
-    title: 'Researching vendor compliance',
-    subtitle: 'Checking SOC 2 & security certifications',
-    type: 'vendor',
-    status: 'waiting' as const,
+    id: "2",
+    title: "Researching vendor compliance",
+    subtitle: "Checking SOC 2 & security certifications",
+    type: "vendor",
+    status: "waiting" as const,
     progress: 0,
   },
   {
-    id: '3',
-    title: 'Drafting security policies',
-    subtitle: 'Based on your infrastructure',
-    type: 'policy',
-    status: 'waiting' as const,
+    id: "3",
+    title: "Drafting security policies",
+    subtitle: "Based on your infrastructure",
+    type: "policy",
+    status: "waiting" as const,
     progress: 0,
   },
   {
-    id: '4',
-    title: 'Identifying compliance risks',
-    subtitle: 'Scanning for gaps and vulnerabilities',
-    type: 'risk',
-    status: 'waiting' as const,
+    id: "4",
+    title: "Identifying compliance risks",
+    subtitle: "Scanning for gaps and vulnerabilities",
+    type: "risk",
+    status: "waiting" as const,
     progress: 0,
   },
   {
-    id: '5',
-    title: 'Setting up monitoring',
-    subtitle: 'Continuous compliance tracking',
-    type: 'control',
-    status: 'waiting' as const,
+    id: "5",
+    title: "Setting up monitoring",
+    subtitle: "Continuous compliance tracking",
+    type: "control",
+    status: "waiting" as const,
     progress: 0,
   },
 ];
 
-const StatusIcon = ({ status, progress }: { status: string; progress: number }) => {
-  const baseClass = 'w-4 h-4 flex-shrink-0';
+const StatusIcon = ({
+  status,
+  progress,
+}: {
+  status: string;
+  progress: number;
+}) => {
+  const baseClass = "w-4 h-4 flex-shrink-0";
 
-  if (status === 'processing') {
-    return <Loader2 className={cn(baseClass, 'text-primary animate-spin')} />;
+  if (status === "processing") {
+    return <Loader2 className={cn(baseClass, "text-primary animate-spin")} />;
   }
 
-  if (status === 'complete') {
-    return <CheckCircle2 className={cn(baseClass, 'text-primary')} />;
+  if (status === "complete") {
+    return <CheckCircle2 className={cn(baseClass, "text-primary")} />;
   }
 
-  if (status === 'error') {
-    return <AlertCircle className={cn(baseClass, 'text-amber-600 dark:text-amber-400')} />;
+  if (status === "error") {
+    return (
+      <AlertCircle
+        className={cn(baseClass, "text-amber-600 dark:text-amber-400")}
+      />
+    );
   }
 
-  return <Circle className={cn(baseClass, 'text-muted-foreground/50')} />;
+  return <Circle className={cn(baseClass, "text-muted-foreground/50")} />;
 };
 
-const getIcon = (type: WorkItem['type']) => {
+const getIcon = (type: WorkItem["type"]) => {
   switch (type) {
-    case 'policy':
+    case "policy":
       return FileText;
-    case 'vendor':
+    case "vendor":
       return Search;
-    case 'risk':
+    case "risk":
       return Shield;
-    case 'control':
+    case "control":
       return Shield;
-    case 'evidence':
+    case "evidence":
       return Search;
     default:
       return FileText;
@@ -113,8 +125,10 @@ export function AiWorkPreviewAuthentic() {
       setWorkItems((items) =>
         items.map((item, index) => ({
           ...item,
-          status: (index === 0 ? 'processing' : item.status) as WorkItem['status'],
-        })),
+          status: (index === 0
+            ? "processing"
+            : item.status) as WorkItem["status"],
+        }))
       );
     }, 2000);
 
@@ -123,7 +137,7 @@ export function AiWorkPreviewAuthentic() {
       setWorkItems((items) => {
         let hasChanges = false;
         const updated = items.map((item, index) => {
-          if (item.status === 'processing') {
+          if (item.status === "processing") {
             hasChanges = true;
 
             // Last task gets stuck at 94%
@@ -137,21 +151,25 @@ export function AiWorkPreviewAuthentic() {
 
             if (newProgress >= 100) {
               // Complete this task and start the next waiting one after a delay
-              const nextWaitingIndex = items.findIndex((i) => i.status === 'waiting');
+              const nextWaitingIndex = items.findIndex(
+                (i) => i.status === "waiting"
+              );
               if (nextWaitingIndex !== -1) {
                 setTimeout(
                   () => {
                     setWorkItems((prev) =>
                       prev.map((i, idx) =>
-                        idx === nextWaitingIndex ? { ...i, status: 'processing' as const } : i,
-                      ),
+                        idx === nextWaitingIndex
+                          ? { ...i, status: "processing" as const }
+                          : i
+                      )
                     );
                   },
-                  Math.random() * 3000 + 2000, // 2-5 seconds between tasks
+                  Math.random() * 3000 + 2000 // 2-5 seconds between tasks
                 );
               }
 
-              return { ...item, progress: 100, status: 'complete' as const };
+              return { ...item, progress: 100, status: "complete" as const };
             }
 
             return { ...item, progress: newProgress };
@@ -160,7 +178,10 @@ export function AiWorkPreviewAuthentic() {
         });
 
         // Calculate overall progress
-        const totalProgress = updated.reduce((sum, item) => sum + item.progress, 0);
+        const totalProgress = updated.reduce(
+          (sum, item) => sum + item.progress,
+          0
+        );
         setOverallProgress(Math.round(totalProgress / updated.length));
 
         return updated;
@@ -172,52 +193,64 @@ export function AiWorkPreviewAuthentic() {
     };
   }, []);
 
-  const processingCount = workItems.filter((item) => item.status === 'processing').length;
-  const completedCount = workItems.filter((item) => item.status === 'complete').length;
+  const processingCount = workItems.filter(
+    (item) => item.status === "processing"
+  ).length;
+  const completedCount = workItems.filter(
+    (item) => item.status === "complete"
+  ).length;
 
   return (
     <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className="relative">
-          <Sparkles className="h-6 w-6 text-primary" />
+          <Sparkles className="text-primary h-6 w-6" />
           {processingCount > 0 && (
-            <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <div className="bg-primary absolute -right-1 -bottom-1 h-2 w-2 animate-pulse rounded-full" />
           )}
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-semibold">AI is building your compliance program</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-2xl font-semibold">
+            AI is building your compliance program
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
             This process typically takes 2-7 minutes to complete
           </p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            We're thoroughly analyzing your infrastructure to create accurate, personalized policies
+          <p className="text-muted-foreground/70 mt-1 text-xs">
+            We're thoroughly analyzing your infrastructure to create accurate,
+            personalized policies
           </p>
         </div>
       </div>
 
       {/* Overall Progress */}
       <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Background job progress</span>
-          <span className="text-lg font-semibold tabular-nums">{overallProgress}%</span>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-sm">
+            Background job progress
+          </span>
+          <span className="text-lg font-semibold tabular-nums">
+            {overallProgress}%
+          </span>
         </div>
         <Progress value={overallProgress} className="h-2" />
-        <p className="text-xs text-muted-foreground/70">
-          {completedCount} of {workItems.length} tasks completed • Estimated time remaining:{' '}
+        <p className="text-muted-foreground/70 text-xs">
+          {completedCount} of {workItems.length} tasks completed • Estimated
+          time remaining:{" "}
           {overallProgress < 10
-            ? '6-7 min'
+            ? "6-7 min"
             : overallProgress < 20
-              ? '5-6 min'
+              ? "5-6 min"
               : overallProgress < 40
-                ? '4-5 min'
+                ? "4-5 min"
                 : overallProgress < 60
-                  ? '3-4 min'
+                  ? "3-4 min"
                   : overallProgress < 80
-                    ? '2-3 min'
+                    ? "2-3 min"
                     : overallProgress < 90
-                      ? '1-2 min'
-                      : 'Almost done...'}
+                      ? "1-2 min"
+                      : "Almost done..."}
         </p>
       </div>
 
@@ -226,10 +259,11 @@ export function AiWorkPreviewAuthentic() {
         <AnimatePresence mode="sync">
           {workItems.map((item, index) => {
             const Icon = getIcon(item.type);
-            const isProcessing = item.status === 'processing';
-            const isComplete = item.status === 'complete';
-            const isWaiting = item.status === 'waiting';
-            const isStuck = index === 4 && item.progress >= 94 && item.progress < 100;
+            const isProcessing = item.status === "processing";
+            const isComplete = item.status === "complete";
+            const isWaiting = item.status === "waiting";
+            const isStuck =
+              index === 4 && item.progress >= 94 && item.progress < 100;
 
             return (
               <motion.div
@@ -238,58 +272,64 @@ export function AiWorkPreviewAuthentic() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
                 className={cn(
-                  'rounded-lg border p-4 transition-all duration-300',
-                  isProcessing && 'border-primary/50 bg-primary/5 backdrop-blur-sm shadow-md',
+                  "rounded-lg border p-4 transition-all duration-300",
+                  isProcessing &&
+                    "border-primary/50 bg-primary/5 shadow-md backdrop-blur-sm",
                   isComplete &&
-                    'border-green-500/30 bg-green-50/50 dark:bg-green-950/20 backdrop-blur-sm',
-                  isWaiting && 'border-border/50 bg-muted/30 backdrop-blur-sm',
+                    "border-green-500/30 bg-green-50/50 backdrop-blur-sm dark:bg-green-950/20",
+                  isWaiting && "border-border/50 bg-muted/30 backdrop-blur-sm"
                 )}
               >
                 <div className="flex items-start gap-3">
                   <StatusIcon status={item.status} progress={item.progress} />
 
-                  <div className="flex-1 min-w-0 space-y-2">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <Icon className="h-3.5 w-3.5 text-muted-foreground/60" />
+                          <Icon className="text-muted-foreground/60 h-3.5 w-3.5" />
                           <p
                             className={cn(
-                              'font-medium text-sm',
-                              isComplete && 'text-muted-foreground',
+                              "text-sm font-medium",
+                              isComplete && "text-muted-foreground"
                             )}
                           >
                             {item.title}
                           </p>
                         </div>
                         {item.subtitle && !isProcessing && (
-                          <p className="text-xs text-muted-foreground/60 pl-5">{item.subtitle}</p>
+                          <p className="text-muted-foreground/60 pl-5 text-xs">
+                            {item.subtitle}
+                          </p>
                         )}
                       </div>
 
                       <span
                         className={cn(
-                          'text-xs px-2 py-0.5 rounded-full font-medium backdrop-blur-sm uppercase tracking-wider',
-                          'bg-muted/50 dark:bg-muted/30 text-muted-foreground border border-border/50',
+                          "rounded-full px-2 py-0.5 text-xs font-medium tracking-wider uppercase backdrop-blur-sm",
+                          "bg-muted/50 dark:bg-muted/30 text-muted-foreground border-border/50 border"
                         )}
                       >
-                        {item.type.replace('_', ' ')}
+                        {item.type.replace("_", " ")}
                       </span>
                     </div>
 
                     {isProcessing && (
                       <div className="space-y-2 pl-5">
-                        <MiniDataStream taskType={item.type} itemTitle={item.title} />
+                        <MiniDataStream
+                          taskType={item.type}
+                          itemTitle={item.title}
+                        />
                         <div className="space-y-1">
                           <Progress value={item.progress} className="h-1" />
                           <p
                             className={cn(
-                              'text-xs text-muted-foreground/60 tabular-nums',
-                              isStuck && 'text-amber-600 dark:text-amber-400',
+                              "text-muted-foreground/60 text-xs tabular-nums",
+                              isStuck && "text-amber-600 dark:text-amber-400"
                             )}
                           >
                             {Math.round(item.progress)}% complete
-                            {isStuck && ' - Finalizing...'}
+                            {isStuck && " - Finalizing..."}
                           </p>
                         </div>
                       </div>

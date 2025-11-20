@@ -1,23 +1,31 @@
-import type { Departments } from '@trycompai/db';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import type { Control } from "react-hook-form";
+
+import type { Departments } from "@trycompai/db";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import type { Control } from 'react-hook-form';
-import type { EmployeeFormValues } from '../EmployeeDetails';
+} from "@trycompai/ui/select";
+
+import type { EmployeeFormValues } from "../EmployeeDetails";
 
 const DEPARTMENTS: { value: Departments; label: string }[] = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'gov', label: 'Governance' },
-  { value: 'hr', label: 'HR' },
-  { value: 'it', label: 'IT' },
-  { value: 'itsm', label: 'IT Service Management' },
-  { value: 'qms', label: 'Quality Management' },
-  { value: 'none', label: 'None' },
+  { value: "admin", label: "Admin" },
+  { value: "gov", label: "Governance" },
+  { value: "hr", label: "HR" },
+  { value: "it", label: "IT" },
+  { value: "itsm", label: "IT Service Management" },
+  { value: "qms", label: "Quality Management" },
+  { value: "none", label: "None" },
 ];
 
 export const Department = ({

@@ -1,16 +1,21 @@
-'use client';
+"use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
-import { useState } from 'react';
-import { GrantsTab } from './grants-tab';
-import { RequestsTab } from './request-tab';
+import { useState } from "react";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@trycompai/ui/tabs";
+
+import { GrantsTab } from "./grants-tab";
+import { RequestsTab } from "./request-tab";
 
 export function TrustAccessRequestsClient({ orgId }: { orgId: string }) {
-  const [tab, setTab] = useState<'requests' | 'grants'>('requests');
+  const [tab, setTab] = useState<"requests" | "grants">("requests");
 
   return (
     <div className="flex flex-col gap-4">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'requests' | 'grants')}>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as "requests" | "grants")}
+      >
         <TabsList>
           <TabsTrigger value="requests">Access Requests</TabsTrigger>
           <TabsTrigger value="grants">Granted Access</TabsTrigger>

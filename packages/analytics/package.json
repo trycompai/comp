@@ -3,12 +3,17 @@
   "description": "Analytics utilities using PostHog for Comp AI",
   "version": "1.0.0",
   "dependencies": {
-    "posthog-js": "^1.236.6",
-    "posthog-node": "^5.8.2"
+    "next": "^16.0.3",
+    "posthog-js": "^1.297.1",
+    "posthog-node": "^5.13.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "next": "^16.0.3",
-    "typescript": "^5.9.2"
+    "@trycompai/tsconfig": "workspace:*",
+    "@types/react": "^19.2.6",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
   },
   "exports": {
     ".": {
@@ -48,8 +53,8 @@
     "build": "tsdown",
     "clean": "rm -rf .turbo node_modules dist",
     "dev": "tsdown --watch",
-    "format": "prettier --write .",
-    "lint": "prettier --check .",
+    "format": "eslint . --fix",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   }
 }

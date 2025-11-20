@@ -1,27 +1,30 @@
 // create-risk-action.ts
 
-'use server';
+"use server";
 
-import { db, Impact, Likelihood } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { createRiskSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import { db, Impact, Likelihood } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { createRiskSchema } from "../schema";
 
 export const createRiskAction = authActionClient
   .inputSchema(createRiskSchema)
   .metadata({
-    name: 'create-risk',
+    name: "create-risk",
     track: {
-      event: 'create-risk',
-      channel: 'server',
+      event: "create-risk",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { title, description, category, department, assigneeId } = parsedInput;
+    const { title, description, category, department, assigneeId } =
+      parsedInput;
     const { user, session } = ctx;
 
     if (!user.id || !session.activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     try {

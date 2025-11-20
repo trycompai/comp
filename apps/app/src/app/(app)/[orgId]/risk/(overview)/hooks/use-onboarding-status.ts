@@ -1,9 +1,14 @@
-'use client';
+"use client";
 
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useMemo } from 'react';
+import { useMemo } from "react";
+import { useRealtimeRun } from "@trigger.dev/react-hooks";
 
-export type OnboardingItemStatus = 'pending' | 'processing' | 'created' | 'assessing' | 'completed';
+export type OnboardingItemStatus =
+  | "pending"
+  | "processing"
+  | "created"
+  | "assessing"
+  | "completed";
 
 export interface OnboardingItemInfo {
   id: string;
@@ -12,10 +17,10 @@ export interface OnboardingItemInfo {
 
 export function useOnboardingStatus(
   onboardingRunId: string | null | undefined,
-  itemType: 'risks' | 'vendors',
+  itemType: "risks" | "vendors",
 ) {
   const shouldSubscribe = Boolean(onboardingRunId);
-  const { run } = useRealtimeRun(shouldSubscribe ? onboardingRunId! : '', {
+  const { run } = useRealtimeRun(shouldSubscribe ? onboardingRunId! : "", {
     enabled: shouldSubscribe,
   });
 
@@ -25,23 +30,27 @@ export function useOnboardingStatus(
     }
 
     const meta = run.metadata as Record<string, unknown>;
-    const itemsInfo = (meta[`${itemType}Info`] as Array<{ id: string; name: string }>) || [];
+    const itemsInfo =
+      (meta[`${itemType}Info`] as Array<{ id: string; name: string }>) || [];
 
-    return itemsInfo.reduce<Record<string, OnboardingItemStatus>>((acc, item) => {
-      const statusKey = `${itemType.slice(0, -1)}_${item.id}_status`;
-      const status = meta[statusKey];
+    return itemsInfo.reduce<Record<string, OnboardingItemStatus>>(
+      (acc, item) => {
+        const statusKey = `${itemType.slice(0, -1)}_${item.id}_status`;
+        const status = meta[statusKey];
 
-      if (
-        status === 'pending' ||
-        status === 'processing' ||
-        status === 'created' ||
-        status === 'assessing' ||
-        status === 'completed'
-      ) {
-        acc[item.id] = status;
-      }
-      return acc;
-    }, {});
+        if (
+          status === "pending" ||
+          status === "processing" ||
+          status === "created" ||
+          status === "assessing" ||
+          status === "completed"
+        ) {
+          acc[item.id] = status;
+        }
+        return acc;
+      },
+      {},
+    );
   }, [run?.metadata, itemType]);
 
   const progress = useMemo(() => {
@@ -49,9 +58,11 @@ export function useOnboardingStatus(
 
     const meta = run.metadata as Record<string, unknown>;
     const total =
-      typeof meta[`${itemType}Total`] === 'number' ? (meta[`${itemType}Total`] as number) : 0;
+      typeof meta[`${itemType}Total`] === "number"
+        ? (meta[`${itemType}Total`] as number)
+        : 0;
     const completed =
-      typeof meta[`${itemType}Completed`] === 'number'
+      typeof meta[`${itemType}Completed`] === "number"
         ? (meta[`${itemType}Completed`] as number)
         : 0;
 
@@ -68,13 +79,15 @@ export function useOnboardingStatus(
     }
 
     const meta = run.metadata as Record<string, unknown>;
-    return (meta[`${itemType}Info`] as Array<{ id: string; name: string }>) || [];
+    return (
+      (meta[`${itemType}Info`] as Array<{ id: string; name: string }>) || []
+    );
   }, [run?.metadata, itemType]);
 
   // Check if any items are still being processed (not completed)
   const hasActiveItems = useMemo(() => {
     return Object.values(itemStatuses).some(
-      (status) => status !== 'completed' && status !== undefined,
+      (status) => status !== "completed" && status !== undefined,
     );
   }, [itemStatuses]);
 
@@ -82,12 +95,13 @@ export function useOnboardingStatus(
   const isRunActive = useMemo(() => {
     if (!run) return false;
     // Run is active if it's executing, queued, or waiting
-    const activeStatuses = ['EXECUTING', 'QUEUED', 'WAITING'];
+    const activeStatuses = ["EXECUTING", "QUEUED", "WAITING"];
     return activeStatuses.includes(run.status);
   }, [run]);
 
   // Check if items are still being processed
-  const hasActiveProgress = progress !== null && progress.completed < progress.total;
+  const hasActiveProgress =
+    progress !== null && progress.completed < progress.total;
 
   // Onboarding is active if:
   // 1. Run is active (executing/queued), OR

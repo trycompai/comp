@@ -1,7 +1,8 @@
-import { Button } from '@trycompai/ui/button';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
+
+import { Button } from "@trycompai/ui/button";
 
 interface OnboardingFormActionsProps {
   onBack: () => void;
@@ -29,10 +30,10 @@ export function OnboardingFormActions({
     // Only check on client side after mount
     const hostname = window.location.hostname;
     setIsLocalhost(
-      hostname === 'localhost' ||
-        hostname === '127.0.0.1' ||
-        hostname.startsWith('192.168.') ||
-        hostname.startsWith('10.0.'),
+      hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("10.0.")
     );
   }, []);
 

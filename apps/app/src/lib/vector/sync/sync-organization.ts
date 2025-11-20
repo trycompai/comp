@@ -1,15 +1,15 @@
-import 'server-only';
+import "server-only";
 
-import { logger } from '@/utils/logger';
-import { db } from '@trycompai/db';
-import { vectorIndex } from '../core/client';
-import {
-  findAllOrganizationEmbeddings,
-  type ExistingEmbedding,
-} from '../core/find-existing-embeddings';
-import { batchUpsertEmbeddings } from '../core/upsert-embedding';
-import { chunkText } from '../utils/chunk-text';
-import { extractTextFromPolicy } from '../utils/extract-policy-text';
+import { logger } from "@/utils/logger";
+
+import { db } from "@trycompai/db";
+
+import type { ExistingEmbedding } from "../core/find-existing-embeddings";
+import { vectorIndex } from "../core/client";
+import { findAllOrganizationEmbeddings } from "../core/find-existing-embeddings";
+import { batchUpsertEmbeddings } from "../core/upsert-embedding";
+import { chunkText } from "../utils/chunk-text";
+import { extractTextFromPolicy } from "../utils/extract-policy-text";
 
 /**
  * Lock map to prevent concurrent syncs for the same organization
@@ -25,16 +25,20 @@ const syncLocks = new Map<string, Promise<void>>();
  * Uses a lock mechanism to prevent concurrent syncs for the same organization.
  * If a sync is already in progress, subsequent calls will wait for it to complete.
  */
-export async function syncOrganizationEmbeddings(organizationId: string): Promise<void> {
+export async function syncOrganizationEmbeddings(
+  organizationId: string,
+): Promise<void> {
   if (!organizationId || organizationId.trim().length === 0) {
-    logger.warn('Invalid organizationId provided for sync');
+    logger.warn("Invalid organizationId provided for sync");
     return;
   }
 
   // Check if sync is already in progress for this organization
   const existingSync = syncLocks.get(organizationId);
   if (existingSync) {
-    logger.info('Sync already in progress, waiting for completion', { organizationId });
+    logger.info("Sync already in progress, waiting for completion", {
+      organizationId,
+    });
     return existingSync;
   }
 
@@ -48,7 +52,7 @@ export async function syncOrganizationEmbeddings(organizationId: string): Promis
   syncPromise
     .finally(() => {
       syncLocks.delete(organizationId);
-      logger.info('Sync lock released', { organizationId });
+      logger.info("Sync lock released", { organizationId });
     })
     .catch(() => {
       // Error already logged in performSync, just ensure cleanup happens
@@ -62,13 +66,16 @@ export async function syncOrganizationEmbeddings(organizationId: string): Promis
  * Uses incremental sync: only updates what changed
  */
 async function performSync(organizationId: string): Promise<void> {
-  logger.info('Starting incremental organization embeddings sync', { organizationId });
+  logger.info("Starting incremental organization embeddings sync", {
+    organizationId,
+  });
 
   try {
     // Step 1: Fetch all existing embeddings once (respects 1000 limit)
     // This is much faster than checking each policy/context individually
-    const existingEmbeddings = await findAllOrganizationEmbeddings(organizationId);
-    logger.info('Fetched existing embeddings', {
+    const existingEmbeddings =
+      await findAllOrganizationEmbeddings(organizationId);
+    logger.info("Fetched existing embeddings", {
       organizationId,
       totalSources: existingEmbeddings.size,
     });
@@ -77,7 +84,7 @@ async function performSync(organizationId: string): Promise<void> {
     const policies = await db.policy.findMany({
       where: {
         organizationId,
-        status: 'published', // Only published policies
+        status: "published", // Only published policies
       },
       select: {
         id: true,
@@ -90,7 +97,7 @@ async function performSync(organizationId: string): Promise<void> {
       // NO take: 10 - get ALL policies
     });
 
-    logger.info('Found policies to sync', {
+    logger.info("Found policies to sync", {
       organizationId,
       count: policies.length,
     });
@@ -118,7 +125,8 @@ async function performSync(organizationId: string): Promise<void> {
             const needsUpdate =
               policyEmbeddings.length === 0 ||
               policyEmbeddings.some(
-                (e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < policyUpdatedAt,
+                (e: ExistingEmbedding) =>
+                  !e.updatedAt || e.updatedAt < policyUpdatedAt,
               );
 
             if (!needsUpdate) {
@@ -128,13 +136,16 @@ async function performSync(organizationId: string): Promise<void> {
 
             // Delete old embeddings if they exist
             if (policyEmbeddings.length > 0 && vectorIndex) {
-              const idsToDelete = policyEmbeddings.map((e: ExistingEmbedding) => e.id);
+              const idsToDelete = policyEmbeddings.map(
+                (e: ExistingEmbedding) => e.id,
+              );
               try {
                 await vectorIndex.delete(idsToDelete);
               } catch (error) {
-                logger.warn('Failed to delete old policy embeddings', {
+                logger.warn("Failed to delete old policy embeddings", {
                   policyId: policy.id,
-                  error: error instanceof Error ? error.message : 'Unknown error',
+                  error:
+                    error instanceof Error ? error.message : "Unknown error",
                 });
               }
             }
@@ -159,7 +170,7 @@ async function performSync(organizationId: string): Promise<void> {
                 text: chunk,
                 metadata: {
                   organizationId,
-                  sourceType: 'policy' as const,
+                  sourceType: "policy" as const,
                   sourceId: policy.id,
                   content: chunk,
                   policyName: policy.name,
@@ -178,9 +189,9 @@ async function performSync(organizationId: string): Promise<void> {
               policiesUpdated++;
             }
           } catch (error) {
-            logger.error('Failed to sync policy', {
+            logger.error("Failed to sync policy", {
               policyId: policy.id,
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: error instanceof Error ? error.message : "Unknown error",
             });
             // Continue with other policies
           }
@@ -188,7 +199,7 @@ async function performSync(organizationId: string): Promise<void> {
       );
     }
 
-    logger.info('Policies sync completed', {
+    logger.info("Policies sync completed", {
       organizationId,
       created: policiesCreated,
       updated: policiesUpdated,
@@ -209,7 +220,7 @@ async function performSync(organizationId: string): Promise<void> {
       // NO take: 10 - get ALL context entries
     });
 
-    logger.info('Found context entries to sync', {
+    logger.info("Found context entries to sync", {
       organizationId,
       count: contextEntries.length,
     });
@@ -237,7 +248,8 @@ async function performSync(organizationId: string): Promise<void> {
             const needsUpdate =
               contextEmbeddings.length === 0 ||
               contextEmbeddings.some(
-                (e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < contextUpdatedAt,
+                (e: ExistingEmbedding) =>
+                  !e.updatedAt || e.updatedAt < contextUpdatedAt,
               );
 
             if (!needsUpdate) {
@@ -247,13 +259,16 @@ async function performSync(organizationId: string): Promise<void> {
 
             // Delete old embeddings if they exist
             if (contextEmbeddings.length > 0 && vectorIndex) {
-              const idsToDelete = contextEmbeddings.map((e: ExistingEmbedding) => e.id);
+              const idsToDelete = contextEmbeddings.map(
+                (e: ExistingEmbedding) => e.id,
+              );
               try {
                 await vectorIndex.delete(idsToDelete);
               } catch (error) {
-                logger.warn('Failed to delete old context embeddings', {
+                logger.warn("Failed to delete old context embeddings", {
                   contextId: context.id,
-                  error: error instanceof Error ? error.message : 'Unknown error',
+                  error:
+                    error instanceof Error ? error.message : "Unknown error",
                 });
               }
             }
@@ -278,7 +293,7 @@ async function performSync(organizationId: string): Promise<void> {
                 text: chunk,
                 metadata: {
                   organizationId,
-                  sourceType: 'context' as const,
+                  sourceType: "context" as const,
                   sourceId: context.id,
                   content: chunk,
                   contextQuestion: context.question,
@@ -297,9 +312,9 @@ async function performSync(organizationId: string): Promise<void> {
               contextUpdated++;
             }
           } catch (error) {
-            logger.error('Failed to sync context', {
+            logger.error("Failed to sync context", {
               contextId: context.id,
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: error instanceof Error ? error.message : "Unknown error",
             });
             // Continue with other context entries
           }
@@ -307,7 +322,7 @@ async function performSync(organizationId: string): Promise<void> {
       );
     }
 
-    logger.info('Context sync completed', {
+    logger.info("Context sync completed", {
       organizationId,
       created: contextCreated,
       updated: contextUpdated,
@@ -324,11 +339,12 @@ async function performSync(organizationId: string): Promise<void> {
     // Check for orphaned embeddings using the pre-fetched map
     try {
       for (const [sourceId, embeddings] of existingEmbeddings.entries()) {
-        const isPolicy = embeddings[0]?.sourceType === 'policy';
-        const isContext = embeddings[0]?.sourceType === 'context';
+        const isPolicy = embeddings[0]?.sourceType === "policy";
+        const isContext = embeddings[0]?.sourceType === "context";
 
         const shouldExist =
-          (isPolicy && dbPolicyIds.has(sourceId)) || (isContext && dbContextIds.has(sourceId));
+          (isPolicy && dbPolicyIds.has(sourceId)) ||
+          (isContext && dbContextIds.has(sourceId));
 
         if (!shouldExist && vectorIndex) {
           // Delete orphaned embeddings
@@ -336,28 +352,28 @@ async function performSync(organizationId: string): Promise<void> {
           try {
             await vectorIndex.delete(idsToDelete);
             orphanedDeleted += idsToDelete.length;
-            logger.info('Deleted orphaned embeddings', {
+            logger.info("Deleted orphaned embeddings", {
               sourceId,
-              sourceType: isPolicy ? 'policy' : 'context',
+              sourceType: isPolicy ? "policy" : "context",
               deletedCount: idsToDelete.length,
             });
           } catch (error) {
-            logger.warn('Failed to delete orphaned embeddings', {
+            logger.warn("Failed to delete orphaned embeddings", {
               sourceId,
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         }
       }
     } catch (error) {
-      logger.warn('Failed to check for orphaned embeddings', {
+      logger.warn("Failed to check for orphaned embeddings", {
         organizationId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       // Continue - orphaned detection is not critical
     }
 
-    logger.info('Incremental organization embeddings sync completed', {
+    logger.info("Incremental organization embeddings sync completed", {
       organizationId,
       policies: {
         total: policies.length,
@@ -374,9 +390,9 @@ async function performSync(organizationId: string): Promise<void> {
       orphanedDeleted,
     });
   } catch (error) {
-    logger.error('Failed to sync organization embeddings', {
+    logger.error("Failed to sync organization embeddings", {
       organizationId,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       errorStack: error instanceof Error ? error.stack : undefined,
     });
     throw error;

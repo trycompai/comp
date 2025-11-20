@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Label, Pie, PieChart } from 'recharts';
+import * as React from "react";
+import { Info } from "lucide-react";
+import { Label, Pie, PieChart } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import type { ChartConfig } from "@trycompai/ui/chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 import {
-  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
-import { Info } from 'lucide-react';
+} from "@trycompai/ui/chart";
 
 interface ComplianceProgressData {
   score: number;
@@ -22,22 +22,24 @@ interface ComplianceProgressChartProps {
 }
 
 const CHART_COLORS = {
-  score: 'hsl(var(--chart-primary))',
-  remaining: 'hsl(var(--muted))',
+  score: "hsl(var(--chart-primary))",
+  remaining: "hsl(var(--muted))",
 };
 
-export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) {
+export function ComplianceProgressChart({
+  data,
+}: ComplianceProgressChartProps) {
   const chartData = React.useMemo(() => {
     if (!data) return [];
     const items = [
       {
-        name: 'Completed',
+        name: "Completed",
         value: data.score,
         text: `${data.score}%`,
         fill: CHART_COLORS.score,
       },
       {
-        name: 'Remaining',
+        name: "Remaining",
         value: data.remaining,
         text: `${data.remaining} / 100%`,
         fill: CHART_COLORS.remaining,
@@ -51,7 +53,9 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
       <Card className="flex flex-col overflow-hidden border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">Compliance Progress</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Compliance Progress
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="flex flex-1 items-center justify-center py-10">
@@ -59,7 +63,9 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
             <div className="text-muted-foreground flex justify-center">
               <Info className="h-10 w-10 opacity-30" />
             </div>
-            <p className="text-muted-foreground text-center text-sm">No data available</p>
+            <p className="text-muted-foreground text-center text-sm">
+              No data available
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -68,12 +74,15 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
 
   const chartConfig = {
     value: {
-      label: 'Overall Progress',
+      label: "Overall Progress",
     },
   } satisfies ChartConfig;
 
   return (
-    <ChartContainer config={chartConfig} className="mx-auto h-[160px] max-w-[200px]">
+    <ChartContainer
+      config={chartConfig}
+      className="mx-auto h-[160px] max-w-[200px]"
+    >
       <PieChart
         width={200}
         height={160}
@@ -84,7 +93,10 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
           left: 0,
         }}
       >
-        <ChartTooltip cursor={false} content={<ChartTooltipContent isPercentage={true} />} />
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent isPercentage={true} />}
+        />
         <Pie
           data={chartData}
           dataKey="value"
@@ -99,7 +111,7 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
         >
           <Label
             content={({ viewBox }) => {
-              if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                 return (
                   <g>
                     <text

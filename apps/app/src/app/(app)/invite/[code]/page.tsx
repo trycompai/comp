@@ -1,12 +1,14 @@
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { AcceptInvite } from '../../setup/components/accept-invite';
-import { InviteNotMatchCard } from './components/InviteNotMatchCard';
-import { InviteStatusCard } from './components/InviteStatusCard';
-import { maskEmail } from './utils';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { AcceptInvite } from "../../setup/components/accept-invite";
+import { InviteNotMatchCard } from "./components/InviteNotMatchCard";
+import { InviteStatusCard } from "./components/InviteStatusCard";
+import { maskEmail } from "./utils";
 
 interface InvitePageProps {
   params: Promise<{ code: string }>;
@@ -50,16 +52,20 @@ export default async function InvitePage({ params }: InvitePageProps) {
     );
   }
 
-  if (invitation.status !== 'pending') {
+  if (invitation.status !== "pending") {
     return (
       <OnboardingLayout variant="setup" currentOrganization={null}>
         <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">
           <InviteStatusCard
-            title={invitation.status === 'accepted' ? 'Invite already accepted' : 'Invite expired'}
+            title={
+              invitation.status === "accepted"
+                ? "Invite already accepted"
+                : "Invite expired"
+            }
             description={
-              invitation.status === 'accepted'
-                ? 'This invitation has already been accepted. If you believe this is a mistake, contact your organization admin.'
-                : 'This invitation has expired. Please ask your organization admin to send a new invite.'
+              invitation.status === "accepted"
+                ? "This invitation has already been accepted. If you believe this is a mistake, contact your organization admin."
+                : "This invitation has expired. Please ask your organization admin to send a new invite."
             }
             primaryHref="/"
             primaryLabel="Go home"
@@ -87,7 +93,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
       <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">
         <AcceptInvite
           inviteCode={invitation.id}
-          organizationName={invitation.organization.name || ''}
+          organizationName={invitation.organization.name || ""}
         />
       </div>
     </OnboardingLayout>

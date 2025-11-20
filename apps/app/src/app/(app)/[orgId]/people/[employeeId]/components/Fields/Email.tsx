@@ -1,7 +1,15 @@
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import type { Control } from 'react-hook-form';
-import type { EmployeeFormValues } from '../EmployeeDetails';
+import type { Control } from "react-hook-form";
+
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
+
+import type { EmployeeFormValues } from "../EmployeeDetails";
 
 export const Email = ({
   control,

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Label, Pie, PieChart } from 'recharts';
+import * as React from "react";
+import { Info } from "lucide-react";
+import { Label, Pie, PieChart } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import type { ChartConfig } from "@trycompai/ui/chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 import {
-  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
-import { Info } from 'lucide-react';
+} from "@trycompai/ui/chart";
 
 interface PoliciesChartData {
   published: number;
@@ -22,8 +22,8 @@ interface PoliciesChartProps {
 }
 
 const CHART_COLORS = {
-  score: 'hsl(var(--chart-primary))',
-  remaining: 'hsl(var(--muted))',
+  score: "hsl(var(--chart-primary))",
+  remaining: "hsl(var(--muted))",
 };
 
 // Custom tooltip component for the pie chart
@@ -47,12 +47,12 @@ export function PoliciesChart({ data }: PoliciesChartProps) {
     if (!data) return [];
     const items = [
       {
-        name: 'Published',
+        name: "Published",
         value: data.published,
         fill: CHART_COLORS.score,
       },
       {
-        name: 'Draft',
+        name: "Draft",
         value: data.draft,
         fill: CHART_COLORS.remaining,
       },
@@ -73,7 +73,9 @@ export function PoliciesChart({ data }: PoliciesChartProps) {
             <div className="text-muted-foreground flex justify-center">
               <Info className="h-10 w-10 opacity-30" />
             </div>
-            <p className="text-muted-foreground text-center text-sm">No data available</p>
+            <p className="text-muted-foreground text-center text-sm">
+              No data available
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -82,12 +84,15 @@ export function PoliciesChart({ data }: PoliciesChartProps) {
 
   const chartConfig = {
     value: {
-      label: 'Policy Status',
+      label: "Policy Status",
     },
   } satisfies ChartConfig;
 
   return (
-    <ChartContainer config={chartConfig} className="mx-auto h-[160px] max-w-[200px]">
+    <ChartContainer
+      config={chartConfig}
+      className="mx-auto h-[160px] max-w-[200px]"
+    >
       <PieChart
         width={200}
         height={160}
@@ -98,7 +103,10 @@ export function PoliciesChart({ data }: PoliciesChartProps) {
           left: 0,
         }}
       >
-        <ChartTooltip cursor={false} content={<ChartTooltipContent isPercentage={true} />} />
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent isPercentage={true} />}
+        />
         <Pie
           data={chartData}
           dataKey="value"
@@ -113,7 +121,7 @@ export function PoliciesChart({ data }: PoliciesChartProps) {
         >
           <Label
             content={({ viewBox }) => {
-              if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                 return (
                   <g>
                     <text

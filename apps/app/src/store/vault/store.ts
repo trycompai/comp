@@ -1,5 +1,5 @@
-import { createContext } from 'react';
-import { createStore } from 'zustand';
+import { createContext } from "react";
+import { createStore } from "zustand";
 
 type Item = {
   id?: string;
@@ -34,7 +34,9 @@ export const createVaultStore = (initProps?: Partial<VaultProps>) => {
 
     deleteItem: (id) => {
       set((state) => ({
-        data: state.data.filter((item) => (item.isFolder ? item.name !== id : item.id !== id)),
+        data: state.data.filter((item) =>
+          item.isFolder ? item.name !== id : item.id !== id,
+        ),
       }));
     },
 

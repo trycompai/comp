@@ -1,10 +1,11 @@
-import { AttachmentType } from '@trycompai/db';
-import { FileAudio, FileQuestion, FileText, FileVideo } from 'lucide-react';
+import { FileAudio, FileQuestion, FileText, FileVideo } from "lucide-react";
+
+import { AttachmentType } from "@trycompai/db";
 
 // Formats a date (string or Date object) into relative time string (e.g., "5m ago")
 export function formatRelativeTime(date: Date | string): string {
   const now = new Date();
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const dateObj = typeof date === "string" ? new Date(date) : date;
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   const diffInHours = Math.floor(diffInMinutes / 60);
@@ -28,6 +29,8 @@ export function getIconForAttachmentType(type: AttachmentType) {
     case AttachmentType.image:
       return null;
     default:
-      return <FileQuestion className="text-muted-foreground h-8 w-8 shrink-0" />;
+      return (
+        <FileQuestion className="text-muted-foreground h-8 w-8 shrink-0" />
+      );
   }
 }

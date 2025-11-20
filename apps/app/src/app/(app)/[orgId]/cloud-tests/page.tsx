@@ -1,18 +1,24 @@
-import { auth as betterAuth } from '@/utils/auth';
-import { auth } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { TestsLayout } from './components/TestsLayout';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth as betterAuth } from "@/utils/auth";
+import { auth } from "@trigger.dev/sdk";
 
-export default async function CloudTestsPage({ params }: { params: Promise<{ orgId: string }> }) {
+import { db } from "@trycompai/db";
+
+import { TestsLayout } from "./components/TestsLayout";
+
+export default async function CloudTestsPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
   const { orgId } = await params;
   const session = await betterAuth.api.getSession({
     headers: await headers(),
   });
 
   if (!session?.session.activeOrganizationId) {
-    redirect('/');
+    redirect("/");
   }
 
   if (session.session.activeOrganizationId !== orgId) {
@@ -25,7 +31,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       where: {
         organizationId: orgId,
         integrationId: {
-          in: ['aws', 'gcp', 'azure'],
+          in: ["aws", "gcp", "azure"],
         },
       },
     })) || [];
@@ -37,7 +43,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
         organizationId: orgId,
         integration: {
           integrationId: {
-            in: ['aws', 'gcp', 'azure'],
+            in: ["aws", "gcp", "azure"],
           },
         },
       },
@@ -56,14 +62,17 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
         },
       },
       orderBy: {
-        completedAt: 'desc',
+        completedAt: "desc",
       },
     })) || [];
 
-  const triggerToken = await auth.createTriggerPublicToken('run-integration-tests', {
-    multipleUse: true,
-    expirationTime: '1hr',
-  });
+  const triggerToken = await auth.createTriggerPublicToken(
+    "run-integration-tests",
+    {
+      multipleUse: true,
+      expirationTime: "1hr",
+    },
+  );
 
   return (
     <TestsLayout

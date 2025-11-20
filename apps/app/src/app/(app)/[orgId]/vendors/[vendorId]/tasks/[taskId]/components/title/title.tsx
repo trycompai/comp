@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import type { Member, Task, User } from '@trycompai/db';
-import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import { Sheet, SheetContent } from '@trycompai/ui/sheet';
-import { PencilIcon } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { useQueryState } from 'nuqs';
+import dynamic from "next/dynamic";
+import { PencilIcon } from "lucide-react";
+import { useQueryState } from "nuqs";
+
+import type { Member, Task, User } from "@trycompai/db";
+import { Alert, AlertDescription, AlertTitle } from "@trycompai/ui/alert";
+import { Button } from "@trycompai/ui/button";
+import { Icons } from "@trycompai/ui/icons";
+import { Sheet, SheetContent } from "@trycompai/ui/sheet";
 
 // Dynamically import the UpdateTaskSheet component
 const UpdateTaskSheet = dynamic(
-  () => import('./update-task-sheet').then((mod) => mod.UpdateTaskSheet),
+  () => import("./update-task-sheet").then((mod) => mod.UpdateTaskSheet),
   { ssr: false, loading: () => <div>Loading...</div> },
 );
 
@@ -23,8 +24,8 @@ interface TitleProps {
 }
 
 export default function Title({ task, assignees }: TitleProps) {
-  const [isOpen, setOpen] = useQueryState('task-overview-sheet');
-  const open = isOpen === 'true';
+  const [isOpen, setOpen] = useQueryState("task-overview-sheet");
+  const open = isOpen === "true";
 
   return (
     <div className="space-y-4">
@@ -37,7 +38,7 @@ export default function Title({ task, assignees }: TitleProps) {
               size="icon"
               variant="ghost"
               className="m-0 size-auto p-0"
-              onClick={() => setOpen('true')}
+              onClick={() => setOpen("true")}
             >
               <PencilIcon className="h-3 w-3" />
             </Button>
@@ -46,7 +47,10 @@ export default function Title({ task, assignees }: TitleProps) {
         <AlertDescription className="mt-4">{task.description}</AlertDescription>
       </Alert>
 
-      <Sheet open={open} onOpenChange={(isOpen) => setOpen(isOpen ? 'true' : null)}>
+      <Sheet
+        open={open}
+        onOpenChange={(isOpen) => setOpen(isOpen ? "true" : null)}
+      >
         <SheetContent className="sm:max-w-md md:max-w-lg lg:max-w-xl">
           {open && <UpdateTaskSheet task={task} assignees={assignees} />}
         </SheetContent>

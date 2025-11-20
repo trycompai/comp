@@ -1,6 +1,7 @@
-import type { Metadata } from 'next';
-import { Suspense } from 'react';
-import { Overview } from './components/Overview';
+import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { Overview } from "./components/Overview";
 
 interface HomePageProps {
   params: Promise<{}>;
@@ -22,6 +23,6 @@ export default function HomePage({ params, searchParams }: HomePageProps) {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Employee Portal Overview',
+    title: "Employee Portal Overview",
   };
 }

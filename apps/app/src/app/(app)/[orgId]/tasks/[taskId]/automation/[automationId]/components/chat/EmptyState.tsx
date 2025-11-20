@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   PromptInput,
   PromptInputBody,
@@ -6,17 +8,25 @@ import {
   PromptInputTextarea,
   PromptInputTools,
   usePromptInputController,
-} from '@trycompai/ui';
-import { Card, CardDescription, CardHeader } from '@trycompai/ui/card';
-import { Skeleton } from '@trycompai/ui/skeleton';
-import { useState } from 'react';
-import { AUTOMATION_EXAMPLES, AutomationExample } from '../../constants/automation-examples';
+} from "@trycompai/ui";
+import { Card, CardDescription, CardHeader } from "@trycompai/ui/card";
+import { Skeleton } from "@trycompai/ui/skeleton";
+
+import {
+  AUTOMATION_EXAMPLES,
+  AutomationExample,
+} from "../../constants/automation-examples";
 
 interface EmptyStateProps {
   onExampleClick: (prompt: string) => void;
   status: string;
   onSubmit: () => void;
-  suggestions?: { title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[];
+  suggestions?: {
+    title: string;
+    prompt: string;
+    vendorName?: string;
+    vendorWebsite?: string;
+  }[];
   isLoadingSuggestions?: boolean;
 }
 
@@ -25,26 +35,26 @@ function getVendorLogoUrl(vendorName?: string, vendorWebsite?: string): string {
   if (vendorWebsite) {
     // Clean up the website - remove protocol, www, and paths
     const cleanDomain = vendorWebsite
-      .replace(/^https?:\/\//i, '')
-      .replace(/^www\./i, '')
-      .split('/')[0]
-      .split('?')[0];
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .split("/")[0]
+      .split("?")[0];
     return `https://img.logo.dev/${cleanDomain}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`;
   }
 
   if (!vendorName) {
-    return 'https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ';
+    return "https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ";
   }
 
   // Try to extract domain from vendor name or use a default
   // Common vendor mappings
   const vendorDomainMap: Record<string, string> = {
-    github: 'github.com',
-    vercel: 'vercel.com',
-    cloudflare: 'cloudflare.com',
-    aws: 'aws.amazon.com',
-    gcp: 'cloud.google.com',
-    azure: 'azure.microsoft.com',
+    github: "github.com",
+    vercel: "vercel.com",
+    cloudflare: "cloudflare.com",
+    aws: "aws.amazon.com",
+    gcp: "cloud.google.com",
+    azure: "azure.microsoft.com",
   };
 
   const lowerName = vendorName.toLowerCase();
@@ -60,7 +70,7 @@ function getVendorLogoUrl(vendorName?: string, vendorWebsite?: string): string {
     return `https://img.logo.dev/${urlMatch[1]}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`;
   }
 
-  return 'https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ';
+  return "https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ";
 }
 
 function VendorCard({
@@ -71,7 +81,8 @@ function VendorCard({
   onExampleClick: (prompt: string) => void;
 }) {
   const [imageError, setImageError] = useState(false);
-  const fallbackUrl = 'https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ';
+  const fallbackUrl =
+    "https://img.logo.dev/trycomp.ai?token=pk_AZatYxV5QDSfWpRDaBxzRQ";
   const imageUrl = imageError ? fallbackUrl : example.url;
 
   return (
@@ -96,7 +107,9 @@ function VendorCard({
             />
           </div>
           <CardDescription className="flex-1">
-            <p className="text-sm font-normal text-foreground leading-relaxed">{example.title}</p>
+            <p className="text-foreground text-sm leading-relaxed font-normal">
+              {example.title}
+            </p>
           </CardDescription>
         </div>
       </CardHeader>
@@ -109,7 +122,7 @@ function SuggestionCardSkeleton() {
     <Card className="transition-all duration-200">
       <CardHeader className="p-4">
         <div className="flex items-start gap-3">
-          <Skeleton className="h-6 w-6 rounded-sm flex-shrink-0" />
+          <Skeleton className="h-6 w-6 flex-shrink-0 rounded-sm" />
           <div className="flex-1">
             <Skeleton className="h-4 w-full" />
           </div>
@@ -141,10 +154,10 @@ export function EmptyState({
   const showSkeletons = isLoadingSuggestions && suggestions?.length === 0;
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto h-full z-20">
-      <div className="w-full h-full flex flex-col items-center py-48 px-4">
-        <div className="w-full max-w-3xl text-center space-y-8 mb-16">
-          <p className="text-2xl font-medium text-primary tracking-wide z-20">
+    <div className="z-20 h-full min-h-0 flex-1 overflow-y-auto">
+      <div className="flex h-full w-full flex-col items-center px-4 py-48">
+        <div className="mb-16 w-full max-w-3xl space-y-8 text-center">
+          <p className="text-primary z-20 text-2xl font-medium tracking-wide">
             What evidence do you want to collect?
           </p>
           <PromptInput
@@ -156,39 +169,49 @@ export function EmptyState({
             <PromptInputBody>
               <PromptInputTextarea
                 placeholder="Describe what evidence you want to collect..."
-                disabled={status === 'streaming' || status === 'submitted'}
-                className="min-h-[80px] max-h-[400px]"
+                disabled={status === "streaming" || status === "submitted"}
+                className="max-h-[400px] min-h-[80px]"
               />
             </PromptInputBody>
             <PromptInputFooter>
               <PromptInputTools />
               <PromptInputSubmit
-                status={status === 'streaming' || status === 'submitted' ? 'submitted' : undefined}
+                status={
+                  status === "streaming" || status === "submitted"
+                    ? "submitted"
+                    : undefined
+                }
                 disabled={
-                  !textInput.value.trim() || status === 'streaming' || status === 'submitted'
+                  !textInput.value.trim() ||
+                  status === "streaming" ||
+                  status === "submitted"
                 }
               />
             </PromptInputFooter>
           </PromptInput>
         </div>
 
-        <div className="w-full max-w-4xl space-y-4 mt-16">
-          <h3 className="text-lg font-normal text-center">Get started with examples</h3>
+        <div className="mt-16 w-full max-w-4xl space-y-4">
+          <h3 className="text-center text-lg font-normal">
+            Get started with examples
+          </h3>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
+          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-3 md:grid-cols-3">
             {showSkeletons
               ? // Show 6 skeleton cards while loading
                 Array.from({ length: 6 }).map((_, index) => (
                   <SuggestionCardSkeleton key={`skeleton-${index}`} />
                 ))
               : // Show actual suggestion cards
-                examplesToShow.map((example: AutomationExample, index: number) => (
-                  <VendorCard
-                    key={`${example.title}-${index}`}
-                    example={example}
-                    onExampleClick={onExampleClick}
-                  />
-                ))}
+                examplesToShow.map(
+                  (example: AutomationExample, index: number) => (
+                    <VendorCard
+                      key={`${example.title}-${index}`}
+                      example={example}
+                      onExampleClick={onExampleClick}
+                    />
+                  ),
+                )}
           </div>
         </div>
       </div>

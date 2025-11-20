@@ -38,6 +38,6 @@ phases:
 
 cache:
   paths:
-    - 'node_modules/**/*'
-    - 'packages/db/node_modules/**/*'
-    - '/root/.bun/install/cache/**/*'
+    - "node_modules/**/*"
+    - "packages/db/node_modules/**/*"
+    - "/root/.bun/install/cache/**/*"

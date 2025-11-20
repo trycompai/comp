@@ -1,29 +1,30 @@
-'use client';
+"use client";
 
-import { useStreamableText } from '@/hooks/use-streamable-text';
-import { type StreamableValue } from '@ai-sdk/rsc';
-import { cn } from '@trycompai/ui/cn';
-import type { UIMessage } from 'ai';
+import type { UIMessage } from "ai";
+import { memo, useCallback, useEffect, useState } from "react";
+import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+import { useStreamableText } from "@/hooks/use-streamable-text";
+import { type StreamableValue } from "@ai-sdk/rsc";
+import equal from "fast-deep-equal";
+import { AnimatePresence, motion } from "motion/react";
 
-import equal from 'fast-deep-equal';
-import { AnimatePresence, motion } from 'motion/react';
-import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
-import { memo, useCallback, useEffect, useState } from 'react';
-import { ErrorFallback } from '../error-fallback';
-import { LogoSpinner } from '../logo-spinner';
-import { MemoizedReactMarkdown } from '../markdown';
-import { ChatAvatar } from './chat-avatar';
+import { cn } from "@trycompai/ui/cn";
+
+import { ErrorFallback } from "../error-fallback";
+import { LogoSpinner } from "../logo-spinner";
+import { MemoizedReactMarkdown } from "../markdown";
+import { ChatAvatar } from "./chat-avatar";
 
 interface ToolInvocation {
   toolName: string;
-  state: 'call' | 'result';
+  state: "call" | "result";
   result?: any;
 }
 
 interface ReasoningPart {
-  type: 'reasoning';
+  type: "reasoning";
   text: string;
-  details?: Array<{ type: 'text'; text: string }>;
+  details?: Array<{ type: "text"; text: string }>;
 }
 
 interface ReasoningMessagePartProps {
@@ -31,7 +32,10 @@ interface ReasoningMessagePartProps {
   isReasoning: boolean;
 }
 
-export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePartProps) {
+export function ReasoningMessagePart({
+  part,
+  isReasoning,
+}: ReasoningMessagePartProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const variants = {
@@ -42,9 +46,9 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
       marginBottom: 0,
     },
     expanded: {
-      height: 'auto',
+      height: "auto",
       opacity: 1,
-      marginTop: '1rem',
+      marginTop: "1rem",
       marginBottom: 0,
     },
   };
@@ -65,7 +69,7 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
             <ChatAvatar participantType="assistant" aria-label="Assistant" />
           </div>
           <div className="ml-4 flex-1 overflow-hidden pl-2 text-xs">
-            <div className="font-medium flex items-center gap-2">
+            <div className="flex items-center gap-2 font-medium">
               Reasoning <LogoSpinner size={16} />
             </div>
           </div>
@@ -92,13 +96,13 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
             animate="expanded"
             exit="collapsed"
             variants={variants}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
           >
             {part.details?.map((detail) =>
-              detail.type === 'text' ? (
+              detail.type === "text" ? (
                 <StreamableMarkdown key={detail.text} text={detail.text} />
               ) : (
-                '<redacted>'
+                "<redacted>"
               ),
             ) || <StreamableMarkdown text={part.text} />}
           </motion.div>
@@ -108,32 +112,42 @@ export function ReasoningMessagePart({ part, isReasoning }: ReasoningMessagePart
   );
 }
 
-const StreamableMarkdown = memo(({ text }: { text: string | StreamableValue<string> }) => {
-  const streamedText = useStreamableText(text);
+const StreamableMarkdown = memo(
+  ({ text }: { text: string | StreamableValue<string> }) => {
+    const streamedText = useStreamableText(text);
 
-  return (
-    <div className="prose text-xs prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
-      <MemoizedReactMarkdown
-        components={{
-          p({ children }) {
-            return <p className="my-1 last:mb-0">{children}</p>;
-          },
-          ol({ children }) {
-            return <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>;
-          },
-          ul({ children }) {
-            return <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>;
-          },
-          li({ children }) {
-            return <li className="leading-tight my-0">{children}</li>;
-          },
-        }}
-      >
-        {streamedText}
-      </MemoizedReactMarkdown>
-    </div>
-  );
-});
+    return (
+      <div className="prose prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 text-xs">
+        <MemoizedReactMarkdown
+          components={{
+            p({ children }) {
+              return <p className="my-1 last:mb-0">{children}</p>;
+            },
+            ol({ children }) {
+              return (
+                <ol className="my-1 list-inside list-decimal space-y-0.5">
+                  {children}
+                </ol>
+              );
+            },
+            ul({ children }) {
+              return (
+                <ul className="my-1 list-inside list-disc space-y-0.5">
+                  {children}
+                </ul>
+              );
+            },
+            li({ children }) {
+              return <li className="my-0 leading-tight">{children}</li>;
+            },
+          }}
+        >
+          {streamedText}
+        </MemoizedReactMarkdown>
+      </div>
+    );
+  },
+);
 
 const PurePreviewMessage = ({
   message,
@@ -142,7 +156,7 @@ const PurePreviewMessage = ({
 }: {
   message: UIMessage;
   isLoading: boolean;
-  status: 'error' | 'submitted' | 'streaming' | 'ready';
+  status: "error" | "submitted" | "streaming" | "ready";
   isLatestMessage: boolean;
 }) => {
   return (
@@ -156,8 +170,8 @@ const PurePreviewMessage = ({
       >
         <div
           className={cn(
-            'flex w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
-            'group-data-[role=user]/message:w-fit',
+            "flex w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl",
+            "group-data-[role=user]/message:w-fit",
           )}
         >
           <div className="flex w-full flex-col space-y-4">
@@ -168,8 +182,8 @@ const PurePreviewMessage = ({
               }
 
               switch (part.type) {
-                case 'text':
-                  return message.role === 'user' ? (
+                case "text":
+                  return message.role === "user" ? (
                     <motion.div
                       initial={{ y: 5, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
@@ -177,12 +191,12 @@ const PurePreviewMessage = ({
                       className="flex w-full flex-row items-start gap-2 pb-2"
                     >
                       <div
-                        className={cn('flex flex-col gap-2', {
-                          'bg-secondary text-secondary-foreground rounded-sm px-3 py-2':
-                            message.role === 'user',
+                        className={cn("flex flex-col gap-2", {
+                          "bg-secondary text-secondary-foreground rounded-sm px-3 py-2":
+                            message.role === "user",
                         })}
                       >
-                        <StreamableMarkdown text={part.text || ''} />
+                        <StreamableMarkdown text={part.text || ""} />
                       </div>
                     </motion.div>
                   ) : (
@@ -193,19 +207,19 @@ const PurePreviewMessage = ({
                       className="flex w-full flex-row items-start gap-2 pb-2"
                     >
                       <BotCard key={`message-${message.id}-part-${i}`}>
-                        <StreamableMarkdown text={part.text || ''} />
+                        <StreamableMarkdown text={part.text || ""} />
                       </BotCard>
                     </motion.div>
                   );
 
-                case 'reasoning': {
+                case "reasoning": {
                   return (
                     <ReasoningMessagePart
                       key={`message-${message.id}-${i}`}
                       part={part as ReasoningPart}
                       isReasoning={
                         (message.parts &&
-                          status === 'streaming' &&
+                          status === "streaming" &&
                           i === message.parts.length - 1) ??
                         false
                       }
@@ -263,7 +277,12 @@ export function BotCard({
           {showAvatar && <ChatAvatar participantType="assistant" />}
         </div>
 
-        <div className={cn('ml-4 flex-1 overflow-hidden pl-2 text-xs leading-relaxed', className)}>
+        <div
+          className={cn(
+            "ml-4 flex-1 overflow-hidden pl-2 text-xs leading-relaxed",
+            className,
+          )}
+        >
           {children}
         </div>
       </div>

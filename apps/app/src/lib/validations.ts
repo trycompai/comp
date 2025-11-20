@@ -1,26 +1,31 @@
-import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Policy, PolicyStatus } from '@trycompai/db';
+import { getFiltersStateParser, getSortingStateParser } from "@/lib/parsers";
 import {
   createSearchParamsCache,
   parseAsArrayOf,
   parseAsInteger,
+  parseAsIsoDateTime,
   parseAsString,
   parseAsStringEnum,
-  parseAsIsoDateTime,
-} from 'nuqs/server';
-import * as z from 'zod';
+} from "nuqs/server";
+import * as z from "zod";
+
+import { Policy, PolicyStatus } from "@trycompai/db";
 
 export const searchParamsCache = createSearchParamsCache({
   page: parseAsInteger.withDefault(1),
   perPage: parseAsInteger.withDefault(50),
-  sort: getSortingStateParser<Policy>().withDefault([{ id: 'createdAt', desc: true }]),
-  name: parseAsString.withDefault(''),
-  status: parseAsArrayOf(parseAsStringEnum(Object.values(PolicyStatus))).withDefault([]),
+  sort: getSortingStateParser<Policy>().withDefault([
+    { id: "createdAt", desc: true },
+  ]),
+  name: parseAsString.withDefault(""),
+  status: parseAsArrayOf(
+    parseAsStringEnum(Object.values(PolicyStatus)),
+  ).withDefault([]),
   createdAt: parseAsArrayOf(parseAsIsoDateTime).withDefault([]),
   updatedAt: parseAsArrayOf(parseAsIsoDateTime).withDefault([]),
   // advanced filter
   filters: getFiltersStateParser().withDefault([]),
-  joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and'),
+  joinOperator: parseAsStringEnum(["and", "or"]).withDefault("and"),
 });
 
 export const createPolicySchema = z.object({
@@ -28,5 +33,7 @@ export const createPolicySchema = z.object({
   status: z.enum(PolicyStatus),
 });
 
-export type GetPolicySchema = Awaited<ReturnType<typeof searchParamsCache.parse>>;
+export type GetPolicySchema = Awaited<
+  ReturnType<typeof searchParamsCache.parse>
+>;
 export type CreatePolicySchema = z.infer<typeof createPolicySchema>;

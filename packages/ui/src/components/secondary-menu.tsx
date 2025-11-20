@@ -1,12 +1,18 @@
-'use client';
+"use client";
 
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { cn } from '../utils';
-import { Button } from './button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { cn } from "../utils";
+import { Button } from "./button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./tooltip";
 
 interface SecondaryMenuProps {
   items: {
@@ -25,14 +31,16 @@ interface SecondaryMenuProps {
 
 export function SecondaryMenu({
   items,
-  isChild,
   showBackButton,
-  backButtonHref = '/',
-  backButtonLabel = 'Back',
+  backButtonHref = "/",
+  backButtonLabel = "Back",
 }: SecondaryMenuProps) {
   const pathname = usePathname();
 
-  function isActiveLink(itemPath: string, activeOverrideIdPrefix?: string): boolean {
+  function isActiveLink(
+    itemPath: string,
+    activeOverrideIdPrefix?: string
+  ): boolean {
     // Handle override prefix first
     if (activeOverrideIdPrefix && pathname.includes(activeOverrideIdPrefix)) {
       return true;
@@ -45,7 +53,7 @@ export function SecondaryMenu({
 
     // Check if current path starts with item path followed by a slash
     // This prevents false matches like "/dashboard/org/test" matching "/dashboard/org/te"
-    if (pathname.startsWith(itemPath + '/')) {
+    if (pathname.startsWith(itemPath + "/")) {
       return true;
     }
 
@@ -53,7 +61,10 @@ export function SecondaryMenu({
   }
 
   // Memoize enabled items to prevent recreation on every render
-  const enabledItems = useMemo(() => items.filter((item) => item.enabled !== false), [items]);
+  const enabledItems = useMemo(
+    () => items.filter((item) => item.enabled !== false),
+    [items]
+  );
 
   // Calculate active index by finding the most specific (longest) matching path
   const getActiveIndex = () => {
@@ -80,7 +91,7 @@ export function SecondaryMenu({
   const [activeIndex, setActiveIndex] = useState(getActiveIndex);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoverStyle, setHoverStyle] = useState({});
-  const [activeStyle, setActiveStyle] = useState({ left: '0px', width: '0px' });
+  const [activeStyle, setActiveStyle] = useState({ left: "0px", width: "0px" });
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   // Update activeIndex when pathname changes
@@ -131,7 +142,7 @@ export function SecondaryMenu({
   }, [activeIndex]);
 
   return (
-    <nav className={'pb-4'} key={pathname}>
+    <nav className={"pb-4"} key={pathname}>
       <div className="flex items-center gap-2 overflow-auto p-[1px]">
         {showBackButton && (
           <Button variant="ghost" size="sm" asChild>
@@ -142,7 +153,7 @@ export function SecondaryMenu({
           </Button>
         )}
 
-        <div className="relative mb-0 w-full bg-card rounded-sm pb-2">
+        <div className="bg-card relative mb-0 w-full rounded-sm pb-2">
           {/* Hover Highlight */}
           <div
             className="bg-muted absolute h-9 rounded-xs transition-all duration-300 ease-out"
@@ -153,12 +164,12 @@ export function SecondaryMenu({
           />
 
           {/* Inactive Tab Underline */}
-          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-border/50" />
+          <div className="bg-border/50 absolute right-0 bottom-0 left-0 h-[1px]" />
 
           {/* Active Indicator */}
           {activeIndex >= 0 && (
             <div
-              className="bg-primary absolute bottom-0 h-[3px] rounded-t-xs transition-all duration-300 ease-out z-10"
+              className="bg-primary absolute bottom-0 z-10 h-[3px] rounded-t-xs transition-all duration-300 ease-out"
               style={activeStyle}
             />
           )}
@@ -201,8 +212,8 @@ export function SecondaryMenu({
                       tabRefs.current[currentEnabledIndex] = el;
                     }}
                     className={cn(
-                      'rounded-xs px-3 text-sm transition-colors pt-2 duration-300 select-none',
-                      isActive ? '' : 'text-muted-foreground',
+                      "rounded-xs px-3 pt-2 text-sm transition-colors duration-300 select-none",
+                      isActive ? "" : "text-muted-foreground"
                     )}
                     onMouseEnter={() => setHoveredIndex(currentEnabledIndex)}
                     onMouseLeave={() => setHoveredIndex(null)}

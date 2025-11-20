@@ -5,10 +5,11 @@
  * Manages chat status, script generation state, and data mapping.
  */
 
-import type { ChatStatus, DataUIPart } from 'ai';
-import { create } from 'zustand';
-import type { TaskAutomationStoreState, ViewMode } from './types';
-import type { DataPart } from './types/data-parts';
+import type { ChatStatus, DataUIPart } from "ai";
+import { create } from "zustand";
+
+import type { TaskAutomationStoreState, ViewMode } from "./types";
+import type { DataPart } from "./types/data-parts";
 
 interface TaskAutomationStore extends TaskAutomationStoreState {
   setChatStatus: (status: ChatStatus) => void;
@@ -24,10 +25,10 @@ interface TaskAutomationStore extends TaskAutomationStoreState {
  */
 export const useTaskAutomationStore = create<TaskAutomationStore>()((set) => ({
   // Initial state
-  chatStatus: 'ready',
+  chatStatus: "ready",
   scriptGenerated: false,
   scriptPath: undefined,
-  viewMode: 'visual',
+  viewMode: "visual",
   scriptUrl: undefined,
 
   // Actions
@@ -55,16 +56,18 @@ export function useTaskAutomationDataMapper() {
 
   return (data: DataUIPart<DataPart>) => {
     switch (data.type) {
-      case 'data-store-to-s3':
-        if (data.data.status === 'done' && data.data.key) {
+      case "data-store-to-s3":
+        if (data.data.status === "done" && data.data.key) {
           // Script has been successfully stored to S3
           setScriptGenerated(true, data.data.key);
 
           // Emit event for workflow visualizer
-          window.dispatchEvent(new CustomEvent('task-automation:script-saved'));
-        } else if (data.data.status === 'uploading') {
+          window.dispatchEvent(new CustomEvent("task-automation:script-saved"));
+        } else if (data.data.status === "uploading") {
           // Script upload started
-          window.dispatchEvent(new CustomEvent('task-automation:script-uploading'));
+          window.dispatchEvent(
+            new CustomEvent("task-automation:script-uploading"),
+          );
         }
         break;
       default:

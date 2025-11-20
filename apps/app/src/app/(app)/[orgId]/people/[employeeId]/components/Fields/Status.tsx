@@ -1,25 +1,33 @@
-import type { EmployeeStatusType } from '@/components/tables/people/employee-status';
-import { cn } from '@trycompai/ui/cn';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import type { EmployeeStatusType } from "@/components/tables/people/employee-status";
+import type { Control } from "react-hook-form";
+
+import { cn } from "@trycompai/ui/cn";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import type { Control } from 'react-hook-form';
-import type { EmployeeFormValues } from '../EmployeeDetails';
+} from "@trycompai/ui/select";
+
+import type { EmployeeFormValues } from "../EmployeeDetails";
 
 const STATUS_OPTIONS: { value: EmployeeStatusType; label: string }[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
 ];
 
 // Status color hex values for charts
 export const EMPLOYEE_STATUS_HEX_COLORS: Record<EmployeeStatusType, string> = {
-  inactive: '#ef4444',
-  active: 'hsl(var(--chart-primary))',
+  inactive: "#ef4444",
+  active: "hsl(var(--chart-primary))",
 };
 
 export const Status = ({
@@ -52,11 +60,12 @@ export const Status = ({
             <SelectContent>
               {STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
-                  <div className={cn('flex items-center gap-2')}>
+                  <div className={cn("flex items-center gap-2")}>
                     <div
-                      className={cn('size-2.5')}
+                      className={cn("size-2.5")}
                       style={{
-                        backgroundColor: EMPLOYEE_STATUS_HEX_COLORS[option.value] ?? '',
+                        backgroundColor:
+                          EMPLOYEE_STATUS_HEX_COLORS[option.value] ?? "",
                       }}
                     />
                     {option.label}

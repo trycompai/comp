@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { Button } from "@trycompai/ui/button";
+import { cn } from "@trycompai/ui/cn";
 import {
   Dialog,
   DialogContent,
@@ -10,12 +14,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Form, FormControl, FormField, FormItem } from '@trycompai/ui/form';
-import { Textarea } from '@trycompai/ui/textarea';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+} from "@trycompai/ui/dialog";
+import { Form, FormControl, FormField, FormItem } from "@trycompai/ui/form";
+import { Textarea } from "@trycompai/ui/textarea";
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -31,7 +32,13 @@ interface PolicyActionDialogProps {
   description: string;
   confirmText: string;
   confirmIcon: React.ReactNode;
-  confirmVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  confirmVariant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
 }
 
 export function PolicyActionDialog({
@@ -42,14 +49,14 @@ export function PolicyActionDialog({
   description,
   confirmText,
   confirmIcon,
-  confirmVariant = 'default',
+  confirmVariant = "default",
 }: PolicyActionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      comment: '',
+      comment: "",
     },
   });
 
@@ -72,7 +79,10 @@ export function PolicyActionDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="comment"
@@ -89,14 +99,19 @@ export function PolicyActionDialog({
               )}
             />
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 variant={confirmVariant}
                 disabled={isSubmitting}
-                className={cn('gap-1', isSubmitting && 'opacity-70')}
+                className={cn("gap-1", isSubmitting && "opacity-70")}
               >
                 {confirmIcon}
                 {confirmText}

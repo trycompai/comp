@@ -1,5 +1,6 @@
-import { cn } from '@trycompai/ui/cn';
-import { motion } from 'framer-motion';
+import { motion } from "motion/react";
+
+import { cn } from "@trycompai/ui/cn";
 
 export const ButtonIcon = ({
   className,
@@ -13,7 +14,7 @@ export const ButtonIcon = ({
   isLoading: boolean;
 }) => {
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn("relative", className)}>
       <motion.div
         initial={{ opacity: 1, scale: 1 }}
         animate={{

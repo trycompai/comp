@@ -1,9 +1,11 @@
-import { logger, task } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { createFleetLabelForOrg } from './create-fleet-label-for-org';
+import { logger, task } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
+
+import { createFleetLabelForOrg } from "./create-fleet-label-for-org";
 
 export const createFleetLabelForAllOrgs = task({
-  id: 'create-fleet-label-for-all-orgs',
+  id: "create-fleet-label-for-all-orgs",
   run: async () => {
     const organizations = await db.organization.findMany({
       where: {
@@ -11,7 +13,9 @@ export const createFleetLabelForAllOrgs = task({
       },
     });
 
-    logger.info(`Found ${organizations.length} organizations to create fleet label for`);
+    logger.info(
+      `Found ${organizations.length} organizations to create fleet label for`,
+    );
 
     const batchItems = organizations.map((organization) => ({
       payload: {

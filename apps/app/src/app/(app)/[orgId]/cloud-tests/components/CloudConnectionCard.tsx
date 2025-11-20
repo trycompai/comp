@@ -1,13 +1,21 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { ExternalLink, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { connectCloudAction } from '../actions/connect-cloud';
+import { useState } from "react";
+import { ExternalLink, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+import { Input } from "@trycompai/ui/input";
+import { Label } from "@trycompai/ui/label";
+
+import { connectCloudAction } from "../actions/connect-cloud";
 
 interface CloudField {
   id: string;
@@ -24,7 +32,7 @@ type TriggerInfo = {
 };
 
 interface CloudConnectionCardProps {
-  cloudProvider: 'aws' | 'gcp' | 'azure';
+  cloudProvider: "aws" | "gcp" | "azure";
   name: string;
   shortName: string;
   description: string;
@@ -42,7 +50,7 @@ export function CloudConnectionCard({
   description,
   fields,
   guideUrl,
-  color = 'from-primary to-primary',
+  color = "from-primary to-primary",
   logoUrl,
   onSuccess,
 }: CloudConnectionCardProps) {
@@ -65,7 +73,7 @@ export function CloudConnectionCard({
     const newErrors: Record<string, string> = {};
     fields.forEach((field) => {
       if (!credentials[field.id]?.trim()) {
-        newErrors[field.id] = 'Required';
+        newErrors[field.id] = "Required";
       }
     });
     setErrors(newErrors);
@@ -74,7 +82,7 @@ export function CloudConnectionCard({
 
   const handleConnect = async () => {
     if (!validateFields()) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -91,14 +99,16 @@ export function CloudConnectionCard({
         onSuccess?.(result.data?.trigger);
 
         if (result.data?.runErrors && result.data.runErrors.length > 0) {
-          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
+          toast.error(
+            result.data.runErrors[0] || "Initial scan reported an issue",
+          );
         }
       } else {
-        toast.error(result?.data?.error || 'Failed to connect');
+        toast.error(result?.data?.error || "Failed to connect");
       }
     } catch (error) {
-      console.error('Connection error:', error);
-      toast.error('An unexpected error occurred');
+      console.error("Connection error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsConnecting(false);
     }
@@ -112,7 +122,11 @@ export function CloudConnectionCard({
             className={`bg-gradient-to-br ${color} flex items-center justify-center rounded-lg p-2`}
           >
             {logoUrl && (
-              <img src={logoUrl} alt={`${shortName} logo`} className="h-8 w-8 object-contain" />
+              <img
+                src={logoUrl}
+                alt={`${shortName} logo`}
+                className="h-8 w-8 object-contain"
+              />
             )}
           </div>
           <div>
@@ -125,7 +139,7 @@ export function CloudConnectionCard({
             href={guideUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline flex items-center gap-1 text-xs"
+            className="text-primary flex items-center gap-1 text-xs hover:underline"
           >
             <ExternalLink className="h-3 w-3" />
             Setup guide
@@ -139,39 +153,45 @@ export function CloudConnectionCard({
               {field.label}
               <span className="text-destructive ml-1">*</span>
             </Label>
-            {field.type === 'textarea' ? (
+            {field.type === "textarea" ? (
               <textarea
                 id={field.id}
                 placeholder={field.placeholder}
-                value={credentials[field.id] || ''}
+                value={credentials[field.id] || ""}
                 onChange={(e) => handleFieldChange(field.id, e.target.value)}
                 disabled={isConnecting}
-                className={`bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                  errors[field.id] ? 'border-destructive' : ''
+                className={`bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+                  errors[field.id] ? "border-destructive" : ""
                 }`}
               />
             ) : (
               <Input
                 id={field.id}
-                type={field.type || 'text'}
+                type={field.type || "text"}
                 placeholder={field.placeholder}
-                value={credentials[field.id] || ''}
+                value={credentials[field.id] || ""}
                 onChange={(e) => handleFieldChange(field.id, e.target.value)}
                 disabled={isConnecting}
-                className={errors[field.id] ? 'border-destructive' : ''}
+                className={errors[field.id] ? "border-destructive" : ""}
               />
             )}
-            {field.helpText && <p className="text-muted-foreground text-xs">{field.helpText}</p>}
+            {field.helpText && (
+              <p className="text-muted-foreground text-xs">{field.helpText}</p>
+            )}
           </div>
         ))}
-        <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
+        <Button
+          onClick={handleConnect}
+          disabled={isConnecting}
+          className="w-full"
+        >
           {isConnecting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Connecting...
             </>
           ) : (
-            'Connect'
+            "Connect"
           )}
         </Button>
       </CardContent>

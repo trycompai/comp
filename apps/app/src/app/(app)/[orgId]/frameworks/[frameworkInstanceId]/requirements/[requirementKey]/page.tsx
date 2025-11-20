@@ -1,11 +1,13 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { auth } from '@/utils/auth';
-import type { FrameworkEditorRequirement } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { getSingleFrameworkInstanceWithControls } from '../../../data/getSingleFrameworkInstanceWithControls';
-import { RequirementControls } from './components/RequirementControls';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+import { auth } from "@/utils/auth";
+
+import type { FrameworkEditorRequirement } from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import { getSingleFrameworkInstanceWithControls } from "../../../data/getSingleFrameworkInstanceWithControls";
+import { RequirementControls } from "./components/RequirementControls";
 
 interface PageProps {
   params: Promise<{
@@ -22,22 +24,23 @@ export default async function RequirementPage({ params }: PageProps) {
   });
 
   if (!session) {
-    redirect('/');
+    redirect("/");
   }
 
   const organizationId = session.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect('/');
+    redirect("/");
   }
 
-  const frameworkInstanceWithControls = await getSingleFrameworkInstanceWithControls({
-    organizationId,
-    frameworkInstanceId,
-  });
+  const frameworkInstanceWithControls =
+    await getSingleFrameworkInstanceWithControls({
+      organizationId,
+      frameworkInstanceId,
+    });
 
   if (!frameworkInstanceWithControls) {
-    redirect('/');
+    redirect("/");
   }
 
   const allReqDefsForFramework = await db.frameworkEditorRequirement.findMany({
@@ -61,7 +64,9 @@ export default async function RequirementPage({ params }: PageProps) {
 
   const frameworkName = frameworkInstanceWithControls.framework.name;
 
-  const siblingRequirements = allReqDefsForFramework.filter((def) => def.id !== requirementKey);
+  const siblingRequirements = allReqDefsForFramework.filter(
+    (def) => def.id !== requirementKey,
+  );
 
   const siblingRequirementsDropdown = siblingRequirements.map((def) => ({
     label: def.name,
@@ -88,14 +93,14 @@ export default async function RequirementPage({ params }: PageProps) {
     },
   });
 
-  console.log('relatedControls', relatedControls);
+  console.log("relatedControls", relatedControls);
 
   const maxLabelLength = 40;
 
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Frameworks', href: `/${organizationId}/frameworks` },
+        { label: "Frameworks", href: `/${organizationId}/frameworks` },
         {
           label: frameworkName,
           href: `/${organizationId}/frameworks/${frameworkInstanceId}`,

@@ -1,10 +1,17 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import NextError from 'next/error';
-import Link from 'next/link';
+import NextError from "next/error";
+import Link from "next/link";
 
-export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+import { Button } from "@trycompai/ui/button";
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
   return (
     <html lang="en">
       <body>

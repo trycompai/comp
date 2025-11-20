@@ -1,20 +1,32 @@
-'use client';
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { BookOpen, HelpCircle, PlusIcon } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useQueryState } from "nuqs";
 
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@trycompai/ui/accordion';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import { BookOpen, HelpCircle, PlusIcon } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useQueryState } from 'nuqs';
+} from "@trycompai/ui/accordion";
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@trycompai/ui/tooltip";
 
 interface FAQ {
   questionKey: string;
@@ -48,7 +60,7 @@ export function AppOnboarding({
   ctaDisabled = false,
   ctaTooltip,
 }: Props) {
-  const [open, setOpen] = useQueryState(sheetName ?? 'sheet');
+  const [open, setOpen] = useQueryState(sheetName ?? "sheet");
   const isOpen = Boolean(open);
   const { theme } = useTheme();
 
@@ -76,7 +88,10 @@ export function AppOnboarding({
               </div>
 
               <div className="bg-secondary/50 relative mt-4 h-1 w-full overflow-hidden rounded-full">
-                <div className="bg-primary h-full transition-all" style={{ width: '5%' }} />
+                <div
+                  className="bg-primary h-full transition-all"
+                  style={{ width: "5%" }}
+                />
               </div>
             </CardHeader>
 
@@ -85,11 +100,15 @@ export function AppOnboarding({
                 <div className="flex flex-col">
                   <div className="mb-4 flex items-center gap-2">
                     <BookOpen className="text-primary h-4 w-4" />
-                    <p className="text-md font-medium">{'Learn More'}</p>
+                    <p className="text-md font-medium">{"Learn More"}</p>
                   </div>
 
                   {faqs && faqs.length > 0 && (
-                    <Accordion type="single" collapsible className="w-full divide-y">
+                    <Accordion
+                      type="single"
+                      collapsible
+                      className="w-full divide-y"
+                    >
                       {faqs.map((faq) => (
                         <AccordionItem
                           key={faq.questionKey}
@@ -116,11 +135,13 @@ export function AppOnboarding({
                         {href ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className={`w-full ${ctaDisabled ? 'cursor-not-allowed' : ''}`}>
+                              <span
+                                className={`w-full ${ctaDisabled ? "cursor-not-allowed" : ""}`}
+                              >
                                 <Link href={href}>
                                   <Button
                                     variant="default"
-                                    className={`flex w-full items-center gap-2 ${ctaDisabled ? 'cursor-not-allowed' : ''}`}
+                                    className={`flex w-full items-center gap-2 ${ctaDisabled ? "cursor-not-allowed" : ""}`}
                                     disabled={ctaDisabled}
                                   >
                                     <PlusIcon className="h-4 w-4" />
@@ -138,11 +159,13 @@ export function AppOnboarding({
                         ) : (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className={`w-full ${ctaDisabled ? 'cursor-not-allowed' : ''}`}>
+                              <span
+                                className={`w-full ${ctaDisabled ? "cursor-not-allowed" : ""}`}
+                              >
                                 <Button
                                   variant="default"
-                                  className={`flex w-full items-center gap-2 ${ctaDisabled ? 'cursor-not-allowed' : ''}`}
-                                  onClick={() => setOpen('true')}
+                                  className={`flex w-full items-center gap-2 ${ctaDisabled ? "cursor-not-allowed" : ""}`}
+                                  onClick={() => setOpen("true")}
                                   disabled={ctaDisabled}
                                 >
                                   <PlusIcon className="h-4 w-4" />
@@ -165,7 +188,7 @@ export function AppOnboarding({
                 <div className="relative hidden flex-col items-center justify-center lg:flex">
                   <div className="bg-gradient-radial from-accent/20 absolute inset-0 rounded-full to-transparent opacity-70" />
                   <Image
-                    src={theme === 'dark' ? imageSrcDark : imageSrcLight}
+                    src={theme === "dark" ? imageSrcDark : imageSrcLight}
                     alt={imageAlt}
                     height={400}
                     width={400}

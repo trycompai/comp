@@ -1,5 +1,6 @@
-import type { Control, Task } from '@trycompai/db';
-import type { FrameworkInstanceWithControls } from '../types';
+import type { Control, Task } from "@trycompai/db";
+
+import type { FrameworkInstanceWithControls } from "../types";
 
 export interface FrameworkStats {
   totalPolicies: number;
@@ -24,18 +25,22 @@ export function computeFrameworkStats(
   const uniquePolicies = Array.from(uniquePoliciesMap.values());
 
   const totalPolicies = uniquePolicies.length;
-  const publishedPolicies = uniquePolicies.filter((p) => p.status === 'published').length;
+  const publishedPolicies = uniquePolicies.filter(
+    (p) => p.status === "published",
+  ).length;
   const policyRatio = totalPolicies > 0 ? publishedPolicies / totalPolicies : 0;
 
   const controlIds = controls.map((c) => c.id);
-  const frameworkTasks = tasks.filter((t) => t.controls.some((c) => controlIds.includes(c.id)));
+  const frameworkTasks = tasks.filter((t) =>
+    t.controls.some((c) => controlIds.includes(c.id)),
+  );
   // Deduplicate tasks by id to avoid double counting across multiple controls
   const uniqueTaskMap = new Map<string, Task & { controls: Control[] }>();
   for (const t of frameworkTasks) uniqueTaskMap.set(t.id, t);
   const uniqueTasks = Array.from(uniqueTaskMap.values());
   const totalTasks = uniqueTasks.length;
   const doneTasks = uniqueTasks.filter(
-    (t) => t.status === 'done' || t.status === 'not_relevant',
+    (t) => t.status === "done" || t.status === "not_relevant",
   ).length;
   const taskRatio = totalTasks > 0 ? doneTasks / totalTasks : 1;
 

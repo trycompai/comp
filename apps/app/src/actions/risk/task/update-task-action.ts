@@ -1,20 +1,22 @@
 // update-task-action.ts
 
-'use server';
+"use server";
 
-import type { TaskStatus } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { authActionClient } from '../../safe-action';
-import { updateTaskSchema } from '../../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import type { TaskStatus } from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../../safe-action";
+import { updateTaskSchema } from "../../schema";
 
 export const updateTaskAction = authActionClient
   .inputSchema(updateTaskSchema)
   .metadata({
-    name: 'update-task',
+    name: "update-task",
     track: {
-      event: 'update-task',
-      channel: 'server',
+      event: "update-task",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -22,7 +24,7 @@ export const updateTaskAction = authActionClient
     const { session } = ctx;
 
     if (!session.activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     try {
@@ -33,7 +35,7 @@ export const updateTaskAction = authActionClient
       });
 
       if (!task) {
-        throw new Error('Task not found');
+        throw new Error("Task not found");
       }
 
       await db.task.update({
@@ -53,7 +55,7 @@ export const updateTaskAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}/tasks/${id}`);
-      revalidateTag('risks', { expire: 0 });
+      revalidateTag("risks", { expire: 0 });
 
       return { success: true };
     } catch (error) {

@@ -1,11 +1,11 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,17 +20,17 @@ import {
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
-import { CreateVendorDto } from './dto/create-vendor.dto';
-import { UpdateVendorDto } from './dto/update-vendor.dto';
-import { VendorsService } from './vendors.service';
-import { VENDOR_OPERATIONS } from './schemas/vendor-operations';
-import { VENDOR_PARAMS } from './schemas/vendor-params';
-import { VENDOR_BODIES } from './schemas/vendor-bodies';
+import type { CreateVendorDto } from './dto/create-vendor.dto';
+import type { UpdateVendorDto } from './dto/update-vendor.dto';
+import { CREATE_VENDOR_RESPONSES } from './schemas/create-vendor.responses';
+import { DELETE_VENDOR_RESPONSES } from './schemas/delete-vendor.responses';
 import { GET_ALL_VENDORS_RESPONSES } from './schemas/get-all-vendors.responses';
 import { GET_VENDOR_BY_ID_RESPONSES } from './schemas/get-vendor-by-id.responses';
-import { CREATE_VENDOR_RESPONSES } from './schemas/create-vendor.responses';
 import { UPDATE_VENDOR_RESPONSES } from './schemas/update-vendor.responses';
-import { DELETE_VENDOR_RESPONSES } from './schemas/delete-vendor.responses';
+import { VENDOR_BODIES } from './schemas/vendor-bodies';
+import { VENDOR_OPERATIONS } from './schemas/vendor-operations';
+import { VENDOR_PARAMS } from './schemas/vendor-params';
+import type { VendorsService } from './vendors.service';
 
 @ApiTags('Vendors')
 @Controller({ path: 'vendors', version: '1' })

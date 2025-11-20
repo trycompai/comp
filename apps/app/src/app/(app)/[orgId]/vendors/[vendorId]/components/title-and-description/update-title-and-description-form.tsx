@@ -1,37 +1,46 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Vendor } from '@trycompai/db';
+import type { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useQueryState } from "nuqs";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import type { Vendor } from "@trycompai/db";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
-import { updateVendorSchema } from '../../actions/schema';
-import { updateVendorAction } from '../../actions/update-vendor-action';
+} from "@trycompai/ui/accordion";
+import { Button } from "@trycompai/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
+import { Textarea } from "@trycompai/ui/textarea";
+
+import { updateVendorSchema } from "../../actions/schema";
+import { updateVendorAction } from "../../actions/update-vendor-action";
 
 export function UpdateTitleAndDescriptionForm({ vendor }: { vendor: Vendor }) {
-  const [open, setOpen] = useQueryState('vendor-overview-sheet');
+  const [open, setOpen] = useQueryState("vendor-overview-sheet");
 
   const updateVendor = useAction(updateVendorAction, {
     onSuccess: () => {
-      toast.success('Vendor updated successfully');
+      toast.success("Vendor updated successfully");
       setOpen(null);
     },
     onError: (error) => {
-      console.error('Error updating vendor:', error);
-      toast.error('Failed to update vendor');
+      console.error("Error updating vendor:", error);
+      toast.error("Failed to update vendor");
     },
   });
 
@@ -61,23 +70,28 @@ export function UpdateTitleAndDescriptionForm({ vendor }: { vendor: Vendor }) {
   return (
     <Form {...form}>
       <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
-        <Accordion type="multiple" defaultValue={['vendor']}>
+        <Accordion type="multiple" defaultValue={["vendor"]}>
           <AccordionItem value="vendor">
-            <AccordionTrigger>{'Vendor'}</AccordionTrigger>
+            <AccordionTrigger>{"Vendor"}</AccordionTrigger>
             <AccordionContent>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{'Name'}</FormLabel>
+                      <FormLabel>{"Name"}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           autoFocus
                           className="mt-3"
-                          placeholder={'A short, descriptive name for the vendor.'}
+                          placeholder={
+                            "A short, descriptive name for the vendor."
+                          }
                           autoCorrect="off"
                         />
                       </FormControl>
@@ -90,12 +104,14 @@ export function UpdateTitleAndDescriptionForm({ vendor }: { vendor: Vendor }) {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{'Description'}</FormLabel>
+                      <FormLabel>{"Description"}</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
                           className="mt-3 min-h-[80px]"
-                          placeholder={'A detailed description of the vendor and its services.'}
+                          placeholder={
+                            "A detailed description of the vendor and its services."
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -106,12 +122,12 @@ export function UpdateTitleAndDescriptionForm({ vendor }: { vendor: Vendor }) {
                   <Button
                     type="submit"
                     variant="default"
-                    disabled={updateVendor.status === 'executing'}
+                    disabled={updateVendor.status === "executing"}
                   >
-                    {updateVendor.status === 'executing' ? (
+                    {updateVendor.status === "executing" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Save'
+                      "Save"
                     )}
                   </Button>
                 </div>

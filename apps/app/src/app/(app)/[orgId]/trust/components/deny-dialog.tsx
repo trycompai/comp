@@ -1,6 +1,9 @@
-import { useDenyAccessRequest } from '@/hooks/use-access-requests';
-import { useForm } from '@tanstack/react-form';
-import { Button } from '@trycompai/ui/button';
+import { useDenyAccessRequest } from "@/hooks/use-access-requests";
+import { useForm } from "@tanstack/react-form";
+import { toast } from "sonner";
+import * as z from "zod";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,14 +11,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@trycompai/ui/field';
-import { Textarea } from '@trycompai/ui/textarea';
-import { toast } from 'sonner';
-import * as z from 'zod';
+} from "@trycompai/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@trycompai/ui/field";
+import { Textarea } from "@trycompai/ui/textarea";
 
 const denySchema = z.object({
-  reason: z.string().min(1, { message: 'Reason is required' }),
+  reason: z.string().min(1, { message: "Reason is required" }),
 });
 
 export function DenyDialog({
@@ -31,19 +32,19 @@ export function DenyDialog({
 
   const form = useForm({
     defaultValues: {
-      reason: '',
+      reason: "",
     },
     validators: {
       onChange: denySchema,
     },
     onSubmit: async ({ value }) => {
       toast.promise(denyRequest({ requestId, reason: value.reason }), {
-        loading: 'Denying...',
+        loading: "Denying...",
         success: () => {
           onClose();
-          return 'Request denied';
+          return "Request denied";
         },
-        error: 'Failed to deny request',
+        error: "Failed to deny request",
       });
     },
   });
@@ -60,11 +61,14 @@ export function DenyDialog({
         >
           <DialogHeader>
             <DialogTitle>Deny Access Request</DialogTitle>
-            <DialogDescription>Please provide a reason for denying this request</DialogDescription>
+            <DialogDescription>
+              Please provide a reason for denying this request
+            </DialogDescription>
           </DialogHeader>
           <form.Field name="reason">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor="reason">Reason</FieldLabel>
@@ -88,10 +92,16 @@ export function DenyDialog({
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>
-            <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+            <form.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+            >
               {([canSubmit, isSubmitting]) => (
-                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? 'Denying...' : 'Deny Request'}
+                <Button
+                  variant="destructive"
+                  type="submit"
+                  disabled={!canSubmit || isSubmitting}
+                >
+                  {isSubmitting ? "Denying..." : "Deny Request"}
                 </Button>
               )}
             </form.Subscribe>

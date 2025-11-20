@@ -1,21 +1,26 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
 
-export default async function SetupLayout({ children }: { children: React.ReactNode }) {
+import { db } from "@trycompai/db";
+
+export default async function SetupLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   // Respect explicit intent to create an additional organization
   const hdrs = await headers();
-  const intent = hdrs.get('x-intent');
+  const intent = hdrs.get("x-intent");
 
   // If user already belongs to an org, route to their latest org instead of re-running setup
   const session = await auth.api.getSession({ headers: await headers() });
-  if (session && intent !== 'create-additional') {
+  if (session && intent !== "create-additional") {
     const userOrg = await db.organization.findFirst({
       where: {
         members: { some: { userId: session.user.id } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       select: { id: true, onboardingCompleted: true },
     });
     if (userOrg) {

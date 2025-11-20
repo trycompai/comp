@@ -1,21 +1,27 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { cache } from 'react';
-import { Overview } from './components/Overview';
-import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
-import { getFrameworkWithComplianceScores } from './data/getFrameworkWithComplianceScores';
-import { getPublishedPoliciesScore } from './lib/getPolicies';
-import { getDoneTasks } from './lib/getTasks';
+import { cache } from "react";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { Overview } from "./components/Overview";
+import { getAllFrameworkInstancesWithControls } from "./data/getAllFrameworkInstancesWithControls";
+import { getFrameworkWithComplianceScores } from "./data/getFrameworkWithComplianceScores";
+import { getPublishedPoliciesScore } from "./lib/getPolicies";
+import { getDoneTasks } from "./lib/getTasks";
 
 export async function generateMetadata() {
   return {
-    title: 'Frameworks',
+    title: "Frameworks",
   };
 }
 
-export default async function DashboardPage({ params }: { params: Promise<{ orgId: string }> }) {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
   const { orgId: organizationId } = await params;
 
   const session = await auth.api.getSession({
@@ -23,7 +29,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
   });
 
   if (!session) {
-    redirect('/login');
+    redirect("/login");
   }
 
   const org = await db.organization.findUnique({
@@ -58,7 +64,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     },
   });
 
-  const publishedPoliciesScore = await getPublishedPoliciesScore(organizationId);
+  const publishedPoliciesScore =
+    await getPublishedPoliciesScore(organizationId);
   const doneTasksScore = await getDoneTasks(organizationId);
 
   return (

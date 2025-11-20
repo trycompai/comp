@@ -1,49 +1,57 @@
-'use client';
+"use client";
 
-import { api } from '@/lib/api-client';
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import {
+  ChevronRight,
+  Loader2,
+  MoreVertical,
+  Play,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import {
   EvidenceAutomation,
   EvidenceAutomationRun,
   EvidenceAutomationVersion,
   Task,
-} from '@trycompai/db';
+} from "@trycompai/db";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
-} from '@trycompai/ui/breadcrumb';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+} from "@trycompai/ui/breadcrumb";
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
+} from "@trycompai/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
-import { ChevronRight, Loader2, MoreVertical, Play, Trash2 } from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useRef, useState } from 'react';
-import { toast } from 'sonner';
+} from "@trycompai/ui/select";
+import { Textarea } from "@trycompai/ui/textarea";
+
 import {
   executeAutomationScript,
   toggleAutomationEnabled,
-} from '../../../../automation/[automationId]/actions/task-automation-actions';
-import { DeleteAutomationDialog } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
-import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
-import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
-import { useAutomationRuns } from '../hooks/use-automation-runs';
-import { MetricsSection } from './MetricsSection';
+} from "../../../../automation/[automationId]/actions/task-automation-actions";
+import { DeleteAutomationDialog } from "../../../../automation/[automationId]/components/AutomationSettingsDialogs";
+import { useTaskAutomation } from "../../../../automation/[automationId]/hooks/use-task-automation";
+import { AutomationRunsCard } from "../../../../components/AutomationRunsCard";
+import { useAutomationRuns } from "../hooks/use-automation-runs";
+import { MetricsSection } from "./MetricsSection";
 
 type RunWithAutomationName = EvidenceAutomationRun & {
   evidenceAutomation: {
@@ -73,13 +81,14 @@ export function AutomationOverview({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
   const [editingDescription, setEditingDescription] = useState(false);
-  const [descriptionValue, setDescriptionValue] = useState('');
+  const [descriptionValue, setDescriptionValue] = useState("");
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [isTestingVersion, setIsTestingVersion] = useState(false);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Use the automation hook to get live data and mutate function
-  const { automation: liveAutomation, mutate: mutateAutomation } = useTaskAutomation();
+  const { automation: liveAutomation, mutate: mutateAutomation } =
+    useTaskAutomation();
 
   // Use live runs data with auto-refresh
   const { runs: liveRuns, mutate: mutateRuns } = useAutomationRuns();
@@ -89,7 +98,8 @@ export function AutomationOverview({
   const runs = liveRuns || initialRuns;
 
   // Set initial selected version to latest
-  const latestVersion = initialVersions.length > 0 ? initialVersions[0].version : null;
+  const latestVersion =
+    initialVersions.length > 0 ? initialVersions[0].version : null;
   if (selectedVersion === null && latestVersion !== null) {
     setSelectedVersion(latestVersion);
   }
@@ -102,21 +112,23 @@ export function AutomationOverview({
       const result = await toggleAutomationEnabled(automation.id, enabled);
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to toggle automation');
+        throw new Error(result.error || "Failed to toggle automation");
       }
 
-      toast.success(enabled ? 'Automation enabled' : 'Automation disabled');
+      toast.success(enabled ? "Automation enabled" : "Automation disabled");
       await mutateAutomation();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to toggle automation');
-      console.error('Error toggling automation:', error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to toggle automation",
+      );
+      console.error("Error toggling automation:", error);
     } finally {
       setIsTogglingEnabled(false);
     }
   };
 
   const handleDescriptionEdit = () => {
-    setDescriptionValue(automation.description || '');
+    setDescriptionValue(automation.description || "");
     setEditingDescription(true);
     setTimeout(() => descriptionInputRef.current?.focus(), 0);
   };
@@ -135,23 +147,23 @@ export function AutomationOverview({
 
       if (result.success) {
         toast.success(`Testing version ${selectedVersion}`, {
-          description: 'Test started - check run history below',
+          description: "Test started - check run history below",
         });
 
         // Refresh runs to show the new test
         await mutateRuns();
       } else {
-        toast.error(result.error || 'Failed to start test');
+        toast.error(result.error || "Failed to start test");
       }
     } catch (error) {
-      toast.error('Failed to start test');
+      toast.error("Failed to start test");
     } finally {
       setIsTestingVersion(false);
     }
   };
 
   const saveDescriptionEdit = async () => {
-    if (descriptionValue === (automation.description || '')) {
+    if (descriptionValue === (automation.description || "")) {
       setEditingDescription(false);
       return;
     }
@@ -168,11 +180,11 @@ export function AutomationOverview({
       }
 
       await mutateAutomation();
-      toast.success('Description updated');
+      toast.success("Description updated");
       setEditingDescription(false);
     } catch (error) {
-      toast.error('Failed to update description');
-      setDescriptionValue(automation.description || '');
+      toast.error("Failed to update description");
+      setDescriptionValue(automation.description || "");
       setEditingDescription(false);
     }
   };
@@ -219,7 +231,9 @@ export function AutomationOverview({
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <span className="text-foreground font-medium">{automation.name}</span>
+                <span className="text-foreground font-medium">
+                  {automation.name}
+                </span>
               </BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -237,7 +251,7 @@ export function AutomationOverview({
       />
 
       {/* Main Content - 2 Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-8 py-12">
+      <div className="grid grid-cols-1 gap-6 px-8 py-12 lg:grid-cols-3">
         {/* Left Column - History */}
         <div className="lg:col-span-2">
           <AutomationRunsCard runs={runsWithName} />
@@ -249,24 +263,31 @@ export function AutomationOverview({
           {initialVersions.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base font-medium">Versions</CardTitle>
+                <CardTitle className="text-base font-medium">
+                  Versions
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Select
-                      value={selectedVersion?.toString() || ''}
-                      onValueChange={(value) => setSelectedVersion(parseInt(value))}
+                      value={selectedVersion?.toString() || ""}
+                      onValueChange={(value) =>
+                        setSelectedVersion(parseInt(value))
+                      }
                     >
-                      <SelectTrigger className="h-9 text-sm flex-1">
+                      <SelectTrigger className="h-9 flex-1 text-sm">
                         <SelectValue placeholder="Select version" />
                       </SelectTrigger>
                       <SelectContent>
                         {initialVersions.map((v) => (
-                          <SelectItem key={v.version} value={v.version.toString()}>
+                          <SelectItem
+                            key={v.version}
+                            value={v.version.toString()}
+                          >
                             v{v.version}
                             {v.changelog &&
-                              ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? '...' : ''}`}
+                              ` - ${v.changelog.substring(0, 30)}${v.changelog.length > 30 ? "..." : ""}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -279,18 +300,18 @@ export function AutomationOverview({
                     >
                       {isTestingVersion ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                           Testing
                         </>
                       ) : (
                         <>
-                          <Play className="w-3.5 h-3.5 mr-1.5" />
+                          <Play className="mr-1.5 h-3.5 w-3.5" />
                           Test
                         </>
                       )}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Select a version and test it to verify functionality
                   </p>
                 </div>
@@ -313,7 +334,7 @@ export function AutomationOverview({
                       onClick={() => setDeleteDialogOpen(true)}
                       className="text-destructive focus:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Delete Automation
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -322,8 +343,10 @@ export function AutomationOverview({
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1 group">
-                  <p className="text-xs font-medium text-muted-foreground">Description</p>
+                <div className="group flex flex-col gap-1">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Description
+                  </p>
                   {editingDescription ? (
                     <Textarea
                       ref={descriptionInputRef}
@@ -331,17 +354,17 @@ export function AutomationOverview({
                       onChange={(e) => setDescriptionValue(e.target.value)}
                       onBlur={saveDescriptionEdit}
                       onKeyDown={(e) => {
-                        if (e.key === 'Escape') {
+                        if (e.key === "Escape") {
                           setEditingDescription(false);
                         }
                       }}
-                      className="text-sm min-h-[60px]"
+                      className="min-h-[60px] text-sm"
                       rows={3}
                     />
                   ) : (
                     <p
                       onClick={handleDescriptionEdit}
-                      className="text-sm cursor-pointer rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-muted/50 transition-colors min-h-[24px]"
+                      className="hover:bg-muted/50 -mx-2 -my-1 min-h-[24px] cursor-pointer rounded-md px-2 py-1 text-sm transition-colors"
                     >
                       {automation.description || (
                         <span className="text-muted-foreground italic">
@@ -353,40 +376,56 @@ export function AutomationOverview({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-muted-foreground">Created</p>
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Created
+                  </p>
                   <p className="text-sm">
-                    {new Date(automation.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}{' '}
-                    at{' '}
-                    {new Date(automation.createdAt).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                    })}
+                    {new Date(automation.createdAt).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      },
+                    )}{" "}
+                    at{" "}
+                    {new Date(automation.createdAt).toLocaleTimeString(
+                      "en-US",
+                      {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      },
+                    )}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-muted-foreground">Last Published</p>
+                  <p className="text-muted-foreground text-xs font-medium">
+                    Last Published
+                  </p>
                   <p className="text-sm">
                     {runsWithName[0]?.createdAt ? (
                       <>
-                        {new Date(runsWithName[0].createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}{' '}
-                        at{' '}
-                        {new Date(runsWithName[0].createdAt).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true,
-                        })}
+                        {new Date(runsWithName[0].createdAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}{" "}
+                        at{" "}
+                        {new Date(runsWithName[0].createdAt).toLocaleTimeString(
+                          "en-US",
+                          {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          },
+                        )}
                       </>
                     ) : (
-                      'Never'
+                      "Never"
                     )}
                   </p>
                 </div>

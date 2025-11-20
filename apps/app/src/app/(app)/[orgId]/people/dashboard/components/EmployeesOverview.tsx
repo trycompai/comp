@@ -1,9 +1,11 @@
-import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
-import { auth } from '@/utils/auth';
-import type { Member, Policy, User } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { EmployeeCompletionChart } from './EmployeeCompletionChart';
+import { headers } from "next/headers";
+import { trainingVideos as trainingVideosData } from "@/lib/data/training-videos";
+import { auth } from "@/utils/auth";
+
+import type { Member, Policy, User } from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import { EmployeeCompletionChart } from "./EmployeeCompletionChart";
 
 // Define EmployeeWithUser type similar to EmployeesList
 interface EmployeeWithUser extends Member {
@@ -48,8 +50,10 @@ export async function EmployeesOverview() {
     });
 
     employees = fetchedMembers.filter((member) => {
-      const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-      return roles.includes('employee') || roles.includes('contractor');
+      const roles = member.role.includes(",")
+        ? member.role.split(",")
+        : [member.role];
+      return roles.includes("employee") || roles.includes("contractor");
     });
 
     // Fetch required policies that are published and not archived
@@ -57,20 +61,21 @@ export async function EmployeesOverview() {
       where: {
         organizationId: organizationId,
         isRequiredToSign: true,
-        status: 'published',
+        status: "published",
         isArchived: false,
       },
     });
 
     // Fetch and process training videos if employees exist
     if (employees.length > 0) {
-      const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
-        where: {
-          memberId: {
-            in: employees.map((employee) => employee.id),
+      const employeeTrainingVideos =
+        await db.employeeTrainingVideoCompletion.findMany({
+          where: {
+            memberId: {
+              in: employees.map((employee) => employee.id),
+            },
           },
-        },
-      });
+        });
 
       for (const dbVideo of employeeTrainingVideos) {
         const videoMetadata = trainingVideosData.find(
@@ -84,7 +89,7 @@ export async function EmployeesOverview() {
             memberId: dbVideo.memberId,
             videoId: dbVideo.videoId,
             completedAt: dbVideo.completedAt,
-            metadata: videoMetadata as ProcessedTrainingVideo['metadata'],
+            metadata: videoMetadata as ProcessedTrainingVideo["metadata"],
           });
         }
       }

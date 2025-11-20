@@ -1,4 +1,4 @@
-import type { ScriptConfig } from '../types';
+import type { ScriptConfig } from "../types";
 
 export function generateWindowsScript(config: ScriptConfig): string {
   const { orgId, employeeId, fleetDevicePath } = config;
@@ -218,5 +218,5 @@ REM End of main
 goto :eof
 `;
 
-  return script.replace(/\n/g, '\r\n');
+  return script.replace(/\n/g, "\r\n");
 }

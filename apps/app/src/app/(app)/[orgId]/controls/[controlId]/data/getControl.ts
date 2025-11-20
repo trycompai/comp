@@ -1,6 +1,7 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
 
 export const getControl = async (id: string) => {
   const session = await auth.api.getSession({
@@ -9,13 +10,13 @@ export const getControl = async (id: string) => {
 
   if (!session) {
     return {
-      error: 'Unauthorized',
+      error: "Unauthorized",
     };
   }
 
   if (!session.session.activeOrganizationId) {
     return {
-      error: 'Unauthorized',
+      error: "Unauthorized",
     };
   }
 

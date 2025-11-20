@@ -1,10 +1,17 @@
-'use client';
+"use client";
 
-import type { TrainingVideo } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@trycompai/db';
-import type { FleetPolicy, Host } from '../../devices/types';
-import { EmployeeDetails } from './EmployeeDetails';
-import { EmployeeTasks } from './EmployeeTasks';
+import type { TrainingVideo } from "@/lib/data/training-videos";
+
+import type {
+  EmployeeTrainingVideoCompletion,
+  Member,
+  Policy,
+  User,
+} from "@trycompai/db";
+
+import type { FleetPolicy, Host } from "../../devices/types";
+import { EmployeeDetails } from "./EmployeeDetails";
+import { EmployeeTasks } from "./EmployeeTasks";
 
 interface EmployeeDetailsProps {
   employee: Member & {

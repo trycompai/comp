@@ -1,13 +1,15 @@
-import { AppOnboarding } from '@/components/app-onboarding';
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import type { SearchParams } from '@/types';
-import { db } from '@trycompai/db';
-import type { Metadata } from 'next';
-import { CreateVendorSheet } from '../components/create-vendor-sheet';
-import { VendorsTable } from './components/VendorsTable';
-import { getAssignees, getVendors } from './data/queries';
-import type { GetVendorsSchema } from './data/validations';
-import { vendorsSearchParamsCache } from './data/validations';
+import type { SearchParams } from "@/types";
+import type { Metadata } from "next";
+import { AppOnboarding } from "@/components/app-onboarding";
+import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+
+import { db } from "@trycompai/db";
+
+import type { GetVendorsSchema } from "./data/validations";
+import { CreateVendorSheet } from "../components/create-vendor-sheet";
+import { VendorsTable } from "./components/VendorsTable";
+import { getAssignees, getVendors } from "./data/queries";
+import { vendorsSearchParamsCache } from "./data/validations";
 
 export default async function Page({
   searchParams,
@@ -50,28 +52,30 @@ export default async function Page({
     return (
       <div className="py-4">
         <AppOnboarding
-          title={'Vendor Management'}
-          description={'Manage your vendors and ensure your organization is protected.'}
-          cta={'Add vendor'}
+          title={"Vendor Management"}
+          description={
+            "Manage your vendors and ensure your organization is protected."
+          }
+          cta={"Add vendor"}
           imageSrcLight="/onboarding/vendor-light.webp"
           imageSrcDark="/onboarding/vendor-dark.webp"
           imageAlt="Vendor Management"
           sheetName="createVendorSheet"
           faqs={[
             {
-              questionKey: 'What is vendor management?',
+              questionKey: "What is vendor management?",
               answerKey:
-                'Vendor management is the process of managing, and controlling relationships and agreements with third-party suppliers of goods and services.',
+                "Vendor management is the process of managing, and controlling relationships and agreements with third-party suppliers of goods and services.",
             },
             {
-              questionKey: 'Why is vendor management important?',
+              questionKey: "Why is vendor management important?",
               answerKey:
-                'It helps to ensure that you are getting the most value from your vendors, while also minimizing risks and maintaining compliance.',
+                "It helps to ensure that you are getting the most value from your vendors, while also minimizing risks and maintaining compliance.",
             },
             {
-              questionKey: 'What are the key steps in vendor management?',
+              questionKey: "What are the key steps in vendor management?",
               answerKey:
-                'The key steps include vendor selection, contract negotiation, performance monitoring, risk management, and relationship management.',
+                "The key steps include vendor selection, contract negotiation, performance monitoring, risk management, and relationship management.",
             },
           ]}
         />
@@ -82,7 +86,9 @@ export default async function Page({
 
   return (
     <PageWithBreadcrumb
-      breadcrumbs={[{ label: 'Vendors', href: `/${orgId}/vendors`, current: true }]}
+      breadcrumbs={[
+        { label: "Vendors", href: `/${orgId}/vendors`, current: true },
+      ]}
     >
       <VendorsTable
         vendors={vendorsResult.data}
@@ -97,6 +103,6 @@ export default async function Page({
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Vendors',
+    title: "Vendors",
   };
 }

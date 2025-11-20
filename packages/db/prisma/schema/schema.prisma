@@ -2,14 +2,11 @@ generator client {
   provider        = "prisma-client"
   output          = "../generated"
   moduleFormat    = "esm"
-  runtime         = "bun"
   previewFeatures = ["postgresqlExtensions"]
   binaryTargets   = ["rhel-openssl-3.0.x", "native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  directUrl  = env("DATABASE_URL")
   extensions = [pgcrypto]
 }

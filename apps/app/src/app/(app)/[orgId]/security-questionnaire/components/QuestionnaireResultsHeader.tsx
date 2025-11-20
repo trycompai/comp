@@ -1,4 +1,15 @@
-'use client';
+"use client";
+
+import {
+  ChevronDown,
+  Download,
+  File,
+  FileSpreadsheet,
+  FileText as FileTextIcon,
+  Loader2,
+  Search,
+  Zap,
+} from "lucide-react";
 
 import {
   AlertDialog,
@@ -9,26 +20,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@trycompai/ui/alert-dialog';
-import { Button } from '@trycompai/ui/button';
+} from "@trycompai/ui/alert-dialog";
+import { Button } from "@trycompai/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Input } from '@trycompai/ui/input';
-import {
-  ChevronDown,
-  Download,
-  File,
-  FileSpreadsheet,
-  FileText as FileTextIcon,
-  Loader2,
-  Search,
-  Zap,
-} from 'lucide-react';
-import type { QuestionAnswer } from './types';
+} from "@trycompai/ui/dropdown-menu";
+import { Input } from "@trycompai/ui/input";
+
+import type { QuestionAnswer } from "./types";
 
 interface QuestionnaireResultsHeaderProps {
   showExitDialog: boolean;
@@ -46,7 +48,7 @@ interface QuestionnaireResultsHeaderProps {
   isAutoAnswering: boolean;
   isExporting: boolean;
   onAutoAnswer: () => void;
-  onExport: (format: 'xlsx' | 'csv' | 'pdf') => void;
+  onExport: (format: "xlsx" | "csv" | "pdf") => void;
 }
 
 export function QuestionnaireResultsHeader({
@@ -70,13 +72,16 @@ export function QuestionnaireResultsHeader({
   return (
     <>
       <div className="flex flex-col gap-4">
-        <AlertDialog open={showExitDialog} onOpenChange={onShowExitDialogChange}>
+        <AlertDialog
+          open={showExitDialog}
+          onOpenChange={onShowExitDialogChange}
+        >
           <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
             <AlertDialogHeader>
               <AlertDialogTitle>Exit questionnaire session?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will discard all questions and answers. Make sure to export your work before
-                exiting if you want to keep it.
+                This will discard all questions and answers. Make sure to export
+                your work before exiting if you want to keep it.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -93,31 +98,31 @@ export function QuestionnaireResultsHeader({
 
         <div className="grid grid-cols-3 gap-8">
           {/* Total Questions */}
-          <div className="px-4 py-3.5 border-l-2 border-l-primary/40">
-            <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-widest">
+          <div className="border-l-primary/40 border-l-2 px-4 py-3.5">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium tracking-widest uppercase">
               Questions
             </div>
-            <div className="text-foreground text-2xl font-semibold tabular-nums tracking-tight">
+            <div className="text-foreground text-2xl font-semibold tracking-tight tabular-nums">
               {totalCount}
             </div>
           </div>
 
           {/* Answered */}
-          <div className="px-4 py-3.5 border-l-2 border-l-emerald-500/40">
-            <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-widest">
+          <div className="border-l-2 border-l-emerald-500/40 px-4 py-3.5">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium tracking-widest uppercase">
               Answered
             </div>
-            <div className="text-foreground text-2xl font-semibold tabular-nums tracking-tight">
+            <div className="text-foreground text-2xl font-semibold tracking-tight tabular-nums">
               {answeredCount}
             </div>
           </div>
 
           {/* Progress */}
-          <div className="px-4 py-3.5 border-l-2 border-l-blue-500/40">
-            <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-widest">
+          <div className="border-l-2 border-l-blue-500/40 px-4 py-3.5">
+            <div className="text-muted-foreground mb-1 text-[10px] font-medium tracking-widest uppercase">
               Progress
             </div>
-            <div className="text-foreground text-2xl font-semibold tabular-nums tracking-tight">
+            <div className="text-foreground text-2xl font-semibold tracking-tight tabular-nums">
               {progressPercentage}%
             </div>
           </div>
@@ -129,7 +134,7 @@ export function QuestionnaireResultsHeader({
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="text-sm w-80"
+              className="w-80 text-sm"
               leftIcon={<Search className="h-4 w-4" />}
             />
           </div>
@@ -154,7 +159,11 @@ export function QuestionnaireResultsHeader({
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="default" disabled={isExporting || isLoading}>
+                <Button
+                  variant="outline"
+                  size="default"
+                  disabled={isExporting || isLoading}
+                >
                   <Download className="size-4" />
                   Export
                   <ChevronDown className="size-4" />
@@ -162,21 +171,21 @@ export function QuestionnaireResultsHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => onExport('xlsx')}
+                  onClick={() => onExport("xlsx")}
                   disabled={isExporting || isLoading}
                 >
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
                   Excel
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => onExport('csv')}
+                  onClick={() => onExport("csv")}
                   disabled={isExporting || isLoading}
                 >
                   <FileTextIcon className="mr-2 h-4 w-4" />
                   CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => onExport('pdf')}
+                  onClick={() => onExport("pdf")}
                   disabled={isExporting || isLoading}
                 >
                   <File className="mr-2 h-4 w-4" />

@@ -1,6 +1,11 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,16 +13,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Label } from '@trycompai/ui/label';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Loader2 } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { executeAutomationScript, publishAutomation } from '../actions/task-automation-actions';
-import { useAutomationVersions } from '../hooks/use-automation-versions';
-import { useSharedChatContext } from '../lib/chat-context';
+} from "@trycompai/ui/dialog";
+import { Label } from "@trycompai/ui/label";
+import { Textarea } from "@trycompai/ui/textarea";
+
+import {
+  executeAutomationScript,
+  publishAutomation,
+} from "../actions/task-automation-actions";
+import { useAutomationVersions } from "../hooks/use-automation-versions";
+import { useSharedChatContext } from "../lib/chat-context";
 
 interface PublishDialogProps {
   open: boolean;
@@ -32,7 +37,7 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
     automationId: string;
   }>();
   const { automationIdRef } = useSharedChatContext();
-  const [changelog, setChangelog] = useState('');
+  const [changelog, setChangelog] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPostPublishOptions, setShowPostPublishOptions] = useState(false);
   const [publishedVersion, setPublishedVersion] = useState<number | null>(null);
@@ -42,7 +47,7 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
     onOpenChange(newOpen);
     // Reset state when dialog closes
     if (!newOpen) {
-      setChangelog('');
+      setChangelog("");
       setShowPostPublishOptions(false);
       setPublishedVersion(null);
     }
@@ -60,7 +65,7 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to publish');
+        throw new Error(result.error || "Failed to publish");
       }
 
       const versionNumber = result.version?.version;
@@ -80,16 +85,18 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
         });
 
         if (runResult.success) {
-          toast.success('Running automation with published version');
+          toast.success("Running automation with published version");
         } else {
-          toast.error(runResult.error || 'Failed to start automation run');
+          toast.error(runResult.error || "Failed to start automation run");
         }
       }
 
       // Show post-publish options instead of closing
       setShowPostPublishOptions(true);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to publish automation');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to publish automation",
+      );
     } finally {
       setIsPublishing(false);
     }
@@ -97,7 +104,9 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
 
   const handleGoToOverview = () => {
     handleDialogChange(false);
-    router.push(`/${orgId}/tasks/${taskId}/automations/${automationIdRef.current}/overview`);
+    router.push(
+      `/${orgId}/tasks/${taskId}/automations/${automationIdRef.current}/overview`,
+    );
   };
 
   const handleStayHere = () => {
@@ -112,7 +121,8 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
             <DialogHeader>
               <DialogTitle>Publish Automation</DialogTitle>
               <DialogDescription>
-                Create a new version of this automation. The current draft will remain editable.
+                Create a new version of this automation. The current draft will
+                remain editable.
               </DialogDescription>
             </DialogHeader>
 
@@ -138,8 +148,10 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
                 Cancel
               </Button>
               <Button onClick={handlePublish} disabled={isPublishing}>
-                {isPublishing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {isPublishing ? 'Publishing...' : 'Publish'}
+                {isPublishing && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isPublishing ? "Publishing..." : "Publish"}
               </Button>
             </DialogFooter>
           </>
@@ -148,13 +160,17 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
             <DialogHeader>
               <DialogTitle>Automation Published!</DialogTitle>
               <DialogDescription>
-                Version {publishedVersion} has been published and is now running. Where would you
-                like to go?
+                Version {publishedVersion} has been published and is now
+                running. Where would you like to go?
               </DialogDescription>
             </DialogHeader>
 
-            <DialogFooter className="flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={handleStayHere} className="w-full sm:w-auto">
+            <DialogFooter className="flex-col gap-2 sm:flex-row">
+              <Button
+                variant="outline"
+                onClick={handleStayHere}
+                className="w-full sm:w-auto"
+              >
                 Stay Here
               </Button>
               <Button onClick={handleGoToOverview} className="w-full sm:w-auto">

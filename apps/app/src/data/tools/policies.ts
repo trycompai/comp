@@ -1,7 +1,8 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 export function getPolicyTools() {
   return {
@@ -11,17 +12,17 @@ export function getPolicyTools() {
 }
 
 export const getPolicies = {
-  description: 'Get all policies for the organization',
+  description: "Get all policies for the organization",
   inputSchema: z.object({
-    status: z.enum(['draft', 'published']).optional(),
+    status: z.enum(["draft", "published"]).optional(),
   }),
-  execute: async ({ status }: { status?: 'draft' | 'published' }) => {
+  execute: async ({ status }: { status?: "draft" | "published" }) => {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
     if (!session?.session.activeOrganizationId) {
-      return { error: 'Unauthorized' };
+      return { error: "Unauthorized" };
     }
 
     const policies = await db.policy.findMany({
@@ -40,7 +41,7 @@ export const getPolicies = {
     if (policies.length === 0) {
       return {
         policies: [],
-        message: 'No policies found',
+        message: "No policies found",
       };
     }
 
@@ -52,7 +53,7 @@ export const getPolicies = {
 
 export const getPolicyContent = {
   description:
-    'Get the content of a specific policy by id. We can only acquire the policy id by running the getPolicies tool first.',
+    "Get the content of a specific policy by id. We can only acquire the policy id by running the getPolicies tool first.",
   inputSchema: z.object({
     id: z.string(),
   }),
@@ -62,7 +63,7 @@ export const getPolicyContent = {
     });
 
     if (!session?.session.activeOrganizationId) {
-      return { error: 'Unauthorized' };
+      return { error: "Unauthorized" };
     }
 
     const policy = await db.policy.findUnique({
@@ -75,7 +76,7 @@ export const getPolicyContent = {
     if (!policy) {
       return {
         content: null,
-        message: 'Policy not found',
+        message: "Policy not found",
       };
     }
 

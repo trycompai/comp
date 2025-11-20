@@ -1,38 +1,41 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
-import { env } from '@/env.mjs';
-import { Inbox } from '@novu/nextjs';
-import { useSession } from '@/utils/auth-client';
-import { Bell, Settings } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { env } from "@/env.mjs";
+import { useSession } from "@/utils/auth-client";
+import { Inbox } from "@novu/nextjs";
+import { Bell, Settings } from "lucide-react";
 
 export function NotificationBell() {
   const applicationIdentifier = env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER;
   const { data: session } = useSession();
   const sessionData = session?.session;
   const pathname = usePathname();
-  const orgId = pathname?.split('/')[1] || null;
+  const orgId = pathname?.split("/")[1] || null;
   const [visible, setVisible] = useState(false);
   const inboxRef = useRef<HTMLDivElement>(null);
-  
+
   // Handle click outside to close inbox
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (inboxRef.current && !inboxRef.current.contains(event.target as Node)) {
+      if (
+        inboxRef.current &&
+        !inboxRef.current.contains(event.target as Node)
+      ) {
         setVisible(false);
       }
     }
 
     if (visible) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [visible]);
-  
+
   // Don't render if we don't have the required config
   if (!applicationIdentifier || !sessionData?.userId || !orgId) {
     return null;
@@ -44,25 +47,25 @@ export function NotificationBell() {
     },
     elements: {
       popoverContent: {
-        right: '8px',
-        left: 'auto !important',
-        marginTop: '8px',
-        width: '360px',
-        borderRadius: '8px',
+        right: "8px",
+        left: "auto !important",
+        marginTop: "8px",
+        width: "360px",
+        borderRadius: "8px",
       },
       notification: {
-        paddingLeft: '24px',
+        paddingLeft: "24px",
       },
       notificationDot: {
-        backgroundColor: 'hsl(var(--primary))',
+        backgroundColor: "hsl(var(--primary))",
       },
       notificationImage: {
-        display: 'none',
+        display: "none",
       },
       notificationBar: ({ notification }: { notification: any }) => {
-        return notification.isRead ? 'bg-transparent' : 'bg-primary';
-      }
-    }
+        return notification.isRead ? "bg-transparent" : "bg-primary";
+      },
+    },
   };
 
   return (
@@ -83,12 +86,12 @@ export function NotificationBell() {
             )}
           </button>
         )}
-        renderSubject={(notification) => <strong>{notification.subject}</strong>}
+        renderSubject={(notification) => (
+          <strong>{notification.subject}</strong>
+        )}
         renderBody={(notification) => (
           <div className="mt-1">
-            <p className="text-xs text-muted-foreground">
-              {notification.body}
-            </p>
+            <p className="text-muted-foreground text-xs">{notification.body}</p>
           </div>
         )}
         onNotificationClick={() => setVisible(false)}

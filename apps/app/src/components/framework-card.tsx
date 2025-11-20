@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import type { FrameworkEditorFramework } from '@trycompai/db';
-import { Checkbox } from '@trycompai/ui/checkbox';
-import { cn } from '@trycompai/ui/cn';
+import type { FrameworkEditorFramework } from "@trycompai/db";
+import { Checkbox } from "@trycompai/ui/checkbox";
+import { cn } from "@trycompai/ui/cn";
 
 type FrameworkCardProps = {
-  framework: Pick<FrameworkEditorFramework, 'id' | 'name' | 'description' | 'version' | 'visible'>;
+  framework: Pick<
+    FrameworkEditorFramework,
+    "id" | "name" | "description" | "version" | "visible"
+  >;
   isSelected: boolean;
   onSelectionChange: (checked: boolean) => void;
   className?: string;
@@ -20,10 +23,10 @@ export function FrameworkCard({
   return (
     <div
       className={cn(
-        'relative rounded-md border transition-all',
+        "relative rounded-md border transition-all",
         isSelected
-          ? 'border-primary bg-primary/10 dark:bg-primary/15 shadow-sm backdrop-blur-sm'
-          : 'border-border bg-card/60 dark:bg-card/50 hover:bg-card/80 dark:hover:bg-card/70 hover:border-muted-foreground/20 backdrop-blur-sm',
+          ? "border-primary bg-primary/10 dark:bg-primary/15 shadow-sm backdrop-blur-sm"
+          : "border-border bg-card/60 dark:bg-card/50 hover:bg-card/80 dark:hover:bg-card/70 hover:border-muted-foreground/20 backdrop-blur-sm",
         className,
       )}
     >
@@ -39,21 +42,25 @@ export function FrameworkCard({
         />
         <div className="min-w-0 flex-1 space-y-0">
           <div className="flex items-center justify-between gap-3">
-            <h4 className="text-sm leading-tight font-medium">{framework.name}</h4>
+            <h4 className="text-sm leading-tight font-medium">
+              {framework.name}
+            </h4>
             <div className="flex-shrink-0">
               <span
                 className={cn(
-                  'inline-flex items-center rounded-xs px-2 py-1 text-xs transition-colors',
+                  "inline-flex items-center rounded-xs px-2 py-1 text-xs transition-colors",
                   isSelected
-                    ? 'bg-primary/20 text-primary dark:bg-primary/25 dark:text-primary-foreground font-medium'
-                    : 'bg-muted text-muted-foreground',
+                    ? "bg-primary/20 text-primary dark:bg-primary/25 dark:text-primary-foreground font-medium"
+                    : "bg-muted text-muted-foreground",
                 )}
               >
                 v{framework.version}
               </span>
             </div>
           </div>
-          <p className="text-muted-foreground text-xs leading-relaxed">{framework.description}</p>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            {framework.description}
+          </p>
         </div>
       </label>
     </div>

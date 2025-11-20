@@ -1,27 +1,40 @@
-'use client';
+"use client";
 
-import { acceptRequestedPolicyChangesAction } from '@/actions/policies/accept-requested-policy-changes';
-import { denyRequestedPolicyChangesAction } from '@/actions/policies/deny-requested-policy-changes';
-import { authClient } from '@/utils/auth-client';
-import type { Member, Policy, User } from '@trycompai/db';
-import { Control } from '@trycompai/db';
-import { Alert, AlertDescription, AlertTitle } from '@trycompai/ui/alert';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Icons } from '@trycompai/ui/icons';
-import { format } from 'date-fns';
-import { ArchiveIcon, ArchiveRestoreIcon, ShieldCheck, ShieldX } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { regeneratePolicyAction } from '../actions/regenerate-policy';
-import { PolicyActionDialog } from './PolicyActionDialog';
-import { PolicyArchiveSheet } from './PolicyArchiveSheet';
-import { PolicyControlMappings } from './PolicyControlMappings';
-import { PolicyDeleteDialog } from './PolicyDeleteDialog';
-import { PolicyOverviewSheet } from './PolicyOverviewSheet';
-import { UpdatePolicyOverview } from './UpdatePolicyOverview';
+import { useState } from "react";
+import { acceptRequestedPolicyChangesAction } from "@/actions/policies/accept-requested-policy-changes";
+import { denyRequestedPolicyChangesAction } from "@/actions/policies/deny-requested-policy-changes";
+import { authClient } from "@/utils/auth-client";
+import { format } from "date-fns";
+import {
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  ShieldCheck,
+  ShieldX,
+} from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useQueryState } from "nuqs";
+import { toast } from "sonner";
+
+import type { Member, Policy, User } from "@trycompai/db";
+import { Control } from "@trycompai/db";
+import { Alert, AlertDescription, AlertTitle } from "@trycompai/ui/alert";
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+import { Icons } from "@trycompai/ui/icons";
+
+import { regeneratePolicyAction } from "../actions/regenerate-policy";
+import { PolicyActionDialog } from "./PolicyActionDialog";
+import { PolicyArchiveSheet } from "./PolicyArchiveSheet";
+import { PolicyControlMappings } from "./PolicyControlMappings";
+import { PolicyDeleteDialog } from "./PolicyDeleteDialog";
+import { PolicyOverviewSheet } from "./PolicyOverviewSheet";
+import { UpdatePolicyOverview } from "./UpdatePolicyOverview";
 
 export function PolicyOverview({
   policy,
@@ -37,35 +50,35 @@ export function PolicyOverview({
   isPendingApproval: boolean;
 }) {
   const { data: activeMember } = authClient.useActiveMember();
-  const [, setArchiveOpen] = useQueryState('archive-policy-sheet');
+  const [, setArchiveOpen] = useQueryState("archive-policy-sheet");
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
 
   const denyPolicyChanges = useAction(denyRequestedPolicyChangesAction, {
     onSuccess: () => {
-      toast.info('Policy changes denied!');
+      toast.info("Policy changes denied!");
       // Force a complete page reload instead of just a refresh
       window.location.reload();
     },
     onError: () => {
-      toast.error('Failed to deny policy changes.');
+      toast.error("Failed to deny policy changes.");
     },
   });
 
   const acceptPolicyChanges = useAction(acceptRequestedPolicyChangesAction, {
     onSuccess: () => {
-      toast.success('Policy changes accepted and published!');
+      toast.success("Policy changes accepted and published!");
       // Force a complete page reload instead of just a refresh
       window.location.reload();
     },
     onError: () => {
-      toast.error('Failed to accept policy changes.');
+      toast.error("Failed to accept policy changes.");
     },
   });
 
   // Dialog state for approval/denial actions
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [denyDialogOpen, setDenyDialogOpen] = useState(false);
-  const [deleteOpenParam, setDeleteOpenParam] = useQueryState('delete-policy');
+  const [deleteOpenParam, setDeleteOpenParam] = useQueryState("delete-policy");
   const [regenerateOpen, setRegenerateOpen] = useState(false);
 
   // Handle approve with optional comment
@@ -102,33 +115,41 @@ export function PolicyOverview({
         <Alert variant="default">
           <ShieldX className="h-4 w-4" />
           <AlertTitle>
-            {canCurrentUserApprove ? 'Action Required by You' : 'Pending Approval'}
+            {canCurrentUserApprove
+              ? "Action Required by You"
+              : "Pending Approval"}
           </AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
             <div>
-              This policy is awaiting approval from{' '}
+              This policy is awaiting approval from{" "}
               <span className="font-semibold">
                 {policy.approverId === activeMember?.id
-                  ? 'you'
+                  ? "you"
                   : `${policy?.approver?.user?.name} (${policy?.approver?.user?.email})`}
               </span>
               .
             </div>
             {canCurrentUserApprove &&
-              ' Please review the details and either approve or reject the changes.'}
-            {!canCurrentUserApprove && ' All fields are disabled until the policy is actioned.'}
-            {isPendingApproval && policy.approverId && canCurrentUserApprove && (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => setDenyDialogOpen(true)}>
-                  <ShieldX className="h-4 w-4" />
-                  Reject Changes
-                </Button>
-                <Button onClick={() => setApproveDialogOpen(true)}>
-                  <ShieldCheck className="h-4 w-4" />
-                  Approve
-                </Button>
-              </div>
-            )}
+              " Please review the details and either approve or reject the changes."}
+            {!canCurrentUserApprove &&
+              " All fields are disabled until the policy is actioned."}
+            {isPendingApproval &&
+              policy.approverId &&
+              canCurrentUserApprove && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDenyDialogOpen(true)}
+                  >
+                    <ShieldX className="h-4 w-4" />
+                    Reject Changes
+                  </Button>
+                  <Button onClick={() => setApproveDialogOpen(true)}>
+                    <ShieldCheck className="h-4 w-4" />
+                    Approve
+                  </Button>
+                </div>
+              )}
           </AlertDescription>
         </Alert>
       )}
@@ -139,7 +160,8 @@ export function PolicyOverview({
             <div className="space-y-1">
               <div className="font-medium">This policy is archived</div>
               <AlertDescription>
-                Archived on {format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}
+                Archived on{" "}
+                {format(new Date(policy?.updatedAt ?? new Date()), "PPP")}
               </AlertDescription>
             </div>
           </div>
@@ -147,7 +169,7 @@ export function PolicyOverview({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setArchiveOpen('true')}
+              onClick={() => setArchiveOpen("true")}
               className="gap-1"
             >
               <ArchiveRestoreIcon className="h-3 w-3" /> Restore
@@ -228,7 +250,7 @@ export function PolicyOverview({
             onConfirm={async () => {
               if (!policy?.id) return;
               await regeneratePolicyAction({ policyId: policy.id });
-              toast.info('Regeneration started');
+              toast.info("Regeneration started");
             }}
             title="Regenerate Policy"
             description="This will regenerate the policy content. Continue?"

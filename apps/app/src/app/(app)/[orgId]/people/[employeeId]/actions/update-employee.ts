@@ -1,16 +1,18 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import type { Departments } from '@trycompai/db';
-import { db, Prisma } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { appErrors } from '../types';
+import { revalidatePath } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import type { Departments } from "@trycompai/db";
+import { db, Prisma } from "@trycompai/db";
+
+import { appErrors } from "../types";
 
 const schema = z.object({
   employeeId: z.string(),
-  name: z.string().min(1, 'Name cannot be empty').optional(),
-  email: z.string().email('Invalid email format').optional(),
+  name: z.string().min(1, "Name cannot be empty").optional(),
+  email: z.string().email("Invalid email format").optional(),
   department: z.string().optional(),
   isActive: z.boolean().optional(),
   createdAt: z.date().optional(),
@@ -19,14 +21,15 @@ const schema = z.object({
 export const updateEmployee = authActionClient
   .inputSchema(schema)
   .metadata({
-    name: 'update-employee',
+    name: "update-employee",
     track: {
-      event: 'update-employee',
-      channel: 'server',
+      event: "update-employee",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { employeeId, name, email, department, isActive, createdAt } = parsedInput;
+    const { employeeId, name, email, department, isActive, createdAt } =
+      parsedInput;
 
     const organizationId = ctx.session.activeOrganizationId;
     if (!organizationId) {
@@ -48,7 +51,8 @@ export const updateEmployee = authActionClient
 
     if (
       !currentUserMember ||
-      (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
+      (!currentUserMember.role.includes("admin") &&
+        !currentUserMember.role.includes("owner"))
     ) {
       return {
         success: false,
@@ -90,7 +94,10 @@ export const updateEmployee = authActionClient
     if (isActive !== undefined && isActive !== member.isActive) {
       memberUpdateData.isActive = isActive;
     }
-    if (createdAt !== undefined && createdAt.toISOString() !== member.createdAt.toISOString()) {
+    if (
+      createdAt !== undefined &&
+      createdAt.toISOString() !== member.createdAt.toISOString()
+    ) {
       memberUpdateData.createdAt = createdAt;
     }
     if (name !== undefined && name !== member.user.name) {
@@ -141,14 +148,14 @@ export const updateEmployee = authActionClient
       return { success: true, data: updatedMemberResult };
     } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           const targetFields = error.meta?.target as string[] | undefined;
-          if (targetFields?.includes('email')) {
+          if (targetFields?.includes("email")) {
             return {
               success: false,
               error: {
                 code: appErrors.UNEXPECTED_ERROR,
-                message: 'Email address is already in use.',
+                message: "Email address is already in use.",
               },
             };
           }

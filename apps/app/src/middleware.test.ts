@@ -1,56 +1,61 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+// Then import other test utilities
+import { createMockRequest } from "@/test-utils/helpers/middleware";
+import {
+  createMockSession,
+  mockAuth,
+  setupAuthMocks,
+} from "@/test-utils/mocks/auth";
+import { mockDb } from "@/test-utils/mocks/db";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock auth module first
-vi.mock('@/utils/auth', async () => {
-  const { mockAuth } = await import('@/test-utils/mocks/auth');
+vi.mock("@/utils/auth", async () => {
+  const { mockAuth } = await import("@/test-utils/mocks/auth");
   return { auth: mockAuth };
 });
 
 // Mock db module
-vi.mock('@trycompai/db', async () => {
-  const { mockDb } = await import('@/test-utils/mocks/db');
+vi.mock("@trycompai/db", async () => {
+  const { mockDb } = await import("@/test-utils/mocks/db");
   return { db: mockDb };
 });
 
-// Then import other test utilities
-import { createMockRequest } from '@/test-utils/helpers/middleware';
-import { createMockSession, mockAuth, setupAuthMocks } from '@/test-utils/mocks/auth';
-import { mockDb } from '@/test-utils/mocks/db';
-
-vi.mock('next/headers', () => ({
+vi.mock("next/headers", () => ({
   headers: vi.fn(
     () =>
       new Map([
-        ['x-pathname', '/'],
-        ['x-forwarded-for', '127.0.0.1'],
-        ['user-agent', 'test-agent'],
+        ["x-pathname", "/"],
+        ["x-forwarded-for", "127.0.0.1"],
+        ["user-agent", "test-agent"],
       ]),
   ),
 }));
 
 // Import middleware after mocks are set up
-const { middleware } = await import('./middleware');
+const { middleware } = await import("./middleware");
 
-describe('Middleware', () => {
+describe("Middleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Authentication & Basic Access', () => {
-    it('should redirect unauthenticated users to /auth', async () => {
+  describe("Authentication & Basic Access", () => {
+    it("should redirect unauthenticated users to /auth", async () => {
       // Arrange
       setupAuthMocks({ session: null, user: null });
-      const request = await createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest("/org_123/dashboard");
 
       // Act
       const response = await middleware(request);
 
       // Assert
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/auth');
+      expect(response.headers.get("location")).toBe(
+        "http://localhost:3000/auth",
+      );
     });
 
-    it('should allow authenticated users to access their org', async () => {
+    it("should allow authenticated users to access their org", async () => {
       // Arrange
       const { user } = setupAuthMocks();
 
@@ -61,21 +66,21 @@ describe('Middleware', () => {
 
       // Mock that onboarding is completed
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: true,
       });
 
-      const request = await createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest("/org_123/dashboard");
 
       // Act
       const response = await middleware(request);
 
       // Assert
       expect(response.status).toBe(200); // Should pass through
-      expect(response.headers.get('x-pathname')).toBe('/org_123/dashboard');
+      expect(response.headers.get("x-pathname")).toBe("/org_123/dashboard");
     });
 
-    it.skip('should prevent users from accessing orgs they do not belong to', async () => {
+    it.skip("should prevent users from accessing orgs they do not belong to", async () => {
       // SECURITY ISSUE: This check is not implemented in the middleware!
       // Arrange
       const { session, user } = setupAuthMocks();
@@ -83,7 +88,7 @@ describe('Middleware', () => {
       // User is NOT a member of org_OTHER
       mockDb.member.findFirst.mockResolvedValue(null);
 
-      const request = await createMockRequest('/org_OTHER/dashboard');
+      const request = await createMockRequest("/org_OTHER/dashboard");
 
       // Act
       const response = await middleware(request);
@@ -95,15 +100,15 @@ describe('Middleware', () => {
     });
   });
 
-  describe('Setup/Onboarding Flow', () => {
-    it('should redirect new users (no org) to /setup from root', async () => {
+  describe("Setup/Onboarding Flow", () => {
+    it("should redirect new users (no org) to /setup from root", async () => {
       // Arrange
       const session = createMockSession({ activeOrganizationId: null });
       setupAuthMocks({ session });
 
       mockDb.organization.findFirst.mockResolvedValue(null);
 
-      const request = await createMockRequest('/');
+      const request = await createMockRequest("/");
 
       // Act
       const response = await middleware(request);
@@ -114,17 +119,17 @@ describe('Middleware', () => {
       expect(response.status).toBe(200);
     });
 
-    it('should allow existing users to create additional orgs with intent param', async () => {
+    it("should allow existing users to create additional orgs with intent param", async () => {
       // Arrange
       const { session, user } = setupAuthMocks();
 
       mockDb.organization.findFirst.mockResolvedValue({
-        id: 'org_123',
-        name: 'Existing Org',
+        id: "org_123",
+        name: "Existing Org",
       });
 
-      const request = await createMockRequest('/setup', {
-        searchParams: Promise.resolve({ intent: 'create-additional' }),
+      const request = await createMockRequest("/setup", {
+        searchParams: Promise.resolve({ intent: "create-additional" }),
       });
 
       // Act
@@ -134,49 +139,53 @@ describe('Middleware', () => {
       expect(response.status).toBe(200); // Should allow access
     });
 
-    it('should redirect users with orgs away from /setup (without intent)', async () => {
+    it("should redirect users with orgs away from /setup (without intent)", async () => {
       // Arrange
       const { session, user } = setupAuthMocks();
 
       mockDb.organization.findFirst.mockResolvedValue({
-        id: 'org_123',
-        name: 'Existing Org',
+        id: "org_123",
+        name: "Existing Org",
       });
 
-      const request = await createMockRequest('/setup');
+      const request = await createMockRequest("/setup");
 
       // Act
       const response = await middleware(request);
 
       // Assert
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/org_123/frameworks');
+      expect(response.headers.get("location")).toBe(
+        "http://localhost:3000/org_123/frameworks",
+      );
     });
   });
 
-  describe('Access Control (hasAccess)', () => {
+  describe("Access Control (hasAccess)", () => {
     beforeEach(() => {
       // Set up authenticated user for access control tests
       setupAuthMocks();
     });
 
-    it('should block access to org routes without hasAccess', async () => {
+    it("should block access to org routes without hasAccess", async () => {
       // Arrange
       mockDb.organization.findFirst.mockResolvedValue({
         hasAccess: false,
       });
 
-      const request = await createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest("/org_123/dashboard");
 
       // Act
       const response = await middleware(request);
 
       // Assert
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
+      expect(response.headers.get("location")).toBe(
+        "http://localhost:3000/upgrade/org_123",
+      );
     });
 
-    it('should allow access with hasAccess = true', async () => {
+    it("should allow access with hasAccess = true", async () => {
       // Arrange
       mockDb.organization.findFirst.mockResolvedValue({
         hasAccess: true,
@@ -184,11 +193,11 @@ describe('Middleware', () => {
 
       // Mock onboarding completed so we don't get redirected to onboarding
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: true,
       });
 
-      const request = await createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest("/org_123/dashboard");
 
       // Act
       const response = await middleware(request);
@@ -197,9 +206,14 @@ describe('Middleware', () => {
       expect(response.status).toBe(200);
     });
 
-    it('should bypass access check for unprotected routes', async () => {
+    it("should bypass access check for unprotected routes", async () => {
       // Arrange
-      const unprotectedRoutes = ['/upgrade/org_123', '/setup', '/auth', '/invite/abc123'];
+      const unprotectedRoutes = [
+        "/upgrade/org_123",
+        "/setup",
+        "/auth",
+        "/invite/abc123",
+      ];
 
       mockDb.organization.findFirst.mockResolvedValue({
         hasAccess: false,
@@ -215,36 +229,38 @@ describe('Middleware', () => {
         // Some routes might redirect for other reasons (e.g., /auth when already authenticated)
         // but they shouldn't redirect to the upgrade page
         if (response.status === 307) {
-          const location = response.headers.get('location');
-          expect(location).not.toContain('/upgrade');
+          const location = response.headers.get("location");
+          expect(location).not.toContain("/upgrade");
         }
       }
     });
 
-    it('should handle organizations that do not exist', async () => {
+    it("should handle organizations that do not exist", async () => {
       // Arrange
       mockDb.organization.findFirst.mockResolvedValue(null);
 
-      const request = await createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest("/org_123/dashboard");
 
       // Act
       const response = await middleware(request);
 
       // Assert
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/upgrade/org_123');
+      expect(response.headers.get("location")).toBe(
+        "http://localhost:3000/upgrade/org_123",
+      );
     });
 
-    it('should preserve query parameters when redirecting to upgrade', async () => {
+    it("should preserve query parameters when redirecting to upgrade", async () => {
       // Arrange
       mockDb.organization.findFirst.mockResolvedValue({
         hasAccess: false,
       });
 
-      const request = await createMockRequest('/org_123/dashboard', {
+      const request = await createMockRequest("/org_123/dashboard", {
         searchParams: Promise.resolve({
-          redirect: 'policies',
-          tab: 'active',
+          redirect: "policies",
+          tab: "active",
         }),
       });
 
@@ -253,24 +269,26 @@ describe('Middleware', () => {
 
       // Assert
       expect(response.status).toBe(307);
-      const location = response.headers.get('location');
-      expect(location).toBe('http://localhost:3000/upgrade/org_123?redirect=policies&tab=active');
+      const location = response.headers.get("location");
+      expect(location).toBe(
+        "http://localhost:3000/upgrade/org_123?redirect=policies&tab=active",
+      );
     });
   });
 
-  describe('Session Healing', () => {
-    it('should auto-set activeOrganizationId when missing', async () => {
+  describe("Session Healing", () => {
+    it("should auto-set activeOrganizationId when missing", async () => {
       // Arrange
       const session = createMockSession({ activeOrganizationId: null });
       setupAuthMocks({ session });
 
       mockDb.organization.findFirst.mockResolvedValue({
-        id: 'org_123',
-        name: 'Test Org',
+        id: "org_123",
+        name: "Test Org",
         hasAccess: true,
       });
 
-      const request = await createMockRequest('/org_123/dashboard');
+      const request = await createMockRequest("/org_123/dashboard");
 
       // Act
       const response = await middleware(request);
@@ -278,13 +296,13 @@ describe('Middleware', () => {
       // Assert
       expect(mockAuth.api.setActiveOrganization).toHaveBeenCalledWith({
         headers: expect.any(Object),
-        body: { organizationId: 'org_123' },
+        body: { organizationId: "org_123" },
       });
       expect(response.status).toBe(307); // Redirect to refresh session
     });
   });
 
-  describe('Onboarding Completion', () => {
+  describe("Onboarding Completion", () => {
     beforeEach(() => {
       // Set up authenticated user with access for onboarding tests
       setupAuthMocks();
@@ -294,31 +312,33 @@ describe('Middleware', () => {
       });
     });
 
-    it('should redirect to /onboarding when user has access but onboarding not completed', async () => {
+    it("should redirect to /onboarding when user has access but onboarding not completed", async () => {
       // Arrange
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: false,
       });
 
-      const request = await createMockRequest('/org_123/frameworks');
+      const request = await createMockRequest("/org_123/frameworks");
 
       // Act
       const response = await middleware(request);
 
       // Assert
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding/org_123');
+      expect(response.headers.get("location")).toBe(
+        "http://localhost:3000/onboarding/org_123",
+      );
     });
 
-    it('should allow access to product when onboarding is completed', async () => {
+    it("should allow access to product when onboarding is completed", async () => {
       // Arrange
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: true,
       });
 
-      const request = await createMockRequest('/org_123/frameworks');
+      const request = await createMockRequest("/org_123/frameworks");
 
       // Act
       const response = await middleware(request);
@@ -327,14 +347,14 @@ describe('Middleware', () => {
       expect(response.status).toBe(200); // Should pass through
     });
 
-    it('should allow access to /onboarding route even without onboarding completed', async () => {
+    it("should allow access to /onboarding route even without onboarding completed", async () => {
       // Arrange
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: false,
       });
 
-      const request = await createMockRequest('/onboarding/org_123');
+      const request = await createMockRequest("/onboarding/org_123");
 
       // Act
       const response = await middleware(request);
@@ -343,17 +363,17 @@ describe('Middleware', () => {
       expect(response.status).toBe(200); // Should allow access
     });
 
-    it('should preserve query params when redirecting to onboarding', async () => {
+    it("should preserve query params when redirecting to onboarding", async () => {
       // Arrange
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: false,
       });
 
-      const request = await createMockRequest('/org_123/frameworks', {
+      const request = await createMockRequest("/org_123/frameworks", {
         searchParams: Promise.resolve({
-          checkoutComplete: 'starter',
-          value: '99',
+          checkoutComplete: "starter",
+          value: "99",
         }),
       });
 
@@ -362,20 +382,25 @@ describe('Middleware', () => {
 
       // Assert
       expect(response.status).toBe(307);
-      const location = response.headers.get('location');
+      const location = response.headers.get("location");
       expect(location).toBe(
-        'http://localhost:3000/onboarding/org_123?checkoutComplete=starter&value=99',
+        "http://localhost:3000/onboarding/org_123?checkoutComplete=starter&value=99",
       );
     });
 
-    it('should not check onboarding for unprotected routes', async () => {
+    it("should not check onboarding for unprotected routes", async () => {
       // Arrange
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: false,
       });
 
-      const unprotectedRoutes = ['/upgrade/org_123', '/onboarding/org_123', '/auth', '/setup'];
+      const unprotectedRoutes = [
+        "/upgrade/org_123",
+        "/onboarding/org_123",
+        "/auth",
+        "/setup",
+      ];
 
       for (const route of unprotectedRoutes) {
         const request = await createMockRequest(route);
@@ -386,20 +411,20 @@ describe('Middleware', () => {
         // Assert
         // Should not redirect to /onboarding for these routes
         if (response.status === 307) {
-          const location = response.headers.get('location');
-          expect(location).not.toContain('/onboarding');
+          const location = response.headers.get("location");
+          expect(location).not.toContain("/onboarding");
         }
       }
     });
 
-    it('should handle organizations without onboardingCompleted field gracefully', async () => {
+    it("should handle organizations without onboardingCompleted field gracefully", async () => {
       // Arrange - org exists but onboardingCompleted is undefined/null
       mockDb.organization.findUnique.mockResolvedValue({
-        id: 'org_123',
+        id: "org_123",
         onboardingCompleted: null,
       });
 
-      const request = await createMockRequest('/org_123/frameworks');
+      const request = await createMockRequest("/org_123/frameworks");
 
       // Act
       const response = await middleware(request);
@@ -409,16 +434,16 @@ describe('Middleware', () => {
     });
   });
 
-  describe('Security Boundaries', () => {
-    it('should validate org ID format to prevent injection', async () => {
+  describe("Security Boundaries", () => {
+    it("should validate org ID format to prevent injection", async () => {
       // Arrange
       setupAuthMocks();
 
       const maliciousRequests = [
-        '/org_../../admin',
-        '/org_%00nullbyte/settings',
-        '/org_<script>alert(1)</script>/dashboard',
-        '/org_' + 'x'.repeat(1000) + '/settings', // Length attack
+        "/org_../../admin",
+        "/org_%00nullbyte/settings",
+        "/org_<script>alert(1)</script>/dashboard",
+        "/org_" + "x".repeat(1000) + "/settings", // Length attack
       ];
 
       for (const path of maliciousRequests) {

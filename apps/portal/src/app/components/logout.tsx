@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { authClient } from '@/app/lib/auth-client';
-import { DropdownMenuItem } from '@trycompai/ui/dropdown-menu';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/app/lib/auth-client";
+
+import { DropdownMenuItem } from "@trycompai/ui/dropdown-menu";
 
 export function Logout() {
   const [isLoading, setLoading] = useState(false);
@@ -14,7 +15,7 @@ export function Logout() {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push('/auth'); // Redirect to /auth instead of /login
+          router.push("/auth"); // Redirect to /auth instead of /login
         },
       },
     });
@@ -23,7 +24,7 @@ export function Logout() {
 
   return (
     <DropdownMenuItem onClick={handleLogout}>
-      {isLoading ? 'Loading...' : 'Sign Out'}
+      {isLoading ? "Loading..." : "Sign Out"}
     </DropdownMenuItem>
   );
 }

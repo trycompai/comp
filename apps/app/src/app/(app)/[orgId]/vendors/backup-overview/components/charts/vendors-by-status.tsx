@@ -1,6 +1,8 @@
-import { db } from '@trycompai/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { StatusChart } from './status-chart';
+import { db } from "@trycompai/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+
+import { StatusChart } from "./status-chart";
+
 interface Props {
   organizationId: string;
 }
@@ -16,7 +18,7 @@ export async function VendorsByStatus({ organizationId }: Props) {
   return (
     <Card className="h-full w-full">
       <CardHeader>
-        <CardTitle>{'Vendor Status'}</CardTitle>
+        <CardTitle>{"Vendor Status"}</CardTitle>
       </CardHeader>
       <CardContent className="w-full">
         <StatusChart data={data} />
@@ -27,7 +29,7 @@ export async function VendorsByStatus({ organizationId }: Props) {
 
 const getVendorsByStatus = async (organizationId: string) => {
   return await db.vendor.groupBy({
-    by: ['status'],
+    by: ["status"],
     where: { organizationId },
     _count: true,
   });

@@ -1,5 +1,6 @@
-import { db } from '@trycompai/db';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+
+import { db } from "@trycompai/db";
 
 export async function GET(
   request: NextRequest,
@@ -20,14 +21,17 @@ export async function GET(
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
       take: 50,
     });
 
     return NextResponse.json({ success: true, runs });
   } catch (error) {
-    console.error('Failed to fetch automation runs:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch runs' }, { status: 500 });
+    console.error("Failed to fetch automation runs:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch runs" },
+      { status: 500 },
+    );
   }
 }

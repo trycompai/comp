@@ -1,11 +1,13 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import PageWithBreadcrumb from '../../../../../components/pages/PageWithBreadcrumb';
-import { getSingleFrameworkInstanceWithControls } from '../data/getSingleFrameworkInstanceWithControls';
-import { FrameworkOverview } from './components/FrameworkOverview';
-import { FrameworkRequirements } from './components/FrameworkRequirements';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import PageWithBreadcrumb from "../../../../../components/pages/PageWithBreadcrumb";
+import { getSingleFrameworkInstanceWithControls } from "../data/getSingleFrameworkInstanceWithControls";
+import { FrameworkOverview } from "./components/FrameworkOverview";
+import { FrameworkRequirements } from "./components/FrameworkRequirements";
 
 interface PageProps {
   params: Promise<{
@@ -21,22 +23,23 @@ export default async function FrameworkPage({ params }: PageProps) {
   });
 
   if (!session) {
-    redirect('/');
+    redirect("/");
   }
 
   const organizationId = session.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect('/');
+    redirect("/");
   }
 
-  const frameworkInstanceWithControls = await getSingleFrameworkInstanceWithControls({
-    organizationId,
-    frameworkInstanceId,
-  });
+  const frameworkInstanceWithControls =
+    await getSingleFrameworkInstanceWithControls({
+      organizationId,
+      frameworkInstanceId,
+    });
 
   if (!frameworkInstanceWithControls) {
-    redirect('/');
+    redirect("/");
   }
 
   // Fetch requirement definitions for this framework
@@ -45,7 +48,7 @@ export default async function FrameworkPage({ params }: PageProps) {
       frameworkId: frameworkInstanceWithControls.frameworkId,
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 
@@ -68,7 +71,7 @@ export default async function FrameworkPage({ params }: PageProps) {
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Frameworks', href: `/${organizationId}/frameworks` },
+        { label: "Frameworks", href: `/${organizationId}/frameworks` },
         { label: frameworkName, current: true },
       ]}
     >

@@ -1,10 +1,12 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { cache } from 'react';
-import { TrustPortalDomain } from './components/TrustPortalDomain';
-import { TrustPortalSwitch } from './components/TrustPortalSwitch';
+import type { Metadata } from "next";
+import { cache } from "react";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { TrustPortalDomain } from "./components/TrustPortalDomain";
+import { TrustPortalSwitch } from "./components/TrustPortalSwitch";
 
 export default async function TrustPortalSettings({
   params,
@@ -19,7 +21,7 @@ export default async function TrustPortalSettings({
       <TrustPortalSwitch
         enabled={trustPortal?.enabled ?? false}
         slug={trustPortal?.friendlyUrl ?? orgId}
-        domain={trustPortal?.domain ?? ''}
+        domain={trustPortal?.domain ?? ""}
         domainVerified={trustPortal?.domainVerified ?? false}
         contactEmail={trustPortal?.contactEmail ?? null}
         orgId={orgId}
@@ -31,18 +33,18 @@ export default async function TrustPortalSettings({
         hipaa={trustPortal?.hipaa ?? false}
         pcidss={trustPortal?.pcidss ?? false}
         nen7510={trustPortal?.nen7510 ?? false}
-        soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
-        soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
-        iso27001Status={trustPortal?.iso27001Status ?? 'started'}
-        iso42001Status={trustPortal?.iso42001Status ?? 'started'}
-        gdprStatus={trustPortal?.gdprStatus ?? 'started'}
-        hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
-        pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
-        nen7510Status={trustPortal?.nen7510Status ?? 'started'}
+        soc2type1Status={trustPortal?.soc2type1Status ?? "started"}
+        soc2type2Status={trustPortal?.soc2type2Status ?? "started"}
+        iso27001Status={trustPortal?.iso27001Status ?? "started"}
+        iso42001Status={trustPortal?.iso42001Status ?? "started"}
+        gdprStatus={trustPortal?.gdprStatus ?? "started"}
+        hipaaStatus={trustPortal?.hipaaStatus ?? "started"}
+        pcidssStatus={trustPortal?.pcidssStatus ?? "started"}
+        nen7510Status={trustPortal?.nen7510Status ?? "started"}
         friendlyUrl={trustPortal?.friendlyUrl ?? null}
       />
       <TrustPortalDomain
-        domain={trustPortal?.domain ?? ''}
+        domain={trustPortal?.domain ?? ""}
         domainVerified={trustPortal?.domainVerified ?? false}
         orgId={orgId}
         isVercelDomain={trustPortal?.isVercelDomain ?? false}
@@ -68,10 +70,10 @@ const getTrustPortal = cache(async (orgId: string) => {
   });
 
   return {
-    enabled: trustPortal?.status === 'published',
+    enabled: trustPortal?.status === "published",
     domain: trustPortal?.domain,
     domainVerified: trustPortal?.domainVerified,
-    contactEmail: trustPortal?.contactEmail ?? '',
+    contactEmail: trustPortal?.contactEmail ?? "",
     soc2type1: trustPortal?.soc2type1,
     soc2type2: trustPortal?.soc2type2 || trustPortal?.soc2,
     iso27001: trustPortal?.iso27001,
@@ -103,6 +105,6 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   return {
-    title: 'Trust Portal',
+    title: "Trust Portal",
   };
 }

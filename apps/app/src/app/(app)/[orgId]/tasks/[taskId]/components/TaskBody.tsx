@@ -1,11 +1,15 @@
-'use client';
+"use client";
 
-import { useTaskAttachmentActions, useTaskAttachments } from '@/hooks/use-tasks-api';
-import type { AttachmentEntityType } from '@trycompai/db';
-import { FileIcon, FileText, ImageIcon, Loader2, Plus, X } from 'lucide-react';
-import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useTaskAttachmentActions,
+  useTaskAttachments,
+} from "@/hooks/use-tasks-api";
+import { FileIcon, FileText, ImageIcon, Loader2, Plus, X } from "lucide-react";
+import { toast } from "sonner";
+
+import type { AttachmentEntityType } from "@trycompai/db";
 
 // Removed ApiAttachment interface - using database Attachment type directly
 
@@ -21,7 +25,7 @@ interface TaskBodyProps {
 // Helper function to provide user-friendly error messages
 function getErrorMessage(errorMessage: string): string {
   // Simplified error handling since API errors are already user-friendly
-  return errorMessage || 'Failed to upload file. Please try again.';
+  return errorMessage || "Failed to upload file. Please try again.";
 }
 
 export function TaskBody({
@@ -41,7 +45,7 @@ export function TaskBody({
   const autoResizeTextarea = useCallback(() => {
     const textarea = textareaRef.current;
     if (textarea) {
-      textarea.style.height = 'auto';
+      textarea.style.height = "auto";
       textarea.style.height = `${Math.max(80, textarea.scrollHeight)}px`;
     }
   }, []);
@@ -65,7 +69,8 @@ export function TaskBody({
   } = useTaskAttachments(taskId);
 
   // Use API hooks for mutations
-  const { uploadAttachment, getDownloadUrl, deleteAttachment } = useTaskAttachmentActions(taskId);
+  const { uploadAttachment, getDownloadUrl, deleteAttachment } =
+    useTaskAttachmentActions(taskId);
 
   // Extract attachments from SWR response
   const attachments = attachmentsData?.data || [];
@@ -73,7 +78,7 @@ export function TaskBody({
   const resetState = () => {
     setIsUploading(false);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -89,7 +94,9 @@ export function TaskBody({
           const MAX_FILE_SIZE_MB = 10;
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           if (file.size > MAX_FILE_SIZE_BYTES) {
-            toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+            toast.error(
+              `File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
+            );
             return resolve(null); // Resolve to skip this file
           }
 
@@ -104,9 +111,11 @@ export function TaskBody({
             .catch((error) => {
               console.error(`Failed to upload ${file.name}:`, error);
               const userFriendlyMessage = getErrorMessage(
-                error instanceof Error ? error.message : 'Unknown error',
+                error instanceof Error ? error.message : "Unknown error",
               );
-              toast.error(`Failed to upload ${file.name}: ${userFriendlyMessage}`);
+              toast.error(
+                `Failed to upload ${file.name}: ${userFriendlyMessage}`,
+              );
               resolve(null); // Resolve even if there's an error to not break Promise.all
             });
         });
@@ -129,10 +138,10 @@ export function TaskBody({
     setBusyAttachmentId(attachmentId);
     try {
       const downloadUrl = await getDownloadUrl(attachmentId);
-      window.open(downloadUrl, '_blank');
+      window.open(downloadUrl, "_blank");
     } catch (error) {
-      console.error('Failed to get download URL:', error);
-      toast.error('Failed to get download URL. Please try again.');
+      console.error("Failed to get download URL:", error);
+      toast.error("Failed to get download URL. Please try again.");
     } finally {
       setBusyAttachmentId(null);
     }
@@ -143,12 +152,12 @@ export function TaskBody({
       setBusyAttachmentId(attachmentId);
       try {
         await deleteAttachment(attachmentId);
-        toast.success('Attachment deleted successfully.');
+        toast.success("Attachment deleted successfully.");
         // Refresh attachments via SWR instead of manual router refresh
         refreshAttachments();
       } catch (error) {
-        console.error('Failed to delete attachment:', error);
-        toast.error('Failed to delete attachment. Please try again.');
+        console.error("Failed to delete attachment:", error);
+        toast.error("Failed to delete attachment. Please try again.");
       } finally {
         setBusyAttachmentId(null);
       }
@@ -168,14 +177,16 @@ export function TaskBody({
       />
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
             Attachments
           </h3>
         </div>
 
         {/* Show error state if attachments failed to load */}
         {attachmentsError && (
-          <p className="text-destructive text-sm">Failed to load attachments. Please try again.</p>
+          <p className="text-destructive text-sm">
+            Failed to load attachments. Please try again.
+          </p>
         )}
 
         {(attachmentsLoading || attachmentsData === undefined) && (
@@ -184,17 +195,19 @@ export function TaskBody({
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-muted/30 border border-border/50 rounded-md h-8 animate-pulse"
+                className="bg-muted/30 border-border/50 inline-flex h-8 animate-pulse items-center gap-2 rounded-md border px-2.5 py-1.5"
                 style={{ width: `${80 + i * 20}px` }}
               >
-                <div className="w-3.5 h-3.5 bg-muted/50 rounded" />
-                <div className="flex-1 h-3 bg-muted/50 rounded" />
+                <div className="bg-muted/50 h-3.5 w-3.5 rounded" />
+                <div className="bg-muted/50 h-3 flex-1 rounded" />
               </div>
             ))}
           </div>
         )}
 
-        {!attachmentsLoading && attachmentsData !== undefined && attachments.length > 0 ? (
+        {!attachmentsLoading &&
+        attachmentsData !== undefined &&
+        attachments.length > 0 ? (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
               {attachments.map((attachment) => {
@@ -207,44 +220,55 @@ export function TaskBody({
                   updatedAt: new Date(attachment.updatedAt),
                   entityType: attachment.entityType as AttachmentEntityType,
                 };
-                const fileExt = attachment.name.split('.').pop()?.toLowerCase() || '';
-                const isPDF = fileExt === 'pdf';
-                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
-                const isDoc = ['doc', 'docx'].includes(fileExt);
+                const fileExt =
+                  attachment.name.split(".").pop()?.toLowerCase() || "";
+                const isPDF = fileExt === "pdf";
+                const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(
+                  fileExt,
+                );
+                const isDoc = ["doc", "docx"].includes(fileExt);
 
                 const getFileTypeStyles = () => {
                   if (isPDF)
-                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                    return "bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30";
                   if (isImage)
-                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                    return "bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30";
                   if (isDoc)
-                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
-                  return 'bg-muted/50 border-border hover:bg-muted/70';
+                    return "bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30";
+                  return "bg-muted/50 border-border hover:bg-muted/70";
                 };
 
                 const getFileIconColor = () => {
-                  if (isPDF || isImage || isDoc) return 'text-primary';
-                  return 'text-muted-foreground';
+                  if (isPDF || isImage || isDoc) return "text-primary";
+                  return "text-muted-foreground";
                 };
 
                 return (
                   <div
                     key={attachment.id}
-                    className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all group ${getFileTypeStyles()} `}
+                    className={`group inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 transition-all ${getFileTypeStyles()} `}
                   >
                     {isPDF ? (
-                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      <FileText
+                        className={`h-3.5 w-3.5 ${getFileIconColor()}`}
+                      />
                     ) : isImage ? (
-                      <ImageIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      <ImageIcon
+                        className={`h-3.5 w-3.5 ${getFileIconColor()}`}
+                      />
                     ) : isDoc ? (
-                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      <FileText
+                        className={`h-3.5 w-3.5 ${getFileIconColor()}`}
+                      />
                     ) : (
-                      <FileIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      <FileIcon
+                        className={`h-3.5 w-3.5 ${getFileIconColor()}`}
+                      />
                     )}
                     <button
                       onClick={() => handleDownloadClick(attachment.id)}
                       disabled={isBusy || isUploading}
-                      className="text-sm hover:underline disabled:opacity-50 disabled:cursor-not-allowed max-w-[200px] truncate"
+                      className="max-w-[200px] truncate text-sm hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                       title={attachment.name}
                     >
                       {attachment.name}
@@ -252,7 +276,7 @@ export function TaskBody({
                     <button
                       onClick={() => handleDeleteAttachment(attachment.id)}
                       disabled={isBusy || isUploading}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive disabled:cursor-not-allowed"
+                      className="text-muted-foreground hover:text-destructive opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
                     >
                       {isBusy ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -267,7 +291,7 @@ export function TaskBody({
               <button
                 onClick={triggerFileInput}
                 disabled={isUploading || !!busyAttachmentId}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md border border-dashed border-border/40 hover:border-border/60 hover:bg-muted/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-muted-foreground"
+                className="border-border/40 hover:border-border/60 hover:bg-muted/30 text-muted-foreground inline-flex items-center gap-1.5 rounded-md border border-dashed px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isUploading ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -285,16 +309,16 @@ export function TaskBody({
             <button
               onClick={triggerFileInput}
               disabled={isUploading || !!busyAttachmentId}
-              className="w-full rounded-md border border-dashed border-border/30 bg-muted/30 px-3 py-4 text-center hover:border-border/50 hover:bg-muted/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border-border/30 bg-muted/30 hover:border-border/50 hover:bg-muted/50 w-full rounded-md border border-dashed px-3 py-4 text-center transition-all disabled:cursor-not-allowed disabled:opacity-50"
             >
               <div className="flex flex-col items-center gap-1.5">
                 {isUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
                 ) : (
-                  <Plus className="h-4 w-4 text-muted-foreground" />
+                  <Plus className="text-muted-foreground h-4 w-4" />
                 )}
-                <span className="text-xs text-muted-foreground">
-                  {isUploading ? 'Uploading...' : 'Add file'}
+                <span className="text-muted-foreground text-xs">
+                  {isUploading ? "Uploading..." : "Add file"}
                 </span>
               </div>
             </button>

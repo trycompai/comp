@@ -1,10 +1,14 @@
-import { memo, useMemo } from 'react';
-import type { Components } from 'react-markdown';
-import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
+import type { Components } from "react-markdown";
+import { memo, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
 
-export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { content: string }) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({
+  content,
+}: {
+  content: string;
+}) {
   const components = useMemo<Components>(
     () => ({
       a: ({ children, href, ...props }) => (
@@ -13,22 +17,28 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { co
         </a>
       ),
       code: ({ children, className, ...props }) => {
-        const match = /language-(\w+)/.exec(className || '');
+        const match = /language-(\w+)/.exec(className || "");
         return match ? (
           <code
-            className={`${className} bg-muted px-1 py-0.5 rounded text-sm font-mono`}
+            className={`${className} bg-muted rounded px-1 py-0.5 font-mono text-sm`}
             {...props}
           >
             {children}
           </code>
         ) : (
-          <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props}>
+          <code
+            className="bg-muted rounded px-1 py-0.5 font-mono text-sm"
+            {...props}
+          >
             {children}
           </code>
         );
       },
       pre: ({ children, ...props }) => (
-        <pre className="bg-muted p-3 rounded-sm overflow-x-auto text-sm" {...props}>
+        <pre
+          className="bg-muted overflow-x-auto rounded-sm p-3 text-sm"
+          {...props}
+        >
           {children}
         </pre>
       ),
@@ -48,12 +58,12 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { co
         </h3>
       ),
       ul: ({ children, ...props }) => (
-        <ul className="list-disc pl-4 flex flex-col gap-0" {...props}>
+        <ul className="flex list-disc flex-col gap-0 pl-4" {...props}>
           {children}
         </ul>
       ),
       ol: ({ children, ...props }) => (
-        <ol className="list-decimal pl-4 flex flex-col gap-0" {...props}>
+        <ol className="flex list-decimal flex-col gap-0 pl-4" {...props}>
           {children}
         </ol>
       ),
@@ -68,7 +78,10 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { co
         </p>
       ),
       blockquote: ({ children, ...props }) => (
-        <blockquote className="border-l-4 border-muted pl-4 italic flex flex-col gap-1" {...props}>
+        <blockquote
+          className="border-muted flex flex-col gap-1 border-l-4 pl-4 italic"
+          {...props}
+        >
           {children}
         </blockquote>
       ),
@@ -77,7 +90,11 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: { co
   );
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw]}
+      components={components}
+    >
       {content}
     </ReactMarkdown>
   );

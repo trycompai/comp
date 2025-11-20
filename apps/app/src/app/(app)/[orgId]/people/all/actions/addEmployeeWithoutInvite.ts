@@ -1,10 +1,11 @@
-'use server';
+"use server";
 
-import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { auth } from '@/utils/auth';
-import type { Role } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { createTrainingVideoEntries } from "@/lib/db/employee";
+import { auth } from "@/utils/auth";
+
+import type { Role } from "@trycompai/db";
+import { db } from "@trycompai/db";
 
 export const addEmployeeWithoutInvite = async ({
   email,
@@ -18,7 +19,7 @@ export const addEmployeeWithoutInvite = async ({
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.session) {
-      throw new Error('Authentication required.');
+      throw new Error("Authentication required.");
     }
     const currentUserId = session.session.userId;
     const currentUserMember = await db.member.findFirst({
@@ -30,17 +31,18 @@ export const addEmployeeWithoutInvite = async ({
 
     if (
       !currentUserMember ||
-      (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
+      (!currentUserMember.role.includes("admin") &&
+        !currentUserMember.role.includes("owner"))
     ) {
       throw new Error("You don't have permission to add members.");
     }
 
-    let userId = '';
+    let userId = "";
     const existingUser = await db.user.findFirst({
       where: {
         email: {
           equals: email,
-          mode: 'insensitive',
+          mode: "insensitive",
         },
       },
     });
@@ -50,7 +52,7 @@ export const addEmployeeWithoutInvite = async ({
         data: {
           emailVerified: false,
           email,
-          name: email.split('@')[0],
+          name: email.split("@")[0],
         },
       });
 
@@ -72,7 +74,7 @@ export const addEmployeeWithoutInvite = async ({
 
     return { success: true, data: member };
   } catch (error) {
-    console.error('Error adding employee:', error);
-    return { success: false, error: 'Failed to add employee' };
+    console.error("Error adding employee:", error);
+    return { success: false, error: "Failed to add employee" };
   }
 };

@@ -1,17 +1,19 @@
-'use client';
+"use client";
 
-import { authClient } from '@/app/lib/auth-client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
-import { Form, FormControl, FormField, FormItem } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { ArrowRight, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
-import { OtpForm } from './otp-form';
+import { useState } from "react";
+import { authClient } from "@/app/lib/auth-client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Button } from "@trycompai/ui/button";
+import { cn } from "@trycompai/ui/cn";
+import { Form, FormControl, FormField, FormItem } from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
+
+import { OtpForm } from "./otp-form";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -29,7 +31,7 @@ export function OtpSignIn({ className }: Props) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      email: "",
     },
   });
 
@@ -39,7 +41,7 @@ export function OtpSignIn({ className }: Props) {
 
     const { data, error } = await authClient.emailOtp.sendVerificationOtp({
       email: email,
-      type: 'sign-in',
+      type: "sign-in",
     });
 
     if (error) {
@@ -55,8 +57,8 @@ export function OtpSignIn({ className }: Props) {
 
   if (isSent) {
     return (
-      <div className={cn('flex flex-col space-y-4', className)}>
-        <OtpForm email={_email ?? ''} />
+      <div className={cn("flex flex-col space-y-4", className)}>
+        <OtpForm email={_email ?? ""} />
       </div>
     );
   }
@@ -64,7 +66,7 @@ export function OtpSignIn({ className }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className={cn('flex flex-col space-y-4', className)}>
+        <div className={cn("flex flex-col space-y-4", className)}>
           <FormField
             control={form.control}
             name="email"

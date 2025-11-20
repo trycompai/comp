@@ -2,17 +2,10 @@
   "$schema": "https://turborepo.org/schema.json",
   "ui": "stream",
   "tasks": {
-    "db:generate": {
-      "cache": false,
-      "persistent": true
-    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**"]
-    },
-    "lint": {
-      "dependsOn": ["^lint"]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
@@ -24,10 +17,38 @@
     "clean": {
       "cache": false
     },
+    "generate": {
+      "cache": false,
+      "persistent": true
+    },
+    "migrate": {
+      "cache": false,
+      "persistent": true
+    },
+    "push": {
+      "cache": false,
+      "persistent": true
+    },
+    "studio": {
+      "cache": false,
+      "persistent": true
+    },
+    "seed": {
+      "cache": false,
+      "persistent": true
+    },
     "test": {
       "cache": false,
       "outputs": ["coverage/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env"]
+    },
+    "format": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

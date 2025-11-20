@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
-import type { answerQuestion } from '@/jobs/tasks/vendors/answer-question';
-import { useEffect } from 'react';
-import { toast } from 'sonner';
-import type { QuestionAnswer } from '../components/types';
+import type { answerQuestion } from "@/jobs/tasks/vendors/answer-question";
+import { useEffect } from "react";
+import { useRealtimeTaskTrigger } from "@trigger.dev/react-hooks";
+import { toast } from "sonner";
+
+import type { QuestionAnswer } from "../components/types";
 
 interface UseQuestionnaireSingleAnswerProps {
   singleAnswerToken: string | null;
@@ -12,7 +13,7 @@ interface UseQuestionnaireSingleAnswerProps {
   answeringQuestionIndex: number | null;
   setResults: React.Dispatch<React.SetStateAction<QuestionAnswer[] | null>>;
   setQuestionStatuses: React.Dispatch<
-    React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    React.SetStateAction<Map<number, "pending" | "processing" | "completed">>
   >;
   setAnsweringQuestionIndex: (index: number | null) => void;
 }
@@ -31,14 +32,18 @@ export function useQuestionnaireSingleAnswer({
     run: singleAnswerRun,
     error: singleAnswerError,
     isLoading: isSingleAnswerTriggering,
-  } = useRealtimeTaskTrigger<typeof answerQuestion>('answer-question', {
+  } = useRealtimeTaskTrigger<typeof answerQuestion>("answer-question", {
     accessToken: singleAnswerToken || undefined,
     enabled: !!singleAnswerToken,
   });
 
   // Handle single answer completion
   useEffect(() => {
-    if (singleAnswerRun?.status === 'COMPLETED' && singleAnswerRun.output && answeringQuestionIndex !== null) {
+    if (
+      singleAnswerRun?.status === "COMPLETED" &&
+      singleAnswerRun.output &&
+      answeringQuestionIndex !== null
+    ) {
       const output = singleAnswerRun.output as {
         success: boolean;
         questionIndex: number;
@@ -65,7 +70,11 @@ export function useQuestionnaireSingleAnswer({
           const targetIndex = output.questionIndex;
 
           // Verify we're updating the correct question
-          if (targetIndex === answeringQuestionIndex && targetIndex >= 0 && targetIndex < updatedResults.length) {
+          if (
+            targetIndex === answeringQuestionIndex &&
+            targetIndex >= 0 &&
+            targetIndex < updatedResults.length
+          ) {
             updatedResults[targetIndex] = {
               question: updatedResults[targetIndex].question, // Preserve original question text
               answer: output.answer,
@@ -82,12 +91,12 @@ export function useQuestionnaireSingleAnswer({
         setQuestionStatuses((prev) => {
           const newStatuses = new Map(prev);
           if (output.questionIndex === answeringQuestionIndex) {
-            newStatuses.set(output.questionIndex, 'completed');
+            newStatuses.set(output.questionIndex, "completed");
           }
           return newStatuses;
         });
 
-        toast.success('Answer generated successfully');
+        toast.success("Answer generated successfully");
       } else {
         // Mark as failed
         setResults((prevResults) => {
@@ -96,7 +105,11 @@ export function useQuestionnaireSingleAnswer({
           const updatedResults = [...prevResults];
           const targetIndex = output.questionIndex;
 
-          if (targetIndex === answeringQuestionIndex && targetIndex >= 0 && targetIndex < updatedResults.length) {
+          if (
+            targetIndex === answeringQuestionIndex &&
+            targetIndex >= 0 &&
+            targetIndex < updatedResults.length
+          ) {
             updatedResults[targetIndex] = {
               ...updatedResults[targetIndex],
               failedToGenerate: true,
@@ -110,55 +123,78 @@ export function useQuestionnaireSingleAnswer({
         setQuestionStatuses((prev) => {
           const newStatuses = new Map(prev);
           if (output.questionIndex === answeringQuestionIndex) {
-            newStatuses.set(output.questionIndex, 'completed');
+            newStatuses.set(output.questionIndex, "completed");
           }
           return newStatuses;
         });
 
-        toast.warning('Could not find relevant information in your policies for this question.');
+        toast.warning(
+          "Could not find relevant information in your policies for this question.",
+        );
       }
 
       // Reset answering index
       setAnsweringQuestionIndex(null);
     }
-  }, [singleAnswerRun?.status, singleAnswerRun?.output, answeringQuestionIndex, setResults, setQuestionStatuses, setAnsweringQuestionIndex]);
+  }, [
+    singleAnswerRun?.status,
+    singleAnswerRun?.output,
+    answeringQuestionIndex,
+    setResults,
+    setQuestionStatuses,
+    setAnsweringQuestionIndex,
+  ]);
 
   // Handle single answer errors
   useEffect(() => {
     if (singleAnswerError && answeringQuestionIndex !== null) {
       setQuestionStatuses((prev) => {
         const newStatuses = new Map(prev);
-        newStatuses.set(answeringQuestionIndex, 'completed');
+        newStatuses.set(answeringQuestionIndex, "completed");
         return newStatuses;
       });
       setAnsweringQuestionIndex(null);
       toast.error(`Failed to generate answer: ${singleAnswerError.message}`);
     }
-  }, [singleAnswerError, answeringQuestionIndex, setQuestionStatuses, setAnsweringQuestionIndex]);
+  }, [
+    singleAnswerError,
+    answeringQuestionIndex,
+    setQuestionStatuses,
+    setAnsweringQuestionIndex,
+  ]);
 
   // Handle task failures and cancellations
   useEffect(() => {
-    if ((singleAnswerRun?.status === 'FAILED' || singleAnswerRun?.status === 'CANCELED') && answeringQuestionIndex !== null) {
+    if (
+      (singleAnswerRun?.status === "FAILED" ||
+        singleAnswerRun?.status === "CANCELED") &&
+      answeringQuestionIndex !== null
+    ) {
       setQuestionStatuses((prev) => {
         const newStatuses = new Map(prev);
-        newStatuses.set(answeringQuestionIndex, 'completed');
+        newStatuses.set(answeringQuestionIndex, "completed");
         return newStatuses;
       });
       setAnsweringQuestionIndex(null);
-      
+
       const errorMessage =
         singleAnswerRun.error instanceof Error
           ? singleAnswerRun.error.message
-          : typeof singleAnswerRun.error === 'string'
+          : typeof singleAnswerRun.error === "string"
             ? singleAnswerRun.error
-            : 'Task failed or was canceled';
+            : "Task failed or was canceled";
       toast.error(`Failed to generate answer: ${errorMessage}`);
     }
-  }, [singleAnswerRun?.status, singleAnswerRun?.error, answeringQuestionIndex, setQuestionStatuses, setAnsweringQuestionIndex]);
+  }, [
+    singleAnswerRun?.status,
+    singleAnswerRun?.error,
+    answeringQuestionIndex,
+    setQuestionStatuses,
+    setAnsweringQuestionIndex,
+  ]);
 
   return {
     triggerSingleAnswer,
     isSingleAnswerTriggering,
   };
 }
-

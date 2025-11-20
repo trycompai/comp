@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { healAndSetAccessToken } from '@/actions/trigger/heal-access-token';
-import { TriggerProvider } from '@/components/trigger-provider';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import { healAndSetAccessToken } from "@/actions/trigger/heal-access-token";
+import { TriggerProvider } from "@/components/trigger-provider";
 
 interface TriggerTokenProviderProps {
   triggerJobId?: string;
@@ -26,7 +26,7 @@ export function TriggerTokenProvider({
           const healedToken = await healAndSetAccessToken(triggerJobId);
           setToken(healedToken);
         } catch (error) {
-          console.error('Failed to heal token:', error);
+          console.error("Failed to heal token:", error);
         } finally {
           setIsLoading(false);
         }
@@ -40,8 +40,10 @@ export function TriggerTokenProvider({
   if (triggerJobId && isLoading) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-        <span className="ml-2 text-sm text-muted-foreground">Connecting...</span>
+        <div className="border-primary h-4 w-4 animate-spin rounded-full border-b-2"></div>
+        <span className="text-muted-foreground ml-2 text-sm">
+          Connecting...
+        </span>
       </div>
     );
   }
@@ -50,7 +52,9 @@ export function TriggerTokenProvider({
   if (triggerJobId && !token && !isLoading) {
     return (
       <div className="flex items-center justify-center p-4">
-        <span className="text-sm text-destructive">Failed to establish connection</span>
+        <span className="text-destructive text-sm">
+          Failed to establish connection
+        </span>
       </div>
     );
   }
@@ -61,5 +65,7 @@ export function TriggerTokenProvider({
   }
 
   // Wrap everything in TriggerProvider with the token
-  return <TriggerProvider accessToken={token || ''}>{children}</TriggerProvider>;
+  return (
+    <TriggerProvider accessToken={token || ""}>{children}</TriggerProvider>
+  );
 }

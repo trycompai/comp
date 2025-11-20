@@ -1,19 +1,24 @@
-'use client';
+"use client";
 
+import { useEffect, useState } from "react";
 import {
+  closestCenter,
   DndContext,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useEffect, useState } from 'react';
-import { useCardOrder } from '../hooks/useCardOrder';
-import { SortableCard } from './SortableCard';
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
+import { useCardOrder } from "../hooks/useCardOrder";
+import { SortableCard } from "./SortableCard";
 
 interface DraggableCardsProps {
   children: React.ReactNode[];
@@ -24,7 +29,9 @@ export function DraggableCards({ children, onReorder }: DraggableCardsProps) {
   const [items, setItems] = useState(children);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  const { order, updateOrder } = useCardOrder(children.map((_, index) => index));
+  const { order, updateOrder } = useCardOrder(
+    children.map((_, index) => index),
+  );
 
   // Ensure component is mounted before rendering drag-and-drop functionality
   useEffect(() => {
@@ -55,8 +62,12 @@ export function DraggableCards({ children, onReorder }: DraggableCardsProps) {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((_, index) => `card-${index}` === active.id);
-      const newIndex = items.findIndex((_, index) => `card-${index}` === over.id);
+      const oldIndex = items.findIndex(
+        (_, index) => `card-${index}` === active.id,
+      );
+      const newIndex = items.findIndex(
+        (_, index) => `card-${index}` === over.id,
+      );
 
       const newItems = arrayMove(items, oldIndex, newIndex);
       setItems(newItems);
@@ -68,7 +79,7 @@ export function DraggableCards({ children, onReorder }: DraggableCardsProps) {
         return originalIndex;
       });
 
-      console.log('Drag reorder:', {
+      console.log("Drag reorder:", {
         oldIndex,
         newIndex,
         newItems: newItems.map((_, i) => `card-${i}`),
@@ -111,7 +122,7 @@ export function DraggableCards({ children, onReorder }: DraggableCardsProps) {
         items={items.map((_, index) => `card-${index}`)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 select-none">
+        <div className="grid grid-cols-1 gap-4 select-none lg:grid-cols-2">
           {items.map((child, index) => (
             <SortableCard key={`card-${index}`} id={`card-${index}`}>
               <div className="h-full">{child}</div>
@@ -122,7 +133,7 @@ export function DraggableCards({ children, onReorder }: DraggableCardsProps) {
 
       <DragOverlay>
         {activeId ? (
-          <div className="opacity-90 transform rotate-1 shadow-2xl">
+          <div className="rotate-1 transform opacity-90 shadow-2xl">
             {items.find((_, index) => `card-${index}` === activeId)}
           </div>
         ) : null}

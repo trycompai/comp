@@ -1,21 +1,26 @@
-import { logger, metadata, queue, task } from '@trigger.dev/sdk';
-import { VendorStatus, db } from '@trycompai/db';
-import axios from 'axios';
+import { logger, metadata, queue, task } from "@trigger.dev/sdk";
+import axios from "axios";
+
+import { db, VendorStatus } from "@trycompai/db";
+
+import type { PolicyContext } from "./onboard-organization-helpers";
 import {
   createVendorRiskComment,
   findCommentAuthor,
-  type PolicyContext,
-} from './onboard-organization-helpers';
+} from "./onboard-organization-helpers";
 
 // Queues
-const vendorMitigationQueue = queue({ name: 'vendor-risk-mitigations', concurrencyLimit: 50 });
+const vendorMitigationQueue = queue({
+  name: "vendor-risk-mitigations",
+  concurrencyLimit: 50,
+});
 const vendorMitigationFanoutQueue = queue({
-  name: 'vendor-risk-mitigations-fanout',
+  name: "vendor-risk-mitigations-fanout",
   concurrencyLimit: 50,
 });
 
 export const generateVendorMitigation = task({
-  id: 'generate-vendor-mitigation',
+  id: "generate-vendor-mitigation",
   queue: vendorMitigationQueue,
   retry: {
     maxAttempts: 5,
@@ -27,9 +32,13 @@ export const generateVendorMitigation = task({
     policies: PolicyContext[];
   }) => {
     const { organizationId, vendorId, authorId, policies } = payload;
-    logger.info(`Generating vendor mitigation for vendor ${vendorId} in org ${organizationId}`);
+    logger.info(
+      `Generating vendor mitigation for vendor ${vendorId} in org ${organizationId}`,
+    );
 
-    const vendor = await db.vendor.findFirst({ where: { id: vendorId, organizationId } });
+    const vendor = await db.vendor.findFirst({
+      where: { id: vendorId, organizationId },
+    });
 
     if (!vendor) {
       logger.warn(`Vendor ${vendorId} not found in org ${organizationId}`);
@@ -40,7 +49,7 @@ export const generateVendorMitigation = task({
     // Update root onboarding task metadata if available (when triggered from onboarding)
     // Try root first (onboarding task), then parent (fanout task), then own metadata
     const metadataHandle = metadata.root ?? metadata.parent ?? metadata;
-    metadataHandle.set(`vendor_${vendorId}_status`, 'processing');
+    metadataHandle.set(`vendor_${vendorId}_status`, "processing");
 
     await createVendorRiskComment(vendor, policies, organizationId, authorId);
 
@@ -55,26 +64,29 @@ export const generateVendorMitigation = task({
 
     // Mark as completed after mitigation is done
     // Update root onboarding task metadata if available
-    metadataHandle.set(`vendor_${vendorId}_status`, 'completed');
-    metadataHandle.increment('vendorsCompleted', 1);
-    metadataHandle.decrement('vendorsRemaining', 1);
+    metadataHandle.set(`vendor_${vendorId}_status`, "completed");
+    metadataHandle.increment("vendorsCompleted", 1);
+    metadataHandle.decrement("vendorsRemaining", 1);
 
     // Revalidate the vendor detail page so the new comment shows up
     try {
       const detailPath = `/${organizationId}/vendors/${vendorId}`;
-      await axios.post(`${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`, {
-        path: detailPath,
-        secret: process.env.REVALIDATION_SECRET,
-      });
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`,
+        {
+          path: detailPath,
+          secret: process.env.REVALIDATION_SECRET,
+        },
+      );
       logger.info(`Revalidated vendor path: ${detailPath}`);
     } catch (e) {
-      logger.error('Failed to revalidate vendor paths after mitigation', { e });
+      logger.error("Failed to revalidate vendor paths after mitigation", { e });
     }
   },
 });
 
 export const generateVendorMitigationsForOrg = task({
-  id: 'generate-vendor-mitigations-for-org',
+  id: "generate-vendor-mitigations-for-org",
   queue: vendorMitigationFanoutQueue,
   run: async (payload: { organizationId: string }) => {
     const { organizationId } = payload;
@@ -101,7 +113,10 @@ export const generateVendorMitigationsForOrg = task({
       return;
     }
 
-    const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
+    const policies = policyRows.map((p) => ({
+      name: p.name,
+      description: p.description,
+    }));
 
     await generateVendorMitigation.batchTrigger(
       vendors.map((v) => ({
@@ -118,13 +133,18 @@ export const generateVendorMitigationsForOrg = task({
     // Revalidate the parent vendors route after batch triggering
     try {
       const parentPath = `/${organizationId}/vendors`;
-      await axios.post(`${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`, {
-        path: parentPath,
-        secret: process.env.REVALIDATION_SECRET,
-      });
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`,
+        {
+          path: parentPath,
+          secret: process.env.REVALIDATION_SECRET,
+        },
+      );
       logger.info(`Revalidated vendors parent path: ${parentPath}`);
     } catch (e) {
-      logger.error('Failed to revalidate vendors parent path after batch', { e });
+      logger.error("Failed to revalidate vendors parent path after batch", {
+        e,
+      });
     }
   },
 });

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Shield, Sparkles, Zap } from 'lucide-react';
+import { Shield, Sparkles, Zap } from "lucide-react";
+import { motion } from "motion/react";
 
 interface OnboardingLoadingAnimationProps {
-  itemType: 'risks' | 'vendors';
+  itemType: "risks" | "vendors";
   title: string;
   description: string;
 }
@@ -14,17 +14,17 @@ export function OnboardingLoadingAnimation({
   title,
   description,
 }: OnboardingLoadingAnimationProps) {
-  const Icon = itemType === 'risks' ? Shield : Shield; // Could use different icon for vendors if needed
+  const Icon = itemType === "risks" ? Shield : Shield; // Could use different icon for vendors if needed
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] py-16 px-4">
+    <div className="flex min-h-[400px] flex-col items-center justify-center px-4 py-16">
       {/* Main Animation Container */}
       <div className="relative w-full max-w-2xl">
         {/* Background Grid Pattern */}
         <div className="absolute inset-0 opacity-5">
-          <div className="grid grid-cols-4 gap-4 h-full">
+          <div className="grid h-full grid-cols-4 gap-4">
             {Array.from({ length: 16 }).map((_, i) => (
-              <div key={i} className="border border-foreground/10 rounded" />
+              <div key={i} className="border-foreground/10 rounded border" />
             ))}
           </div>
         </div>
@@ -44,12 +44,12 @@ export function OnboardingLoadingAnimation({
                 duration: 3,
                 repeat: Infinity,
                 delay: index * 0.5,
-                ease: 'easeInOut',
+                ease: "easeInOut",
               }}
               className="flex items-center gap-4"
             >
               {/* Item Card */}
-              <div className="flex-1 bg-card border border-border rounded-lg p-4 shadow-sm">
+              <div className="bg-card border-border flex-1 rounded-lg border p-4 shadow-sm">
                 <div className="flex items-center gap-3">
                   {/* Icon */}
                   <motion.div
@@ -57,16 +57,16 @@ export function OnboardingLoadingAnimation({
                     transition={{
                       duration: 2,
                       repeat: Infinity,
-                      ease: 'linear',
+                      ease: "linear",
                     }}
                   >
-                    <Icon className="h-5 w-5 text-primary" />
+                    <Icon className="text-primary h-5 w-5" />
                   </motion.div>
 
                   {/* Content Skeleton */}
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
-                    <div className="h-3 bg-muted/60 rounded w-1/2 animate-pulse" />
+                    <div className="bg-muted h-4 w-3/4 animate-pulse rounded" />
+                    <div className="bg-muted/60 h-3 w-1/2 animate-pulse rounded" />
                   </div>
 
                   {/* Sparkle Effect */}
@@ -78,10 +78,10 @@ export function OnboardingLoadingAnimation({
                     transition={{
                       duration: 1.5,
                       repeat: Infinity,
-                      ease: 'easeInOut',
+                      ease: "easeInOut",
                     }}
                   >
-                    <Sparkles className="h-4 w-4 text-primary" />
+                    <Sparkles className="text-primary h-4 w-4" />
                   </motion.div>
                 </div>
               </div>
@@ -99,7 +99,7 @@ export function OnboardingLoadingAnimation({
                     repeat: Infinity,
                     delay: index * 0.5 + 0.3,
                   }}
-                  className="w-8 h-0.5 bg-primary/30"
+                  className="bg-primary/30 h-0.5 w-8"
                 />
               )}
             </motion.div>
@@ -116,14 +116,14 @@ export function OnboardingLoadingAnimation({
           transition={{
             duration: 2,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: "easeInOut",
           }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
-            <div className="relative bg-primary/10 backdrop-blur-sm rounded-full p-6 border-2 border-primary/30">
-              <Zap className="h-8 w-8 text-primary" />
+            <div className="bg-primary/20 absolute inset-0 rounded-full blur-xl" />
+            <div className="bg-primary/10 border-primary/30 relative rounded-full border-2 p-6 backdrop-blur-sm">
+              <Zap className="text-primary h-8 w-8" />
             </div>
           </div>
         </motion.div>
@@ -134,12 +134,11 @@ export function OnboardingLoadingAnimation({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="mt-12 text-center space-y-2"
+        className="mt-12 space-y-2 text-center"
       >
         <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-muted-foreground text-sm max-w-md">{description}</p>
+        <p className="text-muted-foreground max-w-md text-sm">{description}</p>
       </motion.div>
     </div>
   );
 }
-

@@ -1,7 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
+
 const SVGComponent = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    className="h-10 w-30 grayscale opacity-70 text-muted-foreground dark:text-white"
+    className="text-muted-foreground h-10 w-30 opacity-70 grayscale dark:text-white"
     xmlns="http://www.w3.org/2000/svg"
     width={120}
     height={40}

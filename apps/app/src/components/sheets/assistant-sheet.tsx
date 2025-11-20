@@ -1,19 +1,21 @@
-'use client';
+"use client";
 
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { Sheet, SheetContent } from '@trycompai/ui/sheet';
+import { Drawer, DrawerContent, DrawerTitle } from "@trycompai/ui/drawer";
+import { useMediaQuery } from "@trycompai/ui/hooks";
+import { Sheet, SheetContent } from "@trycompai/ui/sheet";
 
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import '@trycompai/ui/editor.css';
-import { useQueryState } from 'nuqs';
-import Chat from '../ai/chat';
+import "@trycompai/ui/editor.css";
+
+import { useQueryState } from "nuqs";
+
+import Chat from "../ai/chat";
 
 export function AssistantSheet() {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const [isOpen, setIsOpen] = useQueryState('assistant', {
-    history: 'push',
-    parse: (value) => value === 'true',
+  const [isOpen, setIsOpen] = useQueryState("assistant", {
+    history: "push",
+    parse: (value) => value === "true",
     serialize: (value) => value.toString(),
   });
 

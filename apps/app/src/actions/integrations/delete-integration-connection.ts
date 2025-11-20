@@ -1,19 +1,21 @@
 // delete-integration-connection.ts
 
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { deleteIntegrationConnectionSchema } from '../schema';
+import { revalidatePath } from "next/cache";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { deleteIntegrationConnectionSchema } from "../schema";
 
 export const deleteIntegrationConnectionAction = authActionClient
   .inputSchema(deleteIntegrationConnectionSchema)
   .metadata({
-    name: 'delete-integration-connection',
+    name: "delete-integration-connection",
     track: {
-      event: 'delete-integration-connection',
-      channel: 'server',
+      event: "delete-integration-connection",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -23,7 +25,7 @@ export const deleteIntegrationConnectionAction = authActionClient
     if (!session.activeOrganizationId) {
       return {
         success: false,
-        error: 'Unauthorized',
+        error: "Unauthorized",
       };
     }
 
@@ -37,7 +39,7 @@ export const deleteIntegrationConnectionAction = authActionClient
     if (!integration) {
       return {
         success: false,
-        error: 'Integration not found',
+        error: "Integration not found",
       };
     }
 
@@ -47,7 +49,7 @@ export const deleteIntegrationConnectionAction = authActionClient
       },
     });
 
-    revalidatePath('/integrations');
+    revalidatePath("/integrations");
 
     return {
       success: true,

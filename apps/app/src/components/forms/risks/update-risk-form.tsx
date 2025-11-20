@@ -1,36 +1,45 @@
-'use client';
+"use client";
 
-import { updateRiskAction } from '@/actions/risk/update-risk-action';
-import { updateRiskSchema } from '@/actions/schema';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Departments, type Risk } from '@trycompai/db';
+import type { z } from "zod";
+import { updateRiskAction } from "@/actions/risk/update-risk-action";
+import { updateRiskSchema } from "@/actions/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useQueryState } from "nuqs";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import type { Risk } from "@trycompai/db";
+import { Departments } from "@trycompai/db";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
+} from "@trycompai/ui/accordion";
+import { Button } from "@trycompai/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
+import { Textarea } from "@trycompai/ui/textarea";
 
 export function UpdateRiskForm({ risk }: { risk: Risk }) {
-  const [open, setOpen] = useQueryState('risk-overview-sheet');
+  const [open, setOpen] = useQueryState("risk-overview-sheet");
 
   const updateRisk = useAction(updateRiskAction, {
     onSuccess: () => {
-      toast.success('Risk updated successfully');
+      toast.success("Risk updated successfully");
       setOpen(null);
     },
     onError: () => {
-      toast.error('Failed to update risk');
+      toast.error("Failed to update risk");
     },
   });
 
@@ -62,9 +71,9 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
   return (
     <Form {...form}>
       <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
-        <Accordion type="multiple" defaultValue={['risk']}>
+        <Accordion type="multiple" defaultValue={["risk"]}>
           <AccordionItem value="risk">
-            <AccordionTrigger>{'Risk'}</AccordionTrigger>
+            <AccordionTrigger>{"Risk"}</AccordionTrigger>
             <AccordionContent>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="space-y-4">
@@ -73,13 +82,15 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{'Risk Title'}</FormLabel>
+                        <FormLabel>{"Risk Title"}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             autoFocus
                             className="mt-3"
-                            placeholder={'A short, descriptive title for the risk.'}
+                            placeholder={
+                              "A short, descriptive title for the risk."
+                            }
                             autoCorrect="off"
                           />
                         </FormControl>
@@ -98,7 +109,7 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                             {...field}
                             className="mt-3 min-h-[80px]"
                             placeholder={
-                              'A detailed description of the risk, its potential impact, and its causes.'
+                              "A detailed description of the risk, its potential impact, and its causes."
                             }
                           />
                         </FormControl>
@@ -111,12 +122,12 @@ export function UpdateRiskForm({ risk }: { risk: Risk }) {
                   <Button
                     type="submit"
                     variant="default"
-                    disabled={updateRisk.status === 'executing'}
+                    disabled={updateRisk.status === "executing"}
                   >
-                    {updateRisk.status === 'executing' ? (
+                    {updateRisk.status === "executing" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Save'
+                      "Save"
                     )}
                   </Button>
                 </div>

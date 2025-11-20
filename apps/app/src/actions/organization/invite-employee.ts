@@ -1,10 +1,11 @@
-'use server';
+"use server";
 
-import { authClient } from '@/utils/auth-client';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { z } from 'zod';
-import { authActionClient } from '../safe-action';
-import type { ActionResponse } from '../types';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { authClient } from "@/utils/auth-client";
+import { z } from "zod";
+
+import type { ActionResponse } from "../types";
+import { authActionClient } from "../safe-action";
 
 // Schema only needs email now
 const inviteEmployeeSchema = z.object({
@@ -13,45 +14,51 @@ const inviteEmployeeSchema = z.object({
 
 export const inviteEmployee = authActionClient
   .metadata({
-    name: 'invite-employee', // Updated name
+    name: "invite-employee", // Updated name
     track: {
-      event: 'invite_employee', // Updated event name
-      channel: 'organization',
+      event: "invite_employee", // Updated event name
+      channel: "organization",
     },
   })
   .inputSchema(inviteEmployeeSchema)
-  .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ invited: boolean }>> => {
-    const organizationId = ctx.session.activeOrganizationId;
+  .action(
+    async ({
+      parsedInput,
+      ctx,
+    }): Promise<ActionResponse<{ invited: boolean }>> => {
+      const organizationId = ctx.session.activeOrganizationId;
 
-    if (!organizationId) {
-      return {
-        success: false,
-        error: 'Organization not found',
-      };
-    }
+      if (!organizationId) {
+        return {
+          success: false,
+          error: "Organization not found",
+        };
+      }
 
-    const { email } = parsedInput; // Role is removed from input
+      const { email } = parsedInput; // Role is removed from input
 
-    try {
-      await authClient.organization.inviteMember({
-        email,
-        role: 'employee', // Hardcoded role
-      });
+      try {
+        await authClient.organization.inviteMember({
+          email,
+          role: "employee", // Hardcoded role
+        });
 
-      // Revalidate the employees list page
-      revalidatePath(`/${organizationId}/people/all`);
-      revalidateTag(`user_${ctx.user.id}`, { expire: 0 }); // Keep user tag revalidation
+        // Revalidate the employees list page
+        revalidatePath(`/${organizationId}/people/all`);
+        revalidateTag(`user_${ctx.user.id}`, { expire: 0 }); // Keep user tag revalidation
 
-      return {
-        success: true,
-        data: { invited: true },
-      };
-    } catch (error) {
-      console.error('Error inviting employee:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to invite employee';
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
-  });
+        return {
+          success: true,
+          data: { invited: true },
+        };
+      } catch (error) {
+        console.error("Error inviting employee:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to invite employee";
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      }
+    },
+  );

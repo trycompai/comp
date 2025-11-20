@@ -1,25 +1,25 @@
 // Note: middleware must not call Prisma/BetterAuth APIs. Use cookie presence only.
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export const config = {
   matcher: [
     // Skip auth-related routes (removed onboarding from exclusions)
-    '/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest|research).*)",
   ],
 };
 
 export async function middleware(request: NextRequest) {
   try {
     // E2E Test Mode: Check for test auth header
-    if (process.env.E2E_TEST_MODE === 'true') {
-      const testAuthHeader = request.headers.get('x-e2e-test-auth');
+    if (process.env.E2E_TEST_MODE === "true") {
+      const testAuthHeader = request.headers.get("x-e2e-test-auth");
       if (testAuthHeader) {
         try {
           const testAuth = JSON.parse(testAuthHeader);
           if (testAuth.bypass) {
             // Allow the request to proceed without auth checks
             const response = NextResponse.next();
-            response.headers.set('x-pathname', request.nextUrl.pathname);
+            response.headers.set("x-pathname", request.nextUrl.pathname);
             return response;
           }
         } catch (e) {
@@ -29,8 +29,8 @@ export async function middleware(request: NextRequest) {
     }
 
     // Cookie-only gating (auth will validate server-side on actual routes)
-    const secureCookieName = '__Secure-better-auth.session_token';
-    const fallbackCookieName = 'better-auth.session_token';
+    const secureCookieName = "__Secure-better-auth.session_token";
+    const fallbackCookieName = "better-auth.session_token";
 
     let sessionToken = request.cookies.get(secureCookieName)?.value;
     if (!sessionToken) {
@@ -46,23 +46,23 @@ export async function middleware(request: NextRequest) {
         headers: requestHeaders,
       },
     });
-    response.headers.set('x-pathname', nextUrl.pathname);
-    const intent = nextUrl.searchParams.get('intent') || '';
+    response.headers.set("x-pathname", nextUrl.pathname);
+    const intent = nextUrl.searchParams.get("intent") || "";
     if (intent) {
       // Also forward intent to the request headers so server components can read it
-      requestHeaders.set('x-intent', intent);
+      requestHeaders.set("x-intent", intent);
       // Recreate response with updated forwarded headers
       return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
     // Allow unauthenticated access to invite routes
-    if (nextUrl.pathname.startsWith('/invite/')) {
+    if (nextUrl.pathname.startsWith("/invite/")) {
       return response;
     }
 
     // 1. Not authenticated
-    if (!hasToken && nextUrl.pathname !== '/auth') {
-      const url = new URL('/auth', request.url);
+    if (!hasToken && nextUrl.pathname !== "/auth") {
+      const url = new URL("/auth", request.url);
       // Preserve existing search params
       nextUrl.searchParams.forEach((value, key) => {
         url.searchParams.set(key, value);
@@ -72,11 +72,11 @@ export async function middleware(request: NextRequest) {
 
     // 2. Authenticated users (avoid DB calls in middleware)
     if (hasToken) {
-      const isRootPath = nextUrl.pathname === '/';
+      const isRootPath = nextUrl.pathname === "/";
 
       // If user hits root: route based on active org presence
       if (isRootPath) {
-        const url = new URL('/setup', request.url);
+        const url = new URL("/setup", request.url);
         nextUrl.searchParams.forEach((value, key) => {
           url.searchParams.set(key, value);
         });
@@ -86,7 +86,7 @@ export async function middleware(request: NextRequest) {
 
     return response;
   } catch (err) {
-    console.error('[MW] error', err);
+    console.error("[MW] error", err);
     return NextResponse.next();
   }
 }

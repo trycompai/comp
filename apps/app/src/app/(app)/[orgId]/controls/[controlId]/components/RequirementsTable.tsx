@@ -1,18 +1,19 @@
-'use client';
+"use client";
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { useDataTable } from '@/hooks/use-data-table';
-import { ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useDataTable } from "@/hooks/use-data-table";
+import { ColumnDef } from "@tanstack/react-table";
+
 import type {
   FrameworkEditorFramework,
   FrameworkEditorRequirement,
   FrameworkInstance,
   RequirementMap,
-} from '@trycompai/db';
-import { Icons } from '@trycompai/ui/icons';
-import { Input } from '@trycompai/ui/input';
-import { useMemo, useState } from 'react';
+} from "@trycompai/db";
+import { Icons } from "@trycompai/ui/icons";
+import { Input } from "@trycompai/ui/input";
 
 interface RequirementsTableProps {
   requirements: (RequirementMap & {
@@ -24,8 +25,11 @@ interface RequirementsTableProps {
   orgId: string;
 }
 
-export function RequirementsTable({ requirements, orgId }: RequirementsTableProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+export function RequirementsTable({
+  requirements,
+  orgId,
+}: RequirementsTableProps) {
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Define columns for requirements table
   const columns = useMemo<
@@ -40,9 +44,11 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
   >(
     () => [
       {
-        id: 'reqName',
-        accessorKey: 'requirement.name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Name'} />,
+        id: "reqName",
+        accessorKey: "requirement.name",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={"Name"} />
+        ),
 
         cell: ({ row }) => {
           return (
@@ -53,16 +59,18 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
         },
         enableSorting: true,
         sortingFn: (rowA, rowB, columnId) => {
-          const nameA = rowA.original.requirement.name || '';
-          const nameB = rowB.original.requirement.name || '';
+          const nameA = rowA.original.requirement.name || "";
+          const nameB = rowB.original.requirement.name || "";
 
           return nameA.localeCompare(nameB);
         },
       },
       {
-        id: 'reqDescription',
-        accessorKey: 'requirement.description',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Description'} />,
+        id: "reqDescription",
+        accessorKey: "requirement.description",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={"Description"} />
+        ),
         cell: ({ row }) => {
           return (
             <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
@@ -72,8 +80,8 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
         },
         enableSorting: true,
         sortingFn: (rowA, rowB, columnId) => {
-          const descA = rowA.original.requirement.description || '';
-          const descB = rowB.original.requirement.description || '';
+          const descA = rowA.original.requirement.description || "";
+          const descB = rowB.original.requirement.description || "";
 
           return descA.localeCompare(descB);
         },
@@ -90,10 +98,12 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
     return requirements.filter((req) => {
       // Search in ID, name, and description from the nested requirement object
       return (
-        (req.requirement.id?.toLowerCase() || '').includes(searchLower) ||
-        (req.requirement.name?.toLowerCase() || '').includes(searchLower) ||
-        (req.requirement.description?.toLowerCase() || '').includes(searchLower) ||
-        (req.requirement.identifier?.toLowerCase() || '').includes(searchLower) // Also search identifier
+        (req.requirement.id?.toLowerCase() || "").includes(searchLower) ||
+        (req.requirement.name?.toLowerCase() || "").includes(searchLower) ||
+        (req.requirement.description?.toLowerCase() || "").includes(
+          searchLower,
+        ) ||
+        (req.requirement.identifier?.toLowerCase() || "").includes(searchLower) // Also search identifier
       );
     });
   }, [requirements, searchTerm]);
@@ -108,7 +118,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
     initialState: {
       // No default sorting to avoid type issues
     },
-    tableId: 'r',
+    tableId: "r",
     clearOnDefault: true,
   });
 
@@ -133,7 +143,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
           // row.frameworkInstanceId is the ID of the FrameworkInstance
           return `${row.frameworkInstanceId}/requirements/${row.requirementId}`;
         }}
-        tableId={'r'}
+        tableId={"r"}
       />
     </div>
   );

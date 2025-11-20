@@ -1,8 +1,10 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { cache } from 'react';
-import 'server-only';
+import { cache } from "react";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import "server-only";
 
 export const getContextEntries = cache(
   async ({
@@ -20,7 +22,10 @@ export const getContextEntries = cache(
     pageCount: number;
   }> => {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.session.activeOrganizationId || session.session.activeOrganizationId !== orgId) {
+    if (
+      !session?.session.activeOrganizationId ||
+      session.session.activeOrganizationId !== orgId
+    ) {
       return { data: [], pageCount: 0 };
     }
     const where: any = {
@@ -28,7 +33,7 @@ export const getContextEntries = cache(
       ...(search && {
         question: {
           contains: search,
-          mode: 'insensitive',
+          mode: "insensitive",
         },
       }),
     };
@@ -38,7 +43,7 @@ export const getContextEntries = cache(
       where,
       skip,
       take,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
     const total = await db.context.count({ where });
     const pageCount = Math.ceil(total / perPage);

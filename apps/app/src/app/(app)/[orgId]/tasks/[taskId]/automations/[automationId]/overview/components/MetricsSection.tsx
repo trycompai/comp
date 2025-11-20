@@ -1,17 +1,22 @@
-'use client';
+"use client";
 
-import { api } from '@/lib/api-client';
-import { EvidenceAutomationRun, EvidenceAutomationVersion } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Switch } from '@trycompai/ui/switch';
-import { Clock, Code2 } from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
+import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import { Clock, Code2 } from "lucide-react";
+import { toast } from "sonner";
+
+import {
+  EvidenceAutomationRun,
+  EvidenceAutomationVersion,
+} from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent } from "@trycompai/ui/card";
+import { Input } from "@trycompai/ui/input";
+import { Switch } from "@trycompai/ui/switch";
+
+import { useTaskAutomation } from "../../../../automation/[automationId]/hooks/use-task-automation";
 
 interface MetricsSectionProps {
   automationName: string;
@@ -39,12 +44,13 @@ export function MetricsSection({
   }>();
 
   const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState('');
+  const [nameValue, setNameValue] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
   const { mutate: mutateAutomation } = useTaskAutomation();
 
   // Get latest published version runs only
-  const latestVersionNumber = initialVersions.length > 0 ? initialVersions[0].version : null;
+  const latestVersionNumber =
+    initialVersions.length > 0 ? initialVersions[0].version : null;
 
   const latestVersionRuns = useMemo(() => {
     if (!latestVersionNumber) {
@@ -55,8 +61,11 @@ export function MetricsSection({
 
   // Calculate metrics from latest version runs
   const totalRuns = latestVersionRuns.length;
-  const successfulRuns = latestVersionRuns.filter((run) => run.status === 'completed').length;
-  const successRate = totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
+  const successfulRuns = latestVersionRuns.filter(
+    (run) => run.status === "completed",
+  ).length;
+  const successRate =
+    totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
   const latestRun = latestVersionRuns[0];
 
   const handleNameEdit = () => {
@@ -83,17 +92,17 @@ export function MetricsSection({
       }
 
       await mutateAutomation();
-      toast.success('Name updated');
+      toast.success("Name updated");
       setEditingName(false);
     } catch (error) {
-      toast.error('Failed to update name');
+      toast.error("Failed to update name");
       setNameValue(automationName);
       setEditingName(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-6 bg-secondary p-8">
+    <div className="bg-secondary flex flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         {editingName ? (
           <Input
@@ -102,25 +111,27 @@ export function MetricsSection({
             onChange={(e) => setNameValue(e.target.value)}
             onBlur={saveNameEdit}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 saveNameEdit();
-              } else if (e.key === 'Escape') {
+              } else if (e.key === "Escape") {
                 setEditingName(false);
               }
             }}
-            className="text-xl font-medium max-w-md"
+            className="max-w-md text-xl font-medium"
           />
         ) : (
           <div
             onClick={handleNameEdit}
-            className="group/title text-xl font-medium cursor-pointer rounded-md px-2 py-1 -mx-2 -my-1 hover:bg-background/80 hover:border hover:border-border transition-all inline-flex items-center gap-2"
+            className="group/title hover:bg-background/80 hover:border-border -mx-2 -my-1 inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xl font-medium transition-all hover:border"
           >
             <span>{automationName}</span>
           </div>
         )}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium">{isEnabled ? 'Enabled' : 'Disabled'}</span>
+            <span className="text-xs font-medium">
+              {isEnabled ? "Enabled" : "Disabled"}
+            </span>
             <Switch
               checked={isEnabled}
               onCheckedChange={onToggleEnabled}
@@ -129,7 +140,7 @@ export function MetricsSection({
             />
             <Link href={editScriptUrl}>
               <Button size="sm">
-                <Code2 className="h-4 w-4 mr-2" />
+                <Code2 className="mr-2 h-4 w-4" />
                 Edit Script
               </Button>
             </Link>
@@ -137,21 +148,23 @@ export function MetricsSection({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
-          <CardContent className="p-6 min-h-[120px]">
-            <p className="text-sm text-muted-foreground mb-2">Success Rate</p>
+          <CardContent className="min-h-[120px] p-6">
+            <p className="text-muted-foreground mb-2 text-sm">Success Rate</p>
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-semibold text-chart-positive">{successRate}%</p>
-              <p className="text-sm text-muted-foreground">Avg.</p>
+              <p className="text-chart-positive text-3xl font-semibold">
+                {successRate}%
+              </p>
+              <p className="text-muted-foreground text-sm">Avg.</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 min-h-[120px]">
-            <p className="text-sm text-muted-foreground mb-2">Schedule</p>
-            <div className="text-base font-medium flex items-center gap-2">
+          <CardContent className="min-h-[120px] p-6">
+            <p className="text-muted-foreground mb-2 text-sm">Schedule</p>
+            <div className="flex items-center gap-2 text-base font-medium">
               <Clock className="h-4 w-4" />
               Every Day 9:00 AM
             </div>
@@ -159,45 +172,45 @@ export function MetricsSection({
         </Card>
 
         <Card>
-          <CardContent className="p-6 min-h-[120px]">
-            <p className="text-sm text-muted-foreground mb-2">Next Run</p>
+          <CardContent className="min-h-[120px] p-6">
+            <p className="text-muted-foreground mb-2 text-sm">Next Run</p>
             <p className="text-base font-medium">Tomorrow 9:00 AM</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 min-h-[120px]">
-            <p className="text-sm text-muted-foreground mb-2">Last Run</p>
+          <CardContent className="min-h-[120px] p-6">
+            <p className="text-muted-foreground mb-2 text-sm">Last Run</p>
             {latestRun ? (
               <>
                 <p className="text-base font-medium">
                   {new Date(latestRun.createdAt).toLocaleTimeString([], {
-                    hour: 'numeric',
-                    minute: '2-digit',
+                    hour: "numeric",
+                    minute: "2-digit",
                   })}
                 </p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="mt-1 flex items-center gap-2">
                   <span
                     className={`text-xs font-medium ${
-                      latestRun.status === 'completed'
-                        ? 'text-chart-positive'
-                        : 'text-chart-destructive'
+                      latestRun.status === "completed"
+                        ? "text-chart-positive"
+                        : "text-chart-destructive"
                     }`}
                   >
-                    {latestRun.status === 'completed' ? 'Complete' : 'Failed'}
+                    {latestRun.status === "completed" ? "Complete" : "Failed"}
                   </span>
-                  <span className="text-xs text-muted-foreground">• 2s</span>
+                  <span className="text-muted-foreground text-xs">• 2s</span>
                 </div>
               </>
             ) : (
-              <p className="text-base text-muted-foreground">No runs yet</p>
+              <p className="text-muted-foreground text-base">No runs yet</p>
             )}
           </CardContent>
         </Card>
       </div>
 
       {latestVersionNumber && (
-        <span className="text-xs text-muted-foreground w-fit">
+        <span className="text-muted-foreground w-fit text-xs">
           Metrics shown for version {latestVersionNumber}
         </span>
       )}

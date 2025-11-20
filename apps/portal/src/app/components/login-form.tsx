@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { GoogleSignIn } from './google-sign-in';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from "next/navigation";
+
+import { GoogleSignIn } from "./google-sign-in";
 
 interface LoginFormProps {
   inviteCode?: string;
@@ -21,12 +22,15 @@ export function LoginForm({ inviteCode, showGoogle }: LoginFormProps) {
         <div className="absolute inset-x-0 top-1/2 flex items-center">
           <span className="w-full border-t" />
         </div>
-        <span className="relative z-10 bg-background px-3 text-xs text-muted-foreground font-medium">
+        <span className="bg-background text-muted-foreground relative z-10 px-3 text-xs font-medium">
           OR
         </span>
       </div>
       <div className="space-y-4 pt-4">
-        <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+        <GoogleSignIn
+          inviteCode={inviteCode}
+          searchParams={searchParams as URLSearchParams}
+        />
       </div>
     </div>
   );

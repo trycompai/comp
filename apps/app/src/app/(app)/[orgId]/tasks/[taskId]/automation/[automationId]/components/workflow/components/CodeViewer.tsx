@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { Code2 } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { Code2 } from "lucide-react";
 
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center">
+    <div className="flex h-full items-center justify-center">
       <div className="text-center">
-        <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-muted/30 flex items-center justify-center animate-pulse">
-          <Code2 className="w-6 h-6 text-muted-foreground/60" />
+        <div className="bg-muted/30 mx-auto mb-4 flex h-12 w-12 animate-pulse items-center justify-center rounded-xl">
+          <Code2 className="text-muted-foreground/60 h-6 w-6" />
         </div>
-        <p className="text-sm text-muted-foreground">Loading editor...</p>
+        <p className="text-muted-foreground text-sm">Loading editor...</p>
       </div>
     </div>
   ),
@@ -28,22 +28,23 @@ export function CodeViewer({ content, isLoading }: Props) {
 
   useEffect(() => {
     // Detect Tailwind's dark class or system preference as a fallback
-    const hasDarkClass = document.documentElement.classList.contains('dark');
+    const hasDarkClass = document.documentElement.classList.contains("dark");
     const prefersDark =
-      window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
     setIsDark(hasDarkClass || prefersDark);
   }, []);
 
-  const editorTheme = useMemo(() => (isDark ? 'vs-dark' : 'vs'), [isDark]);
+  const editorTheme = useMemo(() => (isDark ? "vs-dark" : "vs"), [isDark]);
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-muted/30 flex items-center justify-center animate-pulse">
-            <Code2 className="w-6 h-6 text-muted-foreground/60" />
+          <div className="bg-muted/30 mx-auto mb-4 flex h-12 w-12 animate-pulse items-center justify-center rounded-xl">
+            <Code2 className="text-muted-foreground/60 h-6 w-6" />
           </div>
-          <p className="text-sm text-muted-foreground">Loading code...</p>
+          <p className="text-muted-foreground text-sm">Loading code...</p>
         </div>
       </div>
     );
@@ -51,10 +52,10 @@ export function CodeViewer({ content, isLoading }: Props) {
 
   if (!content) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/30 flex items-center justify-center">
-            <Code2 className="w-8 h-8 text-muted-foreground" />
+          <div className="bg-muted/30 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl">
+            <Code2 className="text-muted-foreground h-8 w-8" />
           </div>
           <p className="text-muted-foreground">No code to display</p>
         </div>
@@ -63,18 +64,18 @@ export function CodeViewer({ content, isLoading }: Props) {
   }
 
   return (
-    <div className="h-full min-h-full rounded-sm overflow-hidden border border-border/40">
+    <div className="border-border/40 h-full min-h-full overflow-hidden rounded-sm border">
       <MonacoEditor
         value={content}
         language="javascript"
         theme={editorTheme}
         options={{
           readOnly: true,
-          wordWrap: 'on',
-          wrappingStrategy: 'advanced',
+          wordWrap: "on",
+          wrappingStrategy: "advanced",
           minimap: { enabled: false },
-          lineNumbers: 'on',
-          renderLineHighlight: 'line',
+          lineNumbers: "on",
+          renderLineHighlight: "line",
           automaticLayout: true,
           smoothScrolling: true,
           fontSize: 13,

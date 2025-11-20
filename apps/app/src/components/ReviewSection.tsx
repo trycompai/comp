@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { ReviewWidget } from './review-widget';
+import { ReviewWidget } from "./review-widget";
 
 interface ReviewSectionProps {
   rating?: number;
@@ -11,7 +11,7 @@ interface ReviewSectionProps {
 export function ReviewSection({
   rating = 4.7,
   reviewCount = 100,
-  className = '',
+  className = "",
 }: ReviewSectionProps) {
   return (
     <div className={`flex flex-col items-center gap-2 ${className}`}>
@@ -19,7 +19,7 @@ export function ReviewSection({
       <ReviewWidget rating={rating} reviewCount={reviewCount} />
 
       {/* Trust Signals - Simplified without icons */}
-      <div className="text-[10px] text-muted-foreground/70 text-center">
+      <div className="text-muted-foreground/70 text-center text-[10px]">
         100% money back guarantee • Cancel anytime
       </div>
     </div>

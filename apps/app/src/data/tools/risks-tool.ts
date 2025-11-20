@@ -1,7 +1,8 @@
-import { auth } from '@/utils/auth';
-import { db, Departments, RiskCategory, RiskStatus } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { z } from 'zod';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+import { z } from "zod";
+
+import { db, Departments, RiskCategory, RiskStatus } from "@trycompai/db";
 
 export function getRiskTools() {
   return {
@@ -11,11 +12,17 @@ export function getRiskTools() {
 }
 
 export const getRisks = {
-  description: 'Get risks for the organization',
+  description: "Get risks for the organization",
   inputSchema: z.object({
-    status: z.enum(Object.values(RiskStatus) as [RiskStatus, ...RiskStatus[]]).optional(),
-    department: z.enum(Object.values(Departments) as [Departments, ...Departments[]]).optional(),
-    category: z.enum(Object.values(RiskCategory) as [RiskCategory, ...RiskCategory[]]).optional(),
+    status: z
+      .enum(Object.values(RiskStatus) as [RiskStatus, ...RiskStatus[]])
+      .optional(),
+    department: z
+      .enum(Object.values(Departments) as [Departments, ...Departments[]])
+      .optional(),
+    category: z
+      .enum(Object.values(RiskCategory) as [RiskCategory, ...RiskCategory[]])
+      .optional(),
     owner: z.string().optional(),
   }),
   execute: async ({
@@ -34,7 +41,7 @@ export const getRisks = {
     });
 
     if (!session?.session.activeOrganizationId) {
-      return { error: 'Unauthorized' };
+      return { error: "Unauthorized" };
     }
 
     const risks = await db.risk.findMany({
@@ -55,7 +62,7 @@ export const getRisks = {
     if (risks.length === 0) {
       return {
         risks: [],
-        message: 'No risks found',
+        message: "No risks found",
       };
     }
 
@@ -66,7 +73,7 @@ export const getRisks = {
 };
 
 export const getRiskById = {
-  description: 'Get a risk by id',
+  description: "Get a risk by id",
   inputSchema: z.object({
     id: z.string(),
   }),
@@ -76,7 +83,7 @@ export const getRiskById = {
     });
 
     if (!session?.session.activeOrganizationId) {
-      return { error: 'Unauthorized' };
+      return { error: "Unauthorized" };
     }
 
     const risk = await db.risk.findUnique({
@@ -86,7 +93,7 @@ export const getRiskById = {
     if (!risk) {
       return {
         risk: null,
-        message: 'Risk not found',
+        message: "Risk not found",
       };
     }
 

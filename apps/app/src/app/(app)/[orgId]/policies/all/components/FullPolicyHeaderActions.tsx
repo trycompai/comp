@@ -1,6 +1,10 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
+import { useState } from "react";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,29 +12,29 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from "@trycompai/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Icons } from '@trycompai/ui/icons';
-import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { regenerateFullPoliciesAction } from '../actions/regenerate-full-policies';
+} from "@trycompai/ui/dropdown-menu";
+import { Icons } from "@trycompai/ui/icons";
+
+import { regenerateFullPoliciesAction } from "../actions/regenerate-full-policies";
 
 export function FullPolicyHeaderActions() {
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
 
   const regenerate = useAction(regenerateFullPoliciesAction, {
     onSuccess: () => {
-      toast.success('Policy regeneration started. This may take a few minutes.');
+      toast.success(
+        "Policy regeneration started. This may take a few minutes.",
+      );
       setRegenerateConfirmOpen(false);
     },
     onError: (error) => {
-      toast.error(error.error.serverError || 'Failed to regenerate policies');
+      toast.error(error.error.serverError || "Failed to regenerate policies");
     },
   });
 
@@ -54,25 +58,31 @@ export function FullPolicyHeaderActions() {
       </DropdownMenu>
 
       {/* Regenerate Confirmation Dialog */}
-      <Dialog open={isRegenerateConfirmOpen} onOpenChange={setRegenerateConfirmOpen}>
+      <Dialog
+        open={isRegenerateConfirmOpen}
+        onOpenChange={setRegenerateConfirmOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Regenerate All Policies</DialogTitle>
             <DialogDescription>
-              This will generate new policy content for all policies using your org context and
-              frameworks. Continue?
+              This will generate new policy content for all policies using your
+              org context and frameworks. Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setRegenerateConfirmOpen(false)}
-              disabled={regenerate.status === 'executing'}
+              disabled={regenerate.status === "executing"}
             >
               Cancel
             </Button>
-            <Button onClick={handleRegenerate} disabled={regenerate.status === 'executing'}>
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+            <Button
+              onClick={handleRegenerate}
+              disabled={regenerate.status === "executing"}
+            >
+              {regenerate.status === "executing" ? "Working…" : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>

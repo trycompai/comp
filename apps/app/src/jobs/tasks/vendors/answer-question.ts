@@ -1,9 +1,10 @@
-import { logger, metadata, task } from '@trigger.dev/sdk';
-import { syncOrganizationEmbeddings } from '@/lib/vector';
-import { generateAnswerWithRAG } from './answer-question-helpers';
+import { syncOrganizationEmbeddings } from "@/lib/vector";
+import { logger, metadata, task } from "@trigger.dev/sdk";
 
-export const answerQuestion= task({
-  id: 'answer-question',
+import { generateAnswerWithRAG } from "./answer-question-helpers";
+
+export const answerQuestion = task({
+  id: "answer-question",
   retry: {
     maxAttempts: 3,
   },
@@ -13,7 +14,7 @@ export const answerQuestion= task({
     questionIndex: number;
     totalQuestions: number;
   }) => {
-    logger.info('🚀 Starting to process question', {
+    logger.info("🚀 Starting to process question", {
       questionIndex: payload.questionIndex,
       totalQuestions: payload.totalQuestions,
       question: payload.question.substring(0, 100),
@@ -24,9 +25,12 @@ export const answerQuestion= task({
     // This allows frontend to show spinner for this specific question when it starts
     // Note: When called directly (not as child), metadata.parent is null, so use metadata directly
     if (metadata.parent) {
-      metadata.parent.set(`question_${payload.questionIndex}_status`, 'processing');
+      metadata.parent.set(
+        `question_${payload.questionIndex}_status`,
+        "processing",
+      );
     } else {
-      metadata.set(`question_${payload.questionIndex}_status`, 'processing');
+      metadata.set(`question_${payload.questionIndex}_status`, "processing");
     }
 
     try {
@@ -35,18 +39,18 @@ export const answerQuestion= task({
       // Lock mechanism prevents concurrent syncs for the same organization
       try {
         await syncOrganizationEmbeddings(payload.organizationId);
-        logger.info('Organization embeddings synced successfully', {
+        logger.info("Organization embeddings synced successfully", {
           organizationId: payload.organizationId,
         });
       } catch (error) {
-        logger.warn('Failed to sync organization embeddings', {
+        logger.warn("Failed to sync organization embeddings", {
           organizationId: payload.organizationId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         });
         // Continue with existing embeddings if sync fails
       }
 
-      logger.info('🔍 Calling generateAnswerWithRAG', {
+      logger.info("🔍 Calling generateAnswerWithRAG", {
         questionIndex: payload.questionIndex,
       });
 
@@ -55,7 +59,7 @@ export const answerQuestion= task({
         payload.organizationId,
       );
 
-      logger.info('✅ Successfully generated answer', {
+      logger.info("✅ Successfully generated answer", {
         questionIndex: payload.questionIndex,
         hasAnswer: !!result.answer,
         sourcesCount: result.sources.length,
@@ -73,13 +77,16 @@ export const answerQuestion= task({
       // When called directly (not as child), use metadata directly instead of metadata.parent
       if (metadata.parent) {
         metadata.parent.set(`answer_${payload.questionIndex}`, answerData);
-        metadata.parent.set(`question_${payload.questionIndex}_status`, 'completed');
-        metadata.parent.increment('questionsCompleted', 1);
-        metadata.parent.increment('questionsRemaining', -1);
+        metadata.parent.set(
+          `question_${payload.questionIndex}_status`,
+          "completed",
+        );
+        metadata.parent.increment("questionsCompleted", 1);
+        metadata.parent.increment("questionsRemaining", -1);
       } else {
         // Direct call: update metadata directly for frontend to read
         metadata.set(`answer_${payload.questionIndex}`, answerData);
-        metadata.set(`question_${payload.questionIndex}_status`, 'completed');
+        metadata.set(`question_${payload.questionIndex}_status`, "completed");
       }
 
       return {
@@ -90,9 +97,9 @@ export const answerQuestion= task({
         sources: result.sources,
       };
     } catch (error) {
-      logger.error('❌ Failed to answer question', {
+      logger.error("❌ Failed to answer question", {
         questionIndex: payload.questionIndex,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         errorStack: error instanceof Error ? error.stack : undefined,
       });
 
@@ -106,14 +113,20 @@ export const answerQuestion= task({
       // Update metadata even on failure
       // When called directly (not as child), use metadata directly instead of metadata.parent
       if (metadata.parent) {
-        metadata.parent.set(`answer_${payload.questionIndex}`, failedAnswerData);
-        metadata.parent.set(`question_${payload.questionIndex}_status`, 'completed');
-        metadata.parent.increment('questionsCompleted', 1);
-        metadata.parent.increment('questionsRemaining', -1);
+        metadata.parent.set(
+          `answer_${payload.questionIndex}`,
+          failedAnswerData,
+        );
+        metadata.parent.set(
+          `question_${payload.questionIndex}_status`,
+          "completed",
+        );
+        metadata.parent.increment("questionsCompleted", 1);
+        metadata.parent.increment("questionsRemaining", -1);
       } else {
         // Direct call: update metadata directly for frontend to read
         metadata.set(`answer_${payload.questionIndex}`, failedAnswerData);
-        metadata.set(`question_${payload.questionIndex}_status`, 'completed');
+        metadata.set(`question_${payload.questionIndex}_status`, "completed");
       }
 
       return {
@@ -122,9 +135,8 @@ export const answerQuestion= task({
         question: payload.question,
         answer: null,
         sources: [],
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   },
 });
-

@@ -1,5 +1,5 @@
-import { Badge } from '@trycompai/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Badge } from "@trycompai/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 
 interface Risk {
   id: string;
@@ -17,7 +17,9 @@ interface RiskDisplayProps {
 export function RiskDisplay({ risks }: RiskDisplayProps) {
   if (!risks?.length) {
     return (
-      <div className="text-muted-foreground text-sm">No risks found for this organization.</div>
+      <div className="text-muted-foreground text-sm">
+        No risks found for this organization.
+      </div>
     );
   }
 

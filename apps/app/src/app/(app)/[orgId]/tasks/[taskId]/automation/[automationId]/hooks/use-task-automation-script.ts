@@ -13,9 +13,10 @@
  * ```
  */
 
-import useSWR from 'swr';
-import { TaskAutomationScript, UseTaskAutomationScriptOptions } from '../lib';
-import { taskAutomationApi } from '../lib/task-automation-api';
+import useSWR from "swr";
+
+import { TaskAutomationScript, UseTaskAutomationScriptOptions } from "../lib";
+import { taskAutomationApi } from "../lib/task-automation-api";
 
 export function useTaskAutomationScript({
   orgId,
@@ -26,14 +27,17 @@ export function useTaskAutomationScript({
   const scriptKey = `${orgId}/${taskId}/${automationId}.draft.js`;
 
   const { data, error, isLoading, mutate } = useSWR<TaskAutomationScript>(
-    enabled ? ['task-automation-script', scriptKey] : null,
-    () => taskAutomationApi.s3.getScript(scriptKey) as Promise<TaskAutomationScript>,
+    enabled ? ["task-automation-script", scriptKey] : null,
+    () =>
+      taskAutomationApi.s3.getScript(
+        scriptKey,
+      ) as Promise<TaskAutomationScript>,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       shouldRetryOnError: (error) => {
         // Don't retry on 404s
-        return error?.message !== 'Script not found';
+        return error?.message !== "Script not found";
       },
     },
   );

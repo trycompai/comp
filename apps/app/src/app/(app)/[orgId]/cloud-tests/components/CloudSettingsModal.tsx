@@ -1,6 +1,10 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
+import { useState } from "react";
+import { Edit2, Loader2, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,18 +12,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
-import { Edit2, Loader2, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { disconnectCloudAction } from '../actions/disconnect-cloud';
-import { updateCloudCredentialsAction } from '../actions/update-cloud-credentials';
+} from "@trycompai/ui/dialog";
+import { Input } from "@trycompai/ui/input";
+import { Label } from "@trycompai/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@trycompai/ui/tabs";
+
+import { disconnectCloudAction } from "../actions/disconnect-cloud";
+import { updateCloudCredentialsAction } from "../actions/update-cloud-credentials";
 
 interface CloudProvider {
-  id: 'aws' | 'gcp' | 'azure';
+  id: "aws" | "gcp" | "azure";
   name: string;
   fields: {
     id: string;
@@ -40,22 +42,30 @@ export function CloudSettingsModal({
   connectedProviders,
   onUpdate,
 }: CloudSettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.id || 'aws');
+  const [activeTab, setActiveTab] = useState<string>(
+    connectedProviders[0]?.id || "aws",
+  );
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [credentials, setCredentials] = useState<Record<string, Record<string, string>>>({});
-  const [editingFields, setEditingFields] = useState<Record<string, Set<string>>>({});
+  const [credentials, setCredentials] = useState<
+    Record<string, Record<string, string>>
+  >({});
+  const [editingFields, setEditingFields] = useState<
+    Record<string, Set<string>>
+  >({});
 
-  const handleUpdateCredentials = async (providerId: 'aws' | 'gcp' | 'azure') => {
+  const handleUpdateCredentials = async (
+    providerId: "aws" | "gcp" | "azure",
+  ) => {
     const providerCredentials = credentials[providerId] || {};
 
     // Filter out empty values
     const filledCredentials = Object.entries(providerCredentials)
-      .filter(([_, value]) => value.trim() !== '')
+      .filter(([_, value]) => value.trim() !== "")
       .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
     if (Object.keys(filledCredentials).length === 0) {
-      toast.error('Please fill in at least one field to update');
+      toast.error("Please fill in at least one field to update");
       return;
     }
 
@@ -67,26 +77,26 @@ export function CloudSettingsModal({
       });
 
       if (result?.data?.success) {
-        toast.success('Credentials updated successfully');
+        toast.success("Credentials updated successfully");
         setCredentials({});
         setEditingFields({});
         onUpdate();
         onOpenChange(false);
       } else {
-        toast.error(result?.data?.error || 'Failed to update credentials');
+        toast.error(result?.data?.error || "Failed to update credentials");
       }
     } catch (error) {
-      console.error('Update error:', error);
-      toast.error('An unexpected error occurred');
+      console.error("Update error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleDisconnect = async (providerId: 'aws' | 'gcp' | 'azure') => {
+  const handleDisconnect = async (providerId: "aws" | "gcp" | "azure") => {
     if (
       !confirm(
-        'Are you sure you want to disconnect this cloud provider? All scan results will be deleted.',
+        "Are you sure you want to disconnect this cloud provider? All scan results will be deleted.",
       )
     ) {
       return;
@@ -99,15 +109,15 @@ export function CloudSettingsModal({
       });
 
       if (result?.data?.success) {
-        toast.success('Cloud provider disconnected');
+        toast.success("Cloud provider disconnected");
         onUpdate();
         onOpenChange(false);
       } else {
-        toast.error(result?.data?.error || 'Failed to disconnect');
+        toast.error(result?.data?.error || "Failed to disconnect");
       }
     } catch (error) {
-      console.error('Disconnect error:', error);
-      toast.error('An unexpected error occurred');
+      console.error("Disconnect error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsDeleting(false);
     }
@@ -128,7 +138,11 @@ export function CloudSettingsModal({
     });
   };
 
-  const handleFieldChange = (providerId: string, fieldId: string, value: string) => {
+  const handleFieldChange = (
+    providerId: string,
+    fieldId: string,
+    value: string,
+  ) => {
     setCredentials((prev) => ({
       ...prev,
       [providerId]: {
@@ -144,7 +158,7 @@ export function CloudSettingsModal({
 
   const hasChanges = (providerId: string) => {
     const providerCreds = credentials[providerId] || {};
-    return Object.values(providerCreds).some((val) => val.trim() !== '');
+    return Object.values(providerCreds).some((val) => val.trim() !== "");
   };
 
   if (connectedProviders.length === 0) {
@@ -156,13 +170,17 @@ export function CloudSettingsModal({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Manage Cloud Connections</DialogTitle>
-          <DialogDescription>Update credentials or disconnect cloud providers</DialogDescription>
+          <DialogDescription>
+            Update credentials or disconnect cloud providers
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList
             className="grid w-full"
-            style={{ gridTemplateColumns: `repeat(${connectedProviders.length}, 1fr)` }}
+            style={{
+              gridTemplateColumns: `repeat(${connectedProviders.length}, 1fr)`,
+            }}
           >
             {connectedProviders.map((provider) => (
               <TabsTrigger key={provider.id} value={provider.id}>
@@ -172,10 +190,15 @@ export function CloudSettingsModal({
           </TabsList>
 
           {connectedProviders.map((provider) => (
-            <TabsContent key={provider.id} value={provider.id} className="space-y-4">
+            <TabsContent
+              key={provider.id}
+              value={provider.id}
+              className="space-y-4"
+            >
               <div className="bg-muted/50 rounded-lg border p-4">
                 <p className="text-muted-foreground text-sm">
-                  Credentials are securely stored. Click the edit icon to change a specific field.
+                  Credentials are securely stored. Click the edit icon to change
+                  a specific field.
                 </p>
               </div>
 
@@ -184,7 +207,9 @@ export function CloudSettingsModal({
                   const isEditing = isFieldEditing(provider.id, field.id);
                   return (
                     <div key={field.id} className="space-y-2">
-                      <Label htmlFor={`${provider.id}-${field.id}`}>{field.label}</Label>
+                      <Label htmlFor={`${provider.id}-${field.id}`}>
+                        {field.label}
+                      </Label>
                       <div className="flex gap-2">
                         {isEditing ? (
                           <>
@@ -192,9 +217,13 @@ export function CloudSettingsModal({
                               id={`${provider.id}-${field.id}`}
                               type="password"
                               placeholder={`Enter new ${field.label.toLowerCase()}`}
-                              value={credentials[provider.id]?.[field.id] || ''}
+                              value={credentials[provider.id]?.[field.id] || ""}
                               onChange={(e) =>
-                                handleFieldChange(provider.id, field.id, e.target.value)
+                                handleFieldChange(
+                                  provider.id,
+                                  field.id,
+                                  e.target.value,
+                                )
                               }
                               disabled={isUpdating || isDeleting}
                               className="flex-1"
@@ -206,7 +235,7 @@ export function CloudSettingsModal({
                               onClick={() => {
                                 toggleFieldEditing(provider.id, field.id);
                                 // Clear the value when canceling
-                                handleFieldChange(provider.id, field.id, '');
+                                handleFieldChange(provider.id, field.id, "");
                               }}
                               disabled={isUpdating || isDeleting}
                             >
@@ -225,7 +254,9 @@ export function CloudSettingsModal({
                             <Button
                               variant="outline"
                               size="icon"
-                              onClick={() => toggleFieldEditing(provider.id, field.id)}
+                              onClick={() =>
+                                toggleFieldEditing(provider.id, field.id)
+                              }
                               disabled={isUpdating || isDeleting}
                             >
                               <Edit2 className="h-4 w-4" />
@@ -258,7 +289,9 @@ export function CloudSettingsModal({
                 </Button>
                 <Button
                   onClick={() => handleUpdateCredentials(provider.id)}
-                  disabled={isUpdating || isDeleting || !hasChanges(provider.id)}
+                  disabled={
+                    isUpdating || isDeleting || !hasChanges(provider.id)
+                  }
                 >
                   {isUpdating ? (
                     <>
@@ -266,7 +299,7 @@ export function CloudSettingsModal({
                       Updating...
                     </>
                   ) : (
-                    'Save Changes'
+                    "Save Changes"
                   )}
                 </Button>
               </DialogFooter>

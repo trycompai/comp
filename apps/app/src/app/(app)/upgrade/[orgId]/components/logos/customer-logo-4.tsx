@@ -1,4 +1,5 @@
-import * as React from 'react';
+import * as React from "react";
+
 const SVGComponent = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -9,7 +10,7 @@ const SVGComponent = (props: React.SVGProps<SVGSVGElement>) => (
     xmlSpace="preserve"
     width={120}
     height={40}
-    className="h-10 w-30 grayscale opacity-70 text-muted-foreground dark:text-white"
+    className="text-muted-foreground h-10 w-30 opacity-70 grayscale dark:text-white"
     {...props}
   >
     <style>
@@ -20,12 +21,12 @@ const SVGComponent = (props: React.SVGProps<SVGSVGElement>) => (
     <path
       d="M15.794 25.032c.206-.333.397-1.063.825-1.349s2.048-.349 2.714-.206c.968.222 2.667 1.841 2.873 2.254.302.587.333 2.016-.111 2.714-.444.714-.952 1.222-1.365 1.746-1.079 1.381-.825 3.365.556 4.444s3.365.825 4.444-.556.825-3.365-.556-4.444c-.302-.238-1-.524-1.254-.968-.238-.444-.111-2.079.111-2.714.333-.937 1.19-1.524 1.556-2 1.079-1.381.825-3.365-.556-4.444s-3.365-.825-4.444.556c-.587.746-.714 1.206-1.254 1.571s-1.952.571-2.714.206-1.317-.81-1.889-1.143c-1.492-.905-3.444-.429-4.349 1.063s-.429 3.444 1.063 4.349a3.185 3.185 0 0 0 4.349-1.079"
       style={{
-        fill: 'currentColor',
+        fill: "currentColor",
       }}
     />
     <path
       style={{
-        fill: 'currentColor',
+        fill: "currentColor",
       }}
       d="M23.349 10.968c-.079.381-.016 1.143-.302 1.556s-1.81 1.048-2.476 1.127c-.984.127-3.127-.81-3.476-1.111-.492-.444-1.016-1.778-.825-2.587.175-.825.476-1.476.667-2.111.524-1.667-.381-3.444-2.048-3.968-1.667-.54-3.444.365-3.968 2.032s.381 3.444 2.048 3.968c.381.127 1.127.143 1.508.476s.825 1.921.825 2.587c.016 1-.587 1.841-.778 2.413a3.177 3.177 0 0 0 2.048 3.984 3.177 3.177 0 0 0 3.984-2.048c.286-.905.254-1.365.635-1.905.397-.54 1.635-1.206 2.476-1.127s1.524.302 2.175.429a3.163 3.163 0 0 0 1.222-6.206 3.163 3.163 0 0 0-3.714 2.492"
     />
@@ -36,13 +37,13 @@ const SVGComponent = (props: React.SVGProps<SVGSVGElement>) => (
     <path
       d="M23.476 6.762a2.05 2.05 0 0 1-2.047 2.048 2.05 2.05 0 0 1-2.048-2.048 2.048 2.048 0 0 1 4.095 0"
       style={{
-        fill: 'currentColor',
+        fill: "currentColor",
       }}
     />
     <path
       d="M11.397 15.524a4.333 4.333 0 0 1-4.334 4.333 4.333 4.333 0 0 1-4.333-4.333 4.333 4.333 0 0 1 8.667 0"
       style={{
-        fill: 'currentColor',
+        fill: "currentColor",
       }}
     />
     <g className="st5">

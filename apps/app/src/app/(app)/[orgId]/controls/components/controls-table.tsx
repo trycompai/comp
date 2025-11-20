@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
+import { useParams } from "next/navigation";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { useDataTable } from "@/hooks/use-data-table";
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { useDataTable } from '@/hooks/use-data-table';
-import { useParams } from 'next/navigation';
-import { ControlWithRelations } from '../data/queries';
-import { getControlColumns } from './controls-table-columns';
-import { CreateControlSheet } from './CreateControlSheet';
+import { ControlWithRelations } from "../data/queries";
+import { getControlColumns } from "./controls-table-columns";
+import { CreateControlSheet } from "./CreateControlSheet";
 
 interface ControlsTableProps {
   promises: Promise<[{ data: ControlWithRelations[]; pageCount: number }]>;
@@ -23,11 +23,17 @@ interface ControlsTableProps {
   }[];
 }
 
-export function ControlsTable({ promises, policies, tasks, requirements }: ControlsTableProps) {
+export function ControlsTable({
+  promises,
+  policies,
+  tasks,
+  requirements,
+}: ControlsTableProps) {
   const [{ data, pageCount }] = React.use(promises);
   const { orgId } = useParams();
   const columns = React.useMemo(() => getControlColumns(), []);
-  const [filteredData, setFilteredData] = React.useState<ControlWithRelations[]>(data);
+  const [filteredData, setFilteredData] =
+    React.useState<ControlWithRelations[]>(data);
 
   // For client-side filtering, we don't need to apply server-side filtering
   const { table } = useDataTable({
@@ -35,7 +41,7 @@ export function ControlsTable({ promises, policies, tasks, requirements }: Contr
     columns,
     pageCount,
     initialState: {
-      sorting: [{ id: 'name', desc: true }],
+      sorting: [{ id: "name", desc: true }],
     },
     getRowId: (row) => row.id,
     shallow: false,
@@ -44,10 +50,22 @@ export function ControlsTable({ promises, policies, tasks, requirements }: Contr
 
   return (
     <>
-      <DataTable table={table} getRowId={(row) => row.id} rowClickBasePath={`/${orgId}/controls`}>
-        <DataTableToolbar table={table} sheet="create-control" action="Create Control" />
+      <DataTable
+        table={table}
+        getRowId={(row) => row.id}
+        rowClickBasePath={`/${orgId}/controls`}
+      >
+        <DataTableToolbar
+          table={table}
+          sheet="create-control"
+          action="Create Control"
+        />
       </DataTable>
-      <CreateControlSheet policies={policies} tasks={tasks} requirements={requirements} />
+      <CreateControlSheet
+        policies={policies}
+        tasks={tasks}
+        requirements={requirements}
+      />
     </>
   );
 }

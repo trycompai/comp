@@ -1,5 +1,9 @@
-import { logger } from '@trigger.dev/sdk';
-import { FrameworkEditorFramework, FrameworkEditorPolicyTemplate } from '@trycompai/db';
+import { logger } from "@trigger.dev/sdk";
+
+import {
+  FrameworkEditorFramework,
+  FrameworkEditorPolicyTemplate,
+} from "@trycompai/db";
 
 export const generatePrompt = ({
   policyTemplate,
@@ -18,7 +22,9 @@ export const generatePrompt = ({
   logger.info(`Company Name: ${companyName}`);
   logger.info(`Company Website: ${companyWebsite}`);
   logger.info(`Context: ${contextHub}`);
-  logger.info(`Existing Policy Content: ${JSON.stringify(policyTemplate.content)}`);
+  logger.info(
+    `Existing Policy Content: ${JSON.stringify(policyTemplate.content)}`,
+  );
   logger.info(
     `Frameworks: ${JSON.stringify(
       frameworks.map((f) => ({ id: f.id, name: f.name, version: f.version })),
@@ -27,11 +33,13 @@ export const generatePrompt = ({
 
   const frameworkList =
     frameworks.length > 0
-      ? frameworks.map((f) => `${f.name} v${f.version}`).join(', ')
-      : 'None explicitly selected';
-  const hasHIPAA = frameworks.some((f) => f.name.toLowerCase().includes('hipaa'));
+      ? frameworks.map((f) => `${f.name} v${f.version}`).join(", ")
+      : "None explicitly selected";
+  const hasHIPAA = frameworks.some((f) =>
+    f.name.toLowerCase().includes("hipaa"),
+  );
   const hasSOC2 = frameworks.some(
-    (f) => /soc\s*2/i.test(f.name) || f.name.toLowerCase().includes('soc'),
+    (f) => /soc\s*2/i.test(f.name) || f.name.toLowerCase().includes("soc"),
   );
 
   return `
@@ -69,8 +77,8 @@ Required rules (keep this simple):
 3) Handlebars-style conditionals
    - The template may contain conditional blocks using {{#if var}}...{{/if}} syntax (e.g., {{#if soc2}}, {{#if hipaa}}).
    - Evaluate these using the selected frameworks:
-     - soc2 is ${hasSOC2 ? 'true' : 'false'}
-     - hipaa is ${hasHIPAA ? 'true' : 'false'}
+     - soc2 is ${hasSOC2 ? "true" : "false"}
+     - hipaa is ${hasHIPAA ? "true" : "false"}
    - If the condition is true: keep only the inner content and remove the {{#if}}/{{/if}} markers.
    - If the condition is false: remove the entire block including its content.
    - For any other unknown {{#if X}} variables: assume false and remove the block.

@@ -18,14 +18,15 @@
  * ```
  */
 
-import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSharedChatContext } from '../lib/chat-context';
-import { taskAutomationApi } from '../lib/task-automation-api';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+
 import type {
   TaskAutomationExecutionResult,
   UseTaskAutomationExecutionOptions,
-} from '../lib/types';
+} from "../lib/types";
+import { useSharedChatContext } from "../lib/chat-context";
+import { taskAutomationApi } from "../lib/task-automation-api";
 
 export function useTaskAutomationExecution({
   onSuccess,
@@ -38,7 +39,9 @@ export function useTaskAutomationExecution({
   }>();
   const [runId, setRunId] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [result, setResult] = useState<TaskAutomationExecutionResult | null>(null);
+  const [result, setResult] = useState<TaskAutomationExecutionResult | null>(
+    null,
+  );
   const [error, setError] = useState<Error | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -56,10 +59,10 @@ export function useTaskAutomationExecution({
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch run status');
+          throw new Error(data.error || "Failed to fetch run status");
         }
 
-        if (data.status === 'COMPLETED' && data.output) {
+        if (data.status === "COMPLETED" && data.output) {
           const executionResult: TaskAutomationExecutionResult = {
             success: data.output.success,
             data: data.output.output,
@@ -74,9 +77,14 @@ export function useTaskAutomationExecution({
           setResult(executionResult);
           setIsExecuting(false);
           onSuccess?.(executionResult);
-        } else if (data.status === 'FAILED') {
-          const error = new Error(data.error?.message || 'Task execution failed');
-          console.error('[Automation Execution] Client received error:', data.error);
+        } else if (data.status === "FAILED") {
+          const error = new Error(
+            data.error?.message || "Task execution failed",
+          );
+          console.error(
+            "[Automation Execution] Client received error:",
+            data.error,
+          );
           setError(error);
           setIsExecuting(false);
           onError?.(error);
@@ -85,7 +93,8 @@ export function useTaskAutomationExecution({
           pollingIntervalRef.current = setTimeout(pollRunStatus, 1000);
         }
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to poll run status');
+        const error =
+          err instanceof Error ? err : new Error("Failed to poll run status");
         setError(error);
         setIsExecuting(false);
         onError?.(error);
@@ -121,9 +130,9 @@ export function useTaskAutomationExecution({
       // The API now returns a run ID that we can monitor
       if (
         response &&
-        typeof response === 'object' &&
-        'runId' in response &&
-        typeof response.runId === 'string'
+        typeof response === "object" &&
+        "runId" in response &&
+        typeof response.runId === "string"
       ) {
         setRunId(response.runId);
         return response;
@@ -135,7 +144,7 @@ export function useTaskAutomationExecution({
         return response;
       }
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Unknown error');
+      const error = err instanceof Error ? err : new Error("Unknown error");
       setError(error);
       setIsExecuting(false);
       onError?.(error);

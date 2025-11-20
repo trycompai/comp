@@ -1,8 +1,9 @@
-import { UserMenu } from '@/app/components/user-menu';
-import { Icons } from '@trycompai/ui/icons';
-import { Skeleton } from '@trycompai/ui/skeleton';
-import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense } from "react";
+import Link from "next/link";
+import { UserMenu } from "@/app/components/user-menu";
+
+import { Icons } from "@trycompai/ui/icons";
+import { Skeleton } from "@trycompai/ui/skeleton";
 
 export async function Header() {
   return (

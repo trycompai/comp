@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useApi } from '@/hooks/use-api';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useApi } from "@/hooks/use-api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export type AccessRequest = {
   id: string;
@@ -11,7 +11,7 @@ export type AccessRequest = {
   jobTitle?: string | null;
   purpose?: string | null;
   requestedDurationDays?: number | null;
-  status: 'under_review' | 'approved' | 'denied' | 'canceled';
+  status: "under_review" | "approved" | "denied" | "canceled";
   createdAt: string;
   reviewedAt?: string | null;
   decisionReason?: string | null;
@@ -29,7 +29,7 @@ export type AccessRequest = {
 export type AccessGrant = {
   id: string;
   subjectEmail: string;
-  status: 'active' | 'expired' | 'revoked';
+  status: "active" | "expired" | "revoked";
   expiresAt: string;
   accessRequestId: string;
   revokedAt?: string | null;
@@ -41,10 +41,10 @@ export function useAccessRequests(orgId: string) {
   const api = useApi();
 
   return useQuery({
-    queryKey: ['trust-access-requests', orgId],
+    queryKey: ["trust-access-requests", orgId],
     queryFn: async () => {
       const response = await api.get<AccessRequest[]>(
-        '/v1/trust-access/admin/requests',
+        "/v1/trust-access/admin/requests",
         orgId,
       );
 
@@ -62,7 +62,13 @@ export function useApproveAccessRequest(orgId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ requestId, durationDays }: { requestId: string; durationDays: number }) => {
+    mutationFn: async ({
+      requestId,
+      durationDays,
+    }: {
+      requestId: string;
+      durationDays: number;
+    }) => {
       const response = await api.post(
         `/v1/trust-access/admin/requests/${requestId}/approve`,
         { durationDays },
@@ -77,7 +83,7 @@ export function useApproveAccessRequest(orgId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['trust-access-requests', orgId],
+        queryKey: ["trust-access-requests", orgId],
       });
     },
   });
@@ -88,7 +94,13 @@ export function useDenyAccessRequest(orgId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ requestId, reason }: { requestId: string; reason: string }) => {
+    mutationFn: async ({
+      requestId,
+      reason,
+    }: {
+      requestId: string;
+      reason: string;
+    }) => {
       const response = await api.post(
         `/v1/trust-access/admin/requests/${requestId}/deny`,
         { reason },
@@ -103,7 +115,7 @@ export function useDenyAccessRequest(orgId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['trust-access-requests', orgId],
+        queryKey: ["trust-access-requests", orgId],
       });
     },
   });
@@ -113,7 +125,7 @@ export function useAccessRequest(orgId: string, requestId: string) {
   const api = useApi();
 
   return useQuery({
-    queryKey: ['trust-access-request', orgId, requestId],
+    queryKey: ["trust-access-request", orgId, requestId],
     queryFn: async () => {
       const response = await api.get<AccessRequest>(
         `/v1/trust-access/admin/requests/${requestId}`,
@@ -133,10 +145,10 @@ export function useAccessGrants(orgId: string) {
   const api = useApi();
 
   return useQuery({
-    queryKey: ['trust-access-grants', orgId],
+    queryKey: ["trust-access-grants", orgId],
     queryFn: async () => {
       const response = await api.get<AccessGrant[]>(
-        '/v1/trust-access/admin/grants',
+        "/v1/trust-access/admin/grants",
         orgId,
       );
 
@@ -154,7 +166,13 @@ export function useRevokeAccessGrant(orgId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ grantId, reason }: { grantId: string; reason: string }) => {
+    mutationFn: async ({
+      grantId,
+      reason,
+    }: {
+      grantId: string;
+      reason: string;
+    }) => {
       const response = await api.post(
         `/v1/trust-access/admin/grants/${grantId}/revoke`,
         { reason },
@@ -169,7 +187,7 @@ export function useRevokeAccessGrant(orgId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['trust-access-grants', orgId],
+        queryKey: ["trust-access-grants", orgId],
       });
     },
   });
@@ -205,11 +223,7 @@ export function usePreviewNda(orgId: string) {
         previewId: string;
         s3Key: string;
         pdfDownloadUrl: string;
-      }>(
-        `/v1/trust-access/admin/requests/${requestId}/preview-nda`,
-        {},
-        orgId,
-      );
+      }>(`/v1/trust-access/admin/requests/${requestId}/preview-nda`, {}, orgId);
 
       if (response.error) {
         throw new Error(response.error);

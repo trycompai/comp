@@ -1,17 +1,22 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { SecondaryMenu } from '@trycompai/ui/secondary-menu';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
 
-export default async function Layout({ children }: { children: React.ReactNode }) {
+import { db } from "@trycompai/db";
+import { SecondaryMenu } from "@trycompai/ui/secondary-menu";
+
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   const orgId = session?.session.activeOrganizationId;
 
   if (!orgId) {
-    return redirect('/');
+    return redirect("/");
   }
 
   // Fetch all members first
@@ -22,8 +27,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
   });
 
   const employees = allMembers.filter((member) => {
-    const roles = member.role.includes(',') ? member.role.split(',') : [member.role];
-    return roles.includes('employee') || roles.includes('contractor');
+    const roles = member.role.includes(",")
+      ? member.role.split(",")
+      : [member.role];
+    return roles.includes("employee") || roles.includes("contractor");
   });
 
   return (
@@ -32,20 +39,20 @@ export default async function Layout({ children }: { children: React.ReactNode }
         items={[
           {
             path: `/${orgId}/people/all`,
-            label: 'People',
-            activeOverrideIdPrefix: 'mem_',
+            label: "People",
+            activeOverrideIdPrefix: "mem_",
           },
           ...(employees.length > 0
             ? [
                 {
                   path: `/${orgId}/people/dashboard`,
-                  label: 'Employee Tasks',
+                  label: "Employee Tasks",
                 },
               ]
             : []),
           {
             path: `/${orgId}/people/devices`,
-            label: 'Employee Devices',
+            label: "Employee Devices",
           },
         ]}
       />

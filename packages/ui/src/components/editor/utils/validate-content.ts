@@ -1,4 +1,4 @@
-import type { JSONContent } from '@tiptap/react';
+import type { JSONContent } from "@tiptap/react";
 
 /**
  * Validates and fixes common TipTap JSON schema issues
@@ -10,9 +10,9 @@ export function validateAndFixTipTapContent(content: any): JSONContent {
   }
 
   // If it's already a proper doc, validate its content
-  if (content.type === 'doc' && content.content) {
+  if (content.type === "doc" && content.content) {
     return {
-      type: 'doc',
+      type: "doc",
       content: fixContentArray(content.content),
     };
   }
@@ -20,16 +20,16 @@ export function validateAndFixTipTapContent(content: any): JSONContent {
   // If it's an array, wrap it in a doc
   if (Array.isArray(content)) {
     return {
-      type: 'doc',
+      type: "doc",
       content: fixContentArray(content),
     };
   }
 
   // If it's a single node, wrap it in a doc
-  if (content.type && content.type !== 'doc') {
+  if (content.type && content.type !== "doc") {
     const fixedNode = fixNode(content);
     return {
-      type: 'doc',
+      type: "doc",
       content: fixedNode ? [fixedNode] : [createEmptyParagraph()],
     };
   }
@@ -59,61 +59,62 @@ function fixContentArray(contentArray: any[]): JSONContent[] {
 }
 
 function ensureNonEmptyText(value: unknown): string {
-  const text = typeof value === 'string' ? value : '';
+  const text = typeof value === "string" ? value : "";
   // Normalize NBSP and narrow no-break space for emptiness checks
-  const normalized = text.replace(/[\u00A0\u202F]/g, '');
+  const normalized = text.replace(/[\u00A0\u202F]/g, "");
   if (normalized.trim().length > 0) return text;
   // Return zero-width space to ensure non-empty text node without visual change
-  return '\u200B';
+  return "\u200B";
 }
 
 /**
  * Fixes a single node and its content
  */
 function fixNode(node: any): JSONContent | null {
-  if (!node || typeof node !== 'object') {
+  if (!node || typeof node !== "object") {
     return null;
   }
 
   const { type, content, marks, attrs, ...rest } = node;
 
   // Skip invalid nodes
-  if (!type || typeof type !== 'string') {
+  if (!type || typeof type !== "string") {
     return null;
   }
 
   // Handle different node types
   switch (type) {
-    case 'paragraph':
+    case "paragraph":
       return fixParagraph(node);
-    case 'bulletList':
-    case 'orderedList':
+    case "bulletList":
+    case "orderedList":
       return fixList(node);
-    case 'listItem':
+    case "listItem":
       return fixListItem(node);
-    case 'table':
+    case "table":
       return fixTable(node);
-    case 'tableRow':
+    case "tableRow":
       return fixTableRow(node);
-    case 'tableCell':
+    case "tableCell":
       return fixTableCell(node);
-    case 'text':
+    case "text":
       return fixTextNode(node);
-    case 'heading':
+    case "heading":
       return fixHeading(node);
-    case 'blockquote':
+    case "blockquote":
       return fixBlockquote(node);
-    case 'codeBlock':
+    case "codeBlock":
       return fixCodeBlock(node);
-    case 'hardBreak':
-      return { type: 'hardBreak' };
+    case "hardBreak":
+      return { type: "hardBreak" };
     default:
       // For other valid nodes, just fix their content if they have any
       return {
         type,
-        ...(content && Array.isArray(content) && { content: fixContentArray(content) }),
+        ...(content &&
+          Array.isArray(content) && { content: fixContentArray(content) }),
         ...(marks && Array.isArray(marks) && { marks: fixMarks(marks) }),
-        ...(attrs && typeof attrs === 'object' && { attrs }),
+        ...(attrs && typeof attrs === "object" && { attrs }),
         ...rest,
       };
   }
@@ -134,7 +135,7 @@ function fixParagraph(node: any): JSONContent {
       // Fix text nodes that are missing the type property
       if (item.text && !item.type) {
         return {
-          type: 'text',
+          type: "text",
           text: ensureNonEmptyText(item.text),
           ...(item.marks && { marks: fixMarks(item.marks) }),
         };
@@ -146,9 +147,9 @@ function fixParagraph(node: any): JSONContent {
   // If no valid content, keep an empty paragraph (no empty text nodes)
 
   return {
-    type: 'paragraph',
+    type: "paragraph",
     content: fixedContent,
-    ...(attrs && typeof attrs === 'object' && { attrs }),
+    ...(attrs && typeof attrs === "object" && { attrs }),
     ...rest,
   };
 }
@@ -163,7 +164,7 @@ function fixList(node: any): JSONContent {
     return {
       type,
       content: [createEmptyListItem()],
-      ...(attrs && typeof attrs === 'object' && { attrs }),
+      ...(attrs && typeof attrs === "object" && { attrs }),
       ...rest,
     };
   }
@@ -177,7 +178,7 @@ function fixList(node: any): JSONContent {
   return {
     type,
     content: fixedContent,
-    ...(attrs && typeof attrs === 'object' && { attrs }),
+    ...(attrs && typeof attrs === "object" && { attrs }),
     ...rest,
   };
 }
@@ -190,9 +191,9 @@ function fixListItem(node: any): JSONContent {
 
   if (!content || !Array.isArray(content)) {
     return {
-      type: 'listItem',
+      type: "listItem",
       content: [createEmptyParagraph()],
-      ...(attrs && typeof attrs === 'object' && { attrs }),
+      ...(attrs && typeof attrs === "object" && { attrs }),
       ...rest,
     };
   }
@@ -200,9 +201,9 @@ function fixListItem(node: any): JSONContent {
   const fixedContent = fixContentArray(content);
 
   return {
-    type: 'listItem',
+    type: "listItem",
     content: fixedContent,
-    ...(attrs && typeof attrs === 'object' && { attrs }),
+    ...(attrs && typeof attrs === "object" && { attrs }),
     ...rest,
   };
 }
@@ -215,7 +216,7 @@ function fixTextNode(node: any): JSONContent {
 
   const value = ensureNonEmptyText(text);
   return {
-    type: 'text',
+    type: "text",
     text: value,
     ...(marks && Array.isArray(marks) && { marks: fixMarks(marks) }),
     ...rest,
@@ -229,11 +230,15 @@ function fixHeading(node: any): JSONContent {
   const { content, attrs, level, ...rest } = node;
 
   // Ensure level is valid (1-6)
-  const validLevel = typeof level === 'number' && level >= 1 && level <= 6 ? level : 1;
+  const validLevel =
+    typeof level === "number" && level >= 1 && level <= 6 ? level : 1;
 
   return {
-    type: 'heading',
-    attrs: { level: validLevel, ...(attrs && typeof attrs === 'object' ? attrs : {}) },
+    type: "heading",
+    attrs: {
+      level: validLevel,
+      ...(attrs && typeof attrs === "object" ? attrs : {}),
+    },
     content: content && Array.isArray(content) ? fixContentArray(content) : [],
     ...rest,
   };
@@ -246,10 +251,12 @@ function fixBlockquote(node: any): JSONContent {
   const { content, attrs, ...rest } = node;
 
   return {
-    type: 'blockquote',
+    type: "blockquote",
     content:
-      content && Array.isArray(content) ? fixContentArray(content) : [createEmptyParagraph()],
-    ...(attrs && typeof attrs === 'object' && { attrs }),
+      content && Array.isArray(content)
+        ? fixContentArray(content)
+        : [createEmptyParagraph()],
+    ...(attrs && typeof attrs === "object" && { attrs }),
     ...rest,
   };
 }
@@ -261,9 +268,9 @@ function fixCodeBlock(node: any): JSONContent {
   const { content, attrs, ...rest } = node;
 
   return {
-    type: 'codeBlock',
+    type: "codeBlock",
     content: content && Array.isArray(content) ? fixContentArray(content) : [],
-    ...(attrs && typeof attrs === 'object' && { attrs }),
+    ...(attrs && typeof attrs === "object" && { attrs }),
     ...rest,
   };
 }
@@ -276,13 +283,15 @@ function fixTable(node: any): JSONContent {
   let rows: JSONContent[] = [];
   if (Array.isArray(content)) {
     rows = content
-      .map((child: any) => (child?.type === 'tableRow' ? fixTableRow(child) : null))
+      .map((child: any) =>
+        child?.type === "tableRow" ? fixTableRow(child) : null,
+      )
       .filter(Boolean) as JSONContent[];
   }
   if (rows.length === 0) {
     rows = [createEmptyTableRow()];
   }
-  return { type: 'table', content: rows, ...(attrs && { attrs }), ...rest };
+  return { type: "table", content: rows, ...(attrs && { attrs }), ...rest };
 }
 
 function fixTableRow(node: any): JSONContent {
@@ -290,13 +299,15 @@ function fixTableRow(node: any): JSONContent {
   let cells: JSONContent[] = [];
   if (Array.isArray(content)) {
     cells = content
-      .map((child: any) => (child?.type === 'tableCell' ? fixTableCell(child) : null))
+      .map((child: any) =>
+        child?.type === "tableCell" ? fixTableCell(child) : null,
+      )
       .filter(Boolean) as JSONContent[];
   }
   if (cells.length === 0) {
     cells = [createEmptyTableCell()];
   }
-  return { type: 'tableRow', content: cells, ...(attrs && { attrs }), ...rest };
+  return { type: "tableRow", content: cells, ...(attrs && { attrs }), ...rest };
 }
 
 function fixTableCell(node: any): JSONContent {
@@ -308,7 +319,12 @@ function fixTableCell(node: any): JSONContent {
   if (blocks.length === 0) {
     blocks = [createEmptyParagraph()];
   }
-  return { type: 'tableCell', content: blocks, ...(attrs && { attrs }), ...rest };
+  return {
+    type: "tableCell",
+    content: blocks,
+    ...(attrs && { attrs }),
+    ...rest,
+  };
 }
 
 /**
@@ -320,10 +336,11 @@ function fixMarks(marks: any[]): any[] {
   }
 
   return marks
-    .filter((mark) => mark && typeof mark === 'object' && mark.type)
+    .filter((mark) => mark && typeof mark === "object" && mark.type)
     .map((mark) => ({
       type: mark.type,
-      ...(mark.attrs && typeof mark.attrs === 'object' && { attrs: mark.attrs }),
+      ...(mark.attrs &&
+        typeof mark.attrs === "object" && { attrs: mark.attrs }),
     }));
 }
 
@@ -332,7 +349,7 @@ function fixMarks(marks: any[]): any[] {
  */
 function createEmptyDocument(): JSONContent {
   return {
-    type: 'doc',
+    type: "doc",
     content: [createEmptyParagraph()],
   };
 }
@@ -342,7 +359,7 @@ function createEmptyDocument(): JSONContent {
  */
 function createEmptyParagraph(): JSONContent {
   return {
-    type: 'paragraph',
+    type: "paragraph",
     content: [],
   };
 }
@@ -352,21 +369,21 @@ function createEmptyParagraph(): JSONContent {
  */
 function createEmptyListItem(): JSONContent {
   return {
-    type: 'listItem',
+    type: "listItem",
     content: [createEmptyParagraph()],
   };
 }
 
 function createEmptyTableCell(): JSONContent {
   return {
-    type: 'tableCell',
+    type: "tableCell",
     content: [createEmptyParagraph()],
   };
 }
 
 function createEmptyTableRow(): JSONContent {
   return {
-    type: 'tableRow',
+    type: "tableRow",
     content: [createEmptyTableCell()],
   };
 }
@@ -376,17 +393,18 @@ function createEmptyTableRow(): JSONContent {
  */
 export function isValidTipTapContent(content: any): boolean {
   try {
-    if (!content || typeof content !== 'object') {
+    if (!content || typeof content !== "object") {
       return false;
     }
 
-    if (content.type !== 'doc' || !Array.isArray(content.content)) {
+    if (content.type !== "doc" || !Array.isArray(content.content)) {
       return false;
     }
 
     // Basic validation - could be extended
     return content.content.every(
-      (node: any) => node && typeof node === 'object' && typeof node.type === 'string',
+      (node: any) =>
+        node && typeof node === "object" && typeof node.type === "string",
     );
   } catch {
     return false;
@@ -397,40 +415,44 @@ export function isValidTipTapContent(content: any): boolean {
  * Debug function to log content structure issues
  */
 export function debugTipTapContent(content: any): void {
-  console.group('🔍 TipTap Content Debug');
+  console.group("🔍 TipTap Content Debug");
 
   if (!content) {
-    console.warn('❌ Content is null/undefined');
+    console.warn("❌ Content is null/undefined");
     console.groupEnd();
     return;
   }
 
-  if (typeof content !== 'object') {
-    console.warn('❌ Content is not an object:', typeof content);
+  if (typeof content !== "object") {
+    console.warn("❌ Content is not an object:", typeof content);
     console.groupEnd();
     return;
   }
 
-  if (content.type !== 'doc') {
+  if (content.type !== "doc") {
     console.warn('❌ Root type is not "doc":', content.type);
   } else {
     console.log('✅ Root type is "doc"');
   }
 
   if (!Array.isArray(content.content)) {
-    console.warn('❌ Content.content is not an array:', typeof content.content);
+    console.warn("❌ Content.content is not an array:", typeof content.content);
   } else {
-    console.log('✅ Content.content is an array with', content.content.length, 'items');
+    console.log(
+      "✅ Content.content is an array with",
+      content.content.length,
+      "items",
+    );
 
     content.content.forEach((node: any, index: number) => {
       console.group(`Node ${index}:`);
-      console.log('Type:', node?.type);
-      console.log('Has content:', Array.isArray(node?.content));
-      if (node?.type === 'paragraph' && Array.isArray(node.content)) {
+      console.log("Type:", node?.type);
+      console.log("Has content:", Array.isArray(node?.content));
+      if (node?.type === "paragraph" && Array.isArray(node.content)) {
         node.content.forEach((textNode: any, textIndex: number) => {
           console.log(`  Text ${textIndex}:`, {
             type: textNode?.type,
-            hasText: 'text' in textNode,
+            hasText: "text" in textNode,
             marks: textNode?.marks?.length || 0,
           });
         });

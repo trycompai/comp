@@ -1,8 +1,10 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
-import { PostPaymentOnboarding } from '../components/PostPaymentOnboarding';
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
+
+import { PostPaymentOnboarding } from "../components/PostPaymentOnboarding";
 
 interface OnboardingPageProps {
   params: Promise<{ orgId: string }>;
@@ -17,7 +19,7 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
   });
 
   if (!session?.user?.id) {
-    redirect('/auth');
+    redirect("/auth");
   }
 
   // Get organization with subscription info
@@ -34,7 +36,7 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
       context: {
         where: {
           tags: {
-            has: 'onboarding',
+            has: "onboarding",
           },
         },
       },
@@ -59,38 +61,44 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
   const initialData: Record<string, any> = {};
   organization.context.forEach((ctx) => {
     // Map questions back to field keys (this is a bit hacky but works)
-    if (ctx.question.includes('framework')) {
-      initialData.frameworkIds = ctx.answer.split(', ');
+    if (ctx.question.includes("framework")) {
+      initialData.frameworkIds = ctx.answer.split(", ");
     }
   });
 
   // Local-only: prefill onboarding fields to speed up development
   const hdrs = await headers();
-  const host = hdrs.get('host') || '';
+  const host = hdrs.get("host") || "";
   const isLocal =
-    process.env.NODE_ENV !== 'production' ||
-    host.includes('localhost') ||
-    host.startsWith('127.0.0.1') ||
-    host.startsWith('::1');
+    process.env.NODE_ENV !== "production" ||
+    host.includes("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("::1");
 
   if (isLocal) {
     Object.assign(initialData, {
       describe:
         initialData.describe ||
-        'Bubba AI, Inc. is the company behind Comp AI - the fastest way to get SOC 2 compliant.',
-      industry: initialData.industry || 'SaaS',
-      teamSize: initialData.teamSize || '1-10',
-      devices: initialData.devices || 'Personal laptops',
-      authentication: initialData.authentication || 'Google Workspace',
+        "Bubba AI, Inc. is the company behind Comp AI - the fastest way to get SOC 2 compliant.",
+      industry: initialData.industry || "SaaS",
+      teamSize: initialData.teamSize || "1-10",
+      devices: initialData.devices || "Personal laptops",
+      authentication: initialData.authentication || "Google Workspace",
       software:
-        initialData.software || 'Rippling, HubSpot, Slack, Notion, Linear, GitHub, Figma, Stripe',
-      workLocation: initialData.workLocation || 'Fully remote',
-      infrastructure: initialData.infrastructure || 'AWS, Vercel',
-      dataTypes: initialData.dataTypes || 'Employee data',
-      geo: initialData.geo || 'North America,Europe (EU)',
+        initialData.software ||
+        "Rippling, HubSpot, Slack, Notion, Linear, GitHub, Figma, Stripe",
+      workLocation: initialData.workLocation || "Fully remote",
+      infrastructure: initialData.infrastructure || "AWS, Vercel",
+      dataTypes: initialData.dataTypes || "Employee data",
+      geo: initialData.geo || "North America,Europe (EU)",
     });
   }
 
   // We'll use a modified version that starts at step 3
-  return <PostPaymentOnboarding organization={organization} initialData={initialData} />;
+  return (
+    <PostPaymentOnboarding
+      organization={organization}
+      initialData={initialData}
+    />
+  );
 }

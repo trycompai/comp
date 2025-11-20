@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { FrameworkEditorFramework, Policy, Task } from '@trycompai/db';
-import { FrameworkInstanceWithControls } from '../types';
-import { ComplianceOverview } from './ComplianceOverview';
-import { DraggableCards } from './DraggableCards';
-import { FrameworksOverview } from './FrameworksOverview';
-import { ToDoOverview } from './ToDoOverview';
-import { FrameworkInstanceWithComplianceScore } from './types';
+import { FrameworkEditorFramework, Policy, Task } from "@trycompai/db";
+
+import { FrameworkInstanceWithControls } from "../types";
+import { ComplianceOverview } from "./ComplianceOverview";
+import { DraggableCards } from "./DraggableCards";
+import { FrameworksOverview } from "./FrameworksOverview";
+import { ToDoOverview } from "./ToDoOverview";
+import { FrameworkInstanceWithComplianceScore } from "./types";
 
 export interface PublishedPoliciesScore {
   totalPolicies: number;
@@ -60,7 +61,8 @@ export const Overview = ({
         totalPolicies={publishedPoliciesScore.totalPolicies}
         totalTasks={doneTasksScore.totalTasks}
         remainingPolicies={
-          publishedPoliciesScore.totalPolicies - publishedPoliciesScore.publishedPolicies
+          publishedPoliciesScore.totalPolicies -
+          publishedPoliciesScore.publishedPolicies
         }
         remainingTasks={doneTasksScore.totalTasks - doneTasksScore.doneTasks}
         unpublishedPolicies={publishedPoliciesScore.unpublishedPolicies}

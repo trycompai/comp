@@ -1,41 +1,44 @@
-'use client';
+"use client";
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
-import { useDataTable } from '@/hooks/use-data-table';
-import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { useSession } from '@/utils/auth-client';
-import { ColumnDef } from '@tanstack/react-table';
-import type { Member, Risk, User } from '@trycompai/db';
-import { Risk as RiskType } from '@trycompai/db';
-import { Loader2 } from 'lucide-react';
+import { useCallback, useMemo } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { CreateRiskSheet } from "@/components/sheets/create-risk-sheet";
+import { useDataTable } from "@/hooks/use-data-table";
+import { getFiltersStateParser, getSortingStateParser } from "@/lib/parsers";
+import { useSession } from "@/utils/auth-client";
+import { ColumnDef } from "@tanstack/react-table";
+import { Loader2 } from "lucide-react";
 import {
   parseAsArrayOf,
   parseAsInteger,
+  parseAsIsoDateTime,
   parseAsString,
   parseAsStringEnum,
   useQueryState,
-  parseAsIsoDateTime,
-} from 'nuqs';
-import { useCallback, useMemo } from 'react';
-import useSWR from 'swr';
-import * as z from 'zod';
-import { getRisksAction } from './actions/get-risks-action';
-import { RiskOnboardingProvider } from './components/risk-onboarding-context';
-import { RisksLoadingAnimation } from './components/risks-loading-animation';
-import { columns as getColumns } from './components/table/RiskColumns';
-import type { GetRiskSchema } from './data/validations';
-import { useOnboardingStatus } from './hooks/use-onboarding-status';
+} from "nuqs";
+import useSWR from "swr";
+import * as z from "zod";
 
-export type RiskRow = Risk & { assignee: User | null; isPending?: boolean; isAssessing?: boolean };
+import type { Member, Risk, User } from "@trycompai/db";
+import { Risk as RiskType } from "@trycompai/db";
 
-const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'> = [
-  'pending',
-  'processing',
-  'created',
-  'assessing',
-];
+import type { GetRiskSchema } from "./data/validations";
+import { getRisksAction } from "./actions/get-risks-action";
+import { RiskOnboardingProvider } from "./components/risk-onboarding-context";
+import { RisksLoadingAnimation } from "./components/risks-loading-animation";
+import { columns as getColumns } from "./components/table/RiskColumns";
+import { useOnboardingStatus } from "./hooks/use-onboarding-status";
+
+export type RiskRow = Risk & {
+  assignee: User | null;
+  isPending?: boolean;
+  isAssessing?: boolean;
+};
+
+const ACTIVE_STATUSES: Array<
+  "pending" | "processing" | "created" | "assessing"
+> = ["pending", "processing", "created", "assessing"];
 
 export const RisksTable = ({
   risks: initialRisks,
@@ -52,28 +55,31 @@ export const RisksTable = ({
 }) => {
   const session = useSession();
   const orgId = session?.data?.session?.activeOrganizationId;
-  const [_, setOpenSheet] = useQueryState('create-risk-sheet');
+  const [_, setOpenSheet] = useQueryState("create-risk-sheet");
 
-  const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
-    onboardingRunId,
-    'risks',
-  );
+  const { itemStatuses, progress, itemsInfo, isActive, isLoading } =
+    useOnboardingStatus(onboardingRunId, "risks");
 
   // Read current search params from URL (synced with table state via useDataTable)
-  const [page] = useQueryState('page', parseAsInteger.withDefault(1));
-  const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(50));
-  const [title] = useQueryState('title', parseAsString.withDefault(''));
+  const [page] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [perPage] = useQueryState("perPage", parseAsInteger.withDefault(50));
+  const [title] = useQueryState("title", parseAsString.withDefault(""));
   const [sort] = useQueryState(
-    'sort',
-    getSortingStateParser<RiskType>().withDefault([{ id: 'title', desc: true }]),
+    "sort",
+    getSortingStateParser<RiskType>().withDefault([
+      { id: "title", desc: true },
+    ]),
   );
-  const [filters] = useQueryState('filters', getFiltersStateParser().withDefault([]));
+  const [filters] = useQueryState(
+    "filters",
+    getFiltersStateParser().withDefault([]),
+  );
   const [joinOperator] = useQueryState(
-    'joinOperator',
-    parseAsStringEnum(['and', 'or']).withDefault('and'),
+    "joinOperator",
+    parseAsStringEnum(["and", "or"]).withDefault("and"),
   );
   const [lastUpdated] = useQueryState(
-    'lastUpdated',
+    "lastUpdated",
     parseAsArrayOf(parseAsIsoDateTime).withDefault([]),
   );
 
@@ -95,7 +101,7 @@ export const RisksTable = ({
     if (!orgId) return null;
     // Serialize search params to create a stable key
     const key = JSON.stringify(currentSearchParams);
-    return ['risks', orgId, key] as const;
+    return ["risks", orgId, key] as const;
   }, [orgId, currentSearchParams]);
 
   // Fetcher function for SWR
@@ -135,10 +141,10 @@ export const RisksTable = ({
     const hasPendingRisks = itemsInfo.some((item) => {
       const status = itemStatuses[item.id];
       return (
-        (status === 'pending' ||
-          status === 'processing' ||
-          status === 'created' ||
-          status === 'assessing') &&
+        (status === "pending" ||
+          status === "processing" ||
+          status === "created" ||
+          status === "assessing") &&
         !risks.some((r) => r.id === item.id)
       );
     });
@@ -150,12 +156,12 @@ export const RisksTable = ({
     // 2. Closed in database (status === 'closed')
     const allDbRisksDone = risks.every((risk) => {
       const metadataStatus = itemStatuses[risk.id];
-      return metadataStatus === 'completed' || risk.status === 'closed';
+      return metadataStatus === "completed" || risk.status === "closed";
     });
 
     // Also check if there are any risks in metadata that are still assessing
     const hasAssessingRisks = Object.values(itemStatuses).some(
-      (status) => status === 'assessing' || status === 'processing',
+      (status) => status === "assessing" || status === "processing",
     );
 
     return allDbRisksDone && !hasAssessingRisks;
@@ -171,7 +177,12 @@ export const RisksTable = ({
       const metadataStatus = itemStatuses[risk.id];
       // If risk exists in DB but status is open and onboarding is active, it's being assessed
       // Only mark as assessing if status is open (not closed)
-      if (risk.status === 'open' && isActive && onboardingRunId && !metadataStatus) {
+      if (
+        risk.status === "open" &&
+        isActive &&
+        onboardingRunId &&
+        !metadataStatus
+      ) {
         return { ...risk, isAssessing: true };
       }
       return risk;
@@ -182,9 +193,9 @@ export const RisksTable = ({
         // Only show items that are pending/processing and not yet in DB
         const status = itemStatuses[item.id];
         return (
-          (status === 'pending' || status === 'processing') &&
+          (status === "pending" || status === "processing") &&
           !dbRiskIds.has(item.id) &&
-          !item.id.startsWith('temp_')
+          !item.id.startsWith("temp_")
         );
       })
       .map((item) => {
@@ -193,17 +204,17 @@ export const RisksTable = ({
         return {
           id: item.id,
           title: item.name,
-          description: 'Being researched and created by AI...',
-          category: 'other' as const,
+          description: "Being researched and created by AI...",
+          category: "other" as const,
           department: null,
-          status: 'open' as const,
-          likelihood: 'very_unlikely' as const,
-          impact: 'insignificant' as const,
-          residualLikelihood: 'very_unlikely' as const,
-          residualImpact: 'insignificant' as const,
-          treatmentStrategy: 'accept' as const,
+          status: "open" as const,
+          likelihood: "very_unlikely" as const,
+          impact: "insignificant" as const,
+          residualLikelihood: "very_unlikely" as const,
+          residualImpact: "insignificant" as const,
+          treatmentStrategy: "accept" as const,
           treatmentStrategyDescription: null,
-          organizationId: orgId || '',
+          organizationId: orgId || "",
           assigneeId: null,
           assignee: null,
           createdAt: new Date(),
@@ -214,23 +225,23 @@ export const RisksTable = ({
 
     // Also handle temp IDs (risks being created)
     const tempRisks: RiskRow[] = itemsInfo
-      .filter((item) => item.id.startsWith('temp_'))
+      .filter((item) => item.id.startsWith("temp_"))
       .map((item) => {
         const status = itemStatuses[item.id];
         return {
           id: item.id,
           title: item.name,
-          description: 'Being researched and created by AI...',
-          category: 'other' as const,
+          description: "Being researched and created by AI...",
+          category: "other" as const,
           department: null,
-          status: 'open' as const,
-          likelihood: 'very_unlikely' as const,
-          impact: 'insignificant' as const,
-          residualLikelihood: 'very_unlikely' as const,
-          residualImpact: 'insignificant' as const,
-          treatmentStrategy: 'accept' as const,
+          status: "open" as const,
+          likelihood: "very_unlikely" as const,
+          impact: "insignificant" as const,
+          residualLikelihood: "very_unlikely" as const,
+          residualImpact: "insignificant" as const,
+          treatmentStrategy: "accept" as const,
           treatmentStrategyDescription: null,
-          organizationId: orgId || '',
+          organizationId: orgId || "",
           assigneeId: null,
           assignee: null,
           createdAt: new Date(),
@@ -242,7 +253,10 @@ export const RisksTable = ({
     return [...risksWithStatus, ...pendingRisks, ...tempRisks];
   }, [risks, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
-  const columns = useMemo<ColumnDef<RiskRow>[]>(() => getColumns(orgId ?? ''), [orgId]);
+  const columns = useMemo<ColumnDef<RiskRow>[]>(
+    () => getColumns(orgId ?? ""),
+    [orgId],
+  );
 
   const { table } = useDataTable({
     data: mergedRisks,
@@ -254,8 +268,8 @@ export const RisksTable = ({
         pageSize: 50,
         pageIndex: 0,
       },
-      sorting: [{ id: 'title', desc: true }],
-      columnPinning: { right: ['actions'] },
+      sorting: [{ id: "title", desc: true }],
+      columnPinning: { right: ["actions"] },
     },
     shallow: false,
     clearOnDefault: true,
@@ -263,11 +277,14 @@ export const RisksTable = ({
 
   const getRowProps = useMemo(
     () => (risk: RiskRow) => {
-      const status = itemStatuses[risk.id] || (risk.isPending ? 'pending' : undefined);
-      const isAssessing = risk.isAssessing || status === 'assessing';
+      const status =
+        itemStatuses[risk.id] || (risk.isPending ? "pending" : undefined);
+      const isAssessing = risk.isAssessing || status === "assessing";
       const isBlocked =
         (status &&
-          ACTIVE_STATUSES.includes(status as 'pending' | 'processing' | 'created' | 'assessing')) ||
+          ACTIVE_STATUSES.includes(
+            status as "pending" | "processing" | "created" | "assessing",
+          )) ||
         isAssessing;
 
       if (!isBlocked) {
@@ -292,12 +309,12 @@ export const RisksTable = ({
     // Count risks that are completed (either 'completed' in metadata or 'closed' in DB)
     const completedCount = risks.filter((risk) => {
       const metadataStatus = itemStatuses[risk.id];
-      return metadataStatus === 'completed' || risk.status === 'closed';
+      return metadataStatus === "completed" || risk.status === "closed";
     }).length;
 
     // Also count risks in metadata that are completed but not yet in DB
     const completedInMetadata = Object.values(itemStatuses).filter(
-      (status) => status === 'completed',
+      (status) => status === "completed",
     ).length;
 
     // Total is the max of progress.total, itemsInfo.length, or actual risks created
@@ -339,36 +356,41 @@ export const RisksTable = ({
           getRowProps={getRowProps}
         >
           <>
-            <DataTableToolbar table={table} sheet="create-risk-sheet" action="Create Risk" />
+            <DataTableToolbar
+              table={table}
+              sheet="create-risk-sheet"
+              action="Create Risk"
+            />
             {isActive && !allRisksDoneAssessing && (
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <div className="border-primary/20 from-primary/10 via-primary/5 mt-3 flex items-center gap-3 rounded-xl border bg-linear-to-r to-transparent px-4 py-3">
+                <div className="bg-primary/15 text-primary flex h-10 w-10 items-center justify-center rounded-full">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-primary">
+                  <span className="text-primary text-sm font-medium">
                     {assessmentProgress
                       ? assessmentProgress.completed === 0
-                        ? 'Researching and creating risks'
-                        : assessmentProgress.completed < assessmentProgress.total
-                          ? 'Assessing risks and generating mitigation plans'
-                          : 'Assessing risks and generating mitigation plans'
+                        ? "Researching and creating risks"
+                        : assessmentProgress.completed <
+                            assessmentProgress.total
+                          ? "Assessing risks and generating mitigation plans"
+                          : "Assessing risks and generating mitigation plans"
                       : progress
                         ? progress.completed === 0
-                          ? 'Researching and creating risks'
-                          : 'Assessing risks and generating mitigation plans'
-                        : 'Researching and creating risks'}
+                          ? "Researching and creating risks"
+                          : "Assessing risks and generating mitigation plans"
+                        : "Researching and creating risks"}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     {assessmentProgress
                       ? assessmentProgress.completed === 0
-                        ? 'AI is analyzing your organization...'
+                        ? "AI is analyzing your organization..."
                         : `${assessmentProgress.completed}/${assessmentProgress.total} risks assessed`
                       : progress
                         ? progress.completed === 0
-                          ? 'AI is analyzing your organization...'
+                          ? "AI is analyzing your organization..."
                           : `${progress.completed}/${progress.total} risks created`
-                        : 'AI is analyzing your organization...'}
+                        : "AI is analyzing your organization..."}
                   </span>
                 </div>
               </div>

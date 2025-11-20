@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { Editor, type JSONContent } from '@trycompai/ui/editor';
+import type { JSONContent } from "@trycompai/ui/editor";
+import { Editor } from "@trycompai/ui/editor";
 
 interface AdvancedEditorProps {
   initialContent?: JSONContent | JSONContent[];
@@ -17,7 +18,7 @@ const AdvancedEditor = ({
   onUpdate,
   onSave,
   readOnly = false,
-  placeholder = 'Start writing...',
+  placeholder = "Start writing...",
   className,
   saveDebounceMs = 500,
 }: AdvancedEditorProps) => {

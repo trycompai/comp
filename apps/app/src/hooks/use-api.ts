@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { api } from '@/lib/api-client';
-import { useParams } from 'next/navigation';
-import { useCallback } from 'react';
-import { useApiSWR, UseApiSWROptions } from './use-api-swr';
+import { useCallback } from "react";
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+
+import { useApiSWR, UseApiSWROptions } from "./use-api-swr";
 
 /**
  * Hook that provides API client with automatic organization context from URL params
@@ -14,7 +15,7 @@ export function useApi() {
 
   const apiCall = useCallback(
     <T = unknown>(
-      method: 'get' | 'post' | 'put' | 'delete',
+      method: "get" | "post" | "put" | "delete",
       endpoint: string,
       bodyOrOrgId?: unknown,
       explicitOrgId?: string,
@@ -23,10 +24,10 @@ export function useApi() {
       let body: unknown;
       let organizationId: string | undefined;
 
-      if (method === 'get' || method === 'delete') {
+      if (method === "get" || method === "delete") {
         // For GET/DELETE: second param is organizationId
         organizationId =
-          (typeof bodyOrOrgId === 'string' ? bodyOrOrgId : undefined) ||
+          (typeof bodyOrOrgId === "string" ? bodyOrOrgId : undefined) ||
           explicitOrgId ||
           orgIdFromParams;
       } else {
@@ -36,18 +37,20 @@ export function useApi() {
       }
 
       if (!organizationId) {
-        throw new Error('Organization context required. Ensure user has an active organization.');
+        throw new Error(
+          "Organization context required. Ensure user has an active organization.",
+        );
       }
 
       // Call appropriate API method
       switch (method) {
-        case 'get':
+        case "get":
           return api.get<T>(endpoint, organizationId);
-        case 'post':
+        case "post":
           return api.post<T>(endpoint, body, organizationId);
-        case 'put':
+        case "put":
           return api.put<T>(endpoint, body, organizationId);
-        case 'delete':
+        case "delete":
           return api.delete<T>(endpoint, organizationId);
         default:
           throw new Error(`Unsupported method: ${method}`);
@@ -63,30 +66,39 @@ export function useApi() {
     // Standard API methods (for mutations)
     get: useCallback(
       <T = unknown>(endpoint: string, organizationId?: string) =>
-        apiCall<T>('get', endpoint, organizationId),
+        apiCall<T>("get", endpoint, organizationId),
       [apiCall],
     ),
 
     post: useCallback(
-      <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
-        apiCall<T>('post', endpoint, body, organizationId),
+      <T = unknown>(
+        endpoint: string,
+        body?: unknown,
+        organizationId?: string,
+      ) => apiCall<T>("post", endpoint, body, organizationId),
       [apiCall],
     ),
 
     put: useCallback(
-      <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
-        apiCall<T>('put', endpoint, body, organizationId),
+      <T = unknown>(
+        endpoint: string,
+        body?: unknown,
+        organizationId?: string,
+      ) => apiCall<T>("put", endpoint, body, organizationId),
       [apiCall],
     ),
 
     delete: useCallback(
       <T = unknown>(endpoint: string, organizationId?: string) =>
-        apiCall<T>('delete', endpoint, organizationId),
+        apiCall<T>("delete", endpoint, organizationId),
       [apiCall],
     ),
 
     // SWR-based GET requests (recommended for data fetching)
-    useSWR: <T = unknown>(endpoint: string | null, options?: UseApiSWROptions<T>) => {
+    useSWR: <T = unknown>(
+      endpoint: string | null,
+      options?: UseApiSWROptions<T>,
+    ) => {
       return useApiSWR<T>(endpoint, {
         organizationId: orgIdFromParams,
         ...options,

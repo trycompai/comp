@@ -1,20 +1,20 @@
-import { Analytics } from '@trycompai/analytics';
+import { Analytics } from "@trycompai/analytics";
 
 // Tracking event types
 export type TrackingEventName =
-  | 'pageview'
-  | 'signup_started'
-  | 'signup_completed'
-  | 'onboarding_started'
-  | 'onboarding_step_completed'
-  | 'onboarding_completed'
-  | 'framework_selected'
-  | 'organization_created'
-  | 'upgrade_started'
-  | 'upgrade_completed'
-  | 'checkout_started'
-  | 'purchase_completed'
-  | 'conversion';
+  | "pageview"
+  | "signup_started"
+  | "signup_completed"
+  | "onboarding_started"
+  | "onboarding_step_completed"
+  | "onboarding_completed"
+  | "framework_selected"
+  | "organization_created"
+  | "upgrade_started"
+  | "upgrade_completed"
+  | "checkout_started"
+  | "purchase_completed"
+  | "conversion";
 
 export interface TrackingEventParameters {
   event_category?: string;
@@ -34,8 +34,11 @@ declare global {
 /**
  * Unified tracking that sends events to all services
  */
-export function trackEvent(eventName: TrackingEventName, parameters?: TrackingEventParameters) {
-  if (typeof window === 'undefined') return;
+export function trackEvent(
+  eventName: TrackingEventName,
+  parameters?: TrackingEventParameters,
+) {
+  if (typeof window === "undefined") return;
 
   // 1. Google Tag Manager
   if (window.dataLayer) {
@@ -49,7 +52,10 @@ export function trackEvent(eventName: TrackingEventName, parameters?: TrackingEv
   Analytics.track(eventName, parameters);
 
   // 3. LinkedIn - for specific conversion events
-  if (eventName === 'purchase_completed' && process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID) {
+  if (
+    eventName === "purchase_completed" &&
+    process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
+  ) {
     trackLinkedInConversion(process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID);
   }
 }
@@ -58,8 +64,8 @@ export function trackEvent(eventName: TrackingEventName, parameters?: TrackingEv
  * Track conversion with LinkedIn
  */
 export function trackLinkedInConversion(conversionId: string) {
-  if (typeof window !== 'undefined' && window.lintrk) {
-    window.lintrk('track', { conversion_id: conversionId });
+  if (typeof window !== "undefined" && window.lintrk) {
+    window.lintrk("track", { conversion_id: conversionId });
   }
 }
 
@@ -70,7 +76,7 @@ export function trackPageView(pagePath?: string, pageTitle?: string) {
   const path = pagePath || window.location.pathname;
   const title = pageTitle || document.title;
 
-  trackEvent('pageview', {
+  trackEvent("pageview", {
     page_path: path,
     page_title: title,
   });
@@ -90,8 +96,8 @@ export function trackOnboardingEvent(
   stepNumber?: number,
   additionalData?: Record<string, any>,
 ) {
-  trackEvent('onboarding_step_completed', {
-    event_category: 'onboarding',
+  trackEvent("onboarding_step_completed", {
+    event_category: "onboarding",
     event_label: step,
     step_name: step,
     step_number: stepNumber,
@@ -105,13 +111,16 @@ export function trackOnboardingEvent(
 export function trackPurchaseEvent(
   eventName: Extract<
     TrackingEventName,
-    'upgrade_started' | 'upgrade_completed' | 'checkout_started' | 'purchase_completed'
+    | "upgrade_started"
+    | "upgrade_completed"
+    | "checkout_started"
+    | "purchase_completed"
   >,
   value?: number,
-  currency: string = 'USD',
+  currency: string = "USD",
 ) {
   trackEvent(eventName, {
-    event_category: 'ecommerce',
+    event_category: "ecommerce",
     value,
     currency,
   });

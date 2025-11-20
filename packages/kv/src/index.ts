@@ -1,6 +1,6 @@
-import 'server-only';
+import "server-only";
 
-import { Redis } from '@upstash/redis';
+import { Redis } from "@upstash/redis";
 
 // Mock Redis client for E2E tests
 class MockRedis {
@@ -18,7 +18,7 @@ class MockRedis {
         this.storage.delete(key);
       }, options.ex * 1000);
     }
-    return 'OK';
+    return "OK";
   }
 
   async del(key: string) {
@@ -32,10 +32,10 @@ class MockRedis {
 
   async keys(pattern: string) {
     const keys = Array.from(this.storage.keys());
-    if (pattern === '*') return keys;
+    if (pattern === "*") return keys;
 
     // Simple pattern matching for E2E tests
-    const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+    const regex = new RegExp(pattern.replace(/\*/g, ".*"));
     return keys.filter((key) => regex.test(key));
   }
 
@@ -51,8 +51,9 @@ class MockRedis {
 }
 
 // Use mock client for E2E tests in CI or when explicitly mocked
-const isE2ETest = process.env.E2E_TEST_MODE === 'true' && process.env.CI === 'true';
-const isMockRequired = process.env.MOCK_REDIS === 'true';
+const isE2ETest =
+  process.env.E2E_TEST_MODE === "true" && process.env.CI === "true";
+const isMockRequired = process.env.MOCK_REDIS === "true";
 
 export const client =
   isE2ETest || isMockRequired
@@ -63,4 +64,4 @@ export const client =
       });
 
 // Re-export Redis types for convenience
-export type { Redis } from '@upstash/redis';
+export type { Redis } from "@upstash/redis";

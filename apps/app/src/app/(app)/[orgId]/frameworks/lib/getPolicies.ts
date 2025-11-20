@@ -1,4 +1,4 @@
-import { db } from '@trycompai/db';
+import { db } from "@trycompai/db";
 
 export async function getPublishedPoliciesScore(organizationId: string) {
   const allPolicies = await db.policy.findMany({
@@ -7,11 +7,13 @@ export async function getPublishedPoliciesScore(organizationId: string) {
     },
   });
 
-  const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
-  const draftPolicies = allPolicies.filter((p) => p.status === 'draft');
-  const policiesInReview = allPolicies.filter((p) => p.status === 'needs_review');
+  const publishedPolicies = allPolicies.filter((p) => p.status === "published");
+  const draftPolicies = allPolicies.filter((p) => p.status === "draft");
+  const policiesInReview = allPolicies.filter(
+    (p) => p.status === "needs_review",
+  );
   const unpublishedPolicies = allPolicies.filter(
-    (p) => p.status === 'draft' || p.status === 'needs_review',
+    (p) => p.status === "draft" || p.status === "needs_review",
   );
 
   return {

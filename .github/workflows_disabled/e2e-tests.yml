@@ -6,10 +6,10 @@ on:
       - main # Feature branches -> main
       - release # main -> release (production)
     paths:
-      - 'apps/**'
-      - 'packages/**'
-      - '!**/*.md'
-      - '.github/workflows/e2e-tests.yml'
+      - "apps/**"
+      - "packages/**"
+      - "!**/*.md"
+      - ".github/workflows/e2e-tests.yml"
   push: # Also runs AFTER merge to main/release
     branches:
       - main

@@ -1,5 +1,7 @@
-import { Departments, type Member, type Session, type User } from '@trycompai/db';
-import { vi } from 'vitest';
+import { vi } from "vitest";
+
+import type { Member, Session, User } from "@trycompai/db";
+import { Departments } from "@trycompai/db";
 
 // Mock auth API structure
 export const mockAuthApi = {
@@ -27,23 +29,23 @@ export const mockAuth = {
 
 // Mock session data
 export const createMockSession = (overrides?: Partial<Session>): Session => ({
-  id: 'session_test123',
-  token: 'test_token',
-  userId: 'user_test123',
+  id: "session_test123",
+  token: "test_token",
+  userId: "user_test123",
   expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   createdAt: new Date(),
   updatedAt: new Date(),
-  ipAddress: '127.0.0.1',
-  userAgent: 'test-agent',
-  activeOrganizationId: 'org_test123',
+  ipAddress: "127.0.0.1",
+  userAgent: "test-agent",
+  activeOrganizationId: "org_test123",
   ...overrides,
 });
 
 // Mock user data
 export const createMockUser = (overrides?: Partial<User>): User => ({
-  id: 'user_test123',
-  email: 'test@example.com',
-  name: 'Test User',
+  id: "user_test123",
+  email: "test@example.com",
+  name: "Test User",
   emailVerified: true,
   image: null,
   lastLogin: null,
@@ -54,10 +56,10 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
 
 // Mock member data
 export const createMockMember = (overrides?: Partial<Member>): Member => ({
-  id: 'member_test123',
-  userId: 'user_test123',
-  organizationId: 'org_test123',
-  role: 'owner',
+  id: "member_test123",
+  userId: "user_test123",
+  organizationId: "org_test123",
+  role: "owner",
   createdAt: new Date(),
   department: Departments.none,
   isActive: true,
@@ -72,14 +74,18 @@ export const setupAuthMocks = (options?: {
   user?: User | null;
   member?: Member | null;
 }) => {
-  const sessionData = options?.session === null ? null : (options?.session ?? createMockSession());
-  const userData = options?.user === null ? null : (options?.user ?? createMockUser());
+  const sessionData =
+    options?.session === null
+      ? null
+      : (options?.session ?? createMockSession());
+  const userData =
+    options?.user === null ? null : (options?.user ?? createMockUser());
   const memberData =
     options?.member ??
     (sessionData
       ? createMockMember({
           userId: userData?.id,
-          organizationId: sessionData.activeOrganizationId || 'org_test123',
+          organizationId: sessionData.activeOrganizationId || "org_test123",
         })
       : null);
 

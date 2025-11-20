@@ -1,10 +1,19 @@
-import { useAccessGrants } from '@/hooks/use-access-requests';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Skeleton } from '@trycompai/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { useState } from 'react';
-import { RevokeDialog } from './revoke-dialog';
+import { useState } from "react";
+import { useAccessGrants } from "@/hooks/use-access-requests";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import { Skeleton } from "@trycompai/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@trycompai/ui/table";
+
+import { RevokeDialog } from "./revoke-dialog";
 
 export function GrantsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessGrants(orgId);
@@ -50,23 +59,31 @@ export function GrantsTab({ orgId }: { orgId: string }) {
                 <TableCell>
                   <Badge
                     variant={
-                      grant.status === 'active'
-                        ? 'default'
-                        : grant.status === 'revoked'
-                          ? 'destructive'
-                          : 'secondary'
+                      grant.status === "active"
+                        ? "default"
+                        : grant.status === "revoked"
+                          ? "destructive"
+                          : "secondary"
                     }
                   >
                     {grant.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{new Date(grant.expiresAt).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  {grant.revokedAt ? new Date(grant.revokedAt).toLocaleDateString() : '-'}
+                  {new Date(grant.expiresAt).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  {grant.status === 'active' && (
-                    <Button size="sm" variant="destructive" onClick={() => setRevokeId(grant.id)}>
+                  {grant.revokedAt
+                    ? new Date(grant.revokedAt).toLocaleDateString()
+                    : "-"}
+                </TableCell>
+                <TableCell>
+                  {grant.status === "active" && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setRevokeId(grant.id)}
+                    >
                       Revoke
                     </Button>
                   )}
@@ -75,7 +92,10 @@ export function GrantsTab({ orgId }: { orgId: string }) {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+              <TableCell
+                colSpan={5}
+                className="text-muted-foreground py-8 text-center text-sm"
+              >
                 No access grants yet
               </TableCell>
             </TableRow>
@@ -83,7 +103,11 @@ export function GrantsTab({ orgId }: { orgId: string }) {
         </TableBody>
       </Table>
       {revokeId && (
-        <RevokeDialog orgId={orgId} grantId={revokeId} onClose={() => setRevokeId(null)} />
+        <RevokeDialog
+          orgId={orgId}
+          grantId={revokeId}
+          onClose={() => setRevokeId(null)}
+        />
       )}
     </div>
   );

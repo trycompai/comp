@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { useAction } from 'next-safe-action/hooks';
-import { useCallback } from 'react';
-import type { FileRejection } from 'react-dropzone';
-import { toast } from 'sonner';
-import { exportQuestionnaire } from '../actions/export-questionnaire';
-import type { QuestionAnswer } from '../components/types';
+import type { FileRejection } from "react-dropzone";
+import { useCallback } from "react";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+
+import type { QuestionAnswer } from "../components/types";
+import { exportQuestionnaire } from "../actions/export-questionnaire";
 
 interface UseQuestionnaireActionsProps {
   orgId: string;
@@ -25,17 +26,29 @@ interface UseQuestionnaireActionsProps {
   answeringQuestionIndex: number | null;
   setAnsweringQuestionIndex: (index: number | null) => void;
   setQuestionStatuses: React.Dispatch<
-    React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    React.SetStateAction<Map<number, "pending" | "processing" | "completed">>
   >;
   setParseTaskId: (id: string | null) => void;
   setParseToken: (token: string | null) => void;
   uploadFileAction: {
     execute: (payload: any) => void;
-    status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
+    status:
+      | "idle"
+      | "executing"
+      | "hasSucceeded"
+      | "hasErrored"
+      | "transitioning"
+      | "hasNavigated";
   };
   parseAction: {
     execute: (payload: any) => void;
-    status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
+    status:
+      | "idle"
+      | "executing"
+      | "hasSucceeded"
+      | "hasErrored"
+      | "transitioning"
+      | "hasNavigated";
   };
   triggerAutoAnswer: (payload: {
     vendorId: string;
@@ -82,7 +95,7 @@ export function useQuestionnaireActions({
       const downloadUrl = responseData?.downloadUrl;
 
       if (downloadUrl && filename) {
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = downloadUrl;
         link.download = filename;
         document.body.appendChild(link);
@@ -93,21 +106,24 @@ export function useQuestionnaireActions({
       }
     },
     onError: ({ error }) => {
-      console.error('Export action error:', error);
-      toast.error(error.serverError || 'Failed to export questionnaire');
+      console.error("Export action error:", error);
+      toast.error(error.serverError || "Failed to export questionnaire");
     },
   });
 
-  const handleFileSelect = useCallback((acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
-    if (rejectedFiles.length > 0) {
-      toast.error(`File rejected: ${rejectedFiles[0].errors[0].message}`);
-      return;
-    }
+  const handleFileSelect = useCallback(
+    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+      if (rejectedFiles.length > 0) {
+        toast.error(`File rejected: ${rejectedFiles[0].errors[0].message}`);
+        return;
+      }
 
-    if (acceptedFiles.length > 0) {
-      setSelectedFile(acceptedFiles[0]);
-    }
-  }, [setSelectedFile]);
+      if (acceptedFiles.length > 0) {
+        setSelectedFile(acceptedFiles[0]);
+      }
+    },
+    [setSelectedFile],
+  );
 
   const handleParse = async () => {
     // Clear old parse state before starting new parse to prevent token mismatch
@@ -119,8 +135,8 @@ export function useQuestionnaireActions({
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
-        const base64 = dataUrl.split(',')[1];
-        const fileType = selectedFile.type || 'application/octet-stream';
+        const base64 = dataUrl.split(",")[1];
+        const fileType = selectedFile.type || "application/octet-stream";
 
         await uploadFileAction.execute({
           fileName: selectedFile.name,
@@ -136,14 +152,16 @@ export function useQuestionnaireActions({
   const handleAutoAnswer = () => {
     // Prevent "Auto Answer All" if a single question is currently being answered
     if (answeringQuestionIndex !== null) {
-      toast.warning('Please wait for the current question to finish before answering all questions');
+      toast.warning(
+        "Please wait for the current question to finish before answering all questions",
+      );
       return;
     }
 
     setHasClickedAutoAnswer(true);
 
     if (!results || results.length === 0) {
-      toast.error('Please analyze a questionnaire first');
+      toast.error("Please analyze a questionnaire first");
       return;
     }
 
@@ -156,11 +174,11 @@ export function useQuestionnaireActions({
       const newStatuses = new Map(prev);
       results.forEach((qa, index) => {
         if (!qa.answer || qa.answer.trim().length === 0) {
-          newStatuses.set(index, 'processing');
+          newStatuses.set(index, "processing");
         } else {
           // Keep existing completed status
           if (!newStatuses.has(index)) {
-            newStatuses.set(index, 'completed');
+            newStatuses.set(index, "completed");
           }
         }
       });
@@ -182,7 +200,7 @@ export function useQuestionnaireActions({
 
   const handleAnswerSingleQuestion = (index: number) => {
     if (!results || !results[index]) {
-      toast.error('Question not found');
+      toast.error("Question not found");
       return;
     }
 
@@ -196,7 +214,7 @@ export function useQuestionnaireActions({
     // Optimistic UI update: immediately show spinner for this question only
     setQuestionStatuses((prev) => {
       const newStatuses = new Map(prev);
-      newStatuses.set(index, 'processing');
+      newStatuses.set(index, "processing");
       return newStatuses;
     });
 
@@ -211,7 +229,7 @@ export function useQuestionnaireActions({
 
   const handleEditAnswer = (index: number) => {
     setEditingIndex(index);
-    setEditingAnswer(results![index].answer || '');
+    setEditingAnswer(results![index].answer || "");
   };
 
   const handleSaveAnswer = (index: number) => {
@@ -224,18 +242,18 @@ export function useQuestionnaireActions({
     };
     setResults(updated);
     setEditingIndex(null);
-    setEditingAnswer('');
-    toast.success('Answer updated');
+    setEditingAnswer("");
+    toast.success("Answer updated");
   };
 
   const handleCancelEdit = () => {
     setEditingIndex(null);
-    setEditingAnswer('');
+    setEditingAnswer("");
   };
 
-  const handleExport = async (format: 'xlsx' | 'csv' | 'pdf') => {
+  const handleExport = async (format: "xlsx" | "csv" | "pdf") => {
     if (!results || results.length === 0) {
-      toast.error('No data to export');
+      toast.error("No data to export");
       return;
     }
 
@@ -268,4 +286,3 @@ export function useQuestionnaireActions({
     handleToggleSource,
   };
 }
-

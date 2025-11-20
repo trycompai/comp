@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { env } from '@/env.mjs';
-import { jwtManager } from '@/utils/jwt-manager';
+import { env } from "@/env.mjs";
+import { jwtManager } from "@/utils/jwt-manager";
 
-interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
+interface ApiCallOptions extends Omit<RequestInit, "headers"> {
   organizationId?: string;
   headers?: Record<string, string>;
 }
@@ -22,7 +22,7 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    this.baseUrl = env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
   }
 
   /**
@@ -39,39 +39,45 @@ export class ApiClient {
 
     // Build headers
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...customHeaders,
     };
 
     // Add explicit organization context if provided
     if (organizationId) {
-      headers['X-Organization-Id'] = organizationId;
+      headers["X-Organization-Id"] = organizationId;
     }
 
     // Add JWT token for authentication
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         // Get a valid (non-stale) JWT token
         const token = await jwtManager.getValidToken();
 
         if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+          headers["Authorization"] = `Bearer ${token}`;
         }
       } catch (error) {
-        console.error('❌ Error getting JWT token for API call:', error);
+        console.error("❌ Error getting JWT token for API call:", error);
       }
     }
 
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        credentials: 'include',
+        credentials: "include",
         ...fetchOptions,
         headers,
       });
 
       // Handle 401 Unauthorized - token might be invalid, try refreshing
-      if (response.status === 401 && retryOnAuthError && typeof window !== 'undefined') {
-        console.log('🔄 Received 401, refreshing token and retrying request...');
+      if (
+        response.status === 401 &&
+        retryOnAuthError &&
+        typeof window !== "undefined"
+      ) {
+        console.log(
+          "🔄 Received 401, refreshing token and retrying request...",
+        );
 
         // Force refresh token (clear cache and get fresh one)
         const newToken = await jwtManager.forceRefresh();
@@ -84,7 +90,7 @@ export class ApiClient {
           };
 
           const retryResponse = await fetch(`${this.baseUrl}${endpoint}`, {
-            credentials: 'include',
+            credentials: "include",
             ...fetchOptions,
             headers: retryHeaders,
           });
@@ -108,13 +114,14 @@ export class ApiClient {
           return {
             data: retryResponse.ok ? retryData : undefined,
             error: !retryResponse.ok
-              ? retryData?.message || `HTTP ${retryResponse.status}: ${retryResponse.statusText}`
+              ? retryData?.message ||
+                `HTTP ${retryResponse.status}: ${retryResponse.statusText}`
               : undefined,
             status: retryResponse.status,
           };
         } else {
           // Failed to refresh token, read original response and return error
-          console.error('❌ Failed to refresh token after 401 error');
+          console.error("❌ Failed to refresh token after 401 error");
           const text = await response.text();
           let errorData = null;
           if (text) {
@@ -126,7 +133,9 @@ export class ApiClient {
           }
           return {
             data: undefined,
-            error: errorData?.message || `HTTP ${response.status}: ${response.statusText}`,
+            error:
+              errorData?.message ||
+              `HTTP ${response.status}: ${response.statusText}`,
             status: response.status,
           };
         }
@@ -160,7 +169,7 @@ export class ApiClient {
       };
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Network error',
+        error: error instanceof Error ? error.message : "Network error",
         status: 0,
       };
     }
@@ -169,8 +178,11 @@ export class ApiClient {
   /**
    * GET request
    */
-  async get<T = unknown>(endpoint: string, organizationId?: string): Promise<ApiResponse<T>> {
-    return this.call<T>(endpoint, { method: 'GET', organizationId });
+  async get<T = unknown>(
+    endpoint: string,
+    organizationId?: string,
+  ): Promise<ApiResponse<T>> {
+    return this.call<T>(endpoint, { method: "GET", organizationId });
   }
 
   /**
@@ -182,7 +194,7 @@ export class ApiClient {
     organizationId?: string,
   ): Promise<ApiResponse<T>> {
     return this.call<T>(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: body ? JSON.stringify(body) : undefined,
       organizationId,
     });
@@ -197,7 +209,7 @@ export class ApiClient {
     organizationId?: string,
   ): Promise<ApiResponse<T>> {
     return this.call<T>(endpoint, {
-      method: 'PUT',
+      method: "PUT",
       body: body ? JSON.stringify(body) : undefined,
       organizationId,
     });
@@ -212,7 +224,7 @@ export class ApiClient {
     organizationId?: string,
   ): Promise<ApiResponse<T>> {
     return this.call<T>(endpoint, {
-      method: 'PATCH',
+      method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
       organizationId,
     });
@@ -221,8 +233,11 @@ export class ApiClient {
   /**
    * DELETE request
    */
-  async delete<T = unknown>(endpoint: string, organizationId?: string): Promise<ApiResponse<T>> {
-    return this.call<T>(endpoint, { method: 'DELETE', organizationId });
+  async delete<T = unknown>(
+    endpoint: string,
+    organizationId?: string,
+  ): Promise<ApiResponse<T>> {
+    return this.call<T>(endpoint, { method: "DELETE", organizationId });
   }
 }
 
@@ -234,14 +249,23 @@ export const api = {
   get: <T = unknown>(endpoint: string, organizationId?: string) =>
     apiClient.get<T>(endpoint, organizationId),
 
-  post: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
-    apiClient.post<T>(endpoint, body, organizationId),
+  post: <T = unknown>(
+    endpoint: string,
+    body?: unknown,
+    organizationId?: string,
+  ) => apiClient.post<T>(endpoint, body, organizationId),
 
-  put: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
-    apiClient.put<T>(endpoint, body, organizationId),
+  put: <T = unknown>(
+    endpoint: string,
+    body?: unknown,
+    organizationId?: string,
+  ) => apiClient.put<T>(endpoint, body, organizationId),
 
-  patch: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
-    apiClient.patch<T>(endpoint, body, organizationId),
+  patch: <T = unknown>(
+    endpoint: string,
+    body?: unknown,
+    organizationId?: string,
+  ) => apiClient.patch<T>(endpoint, body, organizationId),
 
   delete: <T = unknown>(endpoint: string, organizationId?: string) =>
     apiClient.delete<T>(endpoint, organizationId),

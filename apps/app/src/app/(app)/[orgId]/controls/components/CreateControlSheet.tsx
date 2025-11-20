@@ -1,29 +1,42 @@
-'use client';
+"use client";
 
-import { createControlAction } from '@/actions/controls/create-control-action';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { Input } from '@trycompai/ui/input';
-import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
-import { Textarea } from '@trycompai/ui/textarea';
-import { ArrowRightIcon, X } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useCallback, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
+import { useCallback, useMemo } from "react";
+import { createControlAction } from "@/actions/controls/create-control-action";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRightIcon, X } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useQueryState } from "nuqs";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Button } from "@trycompai/ui/button";
+import { Drawer, DrawerContent, DrawerTitle } from "@trycompai/ui/drawer";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { useMediaQuery } from "@trycompai/ui/hooks";
+import { Input } from "@trycompai/ui/input";
+import MultipleSelector, { Option } from "@trycompai/ui/multiple-selector";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@trycompai/ui/sheet";
+import { Textarea } from "@trycompai/ui/textarea";
 
 const createControlSchema = z.object({
   name: z.string().min(1, {
-    message: 'Name is required',
+    message: "Name is required",
   }),
   description: z.string().min(1, {
-    message: 'Description is required',
+    message: "Description is required",
   }),
   policyIds: z.array(z.string()).optional(),
   taskIds: z.array(z.string()).optional(),
@@ -52,30 +65,31 @@ export function CreateControlSheet({
     frameworkName: string;
   }[];
 }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [createControlOpen, setCreateControlOpen] = useQueryState('create-control');
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [createControlOpen, setCreateControlOpen] =
+    useQueryState("create-control");
   const isOpen = Boolean(createControlOpen);
 
   const handleOpenChange = (open: boolean) => {
-    setCreateControlOpen(open ? 'true' : null);
+    setCreateControlOpen(open ? "true" : null);
   };
 
   const createControl = useAction(createControlAction, {
     onSuccess: () => {
-      toast.success('Control created successfully');
+      toast.success("Control created successfully");
       setCreateControlOpen(null);
       form.reset();
     },
     onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to create control');
+      toast.error(error.error?.serverError || "Failed to create control");
     },
   });
 
   const form = useForm<z.infer<typeof createControlSchema>>({
     resolver: zodResolver(createControlSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       policyIds: [],
       taskIds: [],
       requirementMappings: [],
@@ -140,13 +154,19 @@ export function CreateControlSheet({
   );
 
   // Memoize change handlers
-  const handlePoliciesChange = useCallback((options: Option[], onChange: (value: any) => void) => {
-    onChange(options.map((option) => option.value));
-  }, []);
+  const handlePoliciesChange = useCallback(
+    (options: Option[], onChange: (value: any) => void) => {
+      onChange(options.map((option) => option.value));
+    },
+    [],
+  );
 
-  const handleTasksChange = useCallback((options: Option[], onChange: (value: any) => void) => {
-    onChange(options.map((option) => option.value));
-  }, []);
+  const handleTasksChange = useCallback(
+    (options: Option[], onChange: (value: any) => void) => {
+      onChange(options.map((option) => option.value));
+    },
+    [],
+  );
 
   const requirementFilterFunction = useCallback(
     (value: string, search: string) => {
@@ -158,10 +178,13 @@ export function CreateControlSheet({
   );
 
   const handleRequirementsChange = useCallback(
-    (options: (Option & { frameworkInstanceId?: string })[], onChange: (value: any) => void) => {
+    (
+      options: (Option & { frameworkInstanceId?: string })[],
+      onChange: (value: any) => void,
+    ) => {
       const mappings = options.map((option) => ({
         requirementId: option.value,
-        frameworkInstanceId: option.frameworkInstanceId || '',
+        frameworkInstanceId: option.frameworkInstanceId || "",
       }));
       onChange(mappings);
     },
@@ -170,7 +193,10 @@ export function CreateControlSheet({
 
   const controlForm = (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full max-w-none">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="w-full max-w-none space-y-4"
+      >
         <FormField
           control={form.control}
           name="name"
@@ -226,15 +252,17 @@ export function CreateControlSheet({
                   <div className="relative overflow-visible">
                     <MultipleSelector
                       value={selectedOptions}
-                      onChange={(options) => handlePoliciesChange(options, field.onChange)}
+                      onChange={(options) =>
+                        handlePoliciesChange(options, field.onChange)
+                      }
                       defaultOptions={policyOptions}
                       placeholder="Search and select policies..."
                       emptyIndicator={
-                        <p className="text-center text-lg leading-10 text-muted-foreground">
+                        <p className="text-muted-foreground text-center text-lg leading-10">
                           No policies found.
                         </p>
                       }
-                      className="[&_[cmdk-list]]:!z-[9999] [&_[cmdk-list]]:!fixed"
+                      className="[&_[cmdk-list]]:!fixed [&_[cmdk-list]]:!z-[9999]"
                       commandProps={{
                         filter: policyFilterFunction,
                       }}
@@ -265,15 +293,17 @@ export function CreateControlSheet({
                   <div className="relative overflow-visible">
                     <MultipleSelector
                       value={selectedOptions}
-                      onChange={(options) => handleTasksChange(options, field.onChange)}
+                      onChange={(options) =>
+                        handleTasksChange(options, field.onChange)
+                      }
                       defaultOptions={taskOptions}
                       placeholder="Search and select tasks..."
                       emptyIndicator={
-                        <p className="text-center text-lg leading-10 text-muted-foreground">
+                        <p className="text-muted-foreground text-center text-lg leading-10">
                           No tasks found.
                         </p>
                       }
-                      className="[&_[cmdk-list]]:!z-[9999] [&_[cmdk-list]]:!fixed"
+                      className="[&_[cmdk-list]]:!fixed [&_[cmdk-list]]:!z-[9999]"
                       commandProps={{
                         filter: taskFilterFunction,
                       }}
@@ -290,11 +320,13 @@ export function CreateControlSheet({
           control={form.control}
           name="requirementMappings"
           render={({ field }) => {
-            const selectedOptions: (Option & { frameworkInstanceId?: string })[] = (
-              field.value || []
-            )
+            const selectedOptions: (Option & {
+              frameworkInstanceId?: string;
+            })[] = (field.value || [])
               .map((mapping) => {
-                const req = requirements.find((r) => r.id === mapping.requirementId);
+                const req = requirements.find(
+                  (r) => r.id === mapping.requirementId,
+                );
                 return req
                   ? {
                       value: req.id,
@@ -314,20 +346,24 @@ export function CreateControlSheet({
                       value={selectedOptions}
                       onChange={(options) =>
                         handleRequirementsChange(
-                          options as (Option & { frameworkInstanceId?: string })[],
+                          options as (Option & {
+                            frameworkInstanceId?: string;
+                          })[],
                           field.onChange,
                         )
                       }
                       defaultOptions={
-                        requirementOptions as (Option & { frameworkInstanceId?: string })[]
+                        requirementOptions as (Option & {
+                          frameworkInstanceId?: string;
+                        })[]
                       }
                       placeholder="Search and select requirements..."
                       emptyIndicator={
-                        <p className="text-center text-lg leading-10 text-muted-foreground">
+                        <p className="text-muted-foreground text-center text-lg leading-10">
                           No requirements found.
                         </p>
                       }
-                      className="[&_[cmdk-list]]:!z-[9999] [&_[cmdk-list]]:!fixed"
+                      className="[&_[cmdk-list]]:!fixed [&_[cmdk-list]]:!z-[9999]"
                       commandProps={{
                         filter: requirementFilterFunction,
                       }}
@@ -347,8 +383,8 @@ export function CreateControlSheet({
     return (
       <>
         <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-          <SheetContent stack className="flex flex-col h-full">
-            <SheetHeader className="mb-6 flex flex-row items-center justify-between flex-shrink-0">
+          <SheetContent stack className="flex h-full flex-col">
+            <SheetHeader className="mb-6 flex flex-shrink-0 flex-row items-center justify-between">
               <SheetTitle>Create New Control</SheetTitle>
               <Button
                 size="icon"
@@ -360,15 +396,15 @@ export function CreateControlSheet({
               </Button>
             </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="px-2 pb-6">{controlForm}</div>
             </div>
 
             {/* Fixed Footer with Submit Button */}
-            <div className="border-t bg-background p-4 flex justify-end flex-shrink-0">
+            <div className="bg-background flex flex-shrink-0 justify-end border-t p-4">
               <Button
                 type="submit"
-                disabled={createControl.status === 'executing'}
+                disabled={createControl.status === "executing"}
                 onClick={form.handleSubmit(onSubmit)}
               >
                 <div className="flex items-center justify-center">
@@ -386,16 +422,16 @@ export function CreateControlSheet({
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerTitle hidden>Create New Control</DrawerTitle>
-      <DrawerContent className="flex flex-col h-full max-h-[80vh]">
+      <DrawerContent className="flex h-full max-h-[80vh] flex-col">
         <div className="flex-1 overflow-y-auto p-6 pb-0">
           <div className="w-full pb-6">{controlForm}</div>
         </div>
 
         {/* Fixed Footer with Submit Button */}
-        <div className="border-t bg-background p-4 flex justify-end flex-shrink-0">
+        <div className="bg-background flex flex-shrink-0 justify-end border-t p-4">
           <Button
             type="submit"
-            disabled={createControl.status === 'executing'}
+            disabled={createControl.status === "executing"}
             onClick={form.handleSubmit(onSubmit)}
           >
             <div className="flex items-center justify-center">

@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Plus } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,22 +16,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@trycompai/ui/dialog';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
+} from "@trycompai/ui/dialog";
+import { Input } from "@trycompai/ui/input";
+import { Label } from "@trycompai/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Loader2, Plus } from 'lucide-react';
-import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
+} from "@trycompai/ui/select";
+import { Textarea } from "@trycompai/ui/textarea";
 
 interface AddSecretDialogProps {
   onSecretAdded?: () => void;
@@ -34,10 +35,13 @@ interface AddSecretDialogProps {
 const secretSchema = z.object({
   name: z
     .string()
-    .min(1, 'Name is required')
-    .max(100, 'Name is too long')
-    .regex(/^[A-Z0-9_]+$/, 'Name must be uppercase letters, numbers, and underscores only'),
-  value: z.string().min(1, 'Value is required'),
+    .min(1, "Name is required")
+    .max(100, "Name is too long")
+    .regex(
+      /^[A-Z0-9_]+$/,
+      "Name must be uppercase letters, numbers, and underscores only",
+    ),
+  value: z.string().min(1, "Value is required"),
   description: z.string().optional(),
   category: z.string().optional(),
 });
@@ -56,19 +60,19 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
     formState: { errors, isSubmitting },
   } = useForm<SecretFormValues>({
     resolver: zodResolver(secretSchema),
-    defaultValues: { name: '', value: '', description: '', category: '' },
-    mode: 'onChange',
+    defaultValues: { name: "", value: "", description: "", category: "" },
+    mode: "onChange",
   });
 
   const onSubmit = handleSubmit(async (values) => {
     // Get organizationId from the URL path
-    const pathSegments = window.location.pathname.split('/');
+    const pathSegments = window.location.pathname.split("/");
     const orgId = pathSegments[1];
 
     try {
-      const response = await fetch('/api/secrets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/secrets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: values.name,
           value: values.value,
@@ -84,33 +88,40 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
         if (Array.isArray(error.details)) {
           let handled = false;
           for (const issue of error.details) {
-            const field = issue?.path?.[0] as keyof SecretFormValues | undefined;
+            const field = issue?.path?.[0] as
+              | keyof SecretFormValues
+              | undefined;
             if (field) {
-              setError(field, { type: 'server', message: issue.message });
+              setError(field, { type: "server", message: issue.message });
               handled = true;
             }
           }
           if (handled) return; // Inline errors shown; skip toast
         }
-        throw new Error(error.error || 'Failed to create secret');
+        throw new Error(error.error || "Failed to create secret");
       }
 
-      toast.success('Secret created successfully');
+      toast.success("Secret created successfully");
       setOpen(false);
       reset();
 
       if (onSecretAdded) onSecretAdded();
       else window.location.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create secret');
-      console.error('Error creating secret:', err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create secret",
+      );
+      console.error("Error creating secret:", err);
     }
   });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button
+          size="sm"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Secret
         </Button>
@@ -120,7 +131,8 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
           <DialogHeader>
             <DialogTitle>Add New Secret</DialogTitle>
             <DialogDescription>
-              Create a new secret that can be accessed by AI automations in your organization.
+              Create a new secret that can be accessed by AI automations in your
+              organization.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -129,12 +141,14 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
               <Input
                 id="name"
                 placeholder="e.g., GITHUB_TOKEN, OPENAI_API_KEY"
-                {...register('name')}
+                {...register("name")}
               />
               {errors.name?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.name.message}
+                </p>
               ) : null}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Use uppercase with underscores for naming convention
               </p>
             </div>
@@ -144,10 +158,12 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
                 id="value"
                 type="password"
                 placeholder="Enter the secret value"
-                {...register('value')}
+                {...register("value")}
               />
               {errors.value?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.value.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.value.message}
+                </p>
               ) : null}
             </div>
             <div className="grid gap-2">
@@ -163,7 +179,9 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
                     <SelectContent>
                       <SelectItem value="api_keys">API Keys</SelectItem>
                       <SelectItem value="database">Database</SelectItem>
-                      <SelectItem value="authentication">Authentication</SelectItem>
+                      <SelectItem value="authentication">
+                        Authentication
+                      </SelectItem>
                       <SelectItem value="integration">Integration</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
@@ -171,7 +189,9 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
                 )}
               />
               {errors.category?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.category.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.category.message}
+                </p>
               ) : null}
             </div>
             <div className="grid gap-2">
@@ -180,15 +200,21 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
                 id="description"
                 placeholder="Describe what this secret is used for"
                 rows={3}
-                {...register('description')}
+                {...register("description")}
               />
               {errors.description?.message ? (
-                <p className="text-xs text-destructive mt-1">{errors.description.message}</p>
+                <p className="text-destructive mt-1 text-xs">
+                  {errors.description.message}
+                </p>
               ) : null}
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -198,7 +224,7 @@ export function AddSecretDialog({ onSecretAdded }: AddSecretDialogProps) {
                   Creating...
                 </>
               ) : (
-                'Create Secret'
+                "Create Secret"
               )}
             </Button>
           </DialogFooter>

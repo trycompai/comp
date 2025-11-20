@@ -1,25 +1,34 @@
-'use client';
+"use client";
 
-import { SelectAssignee } from '@/components/SelectAssignee';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Member, Task, User } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import type { z } from "zod";
+import { SelectAssignee } from "@/components/SelectAssignee";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRightIcon, Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import type { Member, Task, User } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { ArrowRightIcon, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
-import { updateVendorTaskSchema } from '../../../../actions/schema';
-import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
+} from "@trycompai/ui/select";
+
+import { updateVendorTaskSchema } from "../../../../actions/schema";
+import { updateVendorTaskAction } from "../../../../actions/task/update-task-action";
 
 export default function SecondaryFields({
   task,
@@ -33,7 +42,9 @@ export default function SecondaryFields({
       <Card>
         <CardHeader>
           <CardTitle>
-            <div className="flex items-center justify-between gap-2">Task Details</div>
+            <div className="flex items-center justify-between gap-2">
+              Task Details
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -55,10 +66,10 @@ function TaskSecondaryFieldsForm({
 }) {
   const updateTask = useAction(updateVendorTaskAction, {
     onSuccess: () => {
-      toast.success('Task updated successfully');
+      toast.success("Task updated successfully");
     },
     onError: () => {
-      toast.error('Failed to update task');
+      toast.error("Failed to update task");
     },
   });
 
@@ -81,16 +92,16 @@ function TaskSecondaryFieldsForm({
   const renderStatus = (status: string) => {
     const getStatusColor = (status: string) => {
       switch (status) {
-        case 'open':
-          return '#ffc107'; // yellow/amber
-        case 'in_progress':
-          return '#0ea5e9'; // blue
-        case 'completed':
-          return '#00DC73'; // green
-        case 'cancelled':
-          return '#64748b'; // gray
+        case "open":
+          return "#ffc107"; // yellow/amber
+        case "in_progress":
+          return "#0ea5e9"; // blue
+        case "completed":
+          return "#00DC73"; // green
+        case "cancelled":
+          return "#64748b"; // gray
         default:
-          return '#64748b';
+          return "#64748b";
       }
     };
 
@@ -100,7 +111,7 @@ function TaskSecondaryFieldsForm({
           className="size-2.5 rounded-full"
           style={{ backgroundColor: getStatusColor(status) }}
         />
-        <span>{status.replace('_', ' ')}</span>
+        <span>{status.replace("_", " ")}</span>
       </div>
     );
   };
@@ -120,7 +131,7 @@ function TaskSecondaryFieldsForm({
                     assigneeId={field.value}
                     assignees={assignees}
                     onAssigneeChange={field.onChange}
-                    disabled={updateTask.status === 'executing'}
+                    disabled={updateTask.status === "executing"}
                     withTitle={false}
                   />
                 </FormControl>
@@ -149,10 +160,18 @@ function TaskSecondaryFieldsForm({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="open">{renderStatus('open')}</SelectItem>
-                      <SelectItem value="in_progress">{renderStatus('in_progress')}</SelectItem>
-                      <SelectItem value="completed">{renderStatus('completed')}</SelectItem>
-                      <SelectItem value="cancelled">{renderStatus('cancelled')}</SelectItem>
+                      <SelectItem value="open">
+                        {renderStatus("open")}
+                      </SelectItem>
+                      <SelectItem value="in_progress">
+                        {renderStatus("in_progress")}
+                      </SelectItem>
+                      <SelectItem value="completed">
+                        {renderStatus("completed")}
+                      </SelectItem>
+                      <SelectItem value="cancelled">
+                        {renderStatus("cancelled")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -162,8 +181,12 @@ function TaskSecondaryFieldsForm({
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
-            {updateTask.status === 'executing' ? (
+          <Button
+            type="submit"
+            variant="default"
+            disabled={updateTask.status === "executing"}
+          >
+            {updateTask.status === "executing" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <div className="flex items-center">

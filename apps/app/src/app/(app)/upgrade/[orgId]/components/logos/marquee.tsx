@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils';
-import type { ComponentPropsWithoutRef } from 'react';
+import type { ComponentPropsWithoutRef } from "react";
+import { cn } from "@/lib/utils";
 
-interface MarqueeProps extends ComponentPropsWithoutRef<'div'> {
+interface MarqueeProps extends ComponentPropsWithoutRef<"div"> {
   /**
    * Optional CSS class name to apply custom styles
    */
@@ -45,10 +45,10 @@ export function Marquee({
     <div
       {...props}
       className={cn(
-        'group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem] [gap:var(--gap)]',
+        "group flex [gap:var(--gap)] overflow-hidden p-2 [--duration:40s] [--gap:1rem]",
         {
-          'flex-row': !vertical,
-          'flex-col': vertical,
+          "flex-row": !vertical,
+          "flex-col": vertical,
         },
         className,
       )}
@@ -58,11 +58,11 @@ export function Marquee({
         .map((_, i) => (
           <div
             key={`${i}-${Math.random()}`}
-            className={cn('flex shrink-0 justify-around [gap:var(--gap)]', {
-              'animate-marquee flex-row': !vertical,
-              'animate-marquee-vertical flex-col': vertical,
-              'group-hover:[animation-play-state:paused]': pauseOnHover,
-              '[animation-direction:reverse]': reverse,
+            className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
+              "animate-marquee flex-row": !vertical,
+              "animate-marquee-vertical flex-col": vertical,
+              "group-hover:[animation-play-state:paused]": pauseOnHover,
+              "[animation-direction:reverse]": reverse,
             })}
           >
             {children}

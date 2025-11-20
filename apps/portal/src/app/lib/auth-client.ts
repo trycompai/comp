@@ -1,25 +1,18 @@
 import {
   emailOTPClient,
-  inferAdditionalFields,
-  inferOrgAdditionalFields,
   multiSessionClient,
   organizationClient,
-} from 'better-auth/client/plugins';
-import { createAuthClient } from 'better-auth/react';
-import { auth } from './auth';
+} from "better-auth/client/plugins";
+import { createAuthClient } from "better-auth/react";
 
-console.log('process.env.NEXT_PUBLIC_BETTER_AUTH_URL', process.env.NEXT_PUBLIC_BETTER_AUTH_URL);
+console.log(
+  "process.env.NEXT_PUBLIC_BETTER_AUTH_URL",
+  process.env.NEXT_PUBLIC_BETTER_AUTH_URL
+);
 
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-  plugins: [
-    organizationClient({
-      schema: inferOrgAdditionalFields<typeof auth>(),
-    }),
-    inferAdditionalFields<typeof auth>(),
-    emailOTPClient(),
-    multiSessionClient(),
-  ],
+  plugins: [organizationClient({}), emailOTPClient(), multiSessionClient()],
 });
 
 export const {

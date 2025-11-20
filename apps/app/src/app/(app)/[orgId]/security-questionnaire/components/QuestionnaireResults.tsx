@@ -1,11 +1,13 @@
-'use client';
+"use client";
 
-import { ScrollArea } from '@trycompai/ui/scroll-area';
-import { Search } from 'lucide-react';
-import { QuestionnaireResultsCards } from './QuestionnaireResultsCards';
-import { QuestionnaireResultsHeader } from './QuestionnaireResultsHeader';
-import { QuestionnaireResultsTable } from './QuestionnaireResultsTable';
-import type { QuestionAnswer } from './types';
+import { Search } from "lucide-react";
+
+import { ScrollArea } from "@trycompai/ui/scroll-area";
+
+import type { QuestionAnswer } from "./types";
+import { QuestionnaireResultsCards } from "./QuestionnaireResultsCards";
+import { QuestionnaireResultsHeader } from "./QuestionnaireResultsHeader";
+import { QuestionnaireResultsTable } from "./QuestionnaireResultsTable";
 
 interface QuestionnaireResultsProps {
   orgId: string;
@@ -17,7 +19,7 @@ interface QuestionnaireResultsProps {
   editingAnswer: string;
   onEditingAnswerChange: (answer: string) => void;
   expandedSources: Set<number>;
-  questionStatuses: Map<number, 'pending' | 'processing' | 'completed'>;
+  questionStatuses: Map<number, "pending" | "processing" | "completed">;
   answeringQuestionIndex: number | null;
   hasClickedAutoAnswer: boolean;
   isLoading: boolean;
@@ -31,7 +33,7 @@ interface QuestionnaireResultsProps {
   onEditAnswer: (index: number) => void;
   onSaveAnswer: (index: number) => void;
   onCancelEdit: () => void;
-  onExport: (format: 'xlsx' | 'csv' | 'pdf') => void;
+  onExport: (format: "xlsx" | "csv" | "pdf") => void;
   onToggleSource: (index: number) => void;
   totalCount: number;
   answeredCount: number;
@@ -69,7 +71,7 @@ export function QuestionnaireResults({
   progressPercentage,
 }: QuestionnaireResultsProps) {
   return (
-    <div className="flex flex-col gap-4 min-w-0">
+    <div className="flex min-w-0 flex-col gap-4">
       <QuestionnaireResultsHeader
         showExitDialog={showExitDialog}
         onShowExitDialogChange={onShowExitDialogChange}
@@ -89,10 +91,10 @@ export function QuestionnaireResults({
         onExport={onExport}
       />
 
-      <div className="flex flex-col flex-1 min-h-0 min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {results && results.length > 0 ? (
           <>
-            <ScrollArea className="flex-1 min-w-0">
+            <ScrollArea className="min-w-0 flex-1">
               <div className="min-w-0">
                 {filteredResults && filteredResults.length > 0 ? (
                   <>
@@ -137,8 +139,8 @@ export function QuestionnaireResults({
                     />
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                    <Search className="h-8 w-8 mb-3 opacity-40" />
+                  <div className="text-muted-foreground flex flex-col items-center justify-center py-16">
+                    <Search className="mb-3 h-8 w-8 opacity-40" />
                     <p className="text-sm font-medium">No matches found</p>
                     <p className="text-xs">Try a different search term</p>
                   </div>

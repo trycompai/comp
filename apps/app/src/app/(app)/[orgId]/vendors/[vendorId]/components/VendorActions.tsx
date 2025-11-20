@@ -1,7 +1,12 @@
-'use client';
+"use client";
 
-import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
-import { Button } from '@trycompai/ui/button';
+import { useState } from "react";
+import { regenerateVendorMitigationAction } from "@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation";
+import { Cog } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,28 +14,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
+} from "@trycompai/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Cog } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
-import { toast } from 'sonner';
+} from "@trycompai/ui/dropdown-menu";
 
 export function VendorActions({ vendorId }: { vendorId: string }) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const regenerate = useAction(regenerateVendorMitigationAction, {
-    onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
-    onError: () => toast.error('Failed to trigger mitigation regeneration'),
+    onSuccess: () =>
+      toast.success("Regeneration triggered. This may take a moment."),
+    onError: () => toast.error("Failed to trigger mitigation regeneration"),
   });
 
   const handleConfirm = () => {
     setIsConfirmOpen(false);
-    toast.info('Regenerating vendor risk mitigation...');
+    toast.info("Regenerating vendor risk mitigation...");
     regenerate.execute({ vendorId });
   };
 
@@ -49,25 +51,31 @@ export function VendorActions({ vendorId }: { vendorId: string }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isConfirmOpen} onOpenChange={(open) => !open && setIsConfirmOpen(false)}>
+      <Dialog
+        open={isConfirmOpen}
+        onOpenChange={(open) => !open && setIsConfirmOpen(false)}
+      >
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle>Regenerate Mitigation</DialogTitle>
             <DialogDescription>
-              This will generate a fresh risk mitigation comment for this vendor and mark it
-              assessed. Continue?
+              This will generate a fresh risk mitigation comment for this vendor
+              and mark it assessed. Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => setIsConfirmOpen(false)}
-              disabled={regenerate.status === 'executing'}
+              disabled={regenerate.status === "executing"}
             >
               Cancel
             </Button>
-            <Button onClick={handleConfirm} disabled={regenerate.status === 'executing'}>
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+            <Button
+              onClick={handleConfirm}
+              disabled={regenerate.status === "executing"}
+            >
+              {regenerate.status === "executing" ? "Working…" : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>

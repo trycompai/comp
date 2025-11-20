@@ -1,6 +1,11 @@
-import { useAccessRequest, useApproveAccessRequest } from '@/hooks/use-access-requests';
-import { useForm } from '@tanstack/react-form';
-import { Button } from '@trycompai/ui/button';
+import {
+  useAccessRequest,
+  useApproveAccessRequest,
+} from "@/hooks/use-access-requests";
+import { useForm } from "@tanstack/react-form";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,10 +13,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@trycompai/ui/field';
-import { toast } from 'sonner';
-import { DurationPicker } from './duration-picker';
+} from "@trycompai/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@trycompai/ui/field";
+
+import { DurationPicker } from "./duration-picker";
 
 export function ApproveDialog({
   orgId,
@@ -36,12 +41,12 @@ export function ApproveDialog({
           durationDays: value.durationDays,
         }),
         {
-          loading: 'Approving...',
+          loading: "Approving...",
           success: () => {
             onClose();
-            return 'Request approved. NDA email sent.';
+            return "Request approved. NDA email sent.";
           },
-          error: 'Failed to approve request',
+          error: "Failed to approve request",
         },
       );
     },
@@ -68,24 +73,34 @@ export function ApproveDialog({
           <div className="grid grid-cols-2 gap-6">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <div className="text-sm font-medium text-muted-foreground">Name</div>
+                <div className="text-muted-foreground text-sm font-medium">
+                  Name
+                </div>
                 <div>{data.name}</div>
               </div>
               <div className="flex flex-col gap-1">
-                <div className="text-sm font-medium text-muted-foreground">Email</div>
+                <div className="text-muted-foreground text-sm font-medium">
+                  Email
+                </div>
                 <div>{data.email}</div>
               </div>
               <div className="flex flex-col gap-1">
-                <div className="text-sm font-medium text-muted-foreground">Company</div>
-                <div>{data.company || '-'}</div>
+                <div className="text-muted-foreground text-sm font-medium">
+                  Company
+                </div>
+                <div>{data.company || "-"}</div>
               </div>
               <div className="flex flex-col gap-1">
-                <div className="text-sm font-medium text-muted-foreground">Job Title</div>
-                <div>{data.jobTitle || '-'}</div>
+                <div className="text-muted-foreground text-sm font-medium">
+                  Job Title
+                </div>
+                <div>{data.jobTitle || "-"}</div>
               </div>
               <div className="flex flex-col gap-1">
-                <div className="text-sm font-medium text-muted-foreground">Purpose</div>
-                <div>{data.purpose || '-'}</div>
+                <div className="text-muted-foreground text-sm font-medium">
+                  Purpose
+                </div>
+                <div>{data.purpose || "-"}</div>
               </div>
             </div>
             <div className="flex flex-col gap-4">
@@ -93,14 +108,15 @@ export function ApproveDialog({
                 name="durationDays"
                 validators={{
                   onChange: ({ value }) => {
-                    if (value < 7) return 'Minimum 7 days';
-                    if (value > 365) return 'Maximum 365 days';
+                    if (value < 7) return "Minimum 7 days";
+                    if (value > 365) return "Maximum 365 days";
                     return undefined;
                   },
                 }}
               >
                 {(field) => {
-                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor="duration">Duration</FieldLabel>
@@ -109,7 +125,9 @@ export function ApproveDialog({
                         onChange={field.handleChange}
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </Field>
                   );
                 }}
@@ -120,10 +138,12 @@ export function ApproveDialog({
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>
-            <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+            <form.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+            >
               {([canSubmit, isSubmitting]) => (
                 <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? 'Approving...' : 'Approve & Send NDA'}
+                  {isSubmitting ? "Approving..." : "Approve & Send NDA"}
                 </Button>
               )}
             </form.Subscribe>

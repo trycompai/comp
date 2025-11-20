@@ -1,14 +1,19 @@
-import { logger } from '@/utils/logger';
-import { getFleetAgent } from '@/utils/s3';
-import archiver from 'archiver';
-import { exec } from 'node:child_process';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
-import type { Readable } from 'node:stream';
-import { PassThrough } from 'node:stream';
-import { promisify } from 'node:util';
-import { getPackageFilename, getReadmeContent, getScriptFilename } from './scripts';
-import type { CreateArchiveParams } from './types';
+import { exec } from "node:child_process";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { PassThrough } from "node:stream";
+import { promisify } from "node:util";
+import type { Readable } from "node:stream";
+import { logger } from "@/utils/logger";
+import { getFleetAgent } from "@/utils/s3";
+import archiver from "archiver";
+
+import type { CreateArchiveParams } from "./types";
+import {
+  getPackageFilename,
+  getReadmeContent,
+  getScriptFilename,
+} from "./scripts";
 
 const execAsync = promisify(exec);
 
@@ -18,7 +23,7 @@ export async function createAgentArchive({
   tempDir,
 }: CreateArchiveParams): Promise<PassThrough> {
   const stream = new PassThrough();
-  const archive = archiver('zip', { zlib: { level: 9 } });
+  const archive = archiver("zip", { zlib: { level: 9 } });
   archive.pipe(stream);
 
   try {
@@ -28,7 +33,7 @@ export async function createAgentArchive({
     await fs.writeFile(scriptPath, script, { mode: 0o755 });
 
     // Codesign only for macOS
-    if (os === 'macos') {
+    if (os === "macos") {
       await codesignMacScript(scriptPath);
     }
 
@@ -47,28 +52,31 @@ export async function createAgentArchive({
 
     // Add README with installation instructions
     const readmeContent = getReadmeContent(os);
-    archive.append(Buffer.from(readmeContent), { name: 'README.txt' });
+    archive.append(Buffer.from(readmeContent), { name: "README.txt" });
 
     archive.finalize().catch((err) => {
-      logger('Error finalizing archive', { error: err });
+      logger("Error finalizing archive", { error: err });
       stream.destroy();
     });
 
     return stream;
   } catch (error) {
-    logger('Error creating archive', { error });
+    logger("Error creating archive", { error });
     stream.destroy();
     throw error;
   }
 }
 
 async function codesignMacScript(scriptPath: string): Promise<void> {
-  const codesignIdentity = process.env.CODESIGN_IDENTITY || 'Developer ID Application';
+  const codesignIdentity =
+    process.env.CODESIGN_IDENTITY || "Developer ID Application";
   try {
-    await execAsync(`codesign --sign "${codesignIdentity}" --timestamp "${scriptPath}"`);
-    logger('Successfully codesigned command file', { scriptPath });
+    await execAsync(
+      `codesign --sign "${codesignIdentity}" --timestamp "${scriptPath}"`,
+    );
+    logger("Successfully codesigned command file", { scriptPath });
   } catch (error) {
-    logger('Failed to codesign command file', { error, scriptPath });
+    logger("Failed to codesign command file", { error, scriptPath });
     // Continue without codesigning if it fails (e.g., in development)
   }
 }

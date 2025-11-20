@@ -1,7 +1,8 @@
-import { api } from '@/lib/api-client';
-import { EvidenceAutomation, EvidenceAutomationRun } from '@trycompai/db';
-import { useParams } from 'next/navigation';
-import useSWR from 'swr';
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import useSWR from "swr";
+
+import { EvidenceAutomation, EvidenceAutomationRun } from "@trycompai/db";
 
 type AutomationWithRuns = EvidenceAutomation & {
   runs: EvidenceAutomationRun[];
@@ -40,7 +41,7 @@ export function useTaskAutomations({
       }
 
       if (!response.data?.success) {
-        throw new Error('Failed to fetch automations');
+        throw new Error("Failed to fetch automations");
       }
 
       return response.data.automations;

@@ -1,17 +1,21 @@
-import { MinimalHeader } from '@/components/layout/MinimalHeader';
-import { getOrganizations } from '@/data/getOrganizations';
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { MinimalHeader } from "@/components/layout/MinimalHeader";
+import { getOrganizations } from "@/data/getOrganizations";
+import { auth } from "@/utils/auth";
 
-export default async function UpgradeLayout({ children }: { children: React.ReactNode }) {
+export default async function UpgradeLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   // Check auth
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   if (!session?.user?.id) {
-    redirect('/sign-in');
+    redirect("/sign-in");
   }
 
   // Get organizations for switcher

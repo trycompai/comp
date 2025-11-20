@@ -1,11 +1,13 @@
-'use client';
+"use client";
 
-import type { Member, Policy } from '@db';
-import { Button } from '@trycompai/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import { PolicyCarousel } from './PolicyCarousel';
-import { PolicyGrid } from './PolicyGrid';
+import type { Member, Policy } from "@trycompai/db";
+import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "@trycompai/ui/button";
+
+import { PolicyCarousel } from "./PolicyCarousel";
+import { PolicyGrid } from "./PolicyGrid";
 
 interface PolicyContainerProps {
   policies: Policy[];
@@ -13,7 +15,9 @@ interface PolicyContainerProps {
 }
 
 export function PolicyContainer({ policies, member }: PolicyContainerProps) {
-  const [selectedPolicyIndex, setSelectedPolicyIndex] = useState<number | null>(null);
+  const [selectedPolicyIndex, setSelectedPolicyIndex] = useState<number | null>(
+    null
+  );
 
   const handlePolicyClick = (index: number) => {
     setSelectedPolicyIndex(index);
@@ -31,7 +35,12 @@ export function PolicyContainer({ policies, member }: PolicyContainerProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleBackToGrid}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleBackToGrid}
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Policies
           </Button>
@@ -49,5 +58,11 @@ export function PolicyContainer({ policies, member }: PolicyContainerProps) {
     );
   }
 
-  return <PolicyGrid policies={policies} onPolicyClick={handlePolicyClick} member={member} />;
+  return (
+    <PolicyGrid
+      policies={policies}
+      onPolicyClick={handlePolicyClick}
+      member={member}
+    />
+  );
 }

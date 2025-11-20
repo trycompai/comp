@@ -1,6 +1,6 @@
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
+import { db } from "@trycompai/db";
 
 export async function acceptPolicy(policyId: string, memberId: string) {
   try {
@@ -10,7 +10,7 @@ export async function acceptPolicy(policyId: string, memberId: string) {
     });
 
     if (!policy) {
-      throw new Error('Policy not found');
+      throw new Error("Policy not found");
     }
 
     if (!policy.signedBy.includes(memberId)) {
@@ -26,8 +26,8 @@ export async function acceptPolicy(policyId: string, memberId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Error accepting policy:', error);
-    return { success: false, error: 'Failed to accept policy' };
+    console.error("Error accepting policy:", error);
+    return { success: false, error: "Failed to accept policy" };
   }
 }
 
@@ -56,7 +56,7 @@ export async function acceptAllPolicies(policyIds: string[], memberId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Error accepting all policies:', error);
-    return { success: false, error: 'Failed to accept all policies' };
+    console.error("Error accepting all policies:", error);
+    return { success: false, error: "Failed to accept all policies" };
   }
 }

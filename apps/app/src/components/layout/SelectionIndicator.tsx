@@ -1,27 +1,28 @@
-'use client';
+"use client";
 
-import { cn } from '@trycompai/ui/cn';
-import { Check } from 'lucide-react';
+import { Check } from "lucide-react";
+
+import { cn } from "@trycompai/ui/cn";
 
 interface SelectionIndicatorProps {
   isSelected: boolean;
   className?: string;
-  variant?: 'radio' | 'checkbox';
+  variant?: "radio" | "checkbox";
 }
 
 export function SelectionIndicator({
   isSelected,
   className,
-  variant = 'radio',
+  variant = "radio",
 }: SelectionIndicatorProps) {
   return (
     <div
       className={cn(
-        'h-6 w-6 border-2 flex items-center justify-center transition-all',
-        variant === 'radio' ? 'rounded-full' : 'rounded-md',
+        "flex h-6 w-6 items-center justify-center border-2 transition-all",
+        variant === "radio" ? "rounded-full" : "rounded-md",
         isSelected
-          ? 'bg-transparent border-green-500'
-          : 'bg-transparent border-muted-foreground/50',
+          ? "border-green-500 bg-transparent"
+          : "border-muted-foreground/50 bg-transparent",
         className,
       )}
     >

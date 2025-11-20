@@ -1,7 +1,11 @@
-import { LoginForm } from '@/app/components/login-form';
-import { OtpSignIn } from '@/app/components/otp';
-import { env } from '@/env.mjs';
-import { Button } from '@trycompai/ui/button';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { LoginForm } from "@/app/components/login-form";
+import { OtpSignIn } from "@/app/components/otp";
+import { env } from "@/env.mjs";
+import { ArrowRight } from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Card,
   CardContent,
@@ -9,14 +13,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
-import { Icons } from '@trycompai/ui/icons';
-import { ArrowRight } from 'lucide-react';
-import type { Metadata } from 'next';
-import Link from 'next/link';
+} from "@trycompai/ui/card";
+import { Icons } from "@trycompai/ui/icons";
 
 export const metadata: Metadata = {
-  title: 'Login | Comp AI',
+  title: "Login | Comp AI",
 };
 
 export default async function Page() {
@@ -29,15 +30,15 @@ export default async function Page() {
   const showGoogle = !!(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
 
   return (
-    <div className="flex min-h-dvh flex-col text-foreground">
+    <div className="text-foreground flex min-h-dvh flex-col">
       <main className="flex flex-1 items-center justify-center p-6">
         <Card className="w-full max-w-lg">
-          <CardHeader className="text-center space-y-3 pt-10">
-            <Icons.Logo className="h-10 w-10 mx-auto" />
-            <CardTitle className="text-2xl tracking-tight text-card-foreground">
+          <CardHeader className="space-y-3 pt-10 text-center">
+            <Icons.Logo className="mx-auto h-10 w-10" />
+            <CardTitle className="text-card-foreground text-2xl tracking-tight">
               Employee Portal
             </CardTitle>
-            <CardDescription className="text-base text-muted-foreground px-4">
+            <CardDescription className="text-muted-foreground px-4 text-base">
               Enter your email address to receive a one time password.
             </CardDescription>
           </CardHeader>
@@ -51,8 +52,9 @@ export default async function Page() {
                 Comp AI - AI that handles compliance for you in hours.
               </h3>
               <p className="text-muted-foreground mt-1 text-xs">
-                Comp AI makes SOC 2, ISO 27001, HIPAA and GDPR effortless. Eliminate compliance
-                busywork, win more deals and accelerate growth.
+                Comp AI makes SOC 2, ISO 27001, HIPAA and GDPR effortless.
+                Eliminate compliance busywork, win more deals and accelerate
+                growth.
               </p>
               <Button variant="link" className="mt-2 p-0" asChild>
                 <Link

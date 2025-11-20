@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState } from "react";
+import { authClient } from "@/app/lib/auth-client";
+import { Loader2 } from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
+import { Icons } from "@trycompai/ui/icons";
 
 export function GoogleSignIn({
   inviteCode,
@@ -20,7 +21,7 @@ export function GoogleSignIn({
 
     // Build the callback URL with search params
     const baseURL = window.location.origin;
-    const path = inviteCode ? `/invite/${inviteCode}` : '/';
+    const path = inviteCode ? `/invite/${inviteCode}` : "/";
     const redirectTo = new URL(path, baseURL);
 
     // Append all search params if they exist
@@ -30,10 +31,10 @@ export function GoogleSignIn({
       });
     }
 
-    console.log('******* redirectTo', redirectTo.toString());
+    console.log("******* redirectTo", redirectTo.toString());
 
     await authClient.signIn.social({
-      provider: 'google',
+      provider: "google",
       callbackURL: redirectTo.toString(),
     });
   };
@@ -41,7 +42,7 @@ export function GoogleSignIn({
   return (
     <Button
       onClick={handleSignIn}
-      className="w-full h-11 font-medium"
+      className="h-11 w-full font-medium"
       variant="outline"
       disabled={isLoading}
     >

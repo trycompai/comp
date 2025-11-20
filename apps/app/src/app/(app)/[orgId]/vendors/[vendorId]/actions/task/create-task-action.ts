@@ -1,19 +1,21 @@
 // create-task-action.ts
 
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db } from '@trycompai/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { createVendorTaskSchema } from '../schema';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+
+import { db } from "@trycompai/db";
+
+import { createVendorTaskSchema } from "../schema";
 
 export const createVendorTaskAction = authActionClient
   .inputSchema(createVendorTaskSchema)
   .metadata({
-    name: 'create-vendor-task',
+    name: "create-vendor-task",
     track: {
-      event: 'create-vendor-task',
-      channel: 'server',
+      event: "create-vendor-task",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -24,7 +26,7 @@ export const createVendorTaskAction = authActionClient
     } = ctx;
 
     if (!user.id || !activeOrganizationId) {
-      throw new Error('Invalid user input');
+      throw new Error("Invalid user input");
     }
 
     try {

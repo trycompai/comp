@@ -1,15 +1,19 @@
-'use client';
+"use client";
 
-import { DubEmbed } from '@dub/embed-react';
-import { useTheme } from 'next-themes';
+import { DubEmbed } from "@dub/embed-react";
+import { useTheme } from "next-themes";
 
-export const DubReferral = ({ publicToken }: { publicToken: string | null }) => {
+export const DubReferral = ({
+  publicToken,
+}: {
+  publicToken: string | null;
+}) => {
   const theme = useTheme();
 
   if (!publicToken) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           No token available. Please try refreshing the page.
         </p>
       </div>
@@ -21,9 +25,9 @@ export const DubReferral = ({ publicToken }: { publicToken: string | null }) => 
       data="referrals"
       token={publicToken}
       options={{
-        theme: (theme.theme ?? 'system') as 'light' | 'dark' | 'system',
+        theme: (theme.theme ?? "system") as "light" | "dark" | "system",
         containerStyles: {
-          colorScheme: 'auto',
+          colorScheme: "auto",
         },
       }}
     />

@@ -1,33 +1,56 @@
-'use client';
+"use client";
 
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@trycompai/db';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { format } from 'date-fns';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
-import { useTask } from '../hooks/use-task';
-import { PropertySelector } from './PropertySelector';
-import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useOrganizationMembers } from "@/hooks/use-organization-members";
+import { format } from "date-fns";
+
+import type {
+  Departments,
+  Member,
+  Task,
+  TaskFrequency,
+  TaskStatus,
+  User,
+} from "@trycompai/db";
+import { Avatar, AvatarFallback, AvatarImage } from "@trycompai/ui/avatar";
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+
+import { TaskStatusIndicator } from "../../components/TaskStatusIndicator";
+import { useTask } from "../hooks/use-task";
+import {
+  DEPARTMENT_COLORS,
+  taskDepartments,
+  taskFrequencies,
+  taskStatuses,
+} from "./constants";
+import { PropertySelector } from "./PropertySelector";
 
 interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
-    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
+    data: Partial<
+      Pick<
+        Task,
+        "status" | "assigneeId" | "frequency" | "department" | "reviewDate"
+      >
+    >,
   ) => void;
 }
 
-export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSidebarProps) {
+export function TaskPropertiesSidebar({
+  handleUpdateTask,
+}: TaskPropertiesSidebarProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
   const { members } = useOrganizationMembers();
 
-  console.log('members', members);
+  console.log("members", members);
 
   const assignedMember =
-    !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);
+    !task?.assigneeId || !members
+      ? null
+      : members.find((m) => m.id === task.assigneeId);
 
   if (isLoading) return <div>Loading...</div>;
   if (!task) return null;
@@ -47,13 +70,14 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             renderOption={(status) => (
               <div className="flex items-center gap-2">
                 <TaskStatusIndicator status={status} />
-                <span className="capitalize">{status.replace('_', ' ')}</span>
+                <span className="capitalize">{status.replace("_", " ")}</span>
               </div>
             )}
             onSelect={(selectedStatus) => {
               handleUpdateTask({
                 status: selectedStatus as TaskStatus,
-                reviewDate: selectedStatus === 'done' ? new Date() : task.reviewDate,
+                reviewDate:
+                  selectedStatus === "done" ? new Date() : task.reviewDate,
               });
             }}
             trigger={
@@ -62,7 +86,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                 className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center gap-2 px-2 py-0.5 font-medium capitalize"
               >
                 <TaskStatusIndicator status={task.status} />
-                {task.status.replace('_', ' ')}
+                {task.status.replace("_", " ")}
               </Button>
             }
             searchPlaceholder="Change status..."
@@ -82,16 +106,22 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
               <div className="flex items-center gap-2">
                 <Avatar className="h-5 w-5">
                   {member.user?.image && (
-                    <AvatarImage src={member.user.image} alt={member.user.name ?? ''} />
+                    <AvatarImage
+                      src={member.user.image}
+                      alt={member.user.name ?? ""}
+                    />
                   )}
-                  <AvatarFallback>{member.user?.name?.charAt(0) ?? '?'}</AvatarFallback>
+                  <AvatarFallback>
+                    {member.user?.name?.charAt(0) ?? "?"}
+                  </AvatarFallback>
                 </Avatar>
                 <span>{member.user.name}</span>
               </div>
             )}
             onSelect={(selectedAssigneeId) => {
               handleUpdateTask({
-                assigneeId: selectedAssigneeId === null ? null : selectedAssigneeId,
+                assigneeId:
+                  selectedAssigneeId === null ? null : selectedAssigneeId,
               });
             }}
             trigger={
@@ -106,14 +136,16 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                       {assignedMember.user?.image && (
                         <AvatarImage
                           src={assignedMember.user.image}
-                          alt={assignedMember.user.name ?? ''}
+                          alt={assignedMember.user.name ?? ""}
                         />
                       )}
                       <AvatarFallback className="text-[10px]">
-                        {assignedMember.user?.name?.charAt(0) ?? '?'}
+                        {assignedMember.user?.name?.charAt(0) ?? "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">{assignedMember.user.name}</span>
+                    <span className="font-medium">
+                      {assignedMember.user.name}
+                    </span>
                   </>
                 ) : (
                   <span className="font-medium">Unassigned</span>
@@ -135,11 +167,16 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             value={task.frequency}
             options={taskFrequencies}
             getKey={(freq) => freq}
-            renderOption={(freq) => <span className="capitalize">{freq.replace('_', ' ')}</span>}
+            renderOption={(freq) => (
+              <span className="capitalize">{freq.replace("_", " ")}</span>
+            )}
             onSelect={(selectedFreq) => {
               // Pass null directly if 'None' (unassign) was selected
               handleUpdateTask({
-                frequency: selectedFreq === null ? null : (selectedFreq as TaskFrequency),
+                frequency:
+                  selectedFreq === null
+                    ? null
+                    : (selectedFreq as TaskFrequency),
               });
             }}
             trigger={
@@ -147,7 +184,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                 variant="ghost"
                 className="hover:bg-muted data-[state=open]:bg-muted h-auto w-auto px-2 py-0.5 font-medium capitalize"
               >
-                {task.frequency ? task.frequency.replace('_', ' ') : 'None'}
+                {task.frequency ? task.frequency.replace("_", " ") : "None"}
               </Button>
             }
             searchPlaceholder="Change frequency..."
@@ -162,16 +199,17 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Department</span>
           <PropertySelector<Departments>
-            value={task.department ?? 'none'}
+            value={task.department ?? "none"}
             options={taskDepartments}
             getKey={(dept) => dept}
             renderOption={(dept) => {
-              if (dept === 'none') {
+              if (dept === "none") {
                 // Render 'none' as plain text
                 return <span className="text-muted-foreground">None</span>;
               }
               // Render other departments as colored badges
-              const mainColor = DEPARTMENT_COLORS[dept] ?? DEPARTMENT_COLORS.none;
+              const mainColor =
+                DEPARTMENT_COLORS[dept] ?? DEPARTMENT_COLORS.none;
               const lightBgColor = `${mainColor}1A`; // Add opacity for lighter background
               return (
                 <Badge
@@ -198,13 +236,14 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                 className="flex h-auto w-auto items-center justify-end p-0 px-1 hover:bg-transparent data-[state=open]:bg-transparent"
               >
                 {(() => {
-                  const currentDept = task.department ?? 'none';
-                  if (currentDept === 'none') {
+                  const currentDept = task.department ?? "none";
+                  if (currentDept === "none") {
                     // Render 'None' as plain text for the trigger
                     return <span className="px-1 font-medium">None</span>;
                   }
                   // Render other departments as colored badges
-                  const mainColor = DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none; // Fallback
+                  const mainColor =
+                    DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none; // Fallback
                   const lightBgColor = `${mainColor}1A`; // Add opacity
                   return (
                     <Badge
@@ -236,7 +275,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                 <Link
                   key={control.id}
                   href={`/${orgId}/controls/${control.id}`}
-                  className="inline-flex items-center px-2 py-1 text-xs bg-muted rounded hover:bg-muted/80 transition-colors max-w-[200px] truncate"
+                  className="bg-muted hover:bg-muted/80 inline-flex max-w-[200px] items-center truncate rounded px-2 py-1 text-xs transition-colors"
                   title={control.name}
                 >
                   {control.name}
@@ -251,10 +290,10 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
           <div className="flex items-center gap-2">
             {task.reviewDate ? (
               <span className="text-sm font-medium">
-                {format(new Date(task.reviewDate), 'M/d/yyyy')}
+                {format(new Date(task.reviewDate), "M/d/yyyy")}
               </span>
             ) : (
-              <span className="text-sm px-2 font-medium">None</span>
+              <span className="px-2 text-sm font-medium">None</span>
             )}
           </div>
         </div>

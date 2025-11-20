@@ -1,10 +1,16 @@
-import 'server-only';
+import "server-only";
 
-import { vectorIndex } from './client';
-import { generateEmbedding } from './generate-embedding';
-import { logger } from '@/utils/logger';
+import { logger } from "@/utils/logger";
 
-export type SourceType = 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire';
+import { vectorIndex } from "./client";
+import { generateEmbedding } from "./generate-embedding";
+
+export type SourceType =
+  | "policy"
+  | "context"
+  | "document_hub"
+  | "attachment"
+  | "questionnaire";
 
 export interface EmbeddingMetadata {
   organizationId: string;
@@ -31,11 +37,14 @@ export async function upsertEmbedding(
   metadata: EmbeddingMetadata,
 ): Promise<void> {
   if (!vectorIndex) {
-    throw new Error('Upstash Vector is not configured');
+    throw new Error("Upstash Vector is not configured");
   }
 
   if (!text || text.trim().length === 0) {
-    logger.warn('Skipping empty text for embedding', { id, sourceType: metadata.sourceType });
+    logger.warn("Skipping empty text for embedding", {
+      id,
+      sourceType: metadata.sourceType,
+    });
     return;
   }
 
@@ -53,20 +62,24 @@ export async function upsertEmbedding(
         sourceId: metadata.sourceId,
         content: text.substring(0, 1000), // Store first 1000 chars for reference
         ...(metadata.policyName && { policyName: metadata.policyName }),
-        ...(metadata.contextQuestion && { contextQuestion: metadata.contextQuestion }),
+        ...(metadata.contextQuestion && {
+          contextQuestion: metadata.contextQuestion,
+        }),
         ...(metadata.vendorId && { vendorId: metadata.vendorId }),
         ...(metadata.vendorName && { vendorName: metadata.vendorName }),
-        ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
+        ...(metadata.questionnaireQuestion && {
+          questionnaireQuestion: metadata.questionnaireQuestion,
+        }),
         ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
       },
     });
 
     // Removed per-embedding success logging for performance (only log errors)
   } catch (error) {
-    logger.error('Failed to upsert embedding', {
+    logger.error("Failed to upsert embedding", {
       id,
       sourceType: metadata.sourceType,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -85,7 +98,7 @@ export async function batchUpsertEmbeddings(
   }>,
 ): Promise<void> {
   if (!vectorIndex) {
-    throw new Error('Upstash Vector is not configured');
+    throw new Error("Upstash Vector is not configured");
   }
 
   if (items.length === 0) {
@@ -93,7 +106,9 @@ export async function batchUpsertEmbeddings(
   }
 
   // Filter out empty texts
-  const validItems = items.filter((item) => item.text && item.text.trim().length > 0);
+  const validItems = items.filter(
+    (item) => item.text && item.text.trim().length > 0,
+  );
 
   if (validItems.length === 0) {
     return;
@@ -108,7 +123,7 @@ export async function batchUpsertEmbeddings(
     // Step 2: Upsert all embeddings in parallel
     // Check vectorIndex before using it (TypeScript safety)
     if (!vectorIndex) {
-      throw new Error('Upstash Vector is not configured');
+      throw new Error("Upstash Vector is not configured");
     }
 
     // Store reference to avoid null check issues in map
@@ -125,24 +140,31 @@ export async function batchUpsertEmbeddings(
             sourceType: item.metadata.sourceType,
             sourceId: item.metadata.sourceId,
             content: item.text.substring(0, 1000), // Store first 1000 chars for reference
-            ...(item.metadata.policyName && { policyName: item.metadata.policyName }),
-            ...(item.metadata.contextQuestion && { contextQuestion: item.metadata.contextQuestion }),
+            ...(item.metadata.policyName && {
+              policyName: item.metadata.policyName,
+            }),
+            ...(item.metadata.contextQuestion && {
+              contextQuestion: item.metadata.contextQuestion,
+            }),
             ...(item.metadata.vendorId && { vendorId: item.metadata.vendorId }),
-            ...(item.metadata.vendorName && { vendorName: item.metadata.vendorName }),
+            ...(item.metadata.vendorName && {
+              vendorName: item.metadata.vendorName,
+            }),
             ...(item.metadata.questionnaireQuestion && {
               questionnaireQuestion: item.metadata.questionnaireQuestion,
             }),
-            ...(item.metadata.updatedAt && { updatedAt: item.metadata.updatedAt }),
+            ...(item.metadata.updatedAt && {
+              updatedAt: item.metadata.updatedAt,
+            }),
           },
         });
       }),
     );
   } catch (error) {
-    logger.error('Failed to batch upsert embeddings', {
+    logger.error("Failed to batch upsert embeddings", {
       itemCount: validItems.length,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
 }
-

@@ -1,5 +1,5 @@
 interface PolicyHeaderProps {
-  saveStatus: 'Saved' | 'Saving' | 'Unsaved';
+  saveStatus: "Saved" | "Saving" | "Unsaved";
 }
 
 export function PolicyHeader({ saveStatus }: PolicyHeaderProps) {

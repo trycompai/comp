@@ -1,13 +1,15 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { getValidFilters } from '@/lib/data-table';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { SearchParams } from 'nuqs';
-import { ControlsTable } from './components/controls-table';
-import { getControls } from './data/queries';
-import { searchParamsCache } from './data/validations';
+import { Metadata } from "next";
+import { headers } from "next/headers";
+import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+import { getValidFilters } from "@/lib/data-table";
+import { auth } from "@/utils/auth";
+import { SearchParams } from "nuqs";
+
+import { db } from "@trycompai/db";
+
+import { ControlsTable } from "./components/controls-table";
+import { getControls } from "./data/queries";
+import { searchParamsCache } from "./data/validations";
 
 interface ControlTableProps {
   searchParams: Promise<SearchParams>;
@@ -15,7 +17,7 @@ interface ControlTableProps {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Controls',
+    title: "Controls",
   };
 }
 
@@ -36,7 +38,7 @@ export default async function ControlsPage({ ...props }: ControlTableProps) {
   const requirements = await getRequirements();
 
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: 'Controls', current: true }]}>
+    <PageWithBreadcrumb breadcrumbs={[{ label: "Controls", current: true }]}>
       <ControlsTable
         promises={promises}
         policies={policies}
@@ -67,7 +69,7 @@ const getPolicies = async () => {
       name: true,
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 
@@ -94,7 +96,7 @@ const getTasks = async () => {
       title: true,
     },
     orderBy: {
-      title: 'asc',
+      title: "asc",
     },
   });
 

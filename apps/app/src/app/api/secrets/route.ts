@@ -1,17 +1,21 @@
-'use server';
+"use server";
 
-import { encrypt } from '@/lib/encryption';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { encrypt } from "@/lib/encryption";
+import { auth } from "@/utils/auth";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 const createSecretSchema = z.object({
   name: z
     .string()
     .min(1)
     .max(100)
-    .regex(/^[A-Z0-9_]+$/, 'Name must be uppercase letters, numbers, and underscores only'),
+    .regex(
+      /^[A-Z0-9_]+$/,
+      "Name must be uppercase letters, numbers, and underscores only",
+    ),
   value: z.string().min(1),
   // Optional in UI; accept undefined or null
   description: z.string().nullish(),
@@ -21,10 +25,14 @@ const createSecretSchema = z.object({
 
 // GET /api/secrets - List all secrets for the organization
 export async function GET(request: NextRequest) {
-  const organizationId: string | null = request.nextUrl.searchParams.get('organizationId');
+  const organizationId: string | null =
+    request.nextUrl.searchParams.get("organizationId");
 
   if (!organizationId) {
-    return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Organization ID is required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -33,7 +41,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session?.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const secrets = await db.secret.findMany({
@@ -50,14 +58,17 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
       },
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
     });
 
     return NextResponse.json({ secrets });
   } catch (error) {
-    console.error('Error fetching secrets:', error);
-    return NextResponse.json({ error: 'Failed to fetch secrets' }, { status: 500 });
+    console.error("Error fetching secrets:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch secrets" },
+      { status: 500 },
+    );
   }
 }
 
@@ -69,7 +80,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!session?.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -83,8 +94,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!member || (!member.role.includes('admin') && !member.role.includes('owner'))) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (
+      !member ||
+      (!member.role.includes("admin") && !member.role.includes("owner"))
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Check if secret with this name already exists
@@ -128,10 +142,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ secret }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('Invalid input:', error.issues);
-      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 });
+      console.error("Invalid input:", error.issues);
+      return NextResponse.json(
+        { error: "Invalid input", details: error.issues },
+        { status: 400 },
+      );
     }
-    console.error('Error creating secret:', error);
-    return NextResponse.json({ error: 'Failed to create secret' }, { status: 500 });
+    console.error("Error creating secret:", error);
+    return NextResponse.json(
+      { error: "Failed to create secret" },
+      { status: 500 },
+    );
   }
 }

@@ -1,12 +1,13 @@
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
-} from '@trycompai/ui/breadcrumb';
-import { ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+} from "@trycompai/ui/breadcrumb";
 
 interface ChatBreadcrumbProps {
   orgId: string;
@@ -32,40 +33,40 @@ export function ChatBreadcrumb({
           <BreadcrumbLink asChild>
             <Link
               href={`/${orgId}/tasks`}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground text-xs"
             >
               Tasks
             </Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator>
-          <ChevronRight className="w-3 h-3" />
+          <ChevronRight className="h-3 w-3" />
         </BreadcrumbSeparator>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
             <Link
               href={`/${orgId}/tasks/${taskId}`}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground text-xs"
             >
-              {taskName || 'Task'}
+              {taskName || "Task"}
             </Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator>
-          <ChevronRight className="w-3 h-3" />
+          <ChevronRight className="h-3 w-3" />
         </BreadcrumbSeparator>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
             {isEphemeral ? (
-              <span className="font-medium text-xs text-foreground/90 cursor-default">
+              <span className="text-foreground/90 cursor-default text-xs font-medium">
                 New Automation
               </span>
             ) : (
               <Link
                 href={`/${orgId}/tasks/${taskId}/automations/${automationId}/overview`}
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground text-xs"
               >
-                {automationName || 'Automation'}
+                {automationName || "Automation"}
               </Link>
             )}
           </BreadcrumbLink>
@@ -73,11 +74,13 @@ export function ChatBreadcrumb({
         {!isEphemeral && (
           <>
             <BreadcrumbSeparator>
-              <ChevronRight className="w-3 h-3" />
+              <ChevronRight className="h-3 w-3" />
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <span className="font-medium text-xs text-foreground/90 cursor-default">Edit</span>
+                <span className="text-foreground/90 cursor-default text-xs font-medium">
+                  Edit
+                </span>
               </BreadcrumbLink>
             </BreadcrumbItem>
           </>

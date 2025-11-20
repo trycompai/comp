@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.7"
 
 services:
   postgres:
@@ -9,11 +9,11 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      - '5432:5432'
+      - "5432:5432"
     networks:
       - prisma-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d comp']
+      test: ["CMD-SHELL", "pg_isready -U postgres -d comp"]
       interval: 5s
       timeout: 2s
       retries: 20
@@ -22,8 +22,8 @@ services:
     command: postgres -c listen_addresses='*'
     logging:
       options:
-        max-size: '10m'
-        max-file: '3'
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   prisma-network:

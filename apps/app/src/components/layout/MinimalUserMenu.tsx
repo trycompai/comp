@@ -1,7 +1,11 @@
-'use client';
+"use client";
 
-import { authClient } from '@/utils/auth-client';
-import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
+import type { User } from "better-auth";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/utils/auth-client";
+
+import { Avatar, AvatarFallback, AvatarImageNext } from "@trycompai/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,11 +13,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import type { User } from 'better-auth';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { ThemeSwitch } from '../theme-switch';
+} from "@trycompai/ui/dropdown-menu";
+
+import { ThemeSwitch } from "../theme-switch";
 
 interface MinimalUserMenuProps {
   user: User;
@@ -28,7 +30,7 @@ export function MinimalUserMenu({ user }: MinimalUserMenuProps) {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push('/auth');
+          router.push("/auth");
         },
       },
     });
@@ -41,7 +43,7 @@ export function MinimalUserMenu({ user }: MinimalUserMenuProps) {
           {user.image && (
             <AvatarImageNext
               src={user.image}
-              alt={user.name ?? user.email ?? ''}
+              alt={user.name ?? user.email ?? ""}
               width={32}
               height={32}
               quality={100}
@@ -49,7 +51,8 @@ export function MinimalUserMenu({ user }: MinimalUserMenuProps) {
           )}
           <AvatarFallback>
             <span className="text-xs">
-              {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
+              {user.name?.charAt(0)?.toUpperCase() ||
+                user.email?.charAt(0)?.toUpperCase()}
             </span>
           </AvatarFallback>
         </Avatar>
@@ -58,8 +61,12 @@ export function MinimalUserMenu({ user }: MinimalUserMenuProps) {
         <DropdownMenuLabel>
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="line-clamp-1 block max-w-[155px] truncate">{user.name}</span>
-              <span className="truncate text-xs font-normal text-[#606060]">{user.email}</span>
+              <span className="line-clamp-1 block max-w-[155px] truncate">
+                {user.name}
+              </span>
+              <span className="truncate text-xs font-normal text-[#606060]">
+                {user.email}
+              </span>
             </div>
           </div>
         </DropdownMenuLabel>
@@ -70,7 +77,7 @@ export function MinimalUserMenu({ user }: MinimalUserMenuProps) {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} disabled={isSigningOut}>
-          {isSigningOut ? 'Signing out...' : 'Sign out'}
+          {isSigningOut ? "Signing out..." : "Sign out"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

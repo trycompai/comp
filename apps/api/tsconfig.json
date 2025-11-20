@@ -1,28 +1,31 @@
 {
+  "extends": "@trycompai/tsconfig/base.json",
+  
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "resolvePackageJsonExports": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "declaration": true,
-    "removeComments": true,
+    "lib": ["es2022", "DOM", "DOM.Iterable"],
+
+    "moduleDetection": "force",
+
+    "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "esnext",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
+    "forceConsistentCasingInFileNames": false,
     "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
+    "module": "commonjs",
+    "moduleResolution": "Node10",
     "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  }
+    "noImplicitAny": false,
+    "removeComments": true,
+
+    "sourceMap": true,
+    "strictNullChecks": false,
+    "strictBindCallApply": false
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }

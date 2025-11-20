@@ -1,56 +1,63 @@
-'use server';
+"use server";
 
-import { authClient } from '@/utils/auth-client';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { z } from 'zod';
-import { authActionClient } from '../safe-action';
-import type { ActionResponse } from '../types';
+import { revalidatePath, revalidateTag } from "next/cache";
+import { authClient } from "@/utils/auth-client";
+import { z } from "zod";
+
+import type { ActionResponse } from "../types";
+import { authActionClient } from "../safe-action";
 
 const inviteMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['owner', 'admin', 'auditor', 'employee', 'contractor']),
+  role: z.enum(["owner", "admin", "auditor", "employee", "contractor"]),
 });
 
 export const inviteMember = authActionClient
   .metadata({
-    name: 'invite-member',
+    name: "invite-member",
     track: {
-      event: 'invite_member',
-      channel: 'organization',
+      event: "invite_member",
+      channel: "organization",
     },
   })
   .inputSchema(inviteMemberSchema)
-  .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ invited: boolean }>> => {
-    const organizationId = ctx.session.activeOrganizationId;
+  .action(
+    async ({
+      parsedInput,
+      ctx,
+    }): Promise<ActionResponse<{ invited: boolean }>> => {
+      const organizationId = ctx.session.activeOrganizationId;
 
-    if (!organizationId) {
-      return {
-        success: false,
-        error: 'Organization not found',
-      };
-    }
+      if (!organizationId) {
+        return {
+          success: false,
+          error: "Organization not found",
+        };
+      }
 
-    const { email, role } = parsedInput;
+      const { email, role } = parsedInput;
 
-    try {
-      await authClient.organization.inviteMember({
-        email,
-        role,
-      });
+      try {
+        await authClient.organization.inviteMember({
+          email,
+          role,
+        });
 
-      revalidatePath(`/${organizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`, { expire: 0 });
+        revalidatePath(`/${organizationId}/settings/users`);
+        revalidateTag(`user_${ctx.user.id}`, { expire: 0 });
 
-      return {
-        success: true,
-        data: { invited: true },
-      };
-    } catch (error) {
-      console.error('Error inviting member:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to invite member';
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
-  });
+        return {
+          success: true,
+          data: { invited: true },
+        };
+      } catch (error) {
+        console.error("Error inviting member:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to invite member";
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      }
+    },
+  );

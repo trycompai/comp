@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useApi } from '@/hooks/use-api';
-import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
-import type { AttachmentType } from '@trycompai/db';
-import { useCallback } from 'react';
+import { useCallback } from "react";
+import { useApi } from "@/hooks/use-api";
+import { useApiSWR, UseApiSWROptions } from "@/hooks/use-api-swr";
+
+import type { AttachmentType } from "@trycompai/db";
 
 // Types for attachments API
 // Note: API returns dates as ISO strings, not Date objects
@@ -55,13 +56,16 @@ export interface Comment {
  * Hook to fetch all tasks using SWR
  */
 export function useTasks(options: UseApiSWROptions<Task[]> = {}) {
-  return useApiSWR<Task[]>('/v1/tasks', options);
+  return useApiSWR<Task[]>("/v1/tasks", options);
 }
 
 /**
  * Hook to fetch a single task using SWR
  */
-export function useTask(taskId: string | null, options: UseApiSWROptions<Task> = {}) {
+export function useTask(
+  taskId: string | null,
+  options: UseApiSWROptions<Task> = {},
+) {
   return useApiSWR<Task>(taskId ? `/v1/tasks/${taskId}` : null, options);
 }
 
@@ -72,7 +76,10 @@ export function useTaskAttachments(
   taskId: string | null,
   options: UseApiSWROptions<Attachment[]> = {},
 ) {
-  return useApiSWR<Attachment[]>(taskId ? `/v1/tasks/${taskId}/attachments` : null, options);
+  return useApiSWR<Attachment[]>(
+    taskId ? `/v1/tasks/${taskId}/attachments` : null,
+    options,
+  );
 }
 
 /**
@@ -88,13 +95,16 @@ export function useTaskAttachmentActions(taskId: string) {
         reader.onload = async () => {
           try {
             const base64String = reader.result as string;
-            const base64Data = base64String.split(',')[1]; // Remove data:image/...;base64, prefix
+            const base64Data = base64String.split(",")[1]; // Remove data:image/...;base64, prefix
 
-            const response = await api.post<Attachment>(`/v1/tasks/${taskId}/attachments`, {
-              fileName: file.name,
-              fileType: file.type || 'application/octet-stream',
-              fileData: base64Data,
-            });
+            const response = await api.post<Attachment>(
+              `/v1/tasks/${taskId}/attachments`,
+              {
+                fileName: file.name,
+                fileType: file.type || "application/octet-stream",
+                fileData: base64Data,
+              },
+            );
 
             if (response.error) {
               throw new Error(response.error);
@@ -105,7 +115,7 @@ export function useTaskAttachmentActions(taskId: string) {
             reject(error);
           }
         };
-        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsDataURL(file);
       });
     },
@@ -127,7 +137,9 @@ export function useTaskAttachmentActions(taskId: string) {
 
   const deleteAttachment = useCallback(
     async (attachmentId: string) => {
-      const response = await api.delete(`/v1/tasks/${taskId}/attachments/${attachmentId}`);
+      const response = await api.delete(
+        `/v1/tasks/${taskId}/attachments/${attachmentId}`,
+      );
       if (response.error) {
         throw new Error(response.error);
       }
@@ -149,7 +161,8 @@ export function useTaskAttachmentActions(taskId: string) {
  */
 export function useOptimisticTaskAttachments(taskId: string) {
   const { data, error, isLoading, mutate } = useTaskAttachments(taskId);
-  const { uploadAttachment, deleteAttachment } = useTaskAttachmentActions(taskId);
+  const { uploadAttachment, deleteAttachment } =
+    useTaskAttachmentActions(taskId);
 
   const optimisticUpload = useCallback(
     async (file: File) => {
@@ -157,11 +170,13 @@ export function useOptimisticTaskAttachments(taskId: string) {
       const optimisticAttachment: Attachment = {
         id: `temp-${Date.now()}`,
         name: file.name,
-        type: file.type.startsWith('image/') ? ('image' as any) : ('document' as any),
-        url: '', // Will be populated by real response
+        type: file.type.startsWith("image/")
+          ? ("image" as any)
+          : ("document" as any),
+        url: "", // Will be populated by real response
         entityId: taskId,
-        entityType: 'task' as any,
-        organizationId: '',
+        entityType: "task" as any,
+        organizationId: "",
         commentId: null,
         description: null,
         createdAt: new Date().toISOString(),
@@ -212,7 +227,9 @@ export function useOptimisticTaskAttachments(taskId: string) {
         async () => {
           // Call the API and return updated cache data
           await deleteAttachment(attachmentId);
-          const updatedAttachments = (data?.data || []).filter((att) => att.id !== attachmentId);
+          const updatedAttachments = (data?.data || []).filter(
+            (att) => att.id !== attachmentId,
+          );
 
           return {
             data: updatedAttachments,
@@ -223,7 +240,9 @@ export function useOptimisticTaskAttachments(taskId: string) {
           optimisticData: data
             ? {
                 ...data,
-                data: (data.data || []).filter((att) => att.id !== attachmentId),
+                data: (data.data || []).filter(
+                  (att) => att.id !== attachmentId,
+                ),
               }
             : undefined,
           populateCache: true,
@@ -249,8 +268,14 @@ export function useOptimisticTaskAttachments(taskId: string) {
  * Legacy task comment hooks (deprecated - use generic comment hooks instead)
  * @deprecated Use useComments from '@/hooks/use-comments-api' instead
  */
-export function useTaskComments(taskId: string | null, options: UseApiSWROptions<Comment[]> = {}) {
-  return useApiSWR<Comment[]>(taskId ? `/v1/tasks/${taskId}/comments` : null, options);
+export function useTaskComments(
+  taskId: string | null,
+  options: UseApiSWROptions<Comment[]> = {},
+) {
+  return useApiSWR<Comment[]>(
+    taskId ? `/v1/tasks/${taskId}/comments` : null,
+    options,
+  );
 }
 
 /**
@@ -261,7 +286,10 @@ export function useTaskCommentActions(taskId: string) {
 
   const createComment = useCallback(
     async (data: { content: string }) => {
-      const response = await api.post<Comment>(`/v1/tasks/${taskId}/comments`, data);
+      const response = await api.post<Comment>(
+        `/v1/tasks/${taskId}/comments`,
+        data,
+      );
       if (response.error) {
         throw new Error(response.error);
       }
@@ -272,9 +300,12 @@ export function useTaskCommentActions(taskId: string) {
 
   const updateComment = useCallback(
     async (commentId: string, data: { content: string }) => {
-      const response = await api.put<Comment>(`/v1/tasks/${taskId}/comments/${commentId}`, {
-        content: data.content,
-      });
+      const response = await api.put<Comment>(
+        `/v1/tasks/${taskId}/comments/${commentId}`,
+        {
+          content: data.content,
+        },
+      );
       if (response.error) {
         throw new Error(response.error);
       }
@@ -285,7 +316,9 @@ export function useTaskCommentActions(taskId: string) {
 
   const deleteComment = useCallback(
     async (commentId: string) => {
-      const response = await api.delete(`/v1/tasks/${taskId}/comments/${commentId}`);
+      const response = await api.delete(
+        `/v1/tasks/${taskId}/comments/${commentId}`,
+      );
       if (response.error) {
         throw new Error(response.error);
       }

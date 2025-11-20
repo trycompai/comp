@@ -1,9 +1,9 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx';
-import { z } from 'zod';
+import { authActionClient } from "@/actions/safe-action";
+import { jsPDF } from "jspdf";
+import * as XLSX from "xlsx";
+import { z } from "zod";
 
 const inputSchema = z.object({
   questionsAndAnswers: z.array(
@@ -12,7 +12,7 @@ const inputSchema = z.object({
       answer: z.string().nullable(),
     }),
   ),
-  format: z.enum(['xlsx', 'csv', 'pdf']),
+  format: z.enum(["xlsx", "csv", "pdf"]),
 });
 
 interface QuestionAnswer {
@@ -28,23 +28,29 @@ function generateXLSX(questionsAndAnswers: QuestionAnswer[]): Buffer {
 
   // Create worksheet data
   const worksheetData = [
-    ['#', 'Question', 'Answer'], // Header row
-    ...questionsAndAnswers.map((qa, index) => [index + 1, qa.question, qa.answer || '']),
+    ["#", "Question", "Answer"], // Header row
+    ...questionsAndAnswers.map((qa, index) => [
+      index + 1,
+      qa.question,
+      qa.answer || "",
+    ]),
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
 
   // Set column widths
-  worksheet['!cols'] = [
+  worksheet["!cols"] = [
     { wch: 5 }, // #
     { wch: 60 }, // Question
     { wch: 60 }, // Answer
   ];
 
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Questionnaire');
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Questionnaire");
 
   // Convert to buffer
-  return Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }));
+  return Buffer.from(
+    XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }),
+  );
 }
 
 /**
@@ -52,21 +58,24 @@ function generateXLSX(questionsAndAnswers: QuestionAnswer[]): Buffer {
  */
 function generateCSV(questionsAndAnswers: QuestionAnswer[]): string {
   const rows = [
-    ['#', 'Question', 'Answer'], // Header row
+    ["#", "Question", "Answer"], // Header row
     ...questionsAndAnswers.map((qa, index) => [
       String(index + 1),
       qa.question.replace(/"/g, '""'), // Escape quotes
-      (qa.answer || '').replace(/"/g, '""'), // Escape quotes
+      (qa.answer || "").replace(/"/g, '""'), // Escape quotes
     ]),
   ];
 
-  return rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+  return rows.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
 }
 
 /**
  * Generates PDF file from questions and answers
  */
-function generatePDF(questionsAndAnswers: QuestionAnswer[], vendorName?: string): Buffer {
+function generatePDF(
+  questionsAndAnswers: QuestionAnswer[],
+  vendorName?: string,
+): Buffer {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -77,14 +86,14 @@ function generatePDF(questionsAndAnswers: QuestionAnswer[], vendorName?: string)
 
   // Add title
   doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  const title = vendorName ? `Questionnaire: ${vendorName}` : 'Questionnaire';
+  doc.setFont("helvetica", "bold");
+  const title = vendorName ? `Questionnaire: ${vendorName}` : "Questionnaire";
   doc.text(title, margin, yPosition);
   yPosition += lineHeight * 2;
 
   // Add date
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont("helvetica", "normal");
   doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, yPosition);
   yPosition += lineHeight * 2;
 
@@ -99,31 +108,34 @@ function generatePDF(questionsAndAnswers: QuestionAnswer[], vendorName?: string)
     }
 
     // Question number and question
-    doc.setFont('helvetica', 'bold');
+    doc.setFont("helvetica", "bold");
     const questionText = `Q${index + 1}: ${qa.question}`;
     const questionLines = doc.splitTextToSize(questionText, contentWidth);
     doc.text(questionLines, margin, yPosition);
     yPosition += questionLines.length * lineHeight + 2;
 
     // Answer
-    doc.setFont('helvetica', 'normal');
-    const answerText = qa.answer || 'No answer provided';
-    const answerLines = doc.splitTextToSize(`A${index + 1}: ${answerText}`, contentWidth);
+    doc.setFont("helvetica", "normal");
+    const answerText = qa.answer || "No answer provided";
+    const answerLines = doc.splitTextToSize(
+      `A${index + 1}: ${answerText}`,
+      contentWidth,
+    );
     doc.text(answerLines, margin, yPosition);
     yPosition += answerLines.length * lineHeight + 4;
   });
 
   // Convert to buffer
-  return Buffer.from(doc.output('arraybuffer'));
+  return Buffer.from(doc.output("arraybuffer"));
 }
 
 export const exportQuestionnaire = authActionClient
   .inputSchema(inputSchema)
   .metadata({
-    name: 'export-questionnaire',
+    name: "export-questionnaire",
     track: {
-      event: 'export-questionnaire',
-      channel: 'server',
+      event: "export-questionnaire",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -131,15 +143,17 @@ export const exportQuestionnaire = authActionClient
     const { session } = ctx;
 
     if (!session?.activeOrganizationId) {
-      throw new Error('No active organization');
+      throw new Error("No active organization");
     }
 
     const organizationId = session.activeOrganizationId;
 
     try {
-      const vendorName = 'security-questionnaire';
-      const sanitizedVendorName = vendorName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-      const timestamp = new Date().toISOString().split('T')[0];
+      const vendorName = "security-questionnaire";
+      const sanitizedVendorName = vendorName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "-");
+      const timestamp = new Date().toISOString().split("T")[0];
 
       let fileBuffer: Buffer;
       let mimeType: string;
@@ -148,27 +162,28 @@ export const exportQuestionnaire = authActionClient
 
       // Generate file based on format
       switch (format) {
-        case 'xlsx': {
+        case "xlsx": {
           fileBuffer = generateXLSX(questionsAndAnswers);
-          mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-          fileExtension = 'xlsx';
+          mimeType =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+          fileExtension = "xlsx";
           filename = `questionnaire-${sanitizedVendorName}-${timestamp}.xlsx`;
           break;
         }
 
-        case 'csv': {
+        case "csv": {
           const csvContent = generateCSV(questionsAndAnswers);
-          fileBuffer = Buffer.from(csvContent, 'utf-8');
-          mimeType = 'text/csv';
-          fileExtension = 'csv';
+          fileBuffer = Buffer.from(csvContent, "utf-8");
+          mimeType = "text/csv";
+          fileExtension = "csv";
           filename = `questionnaire-${sanitizedVendorName}-${timestamp}.csv`;
           break;
         }
 
-        case 'pdf': {
+        case "pdf": {
           fileBuffer = generatePDF(questionsAndAnswers, vendorName);
-          mimeType = 'application/pdf';
-          fileExtension = 'pdf';
+          mimeType = "application/pdf";
+          fileExtension = "pdf";
           filename = `questionnaire-${sanitizedVendorName}-${timestamp}.pdf`;
           break;
         }
@@ -178,7 +193,7 @@ export const exportQuestionnaire = authActionClient
       }
 
       // Convert buffer to base64 data URL for direct download
-      const base64Data = fileBuffer.toString('base64');
+      const base64Data = fileBuffer.toString("base64");
       const dataUrl = `data:${mimeType};base64,${base64Data}`;
 
       return {
@@ -189,6 +204,8 @@ export const exportQuestionnaire = authActionClient
         },
       };
     } catch (error) {
-      throw error instanceof Error ? error : new Error('Failed to export questionnaire');
+      throw error instanceof Error
+        ? error
+        : new Error("Failed to export questionnaire");
     }
   });

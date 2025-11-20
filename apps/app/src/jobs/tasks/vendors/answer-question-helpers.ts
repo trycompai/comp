@@ -1,7 +1,7 @@
-import { findSimilarContent } from '@/lib/vector';
-import { openai } from '@ai-sdk/openai';
-import { logger } from '@trigger.dev/sdk';
-import { generateText } from 'ai';
+import { findSimilarContent } from "@/lib/vector";
+import { openai } from "@ai-sdk/openai";
+import { logger } from "@trigger.dev/sdk";
+import { generateText } from "ai";
 
 export interface AnswerWithSources {
   answer: string | null;
@@ -22,9 +22,13 @@ export async function generateAnswerWithRAG(
 ): Promise<AnswerWithSources> {
   try {
     // Find similar content from vector database
-    const similarContent = await findSimilarContent(question, organizationId, 5);
+    const similarContent = await findSimilarContent(
+      question,
+      organizationId,
+      5,
+    );
 
-    logger.info('Vector search results', {
+    logger.info("Vector search results", {
       question: question.substring(0, 100),
       organizationId,
       resultCount: similarContent.length,
@@ -56,7 +60,7 @@ export async function generateAnswerWithRAG(
       } else if (result.vendorName && result.questionnaireQuestion) {
         sourceName = `Questionnaire: ${result.vendorName}`;
       } else if (result.contextQuestion) {
-        sourceName = 'Context Q&A';
+        sourceName = "Context Q&A";
       }
 
       // Use sourceName as the unique key to prevent duplicates
@@ -78,11 +82,13 @@ export async function generateAnswerWithRAG(
     }
 
     // Convert map to array and sort by score (highest first)
-    const sources = Array.from(sourceMap.values()).sort((a, b) => b.score - a.score);
+    const sources = Array.from(sourceMap.values()).sort(
+      (a, b) => b.score - a.score,
+    );
 
     // If no relevant content found, return null
     if (similarContent.length === 0) {
-      logger.warn('No similar content found in vector database', {
+      logger.warn("No similar content found in vector database", {
         question: question.substring(0, 100),
         organizationId,
       });
@@ -91,7 +97,7 @@ export async function generateAnswerWithRAG(
 
     // Build context from retrieved content
     const contextParts = similarContent.map((result, index) => {
-      let sourceInfo = '';
+      let sourceInfo = "";
       if (result.policyName) {
         sourceInfo = `Source: Policy "${result.policyName}"`;
       } else if (result.vendorName && result.questionnaireQuestion) {
@@ -105,11 +111,11 @@ export async function generateAnswerWithRAG(
       return `[${index + 1}] ${sourceInfo}\n${result.content}`;
     });
 
-    const context = contextParts.join('\n\n');
+    const context = contextParts.join("\n\n");
 
     // Generate answer using LLM with RAG
     const { text } = await generateText({
-      model: openai('gpt-5-mini'), // Faster model for answer generation
+      model: openai("gpt-5-mini"), // Faster model for answer generation
       system: `You are an expert at answering security and compliance questions for vendor questionnaires.
 
 Your task is to answer questions based ONLY on the provided context from the organization's policies and documentation.
@@ -137,19 +143,19 @@ Answer the question based ONLY on the provided context, using first person plura
     // Check if the answer indicates no evidence
     const trimmedAnswer = text.trim();
     if (
-      trimmedAnswer.toLowerCase().includes('n/a') ||
-      trimmedAnswer.toLowerCase().includes('no evidence') ||
-      trimmedAnswer.toLowerCase().includes('not found in the context')
+      trimmedAnswer.toLowerCase().includes("n/a") ||
+      trimmedAnswer.toLowerCase().includes("no evidence") ||
+      trimmedAnswer.toLowerCase().includes("not found in the context")
     ) {
       return { answer: null, sources: [] };
     }
 
     return { answer: trimmedAnswer, sources };
   } catch (error) {
-    logger.error('Failed to generate answer with RAG', {
+    logger.error("Failed to generate answer with RAG", {
       question: question.substring(0, 100),
       organizationId,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     return { answer: null, sources: [] };
   }

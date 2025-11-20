@@ -1,4 +1,8 @@
-'use client';
+"use client";
+
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { ExternalLink, Loader2, Maximize2, Trash } from "lucide-react";
 
 import {
   AlertDialog,
@@ -10,15 +14,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@trycompai/ui';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardFooter } from '@trycompai/ui/card';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@trycompai/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import { ExternalLink, Loader2, Maximize2, Trash } from 'lucide-react';
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
-import { FileIcon } from './FileIcon';
+} from "@trycompai/ui";
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent, CardFooter } from "@trycompai/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@trycompai/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@trycompai/ui/tooltip";
+
+import { FileIcon } from "./FileIcon";
 
 interface FilePreviewState {
   url: string | null;
@@ -42,7 +54,7 @@ export function FileCard({
   onPreviewClick,
   onDelete,
 }: FileCardProps) {
-  const fileName = url.split('/').pop() || url;
+  const fileName = url.split("/").pop() || url;
   const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
   const isPdf = /\.pdf$/i.test(fileName);
 
@@ -53,7 +65,13 @@ export function FileCard({
       onPreviewClick(url);
       setHasLoadedPreview(true);
     }
-  }, [hasLoadedPreview, onPreviewClick, previewState.isLoading, previewState.url, url]);
+  }, [
+    hasLoadedPreview,
+    onPreviewClick,
+    previewState.isLoading,
+    previewState.url,
+    url,
+  ]);
 
   return (
     <Card className="group flex h-[220px] flex-col overflow-hidden transition-all hover:shadow-md">
@@ -84,7 +102,11 @@ export function FileCard({
               </div>
             ) : previewState.url && isPdf ? (
               <div className="relative h-full w-full">
-                <iframe src={previewState.url} className="h-full w-full" title={fileName} />
+                <iframe
+                  src={previewState.url}
+                  className="h-full w-full"
+                  title={fileName}
+                />
                 <DialogTrigger asChild>
                   <Button
                     size="icon"
@@ -106,7 +128,7 @@ export function FileCard({
                     variant="ghost"
                     className="text-muted-foreground hover:text-foreground text-xs"
                   >
-                    {'Preview'}
+                    {"Preview"}
                   </Button>
                 </DialogTrigger>
               </div>
@@ -144,11 +166,15 @@ export function FileCard({
                     />
                   </div>
                 ) : isPdf ? (
-                  <iframe src={previewState.url} className="h-full w-full" title={fileName} />
+                  <iframe
+                    src={previewState.url}
+                    className="h-full w-full"
+                    title={fileName}
+                  />
                 ) : (
                   <div className="flex h-full items-center justify-center">
                     <p className="text-muted-foreground">
-                      {'Preview not available for this file type'}
+                      {"Preview not available for this file type"}
                     </p>
                   </div>
                 )}
@@ -165,9 +191,14 @@ export function FileCard({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="sm" variant="outline" asChild className="h-10 w-10 rounded-full">
+              <Button
+                size="sm"
+                variant="outline"
+                asChild
+                className="h-10 w-10 rounded-full"
+              >
                 <a
-                  href={previewState.url || '#'}
+                  href={previewState.url || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 flex items-center justify-center"
@@ -183,7 +214,7 @@ export function FileCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{'Open File'}</p>
+              <p>{"Open File"}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -203,20 +234,24 @@ export function FileCard({
                 </AlertDialogTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{'Delete File'}</p>
+                <p>{"Delete File"}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{'Delete File'}</AlertDialogTitle>
+              <AlertDialogTitle>{"Delete File"}</AlertDialogTitle>
               <AlertDialogDescription>
-                {'This action cannot be undone. The file will be permanently deleted.'}
+                {
+                  "This action cannot be undone. The file will be permanently deleted."
+                }
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(url)}>{'Delete'}</AlertDialogAction>
+              <AlertDialogCancel>{"Cancel"}</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDelete(url)}>
+                {"Delete"}
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

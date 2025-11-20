@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import { auth } from '@/utils/auth';
-import type { Organization } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import type { Organization } from "@trycompai/db";
+import { db } from "@trycompai/db";
 
 export async function getCurrentOrganization({
   requestedOrgId,

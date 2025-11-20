@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { AnimatedGradientBackground } from './AnimatedGradientBackground';
+import { useEffect, useState } from "react";
+
+import { AnimatedGradientBackground } from "./AnimatedGradientBackground";
 
 export function AnimatedGradientBackgroundWrapper() {
   const [scale, setScale] = useState(0.7);
@@ -15,10 +16,10 @@ export function AnimatedGradientBackgroundWrapper() {
       setScale(progressScale);
     };
 
-    window.addEventListener('onboarding-step-change', handleStepChange);
+    window.addEventListener("onboarding-step-change", handleStepChange);
 
     return () => {
-      window.removeEventListener('onboarding-step-change', handleStepChange);
+      window.removeEventListener("onboarding-step-change", handleStepChange);
     };
   }, []);
 

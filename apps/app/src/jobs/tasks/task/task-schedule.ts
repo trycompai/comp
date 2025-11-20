@@ -1,11 +1,12 @@
-import { Novu } from '@novu/api';
-import { logger, schedules } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
+import { Novu } from "@novu/api";
+import { logger, schedules } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
 
 export const taskSchedule = schedules.task({
-  id: 'task-schedule',
-  machine: 'large-1x',
-  cron: '0 */12 * * *', // Every 12 hours
+  id: "task-schedule",
+  machine: "large-1x",
+  cron: "0 */12 * * *", // Every 12 hours
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
     const now = new Date();
@@ -16,7 +17,7 @@ export const taskSchedule = schedules.task({
     // Find all Done tasks that have a review date and frequency set
     const candidateTasks = await db.task.findMany({
       where: {
-        status: 'done',
+        status: "done",
         reviewDate: {
           not: null,
         },
@@ -31,7 +32,7 @@ export const taskSchedule = schedules.task({
             name: true,
             members: {
               where: {
-                role: { contains: 'owner' },
+                role: { contains: "owner" },
               },
               select: {
                 user: {
@@ -82,19 +83,19 @@ export const taskSchedule = schedules.task({
 
       let nextDueDate: Date | null = null;
       switch (task.frequency) {
-        case 'daily':
+        case "daily":
           nextDueDate = addDaysToDate(task.reviewDate, 1);
           break;
-        case 'weekly':
+        case "weekly":
           nextDueDate = addDaysToDate(task.reviewDate, 7);
           break;
-        case 'monthly':
+        case "monthly":
           nextDueDate = addMonthsToDate(task.reviewDate, 1);
           break;
-        case 'quarterly':
+        case "quarterly":
           nextDueDate = addMonthsToDate(task.reviewDate, 3);
           break;
-        case 'yearly':
+        case "yearly":
           nextDueDate = addMonthsToDate(task.reviewDate, 12);
           break;
         default:
@@ -104,14 +105,16 @@ export const taskSchedule = schedules.task({
       return nextDueDate !== null && nextDueDate <= now;
     });
 
-    logger.info(`Found ${overdueTasks.length} tasks past their computed review deadline`);
+    logger.info(
+      `Found ${overdueTasks.length} tasks past their computed review deadline`,
+    );
 
     if (overdueTasks.length === 0) {
       return {
         success: true,
         totalTasksChecked: 0,
         updatedTasks: 0,
-        message: 'No tasks found past their computed review deadline',
+        message: "No tasks found past their computed review deadline",
       };
     }
 
@@ -126,7 +129,7 @@ export const taskSchedule = schedules.task({
           },
         },
         data: {
-          status: 'todo',
+          status: "todo",
         },
       });
 
@@ -151,7 +154,7 @@ export const taskSchedule = schedules.task({
               recipientsMap.set(key, {
                 email: user.email,
                 userId: user.id,
-                name: user.name ?? '',
+                name: user.name ?? "",
                 task,
               });
             }
@@ -176,7 +179,7 @@ export const taskSchedule = schedules.task({
       // Trigger notification for each recipient.
       novu.triggerBulk({
         events: recipients.map((recipient) => ({
-          workflowId: 'task-review-required',
+          workflowId: "task-review-required",
           to: {
             subscriberId: `${recipient.userId}-${recipient.task.organizationId}`,
             email: recipient.email,
@@ -188,7 +191,7 @@ export const taskSchedule = schedules.task({
             organizationName: recipient.task.organization.name,
             organizationId: recipient.task.organizationId,
             taskId: recipient.task.id,
-            taskUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.task.organizationId}/tasks/${recipient.task.id}`,
+            taskUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.trycomp.ai"}/${recipient.task.organizationId}/tasks/${recipient.task.id}`,
           },
         })),
       });
@@ -200,7 +203,9 @@ export const taskSchedule = schedules.task({
         );
       });
 
-      logger.info(`Successfully updated ${updateResult.count} tasks to "todo" status`);
+      logger.info(
+        `Successfully updated ${updateResult.count} tasks to "todo" status`,
+      );
 
       return {
         success: true,
@@ -217,7 +222,7 @@ export const taskSchedule = schedules.task({
         totalTasksChecked: overdueTasks.length,
         updatedTasks: 0,
         error: error instanceof Error ? error.message : String(error),
-        message: 'Failed to update tasks past their review deadline',
+        message: "Failed to update tasks past their review deadline",
       };
     }
   },

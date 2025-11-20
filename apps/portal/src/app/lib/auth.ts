@@ -1,35 +1,43 @@
-import { env } from '@/env.mjs';
-import { db } from '@trycompai/db';
-import { OTPVerificationEmail, sendEmail, sendInviteMemberEmail } from '@trycompai/email';
-import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, multiSession, organization } from 'better-auth/plugins';
-import { ac, admin, auditor, contractor, employee, owner } from './permissions';
+import { env } from "@/env.mjs";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { nextCookies } from "better-auth/next-js";
+import { emailOTP, multiSession, organization } from "better-auth/plugins";
+
+import { db } from "@trycompai/db";
+import {
+  OTPVerificationEmail,
+  sendEmail,
+  sendInviteMemberEmail,
+} from "@trycompai/email";
+
+import { ac, admin, auditor, contractor, employee, owner } from "./permissions";
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
-    provider: 'postgresql',
+    provider: "postgresql",
   }),
   advanced: {
     // This will enable us to fall back to DB for ID generation.
     // It's important so we can use custom IDs specified in Prisma Schema.
     generateId: false,
   },
-  trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
+  trustedOrigins: ["http://localhost:3000", "https://*.trycomp.ai"],
   secret: env.AUTH_SECRET!,
   plugins: [
     organization({
       membershipLimit: 100000000000,
       async sendInvitationEmail(data) {
         console.log(
-          'process.env.NEXT_PUBLIC_BETTER_AUTH_URL',
+          "process.env.NEXT_PUBLIC_BETTER_AUTH_URL",
           process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
         );
 
-        const isLocalhost = process.env.NODE_ENV === 'development';
-        const protocol = isLocalhost ? 'http' : 'https';
-        const domain = isLocalhost ? 'localhost:3000' : process.env.NEXT_PUBLIC_BETTER_AUTH_URL!;
+        const isLocalhost = process.env.NODE_ENV === "development";
+        const protocol = isLocalhost ? "http" : "https";
+        const domain = isLocalhost
+          ? "localhost:3000"
+          : process.env.NEXT_PUBLIC_BETTER_AUTH_URL!;
         const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
 
         const url = `${protocol}://${domain}/auth`;
@@ -50,7 +58,7 @@ export const auth = betterAuth({
       },
       schema: {
         organization: {
-          modelName: 'Organization',
+          modelName: "Organization",
         },
       },
     }),
@@ -62,7 +70,7 @@ export const auth = betterAuth({
       async sendVerificationOTP({ email, otp }) {
         await sendEmail({
           to: email,
-          subject: 'One-Time Password for Comp AI',
+          subject: "One-Time Password for Comp AI",
           react: OTPVerificationEmail({ email, otp }),
         });
       },
@@ -77,25 +85,25 @@ export const auth = betterAuth({
     },
   },
   user: {
-    modelName: 'User',
+    modelName: "User",
   },
   organization: {
-    modelName: 'Organization',
+    modelName: "Organization",
   },
   member: {
-    modelName: 'Member',
+    modelName: "Member",
   },
   invitation: {
-    modelName: 'Invitation',
+    modelName: "Invitation",
   },
   session: {
-    modelName: 'Session',
+    modelName: "Session",
   },
   account: {
-    modelName: 'Account',
+    modelName: "Account",
   },
   verification: {
-    modelName: 'Verification',
+    modelName: "Verification",
   },
 });
 

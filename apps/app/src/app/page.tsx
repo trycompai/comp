@@ -1,7 +1,8 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
 
 export default async function RootPage({
   searchParams,
@@ -29,7 +30,7 @@ export default async function RootPage({
   };
 
   if (!session) {
-    return redirect(await buildUrlWithParams('/auth'));
+    return redirect(await buildUrlWithParams("/auth"));
   }
 
   const intent = (await searchParams)?.intent;
@@ -40,7 +41,7 @@ export default async function RootPage({
     const pendingInvite = await db.invitation.findFirst({
       where: {
         email: session.user.email,
-        status: 'pending',
+        status: "pending",
       },
     });
 
@@ -48,12 +49,12 @@ export default async function RootPage({
       return redirect(await buildUrlWithParams(`/invite/${pendingInvite.id}`));
     }
 
-    return redirect(await buildUrlWithParams('/setup'));
+    return redirect(await buildUrlWithParams("/setup"));
   }
 
   // If user is explicitly creating an additional org, go to setup regardless of current org state
-  if (intent === 'create-additional') {
-    return redirect(await buildUrlWithParams('/setup'));
+  if (intent === "create-additional") {
+    return redirect(await buildUrlWithParams("/setup"));
   }
 
   // If org exists but hasn't completed onboarding, route to onboarding flow
@@ -73,7 +74,7 @@ export default async function RootPage({
   });
 
   if (!member) {
-    return redirect(await buildUrlWithParams('/setup'));
+    return redirect(await buildUrlWithParams("/setup"));
   }
 
   return redirect(await buildUrlWithParams(`/${orgId}/frameworks`));

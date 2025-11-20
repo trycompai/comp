@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
 import type {
   AccessRequest,
   useApproveAccessRequest,
   useDenyAccessRequest,
-} from '@/hooks/use-access-requests';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
+} from "@/hooks/use-access-requests";
+import type { ColumnDef } from "@tanstack/react-table";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
 
 type ApproveHook = ReturnType<typeof useApproveAccessRequest>;
 type DenyHook = ReturnType<typeof useDenyAccessRequest>;
@@ -21,40 +22,47 @@ export function columns({
 }): ColumnDef<AccessRequest>[] {
   return [
     {
-      accessorKey: 'name',
-      header: 'Name',
+      accessorKey: "name",
+      header: "Name",
       cell: ({ row }) => (
         <div className="flex flex-col">
           <span className="font-medium">{row.original.name}</span>
-          <span className="text-muted-foreground text-xs">{row.original.email}</span>
+          <span className="text-muted-foreground text-xs">
+            {row.original.email}
+          </span>
         </div>
       ),
     },
     {
-      accessorKey: 'company',
-      header: 'Company',
-      cell: ({ getValue }) => (getValue() as string | null) ?? '-',
+      accessorKey: "company",
+      header: "Company",
+      cell: ({ getValue }) => (getValue() as string | null) ?? "-",
     },
     {
-      accessorKey: 'status',
-      header: 'Status',
+      accessorKey: "status",
+      header: "Status",
       cell: ({ row }) => {
         const status = row.original.status;
         const variant =
-          status === 'approved' ? 'secondary' : status === 'denied' ? 'destructive' : 'default';
-        return <Badge variant={variant}>{status.replace('_', ' ')}</Badge>;
+          status === "approved"
+            ? "secondary"
+            : status === "denied"
+              ? "destructive"
+              : "default";
+        return <Badge variant={variant}>{status.replace("_", " ")}</Badge>;
       },
     },
     {
-      accessorKey: 'createdAt',
-      header: 'Date',
-      cell: ({ getValue }) => new Date(getValue() as string).toLocaleDateString(),
+      accessorKey: "createdAt",
+      header: "Date",
+      cell: ({ getValue }) =>
+        new Date(getValue() as string).toLocaleDateString(),
     },
     {
-      id: 'actions',
-      header: 'Actions',
+      id: "actions",
+      header: "Actions",
       cell: ({ row }) => {
-        if (row.original.status === 'under_review') {
+        if (row.original.status === "under_review") {
           return (
             <div className="flex gap-2">
               <Button
@@ -72,8 +80,9 @@ export function columns({
                 size="sm"
                 variant="destructive"
                 onClick={() => {
-                  const reason = window.prompt('Reason for denial:');
-                  if (reason) deny.mutate({ requestId: row.original.id, reason });
+                  const reason = window.prompt("Reason for denial:");
+                  if (reason)
+                    deny.mutate({ requestId: row.original.id, reason });
                 }}
               >
                 Deny
@@ -82,10 +91,11 @@ export function columns({
           );
         }
 
-        if (row.original.status === 'approved' && row.original.grant) {
+        if (row.original.status === "approved" && row.original.grant) {
           return (
-            <span className="text-xs text-muted-foreground">
-              Expires: {new Date(row.original.grant.expiresAt).toLocaleDateString()}
+            <span className="text-muted-foreground text-xs">
+              Expires:{" "}
+              {new Date(row.original.grant.expiresAt).toLocaleDateString()}
             </span>
           );
         }

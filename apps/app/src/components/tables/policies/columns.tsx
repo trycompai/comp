@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { StatusIndicator } from '@/components/status-indicator';
-import { formatDate } from '@/utils/format';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@trycompai/ui/button';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { StatusIndicator } from "@/components/status-indicator";
+import { formatDate } from "@/utils/format";
+
+import { Button } from "@trycompai/ui/button";
 
 export type PolicyType = {
   id: string;
@@ -15,7 +16,7 @@ export type PolicyType = {
     description: string | null;
     slug: string;
   };
-  status: 'draft' | 'published' | 'archived';
+  status: "draft" | "published" | "archived";
   createdAt: string;
   updatedAt: string;
 };
@@ -25,8 +26,8 @@ export function useColumns(): ColumnDef<PolicyType>[] {
 
   return [
     {
-      id: 'name',
-      accessorKey: 'policy.name',
+      id: "name",
+      accessorKey: "policy.name",
       cell: ({ row }) => {
         const name = row.original.policy.name;
         const id = row.original.id;
@@ -47,8 +48,8 @@ export function useColumns(): ColumnDef<PolicyType>[] {
       },
     },
     {
-      id: 'status',
-      accessorKey: 'status',
+      id: "status",
+      accessorKey: "status",
       cell: ({ row }) => {
         const status = row.original.status;
 
@@ -60,12 +61,16 @@ export function useColumns(): ColumnDef<PolicyType>[] {
       },
     },
     {
-      id: 'updatedAt',
-      accessorKey: 'updatedAt',
+      id: "updatedAt",
+      accessorKey: "updatedAt",
       cell: ({ row }) => {
         const date = row.original.updatedAt;
 
-        return <div className="text-muted-foreground">{formatDate(date, 'MMM d, yyyy')}</div>;
+        return (
+          <div className="text-muted-foreground">
+            {formatDate(date, "MMM d, yyyy")}
+          </div>
+        );
       },
     },
   ];

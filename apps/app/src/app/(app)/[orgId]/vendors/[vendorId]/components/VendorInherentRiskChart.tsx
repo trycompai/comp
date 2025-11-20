@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
-import type { Vendor } from '@trycompai/db';
-import { updateVendorInherentRisk } from '../actions/update-vendor-inherent-risk';
+import { RiskMatrixChart } from "@/components/risks/charts/RiskMatrixChart";
+
+import type { Vendor } from "@trycompai/db";
+
+import { updateVendorInherentRisk } from "../actions/update-vendor-inherent-risk";
 
 interface InherentRiskChartProps {
   vendor: Vendor;
@@ -11,8 +13,8 @@ interface InherentRiskChartProps {
 export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
   return (
     <RiskMatrixChart
-      title={'Inherent Risk'}
-      description={'Select the inherent risk level for this vendor'}
+      title={"Inherent Risk"}
+      description={"Select the inherent risk level for this vendor"}
       riskId={vendor.id}
       activeLikelihood={vendor.inherentProbability}
       activeImpact={vendor.inherentImpact}

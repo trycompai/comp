@@ -1,6 +1,7 @@
-import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
-import type { UIMessage } from 'ai';
-import { Message } from './message';
+import type { UIMessage } from "ai";
+import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
+
+import { Message } from "./message";
 
 export const Messages = ({
   messages,
@@ -9,7 +10,7 @@ export const Messages = ({
 }: {
   messages: UIMessage[];
   isLoading: boolean;
-  status: 'error' | 'submitted' | 'streaming' | 'ready';
+  status: "error" | "submitted" | "streaming" | "ready";
 }) => {
   const [containerRef, endRef] = useScrollToBottom();
 

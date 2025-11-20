@@ -1,10 +1,10 @@
-'use server';
+"use server";
 
-import { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
-import { auth } from '@/utils/auth';
-import { tasks } from '@trigger.dev/sdk';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { runIntegrationTests } from "@/jobs/tasks/integration/run-integration-tests";
+import { auth } from "@/utils/auth";
+import { tasks } from "@trigger.dev/sdk";
 
 export const runTests = async () => {
   const session = await auth.api.getSession({
@@ -14,7 +14,7 @@ export const runTests = async () => {
   if (!session) {
     return {
       success: false,
-      errors: ['Unauthorized'],
+      errors: ["Unauthorized"],
     };
   }
 
@@ -22,18 +22,22 @@ export const runTests = async () => {
   if (!orgId) {
     return {
       success: false,
-      errors: ['No active organization'],
+      errors: ["No active organization"],
     };
   }
 
   try {
-    const handle = await tasks.trigger<typeof runIntegrationTests>('run-integration-tests', {
-      organizationId: orgId,
-    });
+    const handle = await tasks.trigger<typeof runIntegrationTests>(
+      "run-integration-tests",
+      {
+        organizationId: orgId,
+      },
+    );
 
     const headersList = await headers();
-    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-    path = path.replace(/\/[a-z]{2}\//, '/');
+    let path =
+      headersList.get("x-pathname") || headersList.get("referer") || "";
+    path = path.replace(/\/[a-z]{2}\//, "/");
 
     revalidatePath(path);
 
@@ -44,11 +48,15 @@ export const runTests = async () => {
       publicAccessToken: handle.publicAccessToken,
     };
   } catch (error) {
-    console.error('Error triggering integration tests:', error);
+    console.error("Error triggering integration tests:", error);
 
     return {
       success: false,
-      errors: [error instanceof Error ? error.message : 'Failed to trigger integration tests'],
+      errors: [
+        error instanceof Error
+          ? error.message
+          : "Failed to trigger integration tests",
+      ],
     };
   }
 };

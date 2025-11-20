@@ -1,8 +1,14 @@
-'use client';
+"use client";
 
-import { EvidenceAutomationVersion } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import { History, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+
+import { EvidenceAutomationVersion } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -10,14 +16,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { formatDistanceToNow } from 'date-fns';
-import { History, RotateCcw } from 'lucide-react';
-import { useParams } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { restoreVersion } from '../../../../automation/[automationId]/actions/task-automation-actions';
-import { useAutomationVersions } from '../../../../automation/[automationId]/hooks/use-automation-versions';
+} from "@trycompai/ui/dialog";
+
+import { restoreVersion } from "../../../../automation/[automationId]/actions/task-automation-actions";
+import { useAutomationVersions } from "../../../../automation/[automationId]/hooks/use-automation-versions";
 
 export function VersionsCard() {
   const { orgId, taskId, automationId } = useParams<{
@@ -27,22 +29,30 @@ export function VersionsCard() {
   }>();
   const { versions, isLoading, mutate } = useAutomationVersions();
   const [restoring, setRestoring] = useState<number | null>(null);
-  const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);
+  const [confirmRestore, setConfirmRestore] =
+    useState<EvidenceAutomationVersion | null>(null);
 
   const handleRestore = async (version: EvidenceAutomationVersion) => {
     setRestoring(version.version);
 
     try {
-      const result = await restoreVersion(orgId, taskId, automationId, version.version);
+      const result = await restoreVersion(
+        orgId,
+        taskId,
+        automationId,
+        version.version,
+      );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to restore version');
+        throw new Error(result.error || "Failed to restore version");
       }
 
       toast.success(`Draft overwritten with version ${version.version}`);
       setConfirmRestore(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to restore version');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to restore version",
+      );
     } finally {
       setRestoring(null);
     }
@@ -52,13 +62,13 @@ export function VersionsCard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <History className="h-4 w-4 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <History className="text-primary h-4 w-4" />
             Published Versions
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Loading versions...</p>
+          <p className="text-muted-foreground text-sm">Loading versions...</p>
         </CardContent>
       </Card>
     );
@@ -68,13 +78,13 @@ export function VersionsCard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <History className="h-4 w-4 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <History className="text-primary h-4 w-4" />
             Published Versions
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-4">
+          <p className="text-muted-foreground py-4 text-center text-sm">
             No published versions yet
           </p>
         </CardContent>
@@ -86,29 +96,37 @@ export function VersionsCard() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <History className="h-4 w-4 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <History className="text-primary h-4 w-4" />
             Published Versions
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {versions.map((version) => {
-            const timeAgo = formatDistanceToNow(new Date(version.createdAt), { addSuffix: true });
+            const timeAgo = formatDistanceToNow(new Date(version.createdAt), {
+              addSuffix: true,
+            });
             const isRestoring = restoring === version.version;
 
             return (
               <div
                 key={version.id}
-                className="flex items-start gap-3 p-3 rounded-xs border border-border bg-muted/20 hover:bg-muted/30 transition-all"
+                className="border-border bg-muted/20 hover:bg-muted/30 flex items-start gap-3 rounded-xs border p-3 transition-all"
               >
-                <div className="flex-1 min-w-0 space-y-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Version {version.version}</span>
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <span className="text-xs text-muted-foreground">{timeAgo}</span>
+                    <span className="text-sm font-medium">
+                      Version {version.version}
+                    </span>
+                    <span className="text-muted-foreground text-xs">•</span>
+                    <span className="text-muted-foreground text-xs">
+                      {timeAgo}
+                    </span>
                   </div>
                   {version.changelog && (
-                    <p className="text-xs text-muted-foreground">{version.changelog}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {version.changelog}
+                    </p>
                   )}
                 </div>
                 <Button
@@ -118,7 +136,7 @@ export function VersionsCard() {
                   disabled={isRestoring}
                 >
                   <RotateCcw className="h-4 w-4" />
-                  {isRestoring ? 'Restoring...' : 'Restore'}
+                  {isRestoring ? "Restoring..." : "Restore"}
                 </Button>
               </div>
             );
@@ -127,14 +145,19 @@ export function VersionsCard() {
       </Card>
 
       {/* Confirm Restore Dialog */}
-      <Dialog open={!!confirmRestore} onOpenChange={(open) => !open && setConfirmRestore(null)}>
+      <Dialog
+        open={!!confirmRestore}
+        onOpenChange={(open) => !open && setConfirmRestore(null)}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Overwrite Draft with Version {confirmRestore?.version}?</DialogTitle>
+            <DialogTitle>
+              Overwrite Draft with Version {confirmRestore?.version}?
+            </DialogTitle>
             <DialogDescription>
-              This will replace your current draft with the script from version{' '}
-              {confirmRestore?.version}. Your current draft will be lost. Chat history will be
-              preserved.
+              This will replace your current draft with the script from version{" "}
+              {confirmRestore?.version}. Your current draft will be lost. Chat
+              history will be preserved.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

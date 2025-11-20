@@ -1,10 +1,12 @@
-import 'server-only';
+import "server-only";
 
-import { auth } from '@/utils/auth';
-import { db, Prisma } from '@trycompai/db';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db, Prisma } from "@trycompai/db";
+
 // import { cache } from "react"; // Already handled: ensure it stays removed or remove if re-introduced
-import type { GetControlSchema } from './validations';
+import type { GetControlSchema } from "./validations";
 
 const controlInclude = {
   policies: {
@@ -54,11 +56,11 @@ export async function getControls(
     const organizationId = session?.session.activeOrganizationId;
 
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error("Organization not found");
     }
 
     const orderBy = input.sort.map((sort) => ({
-      [sort.id]: sort.desc ? 'desc' : 'asc',
+      [sort.id]: sort.desc ? "desc" : "asc",
     }));
 
     const where: Prisma.ControlWhereInput = {
@@ -78,7 +80,7 @@ export async function getControls(
 
     const controls = await db.control.findMany({
       where,
-      orderBy: orderBy.length > 0 ? orderBy : [{ name: 'asc' }],
+      orderBy: orderBy.length > 0 ? orderBy : [{ name: "asc" }],
       skip: (input.page - 1) * input.perPage,
       take: input.perPage,
       include: controlInclude,

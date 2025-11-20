@@ -1,11 +1,11 @@
-import type { Editor } from '@tiptap/react';
-import { Check, Link, Trash } from 'lucide-react';
-import { useState } from 'react';
+import type { Editor } from "@tiptap/react";
+import { useState } from "react";
+import { Check, Link, Trash } from "lucide-react";
 
-import { cn } from '../../../utils/cn';
-import { Button } from '../../button';
-import { Input } from '../../input';
-import { Popover, PopoverContent, PopoverTrigger } from '../../popover';
+import { cn } from "../../../utils/cn";
+import { Button } from "../../button";
+import { Input } from "../../input";
+import { Popover, PopoverContent, PopoverTrigger } from "../../popover";
 
 export function isValidUrl(url: string) {
   try {
@@ -18,7 +18,7 @@ export function isValidUrl(url: string) {
 export function getUrlFromString(str: string) {
   if (isValidUrl(str)) return str;
   try {
-    if (str.includes('.') && !str.includes(' ')) {
+    if (str.includes(".") && !str.includes(" ")) {
       return new URL(`https://${str}`).toString();
     }
   } catch (_e) {
@@ -32,12 +32,16 @@ interface LinkSelectorProps {
   editor: Editor;
 }
 
-export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) => {
-  const [value, setValue] = useState('');
+export const LinkSelector = ({
+  open,
+  onOpenChange,
+  editor,
+}: LinkSelectorProps) => {
+  const [value, setValue] = useState("");
 
   if (!editor) return null;
 
-  const isActive = editor.isActive('link');
+  const isActive = editor.isActive("link");
 
   return (
     <Popover modal={true} open={open} onOpenChange={onOpenChange}>
@@ -45,8 +49,8 @@ export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) 
         <Button
           size="sm"
           variant="ghost"
-          className={cn('hover:bg-accent gap-2', {
-            'text-blue-500': isActive,
+          className={cn("hover:bg-accent gap-2", {
+            "text-blue-500": isActive,
           })}
         >
           <Link className="h-4 w-4" />
@@ -66,13 +70,18 @@ export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) 
             <Button
               onClick={() => {
                 if (value) {
-                  editor.chain().focus().extendMarkRange('link').setLink({ href: value }).run();
+                  editor
+                    .chain()
+                    .focus()
+                    .extendMarkRange("link")
+                    .setLink({ href: value })
+                    .run();
                   onOpenChange(false);
-                  setValue('');
+                  setValue("");
                 }
               }}
               size="sm"
-              className="hover:bg-accent rounded-sm px-2 py-1 text-xs w-full justify-start"
+              className="hover:bg-accent w-full justify-start rounded-sm px-2 py-1 text-xs"
               variant="ghost"
             >
               <Check className="mr-2 h-3 w-3" />
@@ -88,7 +97,7 @@ export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) 
                 onOpenChange(false);
               }}
               size="sm"
-              className="hover:bg-accent rounded-sm px-2 py-1 text-xs w-full justify-start"
+              className="hover:bg-accent w-full justify-start rounded-sm px-2 py-1 text-xs"
               variant="ghost"
             >
               <Trash className="mr-2 h-3 w-3" />

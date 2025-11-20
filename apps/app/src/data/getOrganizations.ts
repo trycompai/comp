@@ -1,8 +1,9 @@
-'use server';
+"use server";
 
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
 
 export async function getOrganizations() {
   const session = await auth.api.getSession({
@@ -12,7 +13,7 @@ export async function getOrganizations() {
   const user = session?.user;
 
   if (!user) {
-    throw new Error('Not authenticated');
+    throw new Error("Not authenticated");
   }
 
   const memberOrganizations = await db.member.findMany({
@@ -29,7 +30,9 @@ export async function getOrganizations() {
     },
   });
 
-  const organizations = memberOrganizations.map((member) => member.organization);
+  const organizations = memberOrganizations.map(
+    (member) => member.organization,
+  );
 
   return {
     organizations,

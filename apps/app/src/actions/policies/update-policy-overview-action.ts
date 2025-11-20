@@ -1,20 +1,22 @@
 // update-policy-overview-action.ts
 
-'use server';
+"use server";
 
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { authActionClient } from '../safe-action';
-import { updatePolicyOverviewSchema } from '../schema';
+import { revalidatePath } from "next/cache";
+
+import { db } from "@trycompai/db";
+
+import { authActionClient } from "../safe-action";
+import { updatePolicyOverviewSchema } from "../schema";
 
 export const updatePolicyOverviewAction = authActionClient
   .inputSchema(updatePolicyOverviewSchema)
   .metadata({
-    name: 'update-policy-overview',
+    name: "update-policy-overview",
     track: {
-      event: 'update-policy-overview',
-      description: 'Update Policy',
-      channel: 'server',
+      event: "update-policy-overview",
+      description: "Update Policy",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -24,14 +26,14 @@ export const updatePolicyOverviewAction = authActionClient
     if (!user) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
     if (!session.activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -43,7 +45,7 @@ export const updatePolicyOverviewAction = authActionClient
       if (!policy) {
         return {
           success: false,
-          error: 'Policy not found',
+          error: "Policy not found",
         };
       }
 
@@ -65,7 +67,7 @@ export const updatePolicyOverviewAction = authActionClient
     } catch (error) {
       return {
         success: false,
-        error: 'Failed to update policy overview',
+        error: "Failed to update policy overview",
       };
     }
   });

@@ -72,13 +72,13 @@ Create a database client in your project:
 
 ```typescript
 // lib/db.ts (or wherever you prefer)
-import { PrismaClient } from '../prisma/generated';
+import { PrismaClient } from "../prisma/generated";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 export const db = globalForPrisma.prisma || new PrismaClient();
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
 ```
 
 ## Git Configuration
@@ -108,10 +108,10 @@ Import and use the database client in your application:
 
 ```typescript
 // Import the database client
-import { db } from '@trycompai/db';
 
 // Import types
-import type { User, Organization, Departments } from '@trycompai/db/types';
+import type { Departments, Organization, User } from "@trycompai/db/types";
+import { db } from "@trycompai/db";
 
 // Query examples
 const users = await db.user.findMany();
@@ -156,15 +156,15 @@ All types are automatically generated and available:
 
 ```typescript
 import type {
-  User,
+  Departments,
   Organization,
   Policy,
-  Risk,
-  Task,
-  Departments,
-  RiskStatus,
   PolicyStatus,
-} from '@/db/types';
+  Risk,
+  RiskStatus,
+  Task,
+  User,
+} from "@/db/types";
 ```
 
 ## Troubleshooting

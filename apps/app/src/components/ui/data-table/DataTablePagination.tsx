@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+} from "@trycompai/ui/select";
 
 interface DataTablePaginationProps {
   page: number;
@@ -39,10 +40,13 @@ export function DataTablePagination({
   return (
     <div className="flex items-center justify-between">
       <div className="text-muted-foreground text-sm">
-        {totalCount} {totalCount === 1 ? 'item' : 'items'}
+        {totalCount} {totalCount === 1 ? "item" : "items"}
       </div>
       <div className="flex items-center gap-2">
-        <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+        <Select
+          value={pageSize.toString()}
+          onValueChange={handlePageSizeChange}
+        >
           <SelectTrigger className="h-8 w-[70px]">
             <SelectValue placeholder={pageSize} />
           </SelectTrigger>

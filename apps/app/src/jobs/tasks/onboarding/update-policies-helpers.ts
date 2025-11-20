@@ -1,38 +1,43 @@
-import { openai } from '@ai-sdk/openai';
-import type { JSONContent } from '@tiptap/react';
-import { logger } from '@trigger.dev/sdk';
+import type { JSONContent } from "@tiptap/react";
+import { openai } from "@ai-sdk/openai";
+import { logger } from "@trigger.dev/sdk";
+import { generateObject, NoObjectGeneratedError } from "ai";
+import { z } from "zod";
+
+import type { Policy } from "@trycompai/db";
 import {
   db,
   FrameworkEditorFramework,
   FrameworkEditorPolicyTemplate,
-  type Policy,
-} from '@trycompai/db';
-import { generateObject, NoObjectGeneratedError } from 'ai';
-import { z } from 'zod';
-import { generatePrompt } from '../../lib/prompts';
+} from "@trycompai/db";
+
+import { generatePrompt } from "../../lib/prompts";
 
 // Sanitization utilities
 const PLACEHOLDER_REGEX = /<<\s*TO\s*REVIEW\s*>>/gi;
 
 function extractText(node: Record<string, unknown>): string {
-  const text = node && typeof node['text'] === 'string' ? (node['text'] as string) : '';
+  const text =
+    node && typeof node["text"] === "string" ? (node["text"] as string) : "";
   const content = Array.isArray((node as any)?.content)
     ? ((node as any).content as Record<string, unknown>[])
     : null;
   if (content && content.length > 0) {
-    return content.map(extractText).join('');
+    return content.map(extractText).join("");
   }
-  return text || '';
+  return text || "";
 }
 
-function sanitizeNodePlaceholders(node: Record<string, unknown>): Record<string, unknown> {
+function sanitizeNodePlaceholders(
+  node: Record<string, unknown>,
+): Record<string, unknown> {
   const cloned: Record<string, unknown> = { ...node };
-  if (typeof cloned['text'] === 'string') {
-    const replaced = (cloned['text'] as string)
-      .replace(PLACEHOLDER_REGEX, '')
-      .replace(/\s{2,}/g, ' ')
+  if (typeof cloned["text"] === "string") {
+    const replaced = (cloned["text"] as string)
+      .replace(PLACEHOLDER_REGEX, "")
+      .replace(/\s{2,}/g, " ")
       .trim();
-    cloned['text'] = replaced;
+    cloned["text"] = replaced;
   }
   const content = Array.isArray((cloned as any).content)
     ? ((cloned as any).content as Record<string, unknown>[])
@@ -46,7 +51,10 @@ function sanitizeNodePlaceholders(node: Record<string, unknown>): Record<string,
 function shouldRemoveAuditorArtifactsHeading(headingText: string): boolean {
   const lower = headingText.trim().toLowerCase();
   // Match variations: artefacts/artifacts and with/without "evidence"
-  return lower.includes('auditor') && (lower.includes('artefact') || lower.includes('artifact'));
+  return (
+    lower.includes("auditor") &&
+    (lower.includes("artefact") || lower.includes("artifact"))
+  );
 }
 
 function removeAuditorArtifactsSection(
@@ -56,16 +64,20 @@ function removeAuditorArtifactsSection(
   let i = 0;
   while (i < content.length) {
     const node = content[i] as Record<string, unknown>;
-    const nodeType = typeof node['type'] === 'string' ? (node['type'] as string) : '';
-    if (nodeType === 'heading') {
+    const nodeType =
+      typeof node["type"] === "string" ? (node["type"] as string) : "";
+    if (nodeType === "heading") {
       const headingText = extractText(node);
       if (shouldRemoveAuditorArtifactsHeading(headingText)) {
         // Skip this heading and subsequent nodes until next heading or end
         i += 1;
         while (i < content.length) {
           const nextNode = content[i] as Record<string, unknown>;
-          const nextType = typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
-          if (nextType === 'heading') break;
+          const nextType =
+            typeof nextNode["type"] === "string"
+              ? (nextNode["type"] as string)
+              : "";
+          if (nextType === "heading") break;
           i += 1;
         }
         continue;
@@ -77,11 +89,14 @@ function removeAuditorArtifactsSection(
   return result;
 }
 
-function sanitizeDocument(document: { type: 'document'; content: Record<string, unknown>[] }) {
+function sanitizeDocument(document: {
+  type: "document";
+  content: Record<string, unknown>[];
+}) {
   const content = Array.isArray(document.content) ? document.content : [];
   const withoutAuditorArtifacts = removeAuditorArtifactsSection(content);
   return {
-    type: 'document' as const,
+    type: "document" as const,
     content: withoutAuditorArtifacts,
   };
 }
@@ -90,8 +105,8 @@ function sanitizeDocument(document: { type: 'document'; content: Record<string, 
  * Extract text from a heading node
  */
 function extractHeadingText(node: Record<string, unknown>): string {
-  const type = typeof node['type'] === 'string' ? (node['type'] as string) : '';
-  if (type !== 'heading') return '';
+  const type = typeof node["type"] === "string" ? (node["type"] as string) : "";
+  if (type !== "heading") return "";
   return extractText(node).trim();
 }
 
@@ -99,13 +114,16 @@ function extractHeadingText(node: Record<string, unknown>): string {
  * Get allowed top-level heading titles from the original/template content
  * We consider headings with level 1 or 2 as top-level anchors for section boundaries.
  */
-function getAllowedTopLevelHeadings(originalContent: Record<string, unknown>[]): string[] {
+function getAllowedTopLevelHeadings(
+  originalContent: Record<string, unknown>[],
+): string[] {
   const allowed: string[] = [];
   for (const node of originalContent) {
-    const type = typeof node['type'] === 'string' ? (node['type'] as string) : '';
-    if (type === 'heading') {
+    const type =
+      typeof node["type"] === "string" ? (node["type"] as string) : "";
+    if (type === "heading") {
       const level = (node as any)?.attrs?.level;
-      if (typeof level === 'number' && level >= 1 && level <= 2) {
+      if (typeof level === "number" && level >= 1 && level <= 2) {
         const text = extractHeadingText(node);
         if (text) allowed.push(text.toLowerCase());
       }
@@ -119,9 +137,9 @@ function getAllowedTopLevelHeadings(originalContent: Record<string, unknown>[]):
  * drop any new top-level sections not present in the original/template headings.
  */
 function alignToTemplateStructure(
-  updated: { type: 'document'; content: Record<string, unknown>[] },
+  updated: { type: "document"; content: Record<string, unknown>[] },
   originalContent: Record<string, unknown>[],
-): { type: 'document'; content: Record<string, unknown>[] } {
+): { type: "document"; content: Record<string, unknown>[] } {
   const allowedTopHeadings = getAllowedTopLevelHeadings(originalContent);
   if (allowedTopHeadings.length === 0) {
     // Nothing to enforce; return as-is
@@ -130,8 +148,8 @@ function alignToTemplateStructure(
 
   const isForbiddenHeading = (headingText: string): boolean => {
     const lower = headingText.toLowerCase();
-    if (lower.includes('table of contents')) return true;
-    if (lower.includes('mapping') && lower.includes('soc')) return true; // e.g., SOC 2 mappings
+    if (lower.includes("table of contents")) return true;
+    if (lower.includes("mapping") && lower.includes("soc")) return true; // e.g., SOC 2 mappings
     return false;
   };
 
@@ -141,9 +159,10 @@ function alignToTemplateStructure(
 
   while (i < content.length) {
     const node = content[i] as Record<string, unknown>;
-    const nodeType = typeof node['type'] === 'string' ? (node['type'] as string) : '';
+    const nodeType =
+      typeof node["type"] === "string" ? (node["type"] as string) : "";
 
-    if (nodeType === 'heading') {
+    if (nodeType === "heading") {
       const level = (node as any)?.attrs?.level;
       const headingText = extractHeadingText(node);
 
@@ -152,15 +171,18 @@ function alignToTemplateStructure(
         i += 1;
         while (i < content.length) {
           const nextNode = content[i] as Record<string, unknown>;
-          const nextType = typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
-          if (nextType === 'heading') break;
+          const nextType =
+            typeof nextNode["type"] === "string"
+              ? (nextNode["type"] as string)
+              : "";
+          if (nextType === "heading") break;
           i += 1;
         }
         continue;
       }
 
       // Enforce allowed top-level headings
-      if (typeof level === 'number' && level >= 1 && level <= 2) {
+      if (typeof level === "number" && level >= 1 && level <= 2) {
         const normalized = headingText.toLowerCase();
         if (!allowedTopHeadings.includes(normalized)) {
           // Drop this new top-level section and its content until next heading
@@ -168,8 +190,10 @@ function alignToTemplateStructure(
           while (i < content.length) {
             const nextNode = content[i] as Record<string, unknown>;
             const nextType =
-              typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
-            if (nextType === 'heading') break;
+              typeof nextNode["type"] === "string"
+                ? (nextNode["type"] as string)
+                : "";
+            if (nextType === "heading") break;
             i += 1;
           }
           continue;
@@ -182,7 +206,7 @@ function alignToTemplateStructure(
     i += 1;
   }
 
-  return { type: 'document', content: result };
+  return { type: "document", content: result };
 }
 
 /**
@@ -195,12 +219,12 @@ function alignToTemplateStructure(
  */
 export async function reconcileFormatWithTemplate(
   originalContent: Record<string, unknown>[],
-  draft: { type: 'document'; content: Record<string, unknown>[] },
-): Promise<{ type: 'document'; content: Record<string, unknown>[] }> {
+  draft: { type: "document"; content: Record<string, unknown>[] },
+): Promise<{ type: "document"; content: Record<string, unknown>[] }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
-      mode: 'json',
+      model: openai("gpt-5-mini"),
+      mode: "json",
       system: `You are an expert policy editor.
 Given an ORIGINAL policy TipTap JSON and a DRAFT TipTap JSON, produce a FINAL TipTap JSON that:
 - Preserves the ORIGINAL top-level section structure (order and presence of titles) and visual presentation of titles.
@@ -212,18 +236,21 @@ Given an ORIGINAL policy TipTap JSON and a DRAFT TipTap JSON, produce a FINAL Ti
 - COMPLETENESS: Include every ORIGINAL top-level title exactly once and in the same order as the ORIGINAL. Do not omit any original section, even if the DRAFT lacks content for it (in that case, keep the ORIGINAL section or include an empty paragraph placeholder under the title).
 - PROHIBITIONS: Do not add new top-level sections. Do not include a Table of Contents. Do not add framework mapping sections unless they already exist in the ORIGINAL.
 - OUTPUT FORMAT: Valid TipTap JSON with root {"type":"document","content":[...]}.`,
-      prompt: `ORIGINAL (TipTap JSON):\n${JSON.stringify({ type: 'document', content: originalContent })}\n\nDRAFT (TipTap JSON):\n${JSON.stringify(draft)}\n\nReturn ONLY the FINAL TipTap JSON document with type "document" and a "content" array.
+      prompt: `ORIGINAL (TipTap JSON):\n${JSON.stringify({ type: "document", content: originalContent })}\n\nDRAFT (TipTap JSON):\n${JSON.stringify(draft)}\n\nReturn ONLY the FINAL TipTap JSON document with type "document" and a "content" array.
 Follow the structure rules above strictly.`,
       schema: z.object({
-        type: z.literal('document'),
+        type: z.literal("document"),
         content: z.array(z.record(z.string(), z.unknown())),
       }),
     });
     return object;
   } catch (error) {
-    logger.error('AI reconcile format step failed; falling back to deterministic alignment', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      "AI reconcile format step failed; falling back to deterministic alignment",
+      {
+        error: error instanceof Error ? error.message : String(error),
+      },
+    );
     return draft;
   }
 }
@@ -233,12 +260,12 @@ Follow the structure rules above strictly.`,
  */
 export async function aiCheckFormatWithTemplate(
   originalContent: Record<string, unknown>[],
-  draft: { type: 'document'; content: Record<string, unknown>[] },
+  draft: { type: "document"; content: Record<string, unknown>[] },
 ): Promise<{ isConforming: boolean; reasons: string[] }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
-      mode: 'json',
+      model: openai("gpt-5-mini"),
+      mode: "json",
       system: `You are validating policy layout.
 Compare ORIGINAL vs DRAFT (TipTap JSON). Determine if DRAFT conforms to ORIGINAL format:
 - Same top-level section titles present and in the same order
@@ -247,7 +274,7 @@ Compare ORIGINAL vs DRAFT (TipTap JSON). Determine if DRAFT conforms to ORIGINAL
 - After every title there is at least one paragraph node
 Return JSON { isConforming: boolean, reasons: string[] }.
 `,
-      prompt: `ORIGINAL:\n${JSON.stringify({ type: 'document', content: originalContent })}\n\nDRAFT:\n${JSON.stringify(draft)}\n\nRespond only with the JSON object.`,
+      prompt: `ORIGINAL:\n${JSON.stringify({ type: "document", content: originalContent })}\n\nDRAFT:\n${JSON.stringify(draft)}\n\nRespond only with the JSON object.`,
       schema: z.object({
         isConforming: z.boolean(),
         reasons: z.array(z.string()).default([]),
@@ -255,10 +282,10 @@ Return JSON { isConforming: boolean, reasons: string[] }.
     });
     return object;
   } catch (error) {
-    logger.error('AI format check failed, defaulting to not conforming', {
+    logger.error("AI format check failed, defaulting to not conforming", {
       error: error instanceof Error ? error.message : String(error),
     });
-    return { isConforming: false, reasons: ['checker_failed'] };
+    return { isConforming: false, reasons: ["checker_failed"] };
   }
 }
 
@@ -270,44 +297,50 @@ Return JSON { isConforming: boolean, reasons: string[] }.
  * - After each title, ensure at least one paragraph node exists
  */
 function isBoldParagraphTitle(node: Record<string, unknown>): boolean {
-  if ((node as any)?.type !== 'paragraph') return false;
-  const content = Array.isArray((node as any)?.content) ? ((node as any).content as any[]) : [];
+  if ((node as any)?.type !== "paragraph") return false;
+  const content = Array.isArray((node as any)?.content)
+    ? ((node as any).content as any[])
+    : [];
   if (content.length !== 1) return false;
   const t = content[0];
-  if (!t || t.type !== 'text' || typeof t.text !== 'string') return false;
+  if (!t || t.type !== "text" || typeof t.text !== "string") return false;
   const marks = Array.isArray(t.marks) ? (t.marks as any[]) : [];
-  return marks.some((m) => m?.type === 'bold');
+  return marks.some((m) => m?.type === "bold");
 }
 
 function toBoldTitleParagraph(text: string): Record<string, unknown> {
   return {
-    type: 'paragraph',
+    type: "paragraph",
     content: [
       {
-        type: 'text',
+        type: "text",
         text,
-        marks: [{ type: 'bold' }],
+        marks: [{ type: "bold" }],
       },
     ],
   } as Record<string, unknown>;
 }
 
-type TitlePattern = { kind: 'heading'; level: number } | { kind: 'boldParagraph' };
+type TitlePattern =
+  | { kind: "heading"; level: number }
+  | { kind: "boldParagraph" };
 
-function getTitlePatternMap(original: Record<string, unknown>[]): Map<string, TitlePattern> {
+function getTitlePatternMap(
+  original: Record<string, unknown>[],
+): Map<string, TitlePattern> {
   const map = new Map<string, TitlePattern>();
   for (const node of original) {
     const type = (node as any)?.type as string;
-    if (type === 'heading') {
+    if (type === "heading") {
       const level = (node as any)?.attrs?.level;
       const text = extractHeadingText(node);
-      if (text && typeof level === 'number') {
-        map.set(text.trim().toLowerCase(), { kind: 'heading', level });
+      if (text && typeof level === "number") {
+        map.set(text.trim().toLowerCase(), { kind: "heading", level });
       }
     } else if (isBoldParagraphTitle(node)) {
       const text = extractText(node);
       if (text) {
-        map.set(text.trim().toLowerCase(), { kind: 'boldParagraph' });
+        map.set(text.trim().toLowerCase(), { kind: "boldParagraph" });
       }
     }
   }
@@ -316,8 +349,8 @@ function getTitlePatternMap(original: Record<string, unknown>[]): Map<string, Ti
 
 export function enforceVisualLayoutWithTemplate(
   original: Record<string, unknown>[],
-  draft: { type: 'document'; content: Record<string, unknown>[] },
-): { type: 'document'; content: Record<string, unknown>[] } {
+  draft: { type: "document"; content: Record<string, unknown>[] },
+): { type: "document"; content: Record<string, unknown>[] } {
   const content = Array.isArray(draft.content) ? draft.content : [];
   const patternMap = getTitlePatternMap(original);
   if (patternMap.size === 0) return draft;
@@ -329,20 +362,22 @@ export function enforceVisualLayoutWithTemplate(
     const type = (node as any)?.type as string;
     let pushed = false;
 
-    if (type === 'heading' || isBoldParagraphTitle(node)) {
-      const titleText = (type === 'heading' ? extractHeadingText(node) : extractText(node)).trim();
+    if (type === "heading" || isBoldParagraphTitle(node)) {
+      const titleText = (
+        type === "heading" ? extractHeadingText(node) : extractText(node)
+      ).trim();
       const key = titleText.toLowerCase();
       const pattern = titleText ? patternMap.get(key) : undefined;
 
       if (pattern) {
-        if (pattern.kind === 'heading') {
+        if (pattern.kind === "heading") {
           out.push({
-            type: 'heading',
+            type: "heading",
             attrs: { level: pattern.level },
-            content: [{ type: 'text', text: titleText }],
+            content: [{ type: "text", text: titleText }],
           });
           pushed = true;
-        } else if (pattern.kind === 'boldParagraph') {
+        } else if (pattern.kind === "boldParagraph") {
           out.push(toBoldTitleParagraph(titleText));
           pushed = true;
         }
@@ -351,8 +386,8 @@ export function enforceVisualLayoutWithTemplate(
           // Ensure at least one paragraph follows a title
           const next = content[i + 1] as Record<string, unknown> | undefined;
           const nextType = (next as any)?.type as string | undefined;
-          if (!next || nextType === 'heading') {
-            out.push({ type: 'paragraph', content: [] });
+          if (!next || nextType === "heading") {
+            out.push({ type: "paragraph", content: [] });
           }
           continue;
         }
@@ -362,7 +397,7 @@ export function enforceVisualLayoutWithTemplate(
     out.push(node);
   }
 
-  return { type: 'document', content: out };
+  return { type: "document", content: out };
 }
 
 // Types
@@ -386,7 +421,7 @@ export type PolicyUpdateResult = {
   contextHub: string;
   policyName: string;
   updatedContent: {
-    type: 'document';
+    type: "document";
     content: Record<string, unknown>[];
   };
 };
@@ -447,8 +482,8 @@ export async function generatePolicyPrompt(
   return generatePrompt({
     contextHub,
     policyTemplate,
-    companyName: organization.name ?? 'Company',
-    companyWebsite: organization.website ?? 'https://company.com',
+    companyName: organization.name ?? "Company",
+    companyWebsite: organization.website ?? "https://company.com",
     frameworks,
   });
 }
@@ -457,13 +492,13 @@ export async function generatePolicyPrompt(
  * Generates policy content using AI with TipTap JSON schema
  */
 export async function generatePolicyContent(prompt: string): Promise<{
-  type: 'document';
+  type: "document";
   content: Record<string, unknown>[];
 }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
-      mode: 'json',
+      model: openai("gpt-5-mini"),
+      mode: "json",
       system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
 
 TipTap JSON structure:
@@ -480,11 +515,11 @@ IMPORTANT: Follow ALL formatting instructions in the prompt, implementing them a
       prompt: `Generate a SOC 2 compliant security policy as a complete TipTap JSON document.
 
 INSTRUCTIONS TO IMPLEMENT IN TIPTAP JSON:
-${prompt.replace(/\\n/g, '\n')}
+${prompt.replace(/\\n/g, "\n")}
 
 Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
       schema: z.object({
-        type: z.literal('document'),
+        type: z.literal("document"),
         content: z.array(z.record(z.string(), z.unknown())),
       }),
     });
@@ -528,7 +563,9 @@ export async function updatePolicyInDatabase(
 /**
  * Complete policy update workflow
  */
-export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<PolicyUpdateResult> {
+export async function processPolicyUpdate(
+  params: UpdatePolicyParams,
+): Promise<PolicyUpdateResult> {
   const { organizationId, policyId, contextHub, frameworks } = params;
 
   // Fetch organization and policy data
@@ -538,7 +575,12 @@ export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<P
   );
 
   // Generate prompt for AI
-  const prompt = await generatePolicyPrompt(policyTemplate, contextHub, organization, frameworks);
+  const prompt = await generatePolicyPrompt(
+    policyTemplate,
+    contextHub,
+    organization,
+    frameworks,
+  );
 
   // Generate new policy content
   const updatedContent = await generatePolicyContent(prompt);

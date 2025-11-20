@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
-import * as THREE from 'three';
+import { useMemo, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 
 // Simplex 3D Noise (from existing codebase)
 const simplexNoise = `
@@ -361,7 +361,7 @@ export function AutomationOrb() {
   );
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-90">
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-90">
       <Canvas
         camera={{
           position: [0, 0, 1.5],
@@ -372,14 +372,18 @@ export function AutomationOrb() {
         gl={{
           antialias: true,
           alpha: true,
-          powerPreference: 'high-performance',
+          powerPreference: "high-performance",
           premultipliedAlpha: false,
         }}
-        dpr={typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1}
-        style={{ width: '96px', height: '96px', display: 'block' }}
+        dpr={
+          typeof window !== "undefined"
+            ? Math.min(window.devicePixelRatio, 2)
+            : 1
+        }
+        style={{ width: "96px", height: "96px", display: "block" }}
         onCreated={(state) => {
           // Ensure canvas is properly initialized
-          state.gl.setClearColor('#000000', 0);
+          state.gl.setClearColor("#000000", 0);
         }}
       >
         <ambientLight intensity={0.5} />

@@ -1,17 +1,20 @@
-import { auth } from '@/utils/auth';
+import type { TrainingVideo } from "@/lib/data/training-videos";
+import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+import { trainingVideos as trainingVideosData } from "@/lib/data/training-videos";
+import { getFleetInstance } from "@/lib/fleet";
+import { auth } from "@/utils/auth";
 
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import {
-  type TrainingVideo,
-  trainingVideos as trainingVideosData,
-} from '@/lib/data/training-videos';
-import { getFleetInstance } from '@/lib/fleet';
-import type { EmployeeTrainingVideoCompletion, Member, User } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
-import { Employee } from './components/Employee';
+import type {
+  EmployeeTrainingVideoCompletion,
+  Member,
+  User,
+} from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import { Employee } from "./components/Employee";
 
 export default async function EmployeeDetailsPage({
   params,
@@ -32,10 +35,12 @@ export default async function EmployeeDetailsPage({
   });
 
   const canEditMembers =
-    currentUserMember?.role.includes('owner') || currentUserMember?.role.includes('admin') || false;
+    currentUserMember?.role.includes("owner") ||
+    currentUserMember?.role.includes("admin") ||
+    false;
 
   if (!orgId) {
-    redirect('/');
+    redirect("/");
   }
 
   const policies = await getPoliciesTasks(employeeId);
@@ -52,7 +57,7 @@ export default async function EmployeeDetailsPage({
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'People', href: `/${orgId}/people/all` },
+        { label: "People", href: `/${orgId}/people/all` },
         { label: employee.user.name, current: true },
       ]}
     >
@@ -70,7 +75,7 @@ export default async function EmployeeDetailsPage({
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Employee Details',
+    title: "Employee Details",
   };
 }
 
@@ -82,7 +87,7 @@ const getEmployee = async (employeeId: string) => {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect('/');
+    redirect("/");
   }
 
   const employee = await db.member.findFirst({
@@ -106,18 +111,18 @@ const getPoliciesTasks = async (employeeId: string) => {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect('/');
+    redirect("/");
   }
 
   const policies = await db.policy.findMany({
     where: {
       organizationId: organizationId,
-      status: 'published',
+      status: "published",
       isRequiredToSign: true,
       isArchived: false,
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 
@@ -132,17 +137,18 @@ const getTrainingVideos = async (employeeId: string) => {
   const organizationId = session?.session.activeOrganizationId;
 
   if (!organizationId) {
-    redirect('/');
+    redirect("/");
   }
 
-  const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
-    where: {
-      memberId: employeeId,
-    },
-    orderBy: {
-      videoId: 'asc',
-    },
-  });
+  const employeeTrainingVideos =
+    await db.employeeTrainingVideoCompletion.findMany({
+      where: {
+        memberId: employeeId,
+      },
+      orderBy: {
+        videoId: "asc",
+      },
+    });
 
   // Map the db records to include the matching metadata from the training videos data
   // Filter out any videos where metadata is not found to ensure type safety
@@ -183,7 +189,9 @@ const getFleetPolicies = async (member: Member & { user: User }) => {
   }
 
   try {
-    const deviceResponse = await fleet.get(`/labels/${member.fleetDmLabelId}/hosts`);
+    const deviceResponse = await fleet.get(
+      `/labels/${member.fleetDmLabelId}/hosts`,
+    );
     const device = deviceResponse.data.hosts?.[0];
 
     if (!device) {

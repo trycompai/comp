@@ -1,32 +1,33 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { logger } from '@/utils/logger';
-import { db } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+import { logger } from "@/utils/logger";
+import { z } from "zod";
+
+import { db } from "@trycompai/db";
 
 export const markPolicyAsCompleted = authActionClient
   .inputSchema(z.object({ policyId: z.string() }))
   .metadata({
-    name: 'markPolicyAsCompleted',
+    name: "markPolicyAsCompleted",
     track: {
-      event: 'markPolicyAsCompleted',
-      channel: 'server',
+      event: "markPolicyAsCompleted",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
     const { policyId } = parsedInput;
     const { user } = ctx;
 
-    logger('markPolicyAsCompleted action started', {
+    logger("markPolicyAsCompleted action started", {
       policyId,
       userId: user?.id,
     });
 
     if (!user) {
-      logger('Unauthorized attempt to mark policy as completed', { policyId });
-      throw new Error('Unauthorized');
+      logger("Unauthorized attempt to mark policy as completed", { policyId });
+      throw new Error("Unauthorized");
     }
 
     const member = await db.member.findFirst({
@@ -36,8 +37,8 @@ export const markPolicyAsCompleted = authActionClient
     });
 
     if (!member) {
-      logger('Member not found', { userId: user.id });
-      throw new Error('Member not found');
+      logger("Member not found", { userId: user.id });
+      throw new Error("Member not found");
     }
 
     const policy = await db.policy.findUnique({
@@ -47,20 +48,20 @@ export const markPolicyAsCompleted = authActionClient
     });
 
     if (!policy) {
-      logger('Policy not found', { policyId });
-      throw new Error('Policy not found');
+      logger("Policy not found", { policyId });
+      throw new Error("Policy not found");
     }
 
     // Check if user has already signed this policy
     if (policy.signedBy.includes(member.id)) {
-      logger('User has already signed this policy', {
+      logger("User has already signed this policy", {
         policyId,
         memberId: member.id,
       });
       return policy;
     }
 
-    logger('Updating policy signature', { policyId, memberId: member.id });
+    logger("Updating policy signature", { policyId, memberId: member.id });
     const completedPolicy = await db.policy.update({
       where: { id: policyId },
       data: {
@@ -68,12 +69,12 @@ export const markPolicyAsCompleted = authActionClient
       },
     });
 
-    logger('Policy successfully marked as completed', {
+    logger("Policy successfully marked as completed", {
       policyId,
       memberId: member.id,
     });
 
-    revalidatePath('/');
+    revalidatePath("/");
 
     return completedPolicy;
   });

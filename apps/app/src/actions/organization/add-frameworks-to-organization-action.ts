@@ -1,9 +1,11 @@
-'use server';
+"use server";
 
-import { addFrameworksSchema } from '@/actions/schema';
-import { db, Prisma } from '@trycompai/db';
-import { authWithOrgAccessClient } from '../safe-action';
-import { _upsertOrgFrameworkStructureCore } from './lib/initialize-organization';
+import { addFrameworksSchema } from "@/actions/schema";
+
+import { db, Prisma } from "@trycompai/db";
+
+import { authWithOrgAccessClient } from "../safe-action";
+import { _upsertOrgFrameworkStructureCore } from "./lib/initialize-organization";
 
 /**
  * Adds specified frameworks and their related entities (controls, policies, tasks)
@@ -13,11 +15,11 @@ import { _upsertOrgFrameworkStructureCore } from './lib/initialize-organization'
 export const addFrameworksToOrganizationAction = authWithOrgAccessClient
   .inputSchema(addFrameworksSchema)
   .metadata({
-    name: 'add-frameworks-to-organization',
+    name: "add-frameworks-to-organization",
     track: {
-      event: 'add-frameworks',
-      description: 'Add frameworks to organization',
-      channel: 'server',
+      event: "add-frameworks",
+      description: "Add frameworks to organization",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -26,21 +28,26 @@ export const addFrameworksToOrganizationAction = authWithOrgAccessClient
 
     await db.$transaction(async (tx) => {
       // 1. Fetch FrameworkEditorFrameworks and their requirements for the given frameworkIds, filtering by visible: true
-      const frameworksAndRequirements = await tx.frameworkEditorFramework.findMany({
-        where: {
-          id: { in: frameworkIds },
-          visible: true,
-        },
-        include: {
-          requirements: true,
-        },
-      });
+      const frameworksAndRequirements =
+        await tx.frameworkEditorFramework.findMany({
+          where: {
+            id: { in: frameworkIds },
+            visible: true,
+          },
+          include: {
+            requirements: true,
+          },
+        });
 
       if (frameworksAndRequirements.length === 0) {
-        throw new Error('No valid or visible frameworks found for the provided IDs.');
+        throw new Error(
+          "No valid or visible frameworks found for the provided IDs.",
+        );
       }
 
-      const finalFrameworkEditorIds = frameworksAndRequirements.map((f) => f.id);
+      const finalFrameworkEditorIds = frameworksAndRequirements.map(
+        (f) => f.id,
+      );
 
       // 2. Call the renamed core function
       await _upsertOrgFrameworkStructureCore({

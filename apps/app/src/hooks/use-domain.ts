@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useApiSWR } from '@/hooks/use-api-swr';
+import { useApiSWR } from "@/hooks/use-api-swr";
 
 export interface DomainVerification {
   type: string;
@@ -17,7 +17,7 @@ export interface DomainStatusResponse {
 
 export function useDomain(domain: string) {
   const endpoint =
-    domain && domain.trim() !== ''
+    domain && domain.trim() !== ""
       ? `/v1/trust-portal/domain/status?domain=${domain}`
       : null;
 

@@ -1,5 +1,5 @@
-import { CommentItem } from './CommentItem';
-import { CommentWithAuthor } from './Comments';
+import { CommentItem } from "./CommentItem";
+import { CommentWithAuthor } from "./Comments";
 
 export function CommentList({
   comments,
@@ -11,7 +11,11 @@ export function CommentList({
   return (
     <div className="space-y-2">
       {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} refreshComments={refreshComments} />
+        <CommentItem
+          key={comment.id}
+          comment={comment}
+          refreshComments={refreshComments}
+        />
       ))}
     </div>
   );

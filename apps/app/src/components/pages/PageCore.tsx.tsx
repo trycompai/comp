@@ -1,5 +1,6 @@
-import { cn } from '@/lib/utils';
-import { CardLiquidGlass } from '@trycompai/ui/card-liquid-glass';
+import { cn } from "@/lib/utils";
+
+import { CardLiquidGlass } from "@trycompai/ui/card-liquid-glass";
 
 export default function PageCore({
   children,
@@ -9,7 +10,9 @@ export default function PageCore({
   className?: string;
 }) {
   return (
-    <CardLiquidGlass className={cn('flex flex-col gap-4 rounded-lg p-4', className)}>
+    <CardLiquidGlass
+      className={cn("flex flex-col gap-4 rounded-lg p-4", className)}
+    >
       {children}
     </CardLiquidGlass>
   );

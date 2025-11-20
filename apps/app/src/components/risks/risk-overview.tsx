@@ -1,12 +1,20 @@
-'use client';
+"use client";
 
-import type { Member, Risk, User } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { PencilIcon } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import { UpdateRiskOverview } from '../forms/risks/risk-overview';
-import { RiskOverviewSheet } from '../sheets/risk-overview-sheet';
+import { PencilIcon } from "lucide-react";
+import { useQueryState } from "nuqs";
+
+import type { Member, Risk, User } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@trycompai/ui/card";
+
+import { UpdateRiskOverview } from "../forms/risks/risk-overview";
+import { RiskOverviewSheet } from "../sheets/risk-overview-sheet";
 
 export function RiskOverview({
   risk,
@@ -15,7 +23,7 @@ export function RiskOverview({
   risk: Risk & { assignee: { user: User } | null };
   assignees: (Member & { user: User })[];
 }) {
-  const [open, setOpen] = useQueryState('risk-overview-sheet');
+  const [open, setOpen] = useQueryState("risk-overview-sheet");
 
   return (
     <Card>
@@ -27,7 +35,7 @@ export function RiskOverview({
               size="icon"
               variant="ghost"
               className="m-0 size-auto p-0 hover:bg-transparent"
-              onClick={() => setOpen('true')}
+              onClick={() => setOpen("true")}
             >
               <PencilIcon className="h-3 w-3" />
             </Button>

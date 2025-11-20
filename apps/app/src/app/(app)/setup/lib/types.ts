@@ -20,7 +20,7 @@ export type CompanyDetails = {
 };
 
 export type ChatBubble = {
-  type: 'system' | 'user';
+  type: "system" | "user";
   text: string;
   key?: keyof CompanyDetails;
   isEditing?: boolean;

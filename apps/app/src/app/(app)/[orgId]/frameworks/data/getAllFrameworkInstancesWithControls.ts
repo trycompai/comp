@@ -1,8 +1,9 @@
-'use server';
+"use server";
 
-import type { Control, PolicyStatus, RequirementMap } from '@trycompai/db';
-import { db } from '@trycompai/db';
-import type { FrameworkInstanceWithControls } from '../types';
+import type { Control, PolicyStatus, RequirementMap } from "@trycompai/db";
+import { db } from "@trycompai/db";
+
+import type { FrameworkInstanceWithControls } from "../types";
 
 export async function getAllFrameworkInstancesWithControls({
   organizationId,
@@ -34,8 +35,8 @@ export async function getAllFrameworkInstancesWithControls({
     },
   });
 
-  const frameworksWithControls: FrameworkInstanceWithControls[] = frameworkInstancesFromDb.map(
-    (fi) => {
+  const frameworksWithControls: FrameworkInstanceWithControls[] =
+    frameworkInstancesFromDb.map((fi) => {
       const controlsMap = new Map<
         string,
         Control & {
@@ -67,8 +68,7 @@ export async function getAllFrameworkInstancesWithControls({
         ...restOfFi,
         controls: Array.from(controlsMap.values()),
       };
-    },
-  );
+    });
 
   return frameworksWithControls;
 }

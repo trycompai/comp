@@ -1,7 +1,7 @@
-'use server';
+"use server";
 
-import { VendorsByCategory } from './vendors-by-category';
-import { VendorsByStatus } from './vendors-by-status';
+import { VendorsByCategory } from "./vendors-by-category";
+import { VendorsByStatus } from "./vendors-by-status";
 
 interface VendorOverviewProps {
   organizationId: string;

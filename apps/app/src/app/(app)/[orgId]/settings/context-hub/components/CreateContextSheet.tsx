@@ -1,32 +1,35 @@
-'use client';
-import { Button } from '@trycompai/ui/button';
+"use client";
+
+import { X } from "lucide-react";
+import { useQueryState } from "nuqs";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from '@trycompai/ui/drawer';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
+} from "@trycompai/ui/drawer";
+import { useMediaQuery } from "@trycompai/ui/hooks";
+import { ScrollArea } from "@trycompai/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@trycompai/ui/sheet';
-import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
-import { ContextForm } from './context-form';
+} from "@trycompai/ui/sheet";
+
+import { ContextForm } from "./context-form";
 
 export function CreateContextSheet() {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('create-context-sheet');
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [open, setOpen] = useQueryState("create-context-sheet");
   const isOpen = Boolean(open);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
+    setOpen(open ? "true" : null);
   };
 
   if (isDesktop) {

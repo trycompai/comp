@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Cell, Pie, PieChart } from "recharts";
+
+import type { ChartConfig } from "@trycompai/ui/chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@trycompai/ui/card";
 import {
-  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@trycompai/ui/chart';
-import { Cell, Pie, PieChart } from 'recharts';
+} from "@trycompai/ui/chart";
 
 interface PolicyOverviewProps {
   data: {
@@ -21,16 +22,16 @@ interface PolicyOverviewProps {
 export function PolicyOverview({ data }: PolicyOverviewProps) {
   const config: ChartConfig = {
     draft: {
-      label: 'Draft',
-      color: 'hsl(var(--chart-1))',
+      label: "Draft",
+      color: "hsl(var(--chart-1))",
     },
     published: {
-      label: 'Published',
-      color: 'hsl(var(--chart-2))',
+      label: "Published",
+      color: "hsl(var(--chart-2))",
     },
     review: {
-      label: 'Needs Review',
-      color: 'hsl(var(--chart-3))',
+      label: "Needs Review",
+      color: "hsl(var(--chart-3))",
     },
   };
 
@@ -38,17 +39,17 @@ export function PolicyOverview({ data }: PolicyOverviewProps) {
     {
       name: config.draft.label,
       value: data.draftPolicies,
-      status: 'draft',
+      status: "draft",
     },
     {
       name: config.published.label,
       value: data.publishedPolicies,
-      status: 'published',
+      status: "published",
     },
     {
       name: config.review.label,
       value: data.needsReviewPolicies,
-      status: 'review',
+      status: "review",
     },
   ].filter((item) => item.value > 0);
 
@@ -56,7 +57,7 @@ export function PolicyOverview({ data }: PolicyOverviewProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{'Policy by Status'}</CardTitle>
+          <CardTitle>{"Policy by Status"}</CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground flex h-[300px] items-center justify-center">
           No data
@@ -68,7 +69,7 @@ export function PolicyOverview({ data }: PolicyOverviewProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{'Policy by Status'}</CardTitle>
+        <CardTitle>{"Policy by Status"}</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={config}>
@@ -97,7 +98,7 @@ export function PolicyOverview({ data }: PolicyOverviewProps) {
                   y={y}
                   dy={y > cy ? 15 : -5}
                   fill="currentColor"
-                  textAnchor={x > cx ? 'start' : 'end'}
+                  textAnchor={x > cx ? "start" : "end"}
                   className="text-xs"
                   dx={x > cx ? 5 : -5}
                 >
@@ -116,7 +117,10 @@ export function PolicyOverview({ data }: PolicyOverviewProps) {
                 />
               ))}
             </Pie>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="line" />}
+            />
           </PieChart>
         </ChartContainer>
       </CardContent>

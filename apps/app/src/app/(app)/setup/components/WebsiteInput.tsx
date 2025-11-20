@@ -1,21 +1,26 @@
-'use client';
+"use client";
 
-import { Input } from '@trycompai/ui/input';
-import { type InputHTMLAttributes, forwardRef, useCallback, useEffect, useState } from 'react';
+import type { InputHTMLAttributes } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
 
-interface WebsiteInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'prefix'> {
+import { Input } from "@trycompai/ui/input";
+
+interface WebsiteInputProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "prefix"> {
   onValueChange?: (value: string) => void;
 }
 
 export const WebsiteInput = forwardRef<HTMLInputElement, WebsiteInputProps>(
   ({ value: propValue, onChange, onValueChange, onBlur, ...props }, ref) => {
     // Use local state for the display value
-    const [displayValue, setDisplayValue] = useState('');
+    const [displayValue, setDisplayValue] = useState("");
 
     // Update display value when prop value changes
     useEffect(() => {
-      if (typeof propValue === 'string') {
-        setDisplayValue(propValue.replace(/^https?:\/\//, '').replace(/^www\./, ''));
+      if (typeof propValue === "string") {
+        setDisplayValue(
+          propValue.replace(/^https?:\/\//, "").replace(/^www\./, ""),
+        );
       }
     }, [propValue]);
 
@@ -27,12 +32,12 @@ export const WebsiteInput = forwardRef<HTMLInputElement, WebsiteInputProps>(
         inputValue = inputValue.trim();
 
         // Remove any protocol if pasted
-        inputValue = inputValue.replace(/^https?:\/\//, '');
-        inputValue = inputValue.replace(/^ftp:\/\//, '');
-        inputValue = inputValue.replace(/^\/\//, '');
+        inputValue = inputValue.replace(/^https?:\/\//, "");
+        inputValue = inputValue.replace(/^ftp:\/\//, "");
+        inputValue = inputValue.replace(/^\/\//, "");
 
         // Clean up multiple slashes (except for the protocol)
-        inputValue = inputValue.replace(/([^:]\/)\/+/g, '$1');
+        inputValue = inputValue.replace(/([^:]\/)\/+/g, "$1");
 
         // Update display value
         setDisplayValue(inputValue);
@@ -41,9 +46,9 @@ export const WebsiteInput = forwardRef<HTMLInputElement, WebsiteInputProps>(
         if (!inputValue) {
           onChange?.({
             ...e,
-            target: { ...e.target, value: '', name: e.target.name },
+            target: { ...e.target, value: "", name: e.target.name },
           } as React.ChangeEvent<HTMLInputElement>);
-          onValueChange?.('');
+          onValueChange?.("");
           return;
         }
 
@@ -72,7 +77,7 @@ export const WebsiteInput = forwardRef<HTMLInputElement, WebsiteInputProps>(
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
         // On blur, ensure the value has a proper format
-        if (displayValue && !displayValue.includes('.')) {
+        if (displayValue && !displayValue.includes(".")) {
           // If there's no dot, add .com as a helpful default
           const finalValue = `https://${displayValue}.com`;
           const syntheticEvent = {
@@ -85,7 +90,10 @@ export const WebsiteInput = forwardRef<HTMLInputElement, WebsiteInputProps>(
           } as React.FocusEvent<HTMLInputElement>;
 
           setDisplayValue(`${displayValue}.com`);
-          onChange?.({ ...syntheticEvent, type: 'change' } as React.ChangeEvent<HTMLInputElement>);
+          onChange?.({
+            ...syntheticEvent,
+            type: "change",
+          } as React.ChangeEvent<HTMLInputElement>);
           onValueChange?.(finalValue);
         }
 
@@ -111,4 +119,4 @@ export const WebsiteInput = forwardRef<HTMLInputElement, WebsiteInputProps>(
   },
 );
 
-WebsiteInput.displayName = 'WebsiteInput';
+WebsiteInput.displayName = "WebsiteInput";

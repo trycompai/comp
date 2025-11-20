@@ -114,37 +114,40 @@ The `CheckoutCompleteTracking` component automatically tracks conversions when u
 ### Client-Side Tracking
 
 ```typescript
-import { trackEvent, trackPurchaseEvent } from '@/utils/tracking';
+import { trackEvent, trackPurchaseEvent } from "@/utils/tracking";
 
 // Track a custom event
-trackEvent('feature_used', {
-  event_category: 'engagement',
-  event_label: 'export_data',
-  feature_name: 'data_export',
+trackEvent("feature_used", {
+  event_category: "engagement",
+  event_label: "export_data",
+  feature_name: "data_export",
 });
 
 // Track a purchase event
-trackPurchaseEvent('checkout_started', 99, 'USD');
+trackPurchaseEvent("checkout_started", 99, "USD");
 ```
 
 ### Server-Side Tracking
 
 ```typescript
-import { trackEventServer, trackPurchaseCompletionServer } from '@/utils/server-tracking';
+import {
+  trackEventServer,
+  trackPurchaseCompletionServer,
+} from "@/utils/server-tracking";
 
 // Track any event from server
 await trackEventServer(
-  'api_called',
+  "api_called",
   {
-    event_category: 'api',
-    endpoint: '/api/data',
-    method: 'POST',
+    event_category: "api",
+    endpoint: "/api/data",
+    method: "POST",
   },
   userId,
 );
 
 // Track purchase completion
-await trackPurchaseCompletionServer(organizationId, 'starter', 99, userId);
+await trackPurchaseCompletionServer(organizationId, "starter", 99, userId);
 ```
 
 ## Setup Instructions

@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { CreateVendorDto } from './dto/create-vendor.dto';
-import { UpdateVendorDto } from './dto/update-vendor.dto';
+import type { CreateVendorDto } from './dto/create-vendor.dto';
+import type { UpdateVendorDto } from './dto/update-vendor.dto';
 
 @Injectable()
 export class VendorsService {

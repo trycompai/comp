@@ -1,16 +1,24 @@
-'use client';
+"use client";
 
-import { OnboardingStepInput } from '@/app/(app)/setup/components/OnboardingStepInput';
-import { AnimatedWrapper } from '@/components/animated-wrapper';
-import { LogoSpinner } from '@/components/logo-spinner';
-import type { Organization } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import Balancer from 'react-wrap-balancer';
-import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';
+import { OnboardingStepInput } from "@/app/(app)/setup/components/OnboardingStepInput";
+import { AnimatedWrapper } from "@/components/animated-wrapper";
+import { LogoSpinner } from "@/components/logo-spinner";
+import { Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useMemo } from "react";
+import Balancer from "react-wrap-balancer";
+
+import type { Organization } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@trycompai/ui/form";
+
+import { usePostPaymentOnboarding } from "../hooks/usePostPaymentOnboarding";
 
 interface PostPaymentOnboardingProps {
   organization: Organization;
@@ -43,13 +51,13 @@ export function PostPaymentOnboarding({
   });
 
   const isLocal = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    const host = window.location.host || '';
+    if (typeof window === "undefined") return false;
+    const host = window.location.host || "";
     return (
-      process.env.NODE_ENV !== 'production' ||
-      host.includes('localhost') ||
-      host.startsWith('127.0.0.1') ||
-      host.startsWith('::1')
+      process.env.NODE_ENV !== "production" ||
+      host.includes("localhost") ||
+      host.startsWith("127.0.0.1") ||
+      host.startsWith("::1")
     );
   }, []);
 
@@ -57,30 +65,32 @@ export function PostPaymentOnboarding({
   const currentStepValue = form.watch(step?.key);
   const isCurrentStepValid = (() => {
     if (!step) return false;
-    if (step.key === 'frameworkIds') {
+    if (step.key === "frameworkIds") {
       return Array.isArray(currentStepValue) && currentStepValue.length > 0;
     }
     // For other fields, check if they have a value
-    return Boolean(currentStepValue) && String(currentStepValue).trim().length > 0;
+    return (
+      Boolean(currentStepValue) && String(currentStepValue).trim().length > 0
+    );
   })();
 
   // Dispatch custom event for background animation when step changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       if (isFinalizing) {
         // Set to max scale when finalizing
         window.dispatchEvent(
-          new CustomEvent('onboarding-step-change', {
+          new CustomEvent("onboarding-step-change", {
             detail: { stepIndex: totalSteps - 1, totalSteps, progress: 1 },
-          }),
+          })
         );
       } else {
         const progress = stepIndex / (totalSteps - 1);
         // Dispatch custom event to notify the background wrapper
         window.dispatchEvent(
-          new CustomEvent('onboarding-step-change', {
+          new CustomEvent("onboarding-step-change", {
             detail: { stepIndex, totalSteps, progress },
-          }),
+          })
         );
       }
     }
@@ -91,33 +101,35 @@ export function PostPaymentOnboarding({
       <LogoSpinner />
     </div>
   ) : (
-    <div className="flex flex-1 flex-col md:px-18 md:py-12 px-4 py-6">
+    <div className="flex flex-1 flex-col px-4 py-6 md:px-18 md:py-12">
       {/* Progress Stepper */}
       <AnimatedWrapper
         delay={700}
         animationKey={`progress-${step?.key}`}
         className="mb-8 md:max-w-sm"
       >
-        <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
+        <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
           <div
-            className="h-full bg-primary transition-all duration-300"
+            className="bg-primary h-full transition-all duration-300"
             style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }}
           />
         </div>
       </AnimatedWrapper>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col">
         {/* Title */}
         <div className="mb-8">
           <AnimatedWrapper delay={800} animationKey={`title-${step?.key}`}>
-            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
-              <Balancer>{step?.question || ''}</Balancer>
+            <h1 className="text-foreground mb-2 text-2xl font-bold md:text-4xl">
+              <Balancer>{step?.question || ""}</Balancer>
             </h1>
           </AnimatedWrapper>
           <AnimatedWrapper delay={1000} animationKey={`subtitle-${step?.key}`}>
-            <p className="text-md md:text-lg text-muted-foreground flex items-center flex-wrap">
-              <Balancer>Our AI will personalize the platform based on your answers.</Balancer>
+            <p className="text-md text-muted-foreground flex flex-wrap items-center md:text-lg">
+              <Balancer>
+                Our AI will personalize the platform based on your answers.
+              </Balancer>
             </p>
           </AnimatedWrapper>
         </div>
@@ -157,7 +169,7 @@ export function PostPaymentOnboarding({
         </div>
 
         {/* Action Buttons - Fixed at bottom */}
-        <div className="flex items-center gap-2 justify-end">
+        <div className="flex items-center justify-end gap-2">
           <AnimatePresence>
             {stepIndex > 0 && (
               <motion.div
@@ -209,7 +221,12 @@ export function PostPaymentOnboarding({
                 type="submit"
                 form="onboarding-form"
                 className="flex items-center gap-2"
-                disabled={!isCurrentStepValid || isOnboarding || isFinalizing || isLoading}
+                disabled={
+                  !isCurrentStepValid ||
+                  isOnboarding ||
+                  isFinalizing ||
+                  isLoading
+                }
                 data-testid="onboarding-next-button"
               >
                 <motion.span
@@ -229,7 +246,12 @@ export function PostPaymentOnboarding({
                 type="submit"
                 form="onboarding-form"
                 className="flex items-center gap-2"
-                disabled={!isCurrentStepValid || isOnboarding || isFinalizing || isLoading}
+                disabled={
+                  !isCurrentStepValid ||
+                  isOnboarding ||
+                  isFinalizing ||
+                  isLoading
+                }
                 data-testid="onboarding-next-button"
               >
                 <motion.span

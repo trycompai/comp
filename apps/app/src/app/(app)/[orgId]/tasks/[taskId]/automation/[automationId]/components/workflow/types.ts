@@ -1,10 +1,10 @@
 export type TestResult = {
-  status: 'success' | 'error';
+  status: "success" | "error";
   message?: string;
   data?: any;
   logs?: string[];
   error?: string;
   summary?: string;
-  evaluationStatus?: 'pass' | 'fail';
+  evaluationStatus?: "pass" | "fail";
   evaluationReason?: string;
 };

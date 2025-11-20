@@ -1,15 +1,24 @@
-import { env } from '@/env.mjs';
-import { dubAnalytics } from '@dub/better-auth';
-import { db } from '@trycompai/db';
-import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
-import { sendInviteMemberEmail } from '@trycompai/email/lib/invite-member';
-import { sendEmail } from '@trycompai/email/lib/resend';
-import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { nextCookies } from 'better-auth/next-js';
-import { bearer, emailOTP, jwt, magicLink, multiSession, organization } from 'better-auth/plugins';
-import { Dub } from 'dub';
-import { ac, allRoles } from './permissions';
+import { env } from "@/env.mjs";
+import { dubAnalytics } from "@dub/better-auth";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { nextCookies } from "better-auth/next-js";
+import {
+  bearer,
+  emailOTP,
+  jwt,
+  magicLink,
+  multiSession,
+  organization,
+} from "better-auth/plugins";
+import { Dub } from "dub";
+
+import { db } from "@trycompai/db";
+import { MagicLinkEmail, OTPVerificationEmail } from "@trycompai/email";
+import { sendInviteMemberEmail } from "@trycompai/email/lib/invite-member";
+import { sendEmail } from "@trycompai/email/lib/resend";
+
+import { ac, allRoles } from "./permissions";
 
 const dub = env.DUB_API_KEY
   ? new Dub({
@@ -41,12 +50,16 @@ if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
-    provider: 'postgresql',
+    provider: "postgresql",
   }),
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
   trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS
-    ? process.env.AUTH_TRUSTED_ORIGINS.split(',').map((o) => o.trim())
-    : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],
+    ? process.env.AUTH_TRUSTED_ORIGINS.split(",").map((o) => o.trim())
+    : [
+        "http://localhost:3000",
+        "https://*.trycomp.ai",
+        "http://localhost:3002",
+      ],
   emailAndPassword: {
     enabled: true,
   },
@@ -61,7 +74,10 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (session) => {
-          console.log('[Better Auth] Session creation hook called for user:', session.userId);
+          console.log(
+            "[Better Auth] Session creation hook called for user:",
+            session.userId
+          );
           try {
             // Find the user's first organization to set as active
             const userOrganization = await db.organization.findFirst({
@@ -73,7 +89,7 @@ export const auth = betterAuth({
                 },
               },
               orderBy: {
-                createdAt: 'desc', // Get the most recently joined organization
+                createdAt: "desc", // Get the most recently joined organization
               },
               select: {
                 id: true,
@@ -83,7 +99,7 @@ export const auth = betterAuth({
 
             if (userOrganization) {
               console.log(
-                `[Better Auth] Setting activeOrganizationId to ${userOrganization.id} (${userOrganization.name}) for user ${session.userId}`,
+                `[Better Auth] Setting activeOrganizationId to ${userOrganization.id} (${userOrganization.name}) for user ${session.userId}`
               );
               return {
                 data: {
@@ -92,13 +108,15 @@ export const auth = betterAuth({
                 },
               };
             } else {
-              console.log(`[Better Auth] No organization found for user ${session.userId}`);
+              console.log(
+                `[Better Auth] No organization found for user ${session.userId}`
+              );
               return {
                 data: session,
               };
             }
           } catch (error) {
-            console.error('[Better Auth] Session creation hook error:', error);
+            console.error("[Better Auth] Session creation hook error:", error);
             // Fallback: create session without organization
             return {
               data: session,
@@ -113,18 +131,18 @@ export const auth = betterAuth({
     organization({
       membershipLimit: 100000000000,
       async sendInvitationEmail(data) {
-        const isLocalhost = process.env.NODE_ENV === 'development';
-        const protocol = isLocalhost ? 'http' : 'https';
+        const isLocalhost = process.env.NODE_ENV === "development";
+        const protocol = isLocalhost ? "http" : "https";
 
         const betterAuthUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL;
-        const isDevEnv = betterAuthUrl?.includes('dev.trycomp.ai');
-        const isProdEnv = betterAuthUrl?.includes('app.trycomp.ai');
+        const isDevEnv = betterAuthUrl?.includes("dev.trycomp.ai");
+        const isProdEnv = betterAuthUrl?.includes("app.trycomp.ai");
 
         const domain = isDevEnv
-          ? 'dev.trycomp.ai'
+          ? "dev.trycomp.ai"
           : isProdEnv
-            ? 'app.trycomp.ai'
-            : 'localhost:3000';
+            ? "app.trycomp.ai"
+            : "localhost:3000";
         const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
 
         await sendInviteMemberEmail({
@@ -137,7 +155,7 @@ export const auth = betterAuth({
       roles: allRoles,
       schema: {
         organization: {
-          modelName: 'Organization',
+          modelName: "Organization",
         },
       },
     }),
@@ -146,7 +164,7 @@ export const auth = betterAuth({
         const urlWithInviteCode = `${url}`;
         await sendEmail({
           to: email,
-          subject: 'Login to Comp AI',
+          subject: "Login to Comp AI",
           react: MagicLinkEmail({
             email,
             url: urlWithInviteCode,
@@ -160,7 +178,7 @@ export const auth = betterAuth({
       async sendVerificationOTP({ email, otp }) {
         await sendEmail({
           to: email,
-          subject: 'One-Time Password for Comp AI',
+          subject: "One-Time Password for Comp AI",
           react: OTPVerificationEmail({ email, otp }),
         });
       },
@@ -176,7 +194,7 @@ export const auth = betterAuth({
             emailVerified: user.emailVerified,
           };
         },
-        expirationTime: '1h', // Extend from default 15 minutes to 1 hour for better UX
+        expirationTime: "1h", // Extend from default 15 minutes to 1 hour for better UX
       },
     }), // Enable JWT token generation and JWKS endpoints
     bearer(), // Enable Bearer token authentication for client-side API calls
@@ -186,25 +204,25 @@ export const auth = betterAuth({
   ],
   socialProviders,
   user: {
-    modelName: 'User',
+    modelName: "User",
   },
   organization: {
-    modelName: 'Organization',
+    modelName: "Organization",
   },
   member: {
-    modelName: 'Member',
+    modelName: "Member",
   },
   invitation: {
-    modelName: 'Invitation',
+    modelName: "Invitation",
   },
   session: {
-    modelName: 'Session',
+    modelName: "Session",
   },
   account: {
-    modelName: 'Account',
+    modelName: "Account",
   },
   verification: {
-    modelName: 'Verification',
+    modelName: "Verification",
   },
 });
 

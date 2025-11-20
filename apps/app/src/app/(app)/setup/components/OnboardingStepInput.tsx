@@ -1,15 +1,17 @@
-import { AnimatedWrapper } from '@/components/animated-wrapper';
-import { SelectablePill } from '@/components/selectable-pill';
-import { FormLabel } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Textarea } from '@trycompai/ui/textarea';
-import { X } from 'lucide-react';
-import { useRef, useState } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
-import { Controller } from 'react-hook-form';
-import type { CompanyDetails, Step } from '../lib/types';
-import { FrameworkSelection } from './FrameworkSelection';
-import { WebsiteInput } from './WebsiteInput';
+import type { UseFormReturn } from "react-hook-form";
+import { useRef, useState } from "react";
+import { AnimatedWrapper } from "@/components/animated-wrapper";
+import { SelectablePill } from "@/components/selectable-pill";
+import { X } from "lucide-react";
+import { Controller } from "react-hook-form";
+
+import { FormLabel } from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
+import { Textarea } from "@trycompai/ui/textarea";
+
+import type { CompanyDetails, Step } from "../lib/types";
+import { FrameworkSelection } from "./FrameworkSelection";
+import { WebsiteInput } from "./WebsiteInput";
 
 export type OnboardingFormFields = Partial<CompanyDetails> & {
   [K in keyof CompanyDetails as `${K}Other`]?: string;
@@ -29,13 +31,16 @@ export function OnboardingStepInput({
   onLoadingChange,
 }: OnboardingStepInputProps) {
   // Hooks must be called at the top level
-  const [customValue, setCustomValue] = useState('');
+  const [customValue, setCustomValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  if (currentStep.key === 'frameworkIds') {
+  if (currentStep.key === "frameworkIds") {
     return (
-      <AnimatedWrapper delay={100} animationKey={`framework-${currentStep.key}`}>
+      <AnimatedWrapper
+        delay={100}
+        animationKey={`framework-${currentStep.key}`}
+      >
         <div data-testid={`onboarding-input-${currentStep.key}`}>
           <FrameworkSelection
             value={form.getValues(currentStep.key) || []}
@@ -47,15 +52,18 @@ export function OnboardingStepInput({
     );
   }
 
-  if (currentStep.key === 'shipping') {
+  if (currentStep.key === "shipping") {
     return (
-      <div className="space-y-4" data-testid={`onboarding-input-${currentStep.key}`}>
+      <div
+        className="space-y-4"
+        data-testid={`onboarding-input-${currentStep.key}`}
+      >
         <AnimatedWrapper delay={100}>
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <FormLabel>Full Name</FormLabel>
               <Input
-                {...form.register('shipping.fullName')}
+                {...form.register("shipping.fullName")}
                 placeholder="John Doe"
                 autoFocus
                 data-testid={`onboarding-input-${currentStep.key}-fullName`}
@@ -67,7 +75,7 @@ export function OnboardingStepInput({
             <div className="flex-1">
               <FormLabel>Phone</FormLabel>
               <Input
-                {...form.register('shipping.phone')}
+                {...form.register("shipping.phone")}
                 placeholder="+1 (555) 123-4567"
                 autoFocus
                 data-testid={`onboarding-input-${currentStep.key}-phone`}
@@ -82,7 +90,7 @@ export function OnboardingStepInput({
           <div>
             <FormLabel>Address</FormLabel>
             <Textarea
-              {...form.register('shipping.address')}
+              {...form.register("shipping.address")}
               placeholder="123 Main St, Apt 4B, Springfield, IL, USA"
               rows={2}
               maxLength={300}
@@ -94,7 +102,7 @@ export function OnboardingStepInput({
           </div>
         </AnimatedWrapper>
         <AnimatedWrapper delay={300}>
-          <p className="text-xs text-center sm:text-left text-muted-foreground">
+          <p className="text-muted-foreground text-center text-xs sm:text-left">
             * We won't use your shipping details for any marketing.
           </p>
         </AnimatedWrapper>
@@ -102,7 +110,7 @@ export function OnboardingStepInput({
     );
   }
 
-  if (currentStep.key === 'website') {
+  if (currentStep.key === "website") {
     return (
       <AnimatedWrapper delay={100} animationKey={`website-${currentStep.key}`}>
         <Controller
@@ -121,12 +129,12 @@ export function OnboardingStepInput({
     );
   }
 
-  if (currentStep.key === 'describe') {
+  if (currentStep.key === "describe") {
     return (
       <AnimatedWrapper delay={100} animationKey={`describe-${currentStep.key}`}>
         <Textarea
           {...form.register(currentStep.key)}
-          placeholder={`${savedAnswers.organizationName || ''} is a company that...`}
+          placeholder={`${savedAnswers.organizationName || ""} is a company that...`}
           rows={2}
           maxLength={300}
           className="h-24 resize-none"
@@ -139,15 +147,18 @@ export function OnboardingStepInput({
   if (currentStep.options) {
     // Single-select fields
     if (
-      currentStep.key === 'industry' ||
-      currentStep.key === 'teamSize' ||
-      currentStep.key === 'workLocation'
+      currentStep.key === "industry" ||
+      currentStep.key === "teamSize" ||
+      currentStep.key === "workLocation"
     ) {
       const selectedValue = form.watch(currentStep.key);
 
       return (
         <AnimatedWrapper delay={100} animationKey={`select-${currentStep.key}`}>
-          <div className="flex flex-wrap gap-2" data-testid={`onboarding-input-${currentStep.key}`}>
+          <div
+            className="flex flex-wrap gap-2"
+            data-testid={`onboarding-input-${currentStep.key}`}
+          >
             {currentStep.options.map((option) => (
               <SelectablePill
                 key={option}
@@ -166,7 +177,9 @@ export function OnboardingStepInput({
     }
 
     // Multi-select fields with custom value support
-    const selectedValues = (form.watch(currentStep.key) || '').split(',').filter(Boolean);
+    const selectedValues = (form.watch(currentStep.key) || "")
+      .split(",")
+      .filter(Boolean);
 
     const handlePillToggle = (option: string) => {
       const isSelected = selectedValues.includes(option);
@@ -178,25 +191,29 @@ export function OnboardingStepInput({
         newValues = [...selectedValues, option];
       }
 
-      form.setValue(currentStep.key, newValues.join(','));
+      form.setValue(currentStep.key, newValues.join(","));
     };
 
     const handleAddCustom = () => {
       if (customValue.trim() && !selectedValues.includes(customValue.trim())) {
         const newValues = [...selectedValues, customValue.trim()];
-        form.setValue(currentStep.key, newValues.join(','));
-        setCustomValue('');
+        form.setValue(currentStep.key, newValues.join(","));
+        setCustomValue("");
       }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         e.preventDefault();
         handleAddCustom();
-      } else if (e.key === 'Backspace' && customValue === '' && selectedValues.length > 0) {
+      } else if (
+        e.key === "Backspace" &&
+        customValue === "" &&
+        selectedValues.length > 0
+      ) {
         e.preventDefault();
         const newValues = selectedValues.slice(0, -1);
-        form.setValue(currentStep.key, newValues.join(','));
+        form.setValue(currentStep.key, newValues.join(","));
       }
     };
 
@@ -204,17 +221,20 @@ export function OnboardingStepInput({
 
     return (
       <AnimatedWrapper delay={100} animationKey={`pills-${currentStep.key}`}>
-        <div className="space-y-4" data-testid={`onboarding-input-${currentStep.key}`}>
+        <div
+          className="space-y-4"
+          data-testid={`onboarding-input-${currentStep.key}`}
+        >
           {/* Tag input container */}
           <div
             ref={containerRef}
             onClick={() => inputRef.current?.focus()}
-            className="flex flex-wrap items-center gap-2 p-3 border border-input rounded-md min-h-[3.25rem] bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text transition-all duration-200 ease-in-out"
+            className="border-input bg-background focus-within:ring-ring flex min-h-[3.25rem] cursor-text flex-wrap items-center gap-2 rounded-md border p-3 transition-all duration-200 ease-in-out focus-within:ring-2 focus-within:ring-offset-2"
           >
             {selectedValues.map((value) => (
               <span
                 key={value}
-                className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-medium"
+                className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
               >
                 {value}
                 <button
@@ -236,14 +256,20 @@ export function OnboardingStepInput({
               value={customValue}
               onChange={(e) => setCustomValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={selectedValues.length === 0 ? 'Search or add custom (press Enter)' : ''}
-              className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+              placeholder={
+                selectedValues.length === 0
+                  ? "Search or add custom (press Enter)"
+                  : ""
+              }
+              className="placeholder:text-muted-foreground min-w-[120px] flex-1 bg-transparent text-sm outline-none"
               autoFocus
             />
           </div>
 
           {/* Suggested options */}
-          {predefinedOptions.filter((option) => !selectedValues.includes(option)).length > 0 && (
+          {predefinedOptions.filter(
+            (option) => !selectedValues.includes(option),
+          ).length > 0 && (
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
                 {predefinedOptions

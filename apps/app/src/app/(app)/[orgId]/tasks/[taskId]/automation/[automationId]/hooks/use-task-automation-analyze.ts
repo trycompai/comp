@@ -13,25 +13,25 @@
  * ```
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
+
 import type {
   TaskAutomationAnalyze,
   TaskAutomationAnalyzeStep,
   UseTaskAutomationAnalyzeOptions,
-} from '../lib/types';
-
-import { taskAutomationApi } from '../lib/task-automation-api';
+} from "../lib/types";
+import { taskAutomationApi } from "../lib/task-automation-api";
 
 export function useTaskAutomationAnalyze({
   scriptContent,
   enabled = true,
 }: UseTaskAutomationAnalyzeOptions) {
   const [steps, setSteps] = useState<TaskAutomationAnalyzeStep[]>([]);
-  const [title, setTitle] = useState<string>('');
+  const [title, setTitle] = useState<string>("");
   const [integrationsUsed, setIntegrationsUsed] = useState<
-    TaskAutomationAnalyze['integrationsUsed']
+    TaskAutomationAnalyze["integrationsUsed"]
   >([]);
-  const [description, setDescription] = useState<string>('');
+  const [description, setDescription] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -49,53 +49,56 @@ export function useTaskAutomationAnalyze({
       )) as TaskAutomationAnalyze;
 
       // Map the API response to our workflow steps format
-      const steps: TaskAutomationAnalyzeStep[] = result.steps.map((step, index) => ({
-        id: `step-${index}`,
-        title: step.title,
-        description: step.description,
-        type: step.type as TaskAutomationAnalyzeStep['type'],
-        iconType: step.iconType as TaskAutomationAnalyzeStep['iconType'],
-      }));
+      const steps: TaskAutomationAnalyzeStep[] = result.steps.map(
+        (step, index) => ({
+          id: `step-${index}`,
+          title: step.title,
+          description: step.description,
+          type: step.type as TaskAutomationAnalyzeStep["type"],
+          iconType: step.iconType as TaskAutomationAnalyzeStep["iconType"],
+        }),
+      );
 
       setSteps(steps);
       setTitle(result.title);
       setIntegrationsUsed(result.integrationsUsed);
-      setDescription('Automation workflow');
+      setDescription("Automation workflow");
 
-      return { steps, description: 'Automation workflow' };
+      return { steps, description: "Automation workflow" };
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to analyze workflow');
+      const error =
+        err instanceof Error ? err : new Error("Failed to analyze workflow");
       setError(error);
 
       // Fallback to a generic workflow on error
       const fallbackSteps: TaskAutomationAnalyzeStep[] = [
         {
-          id: 'start',
-          title: 'Start Automation',
-          description: 'Initialize the automation process',
-          type: 'trigger',
-          iconType: 'start',
+          id: "start",
+          title: "Start Automation",
+          description: "Initialize the automation process",
+          type: "trigger",
+          iconType: "start",
         },
         {
-          id: 'execute',
-          title: 'Execute Script',
-          description: 'Run the automation logic',
-          type: 'action',
-          iconType: 'process',
+          id: "execute",
+          title: "Execute Script",
+          description: "Run the automation logic",
+          type: "action",
+          iconType: "process",
         },
         {
-          id: 'complete',
-          title: 'Complete',
-          description: 'Automation finished successfully',
-          type: 'output',
-          iconType: 'complete',
+          id: "complete",
+          title: "Complete",
+          description: "Automation finished successfully",
+          type: "output",
+          iconType: "complete",
         },
       ];
 
       setSteps(fallbackSteps);
-      setDescription('Automation workflow');
+      setDescription("Automation workflow");
 
-      return { steps: fallbackSteps, description: 'Automation workflow' };
+      return { steps: fallbackSteps, description: "Automation workflow" };
     } finally {
       setIsAnalyzing(false);
     }

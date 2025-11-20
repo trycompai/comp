@@ -1,4 +1,5 @@
-import { Editor } from '@tiptap/react';
+import React from "react";
+import { Editor } from "@tiptap/react";
 import {
   Check,
   ChevronDown,
@@ -9,11 +10,10 @@ import {
   ListOrdered,
   TextQuote,
   Type,
-} from 'lucide-react';
-import React from 'react';
+} from "lucide-react";
 
-import { Button } from '../../button';
-import { Popover, PopoverContent, PopoverTrigger } from '../../popover';
+import { Button } from "../../button";
+import { Popover, PopoverContent, PopoverTrigger } from "../../popover";
 
 export type SelectorItem = {
   name: string;
@@ -24,55 +24,63 @@ export type SelectorItem = {
 
 const items: SelectorItem[] = [
   {
-    name: 'Text',
+    name: "Text",
     icon: Type,
-    command: (editor) => editor.chain().focus().toggleNode('paragraph', 'paragraph').run(),
+    command: (editor) =>
+      editor.chain().focus().toggleNode("paragraph", "paragraph").run(),
     isActive: (editor) =>
-      editor.isActive('paragraph') &&
-      !editor.isActive('bulletList') &&
-      !editor.isActive('orderedList'),
+      editor.isActive("paragraph") &&
+      !editor.isActive("bulletList") &&
+      !editor.isActive("orderedList"),
   },
   {
-    name: 'Heading 1',
+    name: "Heading 1",
     icon: Heading1,
-    command: (editor) => editor.chain().focus().clearNodes().toggleHeading({ level: 1 }).run(),
-    isActive: (editor) => editor.isActive('heading', { level: 1 }),
+    command: (editor) =>
+      editor.chain().focus().clearNodes().toggleHeading({ level: 1 }).run(),
+    isActive: (editor) => editor.isActive("heading", { level: 1 }),
   },
   {
-    name: 'Heading 2',
+    name: "Heading 2",
     icon: Heading2,
-    command: (editor) => editor.chain().focus().clearNodes().toggleHeading({ level: 2 }).run(),
-    isActive: (editor) => editor.isActive('heading', { level: 2 }),
+    command: (editor) =>
+      editor.chain().focus().clearNodes().toggleHeading({ level: 2 }).run(),
+    isActive: (editor) => editor.isActive("heading", { level: 2 }),
   },
   {
-    name: 'Heading 3',
+    name: "Heading 3",
     icon: Heading3,
-    command: (editor) => editor.chain().focus().clearNodes().toggleHeading({ level: 3 }).run(),
-    isActive: (editor) => editor.isActive('heading', { level: 3 }),
+    command: (editor) =>
+      editor.chain().focus().clearNodes().toggleHeading({ level: 3 }).run(),
+    isActive: (editor) => editor.isActive("heading", { level: 3 }),
   },
   {
-    name: 'Bullet List',
+    name: "Bullet List",
     icon: ListOrdered,
-    command: (editor) => editor.chain().focus().clearNodes().toggleBulletList().run(),
-    isActive: (editor) => editor.isActive('bulletList'),
+    command: (editor) =>
+      editor.chain().focus().clearNodes().toggleBulletList().run(),
+    isActive: (editor) => editor.isActive("bulletList"),
   },
   {
-    name: 'Numbered List',
+    name: "Numbered List",
     icon: ListOrdered,
-    command: (editor) => editor.chain().focus().clearNodes().toggleOrderedList().run(),
-    isActive: (editor) => editor.isActive('orderedList'),
+    command: (editor) =>
+      editor.chain().focus().clearNodes().toggleOrderedList().run(),
+    isActive: (editor) => editor.isActive("orderedList"),
   },
   {
-    name: 'Quote',
+    name: "Quote",
     icon: TextQuote,
-    command: (editor) => editor.chain().focus().clearNodes().toggleBlockquote().run(),
-    isActive: (editor) => editor.isActive('blockquote'),
+    command: (editor) =>
+      editor.chain().focus().clearNodes().toggleBlockquote().run(),
+    isActive: (editor) => editor.isActive("blockquote"),
   },
   {
-    name: 'Code',
+    name: "Code",
     icon: Code,
-    command: (editor) => editor.chain().focus().clearNodes().toggleCodeBlock().run(),
-    isActive: (editor) => editor.isActive('codeBlock'),
+    command: (editor) =>
+      editor.chain().focus().clearNodes().toggleCodeBlock().run(),
+    isActive: (editor) => editor.isActive("codeBlock"),
   },
 ];
 
@@ -82,16 +90,23 @@ interface NodeSelectorProps {
   editor: Editor;
 }
 
-export const NodeSelector = ({ open, onOpenChange, editor }: NodeSelectorProps) => {
+export const NodeSelector = ({
+  open,
+  onOpenChange,
+  editor,
+}: NodeSelectorProps) => {
   if (!editor) return null;
 
   const activeItem = items.filter((item) => item.isActive(editor)).pop() ?? {
-    name: 'Multiple',
+    name: "Multiple",
   };
 
   return (
     <Popover modal={true} open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild className="hover:bg-accent gap-2 rounded-sm border-none focus:ring-0">
+      <PopoverTrigger
+        asChild
+        className="hover:bg-accent gap-2 rounded-sm border-none focus:ring-0"
+      >
         <Button size="sm" variant="ghost" className="gap-2">
           <span className="text-sm whitespace-nowrap">{activeItem.name}</span>
           <ChevronDown className="h-4 w-4" />
@@ -105,7 +120,7 @@ export const NodeSelector = ({ open, onOpenChange, editor }: NodeSelectorProps) 
               item.command(editor);
               onOpenChange(false);
             }}
-            className="hover:bg-accent flex cursor-pointer items-center justify-between rounded-sm px-2 py-1 text-sm w-full"
+            className="hover:bg-accent flex w-full cursor-pointer items-center justify-between rounded-sm px-2 py-1 text-sm"
           >
             <div className="flex items-center space-x-2">
               <div className="rounded-sm border p-1">

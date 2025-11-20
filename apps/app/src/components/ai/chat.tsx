@@ -1,29 +1,36 @@
-'use client';
+"use client";
 
-import { useSession } from '@/utils/auth-client';
-import { useChat } from '@ai-sdk/react';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
-import { useState } from 'react';
-import { ChatEmpty } from './chat-empty';
-import { ChatTextarea } from './chat-text-area';
-import { Messages } from './messages';
+import { useState } from "react";
+import { useSession } from "@/utils/auth-client";
+import { useChat } from "@ai-sdk/react";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from "ai";
+
+import { ScrollArea } from "@trycompai/ui/scroll-area";
+
+import { ChatEmpty } from "./chat-empty";
+import { ChatTextarea } from "./chat-text-area";
+import { Messages } from "./messages";
 
 export default function Chat() {
   const { data: session } = useSession();
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
 
-  const { messages, sendMessage, addToolResult, error, status, stop } = useChat({
-    transport: new DefaultChatTransport({
-      api: '/api/chat',
-    }),
+  const { messages, sendMessage, addToolResult, error, status, stop } = useChat(
+    {
+      transport: new DefaultChatTransport({
+        api: "/api/chat",
+      }),
 
-    // Automatically submit when all server-side tool calls are complete
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-  });
+      // Automatically submit when all server-side tool calls are complete
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    },
+  );
 
-  const isLoading = status === 'streaming' || status === 'submitted';
+  const isLoading = status === "streaming" || status === "submitted";
 
   if (error) return <div>{error.message}</div>;
 
@@ -32,7 +39,9 @@ export default function Chat() {
       <ScrollArea className="h-[calc(100vh-100px)]">
         {messages.length === 0 ? (
           <div className="mx-auto w-full max-w-xl">
-            <ChatEmpty firstName={session?.user?.name?.split(' ').at(0) ?? ''} />
+            <ChatEmpty
+              firstName={session?.user?.name?.split(" ").at(0) ?? ""}
+            />
           </div>
         ) : (
           <Messages messages={messages} isLoading={isLoading} status={status} />
@@ -44,7 +53,7 @@ export default function Chat() {
           e.preventDefault();
           if (input.trim()) {
             sendMessage({ text: input });
-            setInput('');
+            setInput("");
           }
         }}
       >

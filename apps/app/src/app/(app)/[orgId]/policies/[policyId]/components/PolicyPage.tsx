@@ -1,10 +1,12 @@
-import type { JSONContent } from '@tiptap/react';
-import { Control, Member, Policy, User } from '@trycompai/db';
-import { Comments } from '../../../../../../components/comments/Comments';
-import { AuditLogWithRelations } from '../data';
-import { PolicyContentManager } from '../editor/components/PolicyDetails';
-import { PolicyOverview } from './PolicyOverview';
-import { RecentAuditLogs } from './RecentAuditLogs';
+import type { JSONContent } from "@tiptap/react";
+
+import { Control, Member, Policy, User } from "@trycompai/db";
+
+import { Comments } from "../../../../../../components/comments/Comments";
+import { AuditLogWithRelations } from "../data";
+import { PolicyContentManager } from "../editor/components/PolicyDetails";
+import { PolicyOverview } from "./PolicyOverview";
+import { RecentAuditLogs } from "./RecentAuditLogs";
 
 export default function PolicyPage({
   policy,

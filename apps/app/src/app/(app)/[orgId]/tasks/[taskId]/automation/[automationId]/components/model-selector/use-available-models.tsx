@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 interface DisplayModel {
   id: string;
@@ -26,19 +26,23 @@ export function useAvailableModels() {
       try {
         const response = await fetch(url);
         if (!response.ok) {
-          throw new Error('Failed to fetch models');
+          throw new Error("Failed to fetch models");
         }
         const data = await response.json();
-        const newModels = data.models.map((model: { id: string; name: string }) => ({
-          id: model.id,
-          label: model.name,
-        }));
+        const newModels = data.models.map(
+          (model: { id: string; name: string }) => ({
+            id: model.id,
+            label: model.name,
+          }),
+        );
         setModels(newModels);
         setError(null);
         setRetryCount(0);
         setIsLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch models'));
+        setError(
+          err instanceof Error ? err : new Error("Failed to fetch models"),
+        );
         if (retryCount < MAX_RETRIES) {
           setRetryCount((prev) => prev + 1);
           setIsLoading(true);

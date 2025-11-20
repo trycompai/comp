@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 interface UsePageLoadAnimationOptions {
   delay?: number;
@@ -31,9 +31,9 @@ export function usePageLoadAnimation({
     isVisible,
     animationStep,
     getAnimationClass: (step: number) => {
-      if (!isVisible) return 'opacity-0 translate-y-4';
-      if (animationStep < step) return 'opacity-0 translate-y-4';
-      return 'opacity-100 translate-y-0';
+      if (!isVisible) return "opacity-0 translate-y-4";
+      if (animationStep < step) return "opacity-0 translate-y-4";
+      return "opacity-100 translate-y-0";
     },
     getTransitionClass: (step: number, duration = 500) =>
       `transition-all duration-${duration} ease-out delay-${step * 100}`,

@@ -1,23 +1,28 @@
-import { AnimatedLayout } from '@/components/animated-layout';
-import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
-import { Header } from '@/components/header';
-import { AssistantSheet } from '@/components/sheets/assistant-sheet';
-import { Sidebar } from '@/components/sidebar';
-import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { SidebarProvider } from '@/context/sidebar-context';
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import dynamic from 'next/dynamic';
-import { cookies, headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
-import { ConditionalOnboardingTracker } from './components/ConditionalOnboardingTracker';
-import { ConditionalPaddingWrapper } from './components/ConditionalPaddingWrapper';
-import { DynamicMinHeight } from './components/DynamicMinHeight';
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { AnimatedLayout } from "@/components/animated-layout";
+import { CheckoutCompleteDialog } from "@/components/dialogs/checkout-complete-dialog";
+import { Header } from "@/components/header";
+import { AssistantSheet } from "@/components/sheets/assistant-sheet";
+import { Sidebar } from "@/components/sidebar";
+import { TriggerTokenProvider } from "@/components/trigger-token-provider";
+import { SidebarProvider } from "@/context/sidebar-context";
+import { auth } from "@/utils/auth";
 
-const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
-  ssr: true,
-});
+import { db } from "@trycompai/db";
+
+import { ConditionalOnboardingTracker } from "./components/ConditionalOnboardingTracker";
+import { ConditionalPaddingWrapper } from "./components/ConditionalPaddingWrapper";
+import { DynamicMinHeight } from "./components/DynamicMinHeight";
+
+const HotKeys = dynamic(
+  () => import("@/components/hot-keys").then((mod) => mod.HotKeys),
+  {
+    ssr: true,
+  },
+);
 
 export default async function Layout({
   children,
@@ -29,8 +34,9 @@ export default async function Layout({
   const { orgId: requestedOrgId } = await params;
 
   const cookieStore = await cookies();
-  const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
-  let publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
+  const isCollapsed = cookieStore.get("sidebar-collapsed")?.value === "true";
+  let publicAccessToken =
+    cookieStore.get("publicAccessToken")?.value || undefined;
 
   // Check if user has access to this organization
   const session = await auth.api.getSession({
@@ -38,8 +44,8 @@ export default async function Layout({
   });
 
   if (!session) {
-    console.log('no session');
-    return redirect('/auth');
+    console.log("no session");
+    return redirect("/auth");
   }
 
   // First check if the organization exists and load access flags
@@ -49,7 +55,7 @@ export default async function Layout({
 
   if (!organization) {
     // Organization doesn't exist
-    return redirect('/auth/not-found');
+    return redirect("/auth/not-found");
   }
 
   const member = await db.member.findFirst({
@@ -61,11 +67,11 @@ export default async function Layout({
 
   if (!member) {
     // User doesn't have access to this organization
-    return redirect('/auth/unauthorized');
+    return redirect("/auth/unauthorized");
   }
 
-  if (member.role === 'employee' || member.role === 'contractor') {
-    return redirect('/no-access');
+  if (member.role === "employee" || member.role === "contractor") {
+    return redirect("/no-access");
   }
 
   // If this org is not accessible on current plan, redirect to upgrade
@@ -90,8 +96,13 @@ export default async function Layout({
       initialToken={publicAccessToken || undefined}
     >
       <SidebarProvider initialIsCollapsed={isCollapsed}>
-        <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
-          {onboarding?.triggerJobId && <ConditionalOnboardingTracker onboarding={onboarding} />}
+        <AnimatedLayout
+          sidebar={<Sidebar organization={organization} />}
+          isCollapsed={isCollapsed}
+        >
+          {onboarding?.triggerJobId && (
+            <ConditionalOnboardingTracker onboarding={onboarding} />
+          )}
           <Header organizationId={organization.id} />
           <ConditionalPaddingWrapper>
             <DynamicMinHeight>{children}</DynamicMinHeight>

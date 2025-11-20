@@ -1,8 +1,9 @@
-'use server';
+"use server";
 
-import { auth } from '@/utils/auth';
-import { db, Policy } from '@trycompai/db';
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+
+import { db, Policy } from "@trycompai/db";
 
 interface GetRelatedPoliciesParams {
   organizationId: string;
@@ -39,7 +40,7 @@ export const getRelatedPolicies = async ({
 
     return control.policies || [];
   } catch (error) {
-    console.error('Error fetching Linked Policies:', error);
+    console.error("Error fetching Linked Policies:", error);
     return [];
   }
 };

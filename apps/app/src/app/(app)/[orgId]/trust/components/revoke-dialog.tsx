@@ -1,6 +1,9 @@
-import { useRevokeAccessGrant } from '@/hooks/use-access-requests';
-import { useForm } from '@tanstack/react-form';
-import { Button } from '@trycompai/ui/button';
+import { useRevokeAccessGrant } from "@/hooks/use-access-requests";
+import { useForm } from "@tanstack/react-form";
+import { toast } from "sonner";
+import * as z from "zod";
+
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,14 +11,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@trycompai/ui/field';
-import { Textarea } from '@trycompai/ui/textarea';
-import { toast } from 'sonner';
-import * as z from 'zod';
+} from "@trycompai/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@trycompai/ui/field";
+import { Textarea } from "@trycompai/ui/textarea";
 
 const revokeSchema = z.object({
-  reason: z.string().min(1, { message: 'Reason is required' }),
+  reason: z.string().min(1, { message: "Reason is required" }),
 });
 
 export function RevokeDialog({
@@ -31,19 +32,19 @@ export function RevokeDialog({
 
   const form = useForm({
     defaultValues: {
-      reason: '',
+      reason: "",
     },
     validators: {
       onChange: revokeSchema,
     },
     onSubmit: async ({ value }) => {
       await toast.promise(revokeGrant({ grantId, reason: value.reason }), {
-        loading: 'Revoking...',
+        loading: "Revoking...",
         success: () => {
           onClose();
-          return 'Grant revoked';
+          return "Grant revoked";
         },
-        error: 'Failed to revoke grant',
+        error: "Failed to revoke grant",
       });
     },
   });
@@ -60,11 +61,14 @@ export function RevokeDialog({
         >
           <DialogHeader>
             <DialogTitle>Revoke Access Grant</DialogTitle>
-            <DialogDescription>Please provide a reason for revoking this grant</DialogDescription>
+            <DialogDescription>
+              Please provide a reason for revoking this grant
+            </DialogDescription>
           </DialogHeader>
           <form.Field name="reason">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid;
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor="reason">Reason</FieldLabel>
@@ -88,10 +92,16 @@ export function RevokeDialog({
             <Button variant="outline" onClick={onClose} type="button">
               Cancel
             </Button>
-            <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+            <form.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+            >
               {([canSubmit, isSubmitting]) => (
-                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? 'Revoking...' : 'Revoke Grant'}
+                <Button
+                  variant="destructive"
+                  type="submit"
+                  disabled={!canSubmit || isSubmitting}
+                >
+                  {isSubmitting ? "Revoking..." : "Revoke Grant"}
                 </Button>
               )}
             </form.Subscribe>

@@ -1,37 +1,46 @@
-'use client';
+"use client";
 
-import { updateTaskAction } from '@/actions/risk/task/update-task-action';
-import { updateTaskSchema } from '@/actions/schema';
-import { SelectUser } from '@/components/select-user';
-import { StatusIndicator } from '@/components/status-indicator';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { type Task, TaskStatus, type User } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Calendar } from '@trycompai/ui/calendar';
-import { cn } from '@trycompai/ui/cn';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
+import type { z } from "zod";
+import { updateTaskAction } from "@/actions/risk/task/update-task-action";
+import { updateTaskSchema } from "@/actions/schema";
+import { SelectUser } from "@/components/select-user";
+import { StatusIndicator } from "@/components/status-indicator";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import type { Task, User } from "@trycompai/db";
+import { TaskStatus } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Calendar } from "@trycompai/ui/calendar";
+import { cn } from "@trycompai/ui/cn";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@trycompai/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { format } from 'date-fns';
-import { CalendarIcon, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
+} from "@trycompai/ui/select";
 
 export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
   const updateTask = useAction(updateTaskAction, {
     onSuccess: () => {
-      toast.success('Task updated successfully');
+      toast.success("Task updated successfully");
     },
     onError: () => {
-      toast.error('Something went wrong, please try again.');
+      toast.error("Something went wrong, please try again.");
     },
   });
 
@@ -62,15 +71,15 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
             name="assigneeId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{'Assignee'}</FormLabel>
+                <FormLabel>{"Assignee"}</FormLabel>
                 <FormControl>
                   <Select
-                    value={field.value ?? ''}
+                    value={field.value ?? ""}
                     onValueChange={field.onChange}
                     onOpenChange={() => form.handleSubmit(onSubmit)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={'Select assignee'} />
+                      <SelectValue placeholder={"Select assignee"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectUser
@@ -91,12 +100,14 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{'Status'}</FormLabel>
+                <FormLabel>{"Status"}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder={'Select a status'}>
-                        {field.value && <StatusIndicator status={field.value} />}
+                      <SelectValue placeholder={"Select a status"}>
+                        {field.value && (
+                          <StatusIndicator status={field.value} />
+                        )}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -118,18 +129,22 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
             name="dueDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>{'Due Date'}</FormLabel>
+                <FormLabel>{"Due Date"}</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
-                        variant={'outline'}
+                        variant={"outline"}
                         className={cn(
-                          'pl-3 text-left font-normal',
-                          !field.value && 'text-muted-foreground',
+                          "pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground",
                         )}
                       >
-                        {field.value ? format(field.value, 'PPP') : <span>{'Pick a date'}</span>}
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>{"Pick a date"}</span>
+                        )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -150,11 +165,15 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
-            {updateTask.status === 'executing' ? (
+          <Button
+            type="submit"
+            variant="default"
+            disabled={updateTask.status === "executing"}
+          >
+            {updateTask.status === "executing" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Save'
+              "Save"
             )}
           </Button>
         </div>

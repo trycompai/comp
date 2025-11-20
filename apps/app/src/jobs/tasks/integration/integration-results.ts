@@ -1,11 +1,13 @@
-import { decrypt } from '@trycompai/crypto/encryption';
-import { logger, schemaTask } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import { type DecryptFunction, getIntegrationHandler } from '@trycompai/integrations';
-import { z } from 'zod';
+import { logger, schemaTask } from "@trigger.dev/sdk";
+import { z } from "zod";
+
+import type { DecryptFunction } from "@trycompai/integrations";
+import { db } from "@trycompai/db";
+import { getIntegrationHandler } from "@trycompai/integrations";
+import { decrypt } from "@trycompai/utils/encryption";
 
 export const sendIntegrationResults = schemaTask({
-  id: 'send-integration-results',
+  id: "send-integration-results",
   schema: z.object({
     integration: z.object({
       id: z.string(),
@@ -34,12 +36,15 @@ export const sendIntegrationResults = schemaTask({
         logger.error(`Integration handler for ${integrationId} not found`);
         return {
           success: false,
-          error: 'Integration handler not found',
+          error: "Integration handler not found",
         };
       }
 
       // Extract user settings which may contain necessary credentials
-      const userSettings = integration.user_settings as unknown as Record<string, unknown>;
+      const userSettings = integration.user_settings as unknown as Record<
+        string,
+        unknown
+      >;
 
       // Process credentials using the integration handler
       const typedCredentials = await integrationHandler.processCredentials(
@@ -113,7 +118,8 @@ export const sendIntegrationResults = schemaTask({
       logger.info(`Integration run completed for ${integration.name}`);
       return { success: true, totalResults: results.length, results };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.error(`Error running integration: ${errorMessage}`);
 
       // Record the failure using model name that matches the database
@@ -121,10 +127,11 @@ export const sendIntegrationResults = schemaTask({
         await db.integrationResult.create({
           data: {
             title: `${integration.name} Security Check`,
-            description: 'Integration failed to run',
-            remediation: 'Please check the integration configuration and try again',
-            status: 'error',
-            severity: 'ERROR',
+            description: "Integration failed to run",
+            remediation:
+              "Please check the integration configuration and try again",
+            status: "error",
+            severity: "ERROR",
             resultDetails: {
               error: errorMessage,
             },

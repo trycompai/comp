@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
+import { OnboardingLoadingAnimation } from "@/components/onboarding-loading-animation";
 
 export function RisksLoadingAnimation() {
   return (

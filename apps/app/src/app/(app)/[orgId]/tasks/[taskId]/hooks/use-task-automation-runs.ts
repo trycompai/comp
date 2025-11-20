@@ -1,7 +1,8 @@
-import { api } from '@/lib/api-client';
-import { EvidenceAutomationRun } from '@trycompai/db';
-import { useParams } from 'next/navigation';
-import useSWR from 'swr';
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import useSWR from "swr";
+
+import { EvidenceAutomationRun } from "@trycompai/db";
 
 type AutomationRunWithName = EvidenceAutomationRun & {
   evidenceAutomation: {
@@ -42,7 +43,7 @@ export function useTaskAutomationRuns({
       }
 
       if (!response.data) {
-        throw new Error('Failed to fetch automation runs');
+        throw new Error("Failed to fetch automation runs");
       }
 
       return response.data;

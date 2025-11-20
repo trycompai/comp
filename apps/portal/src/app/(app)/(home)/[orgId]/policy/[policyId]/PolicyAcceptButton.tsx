@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { acceptPolicy } from '@/actions/accept-policies';
-import { Button } from '@trycompai/ui/button';
-import { Check } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import { toast } from 'sonner';
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { acceptPolicy } from "@/actions/accept-policies";
+import { Check } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@trycompai/ui/button";
 
 interface PolicyAcceptButtonProps {
   policyId: string;
@@ -30,18 +31,18 @@ export function PolicyAcceptButton({
         const result = await acceptPolicy(policyId, memberId);
         if (result.success) {
           setAccepted(true);
-          toast.success('Policy accepted successfully');
+          toast.success("Policy accepted successfully");
           router.refresh();
           // Redirect after a short delay to show the success state
           setTimeout(() => {
             router.push(`/${orgId}`);
           }, 1000);
         } else {
-          toast.error(result.error || 'Failed to accept policy');
+          toast.error(result.error || "Failed to accept policy");
         }
       } catch (error) {
-        console.error('Error accepting policy:', error);
-        toast.error('An error occurred while accepting the policy');
+        console.error("Error accepting policy:", error);
+        toast.error("An error occurred while accepting the policy");
       }
     });
   };
@@ -57,7 +58,7 @@ export function PolicyAcceptButton({
 
   return (
     <Button onClick={handleAccept} disabled={isPending} className="w-full">
-      {isPending ? 'Accepting...' : 'Accept Policy'}
+      {isPending ? "Accepting..." : "Accept Policy"}
     </Button>
   );
 }

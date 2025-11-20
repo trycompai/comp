@@ -1,6 +1,10 @@
-import { type RefObject, useEffect, useRef } from 'react';
+import type { RefObject } from "react";
+import { useEffect, useRef } from "react";
 
-export function useScrollToBottom(): [RefObject<HTMLDivElement>, RefObject<HTMLDivElement>] {
+export function useScrollToBottom(): [
+  RefObject<HTMLDivElement>,
+  RefObject<HTMLDivElement>,
+] {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -10,7 +14,7 @@ export function useScrollToBottom(): [RefObject<HTMLDivElement>, RefObject<HTMLD
 
     if (container && end) {
       const observer = new MutationObserver(() => {
-        end.scrollIntoView({ behavior: 'instant', block: 'end' });
+        end.scrollIntoView({ behavior: "instant", block: "end" });
       });
 
       observer.observe(container, {

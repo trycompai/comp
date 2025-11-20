@@ -23,7 +23,7 @@ Add the UI library's global CSS to your app's entry point:
 
 ```tsx
 // In your app's root layout or _app.tsx
-import '@trycompai/ui/globals.css';
+import "@trycompai/ui/globals.css";
 ```
 
 ### 2. Configure Tailwind
@@ -31,15 +31,16 @@ import '@trycompai/ui/globals.css';
 The UI library provides a Tailwind preset. Update your `tailwind.config.ts`:
 
 ```ts
-import uiPreset from '@trycompai/ui/tailwind-preset';
-import type { Config } from 'tailwindcss';
+import type { Config } from "tailwindcss";
+
+import uiPreset from "@trycompai/ui/tailwind-preset";
 
 export default {
   presets: [uiPreset],
   content: [
-    './src/**/*.{ts,tsx}',
+    "./src/**/*.{ts,tsx}",
     // Include the UI library in content paths
-    './node_modules/@trycompai/ui/dist/**/*.js',
+    "./node_modules/@trycompai/ui/dist/**/*.js",
   ],
   // Your custom config...
 } satisfies Config;
@@ -87,7 +88,7 @@ Ensure your app includes the required CSS variables for theming. These should be
 ### Basic Import
 
 ```tsx
-import { Button, Card, Input } from '@trycompai/ui';
+import { Button, Card, Input } from "@trycompai/ui";
 
 export function MyComponent() {
   return (
@@ -104,17 +105,17 @@ export function MyComponent() {
 For better tree-shaking, import components individually:
 
 ```tsx
-import { Button } from '@trycompai/ui/button';
-import { Card } from '@trycompai/ui/card';
+import { Button } from "@trycompai/ui/button";
+import { Card } from "@trycompai/ui/card";
 ```
 
 ### Using Hooks
 
 ```tsx
-import { useMediaQuery } from '@trycompai/ui/hooks';
+import { useMediaQuery } from "@trycompai/ui/hooks";
 
 export function ResponsiveComponent() {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   return isMobile ? <MobileView /> : <DesktopView />;
 }
@@ -123,10 +124,10 @@ export function ResponsiveComponent() {
 ### Using Utilities
 
 ```tsx
-import { cn } from '@trycompai/ui/utils';
+import { cn } from "@trycompai/ui/utils";
 
 export function Component({ className }: { className?: string }) {
-  return <div className={cn('flex items-center', className)}>Content</div>;
+  return <div className={cn("flex items-center", className)}>Content</div>;
 }
 ```
 

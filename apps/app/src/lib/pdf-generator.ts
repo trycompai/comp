@@ -1,7 +1,8 @@
-import type { JSONContent as TipTapJSONContent } from '@tiptap/react';
-import { AuditLog, Member, Organization, Policy, User } from '@trycompai/db';
-import { format } from 'date-fns';
-import { jsPDF } from 'jspdf';
+import type { JSONContent as TipTapJSONContent } from "@tiptap/react";
+import { format } from "date-fns";
+import { jsPDF } from "jspdf";
+
+import { AuditLog, Member, Organization, Policy, User } from "@trycompai/db";
 
 // Type definition for the JSON content structure
 interface JSONContent {
@@ -34,40 +35,41 @@ interface PDFConfig {
 const cleanTextForPDF = (text: string): string => {
   // First, handle specific problematic characters that cause font issues
   const replacements: { [key: string]: string } = {
-    '\u2018': "'", // left single quotation mark
-    '\u2019': "'", // right single quotation mark
-    '\u201C': '"', // left double quotation mark
-    '\u201D': '"', // right double quotation mark
-    '\u2013': '-', // en dash
-    '\u2014': '-', // em dash
-    '\u2026': '...', // horizontal ellipsis
-    '\u2265': '>=', // greater than or equal to (≥)
-    '\u2264': '<=', // less than or equal to (≤)
-    '\u00B0': 'deg', // degree symbol (°)
-    '\u00A9': '(c)', // copyright symbol (©)
-    '\u00AE': '(R)', // registered trademark (®)
-    '\u2122': 'TM', // trademark symbol (™)
-    '\u00A0': ' ', // non-breaking space
-    '\u2022': '•', // bullet point (ensure consistent bullet)
-    '\u00B1': '+/-', // plus-minus symbol (±)
-    '\u00D7': 'x', // multiplication sign (×)
-    '\u00F7': '/', // division sign (÷)
-    '\u2192': '->', // right arrow (→)
-    '\u2190': '<-', // left arrow (←)
-    '\u2194': '<->', // left-right arrow (↔)
+    "\u2018": "'", // left single quotation mark
+    "\u2019": "'", // right single quotation mark
+    "\u201C": '"', // left double quotation mark
+    "\u201D": '"', // right double quotation mark
+    "\u2013": "-", // en dash
+    "\u2014": "-", // em dash
+    "\u2026": "...", // horizontal ellipsis
+    "\u2265": ">=", // greater than or equal to (≥)
+    "\u2264": "<=", // less than or equal to (≤)
+    "\u00B0": "deg", // degree symbol (°)
+    "\u00A9": "(c)", // copyright symbol (©)
+    "\u00AE": "(R)", // registered trademark (®)
+    "\u2122": "TM", // trademark symbol (™)
+    "\u00A0": " ", // non-breaking space
+    "\u2022": "•", // bullet point (ensure consistent bullet)
+    "\u00B1": "+/-", // plus-minus symbol (±)
+    "\u00D7": "x", // multiplication sign (×)
+    "\u00F7": "/", // division sign (÷)
+    "\u2192": "->", // right arrow (→)
+    "\u2190": "<-", // left arrow (←)
+    "\u2194": "<->", // left-right arrow (↔)
   };
 
   // Replace known problematic characters
   let cleanedText = text;
   for (const [unicode, replacement] of Object.entries(replacements)) {
-    cleanedText = cleanedText.replace(new RegExp(unicode, 'g'), replacement);
+    cleanedText = cleanedText.replace(new RegExp(unicode, "g"), replacement);
   }
 
   // For any remaining non-ASCII characters, try to preserve them first
   // Only replace if they cause font rendering issues
   return cleanedText.replace(/[^\x00-\x7F]/g, function (char) {
     // Common accented characters that should work fine in most PDF fonts
-    const safeChars = /[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß]/;
+    const safeChars =
+      /[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß]/;
 
     if (safeChars.test(char)) {
       return char; // Keep safe accented characters
@@ -75,73 +77,75 @@ const cleanTextForPDF = (text: string): string => {
 
     // For other characters, provide basic ASCII fallbacks
     const fallbacks: { [key: string]: string } = {
-      à: 'a',
-      á: 'a',
-      â: 'a',
-      ã: 'a',
-      ä: 'a',
-      å: 'a',
-      æ: 'ae',
-      è: 'e',
-      é: 'e',
-      ê: 'e',
-      ë: 'e',
-      ì: 'i',
-      í: 'i',
-      î: 'i',
-      ï: 'i',
-      ò: 'o',
-      ó: 'o',
-      ô: 'o',
-      õ: 'o',
-      ö: 'o',
-      ø: 'o',
-      ù: 'u',
-      ú: 'u',
-      û: 'u',
-      ü: 'u',
-      ñ: 'n',
-      ç: 'c',
-      ß: 'ss',
-      ÿ: 'y',
-      À: 'A',
-      Á: 'A',
-      Â: 'A',
-      Ã: 'A',
-      Ä: 'A',
-      Å: 'A',
-      Æ: 'AE',
-      È: 'E',
-      É: 'E',
-      Ê: 'E',
-      Ë: 'E',
-      Ì: 'I',
-      Í: 'I',
-      Î: 'I',
-      Ï: 'I',
-      Ò: 'O',
-      Ó: 'O',
-      Ô: 'O',
-      Õ: 'O',
-      Ö: 'O',
-      Ø: 'O',
-      Ù: 'U',
-      Ú: 'U',
-      Û: 'U',
-      Ü: 'U',
-      Ñ: 'N',
-      Ç: 'C',
-      Ý: 'Y',
+      à: "a",
+      á: "a",
+      â: "a",
+      ã: "a",
+      ä: "a",
+      å: "a",
+      æ: "ae",
+      è: "e",
+      é: "e",
+      ê: "e",
+      ë: "e",
+      ì: "i",
+      í: "i",
+      î: "i",
+      ï: "i",
+      ò: "o",
+      ó: "o",
+      ô: "o",
+      õ: "o",
+      ö: "o",
+      ø: "o",
+      ù: "u",
+      ú: "u",
+      û: "u",
+      ü: "u",
+      ñ: "n",
+      ç: "c",
+      ß: "ss",
+      ÿ: "y",
+      À: "A",
+      Á: "A",
+      Â: "A",
+      Ã: "A",
+      Ä: "A",
+      Å: "A",
+      Æ: "AE",
+      È: "E",
+      É: "E",
+      Ê: "E",
+      Ë: "E",
+      Ì: "I",
+      Í: "I",
+      Î: "I",
+      Ï: "I",
+      Ò: "O",
+      Ó: "O",
+      Ô: "O",
+      Õ: "O",
+      Ö: "O",
+      Ø: "O",
+      Ù: "U",
+      Ú: "U",
+      Û: "U",
+      Ü: "U",
+      Ñ: "N",
+      Ç: "C",
+      Ý: "Y",
     };
 
-    return fallbacks[char] || '?'; // Use ? for unknown characters
+    return fallbacks[char] || "?"; // Use ? for unknown characters
   });
 };
 
 // Convert TipTap JSONContent to our internal format
-const convertToInternalFormat = (content: TipTapJSONContent[]): JSONContent[] => {
+const convertToInternalFormat = (
+  content: TipTapJSONContent[],
+): JSONContent[] => {
   return content.map((item) => ({
-    type: item.type || 'paragraph',
+    type: item.type || "paragraph",
     attrs: item.attrs,
     content: item.content ? convertToInternalFormat(item.content) : undefined,
     text: item.text,
@@ -150,7 +154,10 @@ const convertToInternalFormat = (content: TipTapJSONContent[]): JSONContent[] =>
 };
 
 // Helper function to check for page breaks
-const checkPageBreak = (config: PDFConfig, requiredHeight: number = config.lineHeight) => {
+const checkPageBreak = (
+  config: PDFConfig,
+  requiredHeight: number = config.lineHeight,
+) => {
   if (config.yPosition + requiredHeight > config.pageHeight - config.margin) {
     config.doc.addPage();
     config.yPosition = config.margin;
@@ -170,9 +177,9 @@ const addTextWithWrapping = (
   config.doc.setFontSize(fontSize);
   config.doc.setTextColor(0, 0, 0); // Ensure text is black
   if (isBold) {
-    config.doc.setFont('helvetica', 'bold');
+    config.doc.setFont("helvetica", "bold");
   } else {
-    config.doc.setFont('helvetica', 'normal');
+    config.doc.setFont("helvetica", "normal");
   }
 
   const lines = config.doc.splitTextToSize(cleanText, config.contentWidth);
@@ -193,9 +200,9 @@ const extractTextFromContent = (content: JSONContent[]): string => {
       } else if (item.content) {
         return extractTextFromContent(item.content);
       }
-      return '';
+      return "";
     })
-    .join('');
+    .join("");
 };
 
 // Enhanced helper function that renders text with proper formatting
@@ -207,12 +214,12 @@ const renderFormattedContent = (
 ) => {
   for (const item of content) {
     if (item.text) {
-      const isBold = item.marks?.some((mark) => mark.type === 'bold') || false;
+      const isBold = item.marks?.some((mark) => mark.type === "bold") || false;
       const cleanText = cleanTextForPDF(item.text);
 
       config.doc.setFontSize(config.defaultFontSize);
       config.doc.setTextColor(0, 0, 0); // Ensure text is black
-      config.doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      config.doc.setFont("helvetica", isBold ? "bold" : "normal");
 
       const lines = config.doc.splitTextToSize(cleanText, maxWidth);
       for (const line of lines) {
@@ -227,10 +234,14 @@ const renderFormattedContent = (
 };
 
 // Process JSON content recursively
-const processContent = (config: PDFConfig, content: JSONContent[], level: number = 0) => {
+const processContent = (
+  config: PDFConfig,
+  content: JSONContent[],
+  level: number = 0,
+) => {
   for (const item of content) {
     switch (item.type) {
-      case 'heading':
+      case "heading":
         const headingLevel = item.attrs?.level || 1;
         let fontSize: number;
         let spacingBefore: number;
@@ -269,13 +280,18 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
         config.yPosition += spacingAfter;
         break;
 
-      case 'paragraph':
+      case "paragraph":
         if (item.content) {
           const paragraphText = extractTextFromContent(item.content);
           if (paragraphText.trim()) {
             // Use the enhanced formatting function for paragraphs to handle bold text
             const startY = config.yPosition;
-            renderFormattedContent(config, item.content, config.margin, config.contentWidth);
+            renderFormattedContent(
+              config,
+              item.content,
+              config.margin,
+              config.contentWidth,
+            );
             // Only add spacing if content was actually rendered
             if (config.yPosition > startY) {
               config.yPosition += config.lineHeight * 0.5; // Small spacing after paragraphs
@@ -284,22 +300,26 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
         }
         break;
 
-      case 'bulletList':
+      case "bulletList":
         if (item.content) {
           for (const listItem of item.content) {
-            if (listItem.type === 'listItem' && listItem.content) {
+            if (listItem.type === "listItem" && listItem.content) {
               const listText = extractTextFromContent(listItem.content);
               checkPageBreak(config);
 
               // Add bullet point with consistent font
               config.doc.setFontSize(config.defaultFontSize);
-              config.doc.setFont('helvetica', 'normal');
+              config.doc.setFont("helvetica", "normal");
               config.doc.setTextColor(0, 0, 0); // Ensure bullet is black
-              config.doc.text('•', config.margin + level * 10, config.yPosition);
+              config.doc.text(
+                "•",
+                config.margin + level * 10,
+                config.yPosition,
+              );
 
               // Add indented text with proper font reset
               config.doc.setFontSize(config.defaultFontSize);
-              config.doc.setFont('helvetica', 'normal');
+              config.doc.setFont("helvetica", "normal");
               config.doc.setTextColor(0, 0, 0); // Ensure text is black
               const cleanText = cleanTextForPDF(listText);
               const lines = config.doc.splitTextToSize(
@@ -308,7 +328,11 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
               );
               for (let i = 0; i < lines.length; i++) {
                 checkPageBreak(config);
-                config.doc.text(lines[i], config.margin + 5 + level * 10, config.yPosition);
+                config.doc.text(
+                  lines[i],
+                  config.margin + 5 + level * 10,
+                  config.yPosition,
+                );
                 config.yPosition += config.lineHeight;
               }
               config.yPosition += config.lineHeight * 0.3; // Small spacing between list items
@@ -317,23 +341,27 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
         }
         break;
 
-      case 'orderedList':
+      case "orderedList":
         if (item.content) {
           let itemNumber = 1;
           for (const listItem of item.content) {
-            if (listItem.type === 'listItem' && listItem.content) {
+            if (listItem.type === "listItem" && listItem.content) {
               const listText = extractTextFromContent(listItem.content);
               checkPageBreak(config);
 
               // Add number with consistent font
               config.doc.setFontSize(config.defaultFontSize);
-              config.doc.setFont('helvetica', 'normal');
+              config.doc.setFont("helvetica", "normal");
               config.doc.setTextColor(0, 0, 0); // Ensure number is black
-              config.doc.text(`${itemNumber}.`, config.margin + level * 10, config.yPosition);
+              config.doc.text(
+                `${itemNumber}.`,
+                config.margin + level * 10,
+                config.yPosition,
+              );
 
               // Add indented text with proper font reset
               config.doc.setFontSize(config.defaultFontSize);
-              config.doc.setFont('helvetica', 'normal');
+              config.doc.setFont("helvetica", "normal");
               config.doc.setTextColor(0, 0, 0); // Ensure text is black
               const cleanText = cleanTextForPDF(listText);
               const lines = config.doc.splitTextToSize(
@@ -342,7 +370,11 @@ const processContent = (config: PDFConfig, content: JSONContent[], level: number
               );
               for (let i = 0; i < lines.length; i++) {
                 checkPageBreak(config);
-                config.doc.text(lines[i], config.margin + 8 + level * 10, config.yPosition);
+                config.doc.text(
+                  lines[i],
+                  config.margin + 8 + level * 10,
+                  config.yPosition,
+                );
                 config.yPosition += config.lineHeight;
               }
               config.yPosition += config.lineHeight * 0.3; // Small spacing between list items
@@ -386,7 +418,7 @@ const addAuditLogsTable = (
 
   // Draw table header
   config.doc.setFontSize(headerFontSize);
-  config.doc.setFont('helvetica', 'bold');
+  config.doc.setFont("helvetica", "bold");
 
   // Header background (light gray)
   config.doc.setFillColor(240, 240, 240);
@@ -395,19 +427,23 @@ const addAuditLogsTable = (
     config.yPosition - 2,
     config.contentWidth,
     config.lineHeight + 2,
-    'F',
+    "F",
   );
 
   // Header text
   config.doc.setTextColor(0, 0, 0);
-  config.doc.text('Name', colPositions.name + 2, config.yPosition + 4);
-  config.doc.text('Description', colPositions.description + 2, config.yPosition + 4);
-  config.doc.text('Date/Time', colPositions.datetime + 2, config.yPosition + 4);
+  config.doc.text("Name", colPositions.name + 2, config.yPosition + 4);
+  config.doc.text(
+    "Description",
+    colPositions.description + 2,
+    config.yPosition + 4,
+  );
+  config.doc.text("Date/Time", colPositions.datetime + 2, config.yPosition + 4);
 
   config.yPosition += config.lineHeight + 2;
 
   // Draw table rows
-  config.doc.setFont('helvetica', 'normal');
+  config.doc.setFont("helvetica", "normal");
   config.doc.setFontSize(contentFontSize);
 
   auditLogs.forEach((log, index) => {
@@ -424,36 +460,46 @@ const addAuditLogsTable = (
         config.yPosition - 1,
         config.contentWidth,
         config.lineHeight + 2,
-        'F',
+        "F",
       );
     }
 
     // Extract user info
     const userName = log.user?.name || `User ${log.userId.substring(0, 6)}`;
-    const description = log.description || 'No description available';
-    const dateTime = format(log.timestamp, 'MMM d, yyyy h:mm a');
+    const description = log.description || "No description available";
+    const dateTime = format(log.timestamp, "MMM d, yyyy h:mm a");
 
     // Draw cell contents with text wrapping for description
     config.doc.setTextColor(0, 0, 0);
 
     // Name column (truncate if too long)
-    const nameText = userName.length > 20 ? userName.substring(0, 17) + '...' : userName;
+    const nameText =
+      userName.length > 20 ? userName.substring(0, 17) + "..." : userName;
     config.doc.text(nameText, colPositions.name + 2, config.yPosition + 4);
 
     // Description column (wrap text)
-    const descLines = config.doc.splitTextToSize(description, colWidths.description - 4);
+    const descLines = config.doc.splitTextToSize(
+      description,
+      colWidths.description - 4,
+    );
     const maxDescLines = 2; // Limit to 2 lines to keep row height manageable
     const displayLines = descLines.slice(0, maxDescLines);
 
     displayLines.forEach((line: string, lineIndex: number) => {
-      config.doc.text(line, colPositions.description + 2, config.yPosition + 4 + lineIndex * 4);
+      config.doc.text(
+        line,
+        colPositions.description + 2,
+        config.yPosition + 4 + lineIndex * 4,
+      );
     });
 
     // If text was truncated, add ellipsis
     if (descLines.length > maxDescLines) {
       const lastLine = displayLines[displayLines.length - 1];
       const ellipsisLine =
-        lastLine.length > 40 ? lastLine.substring(0, 37) + '...' : lastLine + '...';
+        lastLine.length > 40
+          ? lastLine.substring(0, 37) + "..."
+          : lastLine + "...";
       config.doc.text(
         ellipsisLine,
         colPositions.description + 2,
@@ -465,7 +511,10 @@ const addAuditLogsTable = (
     config.doc.text(dateTime, colPositions.datetime + 2, config.yPosition + 4);
 
     // Calculate row height based on description lines
-    const rowHeight = Math.max(config.lineHeight + 2, displayLines.length * 4 + 2);
+    const rowHeight = Math.max(
+      config.lineHeight + 2,
+      displayLines.length * 4 + 2,
+    );
     config.yPosition += rowHeight;
 
     // Draw row border
@@ -498,7 +547,12 @@ const addAuditLogsTable = (
     colPositions.description,
     config.yPosition,
   );
-  config.doc.line(colPositions.datetime, tableStartY - 2, colPositions.datetime, config.yPosition);
+  config.doc.line(
+    colPositions.datetime,
+    tableStartY - 2,
+    colPositions.datetime,
+    config.yPosition,
+  );
 
   // Add some space after the table
   config.yPosition += config.lineHeight;
@@ -517,18 +571,18 @@ const addAuditLogsSection = (
   // Add section title
   const titleFontSize = isCompact ? 12 : 14;
   config.doc.setFontSize(titleFontSize);
-  config.doc.setFont('helvetica', 'bold');
+  config.doc.setFont("helvetica", "bold");
   config.doc.setTextColor(0, 0, 0); // Ensure title is black
-  config.doc.text('Recent Activity', config.margin, config.yPosition);
+  config.doc.text("Recent Activity", config.margin, config.yPosition);
   config.yPosition += config.lineHeight * 1.5;
 
   if (!auditLogs || auditLogs.length === 0) {
     // Show "No recent activity" message
     const messageFontSize = isCompact ? 9 : 10;
     config.doc.setFontSize(messageFontSize);
-    config.doc.setFont('helvetica', 'normal');
+    config.doc.setFont("helvetica", "normal");
     config.doc.setTextColor(100, 100, 100); // Gray color
-    config.doc.text('No recent activity', config.margin, config.yPosition);
+    config.doc.text("No recent activity", config.margin, config.yPosition);
     config.yPosition += config.lineHeight;
 
     // Reset text color to black after gray message
@@ -546,7 +600,7 @@ const addPageNumbers = (config: PDFConfig) => {
   for (let i = 1; i <= totalPages; i++) {
     config.doc.setPage(i);
     config.doc.setFontSize(8);
-    config.doc.setFont('helvetica', 'normal');
+    config.doc.setFont("helvetica", "normal");
     config.doc.text(
       `Page ${i} of ${totalPages}`,
       config.pageWidth - config.margin - 30,
@@ -582,7 +636,7 @@ export function generatePolicyPDF(
     const cleanTitle = cleanTextForPDF(policyTitle);
 
     config.doc.setFontSize(16);
-    config.doc.setFont('helvetica', 'bold');
+    config.doc.setFont("helvetica", "bold");
     config.doc.text(cleanTitle, config.margin, config.yPosition);
     config.yPosition += config.lineHeight * 2;
   }
@@ -598,8 +652,8 @@ export function generatePolicyPDF(
 
   // Save the PDF
   const filename = policyTitle
-    ? `${policyTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}-policy.pdf`
-    : 'policy-document.pdf';
+    ? `${policyTitle.toLowerCase().replace(/[^a-z0-9]/g, "-")}-policy.pdf`
+    : "policy-document.pdf";
 
   doc.save(filename);
 }
@@ -612,9 +666,11 @@ export function generatePolicyPDFFromHTML(
   policyTitle?: string,
 ): void {
   // Convert TipTap JSONContent to our internal format
-  const convertToInternalFormat = (content: TipTapJSONContent[]): JSONContent[] => {
+  const convertToInternalFormat = (
+    content: TipTapJSONContent[],
+  ): JSONContent[] => {
     return content.map((item) => ({
-      type: item.type || 'paragraph',
+      type: item.type || "paragraph",
       attrs: item.attrs,
       content: item.content ? convertToInternalFormat(item.content) : undefined,
       text: item.text,
@@ -632,7 +688,7 @@ export function generatePolicyPDFFromHTML(
     <html>
     <head>
       <meta charset="utf-8">
-      <title>${policyTitle || 'Policy Document'}</title>
+      <title>${policyTitle || "Policy Document"}</title>
       <style>
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -656,18 +712,18 @@ export function generatePolicyPDFFromHTML(
       </style>
     </head>
     <body>
-      ${policyTitle ? `<h1>${policyTitle}</h1>` : ''}
+      ${policyTitle ? `<h1>${policyTitle}</h1>` : ""}
       ${htmlContent}
     </body>
     </html>
   `;
 
   // Create a blob and download link
-  const blob = new Blob([htmlPage], { type: 'text/html' });
+  const blob = new Blob([htmlPage], { type: "text/html" });
   const url = URL.createObjectURL(blob);
 
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
   iframe.src = url;
   document.body.appendChild(iframe);
 
@@ -693,46 +749,50 @@ function convertJSONToHTML(content: JSONContent[]): string {
   return content
     .map((item) => {
       switch (item.type) {
-        case 'heading':
+        case "heading":
           const level = item.attrs?.level || 1;
-          const headingText = item.content ? extractTextFromContent(item.content) : '';
+          const headingText = item.content
+            ? extractTextFromContent(item.content)
+            : "";
           return `<h${level}>${headingText}</h${level}>`;
 
-        case 'paragraph':
-          const paragraphText = item.content ? extractTextFromContent(item.content) : '';
+        case "paragraph":
+          const paragraphText = item.content
+            ? extractTextFromContent(item.content)
+            : "";
           return `<p>${paragraphText}</p>`;
 
-        case 'bulletList':
+        case "bulletList":
           const bulletItems =
             item.content
               ?.map((listItem) => {
-                if (listItem.type === 'listItem' && listItem.content) {
+                if (listItem.type === "listItem" && listItem.content) {
                   const text = extractTextFromContent(listItem.content);
                   return `<li>${text}</li>`;
                 }
-                return '';
+                return "";
               })
-              .join('') || '';
+              .join("") || "";
           return `<ul>${bulletItems}</ul>`;
 
-        case 'orderedList':
+        case "orderedList":
           const orderedItems =
             item.content
               ?.map((listItem) => {
-                if (listItem.type === 'listItem' && listItem.content) {
+                if (listItem.type === "listItem" && listItem.content) {
                   const text = extractTextFromContent(listItem.content);
                   return `<li>${text}</li>`;
                 }
-                return '';
+                return "";
               })
-              .join('') || '';
+              .join("") || "";
           return `<ol>${orderedItems}</ol>`;
 
         default:
-          return '';
+          return "";
       }
     })
-    .join('');
+    .join("");
 }
 
 /**
@@ -756,11 +816,13 @@ export function downloadAllPolicies(
   };
 
   // Add document title
-  const documentTitle = organizationName ? `${organizationName} - All Policies` : 'All Policies';
+  const documentTitle = organizationName
+    ? `${organizationName} - All Policies`
+    : "All Policies";
   const cleanTitle = cleanTextForPDF(documentTitle);
 
   config.doc.setFontSize(18);
-  config.doc.setFont('helvetica', 'bold');
+  config.doc.setFont("helvetica", "bold");
   config.doc.text(cleanTitle, config.margin, config.yPosition);
   config.yPosition += config.lineHeight * 3;
 
@@ -779,7 +841,7 @@ export function downloadAllPolicies(
     if (policy.name) {
       const cleanPolicyTitle = cleanTextForPDF(policy.name);
       config.doc.setFontSize(16);
-      config.doc.setFont('helvetica', 'bold');
+      config.doc.setFont("helvetica", "bold");
       config.doc.setTextColor(0, 0, 0); // Ensure title is black
       config.doc.text(cleanPolicyTitle, config.margin, config.yPosition);
       config.yPosition += config.lineHeight * 2;
@@ -790,7 +852,10 @@ export function downloadAllPolicies(
       let policyContent: TipTapJSONContent[];
       if (Array.isArray(policy.content)) {
         policyContent = policy.content as TipTapJSONContent[];
-      } else if (typeof policy.content === 'object' && policy.content !== null) {
+      } else if (
+        typeof policy.content === "object" &&
+        policy.content !== null
+      ) {
         policyContent = [policy.content as TipTapJSONContent];
       } else {
         // Skip this policy if content format is invalid
@@ -811,8 +876,8 @@ export function downloadAllPolicies(
 
   // Save the PDF
   const filename = organizationName
-    ? `${organizationName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-all-policies.pdf`
-    : 'all-policies.pdf';
+    ? `${organizationName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-all-policies.pdf`
+    : "all-policies.pdf";
 
   doc.save(filename);
 }

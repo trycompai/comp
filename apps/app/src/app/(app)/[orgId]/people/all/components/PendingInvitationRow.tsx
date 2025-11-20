@@ -1,9 +1,12 @@
-'use client';
+"use client";
 
-import type { Invitation } from '@trycompai/db';
-import { Avatar, AvatarFallback } from '@trycompai/ui/avatar';
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Clock, MoreHorizontal, Trash2 } from "lucide-react";
+
+import type { Invitation } from "@trycompai/db";
+import { Avatar, AvatarFallback } from "@trycompai/ui/avatar";
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,15 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@trycompai/ui/dialog';
+} from "@trycompai/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+} from "@trycompai/ui/dropdown-menu";
 
 interface PendingInvitationRowProps {
   invitation: Invitation & {
@@ -83,12 +84,17 @@ export function PendingInvitationRow({
       <div className="hover:bg-muted/50 flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <Avatar>
-            <AvatarFallback>{invitation.email.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>
+              {invitation.email.charAt(0).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2 font-medium">
               <span>{invitation.email}</span>
-              <Badge variant="outline" className="hidden md:flex items-center gap-1 text-xs">
+              <Badge
+                variant="outline"
+                className="hidden items-center gap-1 text-xs md:flex"
+              >
                 <Clock className="mr-1 h-3 w-3" />
                 Pending
               </Badge>
@@ -97,11 +103,12 @@ export function PendingInvitationRow({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="max-w-[150px] flex-wrap justify-end gap-1 hidden md:flex">
+          <div className="hidden max-w-[150px] flex-wrap justify-end gap-1 md:flex">
             {(Array.isArray(invitation.role)
               ? invitation.role
-              : typeof invitation.role === 'string' && invitation.role.includes(',')
-                ? invitation.role.split(',')
+              : typeof invitation.role === "string" &&
+                  invitation.role.includes(",")
+                ? invitation.role.split(",")
                 : [invitation.role]
             ).map((role: string) => (
               <Badge key={role} variant="secondary" className="text-xs">
@@ -115,7 +122,10 @@ export function PendingInvitationRow({
               asChild
               disabled={isCancelling || !canCancel}
             >
-              <Button variant="ghost" className="data-[state=open]:bg-muted flex h-8 w-8 p-0">
+              <Button
+                variant="ghost"
+                className="data-[state=open]:bg-muted flex h-8 w-8 p-0"
+              >
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -131,7 +141,10 @@ export function PendingInvitationRow({
                 }
               }}
             >
-              <Dialog open={isCancelDialogOpen} onOpenChange={handleDialogOpenChange}>
+              <Dialog
+                open={isCancelDialogOpen}
+                onOpenChange={handleDialogOpenChange}
+              >
                 <DialogTrigger asChild>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
@@ -151,14 +164,18 @@ export function PendingInvitationRow({
                   <DialogHeader>
                     <DialogTitle>Cancel Invitation</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to cancel the invitation for {invitation.email}?
+                      Are you sure you want to cancel the invitation for{" "}
+                      {invitation.email}?
                     </DialogDescription>
                   </DialogHeader>
                   <p className="text-muted-foreground mt-1 text-xs">
                     This action cannot be undone.
                   </p>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCancelDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
                     <Button

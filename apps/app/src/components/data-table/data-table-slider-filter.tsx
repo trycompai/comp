@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import type { Column } from '@tanstack/react-table';
-import * as React from 'react';
+import type { Column } from "@tanstack/react-table";
+import * as React from "react";
+import { PlusCircle, XCircle } from "lucide-react";
 
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
-import { Input } from '@trycompai/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Separator } from '@trycompai/ui/separator';
-import { Slider } from '@trycompai/ui/slider';
-import { PlusCircle, XCircle } from 'lucide-react';
+import { Button } from "@trycompai/ui/button";
+import { cn } from "@trycompai/ui/cn";
+import { Input } from "@trycompai/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@trycompai/ui/popover";
+import { Separator } from "@trycompai/ui/separator";
+import { Slider } from "@trycompai/ui/slider";
 
 interface Range {
   min: number;
@@ -22,8 +22,8 @@ function getIsValidRange(value: unknown): value is RangeValue {
   return (
     Array.isArray(value) &&
     value.length === 2 &&
-    typeof value[0] === 'number' &&
-    typeof value[1] === 'number'
+    typeof value[0] === "number" &&
+    typeof value[1] === "number"
   );
 }
 
@@ -32,7 +32,10 @@ interface DataTableSliderFilterProps<TData> {
   title?: string;
 }
 
-export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderFilterProps<TData>) {
+export function DataTableSliderFilter<TData>({
+  column,
+  title,
+}: DataTableSliderFilterProps<TData>) {
   const id = React.useId();
 
   const columnFilterValue = getIsValidRange(column.getFilterValue())
@@ -52,7 +55,10 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
       const values = column.getFacetedMinMaxValues();
       if (values && Array.isArray(values) && values.length === 2) {
         const [facetMinValue, facetMaxValue] = values;
-        if (typeof facetMinValue === 'number' && typeof facetMaxValue === 'number') {
+        if (
+          typeof facetMinValue === "number" &&
+          typeof facetMaxValue === "number"
+        ) {
           minValue = facetMinValue;
           maxValue = facetMaxValue;
         }
@@ -139,8 +145,9 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
                 orientation="vertical"
                 className="mx-0.5 data-[orientation=vertical]:h-4"
               />
-              {formatValue(columnFilterValue[0])} - {formatValue(columnFilterValue[1])}
-              {unit ? ` ${unit}` : ''}
+              {formatValue(columnFilterValue[0])} -{" "}
+              {formatValue(columnFilterValue[1])}
+              {unit ? ` ${unit}` : ""}
             </>
           ) : null}
         </Button>
@@ -164,7 +171,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
                 max={max}
                 value={range[0]?.toString()}
                 onChange={onFromInputChange}
-                className={cn('h-8 w-24', unit && 'pr-8')}
+                className={cn("h-8 w-24", unit && "pr-8")}
               />
               {unit && (
                 <span className="bg-accent text-muted-foreground absolute top-0 right-0 bottom-0 flex items-center rounded-r-md px-2 text-sm">
@@ -185,7 +192,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
                 max={max}
                 value={range[1]?.toString()}
                 onChange={onToInputChange}
-                className={cn('h-8 w-24', unit && 'pr-8')}
+                className={cn("h-8 w-24", unit && "pr-8")}
               />
               {unit && (
                 <span className="bg-accent text-muted-foreground absolute top-0 right-0 bottom-0 flex items-center rounded-r-md px-2 text-sm">
@@ -203,7 +210,12 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
             onValueChange={onSliderValueChange}
           />
         </div>
-        <Button aria-label={`Clear ${title} filter`} variant="outline" size="sm" onClick={onReset}>
+        <Button
+          aria-label={`Clear ${title} filter`}
+          variant="outline"
+          size="sm"
+          onClick={onReset}
+        >
           Clear
         </Button>
       </PopoverContent>

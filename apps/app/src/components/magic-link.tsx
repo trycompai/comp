@@ -1,16 +1,17 @@
-'use client';
+"use client";
 
-import { authClient } from '@/utils/auth-client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
-import { Form, FormControl, FormField, FormItem } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Loader2, Mail } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
+import { useState } from "react";
+import { authClient } from "@/utils/auth-client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Mail } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Button } from "@trycompai/ui/button";
+import { cn } from "@trycompai/ui/cn";
+import { Form, FormControl, FormField, FormItem } from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -23,13 +24,18 @@ type Props = {
   onMagicLinkSubmit?: (email: string) => void;
 };
 
-export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLinkSubmit }: Props) {
+export function MagicLinkSignIn({
+  className,
+  inviteCode,
+  searchParams,
+  onMagicLinkSubmit,
+}: Props) {
   const [isLoading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      email: "",
     },
   });
 
@@ -38,7 +44,7 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
 
     // Build the callback URL with search params
     const baseURL = window.location.origin;
-    const path = inviteCode ? `/invite/${inviteCode}` : '/';
+    const path = inviteCode ? `/invite/${inviteCode}` : "/";
     const callbackURL = new URL(path, baseURL);
 
     // Append all search params if they exist
@@ -54,7 +60,7 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
     });
 
     if (error) {
-      toast.error('Error sending email - try again?');
+      toast.error("Error sending email - try again?");
       setLoading(false);
     } else {
       // Call the callback if provided
@@ -67,7 +73,7 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className={cn('flex flex-col space-y-3', className)}>
+        <div className={cn("flex flex-col space-y-3", className)}>
           <FormField
             control={form.control}
             name="email"
@@ -90,7 +96,7 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
 
           <Button
             type="submit"
-            className="w-full h-11 font-medium"
+            className="h-11 w-full font-medium"
             variant="default"
             disabled={isLoading}
           >

@@ -1,9 +1,10 @@
-'use server';
+"use server";
 
-import { authActionClient } from '@/actions/safe-action';
-import { db, TaskStatus } from '@trycompai/db';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
+import { revalidatePath } from "next/cache";
+import { authActionClient } from "@/actions/safe-action";
+import { z } from "zod";
+
+import { db, TaskStatus } from "@trycompai/db";
 
 const updateTaskStatusSchema = z.object({
   id: z.string(),
@@ -13,11 +14,11 @@ const updateTaskStatusSchema = z.object({
 export const updateTaskStatusAction = authActionClient
   .inputSchema(updateTaskStatusSchema)
   .metadata({
-    name: 'update-task-status',
+    name: "update-task-status",
     track: {
-      event: 'update_task_status',
-      description: 'Update Task Status from List View',
-      channel: 'server',
+      event: "update_task_status",
+      description: "Update Task Status from List View",
+      channel: "server",
     },
   })
   .action(async ({ parsedInput, ctx }) => {
@@ -27,7 +28,7 @@ export const updateTaskStatusAction = authActionClient
     if (!activeOrganizationId) {
       return {
         success: false,
-        error: 'Not authorized',
+        error: "Not authorized",
       };
     }
 
@@ -42,7 +43,7 @@ export const updateTaskStatusAction = authActionClient
       if (!task) {
         return {
           success: false,
-          error: 'Task not found',
+          error: "Task not found",
         };
       }
 
@@ -62,7 +63,7 @@ export const updateTaskStatusAction = authActionClient
       console.error(error);
       return {
         success: false,
-        error: 'Failed to update task status',
+        error: "Failed to update task status",
       };
     }
   });

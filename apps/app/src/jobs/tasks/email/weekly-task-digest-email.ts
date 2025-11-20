@@ -1,9 +1,10 @@
-import { logger, queue, task } from '@trigger.dev/sdk';
-import { sendWeeklyTaskDigestEmail } from '@trycompai/email/lib/weekly-task-digest';
+import { logger, queue, task } from "@trigger.dev/sdk";
+
+import { sendWeeklyTaskDigestEmail } from "@trycompai/email/lib/weekly-task-digest";
 
 // Queue with concurrency limit to prevent rate limiting
 const weeklyTaskDigestQueue = queue({
-  name: 'weekly-task-digest-queue',
+  name: "weekly-task-digest-queue",
   concurrencyLimit: 2, // Max 2 emails at a time
 });
 
@@ -19,10 +20,10 @@ interface WeeklyTaskDigestPayload {
 }
 
 export const sendWeeklyTaskDigestEmailTask = task({
-  id: 'send-weekly-task-digest-email',
+  id: "send-weekly-task-digest-email",
   queue: weeklyTaskDigestQueue,
   run: async (payload: WeeklyTaskDigestPayload) => {
-    logger.info('Sending weekly task digest email', {
+    logger.info("Sending weekly task digest email", {
       email: payload.email,
       organizationName: payload.organizationName,
       taskCount: payload.tasks.length,
@@ -31,7 +32,7 @@ export const sendWeeklyTaskDigestEmailTask = task({
     try {
       await sendWeeklyTaskDigestEmail(payload);
 
-      logger.info('Successfully sent weekly task digest email', {
+      logger.info("Successfully sent weekly task digest email", {
         email: payload.email,
         organizationName: payload.organizationName,
       });
@@ -41,7 +42,7 @@ export const sendWeeklyTaskDigestEmailTask = task({
         email: payload.email,
       };
     } catch (error) {
-      logger.error('Failed to send weekly task digest email', {
+      logger.error("Failed to send weekly task digest email", {
         email: payload.email,
         error: error instanceof Error ? error.message : String(error),
       });

@@ -1,45 +1,59 @@
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { VendorStatus } from '@/components/vendor-status';
-import type { ColumnDef, Row } from '@tanstack/react-table';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
-import { Badge } from '@trycompai/ui/badge';
-import { Loader2, UserIcon } from 'lucide-react';
-import Link from 'next/link';
-import { useVendorOnboardingStatus } from './vendor-onboarding-context';
-import { VendorDeleteCell } from './VendorDeleteCell';
-import type { VendorRow } from './VendorsTable';
+import type { ColumnDef, Row } from "@tanstack/react-table";
+import Link from "next/link";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { VendorStatus } from "@/components/vendor-status";
+import { Loader2, UserIcon } from "lucide-react";
 
-function VendorNameCell({ row, orgId }: { row: Row<VendorRow>; orgId: string }) {
+import { Avatar, AvatarFallback, AvatarImage } from "@trycompai/ui/avatar";
+import { Badge } from "@trycompai/ui/badge";
+
+import type { VendorRow } from "./VendorsTable";
+import { useVendorOnboardingStatus } from "./vendor-onboarding-context";
+import { VendorDeleteCell } from "./VendorDeleteCell";
+
+function VendorNameCell({
+  row,
+  orgId,
+}: {
+  row: Row<VendorRow>;
+  orgId: string;
+}) {
   const vendorId = row.original.id;
   const onboardingStatus = useVendorOnboardingStatus();
   const status = onboardingStatus[vendorId];
-  const isPending = row.original.isPending || status === 'pending' || status === 'processing';
-  const isAssessing = row.original.isAssessing || status === 'assessing';
-  const isResolved = row.original.status === 'assessed';
+  const isPending =
+    row.original.isPending || status === "pending" || status === "processing";
+  const isAssessing = row.original.isAssessing || status === "assessing";
+  const isResolved = row.original.status === "assessed";
 
   if ((isPending || isAssessing) && !isResolved) {
     return (
       <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
         <span className="text-muted-foreground">{row.original.name}</span>
       </div>
     );
   }
-  return <Link href={`/${orgId}/vendors/${row.original.id}`}>{row.original.name}</Link>;
+  return (
+    <Link href={`/${orgId}/vendors/${row.original.id}`}>
+      {row.original.name}
+    </Link>
+  );
 }
 
 function VendorStatusCell({ row }: { row: Row<VendorRow> }) {
   const vendorId = row.original.id;
   const onboardingStatus = useVendorOnboardingStatus();
   const status = onboardingStatus[vendorId];
-  const isPending = row.original.isPending || status === 'pending' || status === 'processing';
-  const isAssessing = row.original.isAssessing || status === 'assessing';
-  const isResolved = row.original.status === 'assessed';
+  const isPending =
+    row.original.isPending || status === "pending" || status === "processing";
+  const isAssessing = row.original.isAssessing || status === "assessing";
+  const isResolved = row.original.status === "assessed";
 
   if (isPending && !isResolved) {
     return (
       <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
         <span className="text-muted-foreground text-sm">Creating...</span>
       </div>
     );
@@ -47,7 +61,7 @@ function VendorStatusCell({ row }: { row: Row<VendorRow> }) {
   if (isAssessing && !isResolved) {
     return (
       <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
         <span className="text-muted-foreground text-sm">Assessing...</span>
       </div>
     );
@@ -57,8 +71,8 @@ function VendorStatusCell({ row }: { row: Row<VendorRow> }) {
 
 export const columns = (orgId: string): ColumnDef<VendorRow>[] => [
   {
-    id: 'name',
-    accessorKey: 'name',
+    id: "name",
+    accessorKey: "name",
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Vendor Name" />;
     },
@@ -66,9 +80,9 @@ export const columns = (orgId: string): ColumnDef<VendorRow>[] => [
       return <VendorNameCell row={row} orgId={orgId} />;
     },
     meta: {
-      label: 'Vendor Name',
-      placeholder: 'Search for vendor name...',
-      variant: 'text',
+      label: "Vendor Name",
+      placeholder: "Search for vendor name...",
+      variant: "text",
     },
     size: 250,
     minSize: 200,
@@ -76,8 +90,8 @@ export const columns = (orgId: string): ColumnDef<VendorRow>[] => [
     enableColumnFilter: true,
   },
   {
-    id: 'status',
-    accessorKey: 'status',
+    id: "status",
+    accessorKey: "status",
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Status" />;
     },
@@ -85,27 +99,27 @@ export const columns = (orgId: string): ColumnDef<VendorRow>[] => [
       return <VendorStatusCell row={row} />;
     },
     meta: {
-      label: 'Status',
-      placeholder: 'Search by status...',
-      variant: 'select',
+      label: "Status",
+      placeholder: "Search by status...",
+      variant: "select",
     },
   },
   {
-    id: 'category',
-    accessorKey: 'category',
+    id: "category",
+    accessorKey: "category",
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Category" />;
     },
     cell: ({ row }) => {
       const categoryMap: Record<string, string> = {
-        cloud: 'Cloud',
-        infrastructure: 'Infrastructure',
-        software_as_a_service: 'SaaS',
-        finance: 'Finance',
-        marketing: 'Marketing',
-        sales: 'Sales',
-        hr: 'HR',
-        other: 'Other',
+        cloud: "Cloud",
+        infrastructure: "Infrastructure",
+        software_as_a_service: "SaaS",
+        finance: "Finance",
+        marketing: "Marketing",
+        sales: "Sales",
+        hr: "HR",
+        other: "Other",
       };
 
       return (
@@ -115,14 +129,14 @@ export const columns = (orgId: string): ColumnDef<VendorRow>[] => [
       );
     },
     meta: {
-      label: 'Category',
-      placeholder: 'Search by category...',
-      variant: 'select',
+      label: "Category",
+      placeholder: "Search by category...",
+      variant: "select",
     },
   },
   {
-    id: 'assignee',
-    accessorKey: 'assignee',
+    id: "assignee",
+    accessorKey: "assignee",
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Assignee" />;
     },
@@ -145,30 +159,34 @@ export const columns = (orgId: string): ColumnDef<VendorRow>[] => [
           <Avatar className="h-8 w-8">
             <AvatarImage
               src={row.original.assignee.user?.image || undefined}
-              alt={row.original.assignee.user?.name || row.original.assignee.user?.email || ''}
+              alt={
+                row.original.assignee.user?.name ||
+                row.original.assignee.user?.email ||
+                ""
+              }
             />
             <AvatarFallback>
               {row.original.assignee.user?.name?.charAt(0) ||
                 row.original.assignee.user?.email?.charAt(0).toUpperCase() ||
-                '?'}
+                "?"}
             </AvatarFallback>
           </Avatar>
           <p className="text-sm font-medium">
             {row.original.assignee.user?.name ||
               row.original.assignee.user?.email ||
-              'Unknown User'}
+              "Unknown User"}
           </p>
         </div>
       );
     },
     meta: {
-      label: 'Assignee',
-      placeholder: 'Search by assignee...',
-      variant: 'select',
+      label: "Assignee",
+      placeholder: "Search by assignee...",
+      variant: "select",
     },
   },
   {
-    id: 'delete-vendor',
+    id: "delete-vendor",
     cell: ({ row }) => {
       return <VendorDeleteCell vendor={row.original} />;
     },

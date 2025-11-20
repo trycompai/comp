@@ -1,10 +1,12 @@
-'use server';
+"use server";
 
-import { auth } from '@trigger.dev/sdk';
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
+import { auth } from "@trigger.dev/sdk";
 
 // Server action that can set cookies (called from client components or forms)
-export async function healAndSetAccessToken(triggerJobId: string): Promise<string | null> {
+export async function healAndSetAccessToken(
+  triggerJobId: string,
+): Promise<string | null> {
   try {
     const cookieStore = await cookies();
 
@@ -16,17 +18,19 @@ export async function healAndSetAccessToken(triggerJobId: string): Promise<strin
       },
     });
 
-    cookieStore.set('publicAccessToken', token);
+    cookieStore.set("publicAccessToken", token);
 
     return token;
   } catch (error) {
-    console.error('Failed to heal and set access token:', error);
+    console.error("Failed to heal and set access token:", error);
     return null;
   }
 }
 
 // Helper function for server components (doesn't set cookies)
-export async function createAccessToken(triggerJobId: string): Promise<string | null> {
+export async function createAccessToken(
+  triggerJobId: string,
+): Promise<string | null> {
   try {
     const token = await auth.createPublicToken({
       scopes: {
@@ -38,7 +42,7 @@ export async function createAccessToken(triggerJobId: string): Promise<string | 
 
     return token;
   } catch (error) {
-    console.error('Failed to create access token:', error);
+    console.error("Failed to create access token:", error);
     return null;
   }
 }

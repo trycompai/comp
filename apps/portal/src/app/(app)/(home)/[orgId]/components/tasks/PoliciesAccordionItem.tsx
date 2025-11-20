@@ -1,29 +1,38 @@
-'use client';
+"use client";
 
-import { acceptAllPolicies } from '@/actions/accept-policies';
-import type { Member, Policy } from '@db';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
-import { CheckCircle2, Circle, FileText } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { acceptAllPolicies } from "@/actions/accept-policies";
+import type { Member, Policy } from "@trycompai/db";
+import { CheckCircle2, Circle, FileText } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@trycompai/ui/accordion";
+import { Button } from "@trycompai/ui/button";
+import { cn } from "@trycompai/ui/cn";
 
 interface PoliciesAccordionItemProps {
   policies: Policy[];
   member: Member;
 }
 
-export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionItemProps) {
+export function PoliciesAccordionItem({
+  policies,
+  member,
+}: PoliciesAccordionItemProps) {
   const router = useRouter();
   const [acceptedPolicies, setAcceptedPolicies] = useState<string[]>(
-    policies.filter((p) => p.signedBy.includes(member.id)).map((p) => p.id),
+    policies.filter((p) => p.signedBy.includes(member.id)).map((p) => p.id)
   );
   const [isAcceptingAll, setIsAcceptingAll] = useState(false);
 
-  const hasAcceptedPolicies = policies.length === 0 || acceptedPolicies.length === policies.length;
+  const hasAcceptedPolicies =
+    policies.length === 0 || acceptedPolicies.length === policies.length;
 
   const handleAcceptAllPolicies = async () => {
     setIsAcceptingAll(true);
@@ -36,21 +45,21 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
 
       if (result.success) {
         setAcceptedPolicies([...acceptedPolicies, ...unacceptedPolicyIds]);
-        toast.success('All policies accepted successfully');
+        toast.success("All policies accepted successfully");
         router.refresh();
       } else {
-        toast.error(result.error || 'Failed to accept policies');
+        toast.error(result.error || "Failed to accept policies");
       }
     } catch (error) {
-      console.error('Error accepting all policies:', error);
-      toast.error('An error occurred while accepting policies');
+      console.error("Error accepting all policies:", error);
+      toast.error("An error occurred while accepting policies");
     } finally {
       setIsAcceptingAll(false);
     }
   };
 
   return (
-    <AccordionItem value="policies" className="border rounded-xs">
+    <AccordionItem value="policies" className="rounded-xs border">
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {hasAcceptedPolicies ? (
@@ -59,7 +68,10 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
             <Circle className="text-muted-foreground h-5 w-5" />
           )}
           <span
-            className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
+            className={cn(
+              "text-base",
+              hasAcceptedPolicies && "text-muted-foreground line-through"
+            )}
           >
             Accept security policies
           </span>
@@ -77,15 +89,22 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                   const isAccepted = acceptedPolicies.includes(policy.id);
 
                   return (
-                    <div key={policy.id} className="underline flex gap-2 items-center">
+                    <div
+                      key={policy.id}
+                      className="flex items-center gap-2 underline"
+                    >
                       <Link
                         href={`/${member.organizationId}/policy/${policy.id}`}
                         className="hover:text-primary flex items-center gap-2 text-sm transition-colors"
                       >
                         <FileText className="text-muted-foreground h-4 w-4" />
-                        <span className={cn(isAccepted && 'line-through')}>{policy.name}</span>
+                        <span className={cn(isAccepted && "line-through")}>
+                          {policy.name}
+                        </span>
                       </Link>
-                      {isAccepted && <CheckCircle2 className="text-primary h-3 w-3" />}
+                      {isAccepted && (
+                        <CheckCircle2 className="text-primary h-3 w-3" />
+                      )}
                     </div>
                   );
                 })}
@@ -96,14 +115,16 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                 disabled={hasAcceptedPolicies || isAcceptingAll}
               >
                 {isAcceptingAll
-                  ? 'Accepting...'
+                  ? "Accepting..."
                   : hasAcceptedPolicies
-                    ? 'All Policies Accepted'
-                    : 'Accept All'}
+                    ? "All Policies Accepted"
+                    : "Accept All"}
               </Button>
             </>
           ) : (
-            <p className="text-muted-foreground text-sm">No policies to accept.</p>
+            <p className="text-muted-foreground text-sm">
+              No policies to accept.
+            </p>
           )}
         </div>
       </AccordionContent>

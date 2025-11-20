@@ -1,30 +1,38 @@
-'use client';
+"use client";
 
-import { updateTaskAction } from '@/actions/risk/task/update-task-action';
-import { updateTaskSchema } from '@/actions/schema';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Task } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { Input } from '@trycompai/ui/input';
-import { Textarea } from '@trycompai/ui/textarea';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
+import type { z } from "zod";
+import { updateTaskAction } from "@/actions/risk/task/update-task-action";
+import { updateTaskSchema } from "@/actions/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useQueryState } from "nuqs";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import type { Task } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Input } from "@trycompai/ui/input";
+import { Textarea } from "@trycompai/ui/textarea";
 
 export function UpdateTaskOverviewForm({ task }: { task: Task }) {
-  const [open, setOpen] = useQueryState('task-update-overview-sheet');
+  const [open, setOpen] = useQueryState("task-update-overview-sheet");
 
   const updateTask = useAction(updateTaskAction, {
     onSuccess: () => {
-      toast.success('Risk updated successfully');
+      toast.success("Risk updated successfully");
       setOpen(null);
     },
     onError: () => {
-      toast.error('Failed to update risk');
+      toast.error("Failed to update risk");
     },
   });
 
@@ -58,13 +66,13 @@ export function UpdateTaskOverviewForm({ task }: { task: Task }) {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{'Task Title'}</FormLabel>
+                <FormLabel>{"Task Title"}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     autoFocus
                     className="mt-3"
-                    placeholder={'A short, descriptive title for the task.'}
+                    placeholder={"A short, descriptive title for the task."}
                     autoCorrect="off"
                   />
                 </FormControl>
@@ -82,7 +90,9 @@ export function UpdateTaskOverviewForm({ task }: { task: Task }) {
                   <Textarea
                     {...field}
                     className="mt-3 min-h-[80px]"
-                    placeholder={'Provide a detailed description of what needs to be done.'}
+                    placeholder={
+                      "Provide a detailed description of what needs to be done."
+                    }
                   />
                 </FormControl>
                 <FormMessage />
@@ -91,11 +101,15 @@ export function UpdateTaskOverviewForm({ task }: { task: Task }) {
           />
         </div>
         <div className="mt-8 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
-            {updateTask.status === 'executing' ? (
+          <Button
+            type="submit"
+            variant="default"
+            disabled={updateTask.status === "executing"}
+          >
+            {updateTask.status === "executing" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Save'
+              "Save"
             )}
           </Button>
         </div>

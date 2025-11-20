@@ -1,23 +1,25 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { Button } from '@trycompai/ui/button';
-import { Code2, Eye } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { Code2, Eye } from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
 
 interface Props {
-  value: 'visual' | 'code';
-  onChange: (value: 'visual' | 'code') => void;
+  value: "visual" | "code";
+  onChange: (value: "visual" | "code") => void;
 }
 
 export function ViewModeSwitch({ value, onChange }: Props) {
   return (
-    <div className="bg-background rounded-sm border border-border">
+    <div className="bg-background border-border rounded-sm border">
       <Button
-        variant={value === 'visual' ? 'default' : 'ghost'}
-        onClick={() => onChange('visual')}
+        variant={value === "visual" ? "default" : "ghost"}
+        onClick={() => onChange("visual")}
         className={cn(
-          'h-7 w-7 p-0',
-          value === 'visual' && 'bg-primary text-primary-foreground hover:bg-primary/90',
+          "h-7 w-7 p-0",
+          value === "visual" &&
+            "bg-primary text-primary-foreground hover:bg-primary/90",
         )}
         aria-label="Visual view"
         title="Visual view"
@@ -25,12 +27,13 @@ export function ViewModeSwitch({ value, onChange }: Props) {
         <Eye className="h-3.5 w-3.5" />
       </Button>
       <Button
-        variant={value === 'code' ? 'default' : 'ghost'}
+        variant={value === "code" ? "default" : "ghost"}
         size="sm"
-        onClick={() => onChange('code')}
+        onClick={() => onChange("code")}
         className={cn(
-          'h-7 w-7 p-0',
-          value === 'code' && 'bg-primary text-primary-foreground hover:bg-primary/90',
+          "h-7 w-7 p-0",
+          value === "code" &&
+            "bg-primary text-primary-foreground hover:bg-primary/90",
         )}
         aria-label="Code view"
         title="Code view"

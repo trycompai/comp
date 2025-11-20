@@ -1,6 +1,7 @@
-import PageCore from '@/components/pages/PageCore.tsx';
-import type { Metadata } from 'next';
-import { TeamMembers } from './components/TeamMembers';
+import type { Metadata } from "next";
+import PageCore from "@/components/pages/PageCore.tsx";
+
+import { TeamMembers } from "./components/TeamMembers";
 
 export default async function Members() {
   return (
@@ -12,6 +13,6 @@ export default async function Members() {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'People',
+    title: "People",
   };
 }

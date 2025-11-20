@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useApi } from '@/hooks/use-api';
-import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
-import type { CommentEntityType } from '@trycompai/db';
-import { useCallback } from 'react';
+import { useCallback } from "react";
+import { useApi } from "@/hooks/use-api";
+import { useApiSWR, UseApiSWROptions } from "@/hooks/use-api-swr";
+
+import type { CommentEntityType } from "@trycompai/db";
 
 // Helper function to convert API date strings to Date objects
 export function parseApiDate(dateString: string): Date {
@@ -55,7 +56,9 @@ export function useComments(
   options: UseApiSWROptions<Comment[]> = {},
 ) {
   const endpoint =
-    entityId && entityType ? `/v1/comments?entityId=${entityId}&entityType=${entityType}` : null;
+    entityId && entityType
+      ? `/v1/comments?entityId=${entityId}&entityType=${entityType}`
+      : null;
 
   return useApiSWR<Comment[]>(endpoint, options);
 }
@@ -68,7 +71,7 @@ export function useCommentActions() {
 
   const createComment = useCallback(
     async (data: CreateCommentData) => {
-      const response = await api.post<Comment>('/v1/comments', data);
+      const response = await api.post<Comment>("/v1/comments", data);
       if (response.error) {
         throw new Error(response.error);
       }
@@ -79,7 +82,10 @@ export function useCommentActions() {
 
   const updateComment = useCallback(
     async (commentId: string, data: UpdateCommentData) => {
-      const response = await api.put<Comment>(`/v1/comments/${commentId}`, data);
+      const response = await api.put<Comment>(
+        `/v1/comments/${commentId}`,
+        data,
+      );
       if (response.error) {
         throw new Error(response.error);
       }
@@ -114,28 +120,35 @@ export function useCommentWithAttachments() {
   const { createComment } = useCommentActions();
 
   const createCommentWithFiles = useCallback(
-    async (content: string, entityId: string, entityType: CommentEntityType, files: File[]) => {
+    async (
+      content: string,
+      entityId: string,
+      entityType: CommentEntityType,
+      files: File[],
+    ) => {
       const attachments = await Promise.all(
         files.map((file) => {
-          return new Promise<{ fileName: string; fileType: string; fileData: string }>(
-            (resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                const base64Data = (reader.result as string)?.split(',')[1];
-                if (!base64Data) {
-                  reject(new Error('Failed to read file data'));
-                } else {
-                  resolve({
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileData: base64Data,
-                  });
-                }
-              };
-              reader.onerror = () => reject(new Error('Failed to read file'));
-              reader.readAsDataURL(file);
-            },
-          );
+          return new Promise<{
+            fileName: string;
+            fileType: string;
+            fileData: string;
+          }>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64Data = (reader.result as string)?.split(",")[1];
+              if (!base64Data) {
+                reject(new Error("Failed to read file data"));
+              } else {
+                resolve({
+                  fileName: file.name,
+                  fileType: file.type,
+                  fileData: base64Data,
+                });
+              }
+            };
+            reader.onerror = () => reject(new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+          });
         }),
       );
 
@@ -157,7 +170,10 @@ export function useCommentWithAttachments() {
 /**
  * Enhanced hooks with optimistic updates following official SWR patterns
  */
-export function useOptimisticComments(entityId: string, entityType: CommentEntityType) {
+export function useOptimisticComments(
+  entityId: string,
+  entityType: CommentEntityType,
+) {
   const { data, error, isLoading, mutate } = useComments(entityId, entityType);
   const { createComment, updateComment, deleteComment } = useCommentActions();
 
@@ -171,9 +187,9 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
         id: `temp-${Date.now()}`,
         content,
         author: {
-          id: 'temp-user',
-          name: 'You', // Will be replaced with real author data
-          email: '',
+          id: "temp-user",
+          name: "You", // Will be replaced with real author data
+          email: "",
           image: null,
         },
         attachments: [], // Will be populated by real response
@@ -183,7 +199,12 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
       return mutate(
         async () => {
           // Call the API and transform single item response to array format for SWR cache
-          const newComment = await createComment({ content, entityId, entityType, attachments });
+          const newComment = await createComment({
+            content,
+            entityId,
+            entityType,
+            attachments,
+          });
           const currentComments = data?.data || [];
 
           // Replace optimistic comment with real one, or add if not found
@@ -273,7 +294,9 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
           optimisticData: data
             ? {
                 ...data,
-                data: (data.data || []).filter((comment: any) => comment.id !== commentId),
+                data: (data.data || []).filter(
+                  (comment: any) => comment.id !== commentId,
+                ),
               }
             : undefined,
           populateCache: true,
@@ -301,8 +324,11 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
 /**
  * Convenience hook for task comments
  */
-export function useTaskComments(taskId: string | null, options: UseApiSWROptions<Comment[]> = {}) {
-  return useComments(taskId, 'task', options);
+export function useTaskComments(
+  taskId: string | null,
+  options: UseApiSWROptions<Comment[]> = {},
+) {
+  return useComments(taskId, "task", options);
 }
 
 /**
@@ -312,7 +338,7 @@ export function usePolicyComments(
   policyId: string | null,
   options: UseApiSWROptions<Comment[]> = {},
 ) {
-  return useComments(policyId, 'policy', options);
+  return useComments(policyId, "policy", options);
 }
 
 /**
@@ -322,14 +348,17 @@ export function useVendorComments(
   vendorId: string | null,
   options: UseApiSWROptions<Comment[]> = {},
 ) {
-  return useComments(vendorId, 'vendor', options);
+  return useComments(vendorId, "vendor", options);
 }
 
 /**
  * Convenience hook for risk comments
  */
-export function useRiskComments(riskId: string | null, options: UseApiSWROptions<Comment[]> = {}) {
-  return useComments(riskId, 'risk', options);
+export function useRiskComments(
+  riskId: string | null,
+  options: UseApiSWROptions<Comment[]> = {},
+) {
+  return useComments(riskId, "risk", options);
 }
 
 /**

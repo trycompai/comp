@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { authClient } from './auth-client';
+import { authClient } from "./auth-client";
 
 interface TokenInfo {
   token: string;
@@ -13,8 +13,8 @@ class JWTManager {
   private lastRefreshAttempt: number = 0; // Track last refresh attempt time
   private readonly REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh 5 minutes before expiry
   private readonly REFRESH_COOLDOWN = 2000; // 2 seconds cooldown between refresh attempts
-  private readonly STORAGE_KEY = 'bearer_token';
-  private readonly EXPIRY_KEY = 'bearer_token_expiry';
+  private readonly STORAGE_KEY = "bearer_token";
+  private readonly EXPIRY_KEY = "bearer_token_expiry";
 
   /**
    * Get the current JWT token, refreshing if needed
@@ -25,14 +25,16 @@ class JWTManager {
 
       // If no token or expired, get a fresh one
       if (!stored || this.isTokenExpiringSoon(stored.expiresAt)) {
-        console.log('🔄 JWT token missing or expiring soon, fetching fresh token...');
+        console.log(
+          "🔄 JWT token missing or expiring soon, fetching fresh token...",
+        );
         return await this.refreshToken();
       }
 
-      console.log('✅ Using cached JWT token');
+      console.log("✅ Using cached JWT token");
       return stored.token;
     } catch (error) {
-      console.error('❌ Error getting valid JWT token:', error);
+      console.error("❌ Error getting valid JWT token:", error);
       return null;
     }
   }
@@ -44,7 +46,7 @@ class JWTManager {
   async refreshToken(): Promise<string | null> {
     // If a refresh is already in progress, wait for it instead of starting a new one
     if (this.refreshPromise) {
-      console.log('🔄 Token refresh already in progress, waiting...');
+      console.log("🔄 Token refresh already in progress, waiting...");
       return await this.refreshPromise;
     }
 
@@ -84,7 +86,7 @@ class JWTManager {
    */
   private async _doRefreshToken(): Promise<string | null> {
     try {
-      console.log('🔄 Refreshing JWT token...');
+      console.log("🔄 Refreshing JWT token...");
 
       let newToken: string | null = null;
 
@@ -92,10 +94,10 @@ class JWTManager {
       const sessionResponse = await authClient.getSession({
         fetchOptions: {
           onSuccess: (ctx) => {
-            const jwtToken = ctx.response.headers.get('set-auth-jwt');
+            const jwtToken = ctx.response.headers.get("set-auth-jwt");
             if (jwtToken) {
               newToken = jwtToken;
-              console.log('✅ JWT token refreshed via session');
+              console.log("✅ JWT token refreshed via session");
             }
           },
         },
@@ -104,17 +106,17 @@ class JWTManager {
       // If that didn't work, try the explicit token endpoint
       if (!newToken) {
         try {
-          const tokenResponse = await fetch('/api/auth/token', {
-            credentials: 'include',
+          const tokenResponse = await fetch("/api/auth/token", {
+            credentials: "include",
           });
 
           if (tokenResponse.ok) {
             const tokenData = await tokenResponse.json();
             newToken = tokenData.token;
-            console.log('✅ JWT token refreshed via token endpoint');
+            console.log("✅ JWT token refreshed via token endpoint");
           }
         } catch (error) {
-          console.warn('⚠️ Token endpoint failed, using session token');
+          console.warn("⚠️ Token endpoint failed, using session token");
         }
       }
 
@@ -124,10 +126,10 @@ class JWTManager {
         return newToken;
       }
 
-      console.error('❌ Failed to refresh JWT token');
+      console.error("❌ Failed to refresh JWT token");
       return null;
     } catch (error) {
-      console.error('❌ Error refreshing JWT token:', error);
+      console.error("❌ Error refreshing JWT token:", error);
       return null;
     }
   }
@@ -143,9 +145,11 @@ class JWTManager {
       localStorage.setItem(this.STORAGE_KEY, token);
       localStorage.setItem(this.EXPIRY_KEY, expiresAt.toString());
 
-      console.log(`🔐 JWT token stored, expires at: ${new Date(expiresAt).toISOString()}`);
+      console.log(
+        `🔐 JWT token stored, expires at: ${new Date(expiresAt).toISOString()}`,
+      );
     } catch (error) {
-      console.error('❌ Error storing JWT token:', error);
+      console.error("❌ Error storing JWT token:", error);
     }
   }
 
@@ -164,7 +168,7 @@ class JWTManager {
         expiresAt: parseInt(expiryStr, 10),
       };
     } catch (error) {
-      console.error('❌ Error getting stored token:', error);
+      console.error("❌ Error getting stored token:", error);
       return null;
     }
   }
@@ -183,11 +187,11 @@ class JWTManager {
    */
   private decodeJWTPayload(token: string): any {
     try {
-      const parts = token.split('.');
+      const parts = token.split(".");
       const payload = JSON.parse(atob(parts[1]));
       return payload;
     } catch (error) {
-      throw new Error('Invalid JWT token format');
+      throw new Error("Invalid JWT token format");
     }
   }
 
@@ -206,14 +210,16 @@ class JWTManager {
       const now = Date.now();
       const refreshIn = Math.max(0, expiresAt - now - this.REFRESH_THRESHOLD);
 
-      console.log(`⏰ Scheduling JWT refresh in ${Math.round(refreshIn / 1000 / 60)} minutes`);
+      console.log(
+        `⏰ Scheduling JWT refresh in ${Math.round(refreshIn / 1000 / 60)} minutes`,
+      );
 
       this.refreshTimer = setTimeout(async () => {
-        console.log('⏰ Auto-refreshing JWT token...');
+        console.log("⏰ Auto-refreshing JWT token...");
         await this.refreshToken();
       }, refreshIn);
     } catch (error) {
-      console.error('❌ Error scheduling token refresh:', error);
+      console.error("❌ Error scheduling token refresh:", error);
     }
   }
 
@@ -221,7 +227,7 @@ class JWTManager {
    * Initialize the JWT manager (call this once on app start)
    */
   async initialize(): Promise<void> {
-    console.log('🚀 Initializing JWT Manager...');
+    console.log("🚀 Initializing JWT Manager...");
 
     // Get a valid token and set up refresh schedule
     const token = await this.getValidToken();
@@ -242,7 +248,7 @@ class JWTManager {
 
     localStorage.removeItem(this.STORAGE_KEY);
     localStorage.removeItem(this.EXPIRY_KEY);
-    console.log('🧹 JWT Manager cleaned up');
+    console.log("🧹 JWT Manager cleaned up");
   }
 
   /**
@@ -251,7 +257,7 @@ class JWTManager {
    * Respects cooldown and concurrent refresh protection
    */
   async forceRefresh(): Promise<string | null> {
-    console.log('🔄 Force refreshing JWT token...');
+    console.log("🔄 Force refreshing JWT token...");
     // Clear stored token to force a fresh fetch
     localStorage.removeItem(this.STORAGE_KEY);
     localStorage.removeItem(this.EXPIRY_KEY);
@@ -265,6 +271,6 @@ class JWTManager {
 export const jwtManager = new JWTManager();
 
 // Auto-initialize when imported
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   jwtManager.initialize();
 }

@@ -1,15 +1,29 @@
-'use client';
+"use client";
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import { format } from 'date-fns';
-import { Copy, Edit, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { AddSecretDialog } from '../AddSecretDialog';
-import { EditSecretDialog } from '../EditSecretDialog';
+import { useState } from "react";
+import { format } from "date-fns";
+import { Copy, Edit, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Badge } from "@trycompai/ui/badge";
+import { Button } from "@trycompai/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@trycompai/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@trycompai/ui/tooltip";
+
+import { AddSecretDialog } from "../AddSecretDialog";
+import { EditSecretDialog } from "../EditSecretDialog";
 
 interface Secret {
   id: string;
@@ -26,8 +40,12 @@ interface SecretsTableProps {
 }
 
 export function SecretsTable({ secrets }: SecretsTableProps) {
-  const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
-  const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
+  const [revealedSecrets, setRevealedSecrets] = useState<
+    Record<string, string>
+  >({});
+  const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>(
+    {},
+  );
   const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
 
   const handleRevealSecret = async (secretId: string) => {
@@ -46,58 +64,70 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
 
     try {
       // Get organizationId from the URL path
-      const pathSegments = window.location.pathname.split('/');
+      const pathSegments = window.location.pathname.split("/");
       const orgId = pathSegments[1]; // Assuming path is /{orgId}/settings/secrets
 
-      const response = await fetch(`/api/secrets/${secretId}?organizationId=${orgId}`);
+      const response = await fetch(
+        `/api/secrets/${secretId}?organizationId=${orgId}`,
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch secret');
+        throw new Error("Failed to fetch secret");
       }
 
       const data = await response.json();
-      setRevealedSecrets((prev) => ({ ...prev, [secretId]: data.secret.value }));
+      setRevealedSecrets((prev) => ({
+        ...prev,
+        [secretId]: data.secret.value,
+      }));
     } catch (error) {
-      toast.error('Failed to reveal secret');
-      console.error('Error revealing secret:', error);
+      toast.error("Failed to reveal secret");
+      console.error("Error revealing secret:", error);
     } finally {
       setLoadingSecrets((prev) => ({ ...prev, [secretId]: false }));
     }
   };
 
   const handleDeleteSecret = async (secretId: string) => {
-    if (!confirm('Are you sure you want to delete this secret? This action cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this secret? This action cannot be undone.",
+      )
+    ) {
       return;
     }
 
     try {
       // Get organizationId from the URL path
-      const pathSegments = window.location.pathname.split('/');
+      const pathSegments = window.location.pathname.split("/");
       const orgId = pathSegments[1]; // Assuming path is /{orgId}/settings/secrets
 
-      const response = await fetch(`/api/secrets/${secretId}?organizationId=${orgId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/secrets/${secretId}?organizationId=${orgId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to delete secret');
+        throw new Error("Failed to delete secret");
       }
 
-      toast.success('Secret deleted successfully');
+      toast.success("Secret deleted successfully");
       // Reload the page to refresh the list
       window.location.reload();
     } catch (error) {
-      toast.error('Failed to delete secret');
-      console.error('Error deleting secret:', error);
+      toast.error("Failed to delete secret");
+      console.error("Error deleting secret:", error);
     }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Organization Secrets</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm">
             Secure storage for API keys and credentials used by AI automations
           </p>
         </div>
@@ -105,29 +135,29 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
+      <div className="border-border/50 bg-card/50 overflow-hidden rounded-md border shadow-sm backdrop-blur-sm">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-border/50">
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground pl-6">
+            <TableRow className="border-border/50 border-b hover:bg-transparent">
+              <TableHead className="text-muted-foreground pl-6 text-xs font-medium tracking-wider uppercase">
                 Name
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Value
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Category
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Description
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Last Used
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Created
               </TableHead>
-              <TableHead className="text-right font-medium text-xs uppercase tracking-wider text-muted-foreground pr-6">
+              <TableHead className="text-muted-foreground pr-6 text-right text-xs font-medium tracking-wider uppercase">
                 Actions
               </TableHead>
             </TableRow>
@@ -135,14 +165,14 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
           <TableBody>
             {secrets.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="text-center py-16">
+                <TableCell colSpan={7} className="py-16 text-center">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                      <Eye className="h-5 w-5 text-muted-foreground" />
+                    <div className="bg-muted/50 flex h-12 w-12 items-center justify-center rounded-full">
+                      <Eye className="text-muted-foreground h-5 w-5" />
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-medium">No secrets yet</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         Create your first secret to enable AI automations
                       </p>
                     </div>
@@ -151,8 +181,11 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
               </TableRow>
             ) : (
               secrets.map((secret) => (
-                <TableRow key={secret.id} className="hover:bg-muted/30 transition-colors">
-                  <TableCell className="font-mono text-sm font-medium pl-6">
+                <TableRow
+                  key={secret.id}
+                  className="hover:bg-muted/30 transition-colors"
+                >
+                  <TableCell className="pl-6 font-mono text-sm font-medium">
                     {secret.name}
                   </TableCell>
                   <TableCell>
@@ -160,7 +193,9 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                       {loadingSecrets[secret.id] ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm text-muted-foreground">Loading...</span>
+                          <span className="text-muted-foreground text-sm">
+                            Loading...
+                          </span>
                         </div>
                       ) : revealedSecrets[secret.id] ? (
                         <TooltipProvider>
@@ -168,15 +203,17 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => {
-                                  navigator.clipboard.writeText(revealedSecrets[secret.id]);
-                                  toast.success('Secret copied to clipboard');
+                                  navigator.clipboard.writeText(
+                                    revealedSecrets[secret.id],
+                                  );
+                                  toast.success("Secret copied to clipboard");
                                 }}
-                                className="inline-flex items-center gap-1.5 text-sm bg-primary/10 px-3 py-1.5 rounded-md font-mono hover:bg-primary/20 transition-all max-w-[240px] group border border-primary/20"
+                                className="bg-primary/10 hover:bg-primary/20 group border-primary/20 inline-flex max-w-[240px] items-center gap-1.5 rounded-md border px-3 py-1.5 font-mono text-sm transition-all"
                               >
-                                <span className="truncate text-primary">
+                                <span className="text-primary truncate">
                                   {revealedSecrets[secret.id]}
                                 </span>
-                                <Copy className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity flex-shrink-0 text-primary" />
+                                <Copy className="text-primary h-3 w-3 flex-shrink-0 opacity-60 transition-opacity group-hover:opacity-100" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -185,7 +222,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                           </Tooltip>
                         </TooltipProvider>
                       ) : (
-                        <span className="font-mono text-sm text-muted-foreground/70">
+                        <span className="text-muted-foreground/70 font-mono text-sm">
                           ••••••••••••
                         </span>
                       )}
@@ -195,7 +232,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-primary/10"
+                              className="hover:bg-primary/10 h-8 w-8"
                               onClick={() => handleRevealSecret(secret.id)}
                               disabled={loadingSecrets[secret.id]}
                             >
@@ -207,7 +244,10 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{revealedSecrets[secret.id] ? 'Hide' : 'Reveal'} secret</p>
+                            <p>
+                              {revealedSecrets[secret.id] ? "Hide" : "Reveal"}{" "}
+                              secret
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -217,12 +257,14 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                     {secret.category ? (
                       <Badge
                         variant="outline"
-                        className="text-xs font-normal border-border/50 bg-muted/30"
+                        className="border-border/50 bg-muted/30 text-xs font-normal"
                       >
-                        {secret.category.replace('_', ' ')}
+                        {secret.category.replace("_", " ")}
                       </Badge>
                     ) : (
-                      <span className="text-sm text-muted-foreground/50">—</span>
+                      <span className="text-muted-foreground/50 text-sm">
+                        —
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -230,32 +272,34 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="text-sm max-w-xs truncate block text-muted-foreground cursor-help">
+                            <span className="text-muted-foreground block max-w-xs cursor-help truncate text-sm">
                               {secret.description}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-md">
-                            <p className="text-sm whitespace-pre-wrap">{secret.description}</p>
+                            <p className="text-sm whitespace-pre-wrap">
+                              {secret.description}
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
+                      <span className="text-muted-foreground text-sm">—</span>
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       {secret.lastUsedAt
-                        ? format(new Date(secret.lastUsedAt), 'MMM d, yyyy')
-                        : 'Never'}
+                        ? format(new Date(secret.lastUsedAt), "MMM d, yyyy")
+                        : "Never"}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      {format(new Date(secret.createdAt), 'MMM d, yyyy')}
+                    <span className="text-muted-foreground text-sm">
+                      {format(new Date(secret.createdAt), "MMM d, yyyy")}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right pr-6">
+                  <TableCell className="pr-6 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <TooltipProvider>
                         <Tooltip>
@@ -263,7 +307,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
+                              className="text-muted-foreground/50 hover:text-primary hover:bg-primary/10 h-8 w-8 transition-all"
                               onClick={() => setEditingSecret(secret)}
                             >
                               <Edit className="h-4 w-4" />
@@ -280,7 +324,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-all"
+                              className="text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 h-8 w-8 transition-all"
                               onClick={() => handleDeleteSecret(secret.id)}
                             >
                               <Trash2 className="h-4 w-4" />

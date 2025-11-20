@@ -1,12 +1,14 @@
-'use client';
+"use client";
 
-import type { Organization } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import { Sheet, SheetContent } from '@trycompai/ui/sheet';
-import { useState } from 'react';
-import { MainMenu } from './main-menu';
-import { OrganizationSwitcher } from './organization-switcher';
+import { useState } from "react";
+
+import type { Organization } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Icons } from "@trycompai/ui/icons";
+import { Sheet, SheetContent } from "@trycompai/ui/sheet";
+
+import { MainMenu } from "./main-menu";
+import { OrganizationSwitcher } from "./organization-switcher";
 
 interface MobileMenuProps {
   organizations: Organization[];
@@ -28,7 +30,8 @@ export function MobileMenu({
     setOpen(false);
   };
 
-  const currentOrganization = organizations.find((org) => org.id === organizationId) || null;
+  const currentOrganization =
+    organizations.find((org) => org.id === organizationId) || null;
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>

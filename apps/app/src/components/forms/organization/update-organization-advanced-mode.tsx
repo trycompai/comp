@@ -1,8 +1,14 @@
-'use client';
+"use client";
 
-import { updateOrganizationAdvancedModeAction } from '@/actions/organization/update-organization-advanced-mode-action';
-import { organizationAdvancedModeSchema } from '@/actions/schema';
-import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from "zod";
+import { updateOrganizationAdvancedModeAction } from "@/actions/organization/update-organization-advanced-mode-action";
+import { organizationAdvancedModeSchema } from "@/actions/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
 import {
   Card,
   CardContent,
@@ -10,14 +16,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@trycompai/ui/card';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
-import { Switch } from '@trycompai/ui/switch';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
+} from "@trycompai/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { Switch } from "@trycompai/ui/switch";
 
 export function UpdateOrganizationAdvancedMode({
   advancedModeEnabled,
@@ -26,10 +33,10 @@ export function UpdateOrganizationAdvancedMode({
 }) {
   const updateAdvancedMode = useAction(updateOrganizationAdvancedModeAction, {
     onSuccess: () => {
-      toast.success('Advanced mode setting updated');
+      toast.success("Advanced mode setting updated");
     },
     onError: () => {
-      toast.error('Error updating advanced mode setting');
+      toast.error("Error updating advanced mode setting");
     },
   });
 
@@ -52,9 +59,9 @@ export function UpdateOrganizationAdvancedMode({
             <CardTitle>Advanced Mode</CardTitle>
             <CardDescription>
               <div className="max-w-[600px]">
-                Enable advanced mode to access additional features like the Controls page. This
-                setting is designed for users who need access to more detailed compliance management
-                tools.
+                Enable advanced mode to access additional features like the
+                Controls page. This setting is designed for users who need
+                access to more detailed compliance management tools.
               </div>
             </CardDescription>
           </CardHeader>
@@ -89,8 +96,8 @@ export function UpdateOrganizationAdvancedMode({
             <div className="text-muted-foreground text-xs">
               Changes are saved automatically when toggled.
             </div>
-            {updateAdvancedMode.status === 'executing' && (
-              <div className="flex items-center text-muted-foreground text-sm">
+            {updateAdvancedMode.status === "executing" && (
+              <div className="text-muted-foreground flex items-center text-sm">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </div>

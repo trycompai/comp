@@ -1,9 +1,10 @@
-import type { TextUIPart } from 'ai';
-import { MarkdownRenderer } from '../../markdown-renderer/markdown-renderer';
+import type { TextUIPart } from "ai";
+
+import { MarkdownRenderer } from "../../markdown-renderer/markdown-renderer";
 
 export function Text({ part }: { part: TextUIPart }) {
   return (
-    <div className="text-sm leading-relaxed text-foreground">
+    <div className="text-foreground text-sm leading-relaxed">
       <MarkdownRenderer content={part.text} />
     </div>
   );

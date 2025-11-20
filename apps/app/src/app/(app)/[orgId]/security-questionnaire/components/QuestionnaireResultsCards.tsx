@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import { Button } from '@trycompai/ui/button';
-import { Textarea } from '@trycompai/ui/textarea';
-import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import type { QuestionAnswer } from './types';
+import Link from "next/link";
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Link as LinkIcon,
+  Loader2,
+} from "lucide-react";
+
+import { Button } from "@trycompai/ui/button";
+import { Textarea } from "@trycompai/ui/textarea";
+
+import type { QuestionAnswer } from "./types";
 
 interface QuestionnaireResultsCardsProps {
   orgId: string;
@@ -14,7 +22,7 @@ interface QuestionnaireResultsCardsProps {
   editingAnswer: string;
   onEditingAnswerChange: (answer: string) => void;
   expandedSources: Set<number>;
-  questionStatuses: Map<number, 'pending' | 'processing' | 'completed'>;
+  questionStatuses: Map<number, "pending" | "processing" | "completed">;
   answeringQuestionIndex: number | null;
   isAutoAnswering: boolean;
   hasClickedAutoAnswer: boolean;
@@ -44,27 +52,31 @@ export function QuestionnaireResultsCards({
   onToggleSource,
 }: QuestionnaireResultsCardsProps) {
   return (
-    <div className="lg:hidden space-y-4">
+    <div className="space-y-4 lg:hidden">
       {filteredResults.map((qa, index) => {
         const originalIndex = results.findIndex((r) => r === qa);
         const isEditing = editingIndex === originalIndex;
         const questionStatus = questionStatuses.get(originalIndex);
-        const isProcessing = questionStatus === 'processing';
+        const isProcessing = questionStatus === "processing";
 
         return (
           <div
             key={originalIndex}
-            className="flex flex-col gap-3 p-4 rounded-xs bg-muted/20 border border-border/30"
+            className="bg-muted/20 border-border/30 flex flex-col gap-3 rounded-xs border p-4"
           >
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-muted-foreground tabular-nums">
+              <span className="text-muted-foreground text-xs font-medium tabular-nums">
                 Question {originalIndex + 1}
               </span>
-              <p className="text-sm font-medium text-foreground">{qa.question}</p>
+              <p className="text-foreground text-sm font-medium">
+                {qa.question}
+              </p>
             </div>
 
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-muted-foreground">Answer</span>
+              <span className="text-muted-foreground text-xs font-medium">
+                Answer
+              </span>
               {isEditing ? (
                 <div className="space-y-2">
                   <Textarea
@@ -74,7 +86,10 @@ export function QuestionnaireResultsCards({
                     autoFocus
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => onSaveAnswer(originalIndex)}>
+                    <Button
+                      size="sm"
+                      onClick={() => onSaveAnswer(originalIndex)}
+                    >
                       Save
                     </Button>
                     <Button size="sm" onClick={onCancelEdit} variant="outline">
@@ -86,15 +101,17 @@ export function QuestionnaireResultsCards({
                 <>
                   {qa.answer ? (
                     <div
-                      className="rounded-xs p-3 bg-muted/30 border border-border/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                      className="bg-muted/30 border-border/30 hover:bg-muted/50 cursor-pointer rounded-xs border p-3 transition-colors"
                       onClick={() => onEditAnswer(originalIndex)}
                     >
-                      <p className="text-sm text-foreground">{qa.answer}</p>
+                      <p className="text-foreground text-sm">{qa.answer}</p>
                     </div>
                   ) : isProcessing ? (
-                    <div className="flex items-center gap-2 p-3 rounded-xs bg-muted/30 border border-border/30">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-                      <span className="text-sm text-muted-foreground">Generating answer...</span>
+                    <div className="bg-muted/30 border-border/30 flex items-center gap-2 rounded-xs border p-3">
+                      <Loader2 className="text-primary h-4 w-4 shrink-0 animate-spin" />
+                      <span className="text-muted-foreground text-sm">
+                        Generating answer...
+                      </span>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
@@ -115,9 +132,10 @@ export function QuestionnaireResultsCards({
                         </Button>
                       )}
                       {qa.failedToGenerate && (
-                        <div className="p-2 rounded-xs bg-muted/30 border border-border/30">
-                          <p className="text-xs text-muted-foreground text-center">
-                            Insufficient information in policies. Please write answer manually.
+                        <div className="bg-muted/30 border-border/30 rounded-xs border p-2">
+                          <p className="text-muted-foreground text-center text-xs">
+                            Insufficient information in policies. Please write
+                            answer manually.
                           </p>
                         </div>
                       )}
@@ -136,12 +154,12 @@ export function QuestionnaireResultsCards({
             </div>
 
             {qa.sources && qa.sources.length > 0 && (
-              <div className="pt-2 border-t border-border/30">
+              <div className="border-border/30 border-t pt-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onToggleSource(originalIndex)}
-                  className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground w-full justify-start"
+                  className="text-muted-foreground hover:text-foreground h-auto w-full justify-start p-1 text-xs"
                 >
                   <BookOpen className="mr-1 h-3 w-3" />
                   {expandedSources.has(originalIndex) ? (
@@ -157,26 +175,31 @@ export function QuestionnaireResultsCards({
                   )}
                 </Button>
                 {expandedSources.has(originalIndex) && (
-                  <div className="mt-2 space-y-1 pl-4 border-l-2 border-muted/30">
+                  <div className="border-muted/30 mt-2 space-y-1 border-l-2 pl-4">
                     {qa.sources.map((source, sourceIndex) => {
-                      const isPolicy = source.sourceType === 'policy' && source.sourceId;
-                      const sourceContent = source.sourceName || source.sourceType;
+                      const isPolicy =
+                        source.sourceType === "policy" && source.sourceId;
+                      const sourceContent =
+                        source.sourceName || source.sourceType;
 
                       return (
-                        <div key={sourceIndex} className="flex items-center gap-2 text-xs">
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        <div
+                          key={sourceIndex}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          <div className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
                           {isPolicy ? (
                             <Link
                               href={`/${orgId}/policies/${source.sourceId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                              className="text-primary inline-flex items-center gap-1 font-medium hover:underline"
                             >
                               {sourceContent}
                               <LinkIcon className="h-3 w-3" />
                             </Link>
                           ) : (
-                            <span className="font-medium text-muted-foreground">
+                            <span className="text-muted-foreground font-medium">
                               {sourceContent}
                             </span>
                           )}

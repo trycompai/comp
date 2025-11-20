@@ -1,7 +1,8 @@
-import { auth } from '@/utils/auth';
-import { db } from '@trycompai/db';
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { auth } from "@/utils/auth";
+
+import { db } from "@trycompai/db";
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
     const orgId = session?.session.activeOrganizationId;
 
     if (!orgId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const providers =
@@ -20,14 +21,17 @@ export async function GET() {
         where: {
           organizationId: orgId,
           integrationId: {
-            in: ['aws', 'gcp', 'azure'],
+            in: ["aws", "gcp", "azure"],
           },
         },
       })) || [];
 
     return NextResponse.json(providers);
   } catch (error) {
-    console.error('Error fetching providers:', error);
-    return NextResponse.json({ error: 'Failed to fetch providers' }, { status: 500 });
+    console.error("Error fetching providers:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch providers" },
+      { status: 500 },
+    );
   }
 }

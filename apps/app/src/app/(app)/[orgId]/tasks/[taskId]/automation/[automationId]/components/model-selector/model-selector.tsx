@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { Loader2Icon } from 'lucide-react';
-import { memo } from 'react';
+import { memo } from "react";
+import { Loader2Icon } from "lucide-react";
+
 import {
   Select,
   SelectContent,
@@ -10,15 +11,19 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { useAvailableModels } from './use-available-models';
+} from "@trycompai/ui/select";
+
+import { useAvailableModels } from "./use-available-models";
 
 interface Props {
   modelId: string;
   onModelChange: (modelId: string) => void;
 }
 
-export const ModelSelector = memo(function ModelSelector({ modelId, onModelChange }: Props) {
+export const ModelSelector = memo(function ModelSelector({
+  modelId,
+  onModelChange,
+}: Props) {
   const { models, isLoading, error } = useAvailableModels();
   return (
     <Select
@@ -26,7 +31,7 @@ export const ModelSelector = memo(function ModelSelector({ modelId, onModelChang
       onValueChange={onModelChange}
       disabled={isLoading || !!error || !models?.length}
     >
-      <SelectTrigger className="w-[180px] bg-background">
+      <SelectTrigger className="bg-background w-[180px]">
         {isLoading ? (
           <div className="flex items-center gap-2">
             <Loader2Icon className="h-4 w-4 animate-spin" />

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface ReviewWidgetProps {
   rating?: number;
@@ -9,7 +9,7 @@ interface ReviewWidgetProps {
 export function ReviewWidget({
   rating = 4.7,
   reviewCount = 100,
-  className = '',
+  className = "",
 }: ReviewWidgetProps) {
   // Calculate how many full stars and the partial star percentage
   const fullStars = Math.floor(rating);
@@ -17,7 +17,9 @@ export function ReviewWidget({
   const partialPercentage = Math.round(partialStar * 100);
 
   return (
-    <div className={`flex items-center justify-center gap-4 text-center ${className}`}>
+    <div
+      className={`flex items-center justify-center gap-4 text-center ${className}`}
+    >
       <div className="flex flex-col items-center justify-center gap-1">
         <div className="flex items-center gap-1">
           {/* Star Rating */}
@@ -62,11 +64,15 @@ export function ReviewWidget({
           </div>
 
           {/* Rating Number */}
-          <div className="text-base leading-none font-semibold text-foreground ml-1">{rating}</div>
+          <div className="text-foreground ml-1 text-base leading-none font-semibold">
+            {rating}
+          </div>
         </div>
 
         {/* Review Count Text */}
-        <div className="text-sm text-muted-foreground">Based on {reviewCount}+ reviews</div>
+        <div className="text-muted-foreground text-sm">
+          Based on {reviewCount}+ reviews
+        </div>
       </div>
     </div>
   );

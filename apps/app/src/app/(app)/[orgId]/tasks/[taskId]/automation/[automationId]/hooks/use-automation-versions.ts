@@ -1,8 +1,9 @@
-import { api } from '@/lib/api-client';
-import { EvidenceAutomationVersion } from '@trycompai/db';
-import { useParams } from 'next/navigation';
-import { useCallback, useState } from 'react';
-import useSWR from 'swr';
+import { useCallback, useState } from "react";
+import { useParams } from "next/navigation";
+import { api } from "@/lib/api-client";
+import useSWR from "swr";
+
+import { EvidenceAutomationVersion } from "@trycompai/db";
 
 interface UseAutomationVersionsOptions {
   /**
@@ -72,12 +73,19 @@ export function useAutomationVersions(
     automationId: string;
   }>();
 
-  const [allVersions, setAllVersions] = useState<EvidenceAutomationVersion[]>(initialData);
+  const [allVersions, setAllVersions] =
+    useState<EvidenceAutomationVersion[]>(initialData);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(initialData.length === pageSize);
 
   const { data, error, isLoading, mutate } = useSWR(
-    [`automation-versions-${automationId}-${offset}`, orgId, taskId, automationId, offset],
+    [
+      `automation-versions-${automationId}-${offset}`,
+      orgId,
+      taskId,
+      automationId,
+      offset,
+    ],
     async () => {
       const url = `/v1/tasks/${taskId}/automations/${automationId}/versions?limit=${pageSize}&offset=${offset}`;
       const response = await api.get<{
@@ -90,7 +98,7 @@ export function useAutomationVersions(
       }
 
       if (!response.data?.success) {
-        throw new Error('Failed to fetch versions');
+        throw new Error("Failed to fetch versions");
       }
 
       return response.data.versions;

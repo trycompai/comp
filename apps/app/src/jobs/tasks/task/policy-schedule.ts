@@ -1,11 +1,12 @@
-import { Novu } from '@novu/api';
-import { logger, schedules } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
+import { Novu } from "@novu/api";
+import { logger, schedules } from "@trigger.dev/sdk";
+
+import { db } from "@trycompai/db";
 
 export const policySchedule = schedules.task({
-  id: 'policy-schedule',
-  machine: 'large-1x',
-  cron: '0 */12 * * *', // Every 12 hours
+  id: "policy-schedule",
+  machine: "large-1x",
+  cron: "0 */12 * * *", // Every 12 hours
   maxDuration: 1000 * 60 * 10, // 10 minutes
   run: async () => {
     const now = new Date();
@@ -17,7 +18,7 @@ export const policySchedule = schedules.task({
     // Find all published policies that have a review date and frequency set
     const candidatePolicies = await db.policy.findMany({
       where: {
-        status: 'published',
+        status: "published",
         reviewDate: {
           not: null,
         },
@@ -32,7 +33,7 @@ export const policySchedule = schedules.task({
             name: true,
             members: {
               where: {
-                role: { contains: 'owner' },
+                role: { contains: "owner" },
               },
               select: {
                 user: {
@@ -77,13 +78,13 @@ export const policySchedule = schedules.task({
 
       let monthsToAdd = 0;
       switch (policy.frequency) {
-        case 'monthly':
+        case "monthly":
           monthsToAdd = 1;
           break;
-        case 'quarterly':
+        case "quarterly":
           monthsToAdd = 3;
           break;
-        case 'yearly':
+        case "yearly":
           monthsToAdd = 12;
           break;
         default:
@@ -96,14 +97,16 @@ export const policySchedule = schedules.task({
       return nextDueDate <= now;
     });
 
-    logger.info(`Found ${overduePolicies.length} policies past their computed review deadline`);
+    logger.info(
+      `Found ${overduePolicies.length} policies past their computed review deadline`,
+    );
 
     if (overduePolicies.length === 0) {
       return {
         success: true,
         totalPoliciesChecked: 0,
         updatedPolicies: 0,
-        message: 'No policies found past their computed review deadline',
+        message: "No policies found past their computed review deadline",
       };
     }
 
@@ -118,7 +121,7 @@ export const policySchedule = schedules.task({
           },
         },
         data: {
-          status: 'needs_review',
+          status: "needs_review",
         },
       });
 
@@ -144,7 +147,7 @@ export const policySchedule = schedules.task({
               recipientsMap.set(key, {
                 email: user.email,
                 userId: user.id,
-                name: user.name ?? '',
+                name: user.name ?? "",
                 policy,
               });
             }
@@ -168,7 +171,7 @@ export const policySchedule = schedules.task({
       const recipients = Array.from(recipientsMap.values());
       novu.triggerBulk({
         events: recipients.map((recipient) => ({
-          workflowId: 'policy-review-required',
+          workflowId: "policy-review-required",
           to: {
             subscriberId: `${recipient.userId}-${recipient.policy.organizationId}`,
             email: recipient.email,
@@ -180,7 +183,7 @@ export const policySchedule = schedules.task({
             organizationName: recipient.policy.organization.name,
             organizationId: recipient.policy.organizationId,
             policyId: recipient.policy.id,
-            policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
+            policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.trycomp.ai"}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
           },
         })),
       });
@@ -192,7 +195,9 @@ export const policySchedule = schedules.task({
         );
       });
 
-      logger.info(`Successfully updated ${updateResult.count} policies to "needs_review" status`);
+      logger.info(
+        `Successfully updated ${updateResult.count} policies to "needs_review" status`,
+      );
 
       return {
         success: true,
@@ -209,7 +214,7 @@ export const policySchedule = schedules.task({
         totalPoliciesChecked: overduePolicies.length,
         updatedPolicies: 0,
         error: error instanceof Error ? error.message : String(error),
-        message: 'Failed to update policies past their review deadline',
+        message: "Failed to update policies past their review deadline",
       };
     }
   },

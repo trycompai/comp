@@ -1,21 +1,26 @@
-import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
-import { db } from '@trycompai/db';
-import axios from 'axios';
-import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
-import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
+import { logger, metadata, queue, task, tasks } from "@trigger.dev/sdk";
+import axios from "axios";
+
+import { db } from "@trycompai/db";
+
+import { generateRiskMitigationsForOrg } from "./generate-risk-mitigation";
+import { generateVendorMitigationsForOrg } from "./generate-vendor-mitigation";
 import {
   createRisks,
   createVendors,
   extractVendorsFromContext,
   getOrganizationContext,
   updateOrganizationPolicies,
-} from './onboard-organization-helpers';
+} from "./onboard-organization-helpers";
 
 // v4 queues must be declared in advance
-const onboardOrgQueue = queue({ name: 'onboard-organization', concurrencyLimit: 50 });
+const onboardOrgQueue = queue({
+  name: "onboard-organization",
+  concurrencyLimit: 50,
+});
 
 export const onboardOrganization = task({
-  id: 'onboard-organization',
+  id: "onboard-organization",
   queue: onboardOrgQueue,
   retry: {
     maxAttempts: 3,
@@ -24,10 +29,10 @@ export const onboardOrganization = task({
     logger.info(`Start onboarding organization ${payload.organizationId}`);
 
     // Initialize metadata for real-time tracking
-    metadata.set('currentStep', 'Researching Vendors...');
-    metadata.set('vendors', false);
-    metadata.set('risk', false);
-    metadata.set('policies', false);
+    metadata.set("currentStep", "Researching Vendors...");
+    metadata.set("vendors", false);
+    metadata.set("risk", false);
+    metadata.set("policies", false);
 
     try {
       // Get organization context
@@ -35,27 +40,26 @@ export const onboardOrganization = task({
         organization,
         questionsAndAnswers,
         policies,
-      }: Awaited<ReturnType<typeof getOrganizationContext>> = await getOrganizationContext(
-        payload.organizationId,
-      );
+      }: Awaited<ReturnType<typeof getOrganizationContext>> =
+        await getOrganizationContext(payload.organizationId);
       const policyList = policies ?? [];
       // Initialize policy metadata immediately so UI can reflect pending status
       if (policyList.length > 0) {
-        metadata.set('policiesTotal', policyList.length);
-        metadata.set('policiesCompleted', 0);
-        metadata.set('policiesRemaining', policyList.length);
+        metadata.set("policiesTotal", policyList.length);
+        metadata.set("policiesCompleted", 0);
+        metadata.set("policiesRemaining", policyList.length);
         metadata.set(
-          'policiesInfo',
+          "policiesInfo",
           policyList.map((policy) => ({ id: policy.id, name: policy.name })),
         );
         policyList.forEach((policy) => {
-          metadata.set(`policy_${policy.id}_status`, 'queued');
+          metadata.set(`policy_${policy.id}_status`, "queued");
         });
       } else {
-        metadata.set('policiesTotal', 0);
-        metadata.set('policiesCompleted', 0);
-        metadata.set('policiesRemaining', 0);
-        metadata.set('policiesInfo', []);
+        metadata.set("policiesTotal", 0);
+        metadata.set("policiesCompleted", 0);
+        metadata.set("policiesRemaining", 0);
+        metadata.set("policiesInfo", []);
       }
 
       const frameworkInstances = await db.frameworkInstance.findMany({
@@ -77,14 +81,18 @@ export const onboardOrganization = task({
         where: {
           organizationId: payload.organizationId,
           role: {
-            contains: 'owner',
+            contains: "owner",
           },
         },
       });
 
       if (!owner) {
-        logger.error(`Owner not found for organization ${payload.organizationId}`);
-        throw new Error(`Owner not found for organization ${payload.organizationId}`);
+        logger.error(
+          `Owner not found for organization ${payload.organizationId}`,
+        );
+        throw new Error(
+          `Owner not found for organization ${payload.organizationId}`,
+        );
       }
 
       // Update owner to also be an employee
@@ -93,7 +101,7 @@ export const onboardOrganization = task({
           id: owner.id,
         },
         data: {
-          role: 'owner,employee',
+          role: "owner,employee",
         },
       });
 
@@ -113,7 +121,7 @@ export const onboardOrganization = task({
           organizationId: payload.organizationId,
         },
         data: {
-          frequency: 'quarterly',
+          frequency: "quarterly",
         },
       });
 
@@ -122,43 +130,50 @@ export const onboardOrganization = task({
 
       // Track vendors immediately as "pending" before creation
       if (vendorData.length > 0) {
-        metadata.set('vendorsTotal', vendorData.length);
-        metadata.set('vendorsCompleted', 0);
-        metadata.set('vendorsRemaining', vendorData.length);
+        metadata.set("vendorsTotal", vendorData.length);
+        metadata.set("vendorsCompleted", 0);
+        metadata.set("vendorsRemaining", vendorData.length);
         // Use temporary IDs based on index until we have real IDs
         metadata.set(
-          'vendorsInfo',
-          vendorData.map((v, index) => ({ id: `temp_${index}`, name: v.vendor_name })),
+          "vendorsInfo",
+          vendorData.map((v, index) => ({
+            id: `temp_${index}`,
+            name: v.vendor_name,
+          })),
         );
         // Mark all as pending initially
         vendorData.forEach((_, index) => {
-          metadata.set(`vendor_temp_${index}_status`, 'pending');
+          metadata.set(`vendor_temp_${index}_status`, "pending");
         });
       }
 
       // Create vendors (pass extracted data to avoid re-extraction)
       // Tracking is handled inside createVendors -> createVendorsFromData
-      const vendors = await createVendors(questionsAndAnswers, payload.organizationId, vendorData);
+      const vendors = await createVendors(
+        questionsAndAnswers,
+        payload.organizationId,
+        vendorData,
+      );
 
       // Update tracking with real vendor IDs (tracking during creation uses temp IDs)
       if (vendors.length > 0) {
         metadata.set(
-          'vendorsInfo',
+          "vendorsInfo",
           vendors.map((v) => ({ id: v.id, name: v.name })),
         );
         // Mark all created vendors as "assessing" since they need mitigation
         vendors.forEach((vendor) => {
-          metadata.set(`vendor_${vendor.id}_status`, 'assessing');
+          metadata.set(`vendor_${vendor.id}_status`, "assessing");
         });
       }
 
       // Mark vendors step as complete in metadata (real-time)
-      metadata.set('vendors', true);
-      metadata.set('currentStep', 'Creating Risks...');
+      metadata.set("vendors", true);
+      metadata.set("currentStep", "Creating Risks...");
 
       // Fan-out vendor mitigations as separate jobs
       await tasks.trigger<typeof generateVendorMitigationsForOrg>(
-        'generate-vendor-mitigations-for-org',
+        "generate-vendor-mitigations-for-org",
         {
           organizationId: payload.organizationId,
         },
@@ -174,34 +189,38 @@ export const onboardOrganization = task({
       // Mark all created risks as "assessing" since they need mitigation
       if (risks.length > 0) {
         risks.forEach((risk) => {
-          metadata.set(`risk_${risk.id}_status`, 'assessing');
+          metadata.set(`risk_${risk.id}_status`, "assessing");
         });
       }
 
       // Mark risks step as complete in metadata (real-time)
-      metadata.set('risk', true);
+      metadata.set("risk", true);
 
       // Get policy count for the step message
       const policyCount = policyList.length;
-      metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
+      metadata.set("currentStep", `Tailoring Policies... (0/${policyCount})`);
 
       // Fan-out risk mitigations as separate jobs
       await tasks.trigger<typeof generateRiskMitigationsForOrg>(
-        'generate-risk-mitigations-for-org',
+        "generate-risk-mitigations-for-org",
         {
           organizationId: payload.organizationId,
         },
       );
 
       // Update policies with progress tracking
-      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
+      await updateOrganizationPolicies(
+        payload.organizationId,
+        questionsAndAnswers,
+        frameworks,
+      );
 
       // Mark policies step as complete in metadata (real-time)
-      metadata.set('policies', true);
-      metadata.set('currentStep', 'Finalizing...');
+      metadata.set("policies", true);
+      metadata.set("currentStep", "Finalizing...");
 
       // Mark onboarding as completed in metadata
-      metadata.set('completed', true);
+      metadata.set("completed", true);
 
       // Mark onboarding as completed in database
       await db.onboarding.update({
@@ -210,11 +229,16 @@ export const onboardOrganization = task({
       });
 
       logger.info(`Created ${vendors.length} vendors`);
-      logger.info(`Onboarding completed for organization ${payload.organizationId}`);
+      logger.info(
+        `Onboarding completed for organization ${payload.organizationId}`,
+      );
     } catch (error) {
-      logger.error(`Error during onboarding for organization ${payload.organizationId}:`, {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.error(
+        `Error during onboarding for organization ${payload.organizationId}:`,
+        {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
       throw error;
     }
 
@@ -227,24 +251,28 @@ export const onboardOrganization = task({
     });
 
     try {
-      logger.info(`Revalidating path ${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`);
+      logger.info(
+        `Revalidating path ${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`,
+      );
       const revalidateResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`,
         {
           path: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/${organizationId}`,
           secret: process.env.REVALIDATION_SECRET,
-          type: 'layout',
+          type: "layout",
         },
       );
 
       if (!revalidateResponse.data?.revalidated) {
-        logger.error(`Failed to revalidate path: ${revalidateResponse.statusText}`);
+        logger.error(
+          `Failed to revalidate path: ${revalidateResponse.statusText}`,
+        );
         logger.error(revalidateResponse.data);
       } else {
-        logger.info('Revalidated path successfully');
+        logger.info("Revalidated path successfully");
       }
     } catch (err) {
-      logger.error('Error revalidating path', { err });
+      logger.error("Error revalidating path", { err });
     }
   },
 });

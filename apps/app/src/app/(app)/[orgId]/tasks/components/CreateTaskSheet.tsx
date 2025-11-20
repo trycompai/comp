@@ -1,40 +1,57 @@
-'use client';
+"use client";
 
-import { createTaskAction } from '@/actions/tasks/create-task-action';
-import { SelectAssignee } from '@/components/SelectAssignee';
-import { useTaskTemplates } from '@/hooks/use-task-template-api';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Departments, Member, TaskFrequency, User } from '@trycompai/db';
-import { Button } from '@trycompai/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import { Input } from '@trycompai/ui/input';
-import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
+import { useCallback, useEffect, useMemo } from "react";
+import { createTaskAction } from "@/actions/tasks/create-task-action";
+import { SelectAssignee } from "@/components/SelectAssignee";
+import { useTaskTemplates } from "@/hooks/use-task-template-api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRightIcon, X } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useQueryState } from "nuqs";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Departments, Member, TaskFrequency, User } from "@trycompai/db";
+import { Button } from "@trycompai/ui/button";
+import { Drawer, DrawerContent, DrawerTitle } from "@trycompai/ui/drawer";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@trycompai/ui/form";
+import { useMediaQuery } from "@trycompai/ui/hooks";
+import { Input } from "@trycompai/ui/input";
+import MultipleSelector, { Option } from "@trycompai/ui/multiple-selector";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
-import { Textarea } from '@trycompai/ui/textarea';
-import { ArrowRightIcon, X } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useCallback, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
-import { taskDepartments, taskFrequencies } from '../[taskId]/components/constants';
+} from "@trycompai/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@trycompai/ui/sheet";
+import { Textarea } from "@trycompai/ui/textarea";
+
+import {
+  taskDepartments,
+  taskFrequencies,
+} from "../[taskId]/components/constants";
 
 const createTaskSchema = z.object({
   title: z.string().min(1, {
-    message: 'Title is required',
+    message: "Title is required",
   }),
   description: z.string().min(1, {
-    message: 'Description is required',
+    message: "Description is required",
   }),
   assigneeId: z.string().nullable().optional(),
   frequency: z.nativeEnum(TaskFrequency).nullable().optional(),
@@ -50,32 +67,32 @@ export function CreateTaskSheet({
   members: (Member & { user: User })[];
   controls: { id: string; name: string }[];
 }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [createTaskOpen, setCreateTaskOpen] = useQueryState("create-task");
   const isOpen = Boolean(createTaskOpen);
 
   const { data: taskTemplates } = useTaskTemplates();
 
   const handleOpenChange = (open: boolean) => {
-    setCreateTaskOpen(open ? 'true' : null);
+    setCreateTaskOpen(open ? "true" : null);
   };
 
   const createTask = useAction(createTaskAction, {
     onSuccess: () => {
-      toast.success('Task created successfully');
+      toast.success("Task created successfully");
       setCreateTaskOpen(null);
       form.reset();
     },
     onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to create task');
+      toast.error(error.error?.serverError || "Failed to create task");
     },
   });
 
   const form = useForm<z.infer<typeof createTaskSchema>>({
     resolver: zodResolver(createTaskSchema),
     defaultValues: {
-      title: '',
-      description: '',
+      title: "",
+      description: "",
       assigneeId: null,
       frequency: null,
       department: null,
@@ -101,22 +118,34 @@ export function CreateTaskSheet({
     [controls],
   );
 
-  const frameworkEditorTaskTemplates = useMemo(() => taskTemplates?.data || [], [taskTemplates]);
+  const frameworkEditorTaskTemplates = useMemo(
+    () => taskTemplates?.data || [],
+    [taskTemplates],
+  );
 
   // Watch for task template selection
-  const selectedTaskTemplateId = form.watch('taskTemplateId');
+  const selectedTaskTemplateId = form.watch("taskTemplateId");
   const selectedTaskTemplate = useMemo(
-    () => frameworkEditorTaskTemplates.find((template) => template.id === selectedTaskTemplateId),
+    () =>
+      frameworkEditorTaskTemplates.find(
+        (template) => template.id === selectedTaskTemplateId,
+      ),
     [selectedTaskTemplateId, frameworkEditorTaskTemplates],
   );
 
   // Auto-fill form when task template is selected
   useEffect(() => {
     if (selectedTaskTemplate) {
-      form.setValue('title', selectedTaskTemplate.name);
-      form.setValue('description', selectedTaskTemplate.description);
-      form.setValue('frequency', selectedTaskTemplate.frequency as TaskFrequency);
-      form.setValue('department', selectedTaskTemplate.department as Departments);
+      form.setValue("title", selectedTaskTemplate.name);
+      form.setValue("description", selectedTaskTemplate.description);
+      form.setValue(
+        "frequency",
+        selectedTaskTemplate.frequency as TaskFrequency,
+      );
+      form.setValue(
+        "department",
+        selectedTaskTemplate.department as Departments,
+      );
     }
   }, [selectedTaskTemplate, form]);
 
@@ -134,27 +163,36 @@ export function CreateTaskSheet({
   );
 
   // Memoize select handlers
-  const handleFrequencyChange = useCallback((value: string, onChange: (value: any) => void) => {
-    onChange(value === 'none' ? null : value);
-  }, []);
+  const handleFrequencyChange = useCallback(
+    (value: string, onChange: (value: any) => void) => {
+      onChange(value === "none" ? null : value);
+    },
+    [],
+  );
 
-  const handleDepartmentChange = useCallback((value: string, onChange: (value: any) => void) => {
-    onChange(value === 'none' ? null : value);
-  }, []);
+  const handleDepartmentChange = useCallback(
+    (value: string, onChange: (value: any) => void) => {
+      onChange(value === "none" ? null : value);
+    },
+    [],
+  );
 
-  const handleControlsChange = useCallback((options: Option[], onChange: (value: any) => void) => {
-    onChange(options.map((option) => option.value));
-  }, []);
+  const handleControlsChange = useCallback(
+    (options: Option[], onChange: (value: any) => void) => {
+      onChange(options.map((option) => option.value));
+    },
+    [],
+  );
 
   const handleTaskTemplateChange = useCallback(
     (value: string, onChange: (value: any) => void) => {
-      if (value === 'none') {
+      if (value === "none") {
         onChange(null);
         // Clear the fields when "none" is selected
-        form.setValue('title', '');
-        form.setValue('description', '');
-        form.setValue('frequency', null);
-        form.setValue('department', null);
+        form.setValue("title", "");
+        form.setValue("description", "");
+        form.setValue("frequency", null);
+        form.setValue("department", null);
       } else {
         onChange(value);
       }
@@ -164,7 +202,10 @@ export function CreateTaskSheet({
 
   const taskForm = (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full max-w-none">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="w-full max-w-none space-y-4"
+      >
         <FormField
           control={form.control}
           name="taskTemplateId"
@@ -172,8 +213,10 @@ export function CreateTaskSheet({
             <FormItem className="w-full">
               <FormLabel>Task Template (Optional)</FormLabel>
               <Select
-                value={field.value || 'none'}
-                onValueChange={(value) => handleTaskTemplateChange(value, field.onChange)}
+                value={field.value || "none"}
+                onValueChange={(value) =>
+                  handleTaskTemplateChange(value, field.onChange)
+                }
               >
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -259,8 +302,10 @@ export function CreateTaskSheet({
             <FormItem className="w-full">
               <FormLabel>Frequency (Optional)</FormLabel>
               <Select
-                value={field.value || 'none'}
-                onValueChange={(value) => handleFrequencyChange(value, field.onChange)}
+                value={field.value || "none"}
+                onValueChange={(value) =>
+                  handleFrequencyChange(value, field.onChange)
+                }
               >
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -271,7 +316,9 @@ export function CreateTaskSheet({
                   <SelectItem value="none">None</SelectItem>
                   {taskFrequencies.map((frequency) => (
                     <SelectItem key={frequency} value={frequency}>
-                      <span className="capitalize">{frequency.replace('_', ' ')}</span>
+                      <span className="capitalize">
+                        {frequency.replace("_", " ")}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -288,8 +335,10 @@ export function CreateTaskSheet({
             <FormItem className="w-full">
               <FormLabel>Department (Optional)</FormLabel>
               <Select
-                value={field.value || 'none'}
-                onValueChange={(value) => handleDepartmentChange(value, field.onChange)}
+                value={field.value || "none"}
+                onValueChange={(value) =>
+                  handleDepartmentChange(value, field.onChange)
+                }
               >
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -299,10 +348,12 @@ export function CreateTaskSheet({
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {taskDepartments
-                    .filter((dept) => dept !== 'none')
+                    .filter((dept) => dept !== "none")
                     .map((department) => (
                       <SelectItem key={department} value={department}>
-                        <span className="capitalize">{department.toUpperCase()}</span>
+                        <span className="capitalize">
+                          {department.toUpperCase()}
+                        </span>
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -320,7 +371,9 @@ export function CreateTaskSheet({
             const selectedOptions: Option[] = (field.value || [])
               .map((id) => {
                 const control = controls.find((c) => c.id === id);
-                return control ? { value: control.id, label: control.name } : null;
+                return control
+                  ? { value: control.id, label: control.name }
+                  : null;
               })
               .filter(Boolean) as Option[];
 
@@ -331,15 +384,17 @@ export function CreateTaskSheet({
                   <div className="relative overflow-visible">
                     <MultipleSelector
                       value={selectedOptions}
-                      onChange={(options) => handleControlsChange(options, field.onChange)}
+                      onChange={(options) =>
+                        handleControlsChange(options, field.onChange)
+                      }
                       defaultOptions={controlOptions}
                       placeholder="Search and select controls..."
                       emptyIndicator={
-                        <p className="text-center text-lg leading-10 text-muted-foreground">
+                        <p className="text-muted-foreground text-center text-lg leading-10">
                           No controls found.
                         </p>
                       }
-                      className="[&_[cmdk-list]]:!z-[9999] [&_[cmdk-list]]:!absolute [&_.relative]:!static"
+                      className="[&_.relative]:!static [&_[cmdk-list]]:!absolute [&_[cmdk-list]]:!z-[9999]"
                       commandProps={{
                         filter: filterFunction,
                       }}
@@ -353,7 +408,7 @@ export function CreateTaskSheet({
         />
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={createTask.status === 'executing'}>
+          <Button type="submit" disabled={createTask.status === "executing"}>
             <div className="flex items-center justify-center">
               Create Task
               <ArrowRightIcon className="ml-2 h-4 w-4" />
@@ -376,7 +431,10 @@ export function CreateTaskSheet({
           }
         `}</style>
         <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-          <SheetContent stack className="flex flex-col overflow-visible [&>div]:!overflow-visible">
+          <SheetContent
+            stack
+            className="flex flex-col overflow-visible [&>div]:!overflow-visible"
+          >
             <SheetHeader className="mb-8 flex flex-row items-center justify-between">
               <SheetTitle>Create New Task</SheetTitle>
               <Button
@@ -389,7 +447,7 @@ export function CreateTaskSheet({
               </Button>
             </SheetHeader>
 
-            <div className="flex-1 p-0 pb-[100px] overflow-y-auto overflow-x-visible">
+            <div className="flex-1 overflow-x-visible overflow-y-auto p-0 pb-[100px]">
               <div className="w-full px-2">{taskForm}</div>
             </div>
           </SheetContent>

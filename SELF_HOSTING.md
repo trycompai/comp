@@ -92,11 +92,11 @@ services:
       target: app
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
-    ports: ['3000:3000']
+    ports: ["3000:3000"]
     env_file: [.env]
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -108,11 +108,11 @@ services:
       target: portal
       args:
         NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
-    ports: ['3002:3000']
+    ports: ["3002:3000"]
     env_file: [.env]
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3002/ || exit 1']
+      test: ["CMD-SHELL", "curl -f http://localhost:3002/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

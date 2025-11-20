@@ -1,15 +1,17 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
-import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
-import { RiskOverview } from '@/components/risks/risk-overview';
-import { auth } from '@/utils/auth';
-import { CommentEntityType, db } from '@trycompai/db';
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { cache } from 'react';
-import { Comments } from '../../../../../components/comments/Comments';
-import { RiskActions } from './components/RiskActions';
+import type { Metadata } from "next";
+import { cache } from "react";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import PageWithBreadcrumb from "@/components/pages/PageWithBreadcrumb";
+import { InherentRiskChart } from "@/components/risks/charts/InherentRiskChart";
+import { ResidualRiskChart } from "@/components/risks/charts/ResidualRiskChart";
+import { RiskOverview } from "@/components/risks/risk-overview";
+import { auth } from "@/utils/auth";
+
+import { CommentEntityType, db } from "@trycompai/db";
+
+import { Comments } from "../../../../../components/comments/Comments";
+import { RiskActions } from "./components/RiskActions";
 
 interface PageProps {
   searchParams: Promise<{
@@ -27,13 +29,13 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
   const risk = await getRisk(riskId);
   const assignees = await getAssignees();
   if (!risk) {
-    redirect('/');
+    redirect("/");
   }
 
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
-        { label: 'Risks', href: `/${orgId}/risk` },
+        { label: "Risks", href: `/${orgId}/risk` },
         { label: risk.title, current: true },
       ]}
       headerRight={<RiskActions riskId={riskId} />}
@@ -89,7 +91,7 @@ const getAssignees = cache(async () => {
     where: {
       organizationId: session.session.activeOrganizationId,
       role: {
-        notIn: ['employee', 'contractor'],
+        notIn: ["employee", "contractor"],
       },
     },
     include: {
@@ -102,6 +104,6 @@ const getAssignees = cache(async () => {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Risk Overview',
+    title: "Risk Overview",
   };
 }
