@@ -66,7 +66,25 @@ export class PrismaExtension implements BuildExtension {
       return;
     }
 
+    if (!this._resolvedSchemaPath || !existsSync(this._resolvedSchemaPath)) {
+      const resolution = this.tryResolveSchemaPath(context as ExtendedBuildContext);
+
+      if (!resolution.path) {
+        throw new Error(
+          [
+            'PrismaExtension could not find the prisma schema. Make sure @trycompai/db is installed',
+            `with version ${this.options.dbPackageVersion || 'latest'} and that its dist files are built.`,
+            'Searched the following locations:',
+            ...resolution.searched.map((candidate) => ` - ${candidate}`),
+          ].join('\n'),
+        );
+      }
+
+      this._resolvedSchemaPath = resolution.path;
+    }
+
     assert(this._resolvedSchemaPath, 'Resolved schema path is not set');
+    const schemaPath = this._resolvedSchemaPath;
 
     context.logger.debug('Looking for @prisma/client in the externals', {
       externals: manifest.externals,
@@ -93,9 +111,9 @@ export class PrismaExtension implements BuildExtension {
     // Copy the prisma schema from the published package to the build output path
     const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
     context.logger.debug(
-      `Copying the prisma schema from ${this._resolvedSchemaPath} to ${schemaDestinationPath}`,
+      `Copying the prisma schema from ${schemaPath} to ${schemaDestinationPath}`,
     );
-    await cp(this._resolvedSchemaPath, schemaDestinationPath);
+    await cp(schemaPath, schemaDestinationPath);
 
     // Add prisma generate command to generate the client from the copied schema
     commands.push(
