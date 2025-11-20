@@ -1,17 +1,24 @@
 export type SupportedOS = 'macos' | 'windows' | 'macos-intel';
 
+const isSafariUA = (ua: string) =>
+  ua.includes('safari') &&
+  !ua.includes('chrome') &&
+  !ua.includes('crios') &&
+  !ua.includes('fxios') &&
+  !ua.includes('edgios');
+
+const hasArmIndicators = (ua: string) =>
+  ua.includes('arm64') || ua.includes('aarch64') || ua.includes('apple');
+
 export async function detectOSFromUserAgent(): Promise<SupportedOS | null> {
   try {
     const ua = navigator.userAgent.toLowerCase();
 
-    // Detect Windows
     if (ua.includes('win')) {
       return 'windows';
     }
 
-    // Detect macOS
     if (ua.includes('mac')) {
-      // Try modern userAgentData API first (Chrome, Edge)
       if ('userAgentData' in navigator && navigator.userAgentData) {
         const data: { architecture?: string } = await (
           navigator.userAgentData as {
@@ -23,11 +30,14 @@ export async function detectOSFromUserAgent(): Promise<SupportedOS | null> {
         if (data.architecture === 'x86') return 'macos-intel';
       }
 
-      // Fallback to userAgent string parsing
-      if (ua.includes('arm64')) return 'macos';
-      if (ua.includes('intel')) return 'macos-intel';
+      if (hasArmIndicators(ua)) return 'macos';
 
-      // Default to macos if we can't determine architecture
+      const safari = isSafariUA(ua);
+
+      if (!safari && ua.includes('intel')) {
+        return 'macos-intel';
+      }
+
       return 'macos';
     }
 
