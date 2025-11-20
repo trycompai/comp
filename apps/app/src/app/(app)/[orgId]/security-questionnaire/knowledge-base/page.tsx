@@ -38,7 +38,6 @@ export default async function KnowledgeBasePage() {
       breadcrumbs={[
         { label: 'Overview', current: true },
       ]}
-      className="px-6"
     >
       <KnowledgeBaseHeader organizationId={organizationId} />
 

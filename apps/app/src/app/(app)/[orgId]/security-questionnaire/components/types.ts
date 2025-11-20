@@ -10,5 +10,6 @@ export interface QuestionAnswer {
     score: number;
   }>;
   failedToGenerate?: boolean; // Track if auto-generation was attempted but failed
+  status?: 'untouched' | 'generated' | 'manual'; // Track answer source: untouched, AI-generated, or manually edited
 }
 

@@ -107,48 +107,39 @@ export const authActionClient = actionClientWithMeta
     });
   })
   .use(async ({ next, metadata, ctx }) => {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
+    // Use user and session from previous middleware instead of re-fetching
+    // This ensures consistency and avoids potential security issues from stale data
+    if (!ctx.user || !ctx.session) {
       throw new Error('Unauthorized');
     }
 
     if (metadata.track) {
-      track(session.user.id, metadata.track.event, {
+      track(ctx.user.id, metadata.track.event, {
         channel: metadata.track.channel,
-        email: session.user.email,
-        name: session.user.name,
-        organizationId: session.session.activeOrganizationId,
+        email: ctx.user.email,
+        name: ctx.user.name,
+        organizationId: ctx.session.activeOrganizationId,
       });
     }
 
-    return next({
-      ctx: {
-        ...ctx,
-        user: session.user,
-        session: session.session,
-      },
-    });
+    return next({ ctx });
   })
   .use(async ({ next, metadata, clientInput, ctx }) => {
     const headersList = await headers();
-    const session = await auth.api.getSession({
-      headers: headersList,
-    });
+    
+    // Use user and session from previous middleware for consistency
+    // Only fetch activeMember as it may require fresh data
+    if (!ctx.user || !ctx.session) {
+      throw new Error('Unauthorized');
+    }
+
+    if (!ctx.session.activeOrganizationId) {
+      throw new Error('Organization not found');
+    }
 
     const member = await auth.api.getActiveMember({
       headers: headersList,
     });
-
-    if (!session) {
-      throw new Error('Unauthorized');
-    }
-
-    if (!session.session.activeOrganizationId) {
-      throw new Error('Organization not found');
-    }
 
     if (!member) {
       throw new Error('Member not found');
@@ -157,10 +148,10 @@ export const authActionClient = actionClientWithMeta
     const { fileData: _, ...inputForAuditLog } = (clientInput || {}) as any;
 
     const data = {
-      userId: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      organizationId: session.session.activeOrganizationId,
+      userId: ctx.user.id,
+      email: ctx.user.email,
+      name: ctx.user.name,
+      organizationId: ctx.session.activeOrganizationId,
       action: metadata.name,
       input: inputForAuditLog,
       ipAddress: headersList.get('x-forwarded-for') || null,
@@ -206,9 +197,9 @@ export const authActionClient = actionClientWithMeta
         data: {
           data: JSON.stringify(data),
           memberId: member.id,
-          userId: session.user.id,
+          userId: ctx.user.id,
           description: metadata.track?.description || null,
-          organizationId: session.session.activeOrganizationId,
+          organizationId: ctx.session.activeOrganizationId,
           entityId,
           entityType,
         },

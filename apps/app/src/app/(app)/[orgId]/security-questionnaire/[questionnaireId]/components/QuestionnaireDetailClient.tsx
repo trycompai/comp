@@ -71,6 +71,7 @@ export function QuestionnaireDetailClient({
           answer: r.answer,
           sources: r.sources,
           failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
+          status: (r as any).status ?? 'untouched', // Preserve status field for UI behavior
           _originalIndex: (r as any).originalIndex ?? index, // Preserve originalIndex for reference, fallback to map index
         }))}
         filteredResults={filteredResults?.map((r, index) => ({
@@ -78,6 +79,7 @@ export function QuestionnaireDetailClient({
           answer: r.answer,
           sources: r.sources,
           failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
+          status: (r as any).status ?? 'untouched', // Preserve status field for UI behavior
           _originalIndex: (r as any).originalIndex ?? index, // Preserve originalIndex for reference, fallback to map index
         }))}
         searchQuery={searchQuery}

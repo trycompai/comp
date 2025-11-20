@@ -2,7 +2,7 @@
 
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useEffect, useState } from 'react';
-import { createRunReadToken } from '../../../security-questionnaire/actions/create-trigger-token';
+import { createRunReadToken } from '../../../actions/create-trigger-token';
 import type { processKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/process-knowledge-base-document';
 import type { processKnowledgeBaseDocumentsOrchestratorTask } from '@/jobs/tasks/vector/process-knowledge-base-documents-orchestrator';
 import type { deleteKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/delete-knowledge-base-document';

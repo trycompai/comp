@@ -25,6 +25,7 @@ export function useQuestionnaireParser() {
     setQuestionStatuses: state.setQuestionStatuses,
     setHasClickedAutoAnswer: state.setHasClickedAutoAnswer,
     setQuestionnaireId: state.setQuestionnaireId,
+    orgId: state.orgId,
   });
 
   const autoAnswer = useQuestionnaireAutoAnswer({

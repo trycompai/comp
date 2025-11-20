@@ -89,7 +89,7 @@ export const deleteAllManualAnswers = authActionClient
       path = path.replace(/\/[a-z]{2}\//, '/');
 
       revalidatePath(path);
-      revalidatePath(`/${activeOrganizationId}/knowledge-base`);
+      revalidatePath(`/${activeOrganizationId}/security-questionnaire/knowledge-base`);
 
       return {
         success: true,

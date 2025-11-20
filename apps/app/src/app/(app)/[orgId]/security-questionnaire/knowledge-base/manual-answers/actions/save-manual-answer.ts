@@ -119,7 +119,7 @@ export const saveManualAnswer = authActionClient
 
       revalidatePath(path);
       // Also revalidate knowledge base page
-      revalidatePath(`/${activeOrganizationId}/knowledge-base`);
+      revalidatePath(`/${activeOrganizationId}/security-questionnaire/knowledge-base`);
 
       // Return embedding ID for verification
       // Use embeddingId from syncResult if available, otherwise construct it

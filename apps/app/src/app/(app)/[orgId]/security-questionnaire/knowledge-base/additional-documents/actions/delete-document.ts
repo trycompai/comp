@@ -99,7 +99,7 @@ export const deleteKnowledgeBaseDocumentAction = authActionClient
         },
       });
 
-      revalidatePath(`/${activeOrganizationId}/knowledge-base`);
+      revalidatePath(`/${activeOrganizationId}/security-questionnaire/knowledge-base`);
 
       return {
         success: true,

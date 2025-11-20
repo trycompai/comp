@@ -2,7 +2,7 @@
 
 import { LinkIcon, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { getKnowledgeBaseDocumentViewUrlAction } from '../../knowledge-base/additional-documents/actions/get-document-view-url';
+import { getKnowledgeBaseDocumentViewUrlAction } from '../knowledge-base/additional-documents/actions/get-document-view-url';
 
 interface KnowledgeBaseDocumentLinkProps {
   documentId: string;
@@ -37,14 +37,14 @@ export function KnowledgeBaseDocumentLink({
           window.open(signedUrl, '_blank', 'noopener,noreferrer');
         } else {
           // File cannot be viewed in browser - navigate to knowledge base page
-          const knowledgeBaseUrl = `/${orgId}/knowledge-base`;
+          const knowledgeBaseUrl = `/${orgId}/security-questionnaire/knowledge-base`;
           window.open(knowledgeBaseUrl, '_blank', 'noopener,noreferrer');
         }
       }
     } catch (error) {
       console.error('Error opening knowledge base document:', error);
       // Fallback: navigate to knowledge base page
-      const knowledgeBaseUrl = `/${orgId}/knowledge-base`;
+      const knowledgeBaseUrl = `/${orgId}/security-questionnaire/knowledge-base`;
       window.open(knowledgeBaseUrl, '_blank', 'noopener,noreferrer');
     } finally {
       setIsLoading(false);

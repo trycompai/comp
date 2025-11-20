@@ -15,7 +15,7 @@ import { Card } from '@comp/ui';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { formatDistanceToNow } from 'date-fns';
-import { CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Loader2, Search, Trash2, X } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Loader2, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -78,12 +78,10 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
       {/* Search Input and Items Per Page */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative w-[280px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search by filename..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9"
           />
           {searchQuery && (
             <button

@@ -1,5 +1,6 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -31,7 +32,12 @@ export default async function NewQuestionnairePage() {
   // Show onboarding if no published policies exist
   if (!hasPublishedPolicies) {
     return (
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <PageWithBreadcrumb
+        breadcrumbs={[
+          { label: 'Overview', href: `/${organizationId}/security-questionnaire` },
+          { label: 'New Questionnaire', current: true },
+        ]}
+      >
         <AppOnboarding
           title={'Security Questionnaire'}
           description={
@@ -62,14 +68,19 @@ export default async function NewQuestionnairePage() {
             },
           ]}
         />
-      </div>
+      </PageWithBreadcrumb>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8">
+    <PageWithBreadcrumb
+      breadcrumbs={[
+        { label: 'Security Questionnaire', href: `/${organizationId}/security-questionnaire` },
+        { label: 'New Questionnaire', current: true },
+      ]}
+    >
       <QuestionnaireParser />
-    </div>
+    </PageWithBreadcrumb>
   );
 }
 

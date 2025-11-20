@@ -3,6 +3,7 @@
 import type { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { createRunReadToken, createTriggerToken } from '../actions/create-trigger-token';
@@ -27,6 +28,7 @@ interface UseQuestionnaireParseProps {
   >;
   setHasClickedAutoAnswer: (clicked: boolean) => void;
   setQuestionnaireId: (id: string | null) => void;
+  orgId: string;
 }
 
 export function useQuestionnaireParse({
@@ -44,7 +46,9 @@ export function useQuestionnaireParse({
   setQuestionStatuses,
   setHasClickedAutoAnswer,
   setQuestionnaireId,
+  orgId,
 }: UseQuestionnaireParseProps) {
+  const router = useRouter();
   // Get trigger token for auto-answer (can trigger and read)
   useEffect(() => {
     async function getAutoAnswerToken() {
@@ -101,6 +105,10 @@ export function useQuestionnaireParse({
             setHasClickedAutoAnswer(false);
             if (questionnaireId) {
               setQuestionnaireId(questionnaireId);
+              // Redirect to questionnaire detail page after successful parse
+              setTimeout(() => {
+                router.push(`/${orgId}/security-questionnaire/${questionnaireId}`);
+              }, 500); // Small delay to show success toast
             }
             toast.success(
               `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
