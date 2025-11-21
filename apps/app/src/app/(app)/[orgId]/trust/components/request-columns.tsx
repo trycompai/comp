@@ -4,8 +4,6 @@ import type { AccessRequest } from '@/hooks/use-access-requests';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
 
 export type RequestTableRow = AccessRequest;
 
@@ -97,7 +95,6 @@ export function buildRequestColumns({
         const ndaPending = row.original.status === 'approved' && !row.original.grant;
 
         if (ndaPending) {
-          // @ts-expect-error - warning variant might be custom
           return <Badge variant="warning">Pending</Badge>;
         }
 
