@@ -56,33 +56,7 @@ export function useQuestionnaireAutoAnswer({
 
   const [isPending, startTransition] = useTransition();
 
-  // Debug logging for run tracking
-  useEffect(() => {
-    console.log('[AutoAnswer] Hook state:', {
-      hasToken: !!autoAnswerToken,
-      hasRun: !!autoAnswerRun,
-      runId: autoAnswerRun?.id,
-      runStatus: autoAnswerRun?.status,
-      hasMetadata: !!autoAnswerRun?.metadata,
-      metadataKeys: autoAnswerRun?.metadata ? Object.keys(autoAnswerRun.metadata as Record<string, unknown>).length : 0,
-      isTriggering: isAutoAnswerTriggering,
-      hasError: !!autoAnswerError,
-    });
-    
-    if (autoAnswerRun?.metadata) {
-      const meta = autoAnswerRun.metadata as Record<string, unknown>;
-      const answerKeys = Object.keys(meta).filter((key) => key.startsWith('answer_'));
-      const statusKeys = Object.keys(meta).filter((key) => key.startsWith('question_') && key.endsWith('_status'));
-      console.log('[AutoAnswer] Metadata keys:', {
-        answerKeys,
-        statusKeys,
-        allKeys: Object.keys(meta).slice(0, 20), // First 20 keys for debugging
-      });
-    }
-  }, [autoAnswerToken, autoAnswerRun?.id, autoAnswerRun?.status, autoAnswerRun?.metadata, isAutoAnswerTriggering, autoAnswerError]);
 
-  // Track processed metadata to avoid infinite loops
-  const processedMetadataRef = useRef<string>('');
   // Track which run ID we're currently processing for single questions
   const currentRunIdRef = useRef<string | null>(null);
   // Track which run IDs we've already processed completion for (to prevent infinite loops)
@@ -97,91 +71,67 @@ export function useQuestionnaireAutoAnswer({
   useEffect(() => {
     if (answeringQuestionIndex !== null && autoAnswerRun?.id) {
       currentRunIdRef.current = autoAnswerRun.id;
-      processedMetadataRef.current = ''; // Clear processed metadata for new run
     } else if (answeringQuestionIndex === null) {
       currentRunIdRef.current = null; // Clear when no single question is active
     }
   }, [answeringQuestionIndex, autoAnswerRun?.id]);
 
-  // Handle incremental answer updates from metadata (real-time)
-  // This shows answers and statuses as individual questions complete
-  useEffect(() => {
-    // Read individual answers and statuses from metadata keys
-    // Each answer-question task updates parent metadata when it starts and completes
+  // Extract answers and statuses from metadata using useMemo (like OnboardingTracker)
+  // This ensures React re-renders whenever metadata changes
+  const metadataAnswers = useMemo(() => {
     if (!autoAnswerRun?.metadata || !resultsRef.current) {
-      if (autoAnswerRun && !autoAnswerRun.metadata) {
-        console.log('[AutoAnswer] Run exists but no metadata yet', {
-          runId: autoAnswerRun.id,
-          status: autoAnswerRun.status,
-        });
-      }
-      return;
+      return { answers: [], statuses: new Map<number, 'pending' | 'processing' | 'completed'>() };
     }
 
     // For single question operations, only process metadata from the current run
-    // This prevents metadata from previous runs (like "Auto Answer All") from interfering
     if (answeringQuestionIndex !== null) {
       if (currentRunIdRef.current && autoAnswerRun.id !== currentRunIdRef.current) {
-        return; // Skip metadata from different runs
+        return { answers: [], statuses: new Map<number, 'pending' | 'processing' | 'completed'>() };
       }
     }
 
     const meta = autoAnswerRun.metadata as Record<string, unknown>;
     
-    // Create a hash of current metadata values to detect actual changes
-    // Include both keys and values to catch when metadata content changes
+    // Get all answer keys and status keys from metadata
     const answerKeys = Object.keys(meta).filter((key) => key.startsWith('answer_')).sort();
     const statusKeys = Object.keys(meta).filter((key) => key.startsWith('question_') && key.endsWith('_status')).sort();
     
-    // Debug logging
-    if (answerKeys.length > 0) {
-      console.log('[AutoAnswer] Found answer keys in metadata:', {
-        answerKeys,
-        answerCount: answerKeys.length,
-        runId: autoAnswerRun.id,
-        status: autoAnswerRun.status,
-      });
-    }
-    
-    // Build hash from actual values, not just keys
-    const answerValues = answerKeys.map((key) => {
-      const answer = meta[key] as { questionIndex?: number; answer?: string | null } | undefined;
-      if (answer) {
-        const value = `${answer.questionIndex}:${answer.answer ? 'has-answer' : 'no-answer'}`;
-        console.log('[AutoAnswer] Answer value for hash:', { key, value, answerData: answer });
-        return value;
-      }
-      return null;
-    }).filter(Boolean);
-    
-    const statusValues = statusKeys.map((key) => {
-      const status = meta[key];
-      return `${key}:${status}`;
-    });
-    
-    const metadataHash = JSON.stringify({
-      answerCount: answerKeys.length,
-      answerValues,
-      statusCount: statusKeys.length,
-      statusValues,
-    });
+    // Extract all answers from metadata
+    const answers = answerKeys
+      .map((key) => {
+        const rawValue = meta[key];
+        
+        if (!rawValue || typeof rawValue !== 'object') {
+          return undefined;
+        }
 
-    // Skip if we've already processed this exact metadata state
-    if (processedMetadataRef.current === metadataHash) {
-      console.log('[AutoAnswer] Skipping duplicate metadata hash');
-      return;
-    }
-    console.log('[AutoAnswer] Processing new metadata:', {
-      hash: metadataHash.substring(0, 100),
-      answerKeysCount: answerKeys.length,
-      statusKeysCount: statusKeys.length,
-    });
-    processedMetadataRef.current = metadataHash;
+        const answerData = rawValue as {
+          questionIndex?: number;
+          question?: string;
+          answer?: string | null;
+          sources?: Array<{
+            sourceType: string;
+            sourceName?: string;
+            score: number;
+          }>;
+        };
 
-    const isSingleQuestion = answeringQuestionIndex !== null;
-    
-    // Build status map from individual status keys
-    // For single question operations, only process status for that specific question
+        if (typeof answerData.questionIndex !== 'number') {
+          return undefined;
+        }
+
+        return {
+          metadataKey: key,
+          questionIndex: answerData.questionIndex,
+          question: answerData.question || '',
+          answer: answerData.answer ?? null,
+          sources: answerData.sources || [],
+        };
+      })
+      .filter((answer): answer is NonNullable<typeof answer> => answer !== undefined)
+      .sort((a, b) => a.questionIndex - b.questionIndex);
+
+    // Extract statuses
     const statusMap = new Map<number, 'pending' | 'processing' | 'completed'>();
     statusKeys.forEach((key) => {
       const match = key.match(/^question_(\d+)_status$/);
@@ -189,9 +139,9 @@ export function useQuestionnaireAutoAnswer({
         const questionIndex = parseInt(match[1], 10);
         
         // If this is a single question operation, only process status for that question
-        if (isSingleQuestion && answeringQuestionIndex !== null) {
+        if (answeringQuestionIndex !== null) {
           if (questionIndex !== answeringQuestionIndex) {
-            return; // Skip status updates for other questions
+            return;
           }
         }
         
@@ -202,12 +152,38 @@ export function useQuestionnaireAutoAnswer({
       }
     });
     
-    // Update question statuses from metadata (individual spinners start at different times)
-    if (statusMap.size > 0) {
+    return { answers, statuses: statusMap };
+  }, [autoAnswerRun?.metadata, autoAnswerRun?.id, answeringQuestionIndex]);
+
+  // Apply metadata updates to state whenever metadataAnswers changes
+  // This pattern matches OnboardingTracker - React automatically re-renders when metadata changes
+  useEffect(() => {
+    if (!resultsRef.current) {
+      // Still update statuses even if no results
+      if (metadataAnswers.statuses.size > 0) {
+        setQuestionStatuses((prev) => {
+          const newStatuses = new Map(prev);
+          let hasChanges = false;
+          metadataAnswers.statuses.forEach((status, questionIndex) => {
+            if (prev.get(questionIndex) !== status) {
+              newStatuses.set(questionIndex, status);
+              hasChanges = true;
+            }
+          });
+          return hasChanges ? newStatuses : prev;
+        });
+      }
+      return;
+    }
+
+    const isSingleQuestion = answeringQuestionIndex !== null;
+
+    // Update statuses first
+    if (metadataAnswers.statuses.size > 0) {
       setQuestionStatuses((prev) => {
         const newStatuses = new Map(prev);
         let hasChanges = false;
-        statusMap.forEach((status, questionIndex) => {
+        metadataAnswers.statuses.forEach((status, questionIndex) => {
           if (prev.get(questionIndex) !== status) {
             newStatuses.set(questionIndex, status);
             hasChanges = true;
@@ -217,158 +193,58 @@ export function useQuestionnaireAutoAnswer({
       });
     }
     
-    // Extract and update answers (reuse answerKeys from above)
-    if (answerKeys.length > 0) {
-      const answers = answerKeys
-        .map((key) => {
-          const rawValue = meta[key];
-          
-          // Handle case where metadata value might be a string (shouldn't happen, but be defensive)
-          if (typeof rawValue === 'string') {
-            console.warn('[AutoAnswer] Unexpected string value in metadata:', { key, value: rawValue });
-            return undefined;
-          }
-          
-          // Handle case where metadata value is null or undefined
-          if (!rawValue || typeof rawValue !== 'object') {
-            console.warn('[AutoAnswer] Invalid metadata value:', { key, value: rawValue, type: typeof rawValue });
-            return undefined;
-          }
-          
-          const answerData = rawValue as {
-            questionIndex?: number;
-            question?: string;
-            answer?: string | null;
-            sources?: Array<{
-              sourceType: string;
-              sourceName?: string;
-              score: number;
-            }>;
-          };
-          
-          // Validate that answerData has required fields
-          if (typeof answerData.questionIndex !== 'number') {
-            console.warn('[AutoAnswer] Missing questionIndex in answer data:', { key, answerData });
-            return undefined;
-          }
-          
-          return {
-            questionIndex: answerData.questionIndex,
-            question: answerData.question || '',
-            answer: answerData.answer ?? null,
-            sources: answerData.sources || [],
-          };
-        })
-        .filter((answer): answer is NonNullable<typeof answer> => answer !== undefined)
-        .sort((a, b) => a.questionIndex - b.questionIndex);
-
-      if (answers.length > 0) {
-        console.log('[AutoAnswer] Processing answers:', {
-          answersCount: answers.length,
-          answers: answers.map((a) => ({
-            questionIndex: a.questionIndex,
-            hasAnswer: !!a.answer,
-            answerLength: a.answer?.length || 0,
-          })),
-        });
-        
+    // Update answers - process each answer individually
         setResults((prevResults) => {
           if (!prevResults) {
-            console.warn('[AutoAnswer] No previous results to update');
             return prevResults;
           }
 
           const updatedResults = [...prevResults];
           let hasChanges = false;
+      let updatedCount = 0;
+      let skippedCount = 0;
 
-          answers.forEach((answer) => {
+      metadataAnswers.answers.forEach((answer) => {
             // For single question operations, only process answers for that specific question
             if (isSingleQuestion && answeringQuestionIndex !== null) {
-              // Strict check: must match exactly
               if (answer.questionIndex !== answeringQuestionIndex) {
-                return; // Skip answers for other questions
+            return;
               }
             }
             
             const targetIndex = answer.questionIndex;
             
-            // Verify we're updating the correct question
-            // For single question operations, double-check the index matches
-            if (isSingleQuestion && answeringQuestionIndex !== null) {
-              if (targetIndex !== answeringQuestionIndex) {
-                console.warn('[AutoAnswer] Index mismatch in single question update:', {
-                  targetIndex,
-                  answeringQuestionIndex,
-                  answerQuestionIndex: answer.questionIndex,
-                });
-                return; // Skip if index doesn't match (safety check)
-              }
-            }
-
-            // Safety check: ensure targetIndex is valid
+        // Safety check
             if (targetIndex < 0 || targetIndex >= updatedResults.length) {
-              console.warn('[AutoAnswer] Invalid questionIndex in answer update:', {
-                targetIndex,
-                resultsLength: updatedResults.length,
-                answerQuestionIndex: answer.questionIndex,
-              });
               return;
             }
 
             const currentAnswer = updatedResults[targetIndex]?.answer;
             const originalQuestion = updatedResults[targetIndex]?.question;
             
-            console.log('[AutoAnswer] Updating answer:', {
-              targetIndex,
-              currentAnswer: currentAnswer ? `${currentAnswer.substring(0, 50)}...` : null,
-              newAnswer: answer.answer ? `${answer.answer.substring(0, 50)}...` : null,
-              hasAnswer: !!answer.answer,
-            });
-            
-            // Verify we're updating the correct question by checking question text matches
-            // This is an extra safety check to prevent updating wrong questions
-            if (originalQuestion && answer.question) {
-              // For single question operations, verify question text matches
-              if (isSingleQuestion && answeringQuestionIndex !== null) {
-                const expectedQuestion = resultsRef.current?.[answeringQuestionIndex]?.question;
-                if (expectedQuestion && answer.question.trim() !== expectedQuestion.trim()) {
-                  console.warn('[AutoAnswer] Question text mismatch in single question update:', {
-                    targetIndex,
-                    answeringQuestionIndex,
-                    expectedQuestion: expectedQuestion.substring(0, 50),
-                    answerQuestion: answer.question.substring(0, 50),
-                  });
-                  // Still update if indices match - question text might be slightly different
-                  // But log for debugging
-                }
-              }
-            }
-            
-            // Always preserve the original question text from the results array
-            // Don't use answer.question as it might be formatted differently or from a different question
-            // This prevents question text from being overwritten incorrectly
+        // Skip only if we already have the exact same answer (both non-null and equal)
+        // Always update if: answer changed, or going from null to answer, or answer to null
+        if (currentAnswer !== null && currentAnswer === answer.answer) {
+          // Already has this exact non-null answer, skip to avoid unnecessary updates
+          return;
+        }
             
             if (answer.answer) {
-              if (currentAnswer !== answer.answer) {
-                console.log('[AutoAnswer] Setting answer for question', targetIndex);
+          // Update successful answer immediately - show it as soon as it's available
                 updatedResults[targetIndex] = {
-                  ...updatedResults[targetIndex], // Preserve status and other fields
-                  question: originalQuestion || answer.question, // Preserve original question text
+            ...updatedResults[targetIndex],
+            question: originalQuestion || answer.question,
                   answer: answer.answer,
                   sources: answer.sources,
                   failedToGenerate: false,
                 };
                 hasChanges = true;
               } else {
-                console.log('[AutoAnswer] Answer unchanged for question', targetIndex);
-              }
-            } else {
-              // Only update if answer is still null (don't overwrite existing answers)
+          // Update failed answer only if no answer exists yet
               if (!currentAnswer) {
-                console.log('[AutoAnswer] Marking question as failed to generate', targetIndex);
                 updatedResults[targetIndex] = {
                   ...updatedResults[targetIndex],
-                  question: originalQuestion || answer.question, // Preserve original question text
+              question: originalQuestion || answer.question,
                   answer: null,
                   failedToGenerate: true,
                 };
@@ -377,29 +253,13 @@ export function useQuestionnaireAutoAnswer({
             }
           });
 
-          if (hasChanges) {
-            console.log('[AutoAnswer] Results updated successfully');
-          } else {
-            console.log('[AutoAnswer] No changes detected in results');
-          }
-
           return hasChanges ? updatedResults : prevResults;
         });
-      } else {
-        console.log('[AutoAnswer] No answers found to process');
-      }
-    }
-  }, [
-    autoAnswerRun?.metadata,
-    answeringQuestionIndex,
-    questionnaireId,
-    saveAnswersBatch,
-    // Don't include results, setResults, setQuestionStatuses, setAnsweringQuestionIndex in deps
-    // results is only used for existence check, setState functions are stable
-  ]);
+  }, [metadataAnswers, answeringQuestionIndex]);
 
   // Handle final completion - read ALL answers from final output
-  // This is the primary source of truth since metadata may not be reliable
+  // This is a fallback to ensure all answers are shown even if metadata updates were missed
+  // Primary source is incremental metadata updates above, which show answers as they complete
   useEffect(() => {
     if (
       autoAnswerRun?.status === 'COMPLETED' &&
@@ -424,12 +284,6 @@ export function useQuestionnaireAutoAnswer({
         // Mark this run as processed to prevent infinite loops
         processedCompletionRef.current.add(autoAnswerRun.id);
 
-        console.log('[AutoAnswer] Task completed, updating ALL answers from final output:', {
-          answersCount: answers.length,
-          answeredCount: answers.filter((a) => a.answer).length,
-          runId: autoAnswerRun.id,
-        });
-
         // Update results from final output - merge new answers with existing ones
         // The orchestrator only returns answers for questions it processed (unanswered ones)
         // So we merge them with existing answers
@@ -448,10 +302,6 @@ export function useQuestionnaireAutoAnswer({
           newAnswersMap.forEach((answer, targetIndex) => {
             // Safety check: ensure targetIndex is valid
             if (targetIndex < 0 || targetIndex >= updatedResults.length) {
-              console.warn('[AutoAnswer] Invalid questionIndex in final output:', {
-                targetIndex,
-                resultsLength: updatedResults.length,
-              });
               return;
             }
 

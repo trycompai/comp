@@ -43,7 +43,7 @@ export default async function KnowledgeBasePage() {
 
       <div className="flex flex-col gap-6">
         {/* Published Policies and Context Sections - Side by Side */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
           <PublishedPoliciesSection policies={policies} />
           <ContextSection contextEntries={contextEntries} />
         </div>
