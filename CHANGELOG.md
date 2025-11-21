@@ -1,3 +1,25 @@
+# [1.62.0](https://github.com/trycompai/comp/compare/v1.61.0...v1.62.0) (2025-11-21)
+
+
+### Features
+
+* **trust:** add friendlyUrl parameter for access request methods ([#1813](https://github.com/trycompai/comp/issues/1813)) ([fa97962](https://github.com/trycompai/comp/commit/fa9796212905aa60b533d63f0fe82f6b5a9dc4de))
+
+# [1.61.0](https://github.com/trycompai/comp/compare/v1.60.1...v1.61.0) (2025-11-20)
+
+
+### Features
+
+* **attachments:** add drag and drop for task attachments ([#1805](https://github.com/trycompai/comp/issues/1805)) ([6c2844b](https://github.com/trycompai/comp/commit/6c2844bebd38a86afa183f33ac7056b7b801c090))
+
+## [1.60.1](https://github.com/trycompai/comp/compare/v1.60.0...v1.60.1) (2025-11-20)
+
+
+### Bug Fixes
+
+* **api-env:** added env prevention ([#1793](https://github.com/trycompai/comp/issues/1793)) ([047a448](https://github.com/trycompai/comp/commit/047a448e7ffc4651cdd60d9afe0dab1745fc4d78))
+* **portal:** fix downloading device agent on safari ([#1791](https://github.com/trycompai/comp/issues/1791)) ([699073f](https://github.com/trycompai/comp/commit/699073f945816d7062d32c07f29fcdc942d40aff))
+
 # [1.60.0](https://github.com/trycompai/comp/compare/v1.59.3...v1.60.0) (2025-11-19)
 
 

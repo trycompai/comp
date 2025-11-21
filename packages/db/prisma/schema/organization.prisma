@@ -34,6 +34,9 @@ model Organization {
   trustAccessRequests TrustAccessRequest[]
   trustNdaAgreements  TrustNDAAgreement[]
   trustDocuments      TrustDocument[]
+  knowledgeBaseDocuments KnowledgeBaseDocument[]
+  questionnaires         Questionnaire[]
+  securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
 
   @@index([slug])
 }

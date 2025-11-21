@@ -45,6 +45,7 @@ App (`apps/app`):
 
 - **APP_AWS_REGION**, **APP_AWS_ACCESS_KEY_ID**, **APP_AWS_SECRET_ACCESS_KEY**, **APP_AWS_BUCKET_NAME**: AWS S3 credentials for file storage (attachments, general uploads).
 - **APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET**: AWS S3 bucket name specifically for questionnaire file uploads. Required for the Security Questionnaire feature. If not set, users will see an error when trying to parse questionnaires.
+- **APP_AWS_KNOWLEDGE_BASE_BUCKET**: AWS S3 bucket name specifically for knowledge base documents. Required for the Knowledge Base feature in Security Questionnaire. If not set, users will see an error when trying to upload knowledge base documents.
 - **OPENAI_API_KEY**: Enables AI features that call OpenAI models.
 - **UPSTASH_REDIS_REST_URL**, **UPSTASH_REDIS_REST_TOKEN**: Optional Redis (Upstash) used for rate limiting/queues/caching.
 - **NEXT_PUBLIC_POSTHOG_KEY**, **NEXT_PUBLIC_POSTHOG_HOST**: Client analytics via PostHog; leave unset to disable.
@@ -151,6 +152,7 @@ NEXT_PUBLIC_BETTER_AUTH_URL_PORTAL=http://localhost:3002
 # APP_AWS_SECRET_ACCESS_KEY=
 # APP_AWS_BUCKET_NAME=
 # APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET=
+# APP_AWS_KNOWLEDGE_BASE_BUCKET=
 # OPENAI_API_KEY=
 # UPSTASH_REDIS_REST_URL=
 # UPSTASH_REDIS_REST_TOKEN=

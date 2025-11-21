@@ -1,11 +1,12 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { cache } from 'react';
-import { QuestionnaireParser } from './components/QuestionnaireParser';
+import { QuestionnaireOverview } from './start_page/components';
+import { getQuestionnaires } from './start_page/data/queries';
 
 export default async function SecurityQuestionnairePage() {
   const session = await auth.api.getSession({
@@ -32,7 +33,7 @@ export default async function SecurityQuestionnairePage() {
   // Show onboarding if no published policies exist
   if (!hasPublishedPolicies) {
     return (
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <div className="py-4">
         <AppOnboarding
           title={'Security Questionnaire'}
           description={
@@ -67,14 +68,21 @@ export default async function SecurityQuestionnairePage() {
     );
   }
 
+  // Fetch questionnaires history
+  const questionnaires = await getQuestionnaires(organizationId);
+
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8">
-      <QuestionnaireParser />
-    </div>
+    <PageWithBreadcrumb
+      breadcrumbs={[
+        { label: 'Overview', current: true },
+      ]}
+    >
+      <QuestionnaireOverview questionnaires={questionnaires} />
+    </PageWithBreadcrumb>
   );
 }
 
-const checkPublishedPolicies = cache(async (organizationId: string): Promise<boolean> => {
+const checkPublishedPolicies = async (organizationId: string): Promise<boolean> => {
   const count = await db.policy.count({
     where: {
       organizationId,
@@ -84,4 +92,4 @@ const checkPublishedPolicies = cache(async (organizationId: string): Promise<boo
   });
 
   return count > 0;
-});
+};

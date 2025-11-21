@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  MAC_APPLE_SILICON_FILENAME,
+  MAC_INTEL_FILENAME,
+  WINDOWS_FILENAME,
+} from '@/app/api/download-agent/constants';
 import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
@@ -51,6 +56,11 @@ export function DeviceAgentAccordionItem({
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
   const handleDownload = async () => {
+    if (!detectedOS) {
+      toast.error('Could not detect your OS. Please refresh and try again.');
+      return;
+    }
+
     setIsDownloading(true);
 
     try {
@@ -61,6 +71,7 @@ export function DeviceAgentAccordionItem({
         body: JSON.stringify({
           orgId: member.organizationId,
           employeeId: member.id,
+          os: detectedOS,
         }),
       });
 
@@ -73,7 +84,7 @@ export function DeviceAgentAccordionItem({
 
       // Now trigger the actual download using the browser's native download mechanism
       // This will show in the browser's download UI immediately
-      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}&os=${detectedOS}`;
+      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}`;
 
       // Method 1: Using a temporary link (most reliable)
       const a = document.createElement('a');
@@ -81,12 +92,9 @@ export function DeviceAgentAccordionItem({
 
       // Set filename based on OS and architecture
       if (isMacOS) {
-        a.download =
-          detectedOS === 'macos'
-            ? 'Comp AI Agent-1.0.0-arm64.dmg'
-            : 'Comp AI Agent-1.0.0-intel.dmg';
+        a.download = detectedOS === 'macos' ? MAC_APPLE_SILICON_FILENAME : MAC_INTEL_FILENAME;
       } else {
-        a.download = 'Comp AI Agent 1.0.0.exe';
+        a.download = WINDOWS_FILENAME;
       }
 
       document.body.appendChild(a);

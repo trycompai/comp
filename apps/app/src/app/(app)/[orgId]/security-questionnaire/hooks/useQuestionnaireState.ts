@@ -27,6 +27,7 @@ export function useQuestionnaireState() {
   const [singleAnswerToken, setSingleAnswerToken] = useState<string | null>(null);
   const [isParseProcessStarted, setIsParseProcessStarted] = useState(false);
   const [isAutoAnswerProcessStarted, setIsAutoAnswerProcessStarted] = useState(false);
+  const [questionnaireId, setQuestionnaireId] = useState<string | null>(null);
   const isAutoAnswerProcessStartedRef = useRef(false);
 
   const resetState = () => {
@@ -42,6 +43,7 @@ export function useQuestionnaireState() {
     setIsParseProcessStarted(false);
     isAutoAnswerProcessStartedRef.current = false;
     setIsAutoAnswerProcessStarted(false);
+    setQuestionnaireId(null);
   };
 
   return {
@@ -81,6 +83,8 @@ export function useQuestionnaireState() {
     isAutoAnswerProcessStarted,
     setIsAutoAnswerProcessStarted,
     isAutoAnswerProcessStartedRef,
+    questionnaireId,
+    setQuestionnaireId,
     resetState,
   };
 }

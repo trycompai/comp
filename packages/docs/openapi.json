@@ -6909,6 +6909,7 @@
             "name": "friendlyUrl",
             "required": true,
             "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
             "schema": {
               "type": "string"
             }
@@ -7369,6 +7370,7 @@
             "name": "friendlyUrl",
             "required": true,
             "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
             "schema": {
               "type": "string"
             }
@@ -9848,19 +9850,7 @@
           "fileType": {
             "type": "string",
             "description": "MIME type of the file",
-            "example": "application/pdf",
-            "enum": [
-              "image/jpeg",
-              "image/png",
-              "image/gif",
-              "image/webp",
-              "application/pdf",
-              "text/plain",
-              "application/msword",
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-              "application/vnd.ms-excel",
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            ]
+            "example": "application/pdf"
           },
           "fileData": {
             "type": "string",

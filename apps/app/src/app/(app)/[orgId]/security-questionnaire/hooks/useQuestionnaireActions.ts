@@ -1,10 +1,11 @@
 'use client';
 
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback } from 'react';
+import { useCallback, useTransition } from 'react';
 import type { FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { exportQuestionnaire } from '../actions/export-questionnaire';
+import { saveAnswerAction } from '../actions/save-answer';
 import type { QuestionAnswer } from '../components/types';
 
 interface UseQuestionnaireActionsProps {
@@ -13,6 +14,7 @@ interface UseQuestionnaireActionsProps {
   results: QuestionAnswer[] | null;
   editingAnswer: string;
   expandedSources: Set<number>;
+  questionnaireId: string | null;
   setSelectedFile: (file: File | null) => void;
   setEditingIndex: (index: number | null) => void;
   setEditingAnswer: (answer: string) => void;
@@ -56,6 +58,7 @@ export function useQuestionnaireActions({
   results,
   editingAnswer,
   expandedSources,
+  questionnaireId,
   setSelectedFile,
   setEditingIndex,
   setEditingAnswer,
@@ -75,6 +78,18 @@ export function useQuestionnaireActions({
   triggerAutoAnswer,
   triggerSingleAnswer,
 }: UseQuestionnaireActionsProps) {
+  const saveAnswer = useAction(saveAnswerAction, {
+    onSuccess: () => {
+      // Answer saved successfully
+    },
+    onError: ({ error }) => {
+      console.error('Error saving answer:', error);
+      // Don't show toast for every save - too noisy
+    },
+  });
+
+  const [isPending, startTransition] = useTransition();
+
   const exportAction = useAction(exportQuestionnaire, {
     onSuccess: ({ data }: { data: any }) => {
       const responseData = data?.data || data;
@@ -215,16 +230,28 @@ export function useQuestionnaireActions({
   };
 
   const handleSaveAnswer = (index: number) => {
-    if (!results) return;
+    if (!results || !questionnaireId) return;
     const updated = [...results];
+    const answerText = editingAnswer.trim() || null;
     updated[index] = {
       ...updated[index],
-      answer: editingAnswer.trim() || null,
+      answer: answerText,
       failedToGenerate: false,
     };
     setResults(updated);
     setEditingIndex(null);
     setEditingAnswer('');
+
+    // Save to database (use startTransition to avoid rendering issues)
+    startTransition(() => {
+      saveAnswer.execute({
+        questionnaireId,
+        questionIndex: index,
+        answer: answerText,
+        status: 'manual',
+      });
+    });
+
     toast.success('Answer updated');
   };
 
