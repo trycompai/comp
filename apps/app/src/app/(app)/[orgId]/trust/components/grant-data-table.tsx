@@ -2,7 +2,7 @@
 
 import { DataTable } from '@/components/ui/data-table/DataTable';
 import type { AccessGrant } from '@/hooks/use-access-requests';
-import { buildGrantColumns, type GrantTableRow } from './grant-columns';
+import { buildGrantColumns } from './grant-columns';
 
 interface GrantDataTableProps {
   data: AccessGrant[];
@@ -19,7 +19,6 @@ export function GrantDataTable({ data, isLoading, onRevoke }: GrantDataTableProp
       columns={columns}
       isLoading={isLoading}
       emptyMessage="No access grants yet"
-      density="compact"
     />
   );
 }
