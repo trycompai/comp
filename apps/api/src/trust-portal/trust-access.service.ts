@@ -28,6 +28,28 @@ export class TrustAccessService {
     return randomBytes(length).toString('base64url').slice(0, length);
   }
 
+  private async findPublishedTrustByRouteId(id: string) {
+    // First, try treating `id` as the existing friendlyUrl.
+    let trust = await db.trust.findUnique({
+      where: { friendlyUrl: id },
+      include: { organization: true },
+    });
+
+    // If none found, fall back to treating `id` as organizationId.
+    if (!trust) {
+      trust = await db.trust.findFirst({
+        where: { organizationId: id },
+        include: { organization: true },
+      });
+    }
+
+    if (!trust || trust.status !== 'published') {
+      throw new NotFoundException('Trust site not found or not published');
+    }
+
+    return trust;
+  }
+
   constructor(
     private readonly ndaPdfService: NdaPdfService,
     private readonly emailService: TrustEmailService,
@@ -60,19 +82,12 @@ export class TrustAccessService {
   }
 
   async createAccessRequest(
-    friendlyUrl: string,
+    id: string,
     dto: CreateAccessRequestDto,
     ipAddress: string | undefined,
     userAgent: string | undefined,
   ) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      include: { organization: true },
-    });
-
-    if (!trust || trust.status !== 'published') {
-      throw new NotFoundException('Trust site not found or not published');
-    }
+    const trust = await this.findPublishedTrustByRouteId(id);
 
     // Check if the email already has an active grant
     const existingGrant = await db.trustAccessGrant.findFirst({
@@ -791,15 +806,8 @@ export class TrustAccessService {
     };
   }
 
-  async reclaimAccess(friendlyUrl: string, email: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      include: { organization: true },
-    });
-
-    if (!trust || trust.status !== 'published') {
-      throw new NotFoundException('Trust site not found or not published');
-    }
+  async reclaimAccess(id: string, email: string) {
+    const trust = await this.findPublishedTrustByRouteId(id);
 
     const grant = await db.trustAccessGrant.findFirst({
       where: {
@@ -849,7 +857,8 @@ export class TrustAccessService {
       });
     }
 
-    const accessLink = `${this.TRUST_APP_URL}/${friendlyUrl}/access/${accessToken}`;
+    const urlId = trust.friendlyUrl || trust.organizationId;
+    const accessLink = `${this.TRUST_APP_URL}/${urlId}/access/${accessToken}`;
 
     await this.emailService.sendAccessReclaimEmail({
       toEmail: email,

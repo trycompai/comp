@@ -14,6 +14,7 @@ import {
 import {
   ApiHeader,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiSecurity,
   ApiTags,
@@ -44,11 +45,16 @@ export class TrustAccessController {
     description:
       'External users submit request for data access from trust site',
   })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Access request created and sent for review',
   })
   async createAccessRequest(
+    // Note: friendlyUrl can be either the custom friendly URL or the organization ID
     @Param('friendlyUrl') friendlyUrl: string,
     @Body() dto: CreateAccessRequestDto,
     @Req() req: Request,
@@ -365,11 +371,16 @@ export class TrustAccessController {
     description:
       'Generate access link for users with existing grants to redownload data',
   })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Access link sent to email',
   })
   async reclaimAccess(
+    // Note: friendlyUrl can be either the custom friendly URL or the organization ID
     @Param('friendlyUrl') friendlyUrl: string,
     @Body() dto: ReclaimAccessDto,
   ) {
