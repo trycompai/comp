@@ -4,18 +4,19 @@ import { TrustAccessRequestsClient } from './components/trust-access-request-cli
 
 export default async function TrustAccessPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
+
   return (
-    <PageCore className="border-0">
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Trust Access Management</h1>
-          <p className="text-muted-foreground">
-            Manage data access requests and grants
-          </p>
+    <div className="mx-auto max-w-[1200px] py-8">
+      <PageCore>
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-2xl font-semibold">Trust Access Management</h1>
+            <p className="text-muted-foreground">Manage data access requests and grants</p>
+          </div>
+          <TrustAccessRequestsClient orgId={orgId} />
         </div>
-        <TrustAccessRequestsClient orgId={orgId} />
-      </div>
-    </PageCore>
+      </PageCore>
+    </div>
   );
 }
 
