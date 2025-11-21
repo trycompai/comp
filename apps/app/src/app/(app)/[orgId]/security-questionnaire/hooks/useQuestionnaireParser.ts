@@ -63,6 +63,7 @@ export function useQuestionnaireParser() {
     setEditingAnswer: state.setEditingAnswer,
     setResults: state.setResults,
     setExpandedSources: state.setExpandedSources,
+    isParseProcessStarted: state.isParseProcessStarted, // ✅ Added
     setIsParseProcessStarted: state.setIsParseProcessStarted,
     setIsAutoAnswerProcessStarted: state.setIsAutoAnswerProcessStarted,
     isAutoAnswerProcessStartedRef: state.isAutoAnswerProcessStartedRef,
@@ -78,36 +79,36 @@ export function useQuestionnaireParser() {
     triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
   });
 
+  // ✅ Improved isLoading logic - always shows loading until task completion
   const isLoading = useMemo(() => {
+    // If parsing process has started, show loading until explicit completion
+    if (state.isParseProcessStarted) {
+      // Check if task is completed
+      const isCompleted =
+        parse.parseRun?.status === 'COMPLETED' ||
+        parse.parseRun?.status === 'FAILED' ||
+        parse.parseRun?.status === 'CANCELED';
+
+      // If task is completed, hide loading
+      if (isCompleted) {
+        return false;
+      }
+
+      // Otherwise show loading (even if parseRun is not created yet)
+      return true;
+    }
+
+    // Additional checks for reliability
     const isUploading = parse.uploadFileAction.status === 'executing';
     const isParseActionExecuting = parse.parseAction.status === 'executing';
     const isParseRunActive =
       parse.parseRun?.status === 'EXECUTING' ||
       parse.parseRun?.status === 'QUEUED' ||
-      parse.parseRun?.status === 'WAITING';
+      parse.parseRun?.status === 'WAITING' ||
+      parse.parseRun?.status === 'STARTING';
 
-    if (isParseRunActive) {
+    if (isParseRunActive || isParseActionExecuting || isUploading) {
       return true;
-    }
-
-    if (isParseActionExecuting) {
-      return true;
-    }
-
-    if (isUploading) {
-      return true;
-    }
-
-    if (state.isParseProcessStarted && !parse.parseRun) {
-      return true;
-    }
-
-    if (
-      parse.parseRun?.status === 'COMPLETED' ||
-      parse.parseRun?.status === 'FAILED' ||
-      parse.parseRun?.status === 'CANCELED'
-    ) {
-      return false;
     }
 
     return false;
@@ -143,26 +144,43 @@ export function useQuestionnaireParser() {
     state.setShowExitDialog(false);
   };
 
-  // Get raw parsing status from actions/task
+  // ✅ Improved rawParseStatus logic - accounts for all statuses including cold start
   const rawParseStatus = useMemo(() => {
-    if (parse.uploadFileAction.status === 'executing') {
-      return 'uploading';
-    }
-    if (parse.parseAction.status === 'executing') {
-      return 'starting';
-    }
-    if (parse.parseRun?.status === 'QUEUED') {
-      return 'queued';
-    }
-    if (parse.parseRun?.status === 'EXECUTING') {
-      return 'analyzing';
-    }
-    if (parse.parseRun?.status === 'WAITING') {
-      return 'processing';
-    }
-    // Keep showing status if parsing process started but no run yet
-    if (state.isParseProcessStarted && !parse.parseRun) {
-      return 'starting';
+    // If parsing process has started, always show status
+    if (state.isParseProcessStarted) {
+      // Check statuses in priority order
+      if (parse.uploadFileAction.status === 'executing') {
+        return 'uploading';
+      }
+      if (parse.parseAction.status === 'executing') {
+        return 'starting';
+      }
+      if (parse.parseRun?.status === 'STARTING') {
+        // ✅ Cold start - machine is starting up
+        return 'starting';
+      }
+      if (parse.parseRun?.status === 'QUEUED') {
+        return 'queued';
+      }
+      if (parse.parseRun?.status === 'EXECUTING') {
+        return 'analyzing';
+      }
+      if (parse.parseRun?.status === 'WAITING') {
+        return 'processing';
+      }
+      // If task is not created yet but process has started - show starting
+      if (!parse.parseRun) {
+        return 'starting';
+      }
+      // If task is completed but isParseProcessStarted is still true - show processing
+      // (will be reset in onComplete)
+      if (
+        parse.parseRun?.status === 'COMPLETED' ||
+        parse.parseRun?.status === 'FAILED' ||
+        parse.parseRun?.status === 'CANCELED'
+      ) {
+        return null; // Task completed, status will be reset
+      }
     }
     return null;
   }, [

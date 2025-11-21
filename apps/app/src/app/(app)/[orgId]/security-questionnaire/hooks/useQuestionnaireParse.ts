@@ -153,6 +153,7 @@ export function useQuestionnaireParse({
         return;
       }
 
+      // ✅ Do NOT reset isParseProcessStarted here - task is started, need to wait for completion
       // Clear old token before setting new task ID to prevent using wrong token with new run
       setParseToken(null);
       setParseTaskId(taskId);
@@ -160,12 +161,16 @@ export function useQuestionnaireParse({
       const tokenResult = await createRunReadToken(taskId);
       if (tokenResult.success && tokenResult.token) {
         setParseToken(tokenResult.token);
+        // ✅ Token created successfully - useRealtimeRun will connect and track the task
+        // isParseProcessStarted remains true until task completion (in onComplete)
       } else {
+        // ✅ Only if token creation failed - reset state
         setIsParseProcessStarted(false);
-        toast.error('Failed to create read token for parse task');
+        toast.error('Failed to create read token for parse task. The task may still be running - please check Trigger.dev dashboard.');
       }
     },
     onError: ({ error }) => {
+      // ✅ Only on task start error - reset state
       setIsParseProcessStarted(false);
       console.error('Parse action error:', error);
       toast.error(error.serverError || 'Failed to start parse questionnaire');
@@ -180,6 +185,7 @@ export function useQuestionnaireParse({
       const fileType = responseData?.fileType;
 
       if (s3Key && fileType) {
+        // ✅ isParseProcessStarted remains true - task continues
         parseAction.execute({
           inputType: 's3',
           s3Key,
@@ -187,10 +193,14 @@ export function useQuestionnaireParse({
           fileType,
         });
       } else {
+        // ✅ Only if S3 key is missing - reset state
+        setIsParseProcessStarted(false);
         toast.error('Failed to get S3 key after upload');
       }
     },
     onError: ({ error }) => {
+      // ✅ On upload error - reset state
+      setIsParseProcessStarted(false);
       console.error('Upload action error:', error);
       toast.error(error.serverError || 'Failed to upload file');
     },
