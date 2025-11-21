@@ -18,7 +18,7 @@ export function DataTableHeader<TData>({ table }: DataTableHeaderProps<TData>) {
           {headerGroup.headers.map((header) => (
             <TableHead
               key={header.id}
-              className="relative p-4 whitespace-nowrap"
+              className="relative px-3 py-2 whitespace-nowrap text-sm"
               style={{ width: header.getSize() }}
             >
               {header.isPlaceholder ? null : (
