@@ -20,6 +20,7 @@ model Trust {
   gdpr          Boolean @default(false)
   hipaa         Boolean @default(false)
   pci_dss       Boolean @default(false)
+  iso9001       Boolean @default(false)
 
   soc2_status      FrameworkStatus @default(started)
   soc2type1_status FrameworkStatus @default(started)
@@ -30,6 +31,7 @@ model Trust {
   gdpr_status      FrameworkStatus @default(started)
   hipaa_status     FrameworkStatus @default(started)
   pci_dss_status   FrameworkStatus @default(started)
+  iso9001_status   FrameworkStatus @default(started)
 
   @@id([status, organizationId])
   @@unique([organizationId])
