@@ -1,7 +1,7 @@
-import { getDb, Prisma } from '@trycompai/db';
+import { getDb } from '@trycompai/db';
 
 export * from '@trycompai/db/types';
-export { Prisma };
+
 
 export const db = getDb({ connectionString: process.env.DATABASE_URL! });
 

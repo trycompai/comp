@@ -100,7 +100,6 @@
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
-    "resend": "^4.4.1",
     "sonner": "^2.0.5",
     "swr": "^2.3.4",
     "three": "^0.177.0",

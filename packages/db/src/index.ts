@@ -17,5 +17,4 @@ export function getDb({ connectionString }: GetDbParams): PrismaClient {
 // The inferred type of 'prisma' cannot be named without a reference to '../node_modules/@repo/database/src/generated/prisma/client'.
 // This is likely not portable. A type annotation is necessary.ts(2742)
 // ```
-export { Prisma } from './generated/prisma/client';
 export type { PrismaClient } from './generated/prisma/client';

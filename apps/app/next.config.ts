@@ -1,33 +1,11 @@
 import { withBotId } from 'botid/next/config';
 import type { NextConfig } from 'next';
-import path from 'path';
 
 import './src/env.mjs';
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config: NextConfig = {
-  // Ensure Turbopack can import .md files as raw strings during dev
-  turbopack: {
-    root: path.join(__dirname, '..', '..'),
-    rules: {
-      '*.md': {
-        loaders: ['raw-loader'],
-        as: '*.js',
-      },
-    },
-  },
-  webpack: (config, { isServer }) => {
-    // Enable importing .md files as raw strings during webpack builds
-    config.module = config.module || { rules: [] };
-    config.module.rules = config.module.rules || [];
-    config.module.rules.push({
-      test: /\.md$/,
-      type: 'asset/source',
-    });
-
-    return config;
-  },
   // Use S3 bucket for static assets with app-specific path
   assetPrefix:
     process.env.NODE_ENV === 'production' && process.env.STATIC_ASSETS_URL
@@ -54,16 +32,7 @@ const config: NextConfig = {
           : undefined,
     },
     authInterrupts: true,
-    optimizePackageImports: ['@trycompai/ui'],
-    // Reduce build peak memory
-    webpackMemoryOptimizations: true,
   },
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-
-  // Reduce memory usage during production build
-  productionBrowserSourceMaps: false,
-  // If builds still OOM, uncomment the next line to disable SWC minification (larger output, less memory)
-  // swcMinify: false,
   ...(isStandalone
     ? {
         output: 'standalone' as const,
