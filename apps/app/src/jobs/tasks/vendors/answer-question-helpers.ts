@@ -1,7 +1,9 @@
 import { findSimilarContent } from '@/lib/vector';
+import type { SimilarContentResult } from '@/lib/vector';
 import { openai } from '@ai-sdk/openai';
 import { logger } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
+import { deduplicateSources } from '@/app/(app)/[orgId]/security-questionnaire/utils/deduplicate-sources';
 
 export interface AnswerWithSources {
   answer: string | null;
@@ -22,7 +24,7 @@ export async function generateAnswerWithRAG(
 ): Promise<AnswerWithSources> {
   try {
     // Find similar content from vector database
-    const similarContent = await findSimilarContent(question, organizationId, 5);
+    const similarContent = await findSimilarContent(question, organizationId, 5) as SimilarContentResult[];
 
     logger.info('Vector search results', {
       question: question.substring(0, 100),
@@ -35,50 +37,35 @@ export async function generateAnswerWithRAG(
       })),
     });
 
-    // Extract sources information and deduplicate by sourceName
-    // Multiple chunks from the same source (same policy/context) should appear as a single source
-    const sourceMap = new Map<
-      string,
-      {
-        sourceType: string;
-        sourceName?: string;
-        sourceId: string;
-        policyName?: string;
-        score: number;
-      }
-    >();
+    // Extract sources information and deduplicate using universal utility
+    // Multiple chunks from the same source (same policy/context/manual answer/knowledge base document) should appear as a single source
+    // Note: sourceName is set for some types, but knowledge_base_document will be handled by deduplication function
+    const sources = deduplicateSources(
+      similarContent.map((result) => {
+        // Use any to avoid TypeScript narrowing issues, then assert correct type
+        const r = result as any as SimilarContentResult;
+        let sourceName: string | undefined;
+        if (r.policyName) {
+          sourceName = `Policy: ${r.policyName}`;
+        } else if (r.vendorName && r.questionnaireQuestion) {
+          sourceName = `Questionnaire: ${r.vendorName}`;
+        } else if (r.contextQuestion) {
+          sourceName = 'Context Q&A';
+        } else if ((r.sourceType as string) === 'manual_answer') {
+          sourceName = 'Manual Answer';
+        }
+        // Don't set sourceName for knowledge_base_document - let deduplication function handle it with filename
 
-    for (const result of similarContent) {
-      // Generate sourceName first to use as deduplication key
-      let sourceName: string | undefined;
-      if (result.policyName) {
-        sourceName = `Policy: ${result.policyName}`;
-      } else if (result.vendorName && result.questionnaireQuestion) {
-        sourceName = `Questionnaire: ${result.vendorName}`;
-      } else if (result.contextQuestion) {
-        sourceName = 'Context Q&A';
-      }
-
-      // Use sourceName as the unique key to prevent duplicates
-      // For policies: same policy name = same source
-      // For context: all context entries = single "Context Q&A" source
-      const key = sourceName || result.sourceId;
-
-      // If we haven't seen this source, or this chunk has a higher score, use it
-      const existing = sourceMap.get(key);
-      if (!existing || result.score > existing.score) {
-        sourceMap.set(key, {
-          sourceType: result.sourceType,
+        return {
+          sourceType: r.sourceType,
           sourceName,
-          sourceId: result.sourceId,
-          policyName: result.policyName,
-          score: result.score,
-        });
-      }
-    }
-
-    // Convert map to array and sort by score (highest first)
-    const sources = Array.from(sourceMap.values()).sort((a, b) => b.score - a.score);
+          sourceId: r.sourceId,
+          policyName: r.policyName,
+          documentName: r.documentName,
+          score: r.score,
+        };
+      }),
+    );
 
     // If no relevant content found, return null
     if (similarContent.length === 0) {
@@ -91,18 +78,31 @@ export async function generateAnswerWithRAG(
 
     // Build context from retrieved content
     const contextParts = similarContent.map((result, index) => {
+      // Use any to avoid TypeScript narrowing issues, then assert correct type
+      const r = result as any as SimilarContentResult;
       let sourceInfo = '';
-      if (result.policyName) {
-        sourceInfo = `Source: Policy "${result.policyName}"`;
-      } else if (result.vendorName && result.questionnaireQuestion) {
-        sourceInfo = `Source: Questionnaire from "${result.vendorName}"`;
-      } else if (result.contextQuestion) {
+      if (r.policyName) {
+        sourceInfo = `Source: Policy "${r.policyName}"`;
+      } else if (r.vendorName && r.questionnaireQuestion) {
+        sourceInfo = `Source: Questionnaire from "${r.vendorName}"`;
+      } else if (r.contextQuestion) {
         sourceInfo = `Source: Context Q&A`;
+      } else if ((r.sourceType as string) === 'knowledge_base_document') {
+        const docName = r.documentName;
+        if (docName) {
+          sourceInfo = `Source: Knowledge Base Document "${docName}"`;
+        } else {
+          sourceInfo = `Source: Knowledge Base Document`;
+        }
+      } else if ((r.sourceType as string) === 'knowledge_base_document') {
+        sourceInfo = `Source: Knowledge Base Document`;
+      } else if ((r.sourceType as string) === 'manual_answer') {
+        sourceInfo = `Source: Manual Answer`;
       } else {
-        sourceInfo = `Source: ${result.sourceType}`;
+        sourceInfo = `Source: ${r.sourceType}`;
       }
 
-      return `[${index + 1}] ${sourceInfo}\n${result.content}`;
+      return `[${index + 1}] ${sourceInfo}\n${r.content}`;
     });
 
     const context = contextParts.join('\n\n');

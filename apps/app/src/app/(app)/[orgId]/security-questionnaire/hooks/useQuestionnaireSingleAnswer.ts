@@ -2,8 +2,10 @@
 
 import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
 import type { answerQuestion } from '@/jobs/tasks/vendors/answer-question';
-import { useEffect } from 'react';
+import { useEffect, useTransition } from 'react';
 import { toast } from 'sonner';
+import { useAction } from 'next-safe-action/hooks';
+import { saveAnswerAction } from '../actions/save-answer';
 import type { QuestionAnswer } from '../components/types';
 
 interface UseQuestionnaireSingleAnswerProps {
@@ -15,6 +17,7 @@ interface UseQuestionnaireSingleAnswerProps {
     React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
   >;
   setAnsweringQuestionIndex: (index: number | null) => void;
+  questionnaireId: string | null;
 }
 
 export function useQuestionnaireSingleAnswer({
@@ -24,6 +27,7 @@ export function useQuestionnaireSingleAnswer({
   setResults,
   setQuestionStatuses,
   setAnsweringQuestionIndex,
+  questionnaireId,
 }: UseQuestionnaireSingleAnswerProps) {
   // Use realtime task trigger for single question answer
   const {
@@ -35,6 +39,39 @@ export function useQuestionnaireSingleAnswer({
     accessToken: singleAnswerToken || undefined,
     enabled: !!singleAnswerToken,
   });
+
+  // Action for saving answer
+  const saveAnswer = useAction(saveAnswerAction, {
+    onError: ({ error }) => {
+      console.error('Error saving answer:', error);
+    },
+  });
+
+  const [isPending, startTransition] = useTransition();
+
+  // Set status to processing when task starts or is triggering
+  useEffect(() => {
+    if (answeringQuestionIndex !== null) {
+      const shouldBeProcessing =
+        isSingleAnswerTriggering ||
+        singleAnswerRun?.status === 'EXECUTING' ||
+        singleAnswerRun?.status === 'QUEUED' ||
+        singleAnswerRun?.status === 'WAITING';
+
+      if (shouldBeProcessing) {
+        setQuestionStatuses((prev) => {
+          const newStatuses = new Map(prev);
+          // Ensure status is set to processing when task is running or triggering
+          const currentStatus = prev.get(answeringQuestionIndex);
+          if (currentStatus !== 'processing') {
+            newStatuses.set(answeringQuestionIndex, 'processing');
+            return newStatuses;
+          }
+          return prev;
+        });
+      }
+    }
+  }, [singleAnswerRun?.status, answeringQuestionIndex, isSingleAnswerTriggering, setQuestionStatuses]);
 
   // Handle single answer completion
   useEffect(() => {
@@ -57,26 +94,61 @@ export function useQuestionnaireSingleAnswer({
       }
 
       if (output.success && output.answer) {
-        // Update the results with the answer
-        setResults((prevResults) => {
-          if (!prevResults) return prevResults;
+        const targetIndex = output.questionIndex;
 
-          const updatedResults = [...prevResults];
-          const targetIndex = output.questionIndex;
+        // Verify we're updating the correct question
+        if (targetIndex === answeringQuestionIndex && targetIndex >= 0) {
+          // Update the results with the answer
+          setResults((prevResults) => {
+            if (!prevResults) return prevResults;
 
-          // Verify we're updating the correct question
-          if (targetIndex === answeringQuestionIndex && targetIndex >= 0 && targetIndex < updatedResults.length) {
-            updatedResults[targetIndex] = {
-              question: updatedResults[targetIndex].question, // Preserve original question text
-              answer: output.answer,
-              sources: output.sources,
-              failedToGenerate: false,
-            };
-            return updatedResults;
+            const updatedResults = [...prevResults];
+            
+            // Try to find by questionIndex first (for QuestionnaireResult with originalIndex)
+            // Otherwise use array index
+            let resultIndex = -1;
+            for (let i = 0; i < updatedResults.length; i++) {
+              const result = updatedResults[i] as any;
+              if (result.originalIndex === targetIndex || result._originalIndex === targetIndex) {
+                resultIndex = i;
+                break;
+              }
+            }
+            
+            // Fallback to array index if not found by originalIndex
+            if (resultIndex === -1 && targetIndex < updatedResults.length) {
+              resultIndex = targetIndex;
+            }
+            
+            if (resultIndex >= 0 && resultIndex < updatedResults.length) {
+              const existingResult = updatedResults[resultIndex];
+              updatedResults[resultIndex] = {
+                ...existingResult,
+                question: existingResult.question, // Preserve original question text
+                answer: output.answer,
+                sources: output.sources,
+                failedToGenerate: false,
+              };
+              return updatedResults;
+            }
+
+            return prevResults;
+          });
+
+          // Save answer to database (outside of setState)
+          if (questionnaireId && output.answer) {
+            // Use startTransition to defer the save call to avoid rendering issues
+            startTransition(() => {
+              saveAnswer.execute({
+                questionnaireId,
+                questionIndex: targetIndex,
+                answer: output.answer!,
+                sources: output.sources,
+                status: 'generated',
+              });
+            });
           }
-
-          return prevResults;
-        });
+        }
 
         // Mark question as completed
         setQuestionStatuses((prev) => {
@@ -121,7 +193,7 @@ export function useQuestionnaireSingleAnswer({
       // Reset answering index
       setAnsweringQuestionIndex(null);
     }
-  }, [singleAnswerRun?.status, singleAnswerRun?.output, answeringQuestionIndex, setResults, setQuestionStatuses, setAnsweringQuestionIndex]);
+  }, [singleAnswerRun?.status, singleAnswerRun?.output, answeringQuestionIndex, questionnaireId, saveAnswer, setResults, setQuestionStatuses, setAnsweringQuestionIndex]);
 
   // Handle single answer errors
   useEffect(() => {

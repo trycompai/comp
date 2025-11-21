@@ -15,6 +15,7 @@ interface UpdateTrustPortalFrameworksParams {
   hipaa?: boolean;
   pcidss?: boolean;
   nen7510?: boolean;
+  iso9001?: boolean;
   soc2type1Status?: 'started' | 'in_progress' | 'compliant';
   soc2type2Status?: 'started' | 'in_progress' | 'compliant';
   iso27001Status?: 'started' | 'in_progress' | 'compliant';
@@ -23,6 +24,7 @@ interface UpdateTrustPortalFrameworksParams {
   hipaaStatus?: 'started' | 'in_progress' | 'compliant';
   pcidssStatus?: 'started' | 'in_progress' | 'compliant';
   nen7510Status?: 'started' | 'in_progress' | 'compliant';
+  iso9001Status?: 'started' | 'in_progress' | 'compliant';
 }
 
 export async function updateTrustPortalFrameworks({
@@ -35,6 +37,8 @@ export async function updateTrustPortalFrameworks({
   hipaa,
   pcidss,
   nen7510,
+  iso9001,
+  iso9001Status,
   soc2type1Status,
   soc2type2Status,
   iso27001Status,
@@ -85,6 +89,8 @@ export async function updateTrustPortalFrameworks({
       hipaa_status: hipaaStatus ?? trustPortal.hipaa_status,
       pci_dss_status: pcidssStatus ?? trustPortal.pci_dss_status,
       nen7510_status: nen7510Status ?? trustPortal.nen7510_status,
+      iso9001: iso9001 ?? trustPortal.iso9001,
+      iso9001_status: iso9001Status ?? trustPortal.iso9001_status,
     },
   });
 

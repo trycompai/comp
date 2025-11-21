@@ -3,6 +3,7 @@
 import type { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { createRunReadToken, createTriggerToken } from '../actions/create-trigger-token';
@@ -26,6 +27,8 @@ interface UseQuestionnaireParseProps {
     React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
   >;
   setHasClickedAutoAnswer: (clicked: boolean) => void;
+  setQuestionnaireId: (id: string | null) => void;
+  orgId: string;
 }
 
 export function useQuestionnaireParse({
@@ -42,7 +45,10 @@ export function useQuestionnaireParse({
   setExtractedContent,
   setQuestionStatuses,
   setHasClickedAutoAnswer,
+  setQuestionnaireId,
+  orgId,
 }: UseQuestionnaireParseProps) {
+  const router = useRouter();
   // Get trigger token for auto-answer (can trigger and read)
   useEffect(() => {
     async function getAutoAnswerToken() {
@@ -86,6 +92,7 @@ export function useQuestionnaireParse({
               }>
             | undefined;
           const extractedContent = run.output.extractedContent as string | undefined;
+          const questionnaireId = run.output.questionnaireId as string | undefined;
 
           if (questionsAndAnswers && Array.isArray(questionsAndAnswers)) {
             const initializedResults = questionsAndAnswers.map((qa) => ({
@@ -96,6 +103,13 @@ export function useQuestionnaireParse({
             setExtractedContent(extractedContent || null);
             setQuestionStatuses(new Map());
             setHasClickedAutoAnswer(false);
+            if (questionnaireId) {
+              setQuestionnaireId(questionnaireId);
+              // Redirect to questionnaire detail page after successful parse
+              setTimeout(() => {
+                router.push(`/${orgId}/security-questionnaire/${questionnaireId}`);
+              }, 500); // Small delay to show success toast
+            }
             toast.success(
               `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
             );

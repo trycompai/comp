@@ -635,6 +635,53 @@ export const parseQuestionnaireTask = task({
         parseTimeSeconds: parseTime,
         totalTimeSeconds: totalTime,
       });
+
+      // Create questionnaire record in database
+      let questionnaireId: string;
+      try {
+        const fileName = payload.fileName || payload.url || payload.attachmentId || 'questionnaire';
+        const s3Key = payload.s3Key || '';
+        const fileType = payload.fileType || 'application/octet-stream';
+        // For s3 input, we don't have fileData, so estimate size or use 0
+        // The actual file size isn't critical for questionnaire records
+        const fileSize = payload.fileData ? Buffer.from(payload.fileData, 'base64').length : 0;
+
+        const questionnaire = await db.questionnaire.create({
+          data: {
+            filename: fileName,
+            s3Key: s3Key || '',
+            fileType,
+            fileSize,
+            organizationId: payload.organizationId,
+            status: 'completed',
+            parsedAt: new Date(),
+            totalQuestions: questionsAndAnswers.length,
+            answeredQuestions: 0,
+            questions: {
+              create: questionsAndAnswers.map((qa, index) => ({
+                question: qa.question,
+                answer: qa.answer || null,
+                questionIndex: index,
+                status: qa.answer ? 'generated' : 'untouched',
+              })),
+            },
+          },
+        });
+
+        questionnaireId = questionnaire.id;
+
+        logger.info('Questionnaire record created', {
+          questionnaireId,
+          questionCount: questionsAndAnswers.length,
+        });
+      } catch (error) {
+        logger.error('Failed to create questionnaire record', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        // Don't fail parsing if DB creation fails - we can still return results
+        // Frontend can handle saving later
+        questionnaireId = '';
+      }
       
       // NOTE: We no longer add questionnaire Q&A pairs to the vector database
       // They are not used as a source for generating answers (only Policy and Context are used)
@@ -693,6 +740,7 @@ export const parseQuestionnaireTask = task({
       
       return {
         success: true,
+        questionnaireId,
         questionsAndAnswers,
         extractedContent: extractedContent.substring(0, 1000), // Return first 1000 chars for preview
       };

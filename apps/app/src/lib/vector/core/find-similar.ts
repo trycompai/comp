@@ -8,13 +8,14 @@ export interface SimilarContentResult {
   id: string;
   score: number;
   content: string;
-  sourceType: 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire';
+  sourceType: 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer' | 'knowledge_base_document';
   sourceId: string;
   policyName?: string;
   contextQuestion?: string;
   vendorId?: string;
   vendorName?: string;
   questionnaireQuestion?: string;
+  documentName?: string;
 }
 
 /**
@@ -61,24 +62,25 @@ export async function findSimilarContent(
         const metadata = result.metadata as any;
         const hasCorrectOrg = metadata?.organizationId === organizationId;
         const hasMinScore = result.score >= MIN_SIMILARITY_SCORE;
-        // Exclude questionnaire Q&A from results - we only use Policy and Context as sources
+        // Exclude questionnaire Q&A from results - we use Policy, Context, and Manual Answers as sources
         const isNotQuestionnaire = metadata?.sourceType !== 'questionnaire';
         return hasCorrectOrg && hasMinScore && isNotQuestionnaire;
       })
       .slice(0, limit) // Take only the top N after filtering
-      .map((result) => {
+      .map((result): SimilarContentResult => {
         const metadata = result.metadata as any;
         return {
           id: String(result.id),
           score: result.score,
           content: metadata?.content || '',
-          sourceType: metadata?.sourceType || 'policy',
+          sourceType: (metadata?.sourceType || 'policy') as SimilarContentResult['sourceType'],
           sourceId: metadata?.sourceId || '',
           policyName: metadata?.policyName,
           contextQuestion: metadata?.contextQuestion,
           vendorId: metadata?.vendorId,
           vendorName: metadata?.vendorName,
           questionnaireQuestion: metadata?.questionnaireQuestion,
+          documentName: metadata?.documentName,
         };
       });
 

@@ -17,7 +17,17 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { GDPR, HIPAA, ISO27001, SOC2Type1, SOC2Type2, PCIDSS, ISO42001, NEN7510 } from './logos';
+import {
+  GDPR,
+  HIPAA,
+  ISO27001,
+  ISO42001,
+  ISO9001,
+  NEN7510,
+  PCIDSS,
+  SOC2Type1,
+  SOC2Type2,
+} from './logos';
 
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
@@ -31,6 +41,7 @@ const trustPortalSwitchSchema = z.object({
   hipaa: z.boolean(),
   pcidss: z.boolean(),
   nen7510: z.boolean(),
+  iso9001: z.boolean(),
   soc2type1Status: z.enum(['started', 'in_progress', 'compliant']),
   soc2type2Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
@@ -39,6 +50,7 @@ const trustPortalSwitchSchema = z.object({
   hipaaStatus: z.enum(['started', 'in_progress', 'compliant']),
   pcidssStatus: z.enum(['started', 'in_progress', 'compliant']),
   nen7510Status: z.enum(['started', 'in_progress', 'compliant']),
+  iso9001Status: z.enum(['started', 'in_progress', 'compliant']),
 });
 
 export function TrustPortalSwitch({
@@ -64,6 +76,8 @@ export function TrustPortalSwitch({
   pcidssStatus,
   nen7510,
   nen7510Status,
+  iso9001,
+  iso9001Status,
   friendlyUrl,
 }: {
   enabled: boolean;
@@ -88,6 +102,8 @@ export function TrustPortalSwitch({
   hipaaStatus: 'started' | 'in_progress' | 'compliant';
   pcidssStatus: 'started' | 'in_progress' | 'compliant';
   nen7510Status: 'started' | 'in_progress' | 'compliant';
+  iso9001: boolean;
+  iso9001Status: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
 }) {
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
@@ -114,6 +130,7 @@ export function TrustPortalSwitch({
       hipaa: hipaa ?? false,
       pcidss: pcidss ?? false,
       nen7510: nen7510 ?? false,
+      iso9001: iso9001 ?? false,
       soc2type1Status: soc2type1Status ?? 'started',
       soc2type2Status: soc2type2Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
@@ -122,6 +139,7 @@ export function TrustPortalSwitch({
       hipaaStatus: hipaaStatus ?? 'started',
       pcidssStatus: pcidssStatus ?? 'started',
       nen7510Status: nen7510Status ?? 'started',
+      iso9001Status: iso9001Status ?? 'started',
       friendlyUrl: friendlyUrl ?? undefined,
     },
   });
@@ -578,6 +596,35 @@ export function TrustPortalSwitch({
                         }
                       }}
                     />
+                    {/* ISO 9001 */}
+                    <ComplianceFramework
+                      title="ISO 9001"
+                      description="An international standard for quality management systems."
+                      isEnabled={iso9001}
+                      status={iso9001Status}
+                      onStatusChange={async (value) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            iso9001Status: value as 'started' | 'in_progress' | 'compliant',
+                          });
+                          toast.success('ISO 9001 status updated');
+                        } catch (error) {
+                          toast.error('Failed to update ISO 9001 status');
+                        }
+                      }}
+                      onToggle={async (checked) => {
+                        try {
+                          await updateTrustPortalFrameworks({
+                            orgId,
+                            iso9001: checked,
+                          });
+                          toast.success('ISO 9001 status updated');
+                        } catch (error) {
+                          toast.error('Failed to update ISO 9001 status');
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -637,6 +684,10 @@ function ComplianceFramework({
     ) : title === 'NEN 7510' ? (
       <div className="h-16 w-16 flex items-center justify-center">
         <NEN7510 className="max-h-full max-w-full" />
+      </div>
+    ) : title === 'ISO 9001' ? (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <ISO9001 className="max-h-full max-w-full" />
       </div>
     ) : null;
 
