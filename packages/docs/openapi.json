@@ -6909,6 +6909,7 @@
             "name": "friendlyUrl",
             "required": true,
             "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
             "schema": {
               "type": "string"
             }
@@ -7369,6 +7370,7 @@
             "name": "friendlyUrl",
             "required": true,
             "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
             "schema": {
               "type": "string"
             }

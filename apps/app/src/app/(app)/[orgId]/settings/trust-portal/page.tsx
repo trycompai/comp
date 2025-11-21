@@ -31,6 +31,7 @@ export default async function TrustPortalSettings({
         hipaa={trustPortal?.hipaa ?? false}
         pcidss={trustPortal?.pcidss ?? false}
         nen7510={trustPortal?.nen7510 ?? false}
+        iso9001={trustPortal?.iso9001 ?? false}
         soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
         soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
         iso27001Status={trustPortal?.iso27001Status ?? 'started'}
@@ -39,6 +40,7 @@ export default async function TrustPortalSettings({
         hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
         pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
         nen7510Status={trustPortal?.nen7510Status ?? 'started'}
+        iso9001Status={trustPortal?.iso9001Status ?? 'started'}
         friendlyUrl={trustPortal?.friendlyUrl ?? null}
       />
       <TrustPortalDomain
@@ -81,13 +83,18 @@ const getTrustPortal = cache(async (orgId: string) => {
     pcidss: trustPortal?.pci_dss,
     nen7510: trustPortal?.nen7510,
     soc2type1Status: trustPortal?.soc2type1_status,
-    soc2type2Status: !trustPortal?.soc2type2 && trustPortal?.soc2 ? trustPortal?.soc2_status : trustPortal?.soc2type2_status,
+    soc2type2Status:
+      !trustPortal?.soc2type2 && trustPortal?.soc2
+        ? trustPortal?.soc2_status
+        : trustPortal?.soc2type2_status,
     iso27001Status: trustPortal?.iso27001_status,
     iso42001Status: trustPortal?.iso42001_status,
     gdprStatus: trustPortal?.gdpr_status,
     hipaaStatus: trustPortal?.hipaa_status,
     pcidssStatus: trustPortal?.pci_dss_status,
     nen7510Status: trustPortal?.nen7510_status,
+    iso9001: trustPortal?.iso9001,
+    iso9001Status: trustPortal?.iso9001_status,
     isVercelDomain: trustPortal?.isVercelDomain,
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,

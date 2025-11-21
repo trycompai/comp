@@ -48,6 +48,10 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
     return '/badges/nen7510.svg';
   }
 
+  if (framework.framework.name === 'ISO 9001') {
+    return '/badges/iso9001.svg';
+  }
+
   return null;
 }
 
