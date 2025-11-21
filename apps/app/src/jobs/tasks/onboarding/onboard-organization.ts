@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Control, EvidenceAutomation, EvidenceAutomationRun, Member, Task, User } from '@db';
+import type { Member, Task, User } from '@/lib/db';
 import { Check, Circle, Loader2, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -140,7 +140,9 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
                     <div className="flex min-w-0 flex-1 items-center gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <div className={`text-sm font-semibold ${isNotRelevant ? 'text-slate-500' : 'text-slate-900'}`}>
+                          <div
+                            className={`text-sm font-semibold ${isNotRelevant ? 'text-slate-500' : 'text-slate-900'}`}
+                          >
                             {task.title}
                           </div>
                           <AutomationIndicator
@@ -149,7 +151,9 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
                           />
                         </div>
                         {task.description && (
-                          <div className={`mt-0.5 line-clamp-1 text-xs ${isNotRelevant ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <div
+                            className={`mt-0.5 line-clamp-1 text-xs ${isNotRelevant ? 'text-slate-400' : 'text-slate-500'}`}
+                          >
                             {task.description}
                           </div>
                         )}

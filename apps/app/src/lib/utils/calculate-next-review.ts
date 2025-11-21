@@ -1,4 +1,4 @@
-import { TaskFrequency } from '@db';
+import { TaskFrequency } from '@/lib/db';
 import { differenceInDays, startOfDay } from 'date-fns';
 
 interface ReviewInfo {

@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { db } from '@/lib/db';
 import {
   Card,
   CardContent,
@@ -7,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@comp/ui/card';
-import { db } from '@db';
 import { ArrowLeft, Check } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';

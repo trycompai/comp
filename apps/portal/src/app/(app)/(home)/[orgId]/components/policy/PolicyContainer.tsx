@@ -1,7 +1,7 @@
 'use client';
 
+import type { Member, Policy } from '@/lib/db';
 import { Button } from '@comp/ui/button';
-import type { Member, Policy } from '@db';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyCarousel } from './PolicyCarousel';

@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client';
-import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
+import { EvidenceAutomation, EvidenceAutomationRun } from '@/lib/db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 

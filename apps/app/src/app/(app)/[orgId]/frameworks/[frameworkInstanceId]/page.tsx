@@ -1,5 +1,5 @@
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import PageWithBreadcrumb from '../../../../../components/pages/PageWithBreadcrumb';

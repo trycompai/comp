@@ -1,5 +1,5 @@
+import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@/lib/db';
 import { openai } from '@ai-sdk/openai';
-import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk';
 import { generateObject, NoObjectGeneratedError } from 'ai';

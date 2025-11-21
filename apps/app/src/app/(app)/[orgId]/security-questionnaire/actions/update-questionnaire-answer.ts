@@ -1,12 +1,12 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
+import { db } from '@/lib/db';
 import { syncManualAnswerToVector } from '@/lib/vector/sync/sync-manual-answer';
 import { logger } from '@/utils/logger';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 const updateAnswerSchema = z.object({
   questionnaireId: z.string(),
@@ -114,10 +114,7 @@ export const updateQuestionnaireAnswer = authActionClient
             questionId: questionAnswerId,
           });
 
-          const syncResult = await syncManualAnswerToVector(
-            manualAnswer.id,
-            activeOrganizationId,
-          );
+          const syncResult = await syncManualAnswerToVector(manualAnswer.id, activeOrganizationId);
 
           if (!syncResult.success) {
             logger.error('❌ Failed to sync manual answer to vector DB', {
@@ -179,4 +176,3 @@ export const updateQuestionnaireAnswer = authActionClient
       };
     }
   });
-

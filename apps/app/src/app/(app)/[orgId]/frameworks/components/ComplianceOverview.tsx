@@ -1,8 +1,8 @@
 'use client';
 
+import { FrameworkInstance } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Progress } from '@comp/ui/progress';
-import { FrameworkInstance } from '@db';
 import { ComplianceProgressChart } from './ComplianceProgressChart';
 import { PoliciesChart } from './PoliciesChart';
 import { TasksChart } from './TasksChart';

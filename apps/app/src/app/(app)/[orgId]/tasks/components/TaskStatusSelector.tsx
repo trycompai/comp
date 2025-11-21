@@ -1,6 +1,6 @@
 'use client';
 
-import type { Task, TaskStatus } from '@db';
+import type { Task, TaskStatus } from '@/lib/db';
 import { TaskStatusIndicator } from './TaskStatusIndicator';
 
 interface TaskStatusSelectorProps {

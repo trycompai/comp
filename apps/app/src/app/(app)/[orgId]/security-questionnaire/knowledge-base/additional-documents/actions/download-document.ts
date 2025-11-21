@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { APP_AWS_KNOWLEDGE_BASE_BUCKET, s3Client } from '@/app/s3';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { z } from 'zod';
@@ -92,4 +92,3 @@ export const downloadKnowledgeBaseDocumentAction = authActionClient
       };
     }
   });
-

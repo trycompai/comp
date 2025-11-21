@@ -1,5 +1,5 @@
+import { db, VendorCategory } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { db, VendorCategory } from '@db';
 import { VendorCategoryChart } from './category-chart';
 
 const VENDOR_CATEGORIES = Object.values(VendorCategory);

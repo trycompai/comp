@@ -1,6 +1,6 @@
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 import { StatusChart } from './status-chart';

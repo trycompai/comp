@@ -1,7 +1,7 @@
 import { env } from '@/env.mjs';
 import { trainingVideos } from '@/lib/data/training-videos';
+import { db, type Departments, type Member, type Role } from '@/lib/db';
 import { InvitePortalEmail, sendEmail } from '@comp/email';
-import { db, type Departments, type Member, type Role } from '@db';
 import { revalidatePath } from 'next/cache';
 
 if (!env.NEXT_PUBLIC_PORTAL_URL) {

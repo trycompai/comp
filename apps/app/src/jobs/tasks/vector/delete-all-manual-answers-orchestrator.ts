@@ -1,5 +1,5 @@
+import { db } from '@/lib/db';
 import { logger, metadata, task } from '@trigger.dev/sdk';
-import { db } from '@db';
 import { deleteManualAnswerTask } from './delete-manual-answer';
 
 const BATCH_SIZE = 50; // Process 50 deletions at a time in parallel
@@ -26,7 +26,7 @@ export const deleteAllManualAnswersOrchestratorTask = task({
     try {
       // Use provided IDs if available, otherwise fetch from DB
       let manualAnswers: Array<{ id: string }>;
-      
+
       if (payload.manualAnswerIds && payload.manualAnswerIds.length > 0) {
         // Use IDs passed directly (avoids race condition with DB deletion)
         manualAnswers = payload.manualAnswerIds.map((id) => ({ id }));
@@ -45,7 +45,7 @@ export const deleteAllManualAnswersOrchestratorTask = task({
             id: true,
           },
         });
-        
+
         logger.info('Fetched manual answers from DB', {
           organizationId: payload.organizationId,
           count: manualAnswers.length,
@@ -164,4 +164,3 @@ export const deleteAllManualAnswersOrchestratorTask = task({
     }
   },
 });
-

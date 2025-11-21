@@ -1,10 +1,9 @@
-import { PrismaClient } from '@prisma/client';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { getDb } from '../../src/index';
 import { frameworkEditorModelSchemas } from './frameworkEditorSchemas';
 
-const prisma = new PrismaClient();
-
+const prisma = getDb({ connectionString: process.env.DATABASE_URL! });
 async function seedJsonFiles(subDirectory: string) {
   const directoryPath = path.join(__dirname, subDirectory);
   console.log(`Starting to seed files from: ${directoryPath}`);

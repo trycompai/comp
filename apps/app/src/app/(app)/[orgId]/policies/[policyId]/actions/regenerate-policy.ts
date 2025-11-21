@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { updatePolicy } from '@/jobs/tasks/onboarding/update-policy';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
 

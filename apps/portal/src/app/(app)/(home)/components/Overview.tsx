@@ -1,6 +1,6 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 // Import types directly from @prisma/client
-import type { Member, Organization, User } from '@db';
+import type { Member, Organization, User } from '@/lib/db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 // Removed EmployeeTasksList import as it's not used directly here

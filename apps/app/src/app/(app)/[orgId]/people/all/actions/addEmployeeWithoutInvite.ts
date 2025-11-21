@@ -1,9 +1,9 @@
 'use server';
 
+import type { Role } from '@/lib/db';
+import { db } from '@/lib/db';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
-import type { Role } from '@db';
-import { db } from '@db';
 import { headers } from 'next/headers';
 
 export const addEmployeeWithoutInvite = async ({

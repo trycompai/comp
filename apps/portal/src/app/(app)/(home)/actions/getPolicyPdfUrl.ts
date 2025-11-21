@@ -1,10 +1,10 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { db } from '@/lib/db';
 import { BUCKET_NAME, s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { db } from '@db';
 import { z } from 'zod';
 
 export const getPolicyPdfUrl = authActionClient

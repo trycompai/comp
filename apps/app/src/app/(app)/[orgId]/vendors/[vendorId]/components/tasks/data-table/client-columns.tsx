@@ -1,6 +1,6 @@
+import { Task, TaskStatus } from '@/lib/db';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
-import { Task, TaskStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import Link from 'next/link';

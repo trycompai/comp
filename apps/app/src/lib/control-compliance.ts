@@ -1,4 +1,4 @@
-import type { PolicyStatus } from '@db';
+import type { PolicyStatus } from '@/lib/db';
 
 // Define the expected structure for policies (typically with selected fields)
 export type SelectedPolicy = {

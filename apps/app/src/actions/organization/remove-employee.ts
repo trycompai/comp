@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -104,7 +104,7 @@ export const removeEmployeeRoleOrMember = authActionClient
 
           // Revalidate
           revalidatePath(`/${organizationId}/people/all`);
-          revalidateTag(`user_${currentUserId}`);
+          revalidateTag(`user_${currentUserId}`, { expire: 0 });
 
           return { success: true, data: { removed: true } };
         } else {
@@ -118,7 +118,7 @@ export const removeEmployeeRoleOrMember = authActionClient
 
           // Revalidate
           revalidatePath(`/${organizationId}/people/all`);
-          revalidateTag(`user_${currentUserId}`);
+          revalidateTag(`user_${currentUserId}`, { expire: 0 });
 
           return {
             success: true,

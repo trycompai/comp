@@ -1,8 +1,8 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { QuestionnaireOverview } from './start_page/components';
@@ -72,11 +72,7 @@ export default async function SecurityQuestionnairePage() {
   const questionnaires = await getQuestionnaires(organizationId);
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Overview', current: true },
-      ]}
-    >
+    <PageWithBreadcrumb breadcrumbs={[{ label: 'Overview', current: true }]}>
       <QuestionnaireOverview questionnaires={questionnaires} />
     </PageWithBreadcrumb>
   );

@@ -1,8 +1,8 @@
-import { logger, task } from '@trigger.dev/sdk';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { batchUpsertEmbeddings } from '@/lib/vector/core/upsert-embedding';
 import { chunkText } from '@/lib/vector/utils/chunk-text';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { logger, task } from '@trigger.dev/sdk';
 import { extractContentFromFile } from './helpers/extract-content-from-file';
 
 /**
@@ -36,9 +36,11 @@ async function extractContentFromKnowledgeBaseDocument(
   fileType: string,
 ): Promise<string> {
   const knowledgeBaseBucket = process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET;
-  
+
   if (!knowledgeBaseBucket) {
-    throw new Error('Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable in Trigger.dev.');
+    throw new Error(
+      'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable in Trigger.dev.',
+    );
   }
 
   const s3Client = createS3Client();
@@ -47,13 +49,13 @@ async function extractContentFromKnowledgeBaseDocument(
     Bucket: knowledgeBaseBucket,
     Key: s3Key,
   });
-  
+
   const response = await s3Client.send(getCommand);
-  
+
   if (!response.Body) {
     throw new Error('Failed to retrieve file from S3');
   }
-  
+
   // Convert stream to buffer
   const chunks: Uint8Array[] = [];
   for await (const chunk of response.Body as any) {
@@ -61,12 +63,12 @@ async function extractContentFromKnowledgeBaseDocument(
   }
   const buffer = Buffer.concat(chunks);
   const base64Data = buffer.toString('base64');
-  
+
   // Use provided fileType or determine from content type
   const detectedFileType = response.ContentType || fileType || 'application/octet-stream';
-  
+
   const content = await extractContentFromFile(base64Data, detectedFileType);
-  
+
   return content;
 }
 
@@ -80,10 +82,7 @@ export const processKnowledgeBaseDocumentTask = task({
     maxAttempts: 3,
   },
   maxDuration: 1000 * 60 * 30, // 30 minutes for large files
-  run: async (payload: {
-    documentId: string;
-    organizationId: string;
-  }) => {
+  run: async (payload: { documentId: string; organizationId: string }) => {
     logger.info('Processing Knowledge Base document', {
       documentId: payload.documentId,
       organizationId: payload.organizationId,
@@ -152,7 +151,9 @@ export const processKnowledgeBaseDocumentTask = task({
       });
 
       // Delete existing embeddings for this document (if any)
-      const { findEmbeddingsForSource } = await import('@/lib/vector/core/find-existing-embeddings');
+      const { findEmbeddingsForSource } = await import(
+        '@/lib/vector/core/find-existing-embeddings'
+      );
       const existingEmbeddings = await findEmbeddingsForSource(
         document.id,
         'knowledge_base_document',
@@ -280,4 +281,3 @@ export const processKnowledgeBaseDocumentTask = task({
     }
   },
 });
-

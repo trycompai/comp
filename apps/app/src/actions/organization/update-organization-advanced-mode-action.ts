@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { authActionClient } from '../safe-action';
@@ -36,7 +36,7 @@ export const updateOrganizationAdvancedModeAction = authActionClient
       path = path.replace(/\/[a-z]{2}\//, '/');
 
       revalidatePath(path);
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, { expire: 0 });
 
       return {
         success: true,

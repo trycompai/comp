@@ -1,9 +1,9 @@
 'use client';
 
+import type { Member, User } from '@/lib/db';
 import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 import { Skeleton } from '@comp/ui/skeleton';
-import type { Member, User } from '@db';
 import { Search } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useTransition } from 'react';

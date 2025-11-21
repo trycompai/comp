@@ -1,5 +1,5 @@
+import { Policy, PolicyStatus } from '@/lib/db';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Policy, PolicyStatus } from '@db';
 import {
   createSearchParamsCache,
   parseAsArrayOf,

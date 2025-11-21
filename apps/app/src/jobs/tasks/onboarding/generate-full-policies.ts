@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import { getOrganizationContext, triggerPolicyUpdates } from './onboard-organization-helpers';
 

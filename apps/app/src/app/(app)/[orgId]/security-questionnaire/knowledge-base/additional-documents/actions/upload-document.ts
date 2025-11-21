@@ -2,7 +2,7 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { APP_AWS_KNOWLEDGE_BASE_BUCKET, s3Client } from '@/app/s3';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
@@ -47,7 +47,8 @@ export const uploadKnowledgeBaseDocumentAction = authActionClient
     if (!APP_AWS_KNOWLEDGE_BASE_BUCKET) {
       return {
         success: false,
-        error: 'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.',
+        error:
+          'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.',
       };
     }
 
@@ -129,4 +130,3 @@ export const uploadKnowledgeBaseDocumentAction = authActionClient
       };
     }
   });
-

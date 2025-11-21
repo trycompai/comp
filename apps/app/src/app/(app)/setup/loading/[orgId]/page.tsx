@@ -1,7 +1,7 @@
 import { SetupLoadingStep } from '@/app/(app)/setup/components/SetupLoadingStep';
 import { getOrganizations } from '@/data/getOrganizations';
+import type { Organization } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 

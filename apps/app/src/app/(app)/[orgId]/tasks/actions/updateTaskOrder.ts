@@ -1,8 +1,8 @@
 'use server';
 
+import { db, TaskStatus } from '@/lib/db';
 import type { ActionResponse } from '@/types/actions';
 import { auth } from '@/utils/auth';
-import { db, TaskStatus } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

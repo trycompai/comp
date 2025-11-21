@@ -1,7 +1,7 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

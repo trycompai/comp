@@ -1,8 +1,8 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 

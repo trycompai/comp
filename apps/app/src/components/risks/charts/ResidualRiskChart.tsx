@@ -1,7 +1,7 @@
 'use client';
 
 import { updateResidualRiskEnumAction } from '@/actions/risk/update-residual-risk-enum-action';
-import type { Risk } from '@db';
+import type { Risk } from '@/lib/db';
 import { RiskMatrixChart } from './RiskMatrixChart';
 
 interface ResidualRiskChartProps {

@@ -1,4 +1,4 @@
-import { CommentEntityType } from '@db';
+import { CommentEntityType } from '@/lib/db';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {

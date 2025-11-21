@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { IntegrationsGrid } from './components/IntegrationsGrid';
 
 export default async function IntegrationsPage() {
@@ -23,8 +23,8 @@ export default async function IntegrationsPage() {
           <span className="text-2xl text-muted-foreground/40 font-light">∞</span>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
-          Connect to any system through the AI agent. This directory shows common patterns—the
-          agent can integrate with anything that has an API or web interface.
+          Connect to any system through the AI agent. This directory shows common patterns—the agent
+          can integrate with anything that has an API or web interface.
         </p>
       </div>
 

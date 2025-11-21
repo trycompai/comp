@@ -1,4 +1,4 @@
-import { VendorStatus, db } from '@db';
+import { VendorStatus, db } from '@/lib/db';
 import { logger, metadata, queue, task } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {

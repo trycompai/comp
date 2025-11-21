@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -60,7 +60,7 @@ export const archivePolicyAction = authActionClient
       revalidatePath(`/${activeOrganizationId}/policies/${id}`);
       revalidatePath(`/${activeOrganizationId}/policies/all`);
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidateTag('policies');
+      revalidateTag('policies', { expire: 0 });
 
       return {
         success: true,

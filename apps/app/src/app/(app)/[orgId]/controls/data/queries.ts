@@ -1,7 +1,7 @@
 import 'server-only';
 
+import { db, Prisma } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db, Prisma } from '@db';
 import { headers } from 'next/headers';
 // import { cache } from "react"; // Already handled: ensure it stays removed or remove if re-introduced
 import type { GetControlSchema } from './validations';

@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@/lib/db';
 // Remove unused Role import if not needed elsewhere
 // import { Role } from "@comp/db/types";
 import { revalidatePath, revalidateTag } from 'next/cache';
@@ -74,7 +74,7 @@ export const revokeInvitation = authActionClient
       });
 
       revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`);
+      revalidateTag(`user_${ctx.user.id}`, { expire: 0 });
 
       return {
         success: true,

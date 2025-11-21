@@ -1,6 +1,6 @@
 'use client';
 
-import type { Policy } from '@db';
+import type { Policy } from '@/lib/db';
 import type { JSONContent } from '@tiptap/react';
 import { PolicyEditor } from '../../components/policy/PolicyEditor';
 import { PortalPdfViewer } from '../../components/policy/PortalPdfViewer';

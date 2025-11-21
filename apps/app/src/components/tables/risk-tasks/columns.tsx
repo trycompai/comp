@@ -2,8 +2,8 @@
 import { AssignedUser } from '@/components/assigned-user';
 import { StatusDate } from '@/components/status-date';
 import { StatusIndicator } from '@/components/status-indicator';
+import type { RiskStatus } from '@/lib/db';
 import { Button } from '@comp/ui/button';
-import type { RiskStatus } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

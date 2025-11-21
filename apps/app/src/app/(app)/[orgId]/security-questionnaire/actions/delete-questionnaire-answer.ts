@@ -1,10 +1,9 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
-import { Prisma } from '@prisma/client';
-import { headers } from 'next/headers';
+import { db, Prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const deleteAnswerSchema = z.object({
@@ -115,4 +114,3 @@ export const deleteQuestionnaireAnswer = authActionClient
       };
     }
   });
-

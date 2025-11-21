@@ -1,7 +1,7 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import 'server-only';
 
@@ -10,7 +10,10 @@ export const getQuestionnaires = async (organizationId: string) => {
     headers: await headers(),
   });
 
-  if (!session?.session?.activeOrganizationId || session.session.activeOrganizationId !== organizationId) {
+  if (
+    !session?.session?.activeOrganizationId ||
+    session.session.activeOrganizationId !== organizationId
+  ) {
     return [];
   }
 
@@ -42,4 +45,3 @@ export const getQuestionnaires = async (organizationId: string) => {
 
   return questionnaires;
 };
-

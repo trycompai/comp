@@ -1,7 +1,7 @@
 import { binaryForRuntime, BuildContext, BuildExtension, BuildManifest } from '@trigger.dev/build';
 import assert from 'node:assert';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync } from 'node:fs';
 import { cp, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
@@ -114,16 +114,25 @@ export class PrismaExtension implements BuildExtension {
     const commands: string[] = [];
     const env: Record<string, string | undefined> = {};
 
+    // Determine if we are copying a file or a directory
+    const isDirectory = lstatSync(schemaPath).isDirectory();
+    
     // Copy the prisma schema from the published package to the build output path
-    const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
+    // If it's a directory, we copy to prisma/schema
+    // If it's a file, we copy to prisma/schema.prisma
+    const schemaDestinationPath = isDirectory 
+      ? join(manifest.outputPath, 'prisma', 'schema')
+      : join(manifest.outputPath, 'prisma', 'schema.prisma');
+      
     context.logger.debug(
       `Copying the prisma schema from ${schemaPath} to ${schemaDestinationPath}`,
     );
-    await cp(schemaPath, schemaDestinationPath);
+    await cp(schemaPath, schemaDestinationPath, { recursive: true });
 
     // Add prisma generate command to generate the client from the copied schema
+    const generateSchemaFlag = isDirectory ? './prisma/schema' : './prisma/schema.prisma';
     commands.push(
-      `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js generate --schema=./prisma/schema.prisma`,
+      `${binaryForRuntime(manifest.runtime)} node_modules/prisma/build/index.js generate --schema=${generateSchemaFlag}`,
     );
 
     // Only handle migrations if requested
@@ -185,10 +194,16 @@ export class PrismaExtension implements BuildExtension {
     schemaSourcePath: string,
   ): Promise<void> {
     const schemaDir = resolve(context.workingDir, 'prisma');
-    const schemaDestinationPath = resolve(schemaDir, 'schema.prisma');
-
     await mkdir(schemaDir, { recursive: true });
-    await cp(schemaSourcePath, schemaDestinationPath);
+
+    const isDirectory = lstatSync(schemaSourcePath).isDirectory();
+    
+    // For local copy, we can copy to prisma/schema (if directory) or prisma/schema.prisma
+    const schemaDestinationPath = isDirectory
+      ? resolve(schemaDir, 'schema')
+      : resolve(schemaDir, 'schema.prisma');
+
+    await cp(schemaSourcePath, schemaDestinationPath, { recursive: true });
 
     const clientEntryPoint = resolve(context.workingDir, 'node_modules/.prisma/client/default.js');
 
@@ -216,6 +231,10 @@ export class PrismaExtension implements BuildExtension {
     schemaPath: string,
   ): Promise<void> {
     return new Promise((resolvePromise, rejectPromise) => {
+      // If schemaPath is a directory, we pass it directly? Or do we need to find schema.prisma inside?
+      // Prisma v7 supports directory.
+      // However, resolve(schemaDir, 'schema') might be used as --schema argument.
+      
       const child = spawn(prismaBinary, ['generate', `--schema=${schemaPath}`], {
         cwd: context.workingDir,
         env: {
@@ -274,6 +293,7 @@ export class PrismaExtension implements BuildExtension {
 
       let current = start;
       while (true) {
+        candidates.add(resolve(current, 'node_modules/@trycompai/db/prisma/schema'));
         candidates.add(resolve(current, 'node_modules/@trycompai/db/dist/schema.prisma'));
         const parent = dirname(current);
         if (parent === current) {
@@ -286,6 +306,8 @@ export class PrismaExtension implements BuildExtension {
     addNodeModuleCandidates(context.workingDir);
     addNodeModuleCandidates(context.workspaceDir);
 
+    candidates.add(resolve(context.workingDir, '../../packages/db/prisma/schema'));
+    candidates.add(resolve(context.workingDir, '../packages/db/prisma/schema'));
     candidates.add(resolve(context.workingDir, '../../packages/db/dist/schema.prisma'));
     candidates.add(resolve(context.workingDir, '../packages/db/dist/schema.prisma'));
 

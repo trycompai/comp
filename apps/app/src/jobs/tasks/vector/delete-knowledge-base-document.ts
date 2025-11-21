@@ -1,7 +1,7 @@
-import { logger, task } from '@trigger.dev/sdk';
-import { findEmbeddingsForSource } from '@/lib/vector/core/find-existing-embeddings';
+import { db } from '@/lib/db';
 import { vectorIndex } from '@/lib/vector/core/client';
-import { db } from '@db';
+import { findEmbeddingsForSource } from '@/lib/vector/core/find-existing-embeddings';
+import { logger, task } from '@trigger.dev/sdk';
 
 /**
  * Task to delete all embeddings for a Knowledge Base document from vector database
@@ -11,10 +11,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
   retry: {
     maxAttempts: 3,
   },
-  run: async (payload: {
-    documentId: string;
-    organizationId: string;
-  }) => {
+  run: async (payload: { documentId: string; organizationId: string }) => {
     logger.info('Deleting Knowledge Base document from vector DB', {
       documentId: payload.documentId,
       organizationId: payload.organizationId,
@@ -72,7 +69,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
       }
 
       const idsToDelete = existingEmbeddings.map((e) => e.id);
-      
+
       if (idsToDelete.length === 0) {
         logger.info('No embeddings to delete for document', {
           documentId: payload.documentId,
@@ -87,7 +84,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
       // Delete all embeddings in batches (Upstash Vector supports batch delete)
       const batchSize = 100;
       let deletedCount = 0;
-      
+
       for (let i = 0; i < idsToDelete.length; i += batchSize) {
         const batch = idsToDelete.slice(i, i + batchSize);
         try {
@@ -128,7 +125,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
       // Retry deletion up to 3 times if chunks remain
       let retryAttempt = 0;
       const maxRetries = 3;
-      
+
       while (remainingEmbeddings.length > 0 && retryAttempt < maxRetries) {
         retryAttempt++;
         logger.warn('Some embeddings were not deleted, attempting retry deletion', {
@@ -138,10 +135,10 @@ export const deleteKnowledgeBaseDocumentTask = task({
           retryAttempt,
           maxRetries,
         });
-        
+
         // Wait before retry to allow propagation
         await new Promise((resolve) => setTimeout(resolve, 2000 * retryAttempt)); // Increasing delay
-        
+
         // Try deleting remaining chunks
         const remainingIds = remainingEmbeddings.map((e) => e.id);
         try {
@@ -152,7 +149,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
             await vectorIndex.delete(batch);
             deletedCount += batch.length;
           }
-          
+
           logger.info('Deleted remaining embeddings in retry attempt', {
             documentId: payload.documentId,
             deletedCount: remainingIds.length,
@@ -165,7 +162,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
             error: retryError instanceof Error ? retryError.message : 'Unknown error',
           });
         }
-        
+
         // Query again to check if deletion was successful
         await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for propagation
         remainingEmbeddings = await findEmbeddingsForSource(
@@ -261,4 +258,3 @@ export const deleteKnowledgeBaseDocumentTask = task({
     }
   },
 });
-

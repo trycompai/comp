@@ -1,6 +1,6 @@
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AcceptInvite } from '../../setup/components/accept-invite';

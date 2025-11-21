@@ -1,9 +1,9 @@
 import { track } from '@/app/posthog';
 import { env } from '@/env.mjs';
+import { AuditLogEntityType, db } from '@/lib/db';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import { client } from '@comp/kv';
-import { AuditLogEntityType, db } from '@db';
 import { Ratelimit } from '@upstash/ratelimit';
 import { DEFAULT_SERVER_ERROR_MESSAGE, createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
@@ -126,7 +126,7 @@ export const authActionClient = actionClientWithMeta
   })
   .use(async ({ next, metadata, clientInput, ctx }) => {
     const headersList = await headers();
-    
+
     // Use user and session from previous middleware for consistency
     // Only fetch activeMember as it may require fresh data
     if (!ctx.user || !ctx.session) {

@@ -3,7 +3,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { Vercel } from '@vercel/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { env } from 'node:process';
@@ -101,7 +101,7 @@ export const customDomainAction = authActionClient
       });
 
       revalidatePath(`/${activeOrganizationId}/settings/trust-portal`);
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, { expire: 0 });
 
       return {
         success: true,

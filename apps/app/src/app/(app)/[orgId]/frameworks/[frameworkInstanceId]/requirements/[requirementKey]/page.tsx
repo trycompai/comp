@@ -1,7 +1,7 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import type { FrameworkEditorRequirement } from '@/lib/db';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import type { FrameworkEditorRequirement } from '@db';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSingleFrameworkInstanceWithControls } from '../../../data/getSingleFrameworkInstanceWithControls';

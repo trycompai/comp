@@ -1,6 +1,6 @@
 'use client';
 
-import type { Onboarding } from '@db';
+import type { Onboarding } from '@/lib/db';
 import { usePathname } from 'next/navigation';
 import { OnboardingTracker } from './OnboardingTracker';
 

@@ -1,7 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db, TaskStatus } from '@db';
+import { db, TaskStatus } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 

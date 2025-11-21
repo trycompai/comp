@@ -6,7 +6,7 @@ import {
   findCommentAuthor,
   type PolicyContext,
 } from '@/jobs/tasks/onboarding/onboard-organization-helpers';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
 

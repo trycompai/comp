@@ -1,10 +1,10 @@
 'use client';
 
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@/lib/db';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
-import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

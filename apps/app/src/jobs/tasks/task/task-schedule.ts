@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
 

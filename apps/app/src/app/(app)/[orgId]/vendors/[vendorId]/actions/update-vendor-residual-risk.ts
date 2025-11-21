@@ -1,8 +1,8 @@
 'use server';
 
+import { db, Impact, Likelihood } from '@/lib/db';
 import { appErrors } from '@/lib/errors';
 import type { ActionResponse } from '@/types/actions';
-import { db, Impact, Likelihood } from '@db';
 import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';

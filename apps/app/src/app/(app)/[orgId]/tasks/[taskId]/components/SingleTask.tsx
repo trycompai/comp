@@ -2,6 +2,15 @@
 
 import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
 import {
+  CommentEntityType,
+  EvidenceAutomation,
+  EvidenceAutomationRun,
+  type Control,
+  type Member,
+  type Task,
+  type User,
+} from '@/lib/db';
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -17,15 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import {
-  CommentEntityType,
-  EvidenceAutomation,
-  EvidenceAutomationRun,
-  type Control,
-  type Member,
-  type Task,
-  type User,
-} from '@db';
 import { ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';

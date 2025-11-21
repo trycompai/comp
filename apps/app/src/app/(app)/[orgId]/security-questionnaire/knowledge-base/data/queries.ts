@@ -1,7 +1,7 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import 'server-only';
 
@@ -10,7 +10,10 @@ export const getPublishedPolicies = async (organizationId: string) => {
     headers: await headers(),
   });
 
-  if (!session?.session?.activeOrganizationId || session.session.activeOrganizationId !== organizationId) {
+  if (
+    !session?.session?.activeOrganizationId ||
+    session.session.activeOrganizationId !== organizationId
+  ) {
     return [];
   }
 
@@ -40,7 +43,10 @@ export const getContextEntries = async (organizationId: string) => {
     headers: await headers(),
   });
 
-  if (!session?.session?.activeOrganizationId || session.session.activeOrganizationId !== organizationId) {
+  if (
+    !session?.session?.activeOrganizationId ||
+    session.session.activeOrganizationId !== organizationId
+  ) {
     return [];
   }
 
@@ -72,7 +78,10 @@ export const getKnowledgeBaseDocuments = async (organizationId: string) => {
     headers: await headers(),
   });
 
-  if (!session?.session?.activeOrganizationId || session.session.activeOrganizationId !== organizationId) {
+  if (
+    !session?.session?.activeOrganizationId ||
+    session.session.activeOrganizationId !== organizationId
+  ) {
     return [];
   }
 
@@ -104,7 +113,10 @@ export const getManualAnswers = async (organizationId: string) => {
     headers: await headers(),
   });
 
-  if (!session?.session?.activeOrganizationId || session.session.activeOrganizationId !== organizationId) {
+  if (
+    !session?.session?.activeOrganizationId ||
+    session.session.activeOrganizationId !== organizationId
+  ) {
     return [];
   }
 
@@ -128,4 +140,3 @@ export const getManualAnswers = async (organizationId: string) => {
 
   return manualAnswers;
 };
-

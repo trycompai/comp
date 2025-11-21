@@ -1,5 +1,5 @@
+import { Departments, Vendor, VendorStatus } from '@/lib/db';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Departments, Vendor, VendorStatus } from '@db';
 import {
   createSearchParamsCache,
   parseAsInteger,

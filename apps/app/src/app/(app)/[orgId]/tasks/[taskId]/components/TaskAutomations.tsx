@@ -1,9 +1,9 @@
 'use client';
 
+import { EvidenceAutomation, EvidenceAutomationRun } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { Button } from '@comp/ui/button';
 import { Separator } from '@comp/ui/separator';
-import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowRight, Brain, CheckCircle2, Loader2, Plus, TrendingUp, XCircle } from 'lucide-react';
 import Link from 'next/link';

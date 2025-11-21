@@ -1,10 +1,10 @@
 'use client';
 
 import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
+import type { CommentEntityType } from '@/lib/db';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Textarea } from '@comp/ui/textarea';
-import type { CommentEntityType } from '@db';
 import { FileIcon, Loader2, Paperclip, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import type React from 'react';

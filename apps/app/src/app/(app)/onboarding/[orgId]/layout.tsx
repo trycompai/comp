@@ -1,7 +1,7 @@
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { MinimalHeader } from '@/components/layout/MinimalHeader';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { OnboardingSidebar } from '../../setup/components/OnboardingSidebar';

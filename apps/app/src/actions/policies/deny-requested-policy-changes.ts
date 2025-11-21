@@ -1,6 +1,6 @@
 'use server';
 
-import { db, PolicyStatus } from '@db';
+import { db, PolicyStatus } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -86,7 +86,7 @@ export const denyRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies');
+      revalidateTag('policies', { expire: 0 });
 
       return {
         success: true,

@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -53,7 +53,7 @@ export const deletePolicyAction = authActionClient
 
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/policies/all`);
-      revalidateTag('policies');
+      revalidateTag('policies', { expire: 0 });
     } catch (error) {
       console.error(error);
       return {

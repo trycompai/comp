@@ -1,8 +1,8 @@
 'use client';
 
+import type { Member, Risk, User } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import type { Member, Risk, User } from '@db';
 import { PencilIcon } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { UpdateRiskOverview } from '../forms/risks/risk-overview';

@@ -1,6 +1,6 @@
 'use server';
 
-import { db, Departments, Role } from '@db';
+import { db, Departments, Role } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 // Adjust safe-action import for colocalized structure
@@ -149,7 +149,7 @@ export const updateMemberRole = authActionClient
       }
 
       revalidatePath(`/${orgId}/settings/users`);
-      revalidateTag(`user_${requestingUserId}`);
+      revalidateTag(`user_${requestingUserId}`, { expire: 0 });
 
       return {
         success: true,

@@ -1,11 +1,11 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { revalidatePath } from 'next/cache';
-import { tasks } from '@trigger.dev/sdk';
+import { db } from '@/lib/db';
 import { logger } from '@/utils/logger';
+import { tasks } from '@trigger.dev/sdk';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 // Empty schema since this action doesn't need input
@@ -102,4 +102,3 @@ export const deleteAllManualAnswers = authActionClient
       };
     }
   });
-

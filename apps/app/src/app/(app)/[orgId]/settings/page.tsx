@@ -2,8 +2,8 @@ import { DeleteOrganization } from '@/components/forms/organization/delete-organ
 import { UpdateOrganizationAdvancedMode } from '@/components/forms/organization/update-organization-advanced-mode';
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { cache } from 'react';

@@ -4,11 +4,11 @@ console.log('[uploadFile] Upload action module is being loaded...');
 
 console.log('[uploadFile] Importing auth and logger...');
 import { BUCKET_NAME, s3Client } from '@/app/s3';
+import { AttachmentEntityType, AttachmentType, db } from '@/lib/db';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { AttachmentEntityType, AttachmentType, db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';

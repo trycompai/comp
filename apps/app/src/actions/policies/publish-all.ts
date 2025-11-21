@@ -1,7 +1,7 @@
 'use server';
 
 import { sendPublishAllPoliciesEmail } from '@/jobs/tasks/email/publish-all-policies-email';
-import { db, PolicyStatus, Role } from '@db';
+import { db, PolicyStatus, Role } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -104,10 +104,7 @@ export const publishAllPoliciesAction = authActionClient
         where: {
           organizationId: parsedInput.organizationId,
           isActive: true,
-          OR: [
-            { role: { contains: Role.employee } },
-            { role: { contains: Role.contractor } },
-          ],
+          OR: [{ role: { contains: Role.employee } }, { role: { contains: Role.contractor } }],
         },
         include: {
           user: {

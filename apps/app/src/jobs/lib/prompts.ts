@@ -1,4 +1,4 @@
-import { FrameworkEditorFramework, FrameworkEditorPolicyTemplate } from '@db';
+import { FrameworkEditorFramework, FrameworkEditorPolicyTemplate } from '@/lib/db';
 import { logger } from '@trigger.dev/sdk';
 
 export const generatePrompt = ({

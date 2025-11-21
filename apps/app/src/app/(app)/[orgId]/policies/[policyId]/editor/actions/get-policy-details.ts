@@ -1,8 +1,8 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { appErrors, policyDetailsInputSchema } from '../types';
 

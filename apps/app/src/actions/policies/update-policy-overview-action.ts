@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { updatePolicyOverviewSchema } from '../schema';

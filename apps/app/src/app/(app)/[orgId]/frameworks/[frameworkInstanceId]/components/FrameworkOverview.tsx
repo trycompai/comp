@@ -1,5 +1,6 @@
 'use client';
 
+import { Control, Task } from '@/lib/db';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
@@ -11,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Progress } from '@comp/ui/progress';
-import { Control, Task } from '@db';
 import { BarChart3, MoreVertical, Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { getControlStatus } from '../../lib/utils';

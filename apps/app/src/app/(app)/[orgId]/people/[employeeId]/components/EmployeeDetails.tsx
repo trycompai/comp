@@ -1,9 +1,9 @@
 'use client';
 
+import type { Departments, Member, User } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form } from '@comp/ui/form';
-import type { Departments, Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

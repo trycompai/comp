@@ -1,6 +1,7 @@
 'use client';
 
 import { deleteControlAction } from '@/app/(app)/[orgId]/controls/[controlId]/actions/delete-control';
+import { Control } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -11,7 +12,6 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Form } from '@comp/ui/form';
-import { Control } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

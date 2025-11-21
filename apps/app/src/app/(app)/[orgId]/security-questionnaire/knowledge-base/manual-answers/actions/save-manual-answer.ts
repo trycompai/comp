@@ -1,13 +1,13 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { syncManualAnswerToVector } from '@/lib/vector/sync/sync-manual-answer';
+import { db } from '@/lib/db';
 import { countEmbeddings, listManualAnswerEmbeddings } from '@/lib/vector';
+import { syncManualAnswerToVector } from '@/lib/vector/sync/sync-manual-answer';
 import { logger } from '@/utils/logger';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 const saveManualAnswerSchema = z.object({
   question: z.string().min(1),
@@ -67,7 +67,7 @@ export const saveManualAnswer = authActionClient
 
       // Sync to vector DB SYNCHRONOUSLY (fast ~1-2 sec)
       // This ensures manual answers are immediately available for answer generation
-      
+
       // Count embeddings BEFORE sync
       const countBefore = await countEmbeddings(activeOrganizationId, 'manual_answer');
       logger.info('📊 Manual answer embeddings count BEFORE sync', {
@@ -76,10 +76,7 @@ export const saveManualAnswer = authActionClient
         bySourceType: countBefore.bySourceType,
       });
 
-      const syncResult = await syncManualAnswerToVector(
-        manualAnswer.id,
-        activeOrganizationId,
-      );
+      const syncResult = await syncManualAnswerToVector(manualAnswer.id, activeOrganizationId);
 
       if (!syncResult.success) {
         // Log error but don't fail the operation
@@ -139,4 +136,3 @@ export const saveManualAnswer = authActionClient
       };
     }
   });
-

@@ -1,7 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
@@ -53,7 +53,7 @@ export const deleteFrameworkAction = authActionClient
 
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/frameworks`);
-      revalidateTag('frameworks');
+      revalidateTag('frameworks', { expire: 0 });
 
       return {
         success: true,

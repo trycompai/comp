@@ -1,10 +1,10 @@
 'use client';
 
+import type { Member, Task, User } from '@/lib/db';
 import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
-import type { Member, Task, User } from '@db';
 import { PencilIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useQueryState } from 'nuqs';

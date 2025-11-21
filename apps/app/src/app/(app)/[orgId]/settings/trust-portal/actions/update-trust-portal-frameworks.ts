@@ -1,7 +1,7 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 
@@ -89,5 +89,5 @@ export async function updateTrustPortalFrameworks({
   });
 
   revalidatePath(`/${orgId}/settings/trust-portal`);
-  revalidateTag(`organization_${orgId}`);
+  revalidateTag(`organization_${orgId}`, { expire: 0 });
 }

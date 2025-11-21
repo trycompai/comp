@@ -1,6 +1,6 @@
 'use client';
 
-import type { Role } from '@db';
+import type { Role } from '@/lib/db';
 import * as React from 'react';
 
 import { Dialog, DialogContent } from '@comp/ui/dialog';

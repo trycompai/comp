@@ -1,12 +1,12 @@
 'use client';
 
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
+import { Departments, Member, RiskStatus, User } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Skeleton } from '@comp/ui/skeleton';
-import { Departments, Member, RiskStatus, User } from '@db';
 import { Plus, Search, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useCallback, useTransition } from 'react';

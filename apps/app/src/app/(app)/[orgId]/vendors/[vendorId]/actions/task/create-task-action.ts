@@ -3,7 +3,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { createVendorTaskSchema } from '../schema';
 
@@ -43,7 +43,7 @@ export const createVendorTaskAction = authActionClient
       });
 
       revalidatePath(`/${activeOrganizationId}/vendor/${vendorId}`);
-      revalidateTag(`vendor_${activeOrganizationId}`);
+      revalidateTag(`vendor_${activeOrganizationId}`, { expire: 0 });
 
       return {
         success: true,

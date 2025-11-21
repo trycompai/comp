@@ -1,5 +1,5 @@
+import { db } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { db } from '@db';
 import { StatusChart } from './status-chart';
 interface Props {
   organizationId: string;

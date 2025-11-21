@@ -2,7 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
-import type { AttachmentType } from '@db';
+import type { AttachmentType } from '@/lib/db';
 import { useCallback } from 'react';
 
 // Types for attachments API

@@ -1,10 +1,10 @@
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { getValidFilters } from '@/lib/data-table';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { SearchParams } from 'nuqs';
+import { SearchParams } from 'nuqs/server';
 import { ControlsTable } from './components/controls-table';
 import { getControls } from './data/queries';
 import { searchParamsCache } from './data/validations';

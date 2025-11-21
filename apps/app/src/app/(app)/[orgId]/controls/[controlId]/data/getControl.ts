@@ -1,5 +1,5 @@
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 
 export const getControl = async (id: string) => {

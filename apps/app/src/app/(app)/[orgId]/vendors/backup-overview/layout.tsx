@@ -1,7 +1,7 @@
 import { AppOnboarding } from '@/components/app-onboarding';
+import { db } from '@/lib/db';
 import { getServersideSession } from '@/lib/get-session';
 import { SecondaryMenu } from '@comp/ui/secondary-menu';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { Suspense, cache } from 'react';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';

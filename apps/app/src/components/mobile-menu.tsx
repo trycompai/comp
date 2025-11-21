@@ -1,9 +1,9 @@
 'use client';
 
+import type { Organization } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
-import type { Organization } from '@db';
 import { useState } from 'react';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';

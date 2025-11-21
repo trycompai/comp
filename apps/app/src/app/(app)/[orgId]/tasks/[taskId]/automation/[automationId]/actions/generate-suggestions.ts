@@ -1,7 +1,7 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { groq } from '@ai-sdk/groq';
-import { db } from '@db';
 import { generateObject, NoObjectGeneratedError } from 'ai';
 import { performance } from 'perf_hooks';
 import { z } from 'zod';

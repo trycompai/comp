@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 
 export async function getPublishedPoliciesScore(organizationId: string) {
   const allPolicies = await db.policy.findMany({

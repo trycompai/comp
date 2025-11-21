@@ -1,4 +1,4 @@
-import { Departments, type Member, type Session, type User } from '@db';
+import { Departments, type Member, type Session, type User } from '@/lib/db';
 import { vi } from 'vitest';
 
 // Mock auth API structure

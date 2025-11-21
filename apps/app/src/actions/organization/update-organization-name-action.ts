@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { organizationNameSchema } from '../schema';
@@ -37,7 +37,7 @@ export const updateOrganizationNameAction = authActionClient
       });
 
       revalidatePath('/settings');
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, { expire: 0 });
 
       return {
         success: true,

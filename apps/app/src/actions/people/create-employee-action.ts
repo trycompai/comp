@@ -1,7 +1,7 @@
 'use server';
 
+import { Prisma } from '@/lib/db';
 import { completeEmployeeCreation } from '@/lib/db/employee';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { authActionClient } from '../safe-action';
 import { createEmployeeSchema } from '../schema';
 import type { ActionResponse } from '../types';
@@ -42,7 +42,7 @@ export const createEmployeeAction = authActionClient
     } catch (error) {
       console.error('Error creating employee:', error);
 
-      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         return {
           success: false,
           error: 'An employee with this email already exists in your organization',

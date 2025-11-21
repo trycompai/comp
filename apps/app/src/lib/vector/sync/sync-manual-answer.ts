@@ -1,9 +1,9 @@
 import 'server-only';
 
-import { upsertEmbedding } from '../core/upsert-embedding';
-import { vectorIndex } from '../core/client';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { logger } from '@/utils/logger';
+import { vectorIndex } from '../core/client';
+import { upsertEmbedding } from '../core/upsert-embedding';
 
 /**
  * Syncs a single manual answer to vector database SYNCHRONOUSLY
@@ -16,12 +16,15 @@ export async function syncManualAnswerToVector(
 ): Promise<{ success: boolean; error?: string; embeddingId?: string }> {
   // Check if vectorIndex is configured
   if (!vectorIndex) {
-    logger.error('❌ Upstash Vector not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN', {
-      manualAnswerId,
-      organizationId,
-      hasUrl: !!process.env.UPSTASH_VECTOR_REST_URL,
-      hasToken: !!process.env.UPSTASH_VECTOR_REST_TOKEN,
-    });
+    logger.error(
+      '❌ Upstash Vector not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN',
+      {
+        manualAnswerId,
+        organizationId,
+        hasUrl: !!process.env.UPSTASH_VECTOR_REST_URL,
+        hasToken: !!process.env.UPSTASH_VECTOR_REST_TOKEN,
+      },
+    );
     return { success: false, error: 'Vector DB not configured' };
   }
 
@@ -43,7 +46,7 @@ export async function syncManualAnswerToVector(
 
     // Create embedding ID: manual_answer_{id}
     const embeddingId = `manual_answer_${manualAnswerId}`;
-    
+
     // Combine question and answer for better semantic search
     const text = `${manualAnswer.question}\n\n${manualAnswer.answer}`;
 
@@ -72,9 +75,9 @@ export async function syncManualAnswerToVector(
         'manual_answer',
         organizationId,
       );
-      
+
       const wasFound = foundEmbeddings.some((e) => e.id === embeddingId);
-      
+
       logger.info('✅ Successfully synced manual answer to vector DB', {
         manualAnswerId,
         organizationId,
@@ -139,7 +142,7 @@ export async function deleteManualAnswerFromVector(
     // Find existing embeddings for this manual answer
     // We need to search for embeddings with this sourceId
     const embeddingId = `manual_answer_${manualAnswerId}`;
-    
+
     // Try to delete directly by ID (most efficient)
     try {
       await vectorIndex.delete([embeddingId]);
@@ -171,4 +174,3 @@ export async function deleteManualAnswerFromVector(
     };
   }
 }
-

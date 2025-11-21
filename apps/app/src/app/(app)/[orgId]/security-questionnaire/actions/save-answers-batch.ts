@@ -1,9 +1,9 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
-import { headers } from 'next/headers';
+import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const saveAnswersBatchSchema = z.object({
@@ -74,9 +74,7 @@ export const saveAnswersBatchAction = authActionClient
         },
       });
 
-      const existingQuestionsMap = new Map(
-        existingQuestions.map((q) => [q.questionIndex, q]),
-      );
+      const existingQuestionsMap = new Map(existingQuestions.map((q) => [q.questionIndex, q]));
 
       // Update or create answers
       const updatePromises = answers.map(async (answerData) => {
@@ -152,4 +150,3 @@ export const saveAnswersBatchAction = authActionClient
       };
     }
   });
-

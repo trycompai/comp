@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db, Impact, Likelihood } from '@db';
+import { db, Impact, Likelihood } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { createRiskSchema } from '../schema';
@@ -40,7 +40,7 @@ export const createRiskAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/register`);
-      revalidateTag(`risk_${session.activeOrganizationId}`);
+      revalidateTag(`risk_${session.activeOrganizationId}`, { expire: 0 });
 
       return {
         success: true,

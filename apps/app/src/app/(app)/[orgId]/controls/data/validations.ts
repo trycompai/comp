@@ -1,5 +1,5 @@
+import { Control } from '@/lib/db';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Control } from '@db';
 import {
   createSearchParamsCache,
   parseAsArrayOf,

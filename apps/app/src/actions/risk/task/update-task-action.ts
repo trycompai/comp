@@ -2,8 +2,8 @@
 
 'use server';
 
-import type { TaskStatus } from '@db';
-import { db } from '@db';
+import type { TaskStatus } from '@/lib/db';
+import { db } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../../safe-action';
 import { updateTaskSchema } from '../../schema';
@@ -53,7 +53,7 @@ export const updateTaskAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}`);
       revalidatePath(`/${session.activeOrganizationId}/risk/${id}/tasks/${id}`);
-      revalidateTag('risks');
+      revalidateTag('risks', { expire: 0 });
 
       return { success: true };
     } catch (error) {

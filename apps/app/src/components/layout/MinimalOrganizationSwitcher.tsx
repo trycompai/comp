@@ -1,6 +1,7 @@
 'use client';
 
 import { changeOrganizationAction } from '@/actions/change-organization';
+import type { Organization } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import {
   DropdownMenu,
@@ -9,7 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';

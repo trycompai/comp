@@ -1,7 +1,7 @@
 'use server';
 
 import { sendNewPolicyEmail } from '@/jobs/tasks/email/new-policy-email';
-import { db, PolicyStatus } from '@db';
+import { db, PolicyStatus } from '@/lib/db';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
@@ -149,7 +149,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies');
+      revalidateTag('policies', { expire: 0 });
 
       return {
         success: true,

@@ -1,8 +1,8 @@
 'use server';
 
+import type { Organization } from '@/lib/db';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import type { Organization } from '@db';
-import { db } from '@db';
 import { headers } from 'next/headers';
 
 export async function getCurrentOrganization({

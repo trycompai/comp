@@ -1,8 +1,8 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { AppOnboarding } from '@/components/app-onboarding';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { QuestionnaireParser } from '../components/QuestionnaireParser';
@@ -95,4 +95,3 @@ const checkPublishedPolicies = async (organizationId: string): Promise<boolean> 
 
   return count > 0;
 };
-

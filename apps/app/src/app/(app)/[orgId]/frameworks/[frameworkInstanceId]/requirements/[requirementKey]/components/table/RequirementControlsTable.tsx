@@ -3,8 +3,8 @@
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { useDataTable } from '@/hooks/use-data-table';
+import type { Control, Task } from '@/lib/db';
 import { Input } from '@comp/ui/input';
-import type { Control, Task } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

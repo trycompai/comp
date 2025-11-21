@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma"],
+      "@db": ["../../packages/db/src/index.ts"],
       "@comp/email": ["../../packages/email/index.ts"],
       "@comp/email/*": ["../../packages/email/*"],
       "@comp/kv": ["../../packages/kv/src/index.ts"],

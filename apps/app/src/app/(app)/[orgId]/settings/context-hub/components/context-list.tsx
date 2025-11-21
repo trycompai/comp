@@ -1,6 +1,7 @@
 'use client';
 
 import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
+import type { Context } from '@/lib/db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +30,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@comp/ui/dialog';
-import type { Context } from '@db';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

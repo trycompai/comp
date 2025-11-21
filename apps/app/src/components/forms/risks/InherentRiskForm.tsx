@@ -2,10 +2,10 @@
 
 import { updateInherentRiskAction } from '@/actions/risk/update-inherent-risk-action';
 import { updateInherentRiskSchema } from '@/actions/schema';
+import { Impact, Likelihood } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Member, Policy } from '@db';
+import type { Member, Policy } from '@/lib/db';
 import { PolicyContainer } from './PolicyContainer';
 
 interface PolicyListProps {

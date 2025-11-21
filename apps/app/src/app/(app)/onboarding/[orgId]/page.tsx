@@ -1,5 +1,5 @@
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { PostPaymentOnboarding } from '../components/PostPaymentOnboarding';

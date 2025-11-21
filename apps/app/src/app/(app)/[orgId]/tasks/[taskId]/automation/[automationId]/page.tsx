@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { loadChatHistory } from './actions/task-automation-actions';
 import { AutomationLayoutWrapper } from './automation-layout-wrapper';

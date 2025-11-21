@@ -1,7 +1,7 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import SecondaryFields from './components/secondary-fields/secondary-fields';

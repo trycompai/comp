@@ -1,8 +1,8 @@
 'use client';
 
+import type { Task } from '@/lib/db';
 import { Badge } from '@comp/ui/badge';
 import { Card } from '@comp/ui/card';
-import type { EvidenceAutomation, EvidenceAutomationRun, Task } from '@db';
 import { formatDistanceToNow } from 'date-fns';
 import { Activity, ArrowRight, CheckCircle2, Clock, Sparkles, XCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -109,11 +109,7 @@ export function AutomationsSection({ automations }: AutomationsSectionProps) {
   }).length;
   const errorCount = automations.filter((a) => {
     const run = a.runs?.[0];
-    return (
-      a.isEnabled &&
-      run &&
-      (run.status === 'failed' || run.evaluationStatus === 'fail')
-    );
+    return a.isEnabled && run && (run.status === 'failed' || run.evaluationStatus === 'fail');
   }).length;
 
   return (

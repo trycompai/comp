@@ -1,8 +1,8 @@
 'use server';
 
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { CommentEntityType, db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { CommentEntityType, db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';

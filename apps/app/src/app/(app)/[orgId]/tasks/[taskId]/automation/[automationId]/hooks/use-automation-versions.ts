@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client';
-import { EvidenceAutomationVersion } from '@db';
+import { EvidenceAutomationVersion } from '@/lib/db';
 import { useParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import useSWR from 'swr';

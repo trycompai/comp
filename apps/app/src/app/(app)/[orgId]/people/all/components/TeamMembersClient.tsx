@@ -6,13 +6,13 @@ import { parseAsString, useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import type { Invitation, Role } from '@/lib/db';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Separator } from '@comp/ui/separator';
-import type { Invitation, Role } from '@db';
 
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
@@ -158,7 +158,7 @@ export function TeamMembersClient({
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map(r => r.trim()) ?? [];
+    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');

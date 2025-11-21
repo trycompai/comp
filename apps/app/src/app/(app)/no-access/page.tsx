@@ -1,7 +1,7 @@
 import { Header } from '@/components/header';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -38,7 +38,8 @@ export default async function NoAccess() {
         <h1 className="text-2xl font-bold">Access Denied</h1>
         <div className="flex flex-col text-center">
           <p>
-            <b>Employees</b> and <b>Contractors</b> don&apos;t have access to app.trycomp.ai, did you mean to go to{' '}
+            <b>Employees</b> and <b>Contractors</b> don&apos;t have access to app.trycomp.ai, did
+            you mean to go to{' '}
             <Link href="https://portal.trycomp.ai" className="text-primary underline">
               portal.trycomp.ai
             </Link>

@@ -1,12 +1,12 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { db } from '@db';
-import { headers } from 'next/headers';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
+import { db } from '@/lib/db';
 import { syncManualAnswerToVector } from '@/lib/vector/sync/sync-manual-answer';
 import { logger } from '@/utils/logger';
+import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 const saveAnswerSchema = z.object({
   questionnaireId: z.string(),
@@ -91,7 +91,12 @@ export const saveAnswerAction = authActionClient
         });
 
         // If status is manual and answer exists, also save to SecurityQuestionnaireManualAnswer
-        if (status === 'manual' && answer && answer.trim().length > 0 && existingQuestion.question) {
+        if (
+          status === 'manual' &&
+          answer &&
+          answer.trim().length > 0 &&
+          existingQuestion.question
+        ) {
           try {
             const manualAnswer = await db.securityQuestionnaireManualAnswer.upsert({
               where: {
@@ -204,4 +209,3 @@ export const saveAnswerAction = authActionClient
       };
     }
   });
-

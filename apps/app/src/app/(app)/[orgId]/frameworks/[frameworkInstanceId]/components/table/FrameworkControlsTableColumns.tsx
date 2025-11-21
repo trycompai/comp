@@ -1,8 +1,8 @@
 'use client';
 
 import { StatusIndicator, StatusType } from '@/components/status-indicator';
+import type { Policy } from '@/lib/db';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import type { Policy } from '@db';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

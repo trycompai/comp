@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { cache } from 'react';
 
 import PageCore from '@/components/pages/PageCore.tsx';
-import { db } from '@db';
+import { db } from '@/lib/db';
 import type { Metadata } from 'next';
 import { ApiKeysTable } from './components/table/ApiKeysTable';
 

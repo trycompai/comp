@@ -1,9 +1,9 @@
 'use server';
 
 import { auth } from '@/app/lib/auth';
+import type { Member } from '@/lib/db';
+import { db } from '@/lib/db';
 import { getFleetInstance } from '@/utils/fleet';
-import type { Member } from '@db';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { OrganizationDashboard } from './components/OrganizationDashboard';

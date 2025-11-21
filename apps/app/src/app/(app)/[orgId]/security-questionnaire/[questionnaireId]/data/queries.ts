@@ -1,9 +1,8 @@
 'use server';
 
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
-import { notFound } from 'next/navigation';
 import 'server-only';
 
 export const getQuestionnaireById = async (questionnaireId: string, organizationId: string) => {
@@ -11,7 +10,10 @@ export const getQuestionnaireById = async (questionnaireId: string, organization
     headers: await headers(),
   });
 
-  if (!session?.session?.activeOrganizationId || session.session.activeOrganizationId !== organizationId) {
+  if (
+    !session?.session?.activeOrganizationId ||
+    session.session.activeOrganizationId !== organizationId
+  ) {
     return null;
   }
 
@@ -43,4 +45,3 @@ export const getQuestionnaireById = async (questionnaireId: string, organization
 
   return questionnaire;
 };
-

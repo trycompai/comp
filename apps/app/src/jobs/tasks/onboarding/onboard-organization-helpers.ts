@@ -1,4 +1,3 @@
-import { openai } from '@ai-sdk/openai';
 import {
   CommentEntityType,
   db,
@@ -11,7 +10,8 @@ import {
   RiskStatus,
   RiskTreatmentType,
   VendorCategory,
-} from '@db';
+} from '@/lib/db';
+import { openai } from '@ai-sdk/openai';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText, jsonSchema } from 'ai';
 import axios from 'axios';

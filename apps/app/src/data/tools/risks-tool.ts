@@ -1,5 +1,5 @@
+import { db, Departments, RiskCategory, RiskStatus } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import { db, Departments, RiskCategory, RiskStatus } from '@db';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 

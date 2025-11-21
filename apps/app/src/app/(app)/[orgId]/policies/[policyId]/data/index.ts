@@ -1,7 +1,6 @@
 'use server';
 
 import { CommentWithAuthor } from '@/components/comments/Comments';
-import { auth } from '@/utils/auth';
 import {
   AttachmentEntityType,
   AuditLog,
@@ -11,7 +10,8 @@ import {
   Member,
   Organization,
   User,
-} from '@db';
+} from '@/lib/db';
+import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 
 // Define the type for AuditLog with its relations

@@ -1,8 +1,8 @@
 import { env } from '@/env.mjs';
+import { db } from '@/lib/db';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
 import { sendEmail } from '@comp/email/lib/resend';
-import { db } from '@db';
 import { dubAnalytics } from '@dub/better-auth';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';

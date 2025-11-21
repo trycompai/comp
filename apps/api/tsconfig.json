@@ -23,7 +23,7 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma/index"]
+      "@db": ["../../packages/db/src/index.ts"]
     },
     "jsx": "react-jsx"
   }

@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { logger, task } from '@trigger.dev/sdk';
 import { backfillTrainingVideosForOrg } from './backfill-training-videos-for-org';
 

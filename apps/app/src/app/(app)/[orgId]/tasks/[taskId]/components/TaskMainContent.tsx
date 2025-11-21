@@ -1,6 +1,6 @@
 'use client';
 
-import { type Task } from '@db';
+import { type Task } from '@/lib/db';
 import { TaskBody } from './TaskBody';
 
 interface TaskMainContentProps {

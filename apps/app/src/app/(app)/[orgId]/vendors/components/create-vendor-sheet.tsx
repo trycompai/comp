@@ -1,11 +1,11 @@
 'use client';
 
+import { Member, User } from '@/lib/db';
 import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Member, User } from '@db';
 import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { CreateVendorForm } from './create-vendor-form';

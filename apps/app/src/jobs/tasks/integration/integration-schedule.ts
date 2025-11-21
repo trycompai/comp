@@ -1,4 +1,4 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { sendIntegrationResults } from './integration-results';
 

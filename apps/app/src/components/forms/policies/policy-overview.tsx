@@ -3,6 +3,7 @@
 import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
 import { updatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
+import { Departments, Frequency, type Policy, type PolicyStatus } from '@/lib/db';
 import { useSession } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
@@ -10,7 +11,6 @@ import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Departments, Frequency, type Policy, type PolicyStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';

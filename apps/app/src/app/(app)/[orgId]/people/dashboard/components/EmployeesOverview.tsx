@@ -1,7 +1,7 @@
 import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
+import type { Member, Policy, User } from '@/lib/db';
+import { db } from '@/lib/db';
 import { auth } from '@/utils/auth';
-import type { Member, Policy, User } from '@db';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
 

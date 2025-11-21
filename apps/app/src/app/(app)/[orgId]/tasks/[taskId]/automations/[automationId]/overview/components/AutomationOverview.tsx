@@ -2,6 +2,12 @@
 
 import { api } from '@/lib/api-client';
 import {
+  EvidenceAutomation,
+  EvidenceAutomationRun,
+  EvidenceAutomationVersion,
+  Task,
+} from '@/lib/db';
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -18,7 +24,6 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
 import { ChevronRight, Loader2, MoreVertical, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';

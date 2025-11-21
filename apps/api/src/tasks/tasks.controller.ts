@@ -1,4 +1,4 @@
-import { AttachmentEntityType } from '@db';
+import { AttachmentEntityType } from '@/lib/db';
 import {
   BadRequestException,
   Body,

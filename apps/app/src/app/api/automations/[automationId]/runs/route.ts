@@ -1,9 +1,9 @@
-import { db } from '@db';
+import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ automationId: string }> }
+  { params }: { params: Promise<{ automationId: string }> },
 ) {
   try {
     const { automationId } = await params;
@@ -28,12 +28,6 @@ export async function GET(
     return NextResponse.json({ success: true, runs });
   } catch (error) {
     console.error('Failed to fetch automation runs:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch runs' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to fetch runs' }, { status: 500 });
   }
 }
-
-
-

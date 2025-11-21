@@ -4,10 +4,10 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
+import type { Member, Risk, User } from '@/lib/db';
+import { Risk as RiskType } from '@/lib/db';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
 import { useSession } from '@/utils/auth-client';
-import type { Member, Risk, User } from '@db';
-import { Risk as RiskType } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import { Loader2 } from 'lucide-react';
 import {

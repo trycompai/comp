@@ -1,5 +1,5 @@
-import type { Member, User, Vendor } from '@db';
-import { db } from '@db';
+import type { Member, User, Vendor } from '@/lib/db';
+import { db } from '@/lib/db';
 import { cache } from 'react';
 import type { GetVendorsSchema } from './validations';
 

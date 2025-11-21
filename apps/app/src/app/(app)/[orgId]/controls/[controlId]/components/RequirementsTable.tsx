@@ -3,14 +3,14 @@
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { useDataTable } from '@/hooks/use-data-table';
-import { Icons } from '@comp/ui/icons';
-import { Input } from '@comp/ui/input';
 import type {
   FrameworkEditorFramework,
   FrameworkEditorRequirement,
   FrameworkInstance,
   RequirementMap,
-} from '@db';
+} from '@/lib/db';
+import { Icons } from '@comp/ui/icons';
+import { Input } from '@comp/ui/input';
 import { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 

@@ -1,10 +1,10 @@
 'use client';
 
 import { acceptAllPolicies } from '@/actions/accept-policies';
+import type { Member, Policy } from '@/lib/db';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import type { Member, Policy } from '@db';
 import { CheckCircle2, Circle, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

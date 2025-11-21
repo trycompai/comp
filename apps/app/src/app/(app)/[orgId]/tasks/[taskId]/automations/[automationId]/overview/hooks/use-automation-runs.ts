@@ -1,4 +1,4 @@
-import { EvidenceAutomationRun } from '@db';
+import { EvidenceAutomationRun } from '@/lib/db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 

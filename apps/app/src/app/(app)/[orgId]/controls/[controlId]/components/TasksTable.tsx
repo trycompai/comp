@@ -4,9 +4,9 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { useDataTable } from '@/hooks/use-data-table';
+import { Task } from '@/lib/db';
 import { Icons } from '@comp/ui/icons';
 import { Input } from '@comp/ui/input';
-import { Task } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 

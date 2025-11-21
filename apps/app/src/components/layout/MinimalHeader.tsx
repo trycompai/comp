@@ -2,7 +2,7 @@
 
 import { changeOrganizationAction } from '@/actions/change-organization';
 import { Logo } from '@/app/(app)/setup/components/Logo';
-import type { Organization } from '@db';
+import type { Organization } from '@/lib/db';
 import type { User } from 'better-auth';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
