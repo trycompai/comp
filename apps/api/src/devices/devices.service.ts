@@ -97,6 +97,7 @@ export class DevicesService {
         where: {
           id: memberId,
           organizationId: organizationId,
+          deactivated: false,
         },
         select: {
           id: true,
@@ -165,6 +166,7 @@ export class DevicesService {
         where: {
           id: memberId,
           organizationId: organizationId,
+          deactivated: false,
         },
         select: {
           id: true,

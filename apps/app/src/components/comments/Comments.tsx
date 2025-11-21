@@ -14,6 +14,7 @@ export type CommentWithAuthor = {
     name: string;
     email: string;
     image: string | null;
+    deactivated: boolean;
   };
   attachments: Array<{
     id: string;

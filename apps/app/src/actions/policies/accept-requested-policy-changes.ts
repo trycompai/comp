@@ -82,6 +82,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         where: {
           organizationId: session.activeOrganizationId,
           isActive: true,
+          deactivated: false,
         },
         include: {
           user: true,
@@ -131,6 +132,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
           where: {
             userId: user.id,
             organizationId: session.activeOrganizationId,
+            deactivated: false,
           },
         });
 

@@ -232,6 +232,7 @@ export class HybridAuthGuard implements CanActivate {
         where: {
           userId,
           organizationId,
+          deactivated: false,
         },
         select: {
           id: true,

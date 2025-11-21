@@ -26,6 +26,7 @@ export const getOrganizationUsersAction = authActionClient
         const users = await db.member.findMany({
           where: {
             organizationId: ctx.session.activeOrganizationId,
+            deactivated: false,
           },
           select: {
             user: {

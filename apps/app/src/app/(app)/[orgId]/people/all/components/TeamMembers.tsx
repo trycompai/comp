@@ -45,6 +45,7 @@ export async function TeamMembers() {
     const fetchedMembers = await db.member.findMany({
       where: {
         organizationId: organizationId,
+        deactivated: false,
       },
       include: {
         user: true,

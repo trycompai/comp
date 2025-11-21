@@ -47,6 +47,7 @@ export class MemberValidator {
       where: {
         id: memberId,
         organizationId,
+        deactivated: false,
       },
       select: { id: true, userId: true },
     });
@@ -71,6 +72,7 @@ export class MemberValidator {
     const whereClause: any = {
       userId,
       organizationId,
+      deactivated: false,
     };
 
     if (excludeMemberId) {

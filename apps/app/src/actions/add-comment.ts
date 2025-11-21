@@ -38,6 +38,7 @@ export const addCommentAction = authActionClient
         where: {
           userId: session.userId,
           organizationId: session.activeOrganizationId,
+          deactivated: false,
         },
       });
 

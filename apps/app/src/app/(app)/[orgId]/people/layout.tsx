@@ -18,6 +18,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   const allMembers = await db.member.findMany({
     where: {
       organizationId: orgId,
+      deactivated: false,
     },
   });
 

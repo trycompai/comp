@@ -23,6 +23,7 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   const employees = await db.member.findMany({
     where: {
       organizationId,
+      deactivated: false,
     },
   });
 

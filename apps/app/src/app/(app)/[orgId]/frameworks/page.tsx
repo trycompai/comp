@@ -39,6 +39,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     where: {
       userId: session.user.id,
       organizationId,
+      deactivated: false,
     },
   });
 
