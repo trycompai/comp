@@ -2,7 +2,7 @@
 
 import { DataTable } from '@/components/ui/data-table/DataTable';
 import type { AccessRequest } from '@/hooks/use-access-requests';
-import { buildRequestColumns, type RequestTableRow } from './request-columns';
+import { buildRequestColumns } from './request-columns';
 
 interface RequestDataTableProps {
   data: AccessRequest[];
@@ -13,19 +13,19 @@ interface RequestDataTableProps {
   onPreviewNda: (row: AccessRequest) => void;
 }
 
-export function RequestDataTable({ 
-  data, 
-  isLoading, 
-  onApprove, 
-  onDeny, 
-  onResendNda, 
-  onPreviewNda 
+export function RequestDataTable({
+  data,
+  isLoading,
+  onApprove,
+  onDeny,
+  onResendNda,
+  onPreviewNda,
 }: RequestDataTableProps) {
-  const columns = buildRequestColumns({ 
-    onApprove, 
-    onDeny, 
-    onResendNda, 
-    onPreviewNda 
+  const columns = buildRequestColumns({
+    onApprove,
+    onDeny,
+    onResendNda,
+    onPreviewNda,
   });
 
   return (
@@ -34,7 +34,6 @@ export function RequestDataTable({
       columns={columns}
       isLoading={isLoading}
       emptyMessage="No access requests yet"
-      density="compact"
     />
   );
 }
