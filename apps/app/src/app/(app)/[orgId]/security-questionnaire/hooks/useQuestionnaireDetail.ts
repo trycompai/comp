@@ -61,6 +61,7 @@ export function useQuestionnaireDetail({
   const [questionStatuses, setQuestionStatuses] = useState<Map<number, 'pending' | 'processing' | 'completed'>>(new Map());
   const [answeringQuestionIndex, setAnsweringQuestionIndex] = useState<number | null>(null);
   const [isAutoAnswerProcessStarted, setIsAutoAnswerProcessStarted] = useState(false);
+  const [isParseProcessStarted, setIsParseProcessStarted] = useState(false);
   const [hasClickedAutoAnswer, setHasClickedAutoAnswer] = useState(false);
   const [autoAnswerToken, setAutoAnswerToken] = useState<string | null>(null);
   const [singleAnswerToken, setSingleAnswerToken] = useState<string | null>(null);
@@ -246,7 +247,8 @@ export function useQuestionnaireDetail({
     setEditingAnswer,
     setResults: setResults as Dispatch<SetStateAction<QuestionAnswer[] | null>>,
     setExpandedSources,
-    setIsParseProcessStarted: () => {},
+    isParseProcessStarted,
+    setIsParseProcessStarted,
     setIsAutoAnswerProcessStarted,
     isAutoAnswerProcessStartedRef,
     setHasClickedAutoAnswer,
@@ -260,7 +262,7 @@ export function useQuestionnaireDetail({
     parseAction: { execute: async () => {}, status: 'idle' as const },
     triggerAutoAnswer: autoAnswer.triggerAutoAnswer,
     triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
-  } as Parameters<typeof useQuestionnaireActions>[0]);
+  });
 
   const persistenceAction = {
     execute: () => {},

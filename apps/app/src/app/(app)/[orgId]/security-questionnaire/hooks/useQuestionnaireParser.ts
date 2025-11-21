@@ -104,8 +104,7 @@ export function useQuestionnaireParser() {
     const isParseRunActive =
       parse.parseRun?.status === 'EXECUTING' ||
       parse.parseRun?.status === 'QUEUED' ||
-      parse.parseRun?.status === 'WAITING' ||
-      parse.parseRun?.status === 'STARTING';
+      parse.parseRun?.status === 'WAITING';
 
     if (isParseRunActive || isParseActionExecuting || isUploading) {
       return true;
@@ -153,10 +152,6 @@ export function useQuestionnaireParser() {
         return 'uploading';
       }
       if (parse.parseAction.status === 'executing') {
-        return 'starting';
-      }
-      if (parse.parseRun?.status === 'STARTING') {
-        // ✅ Cold start - machine is starting up
         return 'starting';
       }
       if (parse.parseRun?.status === 'QUEUED') {
