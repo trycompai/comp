@@ -485,6 +485,7 @@ export class TrustAccessService {
             organization: true,
           },
         },
+        grant: true,
       },
     });
 
@@ -492,26 +493,59 @@ export class TrustAccessService {
       throw new NotFoundException('NDA agreement not found');
     }
 
-    if (nda.signTokenExpiresAt < new Date()) {
-      throw new BadRequestException('NDA signing link has expired');
-    }
+    const trust = await db.trust.findUnique({
+      where: { organizationId: nda.organizationId },
+      select: { friendlyUrl: true },
+    });
 
-    if (nda.status === 'void') {
-      throw new BadRequestException(
-        'This NDA has been revoked and is no longer valid',
-      );
-    }
+    const portalUrl = trust?.friendlyUrl
+      ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}`
+      : null;
 
-    if (nda.status !== 'pending') {
-      throw new BadRequestException('NDA has already been signed');
-    }
-
-    return {
+    const baseResponse = {
       id: nda.id,
       organizationName: nda.accessRequest.organization.name,
       requesterName: nda.accessRequest.name,
       requesterEmail: nda.accessRequest.email,
       expiresAt: nda.signTokenExpiresAt,
+      portalUrl,
+    };
+
+    if (nda.signTokenExpiresAt < new Date()) {
+      return {
+        ...baseResponse,
+        status: 'expired',
+        message: 'NDA signing link has expired',
+      };
+    }
+
+    if (nda.status === 'void') {
+      return {
+        ...baseResponse,
+        status: 'void',
+        message: 'This NDA has been revoked and is no longer valid',
+      };
+    }
+
+    if (nda.status === 'signed') {
+      let accessUrl = portalUrl;
+      if (nda.grant?.accessToken && nda.grant.status === 'active') {
+        if (trust?.friendlyUrl) {
+          accessUrl = `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${nda.grant.accessToken}`;
+        }
+      }
+
+      return {
+        ...baseResponse,
+        status: 'signed',
+        message: 'NDA has already been signed',
+        portalUrl: accessUrl,
+      };
+    }
+
+    return {
+      ...baseResponse,
+      status: 'pending',
     };
   }
 
