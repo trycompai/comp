@@ -154,7 +154,7 @@ export function QuestionnaireResultsHeader({
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="default" disabled={isExporting || isLoading} suppressHydrationWarning>
+                <Button variant="outline" size="default" disabled={isExporting} suppressHydrationWarning>
                   <Download className="size-4" />
                   Export
                   <ChevronDown className="size-4" />
@@ -163,21 +163,21 @@ export function QuestionnaireResultsHeader({
               <DropdownMenuContent align="end" suppressHydrationWarning>
                 <DropdownMenuItem
                   onClick={() => onExport('xlsx')}
-                  disabled={isExporting || isLoading}
+                  disabled={isExporting}
                 >
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
                   Excel
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onExport('csv')}
-                  disabled={isExporting || isLoading}
+                  disabled={isExporting}
                 >
                   <FileTextIcon className="mr-2 h-4 w-4" />
                   CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onExport('pdf')}
-                  disabled={isExporting || isLoading}
+                  disabled={isExporting}
                 >
                   <File className="mr-2 h-4 w-4" />
                   PDF

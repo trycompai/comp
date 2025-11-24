@@ -40,11 +40,23 @@ export function QuestionnaireParser() {
     handleToggleSource,
   } = useQuestionnaireParser();
 
+  const normalizedResults =
+    results?.map((result) => ({
+      ...result,
+      sources: result.sources ?? [],
+    })) ?? null;
+
+  const normalizedFilteredResults =
+    filteredResults?.map((result) => ({
+      ...result,
+      sources: result.sources ?? [],
+    })) ?? null;
+
   return (
     <QuestionnaireView
       orgId={orgId}
-      results={results}
-      filteredResults={filteredResults}
+      results={normalizedResults}
+      filteredResults={normalizedFilteredResults}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
       editingIndex={editingIndex}

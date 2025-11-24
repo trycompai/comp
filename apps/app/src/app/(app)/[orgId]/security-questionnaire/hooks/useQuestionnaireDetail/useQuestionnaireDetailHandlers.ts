@@ -32,7 +32,9 @@ interface UseQuestionnaireDetailHandlersProps {
     }) => void;
   };
   deleteAnswerAction: {
-    execute: (payload: { questionnaireId: string; questionAnswerId: string }) => Promise<any>;
+    execute: (
+      payload: { questionnaireId: string; questionAnswerId: string }
+    ) => Promise<any> | void;
   };
   router: { refresh: () => void };
   triggerAutoAnswer: (payload: {
@@ -242,10 +244,12 @@ export function useQuestionnaireDetailHandlers({
 
   const handleDeleteAnswer = async (questionAnswerId: string, questionIndex: number) => {
     try {
-      await deleteAnswerAction.execute({
-        questionnaireId,
-        questionAnswerId,
-      });
+      await Promise.resolve(
+        deleteAnswerAction.execute({
+          questionnaireId,
+          questionAnswerId,
+        })
+      );
 
       setResults((prev) =>
         prev.map((r) =>

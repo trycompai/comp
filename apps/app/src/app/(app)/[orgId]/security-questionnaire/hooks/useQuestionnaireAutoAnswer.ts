@@ -299,17 +299,30 @@ export function useQuestionnaireAutoAnswer({
 
           answers.forEach((answer) => {
             if (answer.sources && answer.sources.length > 0) {
-              const targetIndex = updatedResults.findIndex(
-                (r) => r.originalIndex === answer.questionIndex
-              );
+              const directIndex =
+                answer.questionIndex >= 0 && answer.questionIndex < updatedResults.length
+                  ? answer.questionIndex
+                  : -1;
 
-              if (targetIndex >= 0 && targetIndex < updatedResults.length) {
-                const currentSources = updatedResults[targetIndex]?.sources || [];
-                const sourcesChanged = JSON.stringify(currentSources) !== JSON.stringify(answer.sources);
+              const fallbackIndex =
+                directIndex === -1
+                  ? updatedResults.findIndex((r, idx) => {
+                      const candidate =
+                        (r as { originalIndex?: number; _originalIndex?: number }).originalIndex ??
+                        (r as { originalIndex?: number; _originalIndex?: number })._originalIndex ??
+                        idx;
+                      return candidate === answer.questionIndex;
+                    })
+                  : directIndex;
+
+              if (fallbackIndex >= 0 && fallbackIndex < updatedResults.length) {
+                const currentSources = updatedResults[fallbackIndex]?.sources || [];
+                const sourcesChanged =
+                  JSON.stringify(currentSources) !== JSON.stringify(answer.sources);
 
                 if (sourcesChanged) {
-                  updatedResults[targetIndex] = {
-                    ...updatedResults[targetIndex],
+                  updatedResults[fallbackIndex] = {
+                    ...updatedResults[fallbackIndex],
                     sources: answer.sources,
                   };
                   hasChanges = true;
