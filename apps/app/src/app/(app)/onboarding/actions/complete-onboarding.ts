@@ -56,6 +56,7 @@ export const completeOnboarding = authActionClient
         where: {
           userId: ctx.user.id,
           organizationId: parsedInput.organizationId,
+          deactivated: false,
         },
       });
 

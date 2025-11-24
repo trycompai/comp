@@ -9908,13 +9908,20 @@
             "description": "User profile image URL",
             "example": "https://example.com/avatar.jpg",
             "nullable": true
+          },
+          "deactivated": {
+            "type": "boolean",
+            "description": "Whether the user is deactivated",
+            "example": false,
+            "nullable": true
           }
         },
         "required": [
           "id",
           "name",
           "email",
-          "image"
+          "image",
+          "deactivated"
         ]
       },
       "AttachmentMetadataDto": {

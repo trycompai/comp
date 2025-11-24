@@ -68,6 +68,7 @@ export const denyRequestedPolicyChangesAction = authActionClient
           where: {
             userId: user.id,
             organizationId: session.activeOrganizationId,
+            deactivated: false,
           },
         });
 

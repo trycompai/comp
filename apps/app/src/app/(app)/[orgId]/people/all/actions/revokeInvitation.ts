@@ -37,6 +37,7 @@ export const revokeInvitation = authActionClient
         where: {
           organizationId: ctx.session.activeOrganizationId,
           userId: ctx.user.id,
+          deactivated: false,
         },
       });
 

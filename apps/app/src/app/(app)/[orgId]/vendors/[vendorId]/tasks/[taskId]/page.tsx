@@ -50,6 +50,7 @@ export default async function TaskPage({ params }: PageProps) {
         role: {
           notIn: ['employee', 'contractor'],
         },
+        deactivated: false,
       },
       include: {
         user: true,

@@ -56,6 +56,7 @@ export default async function Layout({
     where: {
       userId: session.user.id,
       organizationId: requestedOrgId,
+      deactivated: false,
     },
   });
 

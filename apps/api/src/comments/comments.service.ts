@@ -116,6 +116,7 @@ export class CommentsService {
               name: comment.author.user.name,
               email: comment.author.user.email,
               image: comment.author.user.image,
+              deactivated: comment.author.deactivated,
             },
             attachments,
             createdAt: comment.createdAt,
@@ -154,6 +155,7 @@ export class CommentsService {
         where: {
           userId,
           organizationId,
+          deactivated: false,
         },
         include: {
           user: true,
@@ -211,6 +213,7 @@ export class CommentsService {
           name: member.user.name,
           email: member.user.email,
           image: member.user.image,
+          deactivated: member.deactivated,
         },
         attachments: result.attachments,
         createdAt: result.comment.createdAt,
@@ -284,6 +287,7 @@ export class CommentsService {
           name: existingComment.author.user.name,
           email: existingComment.author.user.email,
           image: existingComment.author.user.image,
+          deactivated: existingComment.author.deactivated,
         },
         attachments,
         createdAt: updatedComment.createdAt,

@@ -7,7 +7,7 @@ import { Check, Circle, FolderTree, List, Plus, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { ModernTaskList } from './ModernTaskList';
 import { SearchInput } from './SearchInput';
@@ -51,7 +51,31 @@ export function TaskList({
   const [statusFilter, setStatusFilter] = useQueryState('status');
   const [assigneeFilter, setAssigneeFilter] = useQueryState('assignee');
   const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
+
+  // Initialize with default, load from localStorage after hydration
   const [activeTab, setActiveTab] = useState<'categories' | 'list'>('categories');
+  const lastLoadedOrgId = useRef<string | null>(null);
+
+  // Load saved preference from localStorage after client-side hydration
+  useEffect(() => {
+    // Reset and load preference when orgId changes or on initial load
+    if (lastLoadedOrgId.current !== orgId) {
+      const saved = localStorage.getItem(`task-view-preference-${orgId}`);
+      if (saved === 'categories' || saved === 'list') {
+        setActiveTab(saved);
+      } else {
+        // Reset to default if no saved preference exists for this org
+        setActiveTab('categories');
+      }
+      lastLoadedOrgId.current = orgId;
+    }
+  }, [orgId]);
+
+  // Save preference to localStorage when user changes it (not on initial load)
+  const handleTabChange = (tab: 'categories' | 'list') => {
+    setActiveTab(tab);
+    localStorage.setItem(`task-view-preference-${orgId}`, tab);
+  };
 
   const eligibleAssignees = useMemo(() => {
     return members
@@ -88,7 +112,9 @@ export function TaskList({
   // Calculate overall stats from all tasks (not filtered)
   const overallStats = useMemo(() => {
     const total = initialTasks.length;
-    const done = initialTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
+    const done = initialTasks.filter(
+      (t) => t.status === 'done' || t.status === 'not_relevant',
+    ).length;
     const inProgress = initialTasks.filter((t) => t.status === 'in_progress').length;
     const todo = initialTasks.filter((t) => t.status === 'todo').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -621,7 +647,7 @@ export function TaskList({
         {/* View Toggle */}
         <div className="flex items-center gap-0 rounded-md border border-border bg-card p-0.5">
           <button
-            onClick={() => setActiveTab('categories')}
+            onClick={() => handleTabChange('categories')}
             className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === 'categories'
                 ? 'bg-primary text-primary-foreground'
@@ -632,7 +658,7 @@ export function TaskList({
             <span>Categories</span>
           </button>
           <button
-            onClick={() => setActiveTab('list')}
+            onClick={() => handleTabChange('list')}
             className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === 'list'
                 ? 'bg-primary text-primary-foreground'

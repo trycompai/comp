@@ -39,6 +39,7 @@ export const createPolicyAction = authActionClient
       where: {
         userId: user.id,
         organizationId: activeOrganizationId,
+        deactivated: false,
       },
     });
 

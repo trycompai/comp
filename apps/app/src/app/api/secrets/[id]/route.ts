@@ -79,6 +79,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: {
         organizationId: validatedData.organizationId,
         userId: session.user.id,
+        deactivated: false,
       },
     });
 
@@ -175,6 +176,7 @@ export async function DELETE(
       where: {
         organizationId,
         userId: session.user.id,
+        deactivated: false,
       },
     });
 

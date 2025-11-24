@@ -28,6 +28,7 @@ export default async function UpgradePage({ params }: PageProps) {
     where: {
       organizationId: orgId,
       userId: authSession.user.id,
+      deactivated: false,
     },
     include: {
       organization: true,
