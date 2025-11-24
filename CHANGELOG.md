@@ -1,3 +1,10 @@
+# [1.63.0](https://github.com/trycompai/comp/compare/v1.62.0...v1.63.0) (2025-11-24)
+
+
+### Features
+
+* **tasks:** add localStorage support for task view preference ([#1817](https://github.com/trycompai/comp/issues/1817)) ([4caed2a](https://github.com/trycompai/comp/commit/4caed2aa9eb76267fb77dbea560216beee269b57))
+
 # [1.62.0](https://github.com/trycompai/comp/compare/v1.61.0...v1.62.0) (2025-11-21)
 
 
