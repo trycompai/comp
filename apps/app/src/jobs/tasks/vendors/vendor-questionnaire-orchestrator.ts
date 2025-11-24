@@ -6,6 +6,7 @@ const BATCH_SIZE = 500; // Process 500 (prev. used) 10 questions at a time
 
 export const vendorQuestionnaireOrchestratorTask = task({
   id: 'vendor-questionnaire-orchestrator',
+  machine: 'large-2x',
   retry: {
     maxAttempts: 3,
   },

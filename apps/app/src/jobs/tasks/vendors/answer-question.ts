@@ -4,6 +4,7 @@ import { generateAnswerWithRAG } from './answer-question-helpers';
 
 export const answerQuestion= task({
   id: 'answer-question',
+  machine: 'large-2x',
   retry: {
     maxAttempts: 3,
   },
