@@ -539,6 +539,7 @@ async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer
 
 export const parseQuestionnaireTask = task({
   id: 'parse-questionnaire',
+  machine: 'large-2x',
   retry: {
     maxAttempts: 2,
   },

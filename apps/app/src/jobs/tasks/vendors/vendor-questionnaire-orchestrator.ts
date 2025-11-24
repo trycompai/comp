@@ -7,6 +7,7 @@ import { answerQuestion } from './answer-question';
 
 export const vendorQuestionnaireOrchestratorTask = task({
   id: 'vendor-questionnaire-orchestrator',
+  machine: 'large-2x',
   retry: {
     maxAttempts: 3,
   },
