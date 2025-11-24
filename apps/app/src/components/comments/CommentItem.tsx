@@ -19,7 +19,21 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Textarea } from '@comp/ui/textarea';
-import { FileIcon, FileText, ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@comp/ui/tooltip';
+import {
+  AlertTriangle,
+  FileIcon,
+  FileText,
+  ImageIcon,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -158,15 +172,31 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   return (
     <>
       <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card hover:shadow-sm transition-all group">
-        <Avatar className="h-8 w-8 border border-border">
-          <AvatarImage
-            src={comment.author.image || getGravatarUrl(comment.author.email)}
-            alt={comment.author.name ?? 'User'}
-          />
-          <AvatarFallback className="text-xs bg-muted">
-            {comment.author.name?.charAt(0).toUpperCase() ?? '?'}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-8 w-8 border border-border">
+            <AvatarImage
+              src={comment.author.image || getGravatarUrl(comment.author.email)}
+              alt={comment.author.name ?? 'User'}
+            />
+            <AvatarFallback className="text-xs bg-muted">
+              {comment.author.name?.charAt(0).toUpperCase() ?? '?'}
+            </AvatarFallback>
+          </Avatar>
+          {comment.author.deactivated && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute -bottom-0.5 -right-0.5 rounded-full">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 fill-yellow-400" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This user is deactivated.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         <div className="flex-1 items-start space-y-2 text-sm">
           <div>
             <div className="mb-1 flex items-center justify-between gap-2">

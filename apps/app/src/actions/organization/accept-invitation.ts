@@ -69,6 +69,7 @@ export const completeInvitation = authActionClientWithoutOrg
           where: {
             userId: user.id,
             organizationId: invitation.organizationId,
+            deactivated: false,
           },
         });
 
