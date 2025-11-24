@@ -1,10 +1,9 @@
-import { logger, metadata, task } from '@trigger.dev/sdk';
 import { syncOrganizationEmbeddings } from '@/lib/vector';
+import { logger, metadata, task } from '@trigger.dev/sdk';
 import { generateAnswerWithRAG } from './answer-question-helpers';
 
 export const answerQuestion = task({
   id: 'answer-question',
-  machine: 'large-2x',
   retry: {
     maxAttempts: 3,
   },
@@ -60,10 +59,7 @@ export const answerQuestion = task({
         questionIndex: payload.questionIndex,
       });
 
-      const result = await generateAnswerWithRAG(
-        payload.question,
-        payload.organizationId,
-      );
+      const result = await generateAnswerWithRAG(payload.question, payload.organizationId);
 
       // Update metadata with this answer immediately
       // This allows frontend to show answers as they complete individually
@@ -123,4 +119,3 @@ export const answerQuestion = task({
     }
   },
 });
-
