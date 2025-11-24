@@ -242,6 +242,7 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
     where: {
       userId: ctx.user.id,
       organizationId,
+      deactivated: false,
     },
   });
 

@@ -34,6 +34,7 @@ export const deleteVendor = authActionClient
         where: {
           organizationId: ctx.session.activeOrganizationId,
           userId: ctx.user.id,
+          deactivated: false,
         },
       });
 

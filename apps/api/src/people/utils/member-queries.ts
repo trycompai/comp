@@ -40,7 +40,7 @@ export class MemberQueries {
     organizationId: string,
   ): Promise<PeopleResponseDto[]> {
     return db.member.findMany({
-      where: { organizationId },
+      where: { organizationId, deactivated: false },
       select: this.MEMBER_SELECT,
       orderBy: { createdAt: 'desc' },
     });

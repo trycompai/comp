@@ -140,7 +140,7 @@ export function TeamMembersClient({
 
   const handleRemoveMember = async (memberId: string) => {
     const result = await removeMemberAction({ memberId });
-    if (result?.data) {
+    if (result?.data?.success) {
       // Success case
       toast.success('has been removed from the organization');
       router.refresh(); // Add client-side refresh as well

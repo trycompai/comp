@@ -35,7 +35,7 @@ export const getPolicyPdfUrl = authActionClient
       }
 
       const member = await db.member.findFirst({
-        where: { userId: user.id, organizationId: policy.organizationId },
+        where: { userId: user.id, organizationId: policy.organizationId, deactivated: false },
       });
 
       if (!member) {

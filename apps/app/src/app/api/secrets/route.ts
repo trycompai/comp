@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
       where: {
         organizationId: validatedData.organizationId,
         userId: session.user.id,
+        deactivated: false,
       },
     });
 
