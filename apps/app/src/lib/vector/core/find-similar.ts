@@ -16,6 +16,7 @@ export interface SimilarContentResult {
   vendorName?: string;
   questionnaireQuestion?: string;
   documentName?: string;
+  manualAnswerQuestion?: string;
 }
 
 /**
@@ -81,6 +82,7 @@ export async function findSimilarContent(
           vendorName: metadata?.vendorName,
           questionnaireQuestion: metadata?.questionnaireQuestion,
           documentName: metadata?.documentName,
+          manualAnswerQuestion: metadata?.manualAnswerQuestion,
         };
       });
 

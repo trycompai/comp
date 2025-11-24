@@ -2,7 +2,8 @@ import { logger, metadata, task } from '@trigger.dev/sdk';
 import { syncOrganizationEmbeddings } from '@/lib/vector';
 import { answerQuestion } from './answer-question';
 
-const BATCH_SIZE = 500; // Process 500 (prev. used) 10 questions at a time
+// No longer using BATCH_SIZE - process all questions at once like onboard-organization
+// This allows metadata updates to happen incrementally as tasks complete
 
 export const vendorQuestionnaireOrchestratorTask = task({
   id: 'vendor-questionnaire-orchestrator',
@@ -57,8 +58,6 @@ export const vendorQuestionnaireOrchestratorTask = task({
     metadata.set('questionsTotal', questionsToAnswer.length);
     metadata.set('questionsCompleted', 0);
     metadata.set('questionsRemaining', questionsToAnswer.length);
-    metadata.set('currentBatch', 0);
-    metadata.set('totalBatches', Math.ceil(questionsToAnswer.length / BATCH_SIZE));
     
     // Initialize individual question statuses - all start as 'pending'
     // Each question will update its own status to 'processing' when it starts
@@ -67,7 +66,22 @@ export const vendorQuestionnaireOrchestratorTask = task({
       metadata.set(`question_${qa.index}_status`, 'pending');
     });
 
-    // Process questions in batches of 10
+    // Process all questions using batchTriggerAndWait
+    // Note: Trigger.dev may batch metadata updates during batch execution,
+    // so successful answers might not appear incrementally until batch completes
+    const batchHandle = await answerQuestion.batchTriggerAndWait(
+      questionsToAnswer.map((qa) => ({
+        payload: {
+          question: qa.question,
+          organizationId: payload.organizationId,
+          questionIndex: qa.index,
+          totalQuestions: payload.questionsAndAnswers.length,
+        },
+        concurrencyKey: payload.organizationId, // Allow parallel execution
+      })),
+    );
+
+    // Process results - batchHandle has a .runs property with the results array
     const allAnswers: Array<{
       questionIndex: number;
       question: string;
@@ -79,34 +93,8 @@ export const vendorQuestionnaireOrchestratorTask = task({
       }>;
     }> = [];
 
-    for (let i = 0; i < questionsToAnswer.length; i += BATCH_SIZE) {
-      const batch = questionsToAnswer.slice(i, i + BATCH_SIZE);
-      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(questionsToAnswer.length / BATCH_SIZE);
-
-      logger.info(`Processing batch ${batchNumber}/${totalBatches}`, {
-        batchSize: batch.length,
-        questionIndices: batch.map((q) => q.index),
-      });
-
-      // Update metadata
-      metadata.set('currentBatch', batchNumber);
-
-      // Use batchTriggerAndWait - this runs tasks in parallel and waits for all to complete
-      const batchItems = batch.map((qa) => ({
-        payload: {
-          question: qa.question,
-          organizationId: payload.organizationId,
-          questionIndex: qa.index,
-          totalQuestions: payload.questionsAndAnswers.length,
-        },
-      }));
-
-      const batchHandle = await answerQuestion.batchTriggerAndWait(batchItems);
-
-      // Process batch results - batchHandle has a .runs property with the results array
-      batchHandle.runs.forEach((run, batchIdx) => {
-        const qa = batch[batchIdx];
+    batchHandle.runs.forEach((run, idx) => {
+      const qa = questionsToAnswer[idx];
         
         if (run.ok && run.output) {
           const taskResult = run.output;
@@ -143,18 +131,6 @@ export const vendorQuestionnaireOrchestratorTask = task({
           });
         }
       });
-
-      // Note: Individual answers and progress counters are updated in metadata 
-      // by each answer-question task via metadata.parent.set() and metadata.parent.increment()
-      // This allows frontend to show answers as they complete individually
-      // No need to update counters here - they're already updated by individual tasks
-
-      logger.info(`Batch ${batchNumber}/${totalBatches} completed`, {
-        batchSize: batch.length,
-        totalAnswersSoFar: allAnswers.length,
-        remaining: questionsToAnswer.length - allAnswers.length,
-      });
-    }
 
     logger.info('Auto-answer questionnaire completed', {
       vendorId: payload.vendorId,

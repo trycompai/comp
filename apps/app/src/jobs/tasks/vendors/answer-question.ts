@@ -2,7 +2,7 @@ import { logger, metadata, task } from '@trigger.dev/sdk';
 import { syncOrganizationEmbeddings } from '@/lib/vector';
 import { generateAnswerWithRAG } from './answer-question-helpers';
 
-export const answerQuestion= task({
+export const answerQuestion = task({
   id: 'answer-question',
   machine: 'large-2x',
   retry: {
@@ -30,6 +30,15 @@ export const answerQuestion= task({
       metadata.set(`question_${payload.questionIndex}_status`, 'processing');
     }
 
+    const buildMetadataAnswerPayload = (answerValue: string | null) => ({
+      questionIndex: payload.questionIndex,
+      question: payload.question,
+      answer: answerValue,
+      // Sources are NOT included in metadata to avoid blocking incremental updates
+      // Sources will be available in the final output and updated separately
+      sources: [],
+    });
+
     try {
       // Sync organization embeddings before generating answer
       // Uses incremental sync: only updates what changed (much faster than full sync)
@@ -56,30 +65,21 @@ export const answerQuestion= task({
         payload.organizationId,
       );
 
-      logger.info('✅ Successfully generated answer', {
-        questionIndex: payload.questionIndex,
-        hasAnswer: !!result.answer,
-        sourcesCount: result.sources.length,
-      });
-
-      const answerData = {
-        questionIndex: payload.questionIndex,
-        question: payload.question,
-        answer: result.answer,
-        sources: result.sources,
-      };
-
       // Update metadata with this answer immediately
       // This allows frontend to show answers as they complete individually
       // When called directly (not as child), use metadata directly instead of metadata.parent
+      // Sources are NOT included in metadata to avoid blocking incremental updates
+      // Sources will be available in the final output
+      const metadataAnswer = buildMetadataAnswerPayload(result.answer);
+
       if (metadata.parent) {
-        metadata.parent.set(`answer_${payload.questionIndex}`, answerData);
+        metadata.parent.set(`answer_${payload.questionIndex}`, metadataAnswer);
         metadata.parent.set(`question_${payload.questionIndex}_status`, 'completed');
         metadata.parent.increment('questionsCompleted', 1);
         metadata.parent.increment('questionsRemaining', -1);
       } else {
         // Direct call: update metadata directly for frontend to read
-        metadata.set(`answer_${payload.questionIndex}`, answerData);
+        metadata.set(`answer_${payload.questionIndex}`, metadataAnswer);
         metadata.set(`question_${payload.questionIndex}_status`, 'completed');
       }
 
@@ -97,12 +97,7 @@ export const answerQuestion= task({
         errorStack: error instanceof Error ? error.stack : undefined,
       });
 
-      const failedAnswerData = {
-        questionIndex: payload.questionIndex,
-        question: payload.question,
-        answer: null,
-        sources: [],
-      };
+      const failedAnswerData = buildMetadataAnswerPayload(null);
 
       // Update metadata even on failure
       // When called directly (not as child), use metadata directly instead of metadata.parent

@@ -16,7 +16,7 @@ import { Card } from '@comp/ui';
 import { ChevronLeft, ChevronRight, ExternalLink, PenTool, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { usePagination } from '../../hooks/usePagination';
 import { format } from 'date-fns';
 import { useAction } from 'next-safe-action/hooks';
@@ -38,6 +38,7 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [answerIdToDelete, setAnswerIdToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string>('');
 
   const deleteAction = useAction(deleteManualAnswer, {
     onSuccess: ({ data }) => {
@@ -110,9 +111,57 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
     }
   };
 
+  // Handle hash navigation on mount and when hash changes
+  useEffect(() => {
+    const handleHashNavigation = () => {
+      const hash = window.location.hash;
+      if (hash && hash.startsWith('#manual-answer-')) {
+        const manualAnswerId = hash.replace('#manual-answer-', '');
+        const answerElement = document.getElementById(`manual-answer-${manualAnswerId}`);
+        
+        if (answerElement) {
+          // Open accordion first
+          setAccordionValue('manual-answers');
+          
+          // Scroll to the specific manual answer after accordion opens
+          setTimeout(() => {
+            answerElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            });
+            // Highlight the element briefly
+            answerElement.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+            setTimeout(() => {
+              answerElement.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+            }, 2000);
+          }, 300); // Wait for accordion animation
+        }
+      }
+    };
+
+    // Check hash on mount
+    handleHashNavigation();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashNavigation);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashNavigation);
+    };
+  }, []);
+
   return (
     <Card ref={sectionRef} id="manual-answers">
-      <Accordion type="single" collapsible className="w-full" onValueChange={handleAccordionChange}>
+      <Accordion 
+        type="single" 
+        collapsible 
+        className="w-full" 
+        value={accordionValue}
+        onValueChange={(value) => {
+          setAccordionValue(value);
+          handleAccordionChange(value);
+        }}
+      >
         <AccordionItem value="manual-answers" className="border-0">
           <AccordionTrigger className="px-6 py-4 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -136,6 +185,7 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
                     return (
                       <div
                         key={answer.id}
+                        id={`manual-answer-${answer.id}`}
                         className={`group flex items-start justify-between gap-4 rounded-xs border border-border/30 bg-muted/20 p-4 transition-colors hover:bg-muted/30 ${
                           isItemDeleting ? 'opacity-50' : ''
                         }`}

@@ -39,7 +39,7 @@ export default async function SecurityQuestionnairePage() {
           description={
             "Automatically answer security questionnaires with the information we have about your company. Upload questionnaires from vendors and we'll extract the questions and provide answers based on your policies and organizational details."
           }
-          ctaDisabled={true}
+          ctaDisabled={false}
           cta={'Publish policies'}
           ctaTooltip="To use this feature you need to publish policies first"
           href={`/${organizationId}/policies/all`}

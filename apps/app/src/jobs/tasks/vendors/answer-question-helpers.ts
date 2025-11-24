@@ -37,36 +37,6 @@ export async function generateAnswerWithRAG(
       })),
     });
 
-    // Extract sources information and deduplicate using universal utility
-    // Multiple chunks from the same source (same policy/context/manual answer/knowledge base document) should appear as a single source
-    // Note: sourceName is set for some types, but knowledge_base_document will be handled by deduplication function
-    const sources = deduplicateSources(
-      similarContent.map((result) => {
-        // Use any to avoid TypeScript narrowing issues, then assert correct type
-        const r = result as any as SimilarContentResult;
-        let sourceName: string | undefined;
-        if (r.policyName) {
-          sourceName = `Policy: ${r.policyName}`;
-        } else if (r.vendorName && r.questionnaireQuestion) {
-          sourceName = `Questionnaire: ${r.vendorName}`;
-        } else if (r.contextQuestion) {
-          sourceName = 'Context Q&A';
-        } else if ((r.sourceType as string) === 'manual_answer') {
-          sourceName = 'Manual Answer';
-        }
-        // Don't set sourceName for knowledge_base_document - let deduplication function handle it with filename
-
-        return {
-          sourceType: r.sourceType,
-          sourceName,
-          sourceId: r.sourceId,
-          policyName: r.policyName,
-          documentName: r.documentName,
-          score: r.score,
-        };
-      }),
-    );
-
     // If no relevant content found, return null
     if (similarContent.length === 0) {
       logger.warn('No similar content found in vector database', {
@@ -75,6 +45,53 @@ export async function generateAnswerWithRAG(
       });
       return { answer: null, sources: [] };
     }
+
+    // Extract sources information and deduplicate using universal utility
+    // Multiple chunks from the same source (same policy/context/manual answer/knowledge base document) should appear as a single source
+    // Note: sourceName is set for some types, but knowledge_base_document will be handled by deduplication function
+    const sourcesBeforeDedup = similarContent.map((result) => {
+      // Use any to avoid TypeScript narrowing issues, then assert correct type
+      const r = result as any as SimilarContentResult;
+      let sourceName: string | undefined;
+      if (r.policyName) {
+        sourceName = `Policy: ${r.policyName}`;
+      } else if (r.vendorName && r.questionnaireQuestion) {
+        sourceName = `Questionnaire: ${r.vendorName}`;
+      } else if (r.contextQuestion) {
+        sourceName = 'Context Q&A';
+      } else if ((r.sourceType as string) === 'manual_answer') {
+        // Don't set sourceName here - let deduplicateSources handle it with manualAnswerQuestion
+        // This ensures we show the question preview if available
+        sourceName = undefined;
+      }
+      // Don't set sourceName for knowledge_base_document - let deduplication function handle it with filename
+
+      return {
+        sourceType: r.sourceType,
+        sourceName,
+        sourceId: r.sourceId,
+        policyName: r.policyName,
+        documentName: r.documentName,
+        manualAnswerQuestion: r.manualAnswerQuestion,
+        score: r.score,
+      };
+    });
+
+    const sources = deduplicateSources(sourcesBeforeDedup);
+
+    logger.info('Sources extracted and deduplicated', {
+      question: question.substring(0, 100),
+      organizationId,
+      similarContentCount: similarContent.length,
+      sourcesBeforeDedupCount: sourcesBeforeDedup.length,
+      sourcesAfterDedupCount: sources.length,
+      sources: sources.map((s) => ({
+        type: s.sourceType,
+        name: s.sourceName,
+        score: s.score,
+        sourceId: s.sourceId?.substring(0, 30),
+      })),
+    });
 
     // Build context from retrieved content
     const contextParts = similarContent.map((result, index) => {
@@ -141,7 +158,24 @@ Answer the question based ONLY on the provided context, using first person plura
       trimmedAnswer.toLowerCase().includes('no evidence') ||
       trimmedAnswer.toLowerCase().includes('not found in the context')
     ) {
+      logger.warn('Answer indicates no evidence found', {
+        question: question.substring(0, 100),
+        answer: trimmedAnswer.substring(0, 100),
+        sourcesCount: sources.length,
+      });
       return { answer: null, sources: [] };
+    }
+
+    // Safety check: if we have an answer but no sources, log a warning
+    // This shouldn't happen if LLM follows instructions, but we log it for debugging
+    if (sources.length === 0 && trimmedAnswer) {
+      logger.warn('Answer generated but no sources found - this may indicate LLM used general knowledge', {
+        question: question.substring(0, 100),
+        answer: trimmedAnswer.substring(0, 100),
+        similarContentCount: similarContent.length,
+        sourcesBeforeDedupCount: sourcesBeforeDedup.length,
+      });
+      // Still return the answer, but without sources
     }
 
     return { answer: trimmedAnswer, sources };

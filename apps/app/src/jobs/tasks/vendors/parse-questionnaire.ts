@@ -132,7 +132,7 @@ async function extractContentFromFile(
     
     try {
       const { text } = await generateText({
-        model: openai('gpt-5-mini'),
+        model: openai('gpt-5.1-mini'),
         messages: [
           {
             role: 'user',
@@ -407,18 +407,28 @@ async function parseChunkQuestionsAndAnswers(chunk: string, chunkIndex: number, 
       },
       required: ['questionsAndAnswers'],
     }),
-    system: `Extract question-answer pairs from vendor questionnaires. Return structured pairs. Use null for missing answers.`,
+    system: `You parse vendor questionnaires. Return only genuine question text paired with its answer.
+- Ignore table headers, column labels, metadata rows, or placeholder words such as "Question", "Company Name", "Department", "Assessment Date", "Name of Assessor".
+- A valid question is a meaningful sentence (usually ends with '?' or starts with interrogatives like What/Why/How/When/Where/Is/Are/Do/Does/Can/Will/Should).
+- Do not fabricate answers; if no answer is provided, set answer to null.
+- Keep the original question wording but trim whitespace.`,
     prompt: totalChunks > 1
-      ? `Extract question-answer pairs from chunk ${chunkIndex + 1} of ${totalChunks}:
+      ? `Chunk ${chunkIndex + 1} of ${totalChunks}.
+Instructions:
+- Extract only question → answer pairs that represent real questions.
+- Ignore rows or cells that contain only headers/labels (e.g. "Company Name", "Department", "Assessment Date", "Question", "Answer") or other metadata.
+- If an answer is blank, set it to null.
 
-${chunk}
+Chunk content:
+${chunk}`
+      : `Instructions:
+- Extract all meaningful question → answer pairs from the following content.
+- Ignore rows or cells that contain only headers/labels (e.g. "Company Name", "Department", "Assessment Date", "Question", "Answer", "Name of Assessor").
+- Keep only entries that are actual questions (end with '?' or start with interrogative words).
+- If an answer is blank, set it to null.
 
-Return all question-answer pairs found in this chunk.`
-      : `Extract all question-answer pairs from:
-
-${chunk}
-
-Return a structured list of questions and their corresponding answers.`,
+Content:
+${chunk}`,
   });
   
   const parsed = (object as { questionsAndAnswers: QuestionAnswer[] }).questionsAndAnswers;
@@ -435,82 +445,58 @@ Return a structured list of questions and their corresponding answers.`,
  * Optimized to handle large content by chunking and processing in parallel
  */
 async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer[]> {
-  // GPT-5-mini can handle ~128k tokens, chunk at 100k tokens for efficiency
-  // 1 token ≈ 4 characters, so 100k tokens ≈ 400k characters
-  const MAX_CHUNK_SIZE_CHARS = 400_000; // Increased for fewer API calls
-  const MIN_CHUNK_SIZE_CHARS = 10_000; // Don't chunk if content is small
-  
-  // If content is small, process directly
-  if (content.length <= MIN_CHUNK_SIZE_CHARS) {
-    logger.info('Processing content directly (small size)', {
-      contentLength: content.length,
+  // GPT-5-mini can handle ~128k tokens. Chunk by question count + char limit for efficiency.
+  const MAX_CHUNK_SIZE_CHARS = 80_000;
+  const MIN_CHUNK_SIZE_CHARS = 5_000;
+  const MAX_QUESTIONS_PER_CHUNK = 35;
+
+  const chunkInfos = buildQuestionAwareChunks(content, {
+    maxChunkChars: MAX_CHUNK_SIZE_CHARS,
+    minChunkChars: MIN_CHUNK_SIZE_CHARS,
+    maxQuestionsPerChunk: MAX_QUESTIONS_PER_CHUNK,
+  });
+
+  if (chunkInfos.length === 0) {
+    logger.warn('No content found after preprocessing, returning empty result');
+    return [];
+  }
+
+  if (chunkInfos.length === 1) {
+    logger.info('Processing content as a single chunk', {
+      contentLength: chunkInfos[0].content.length,
+      estimatedQuestions: chunkInfos[0].questionCount,
     });
-    return parseChunkQuestionsAndAnswers(content, 0, 1);
+    return parseChunkQuestionsAndAnswers(chunkInfos[0].content, 0, 1);
   }
-  
-  // Chunk large content
-  logger.info('Chunking large content for parallel processing', {
+
+  const totalEstimatedQuestions = chunkInfos.reduce(
+    (sum, chunk) => sum + chunk.questionCount,
+    0,
+  );
+
+  logger.info('Chunking content by question count for parallel processing', {
     contentLength: content.length,
-    estimatedChunks: Math.ceil(content.length / MAX_CHUNK_SIZE_CHARS),
+    totalChunks: chunkInfos.length,
+    avgQuestionsPerChunk: Number(
+      (totalEstimatedQuestions / chunkInfos.length || 0).toFixed(2),
+    ),
   });
   
-  const chunks: string[] = [];
-  let start = 0;
-  
-  while (start < content.length) {
-    const end = Math.min(start + MAX_CHUNK_SIZE_CHARS, content.length);
-    let chunk = content.slice(start, end);
-    
-    // Try to break at smart boundaries for better context
-    // Prefer breaking after question marks (preserves Q&A pairs)
-    if (end < content.length && chunk.length > MAX_CHUNK_SIZE_CHARS * 0.8) {
-      let breakPoint = -1;
-      
-      // First try: break after question mark (best for Q&A content)
-      const lastQuestionMark = chunk.lastIndexOf('?');
-      if (lastQuestionMark > MAX_CHUNK_SIZE_CHARS * 0.7) {
-        // Find end of line after question mark
-        const afterQuestion = chunk.indexOf('\n', lastQuestionMark);
-        breakPoint = afterQuestion !== -1 ? afterQuestion + 1 : lastQuestionMark + 1;
-      }
-      
-      // Fallback: break at paragraph boundaries
-      if (breakPoint === -1) {
-        const lastDoubleNewline = chunk.lastIndexOf('\n\n');
-        const lastSingleNewline = chunk.lastIndexOf('\n');
-        breakPoint = Math.max(lastDoubleNewline, lastSingleNewline);
-      }
-      
-      if (breakPoint > MAX_CHUNK_SIZE_CHARS * 0.7) {
-        chunk = chunk.slice(0, breakPoint + 1);
-      }
-    }
-    
-    if (chunk.trim().length > 0) {
-      chunks.push(chunk.trim());
-    }
-    
-    start = end;
-  }
-  
-  logger.info('Content chunked, processing in parallel', {
-    totalChunks: chunks.length,
-  });
-  
-  // Process ALL chunks in parallel for maximum speed
-  // GPT-5-mini has high rate limits and is faster, so we can process all at once
+  // Process all chunks in parallel for maximum speed
   const parseStartTime = Date.now();
-  const allPromises = chunks.map((chunk, index) =>
-    parseChunkQuestionsAndAnswers(chunk, index, chunks.length),
+  const allPromises = chunkInfos.map((chunk, index) =>
+    parseChunkQuestionsAndAnswers(chunk.content, index, chunkInfos.length),
   );
   
   const allResults = await Promise.all(allPromises);
   const parseTime = ((Date.now() - parseStartTime) / 1000).toFixed(2);
   
+  const totalRawQuestions = allResults.reduce((sum, chunk) => sum + chunk.length, 0);
+  
   logger.info('All chunks processed in parallel', {
-    totalChunks: chunks.length,
+    totalChunks: chunkInfos.length,
     parseTimeSeconds: parseTime,
-    totalQuestions: allResults.flat().length,
+    totalQuestions: totalRawQuestions,
   });
   
   // Deduplicate questions (same question might appear in multiple chunks)
@@ -531,10 +517,120 @@ async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer
   
   logger.info('Parsing complete', {
     totalQuestions: uniqueResults.length,
-    duplicatesRemoved: allResults.length - uniqueResults.length,
+    duplicatesRemoved: totalRawQuestions - uniqueResults.length,
   });
   
   return uniqueResults;
+}
+
+interface ChunkInfo {
+  content: string;
+  questionCount: number;
+}
+
+function buildQuestionAwareChunks(
+  content: string,
+  options: {
+    maxChunkChars: number;
+    minChunkChars: number;
+    maxQuestionsPerChunk: number;
+  },
+): ChunkInfo[] {
+  const trimmedContent = content.trim();
+  if (!trimmedContent) {
+    return [];
+  }
+
+  if (trimmedContent.length <= options.minChunkChars) {
+    return [
+      {
+        content: trimmedContent,
+        questionCount: estimateQuestionCount(trimmedContent),
+      },
+    ];
+  }
+
+  const chunks: ChunkInfo[] = [];
+  const lines = trimmedContent.split(/\r?\n/);
+  let buffer: string[] = [];
+  let bufferCharCount = 0;
+  let bufferQuestionCount = 0;
+
+  const pushChunk = () => {
+    const chunkText = buffer.join('\n').trim();
+    if (!chunkText) {
+      return;
+    }
+    chunks.push({
+      content: chunkText,
+      questionCount: bufferQuestionCount || estimateQuestionCount(chunkText),
+    });
+    buffer = [];
+    bufferCharCount = 0;
+    bufferQuestionCount = 0;
+  };
+
+  for (const line of lines) {
+    const originalLine = line;
+    const trimmedLine = line.trim();
+    const isEmpty = trimmedLine.length === 0;
+    const looksLikeQuestion = !isEmpty && looksLikeQuestionLine(trimmedLine);
+
+    const exceedsCharBudget =
+      bufferCharCount + originalLine.length > options.maxChunkChars;
+    const exceedsQuestionBudget =
+      bufferQuestionCount >= options.maxQuestionsPerChunk;
+
+    if ((exceedsCharBudget || (exceedsQuestionBudget && looksLikeQuestion)) && buffer.length) {
+      pushChunk();
+    }
+
+    if (!isEmpty || buffer.length) {
+      buffer.push(originalLine);
+      bufferCharCount += originalLine.length + 1;
+    }
+
+    if (looksLikeQuestion) {
+      bufferQuestionCount += 1;
+    }
+  }
+
+  pushChunk();
+
+  return chunks.length > 0
+    ? chunks
+    : [
+        {
+          content: trimmedContent,
+          questionCount: estimateQuestionCount(trimmedContent),
+        },
+      ];
+}
+
+function looksLikeQuestionLine(line: string): boolean {
+  const questionSuffix = /[?？]\s*$/;
+  const explicitQuestionPrefix = /^(?:\d+\s*[\).\]]\s*)?(?:question|q)\b/i;
+  const interrogativePrefix =
+    /^(?:what|why|how|when|where|is|are|does|do|can|will|should|list|describe|explain)\b/i;
+
+  return (
+    questionSuffix.test(line) ||
+    explicitQuestionPrefix.test(line) ||
+    interrogativePrefix.test(line)
+  );
+}
+
+function estimateQuestionCount(text: string): number {
+  const questionMarks = text.match(/[?？]/g)?.length ?? 0;
+  if (questionMarks > 0) {
+    return questionMarks;
+  }
+  const lines = text.split(/\r?\n/).filter((line) => looksLikeQuestionLine(line.trim()));
+  if (lines.length > 0) {
+    return lines.length;
+  }
+  // Fallback heuristic: assume roughly one question per 1200 chars
+  return Math.max(1, Math.floor(text.length / 1200));
 }
 
 export const parseQuestionnaireTask = task({
