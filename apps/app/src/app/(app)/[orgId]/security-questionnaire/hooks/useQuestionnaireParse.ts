@@ -16,8 +16,6 @@ interface UseQuestionnaireParseProps {
   parseToken: string | null;
   autoAnswerToken: string | null;
   setAutoAnswerToken: (token: string | null) => void;
-  singleAnswerToken: string | null;
-  setSingleAnswerToken: (token: string | null) => void;
   setIsParseProcessStarted: (started: boolean) => void;
   setParseTaskId: (id: string | null) => void;
   setParseToken: (token: string | null) => void;
@@ -36,8 +34,6 @@ export function useQuestionnaireParse({
   parseToken,
   autoAnswerToken,
   setAutoAnswerToken,
-  singleAnswerToken,
-  setSingleAnswerToken,
   setIsParseProcessStarted,
   setParseTaskId,
   setParseToken,
@@ -62,18 +58,6 @@ export function useQuestionnaireParse({
     }
   }, [autoAnswerToken, setAutoAnswerToken]);
 
-  // Get trigger token for single answer (can trigger and read)
-  useEffect(() => {
-    async function getSingleAnswerToken() {
-      const result = await createTriggerToken('answer-question');
-      if (result.success && result.token) {
-        setSingleAnswerToken(result.token);
-      }
-    }
-    if (!singleAnswerToken) {
-      getSingleAnswerToken();
-    }
-  }, [singleAnswerToken, setSingleAnswerToken]);
 
   // Track parse task with realtime hook
   const { run: parseRun, error: parseError } = useRealtimeRun<typeof parseQuestionnaireTask>(

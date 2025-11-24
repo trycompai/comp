@@ -2,8 +2,8 @@ import { syncOrganizationEmbeddings } from '@/lib/vector';
 import { logger, metadata, task } from '@trigger.dev/sdk';
 import { answerQuestion } from './answer-question';
 
-// No longer using BATCH_SIZE - process all questions at once like onboard-organization
-// This allows metadata updates to happen incrementally as tasks complete
+// Process all questions in parallel by calling answerQuestion directly as a function
+// This allows metadata updates to happen incrementally as questions complete
 
 export const vendorQuestionnaireOrchestratorTask = task({
   id: 'vendor-questionnaire-orchestrator',
@@ -65,22 +65,20 @@ export const vendorQuestionnaireOrchestratorTask = task({
       metadata.set(`question_${qa.index}_status`, 'pending');
     });
 
-    // Process all questions using batchTriggerAndWait
-    // Note: Trigger.dev may batch metadata updates during batch execution,
-    // so successful answers might not appear incrementally until batch completes
-    const batchHandle = await answerQuestion.batchTriggerAndWait(
-      questionsToAnswer.map((qa) => ({
-        payload: {
+    // Process all questions in parallel by calling answerQuestion directly
+    // This allows metadata updates to happen incrementally as questions complete
+    const results = await Promise.all(
+      questionsToAnswer.map((qa) =>
+        answerQuestion({
           question: qa.question,
           organizationId: payload.organizationId,
           questionIndex: qa.index,
           totalQuestions: payload.questionsAndAnswers.length,
-        },
-        concurrencyKey: payload.organizationId, // Allow parallel execution
-      })),
+        }),
+      ),
     );
 
-    // Process results - batchHandle has a .runs property with the results array
+    // Process results
     const allAnswers: Array<{
       questionIndex: number;
       question: string;
@@ -90,49 +88,12 @@ export const vendorQuestionnaireOrchestratorTask = task({
         sourceName?: string;
         score: number;
       }>;
-    }> = [];
-
-    batchHandle.runs.forEach((run, idx) => {
-      const qa = questionsToAnswer[idx];
-
-      if (run.ok && run.output) {
-        const taskResult = run.output;
-        if (taskResult.success && taskResult.answer) {
-          allAnswers.push({
-            questionIndex: qa.index,
-            question: qa.question,
-            answer: taskResult.answer,
-            sources: taskResult.sources,
-          });
-        } else {
-          allAnswers.push({
-            questionIndex: qa.index,
-            question: qa.question,
-            answer: null,
-            sources: [],
-          });
-        }
-      } else {
-        // Task failed - error is only available when run.ok is false
-        const errorMessage =
-          run.ok === false && run.error
-            ? run.error instanceof Error
-              ? run.error.message
-              : String(run.error)
-            : 'Unknown error';
-
-        logger.error('Task failed', {
-          questionIndex: qa.index,
-          error: errorMessage,
-        });
-        allAnswers.push({
-          questionIndex: qa.index,
-          question: qa.question,
-          answer: null,
-          sources: [],
-        });
-      }
-    });
+    }> = results.map((result) => ({
+      questionIndex: result.questionIndex,
+      question: result.question,
+      answer: result.answer,
+      sources: result.sources,
+    }));
 
     logger.info('Auto-answer questionnaire completed', {
       vendorId: payload.vendorId,
