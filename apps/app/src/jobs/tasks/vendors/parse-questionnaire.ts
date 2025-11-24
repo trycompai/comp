@@ -456,10 +456,10 @@ ${chunk}`,
  * Optimized to handle large content by chunking and processing in parallel
  */
 async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer[]> {
-  // GPT-5-mini can handle ~128k tokens. Chunk by question count + char limit for efficiency.
+  // GPT-5-mini can handle ~128k tokens. Chunk by individual questions (1 question = 1 chunk) for parallel processing.
   const MAX_CHUNK_SIZE_CHARS = 80_000;
   const MIN_CHUNK_SIZE_CHARS = 5_000;
-  const MAX_QUESTIONS_PER_CHUNK = 35;
+  const MAX_QUESTIONS_PER_CHUNK = 1; // Each chunk contains exactly one question
 
   const chunkInfos = buildQuestionAwareChunks(content, {
     maxChunkChars: MAX_CHUNK_SIZE_CHARS,
@@ -482,10 +482,10 @@ async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer
 
   const totalEstimatedQuestions = chunkInfos.reduce((sum, chunk) => sum + chunk.questionCount, 0);
 
-  logger.info('Chunking content by question count for parallel processing', {
+  logger.info('Chunking content by individual questions (1 question per chunk) for parallel processing', {
     contentLength: content.length,
     totalChunks: chunkInfos.length,
-    avgQuestionsPerChunk: Number((totalEstimatedQuestions / chunkInfos.length || 0).toFixed(2)),
+    questionsPerChunk: 1, // Each chunk contains exactly one question
   });
 
   // Process all chunks in parallel for maximum speed
@@ -547,60 +547,51 @@ function buildQuestionAwareChunks(
     return [];
   }
 
-  if (trimmedContent.length <= options.minChunkChars) {
-    return [
-      {
-        content: trimmedContent,
-        questionCount: estimateQuestionCount(trimmedContent),
-      },
-    ];
-  }
-
   const chunks: ChunkInfo[] = [];
   const lines = trimmedContent.split(/\r?\n/);
-  let buffer: string[] = [];
-  let bufferCharCount = 0;
-  let bufferQuestionCount = 0;
+  let currentChunk: string[] = [];
+  let currentQuestionFound = false;
 
   const pushChunk = () => {
-    const chunkText = buffer.join('\n').trim();
+    const chunkText = currentChunk.join('\n').trim();
     if (!chunkText) {
       return;
     }
     chunks.push({
       content: chunkText,
-      questionCount: bufferQuestionCount || estimateQuestionCount(chunkText),
+      questionCount: 1, // Each chunk contains exactly one question
     });
-    buffer = [];
-    bufferCharCount = 0;
-    bufferQuestionCount = 0;
+    currentChunk = [];
+    currentQuestionFound = false;
   };
 
   for (const line of lines) {
-    const originalLine = line;
     const trimmedLine = line.trim();
     const isEmpty = trimmedLine.length === 0;
     const looksLikeQuestion = !isEmpty && looksLikeQuestionLine(trimmedLine);
 
-    const exceedsCharBudget = bufferCharCount + originalLine.length > options.maxChunkChars;
-    const exceedsQuestionBudget = bufferQuestionCount >= options.maxQuestionsPerChunk;
-
-    if ((exceedsCharBudget || (exceedsQuestionBudget && looksLikeQuestion)) && buffer.length) {
+    // If we find a new question and we already have a question in the current chunk, start a new chunk
+    if (looksLikeQuestion && currentQuestionFound && currentChunk.length > 0) {
       pushChunk();
     }
 
-    if (!isEmpty || buffer.length) {
-      buffer.push(originalLine);
-      bufferCharCount += originalLine.length + 1;
+    // Add line to current chunk (including empty lines for context)
+    if (!isEmpty || currentChunk.length > 0) {
+      currentChunk.push(line);
     }
 
+    // Mark that we've found a question in this chunk
     if (looksLikeQuestion) {
-      bufferQuestionCount += 1;
+      currentQuestionFound = true;
     }
   }
 
-  pushChunk();
+  // Push the last chunk if it has content
+  if (currentChunk.length > 0) {
+    pushChunk();
+  }
 
+  // If no questions were detected, return the entire content as a single chunk
   return chunks.length > 0
     ? chunks
     : [

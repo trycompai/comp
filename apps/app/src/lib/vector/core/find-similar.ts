@@ -49,7 +49,7 @@ export async function findSimilarContent(
     // so we'll filter results after retrieval
     const results = await vectorIndex.query({
       vector: queryEmbedding,
-      topK: limit * 2, // Get more results to account for filtering
+      topK: 100, // Get more results to account for filtering
       includeMetadata: true,
     });
 
