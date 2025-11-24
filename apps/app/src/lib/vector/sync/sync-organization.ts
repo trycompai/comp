@@ -259,7 +259,7 @@ async function performSync(organizationId: string): Promise<void> {
               return; // Skip empty context
             }
 
-            const chunks = chunkText(contextText, 500, 50);
+            const chunks = chunkText(contextText, 8000, 50);
             
             if (chunks.length === 0) {
               return; // Skip if no chunks

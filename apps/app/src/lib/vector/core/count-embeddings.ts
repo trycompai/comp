@@ -30,7 +30,7 @@ export async function countEmbeddings(
     
     const results = await vectorIndex.query({
       vector: queryEmbedding,
-      topK: 1000, // Max allowed by Upstash Vector
+      topK: 100, // Max allowed by Upstash Vector
       includeMetadata: true,
     });
 
@@ -101,7 +101,7 @@ export async function listManualAnswerEmbeddings(
     
     const results = await vectorIndex.query({
       vector: queryEmbedding,
-      topK: 1000,
+      topK: 100,
       includeMetadata: true,
     });
 
