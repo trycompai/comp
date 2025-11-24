@@ -100,23 +100,17 @@ export function useQuestionnaireDetailState({
 
   const deleteAnswerAction = useAction(deleteQuestionnaireAnswer);
 
-  // Create trigger tokens
+  // Create trigger token for auto-answer (single question answers now use server action)
   useEffect(() => {
-    const fetchTokens = async () => {
-      const [autoTokenResult, singleTokenResult] = await Promise.all([
-        createTriggerToken('vendor-questionnaire-orchestrator'),
-        createTriggerToken('answer-question'),
-      ]);
+    const fetchToken = async () => {
+      const autoTokenResult = await createTriggerToken('vendor-questionnaire-orchestrator');
 
       if (autoTokenResult.success && autoTokenResult.token) {
         setAutoAnswerToken(autoTokenResult.token);
       }
-      if (singleTokenResult.success && singleTokenResult.token) {
-        setSingleAnswerToken(singleTokenResult.token);
-      }
     };
 
-    fetchTokens();
+    fetchToken();
   }, []);
 
   // Sync queue ref with state

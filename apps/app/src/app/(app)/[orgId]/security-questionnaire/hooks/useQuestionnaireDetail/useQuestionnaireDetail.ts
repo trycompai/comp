@@ -94,7 +94,6 @@ export function useQuestionnaireDetail({
 
   // Single answer hook
   const singleAnswer = useQuestionnaireSingleAnswer({
-    singleAnswerToken: state.singleAnswerToken,
     results: state.results.map((r) => ({
       question: r.question,
       answer: r.answer,

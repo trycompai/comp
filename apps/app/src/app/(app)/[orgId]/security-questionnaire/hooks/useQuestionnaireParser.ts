@@ -15,8 +15,6 @@ export function useQuestionnaireParser() {
     parseToken: state.parseToken,
     autoAnswerToken: state.autoAnswerToken,
     setAutoAnswerToken: state.setAutoAnswerToken,
-    singleAnswerToken: state.singleAnswerToken,
-    setSingleAnswerToken: state.setSingleAnswerToken,
     setIsParseProcessStarted: state.setIsParseProcessStarted,
     setParseTaskId: state.setParseTaskId,
     setParseToken: state.setParseToken,
@@ -44,7 +42,6 @@ export function useQuestionnaireParser() {
   });
 
   const singleAnswer = useQuestionnaireSingleAnswer({
-    singleAnswerToken: state.singleAnswerToken,
     results: state.results,
     answeringQuestionIndex: state.answeringQuestionIndex,
     setResults: state.setResults,
