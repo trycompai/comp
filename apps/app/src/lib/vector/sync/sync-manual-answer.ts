@@ -61,6 +61,7 @@ export async function syncManualAnswerToVector(
       sourceType: 'manual_answer',
       sourceId: manualAnswerId,
       content: text,
+      manualAnswerQuestion: manualAnswer.question, // Store question for source identification
       updatedAt: manualAnswer.updatedAt.toISOString(),
     });
 

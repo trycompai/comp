@@ -1,6 +1,6 @@
 'use client';
 
-import { QuestionnaireResults } from '../../components/QuestionnaireResults';
+import { QuestionnaireView } from '../../components/QuestionnaireView';
 import { useQuestionnaireDetail } from '../../hooks/useQuestionnaireDetail';
 
 interface QuestionnaireDetailClientProps {
@@ -33,6 +33,7 @@ export function QuestionnaireDetailClient({
     expandedSources,
     questionStatuses,
     answeringQuestionIndex,
+    answerQueue,
     hasClickedAutoAnswer,
     isLoading,
     isAutoAnswering,
@@ -57,60 +58,52 @@ export function QuestionnaireDetailClient({
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl lg:text-2xl font-semibold text-foreground">{filename}</h1>
-        <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed max-w-3xl">
-          Review and manage answers for this questionnaire
-        </p>
-      </div>
-      <QuestionnaireResults
-        orgId={organizationId}
-        results={results.map((r, index) => ({
-          question: r.question,
-          answer: r.answer,
-          sources: r.sources,
-          failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
-          status: (r as any).status ?? 'untouched', // Preserve status field for UI behavior
-          _originalIndex: (r as any).originalIndex ?? index, // Preserve originalIndex for reference, fallback to map index
-        }))}
-        filteredResults={filteredResults?.map((r, index) => ({
-          question: r.question,
-          answer: r.answer,
-          sources: r.sources,
-          failedToGenerate: (r as any).failedToGenerate ?? false, // Preserve failedToGenerate from result
-          status: (r as any).status ?? 'untouched', // Preserve status field for UI behavior
-          _originalIndex: (r as any).originalIndex ?? index, // Preserve originalIndex for reference, fallback to map index
-        }))}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        editingIndex={editingIndex}
-        editingAnswer={editingAnswer}
-        onEditingAnswerChange={setEditingAnswer}
-        expandedSources={expandedSources}
-        questionStatuses={questionStatuses}
-        answeringQuestionIndex={answeringQuestionIndex}
-        hasClickedAutoAnswer={hasClickedAutoAnswer}
-        isLoading={isLoading}
-        isAutoAnswering={isAutoAnswering}
-        isExporting={isExporting}
-        isSaving={isSaving}
-        savingIndex={savingIndex}
-        showExitDialog={false}
-        onShowExitDialogChange={() => {}}
-        onExit={() => {}}
-        onAutoAnswer={handleAutoAnswer}
-        onAnswerSingleQuestion={handleAnswerSingleQuestion}
-        onEditAnswer={handleEditAnswer}
-        onSaveAnswer={handleSaveAnswer}
-        onCancelEdit={handleCancelEdit}
-        onExport={handleExport}
-        onToggleSource={handleToggleSource}
-        totalCount={totalCount}
-        answeredCount={answeredCount}
-        progressPercentage={progressPercentage}
-      />
-    </div>
+    <QuestionnaireView
+      orgId={organizationId}
+      results={results.map((r, index) => ({
+        question: r.question,
+        answer: r.answer,
+        sources: r.sources,
+        failedToGenerate: (r as any).failedToGenerate ?? false,
+        status: (r as any).status ?? 'untouched',
+        _originalIndex: (r as any).originalIndex ?? index,
+      }))}
+      filteredResults={filteredResults?.map((r, index) => ({
+        question: r.question,
+        answer: r.answer,
+        sources: r.sources,
+        failedToGenerate: (r as any).failedToGenerate ?? false,
+        status: (r as any).status ?? 'untouched',
+        _originalIndex: (r as any).originalIndex ?? index,
+      }))}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      editingIndex={editingIndex}
+      editingAnswer={editingAnswer}
+      setEditingAnswer={setEditingAnswer}
+      expandedSources={expandedSources}
+      questionStatuses={questionStatuses as Map<number, 'pending' | 'processing' | 'completed'>}
+      answeringQuestionIndex={answeringQuestionIndex}
+      answerQueue={answerQueue}
+      hasClickedAutoAnswer={hasClickedAutoAnswer}
+      isLoading={isLoading}
+      isAutoAnswering={isAutoAnswering}
+      isExporting={isExporting}
+      isSaving={isSaving}
+      savingIndex={savingIndex}
+      totalCount={totalCount}
+      answeredCount={answeredCount}
+      progressPercentage={progressPercentage}
+      onAutoAnswer={handleAutoAnswer}
+      onAnswerSingleQuestion={handleAnswerSingleQuestion}
+      onEditAnswer={handleEditAnswer}
+      onSaveAnswer={handleSaveAnswer}
+      onCancelEdit={handleCancelEdit}
+      onExport={handleExport}
+      onToggleSource={handleToggleSource}
+      filename={filename}
+      description="Review and manage answers for this questionnaire"
+    />
   );
 }
 

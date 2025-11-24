@@ -19,6 +19,7 @@ interface QuestionnaireUploadProps {
   isLoading: boolean;
   parseStatus: 'uploading' | 'starting' | 'queued' | 'analyzing' | 'processing' | null;
   orgId: string;
+  hasResults?: boolean;
 }
 
 export function QuestionnaireUpload({
@@ -28,6 +29,7 @@ export function QuestionnaireUpload({
   onParse,
   isLoading,
   parseStatus,
+  hasResults = false,
 }: QuestionnaireUploadProps) {
   return (
     <div className="flex flex-col gap-6">
@@ -99,7 +101,7 @@ export function QuestionnaireUpload({
         <div className="flex items-center justify-end">
           <Button
             onClick={onParse}
-            disabled={isLoading || !selectedFile}
+            disabled={isLoading || !selectedFile || hasResults}
             className="h-11 lg:h-12 px-6 lg:px-8 w-full sm:w-auto"
             size="lg"
           >

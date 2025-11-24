@@ -19,6 +19,7 @@ interface QuestionnaireResultsProps {
   expandedSources: Set<number>;
   questionStatuses: Map<number, 'pending' | 'processing' | 'completed'>;
   answeringQuestionIndex: number | null;
+  answerQueue?: number[];
   hasClickedAutoAnswer: boolean;
   isLoading: boolean;
   isAutoAnswering: boolean;
@@ -52,6 +53,7 @@ export function QuestionnaireResults({
   expandedSources,
   questionStatuses,
   answeringQuestionIndex,
+  answerQueue = [],
   hasClickedAutoAnswer,
   isLoading,
   isAutoAnswering,
@@ -111,6 +113,7 @@ export function QuestionnaireResults({
                         expandedSources={expandedSources}
                       questionStatuses={questionStatuses}
                       answeringQuestionIndex={answeringQuestionIndex}
+                      answerQueue={answerQueue}
                       isAutoAnswering={isAutoAnswering}
                       hasClickedAutoAnswer={hasClickedAutoAnswer}
                       isSaving={isSaving}
@@ -133,6 +136,7 @@ export function QuestionnaireResults({
                       expandedSources={expandedSources}
                       questionStatuses={questionStatuses}
                       answeringQuestionIndex={answeringQuestionIndex}
+                      answerQueue={answerQueue}
                       isAutoAnswering={isAutoAnswering}
                       hasClickedAutoAnswer={hasClickedAutoAnswer}
                       isSaving={isSaving}

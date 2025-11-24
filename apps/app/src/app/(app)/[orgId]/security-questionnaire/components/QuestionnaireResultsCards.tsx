@@ -7,6 +7,7 @@ import Link from 'next/link';
 import type { QuestionAnswer } from './types';
 import { deduplicateSources } from '../utils/deduplicate-sources';
 import { KnowledgeBaseDocumentLink } from './KnowledgeBaseDocumentLink';
+import { ManualAnswerLink } from './ManualAnswerLink';
 
 interface QuestionnaireResultsCardsProps {
   orgId: string;
@@ -18,6 +19,7 @@ interface QuestionnaireResultsCardsProps {
   expandedSources: Set<number>;
   questionStatuses: Map<number, 'pending' | 'processing' | 'completed'>;
   answeringQuestionIndex: number | null;
+  answerQueue?: number[];
   isAutoAnswering: boolean;
   hasClickedAutoAnswer: boolean;
   isSaving?: boolean;
@@ -39,6 +41,7 @@ export function QuestionnaireResultsCards({
   expandedSources,
   questionStatuses,
   answeringQuestionIndex,
+  answerQueue = [],
   isAutoAnswering,
   hasClickedAutoAnswer,
   isSaving,
@@ -63,6 +66,8 @@ export function QuestionnaireResultsCards({
         const uniqueSources = qa.sources ? deduplicateSources(qa.sources) : [];
         const isEditing = editingIndex === safeIndex;
         const questionStatus = questionStatuses.get(safeIndex);
+        // Check if question is in queue (waiting to be processed)
+        const isQueued = answerQueue.includes(safeIndex);
         // Determine if this question is being processed
         // It's processing if:
         // 1. Status is explicitly 'processing'
@@ -138,6 +143,11 @@ export function QuestionnaireResultsCards({
                       <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
                       <span className="text-sm text-muted-foreground">Finding answer...</span>
                     </div>
+                  ) : isQueued ? (
+                    <div className="flex items-center gap-2 p-3 rounded-xs bg-muted/30 border border-border/30 min-h-[44px]">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                      <span className="text-sm text-muted-foreground">Finding answer...</span>
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-2">
                       {!qa.failedToGenerate && (
@@ -204,6 +214,8 @@ export function QuestionnaireResultsCards({
                       const isPolicy = source.sourceType === 'policy' && source.sourceId;
                       const isKnowledgeBaseDocument =
                         source.sourceType === 'knowledge_base_document' && source.sourceId;
+                      const isManualAnswer =
+                        source.sourceType === 'manual_answer' && source.sourceId;
                       const sourceContent = source.sourceName || source.sourceType;
 
                       return (
@@ -222,6 +234,12 @@ export function QuestionnaireResultsCards({
                           ) : isKnowledgeBaseDocument && source.sourceId ? (
                             <KnowledgeBaseDocumentLink
                               documentId={source.sourceId}
+                              sourceName={sourceContent}
+                              orgId={orgId}
+                            />
+                          ) : isManualAnswer && source.sourceId ? (
+                            <ManualAnswerLink
+                              manualAnswerId={source.sourceId}
                               sourceName={sourceContent}
                               orgId={orgId}
                             />

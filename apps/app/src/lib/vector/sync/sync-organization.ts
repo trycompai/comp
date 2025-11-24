@@ -259,7 +259,7 @@ async function performSync(organizationId: string): Promise<void> {
               return; // Skip empty context
             }
 
-            const chunks = chunkText(contextText, 500, 50);
+            const chunks = chunkText(contextText, 8000, 50);
             
             if (chunks.length === 0) {
               return; // Skip if no chunks
@@ -358,6 +358,7 @@ async function performSync(organizationId: string): Promise<void> {
             sourceType: 'manual_answer' as const,
             sourceId: ma.id,
             content: text,
+            manualAnswerQuestion: ma.question, // Store question for source identification
             updatedAt,
           },
         };

@@ -113,7 +113,10 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
     }
 
     const meta = autoAnswerRun.metadata as Record<string, unknown>;
-    const answerKeys = Object.keys(meta).filter((key) => key.startsWith('answer_'));
+    // Exclude _sources keys - they are handled separately
+    const answerKeys = Object.keys(meta).filter((key) => 
+      key.startsWith('answer_') && !key.endsWith('_sources')
+    );
 
     answerKeys.forEach((key) => {
       if (processedMetadataAnswersRef.current.has(key)) {
@@ -130,12 +133,15 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
         return;
       }
 
+      // Sources are included in answerData.sources
+      const sourcesToUse = answerData.sources || [];
+
       const resultMatch = resultsRef.current.find((r) => r.originalIndex === answerData.questionIndex);
 
       if (!resultMatch?.questionAnswerId) {
         pendingUpdatesWaitingForIdRef.current.set(answerData.questionIndex, {
           answer: answerData.answer || '',
-          sources: answerData.sources,
+          sources: sourcesToUse,
         });
         return;
       }
@@ -144,7 +150,7 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
       pendingMetadataUpdatesRef.current.set(key, {
         questionAnswerId: resultMatch.questionAnswerId,
         answer: answerData.answer || '',
-        sources: answerData.sources,
+        sources: sourcesToUse,
       });
     });
 
@@ -203,10 +209,17 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
         (!prevResult || prevResult.answer !== result.answer)
       ) {
         processedResultsRef.current.add(answerKey);
+        // Use sources from current result - preserve existing sources if new ones are empty
+        // This prevents losing sources when updating answers incrementally
+        // Always pass an array (empty or with sources) to avoid undefined issues
+        const sourcesToSave = result.sources && result.sources.length > 0 
+          ? result.sources 
+          : (prevResult?.sources && prevResult.sources.length > 0 ? prevResult.sources : []);
+        
         pendingResultsUpdatesRef.current.set(answerKey, {
           questionAnswerId: result.questionAnswerId,
           answer: result.answer,
-          sources: result.sources,
+          sources: sourcesToSave,
         });
       }
     });
@@ -233,7 +246,10 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
     }
 
     const meta = autoAnswerRun.metadata as Record<string, unknown>;
-    const answerKeys = Object.keys(meta).filter((key) => key.startsWith('answer_'));
+    // Exclude _sources keys - they are handled separately
+    const answerKeys = Object.keys(meta).filter((key) => 
+      key.startsWith('answer_') && !key.endsWith('_sources')
+    );
 
     if (!answerKeys.length) {
       return;
@@ -251,6 +267,7 @@ export function usePersistGeneratedAnswers<TResults extends PersistedQuestionAns
             score: number;
           }>;
         };
+        
         return answer;
       })
       .filter((answer): answer is NonNullable<typeof answer> => Boolean(answer))

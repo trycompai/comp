@@ -1,0 +1,282 @@
+'use client';
+
+import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useQuestionnaireActions } from '../useQuestionnaireActions';
+import { useQuestionnaireAutoAnswer } from '../useQuestionnaireAutoAnswer';
+import { useQuestionnaireSingleAnswer } from '../useQuestionnaireSingleAnswer';
+import type { QuestionAnswer } from '../../components/types';
+import { usePersistGeneratedAnswers } from '../usePersistGeneratedAnswers';
+import { useQuestionnaireDetailState } from './useQuestionnaireDetailState';
+import { useQuestionnaireDetailHandlers } from './useQuestionnaireDetailHandlers';
+import type { UseQuestionnaireDetailProps } from './types';
+
+export function useQuestionnaireDetail({
+  questionnaireId,
+  organizationId,
+  initialQuestions,
+}: UseQuestionnaireDetailProps) {
+  const state = useQuestionnaireDetailState({
+    initialQuestions,
+    questionnaireId,
+  });
+
+  // Auto-answer hook
+  const autoAnswer = useQuestionnaireAutoAnswer({
+    autoAnswerToken: state.autoAnswerToken,
+    results: state.results as QuestionAnswer[] | null,
+    answeringQuestionIndex: state.answeringQuestionIndex,
+    isAutoAnswerProcessStarted: state.isAutoAnswerProcessStarted,
+    isAutoAnswerProcessStartedRef: state.isAutoAnswerProcessStartedRef,
+    setIsAutoAnswerProcessStarted: state.setIsAutoAnswerProcessStarted,
+    setResults: state.setResults as Dispatch<SetStateAction<QuestionAnswer[] | null>>,
+    setQuestionStatuses: state.setQuestionStatuses as Dispatch<
+      SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    >,
+    setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    questionnaireId,
+  });
+
+  // Wrapper for setResults that handles QuestionnaireResult[] with originalIndex
+  const setResultsWrapper = useCallback((updater: React.SetStateAction<QuestionAnswer[] | null>) => {
+    state.setResults((prevResults) => {
+      if (!prevResults) {
+        const newResults = typeof updater === 'function' ? updater(null) : updater;
+        if (!newResults) return prevResults;
+        return newResults.map((r, index) => ({
+          question: r.question,
+          answer: r.answer ?? null,
+          originalIndex: index,
+          sources: r.sources || [],
+          questionAnswerId: '',
+          status: 'untouched' as const,
+          failedToGenerate: r.failedToGenerate ?? false,
+        }));
+      }
+
+      const questionAnswerResults = prevResults.map((r) => ({
+        question: r.question,
+        answer: r.answer,
+        sources: r.sources,
+        failedToGenerate: (r as any).failedToGenerate ?? false,
+        _originalIndex: r.originalIndex,
+      }));
+
+      const newResults =
+        typeof updater === 'function' ? updater(questionAnswerResults) : updater;
+
+      if (!newResults) return prevResults;
+
+      return newResults.map((newR, index) => {
+        const originalIndex =
+          (newR as any)._originalIndex !== undefined ? (newR as any)._originalIndex : index;
+        const existingResult = prevResults.find((r) => r.originalIndex === originalIndex);
+        if (existingResult) {
+          return {
+            ...existingResult,
+            question: newR.question,
+            answer: newR.answer ?? null,
+            sources: newR.sources,
+            failedToGenerate: newR.failedToGenerate ?? false,
+          };
+        }
+        return {
+          question: newR.question,
+          answer: newR.answer ?? null,
+          originalIndex,
+          sources: newR.sources || [],
+          questionAnswerId: '',
+          status: 'untouched' as const,
+          failedToGenerate: newR.failedToGenerate ?? false,
+        };
+      });
+    });
+  }, [state.setResults]);
+
+  // Single answer hook
+  const singleAnswer = useQuestionnaireSingleAnswer({
+    results: state.results.map((r) => ({
+      question: r.question,
+      answer: r.answer,
+      sources: r.sources,
+      failedToGenerate: (r as any).failedToGenerate ?? false,
+      _originalIndex: r.originalIndex,
+    })) as QuestionAnswer[],
+    answeringQuestionIndex: state.answeringQuestionIndex,
+    setResults: setResultsWrapper,
+    setQuestionStatuses: state.setQuestionStatuses as Dispatch<
+      SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    >,
+    setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    questionnaireId,
+  });
+
+  // Actions hook
+  const actions = useQuestionnaireActions({
+    orgId: organizationId,
+    selectedFile: null,
+    results: state.results as QuestionAnswer[] | null,
+    editingAnswer: state.editingAnswer,
+    expandedSources: state.expandedSources,
+    setSelectedFile: () => {},
+    setEditingIndex: state.setEditingIndex,
+    setEditingAnswer: state.setEditingAnswer,
+    setResults: state.setResults as Dispatch<SetStateAction<QuestionAnswer[] | null>>,
+    setExpandedSources: state.setExpandedSources,
+    isParseProcessStarted: state.isParseProcessStarted,
+    setIsParseProcessStarted: state.setIsParseProcessStarted,
+    setIsAutoAnswerProcessStarted: state.setIsAutoAnswerProcessStarted,
+    isAutoAnswerProcessStartedRef: state.isAutoAnswerProcessStartedRef,
+    setHasClickedAutoAnswer: state.setHasClickedAutoAnswer,
+    answeringQuestionIndex: state.answeringQuestionIndex,
+    setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    setQuestionStatuses: state.setQuestionStatuses as Dispatch<
+      SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    >,
+    questionnaireId,
+    setParseTaskId: () => {},
+    setParseToken: () => {},
+    uploadFileAction: { execute: async () => {}, status: 'idle' as const },
+    parseAction: { execute: async () => {}, status: 'idle' as const },
+    triggerAutoAnswer: autoAnswer.triggerAutoAnswer,
+    triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
+  });
+
+  const persistenceAction = {
+    execute: () => {},
+    executeAsync: (input: Parameters<typeof state.updateAnswerAction.executeAsync>[0]) =>
+      state.updateAnswerAction.executeAsync(input),
+  };
+
+  usePersistGeneratedAnswers({
+    questionnaireId,
+    results: state.results as QuestionAnswer[] | null,
+    setResults: state.setResults as Dispatch<SetStateAction<QuestionAnswer[] | null>>,
+    autoAnswerRun: autoAnswer.autoAnswerRun ?? null,
+    updateAnswerAction: persistenceAction as any,
+    setQuestionStatuses: state.setQuestionStatuses as Dispatch<
+      SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    >,
+  });
+
+  // Handlers
+  const handlers = useQuestionnaireDetailHandlers({
+    questionnaireId,
+    organizationId,
+    results: state.results,
+    answeringQuestionIndex: state.answeringQuestionIndex,
+    isAutoAnswerProcessStarted: state.isAutoAnswerProcessStarted,
+    isAutoAnswerProcessStartedRef: state.isAutoAnswerProcessStartedRef,
+    setHasClickedAutoAnswer: state.setHasClickedAutoAnswer,
+    setIsAutoAnswerProcessStarted: state.setIsAutoAnswerProcessStarted,
+    setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    setQuestionStatuses: state.setQuestionStatuses,
+    setResults: state.setResults,
+    editingAnswer: state.editingAnswer,
+    setEditingIndex: state.setEditingIndex,
+    setEditingAnswer: state.setEditingAnswer,
+    saveIndexRef: state.saveIndexRef,
+    saveAnswerRef: state.saveAnswerRef,
+    updateAnswerAction: state.updateAnswerAction,
+    deleteAnswerAction: state.deleteAnswerAction,
+    router: state.router,
+    triggerAutoAnswer: autoAnswer.triggerAutoAnswer,
+    triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
+    answerQueue: state.answerQueue,
+    setAnswerQueue: state.setAnswerQueue,
+    answerQueueRef: state.answerQueueRef,
+  });
+
+  // Computed values
+  const filteredResults = useMemo(() => {
+    if (!state.searchQuery.trim()) return state.results;
+    const query = state.searchQuery.toLowerCase();
+    return state.results.filter(
+      (r) =>
+        r.question.toLowerCase().includes(query) ||
+        (r.answer && r.answer.toLowerCase().includes(query))
+    );
+  }, [state.results, state.searchQuery]);
+
+  const answeredCount = useMemo(() => {
+    return state.results.filter((r) => r.answer && r.answer.trim().length > 0).length;
+  }, [state.results]);
+
+  const progressPercentage = useMemo(() => {
+    if (state.results.length === 0) return 0;
+    return Math.round((answeredCount / state.results.length) * 100);
+  }, [answeredCount, state.results.length]);
+
+  const isAutoAnswering = useMemo(() => {
+    return (
+      state.isAutoAnswerProcessStarted &&
+      state.hasClickedAutoAnswer &&
+      (autoAnswer.autoAnswerRun?.status === 'EXECUTING' ||
+        autoAnswer.autoAnswerRun?.status === 'QUEUED' ||
+        autoAnswer.autoAnswerRun?.status === 'WAITING')
+    );
+  }, [
+    state.isAutoAnswerProcessStarted,
+    state.hasClickedAutoAnswer,
+    autoAnswer.autoAnswerRun?.status,
+  ]);
+
+  const isLoading = useMemo(() => {
+    const hasProcessingQuestions = Array.from(state.questionStatuses.values()).some(
+      (status) => status === 'processing'
+    );
+    const isSingleAnswerTriggering = singleAnswer.isSingleAnswerTriggering;
+    const isAutoAnswerTriggering = autoAnswer.isAutoAnswerTriggering;
+    const isAutoAnswerRunActive =
+      autoAnswer.autoAnswerRun?.status === 'EXECUTING' ||
+      autoAnswer.autoAnswerRun?.status === 'QUEUED' ||
+      autoAnswer.autoAnswerRun?.status === 'WAITING';
+
+    return (
+      hasProcessingQuestions ||
+      isSingleAnswerTriggering ||
+      isAutoAnswerTriggering ||
+      isAutoAnswerRunActive
+    );
+  }, [
+    state.questionStatuses,
+    singleAnswer.isSingleAnswerTriggering,
+    autoAnswer.isAutoAnswerTriggering,
+    autoAnswer.autoAnswerRun?.status,
+  ]);
+
+  const isSaving = state.updateAnswerAction.status === 'executing';
+  const savingIndex =
+    isSaving && state.saveIndexRef.current !== null ? state.saveIndexRef.current : null;
+
+  return {
+    orgId: organizationId,
+    results: state.results,
+    searchQuery: state.searchQuery,
+    setSearchQuery: state.setSearchQuery,
+    editingIndex: state.editingIndex,
+    editingAnswer: state.editingAnswer,
+    setEditingAnswer: state.setEditingAnswer,
+    expandedSources: state.expandedSources,
+    questionStatuses: state.questionStatuses,
+    answeringQuestionIndex: state.answeringQuestionIndex,
+    answerQueue: state.answerQueue,
+    hasClickedAutoAnswer: state.hasClickedAutoAnswer,
+    isLoading,
+    isAutoAnswering,
+    isExporting: actions.exportAction.status === 'executing',
+    isSaving,
+    savingIndex,
+    filteredResults,
+    answeredCount,
+    totalCount: state.results.length,
+    progressPercentage,
+    handleAutoAnswer: handlers.handleAutoAnswer,
+    handleAnswerSingleQuestion: handlers.handleAnswerSingleQuestion,
+    handleEditAnswer: actions.handleEditAnswer,
+    handleSaveAnswer: handlers.handleSaveAnswer,
+    handleCancelEdit: actions.handleCancelEdit,
+    handleExport: actions.handleExport,
+    handleToggleSource: actions.handleToggleSource,
+  };
+}
+

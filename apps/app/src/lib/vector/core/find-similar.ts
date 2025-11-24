@@ -16,6 +16,7 @@ export interface SimilarContentResult {
   vendorName?: string;
   questionnaireQuestion?: string;
   documentName?: string;
+  manualAnswerQuestion?: string;
 }
 
 /**
@@ -48,7 +49,7 @@ export async function findSimilarContent(
     // so we'll filter results after retrieval
     const results = await vectorIndex.query({
       vector: queryEmbedding,
-      topK: limit * 2, // Get more results to account for filtering
+      topK: 100, // Get more results to account for filtering
       includeMetadata: true,
     });
 
@@ -81,6 +82,7 @@ export async function findSimilarContent(
           vendorName: metadata?.vendorName,
           questionnaireQuestion: metadata?.questionnaireQuestion,
           documentName: metadata?.documentName,
+          manualAnswerQuestion: metadata?.manualAnswerQuestion,
         };
       });
 

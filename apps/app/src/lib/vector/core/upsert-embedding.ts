@@ -17,6 +17,7 @@ export interface EmbeddingMetadata {
   vendorName?: string;
   questionnaireQuestion?: string;
   documentName?: string;
+  manualAnswerQuestion?: string;
   updatedAt?: string; // ISO timestamp for incremental sync comparison
 }
 
@@ -62,6 +63,7 @@ export async function upsertEmbedding(
       ...(metadata.vendorId && { vendorId: metadata.vendorId }),
       ...(metadata.vendorName && { vendorName: metadata.vendorName }),
       ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
+      ...(metadata.manualAnswerQuestion && { manualAnswerQuestion: metadata.manualAnswerQuestion }),
       ...(metadata.documentName && { documentName: metadata.documentName }),
       ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
     };
@@ -170,6 +172,9 @@ export async function batchUpsertEmbeddings(
             ...(item.metadata.vendorName && { vendorName: item.metadata.vendorName }),
             ...(item.metadata.questionnaireQuestion && {
               questionnaireQuestion: item.metadata.questionnaireQuestion,
+            }),
+            ...(item.metadata.manualAnswerQuestion && {
+              manualAnswerQuestion: item.metadata.manualAnswerQuestion,
             }),
             ...(item.metadata.documentName && { documentName: item.metadata.documentName }),
             ...(item.metadata.updatedAt && { updatedAt: item.metadata.updatedAt }),

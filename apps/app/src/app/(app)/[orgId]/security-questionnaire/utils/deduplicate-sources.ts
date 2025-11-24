@@ -4,7 +4,7 @@
  * Deduplication rules:
  * - Policies: Same policy name = same source (deduplicated by policyName)
  * - Context: All context entries = single "Context Q&A" source
- * - Manual Answers: All manual answers = single "Manual Answer" source
+ * - Manual Answers: Each manual answer is a separate source (deduplicated by sourceId)
  * - Knowledge Base Documents: Deduplicated by sourceId (each document is a separate source)
  * - Other sources: Deduplicated by sourceId
  */
@@ -15,6 +15,7 @@ export interface Source {
   sourceId?: string;
   policyName?: string;
   documentName?: string;
+  manualAnswerQuestion?: string;
   score: number;
 }
 
@@ -23,16 +24,26 @@ export interface Source {
  * For each source type, uses appropriate deduplication key:
  * - Policies: policyName
  * - Context: "Context Q&A" (all grouped together)
- * - Manual Answers: "Manual Answer" (all grouped together)
+ * - Manual Answers: sourceId (each manual answer is separate)
  * - Knowledge Base Documents: sourceId (each document is separate)
  * - Others: sourceId
  * 
  * When duplicates are found, keeps the one with the highest score.
  */
 export function deduplicateSources(sources: Source[]): Source[] {
+  // Return empty array if no sources provided
+  if (!sources || sources.length === 0) {
+    return [];
+  }
+
   const sourceMap = new Map<string, Source>();
 
   for (const source of sources) {
+    // Skip sources without required fields
+    if (!source.sourceType) {
+      continue;
+    }
+
     let deduplicationKey: string;
 
     // Determine deduplication key based on source type
@@ -43,8 +54,10 @@ export function deduplicateSources(sources: Source[]): Source[] {
       // Context: all context entries are grouped as one source
       deduplicationKey = 'context:all';
     } else if (source.sourceType === 'manual_answer') {
-      // Manual Answers: all manual answers are grouped as one source
-      deduplicationKey = 'manual_answer:all';
+      // Manual Answers: each manual answer is a separate source (like knowledge_base_document)
+      // This prevents one manual answer from appearing as source for all questions
+      // Use sourceId if available, otherwise fallback to unknown
+      deduplicationKey = `manual_answer:${source.sourceId || 'unknown'}`;
     } else if (source.sourceType === 'knowledge_base_document') {
       // Knowledge Base Documents: deduplicate by sourceId (each document is separate)
       deduplicationKey = `knowledge_base_document:${source.sourceId || 'unknown'}`;
@@ -57,20 +70,33 @@ export function deduplicateSources(sources: Source[]): Source[] {
     const existing = sourceMap.get(deduplicationKey);
     if (!existing || source.score > existing.score) {
       // Create a normalized source with appropriate sourceName
-      // Preserve documentName if available (it might be missing in some chunks)
+      // Preserve documentName and manualAnswerQuestion if available (they might be missing in some chunks)
+      // Always regenerate sourceName to ensure it uses the latest metadata (especially manualAnswerQuestion)
       const normalizedSource: Source = {
         ...source,
         documentName: source.documentName || existing?.documentName,
-        sourceName: getSourceDisplayName({
-          ...source,
-          documentName: source.documentName || existing?.documentName,
-        }),
+        manualAnswerQuestion: source.manualAnswerQuestion || existing?.manualAnswerQuestion,
+        // Don't use source.sourceName - regenerate it to ensure it uses manualAnswerQuestion
+        sourceName: undefined, // Will be set by getSourceDisplayName
       };
+      normalizedSource.sourceName = getSourceDisplayName(normalizedSource);
       sourceMap.set(deduplicationKey, normalizedSource);
-    } else if (existing && source.documentName && !existing.documentName) {
-      // If existing source doesn't have documentName but new one does, update it
-      existing.documentName = source.documentName;
-      existing.sourceName = getSourceDisplayName(existing);
+    } else if (existing) {
+      // Update existing source if new one has missing metadata
+      let needsUpdate = false;
+      if (source.documentName && !existing.documentName) {
+        existing.documentName = source.documentName;
+        needsUpdate = true;
+      }
+      if (source.manualAnswerQuestion && !existing.manualAnswerQuestion) {
+        existing.manualAnswerQuestion = source.manualAnswerQuestion;
+        needsUpdate = true;
+      }
+      // Always regenerate sourceName to ensure it uses the latest metadata
+      // Especially important for manual_answer to show the question preview
+      if (needsUpdate || !existing.sourceName || existing.sourceType === 'manual_answer') {
+        existing.sourceName = getSourceDisplayName(existing);
+      }
     }
   }
 
@@ -91,6 +117,21 @@ function getSourceDisplayName(source: Source): string {
   }
   
   if (source.sourceType === 'manual_answer') {
+    // Show question from manual answer if available for better identification
+    // This helps distinguish between different manual answers
+    if (source.manualAnswerQuestion) {
+      const preview = source.manualAnswerQuestion.length > 50 
+        ? source.manualAnswerQuestion.substring(0, 50) + '...'
+        : source.manualAnswerQuestion;
+      return `Manual Answer (${preview})`;
+    }
+    // Fallback: use sourceId if available to distinguish different manual answers
+    if (source.sourceId) {
+      const shortId = source.sourceId.length > 8 
+        ? source.sourceId.substring(source.sourceId.length - 8)
+        : source.sourceId;
+      return `Manual Answer (${shortId})`;
+    }
     return 'Manual Answer';
   }
   
