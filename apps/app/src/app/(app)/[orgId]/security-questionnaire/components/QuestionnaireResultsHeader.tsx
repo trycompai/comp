@@ -154,13 +154,13 @@ export function QuestionnaireResultsHeader({
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="default" disabled={isExporting || isLoading}>
+                <Button variant="outline" size="default" disabled={isExporting || isLoading} suppressHydrationWarning>
                   <Download className="size-4" />
                   Export
                   <ChevronDown className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" suppressHydrationWarning>
                 <DropdownMenuItem
                   onClick={() => onExport('xlsx')}
                   disabled={isExporting || isLoading}

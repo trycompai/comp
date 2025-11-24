@@ -33,6 +33,8 @@ export const answerQuestion = task({
       questionIndex: payload.questionIndex,
       question: payload.question,
       answer: answerValue,
+      // Sources are NOT included in metadata to avoid blocking incremental updates
+      // Sources will be available in the final output and updated separately
       sources: [],
     });
 
@@ -65,6 +67,8 @@ export const answerQuestion = task({
       // Update metadata with this answer immediately
       // This allows frontend to show answers as they complete individually
       // When called directly (not as child), use metadata directly instead of metadata.parent
+      // Sources are NOT included in metadata to avoid blocking incremental updates
+      // Sources will be available in the final output
       const metadataAnswer = buildMetadataAnswerPayload(result.answer);
 
       if (metadata.parent) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useQuestionnaireActions } from './useQuestionnaireActions';
 import { useQuestionnaireAutoAnswer } from './useQuestionnaireAutoAnswer';
 import { useQuestionnaireParse } from './useQuestionnaireParse';
@@ -36,7 +36,9 @@ export function useQuestionnaireParser() {
     isAutoAnswerProcessStartedRef: state.isAutoAnswerProcessStartedRef,
     setIsAutoAnswerProcessStarted: state.setIsAutoAnswerProcessStarted,
     setResults: state.setResults,
-    setQuestionStatuses: state.setQuestionStatuses,
+    setQuestionStatuses: state.setQuestionStatuses as Dispatch<
+      SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    >,
     setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
     questionnaireId: state.questionnaireId,
   });
@@ -46,7 +48,9 @@ export function useQuestionnaireParser() {
     results: state.results,
     answeringQuestionIndex: state.answeringQuestionIndex,
     setResults: state.setResults,
-    setQuestionStatuses: state.setQuestionStatuses,
+    setQuestionStatuses: state.setQuestionStatuses as Dispatch<
+      SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
+    >,
     setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
     questionnaireId: state.questionnaireId,
   });

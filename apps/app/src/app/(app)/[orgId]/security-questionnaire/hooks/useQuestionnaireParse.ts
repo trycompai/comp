@@ -3,6 +3,7 @@
 import type { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { createRunReadToken, createTriggerToken } from '../actions/create-trigger-token';
@@ -47,6 +48,7 @@ export function useQuestionnaireParse({
   setQuestionnaireId,
   orgId,
 }: UseQuestionnaireParseProps) {
+  const router = useRouter();
   // Get trigger token for auto-answer (can trigger and read)
   useEffect(() => {
     async function getAutoAnswerToken() {
@@ -93,20 +95,28 @@ export function useQuestionnaireParse({
           const questionnaireId = run.output.questionnaireId as string | undefined;
 
           if (questionsAndAnswers && Array.isArray(questionsAndAnswers)) {
-            const initializedResults = questionsAndAnswers.map((qa) => ({
-              ...qa,
-              failedToGenerate: false,
-            }));
-            setResults(initializedResults);
-            setExtractedContent(extractedContent || null);
-            setQuestionStatuses(new Map());
-            setHasClickedAutoAnswer(false);
             if (questionnaireId) {
+              // Navigate immediately to avoid showing results on new_questionnaire page
+              // The detail page will load the data from the database
               setQuestionnaireId(questionnaireId);
+              toast.success(
+                `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
+              );
+              router.push(`/${orgId}/security-questionnaire/${questionnaireId}`);
+            } else {
+              // Fallback: if no questionnaireId, set results locally (shouldn't happen)
+              const initializedResults = questionsAndAnswers.map((qa) => ({
+                ...qa,
+                failedToGenerate: false,
+              }));
+              setResults(initializedResults);
+              setExtractedContent(extractedContent || null);
+              setQuestionStatuses(new Map());
+              setHasClickedAutoAnswer(false);
+              toast.success(
+                `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
+              );
             }
-            toast.success(
-              `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
-            );
           } else {
             toast.error('Parsed data is missing questions');
           }

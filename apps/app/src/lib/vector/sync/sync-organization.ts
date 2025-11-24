@@ -358,6 +358,7 @@ async function performSync(organizationId: string): Promise<void> {
             sourceType: 'manual_answer' as const,
             sourceId: ma.id,
             content: text,
+            manualAnswerQuestion: ma.question, // Store question for source identification
             updatedAt,
           },
         };

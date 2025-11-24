@@ -80,20 +80,30 @@ export function useQuestionnaireAutoAnswer({
   // This ensures React re-renders whenever metadata changes
   const metadataAnswers = useMemo(() => {
     if (!autoAnswerRun?.metadata || !resultsRef.current) {
-      return { answers: [], statuses: new Map<number, 'pending' | 'processing' | 'completed'>() };
+      return { 
+        answers: [], 
+        statuses: new Map<number, 'pending' | 'processing' | 'completed'>()
+      };
     }
 
     // For single question operations, only process metadata from the current run
     if (answeringQuestionIndex !== null) {
       if (currentRunIdRef.current && autoAnswerRun.id !== currentRunIdRef.current) {
-        return { answers: [], statuses: new Map<number, 'pending' | 'processing' | 'completed'>() };
+        return { 
+          answers: [], 
+          statuses: new Map<number, 'pending' | 'processing' | 'completed'>(), 
+          sources: new Map<number, any[]>() 
+        };
       }
     }
 
     const meta = autoAnswerRun.metadata as Record<string, unknown>;
     
     // Get all answer keys and status keys from metadata
-    const answerKeys = Object.keys(meta).filter((key) => key.startsWith('answer_')).sort();
+    // Exclude _sources keys - they are handled separately
+    const answerKeys = Object.keys(meta).filter((key) => 
+      key.startsWith('answer_') && !key.endsWith('_sources')
+    ).sort();
     const statusKeys = Object.keys(meta).filter((key) => key.startsWith('question_') && key.endsWith('_status')).sort();
     
     // Extract all answers from metadata
@@ -231,11 +241,15 @@ export function useQuestionnaireAutoAnswer({
             
             if (answer.answer) {
           // Update successful answer immediately - show it as soon as it's available
+          // Sources will be updated separately from answer_${questionIndex}_sources metadata key
+          // Preserve existing sources - don't overwrite them with empty array
+          const existingSources = updatedResults[targetIndex]?.sources || [];
+          
                 updatedResults[targetIndex] = {
             ...updatedResults[targetIndex],
             question: originalQuestion || answer.question,
                   answer: answer.answer,
-                  sources: answer.sources,
+                  sources: existingSources, // Keep existing sources, they'll be updated separately
                   failedToGenerate: false,
                 };
                 hasChanges = true;
@@ -256,6 +270,59 @@ export function useQuestionnaireAutoAnswer({
           return hasChanges ? updatedResults : prevResults;
         });
   }, [metadataAnswers, answeringQuestionIndex]);
+
+  // Update sources from final output when available
+  // This ensures sources are updated even if they weren't in metadata
+  useEffect(() => {
+    if (
+      autoAnswerRun?.status === 'COMPLETED' &&
+      autoAnswerRun.output &&
+      autoAnswerRun.output.answers
+    ) {
+      const answers = autoAnswerRun.output.answers as
+        | Array<{
+            questionIndex: number;
+            sources?: Array<{
+              sourceType: string;
+              sourceName?: string;
+              score: number;
+            }>;
+          }>
+        | undefined;
+
+      if (answers && Array.isArray(answers)) {
+        setResults((prevResults) => {
+          if (!prevResults) return prevResults;
+
+          const updatedResults = [...prevResults];
+          let hasChanges = false;
+
+          answers.forEach((answer) => {
+            if (answer.sources && answer.sources.length > 0) {
+              const targetIndex = updatedResults.findIndex(
+                (r) => r.originalIndex === answer.questionIndex
+              );
+
+              if (targetIndex >= 0 && targetIndex < updatedResults.length) {
+                const currentSources = updatedResults[targetIndex]?.sources || [];
+                const sourcesChanged = JSON.stringify(currentSources) !== JSON.stringify(answer.sources);
+
+                if (sourcesChanged) {
+                  updatedResults[targetIndex] = {
+                    ...updatedResults[targetIndex],
+                    sources: answer.sources,
+                  };
+                  hasChanges = true;
+                }
+              }
+            }
+          });
+
+          return hasChanges ? updatedResults : prevResults;
+        });
+      }
+    }
+  }, [autoAnswerRun?.status, autoAnswerRun?.output, setResults]);
 
   // Handle final completion - read ALL answers from final output
   // This is a fallback to ensure all answers are shown even if metadata updates were missed
@@ -307,16 +374,26 @@ export function useQuestionnaireAutoAnswer({
 
             const originalQuestion = updatedResults[targetIndex]?.question;
             const currentAnswer = updatedResults[targetIndex]?.answer;
+            const currentSources = updatedResults[targetIndex]?.sources || [];
 
             // Update with new answer from orchestrator
             if (answer.answer) {
-              // Only update if answer changed
-              if (currentAnswer !== answer.answer) {
+              // Always update sources from final output if they exist, even if answer is the same
+              // This ensures sources are available even if they weren't in metadata
+              const sourcesToUse = answer.sources && answer.sources.length > 0 
+                ? answer.sources 
+                : currentSources;
+              
+              // Update if answer changed or sources changed
+              const answerChanged = currentAnswer !== answer.answer;
+              const sourcesChanged = JSON.stringify(currentSources) !== JSON.stringify(sourcesToUse);
+              
+              if (answerChanged || sourcesChanged) {
                 updatedResults[targetIndex] = {
                   ...updatedResults[targetIndex], // Preserve status and other fields
                   question: originalQuestion || answer.question,
                   answer: answer.answer,
-                  sources: answer.sources,
+                  sources: sourcesToUse,
                   failedToGenerate: false,
                 };
                 hasChanges = true;

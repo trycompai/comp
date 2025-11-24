@@ -12,6 +12,19 @@ const updateAnswerSchema = z.object({
   questionnaireId: z.string(),
   questionAnswerId: z.string(),
   answer: z.string(),
+  status: z.enum(['generated', 'manual']).optional().default('manual'),
+  sources: z
+    .array(
+      z.object({
+        sourceType: z.string(),
+        sourceName: z.string().optional(),
+        sourceId: z.string().optional(),
+        policyName: z.string().optional(),
+        documentName: z.string().optional(),
+        score: z.number(),
+      }),
+    )
+    .optional(),
 });
 
 export const updateQuestionnaireAnswer = authActionClient
@@ -25,7 +38,7 @@ export const updateQuestionnaireAnswer = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { questionnaireId, questionAnswerId, answer } = parsedInput;
+    const { questionnaireId, questionAnswerId, answer, status, sources } = parsedInput;
     const { activeOrganizationId } = ctx.session;
     const userId = ctx.user.id;
 
@@ -67,6 +80,9 @@ export const updateQuestionnaireAnswer = authActionClient
         };
       }
 
+      // Store the previous status to determine if this was written from scratch
+      const previousStatus = questionAnswer.status;
+
       // Update the answer
       await db.questionnaireQuestionAnswer.update({
         where: {
@@ -74,14 +90,18 @@ export const updateQuestionnaireAnswer = authActionClient
         },
         data: {
           answer: answer.trim() || null,
-          status: 'manual',
-          updatedBy: userId || null,
+          status: status === 'generated' ? 'generated' : 'manual',
+          sources: sources ? (sources as any) : null,
+          generatedAt: status === 'generated' ? new Date() : null,
+          updatedBy: status === 'manual' ? userId || null : null,
           updatedAt: new Date(),
         },
       });
 
-      // Also save to SecurityQuestionnaireManualAnswer if answer exists
-      if (answer && answer.trim().length > 0 && questionAnswer.question) {
+      const shouldPersistManualAnswer =
+        status === 'manual' && answer && answer.trim().length > 0 && questionAnswer.question;
+
+      if (shouldPersistManualAnswer) {
         try {
           const manualAnswer = await db.securityQuestionnaireManualAnswer.upsert({
             where: {
