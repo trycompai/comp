@@ -51,31 +51,11 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect(`/${orgId}`);
   }
 
-  const frameworkInstances = await db.frameworkInstance.findMany({
-    where: {
-      organizationId: orgId,
-    },
-    include: {
-      framework: true,
-    },
-  });
-
-  const complianceFrameworks = frameworkInstances.map((framework) =>
-    framework.framework.name.toLowerCase().replaceAll(' ', ''),
-  );
-
   return (
     <>
       <UpgradePageTracking />
       <div className="mx-auto px-4 max-w-7xl my-auto min-h-[calc(100vh-10rem)] flex items-center justify-center">
-        <BookingStep
-          email={authSession.user.email}
-          name={authSession.user.name}
-          company={member.organization.name}
-          orgId={orgId}
-          complianceFrameworks={complianceFrameworks}
-          hasAccess={hasAccess}
-        />
+        <BookingStep company={member.organization.name} orgId={orgId} hasAccess={hasAccess} />
       </div>
     </>
   );
