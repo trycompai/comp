@@ -1,9 +1,10 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { openai } from '@ai-sdk/openai';
-import { streamText, type UIMessage, convertToModelMessages } from 'ai';
+import { streamText, type UIMessage, convertToModelMessages, tool } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export const maxDuration = 60;
 
@@ -83,12 +84,10 @@ Your role:
 3. Ensure policies remain compliant with relevant frameworks
 4. Maintain professional, clear language appropriate for official documentation
 
-When the user asks you to make changes to the policy:
-1. First explain what changes you'll make and why
-2. Then provide the COMPLETE updated policy content in a code block with the label \`\`\`policy
-3. The policy content inside the code block should be in markdown format
-
-IMPORTANT: When providing updated policy content, you MUST include the ENTIRE policy, not just the changed sections. The content in the \`\`\`policy code block will replace the entire current policy.
+IMPORTANT: When the user asks you to make changes to the policy, you MUST use the proposePolicy tool to submit the updated policy. 
+- First, briefly explain what changes you'll make
+- Then call the proposePolicy tool with the COMPLETE updated policy content in markdown format
+- The tool requires the ENTIRE policy content, not just the changed sections
 
 Keep responses helpful and focused on the policy editing task.`;
 
@@ -96,6 +95,15 @@ Keep responses helpful and focused on the policy editing task.`;
       model: openai('gpt-4o'),
       system: systemPrompt,
       messages: convertToModelMessages(messages),
+      tools: {
+        proposePolicy: tool({
+          description: 'Propose an updated version of the policy. Use this tool whenever the user asks you to make changes, edits, or improvements to the policy. You must provide the COMPLETE policy content, not just the changes.',
+          inputSchema: z.object({
+            content: z.string().describe('The complete updated policy content in markdown format. Must include the entire policy, not just the changed sections.'),
+            summary: z.string().describe('A brief summary of what changes were made to the policy.'),
+          }),
+        }),
+      },
     });
 
     return result.toUIMessageStreamResponse();

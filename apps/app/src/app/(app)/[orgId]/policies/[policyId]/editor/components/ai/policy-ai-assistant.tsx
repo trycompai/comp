@@ -1,37 +1,37 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
+import {
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from '@comp/ui/ai-elements/prompt-input';
+import { Tool, ToolHeader } from '@comp/ui/ai-elements/tool';
 import { Button } from '@comp/ui/button';
-import { DiffViewer } from '@comp/ui/diff-viewer';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Textarea } from '@comp/ui/textarea';
-import type { JSONContent } from '@tiptap/react';
-import { createPatch } from 'diff';
-import { DefaultChatTransport } from 'ai';
-import { Bot, Send, X, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
-import { useState, useRef, useEffect, useMemo } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { cn } from '@comp/ui/cn';
+import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai';
+import type { ToolUIPart } from 'ai';
+import { useChat } from '@ai-sdk/react';
+import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface PolicyAiAssistantProps {
   policyId: string;
   currentPolicyMarkdown: string;
-  applyChanges?: (content: Array<JSONContent>) => Promise<void>;
+  onProposedPolicyChange?: (content: string | null) => void;
   close?: () => void;
 }
 
 export function PolicyAiAssistant({
   policyId,
   currentPolicyMarkdown,
-  applyChanges,
+  onProposedPolicyChange,
   close,
 }: PolicyAiAssistantProps) {
   const [input, setInput] = useState('');
-  const [proposedContent, setProposedContent] = useState<string | null>(null);
-  const [isApplying, setIsApplying] = useState(false);
-  const [showDiff, setShowDiff] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const { messages, sendMessage, status, error } = useChat({
+  const lastProcessedToolCallRef = useRef<string | null>(null);
+  
+  const { messages, status, error, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       api: `/api/policies/${policyId}/chat`,
     }),
@@ -39,347 +39,118 @@ export function PolicyAiAssistant({
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
-  const diffPatch = useMemo(() => {
-    if (!proposedContent) return null;
-    return createPatch(
-      'policy.md',
-      currentPolicyMarkdown,
-      proposedContent,
-      'Current',
-      'Proposed'
-    );
-  }, [currentPolicyMarkdown, proposedContent]);
-
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
+    if (!lastAssistantMessage?.parts) return;
 
-  useEffect(() => {
-    const lastAssistantMessage = [...messages]
-      .reverse()
-      .find((m) => m.role === 'assistant');
-
-    if (lastAssistantMessage?.parts) {
-      const textContent = lastAssistantMessage.parts
-        .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-        .map((part) => part.text)
-        .join('');
-
-      const policyMatch = textContent.match(/```policy\n([\s\S]*?)```/);
-      if (policyMatch) {
-        setProposedContent(policyMatch[1].trim());
+    for (const part of lastAssistantMessage.parts) {
+      if (isToolUIPart(part) && getToolName(part) === 'proposePolicy') {
+        if (lastProcessedToolCallRef.current === part.toolCallId) {
+          continue;
+        }
+        
+        if (part.state === 'input-streaming') {
+          continue;
+        }
+        
+        const toolInput = part.input as { content: string; summary: string };
+        if (toolInput?.content) {
+          lastProcessedToolCallRef.current = part.toolCallId;
+          onProposedPolicyChange?.(toolInput.content);
+        }
       }
     }
-  }, [messages]);
+  }, [messages, onProposedPolicyChange]);
 
-  function submitMessage(e: React.FormEvent) {
-    e.preventDefault();
-    if (input.trim() && !isLoading) {
-      sendMessage({ text: input });
-      setInput('');
-    }
-  }
-
-  async function apply() {
-    if (!proposedContent || !applyChanges) return;
-
-    setIsApplying(true);
-    try {
-      const jsonContent = markdownToTipTapJSON(proposedContent);
-      await applyChanges(jsonContent);
-      setProposedContent(null);
-    } catch (err) {
-      console.error('Failed to apply changes:', err);
-    } finally {
-      setIsApplying(false);
-    }
-  }
-
-  function dismiss() {
-    setProposedContent(null);
-  }
-
-  function toggleDiff() {
-    setShowDiff(!showDiff);
-  }
-
-  function updateInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setInput(e.target.value);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      submitMessage(e);
-    }
-  }
+  const handleSubmit = () => {
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+    setInput('');
+  };
 
   return (
     <div className="flex h-full flex-col border-l bg-background">
-      <div className="flex items-center justify-between border-b p-3">
-        <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          <span className="font-medium">AI Policy Assistant</span>
-        </div>
+      <div className="flex items-center justify-between border-b px-3 py-2">
+        <span className="text-sm font-medium">AI Assistant</span>
         {close && (
-          <Button variant="ghost" size="icon" onClick={close}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={close}>
             <X className="h-4 w-4" />
           </Button>
         )}
       </div>
 
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-            <Bot className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-sm">
-              Ask me to help edit this policy. I can suggest improvements,
-              update specific sections, or help ensure compliance.
-            </p>
-            <div className="mt-4 space-y-2 text-xs">
-              <p className="text-muted-foreground">Try asking:</p>
-              <ul className="space-y-1">
-                <li>&quot;Add a data retention section&quot;</li>
-                <li>&quot;Make this more SOC 2 compliant&quot;</li>
-                <li>&quot;Simplify the language&quot;</li>
-              </ul>
-            </div>
+          <div className="text-sm text-muted-foreground py-4">
+            <p>Ask me to help edit this policy.</p>
+            <ul className="mt-2 space-y-1 text-xs">
+              <li>"Add a data retention section"</li>
+              <li>"Make this more SOC 2 compliant"</li>
+              <li>"Simplify the language"</li>
+            </ul>
           </div>
         ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
-                      {message.parts
-                        .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-                        .map((part, index) => (
-                          <ReactMarkdown
-                            key={index}
-                            components={{
-                              code({ className, children, ...props }) {
-                                const isPolicy = className === 'language-policy';
-                                if (isPolicy) {
-                                  return (
-                                    <div className="my-2 rounded-xs border bg-green-50 p-2 text-xs dark:bg-green-900/20">
-                                      <div className="mb-1 text-xs font-medium text-green-700 dark:text-green-400">
-                                        Proposed Policy Content
-                                      </div>
-                                      <pre className="whitespace-pre-wrap text-muted-foreground">
-                                        {String(children).substring(0, 500)}
-                                        {String(children).length > 500 && '...'}
-                                      </pre>
-                                    </div>
-                                  );
-                                }
-                                return (
-                                  <code className={className} {...props}>
-                                    {children}
-                                  </code>
-                                );
-                              },
-                            }}
-                          >
-                            {part.text}
-                          </ReactMarkdown>
-                        ))}
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                'text-sm',
+                message.role === 'user'
+                  ? 'ml-auto max-w-[85%] rounded-lg bg-secondary px-3 py-2'
+                  : 'text-foreground'
+              )}
+            >
+              {message.parts.map((part, index) => {
+                if (part.type === 'text') {
+                  return (
+                    <div key={`${message.id}-${index}`} className="whitespace-pre-wrap">
+                      {part.text}
                     </div>
-                  ) : (
-                    message.parts
-                      .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-                      .map((part) => part.text)
-                      .join('')
-                  )}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="rounded-lg bg-muted px-3 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              </div>
-            )}
-          </div>
+                  );
+                }
+                
+                if (isToolUIPart(part) && getToolName(part) === 'proposePolicy') {
+                  const toolPart = part as ToolUIPart;
+                  const toolInput = part.input as { content: string; summary: string };
+                  return (
+                    <Tool key={`${message.id}-${index}`} className="mt-2">
+                      <ToolHeader
+                        title={toolInput?.summary || 'Proposing policy changes'}
+                        type={toolPart.type}
+                        state={toolPart.state}
+                      />
+                    </Tool>
+                  );
+                }
+                
+                return null;
+              })}
+            </div>
+          ))
         )}
-      </ScrollArea>
-
-      {proposedContent && applyChanges && (
-        <div className="border-t bg-green-50 p-3 dark:bg-green-900/20">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-green-700 dark:text-green-400">
-              Changes ready to apply
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleDiff}
-                className="gap-1"
-              >
-                {showDiff ? (
-                  <>
-                    <EyeOff className="h-3 w-3" />
-                    Hide Diff
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-3 w-3" />
-                    Show Diff
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" size="sm" onClick={dismiss}>
-                Dismiss
-              </Button>
-              <Button
-                size="sm"
-                onClick={apply}
-                disabled={isApplying}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isApplying ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                )}
-                Apply Changes
-              </Button>
-            </div>
-          </div>
-          {showDiff && diffPatch && (
-            <div className="max-h-48 overflow-auto rounded-xs border bg-background">
-              <DiffViewer patch={diffPatch} />
-            </div>
-          )}
-        </div>
-      )}
+        {isLoading && (
+          <div className="text-sm text-muted-foreground">Thinking...</div>
+        )}
+      </div>
 
       {error && (
-        <div className="border-t bg-destructive/10 p-3">
-          <p className="text-sm text-destructive">{error.message}</p>
+        <div className="border-t bg-destructive/10 px-3 py-2">
+          <p className="text-xs text-destructive">{error.message}</p>
         </div>
       )}
 
-      <form onSubmit={submitMessage} className="border-t p-3">
-        <div className="flex gap-2">
-          <Textarea
+      <div className="border-t p-3">
+        <PromptInput onSubmit={handleSubmit}>
+          <PromptInputTextarea
             value={input}
-            onChange={updateInput}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about this policy..."
-            className="min-h-[40px] max-h-[120px] resize-none"
-            onKeyDown={handleKeyDown}
           />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </form>
+          <PromptInputFooter>
+            <PromptInputSubmit disabled={isLoading || !input.trim()} />
+          </PromptInputFooter>
+        </PromptInput>
+      </div>
     </div>
   );
-}
-
-function markdownToTipTapJSON(markdown: string): Array<JSONContent> {
-  const lines = markdown.split('\n');
-  const content: Array<JSONContent> = [];
-  let currentList: JSONContent | null = null;
-  let listType: 'bulletList' | 'orderedList' | null = null;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      if (currentList) {
-        content.push(currentList);
-        currentList = null;
-        listType = null;
-      }
-      continue;
-    }
-
-    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
-    if (headingMatch) {
-      if (currentList) {
-        content.push(currentList);
-        currentList = null;
-        listType = null;
-      }
-      content.push({
-        type: 'heading',
-        attrs: { level: headingMatch[1].length },
-        content: [{ type: 'text', text: headingMatch[2] }],
-      });
-      continue;
-    }
-
-    const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
-    if (bulletMatch) {
-      if (listType !== 'bulletList') {
-        if (currentList) content.push(currentList);
-        currentList = { type: 'bulletList', content: [] };
-        listType = 'bulletList';
-      }
-      (currentList!.content as Array<JSONContent>).push({
-        type: 'listItem',
-        content: [
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: bulletMatch[1] }],
-          },
-        ],
-      });
-      continue;
-    }
-
-    const orderedMatch = trimmed.match(/^\d+\.\s+(.+)$/);
-    if (orderedMatch) {
-      if (listType !== 'orderedList') {
-        if (currentList) content.push(currentList);
-        currentList = { type: 'orderedList', content: [] };
-        listType = 'orderedList';
-      }
-      (currentList!.content as Array<JSONContent>).push({
-        type: 'listItem',
-        content: [
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: orderedMatch[1] }],
-          },
-        ],
-      });
-      continue;
-    }
-
-    if (currentList) {
-      content.push(currentList);
-      currentList = null;
-      listType = null;
-    }
-    content.push({
-      type: 'paragraph',
-      content: [{ type: 'text', text: trimmed }],
-    });
-  }
-
-  if (currentList) {
-    content.push(currentList);
-  }
-
-  return content.length > 0
-    ? content
-    : [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }];
 }

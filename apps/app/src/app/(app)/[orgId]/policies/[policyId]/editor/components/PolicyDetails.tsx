@@ -3,18 +3,22 @@
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
+import { DiffViewer } from '@comp/ui/diff-viewer';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import '@comp/ui/editor.css';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { Bot } from 'lucide-react';
+import { structuredPatch } from 'diff';
+import { CheckCircle, ChevronDown, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { PdfViewer } from '../../components/PdfViewer';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
+import { PdfViewer } from '../../components/PdfViewer';
 import { updatePolicy } from '../actions/update-policy';
+import { markdownToTipTapJSON } from './ai/markdown-utils';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 
 interface PolicyContentManagerProps {
@@ -35,12 +39,17 @@ export function PolicyContentManager({
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
-    const formattedContent = Array.isArray(policyContent) ? policyContent : [policyContent as JSONContent];
+    const formattedContent = Array.isArray(policyContent)
+      ? policyContent
+      : [policyContent as JSONContent];
     return formattedContent;
   });
 
+  const [proposedPolicyMarkdown, setProposedPolicyMarkdown] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
+  const [isDiffOpen, setIsDiffOpen] = useState(true);
+
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onSuccess: () => toast.info('View mode switched.'),
     onError: () => toast.error('Failed to switch view.'),
   });
 
@@ -59,80 +68,164 @@ export function PolicyContentManager({
     setShowAiAssistant(false);
   }
 
-  const applyAiChanges = useCallback(async (content: Array<JSONContent>) => {
-    try {
-      await updatePolicy({ policyId, content });
-      setCurrentContent(content);
-      setEditorKey((prev) => prev + 1);
-      toast.success('Policy updated with AI suggestions');
-    } catch (error) {
-      console.error('Failed to apply AI changes:', error);
-      toast.error('Failed to apply changes');
-      throw error;
-    }
-  }, [policyId]);
-
   const currentPolicyMarkdown = convertContentToMarkdown(currentContent);
 
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex gap-4">
-          <div className={`flex-1 ${showAiAssistant ? 'w-2/3' : 'w-full'}`}>
-            <Tabs
-              defaultValue={displayFormat}
-              onValueChange={handleTabChange}
-              className="w-full"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <TabsList className="grid w-auto grid-cols-2">
-                  <TabsTrigger value="EDITOR" disabled={isPendingApproval}>Editor View</TabsTrigger>
-                  <TabsTrigger value="PDF" disabled={isPendingApproval}>PDF View</TabsTrigger>
-                </TabsList>
-                {!isPendingApproval && displayFormat === 'EDITOR' && (
-                  <Button
-                    variant={showAiAssistant ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={toggleAiAssistant}
-                    className="gap-2"
-                  >
-                    <Bot className="h-4 w-4" />
-                    AI Assistant
-                  </Button>
-                )}
-              </div>
-              <TabsContent value="EDITOR" className="mt-4">
-                <PolicyEditorWrapper
-                  key={editorKey}
-                  policyId={policyId}
-                  policyContent={currentContent}
-                  isPendingApproval={isPendingApproval}
-                  onContentChange={setCurrentContent}
-                />
-              </TabsContent>
-              <TabsContent value="PDF" className="mt-4">
-                <PdfViewer
-                  policyId={policyId}
-                  pdfUrl={pdfUrl}
-                  isPendingApproval={isPendingApproval}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-          {showAiAssistant && (
-            <div className="w-1/3 min-w-[320px] max-w-[400px] h-[600px]">
-              <PolicyAiAssistant
-                policyId={policyId}
-                currentPolicyMarkdown={currentPolicyMarkdown}
-                applyChanges={applyAiChanges}
-                close={closeAiAssistant}
-              />
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+  const diffPatch = useMemo(() => {
+    if (!proposedPolicyMarkdown) return null;
+    return createGitPatch('policy.md', currentPolicyMarkdown, proposedPolicyMarkdown);
+  }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
+
+  const applyAiChanges = useCallback(
+    async (content: Array<JSONContent>) => {
+      try {
+        await updatePolicy({ policyId, content });
+        setCurrentContent(content);
+        setEditorKey((prev) => prev + 1);
+        toast.success('Policy updated with AI suggestions');
+      } catch (error) {
+        console.error('Failed to apply AI changes:', error);
+        toast.error('Failed to apply changes');
+        throw error;
+      }
+    },
+    [policyId],
   );
+
+  async function applyProposedChanges() {
+    if (!proposedPolicyMarkdown) return;
+
+    setIsApplying(true);
+    try {
+      const jsonContent = markdownToTipTapJSON(proposedPolicyMarkdown);
+      await applyAiChanges(jsonContent);
+      setProposedPolicyMarkdown(null);
+    } catch (err) {
+      console.error('Failed to apply changes:', err);
+    } finally {
+      setIsApplying(false);
+    }
+  }
+
+  function dismissProposedChanges() {
+    setProposedPolicyMarkdown(null);
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-0">
+              <Tabs defaultValue={displayFormat} onValueChange={handleTabChange} className="w-full">
+                <div className="flex items-center justify-between mb-2">
+                  <TabsList className="grid w-auto grid-cols-2">
+                    <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
+                      Editor View
+                    </TabsTrigger>
+                    <TabsTrigger value="PDF" disabled={isPendingApproval}>
+                      PDF View
+                    </TabsTrigger>
+                  </TabsList>
+                  {!isPendingApproval && displayFormat === 'EDITOR' && (
+                    <Button
+                      variant={showAiAssistant ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={toggleAiAssistant}
+                      className="gap-2"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      AI Assistant
+                    </Button>
+                  )}
+                </div>
+                <TabsContent value="EDITOR" className="mt-4">
+                  <PolicyEditorWrapper
+                    key={editorKey}
+                    policyId={policyId}
+                    policyContent={currentContent}
+                    isPendingApproval={isPendingApproval}
+                    onContentChange={setCurrentContent}
+                  />
+                </TabsContent>
+                <TabsContent value="PDF" className="mt-4">
+                  <PdfViewer
+                    policyId={policyId}
+                    pdfUrl={pdfUrl}
+                    isPendingApproval={isPendingApproval}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {showAiAssistant && (
+              <div className="w-80 shrink-0 min-h-[400px] self-stretch flex flex-col">
+                <PolicyAiAssistant
+                  policyId={policyId}
+                  currentPolicyMarkdown={currentPolicyMarkdown}
+                  onProposedPolicyChange={setProposedPolicyMarkdown}
+                  close={closeAiAssistant}
+                />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {proposedPolicyMarkdown && diffPatch && (
+        <Card>
+          <Collapsible open={isDiffOpen} onOpenChange={setIsDiffOpen}>
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center gap-2 text-sm font-medium hover:text-foreground/80">
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${isDiffOpen ? '' : '-rotate-90'}`}
+                  />
+                  Proposed Changes
+                </button>
+              </CollapsibleTrigger>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={dismissProposedChanges}>
+                  <X className="h-3 w-3 mr-1" />
+                  Dismiss
+                </Button>
+                <Button size="sm" onClick={applyProposedChanges} disabled={isApplying}>
+                  {isApplying ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                  )}
+                  Apply Changes
+                </Button>
+              </div>
+            </div>
+            <CollapsibleContent>
+              <CardContent className="p-4 max-h-[400px] overflow-auto">
+                <DiffViewer patch={diffPatch} />
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function createGitPatch(fileName: string, oldStr: string, newStr: string): string {
+  const patch = structuredPatch(fileName, fileName, oldStr, newStr);
+  const lines: string[] = [
+    `diff --git a/${fileName} b/${fileName}`,
+    `--- a/${fileName}`,
+    `+++ b/${fileName}`,
+  ];
+
+  for (const hunk of patch.hunks) {
+    lines.push(`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`);
+    for (const line of hunk.lines) {
+      lines.push(line);
+    }
+  }
+
+  return lines.join('\n');
 }
 
 function convertContentToMarkdown(content: Array<JSONContent>): string {
@@ -180,7 +273,9 @@ function PolicyEditorWrapper({
   isPendingApproval: boolean;
   onContentChange?: (content: Array<JSONContent>) => void;
 }) {
-  const formattedContent = Array.isArray(policyContent) ? policyContent : [policyContent as JSONContent];
+  const formattedContent = Array.isArray(policyContent)
+    ? policyContent
+    : [policyContent as JSONContent];
   const sanitizedContent = formattedContent.map((node) => {
     if (node.marks) node.marks = node.marks.filter((mark) => mark.type !== 'textStyle');
     if (node.content) node.content = node.content.map((child) => child);
@@ -203,11 +298,7 @@ function PolicyEditorWrapper({
 
   return (
     <div className="flex h-full flex-col border border-border rounded-md p-2">
-      <PolicyEditor
-        content={normalizedContent}
-        onSave={savePolicy}
-        readOnly={isPendingApproval}
-      />
+      <PolicyEditor content={normalizedContent} onSave={savePolicy} readOnly={isPendingApproval} />
     </div>
   );
 }
