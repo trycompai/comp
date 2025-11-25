@@ -60,14 +60,20 @@ export function useQuestionnaireAutoAnswer({
     setIsAutoAnswerProcessStarted(true);
 
     // Set all unanswered questions to processing
+    // Use originalIndex/_originalIndex instead of array index to match SSE response questionIndex
     if (results) {
       setQuestionStatuses((prev) => {
         const newStatuses = new Map(prev);
         let hasChanges = false;
         results.forEach((result, index) => {
           if (!result.answer || result.answer.trim().length === 0) {
-            if (prev.get(index) !== 'processing') {
-              newStatuses.set(index, 'processing');
+            // Use originalIndex/_originalIndex if available, otherwise fall back to array index
+            const resultOriginalIndex = (result as QuestionAnswer & { originalIndex?: number; _originalIndex?: number }).originalIndex ?? 
+                                       (result as QuestionAnswer & { originalIndex?: number; _originalIndex?: number })._originalIndex ?? 
+                                       index;
+            
+            if (prev.get(resultOriginalIndex) !== 'processing') {
+              newStatuses.set(resultOriginalIndex, 'processing');
               hasChanges = true;
             }
           }
@@ -133,24 +139,41 @@ export function useQuestionnaireAutoAnswer({
                       if (!prevResults) return prevResults;
 
                       const updatedResults = [...prevResults];
-                      const targetIndex = data.questionIndex;
+                      const targetOriginalIndex = data.questionIndex; // This is the original question index
 
-                      if (targetIndex >= 0 && targetIndex < updatedResults.length) {
-                        const originalQuestion = updatedResults[targetIndex]?.question;
+                      // Find the result by matching originalIndex (like useQuestionnaireSingleAnswer does)
+                      let resultIndex = -1;
+                      for (let i = 0; i < updatedResults.length; i++) {
+                        const result = updatedResults[i] as QuestionAnswer & { originalIndex?: number; _originalIndex?: number };
+                        // Check both originalIndex (from QuestionnaireResult) and _originalIndex (from QuestionAnswer)
+                        if (result.originalIndex === targetOriginalIndex || result._originalIndex === targetOriginalIndex) {
+                          resultIndex = i;
+                          break;
+                        }
+                      }
+
+                      // Fallback to array index if not found by originalIndex (for backward compatibility)
+                      if (resultIndex === -1 && targetOriginalIndex >= 0 && targetOriginalIndex < updatedResults.length) {
+                        resultIndex = targetOriginalIndex;
+                      }
+
+                      if (resultIndex >= 0 && resultIndex < updatedResults.length) {
+                        const existingResult = updatedResults[resultIndex];
+                        const originalQuestion = existingResult.question;
 
                         if (data.answer) {
-                          updatedResults[targetIndex] = {
-                            ...updatedResults[targetIndex],
+                          updatedResults[resultIndex] = {
+                            ...existingResult,
                             question: originalQuestion || data.question,
                             answer: data.answer,
                             sources: data.sources || [],
                             failedToGenerate: false,
                           };
                         } else {
-                          const currentAnswer = updatedResults[targetIndex]?.answer;
+                          const currentAnswer = existingResult.answer;
                           if (!currentAnswer) {
-                            updatedResults[targetIndex] = {
-                              ...updatedResults[targetIndex],
+                            updatedResults[resultIndex] = {
+                              ...existingResult,
                               question: originalQuestion || data.question,
                               answer: null,
                               failedToGenerate: true,
@@ -162,7 +185,7 @@ export function useQuestionnaireAutoAnswer({
                       return updatedResults;
                     });
 
-                    // Update status to completed
+                    // Update status to completed using the original index
                     setQuestionStatuses((prev) => {
                       const newStatuses = new Map(prev);
                       newStatuses.set(data.questionIndex, 'completed');

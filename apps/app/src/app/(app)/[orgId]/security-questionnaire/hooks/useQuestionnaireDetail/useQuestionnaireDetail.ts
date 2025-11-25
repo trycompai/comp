@@ -67,7 +67,7 @@ export function useQuestionnaireDetail({
 
       return newResults.map((newR, index) => {
         const originalIndex =
-          (newR as any)._originalIndex !== undefined ? (newR as any)._originalIndex : index;
+          newR._originalIndex !== undefined ? newR._originalIndex : index;
         const existingResult = prevResults.find((r) => r.originalIndex === originalIndex);
         if (existingResult) {
           return {

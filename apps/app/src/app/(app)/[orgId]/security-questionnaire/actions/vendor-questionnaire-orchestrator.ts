@@ -13,6 +13,7 @@ const inputSchema = z.object({
     z.object({
       question: z.string(),
       answer: z.string().nullable(),
+      _originalIndex: z.number().optional(), // Preserves original index from QuestionnaireResult
     }),
   ),
 });
@@ -62,7 +63,7 @@ export const vendorQuestionnaireOrchestrator = authActionClient
       const questionsToAnswer = questionsAndAnswers
         .map((qa, index) => ({
           ...qa,
-          index: (qa as any)._originalIndex !== undefined ? (qa as any)._originalIndex : index,
+          index: qa._originalIndex !== undefined ? qa._originalIndex : index,
         }))
         .filter((qa) => !qa.answer || qa.answer.trim().length === 0);
 
