@@ -13,6 +13,8 @@ import {
 } from '@react-email/components';
 import { Footer } from '../../components/footer';
 import { Logo } from '../../components/logo';
+import { UnsubscribeLink } from '../../components/unsubscribe-link';
+import { getUnsubscribeUrl } from '../../lib/unsubscribe';
 
 interface Props {
   email: string;
@@ -123,6 +125,8 @@ export const WeeklyTaskDigestEmail = ({
                 This notification was intended for <span className="text-[#121212]">{email}</span>.
               </Text>
             </Section>
+
+            <UnsubscribeLink email={email} unsubscribeUrl={getUnsubscribeUrl(email)} />
 
             <br />
 

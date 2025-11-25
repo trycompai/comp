@@ -47,7 +47,7 @@ export async function Header({
       </div>
       <div className="flex items-center space-x-2">
         <Suspense fallback={<Skeleton className="h-8 w-8 rounded-full" />}>
-          <UserMenu />
+          <UserMenu orgId={organizationId} />
         </Suspense>
       </div>
     </header>
