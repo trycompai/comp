@@ -6,7 +6,10 @@ import {
   Param,
   Patch,
   Post,
+  Res,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -18,11 +21,15 @@ import {
   ApiTags,
   ApiExtraModels,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { openai } from '@ai-sdk/openai';
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
+import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
 import { PoliciesService } from './policies.service';
 import { GET_ALL_POLICIES_RESPONSES } from './schemas/get-all-policies.responses';
 import { GET_POLICY_BY_ID_RESPONSES } from './schemas/get-policy-by-id.responses';
@@ -178,5 +185,131 @@ export class PoliciesController {
         },
       }),
     };
+  }
+
+  @Post(':id/ai-chat')
+  @ApiOperation({
+    summary: 'Chat with AI about a policy',
+    description:
+      'Stream AI responses for policy editing assistance. Returns a text/event-stream with AI-generated suggestions.',
+  })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({ type: AISuggestPolicyRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Streaming AI response',
+    content: {
+      'text/event-stream': {
+        schema: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Policy not found' })
+  async aiChatPolicy(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: AISuggestPolicyRequestDto,
+    @Res() res: Response,
+  ) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new HttpException(
+        'AI service not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const policy = await this.policiesService.findById(id, organizationId);
+
+    const policyContentText = this.convertPolicyContentToText(policy.content);
+
+    const systemPrompt = `You are an expert GRC (Governance, Risk, and Compliance) policy editor. You help users edit and improve their organizational policies to meet compliance requirements like SOC 2, ISO 27001, and GDPR.
+
+Current Policy Name: ${policy.name}
+${policy.description ? `Policy Description: ${policy.description}` : ''}
+
+Current Policy Content:
+---
+${policyContentText}
+---
+
+Your role:
+1. Help users understand and improve their policies
+2. Suggest specific changes when asked
+3. Ensure policies remain compliant with relevant frameworks
+4. Maintain professional, clear language appropriate for official documentation
+
+When the user asks you to make changes to the policy:
+1. First explain what changes you'll make and why
+2. Then provide the COMPLETE updated policy content in a code block with the label \`\`\`policy
+3. The policy content inside the code block should be in markdown format
+
+IMPORTANT: When providing updated policy content, you MUST include the ENTIRE policy, not just the changed sections. The content in the \`\`\`policy code block will replace the entire current policy.
+
+Keep responses helpful and focused on the policy editing task.`;
+
+    const messages: UIMessage[] = [
+      ...(body.chatHistory || []).map((msg) => ({
+        id: crypto.randomUUID(),
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        parts: [{ type: 'text' as const, text: msg.content }],
+      })),
+      {
+        id: crypto.randomUUID(),
+        role: 'user' as const,
+        content: body.instructions,
+        parts: [{ type: 'text' as const, text: body.instructions }],
+      },
+    ];
+
+    const result = streamText({
+      model: openai('gpt-4o'),
+      system: systemPrompt,
+      messages: convertToModelMessages(messages),
+    });
+
+    return result.pipeTextStreamToResponse(res);
+  }
+
+  private convertPolicyContentToText(content: unknown): string {
+    if (!content) return '';
+
+    const contentArray = Array.isArray(content) ? content : [content];
+
+    const extractText = (node: unknown): string => {
+      if (!node || typeof node !== 'object') return '';
+
+      const n = node as Record<string, unknown>;
+
+      if (n.type === 'text' && typeof n.text === 'string') {
+        return n.text;
+      }
+
+      if (Array.isArray(n.content)) {
+        const texts = n.content.map(extractText).filter(Boolean);
+
+        switch (n.type) {
+          case 'heading':
+            const level = (n.attrs as Record<string, unknown>)?.level || 1;
+            return '\n' + '#'.repeat(Number(level)) + ' ' + texts.join('') + '\n';
+          case 'paragraph':
+            return texts.join('') + '\n';
+          case 'bulletList':
+          case 'orderedList':
+            return '\n' + texts.join('');
+          case 'listItem':
+            return '- ' + texts.join('') + '\n';
+          case 'blockquote':
+            return '\n> ' + texts.join('\n> ') + '\n';
+          default:
+            return texts.join('');
+        }
+      }
+
+      return '';
+    };
+
+    return contentArray.map(extractText).join('\n').trim();
   }
 }
