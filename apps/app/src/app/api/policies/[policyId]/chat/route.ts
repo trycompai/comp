@@ -119,6 +119,7 @@ Keep responses helpful and focused on the policy editing task.`;
               .string()
               .describe('One to two sentences summarizing the changes. No bullet points.'),
           }),
+          execute: async ({ summary }) => ({ success: true, summary }),
         }),
       },
     });

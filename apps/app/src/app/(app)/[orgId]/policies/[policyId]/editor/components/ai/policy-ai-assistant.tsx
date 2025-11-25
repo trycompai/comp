@@ -45,15 +45,17 @@ export function PolicyAiAssistant({
 
     for (const part of lastAssistantMessage.parts) {
       if (isToolUIPart(part) && getToolName(part) === 'proposePolicy') {
+        const toolInput = part.input as { content: string; summary: string };
+        
+        if (part.state === 'input-streaming') {
+          onProposedPolicyChange?.(toolInput?.content || '');
+          continue;
+        }
+        
         if (lastProcessedToolCallRef.current === part.toolCallId) {
           continue;
         }
         
-        if (part.state === 'input-streaming') {
-          continue;
-        }
-        
-        const toolInput = part.input as { content: string; summary: string };
         if (toolInput?.content) {
           lastProcessedToolCallRef.current = part.toolCallId;
           onProposedPolicyChange?.(toolInput.content);

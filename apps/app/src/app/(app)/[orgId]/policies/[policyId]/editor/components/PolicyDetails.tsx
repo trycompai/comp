@@ -3,7 +3,7 @@
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
+
 import { DiffViewer } from '@comp/ui/diff-viewer';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import '@comp/ui/editor.css';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { structuredPatch } from 'diff';
-import { CheckCircle, ChevronDown, Loader2, Sparkles, X } from 'lucide-react';
+import { CheckCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -47,7 +47,6 @@ export function PolicyContentManager({
 
   const [proposedPolicyMarkdown, setProposedPolicyMarkdown] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
-  const [isDiffOpen, setIsDiffOpen] = useState(true);
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
     onError: () => toast.error('Failed to switch view.'),
@@ -72,7 +71,7 @@ export function PolicyContentManager({
 
   const diffPatch = useMemo(() => {
     if (!proposedPolicyMarkdown) return null;
-    return createGitPatch('policy.md', currentPolicyMarkdown, proposedPolicyMarkdown);
+    return createGitPatch('Proposed Changes', currentPolicyMarkdown, proposedPolicyMarkdown);
   }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
 
   const applyAiChanges = useCallback(
@@ -172,39 +171,23 @@ export function PolicyContentManager({
       </Card>
 
       {proposedPolicyMarkdown && diffPatch && (
-        <Card>
-          <Collapsible open={isDiffOpen} onOpenChange={setIsDiffOpen}>
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center gap-2 text-sm font-medium hover:text-foreground/80">
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${isDiffOpen ? '' : '-rotate-90'}`}
-                  />
-                  Proposed Changes
-                </button>
-              </CollapsibleTrigger>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={dismissProposedChanges}>
-                  <X className="h-3 w-3 mr-1" />
-                  Dismiss
-                </Button>
-                <Button size="sm" onClick={applyProposedChanges} disabled={isApplying}>
-                  {isApplying ? (
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                  )}
-                  Apply Changes
-                </Button>
-              </div>
-            </div>
-            <CollapsibleContent>
-              <CardContent className="p-4 max-h-[400px] overflow-auto">
-                <DiffViewer patch={diffPatch} />
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
+        <div className="space-y-2">
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={dismissProposedChanges}>
+              <X className="h-3 w-3 mr-1" />
+              Dismiss
+            </Button>
+            <Button size="sm" onClick={applyProposedChanges} disabled={isApplying}>
+              {isApplying ? (
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <CheckCircle className="h-3 w-3 mr-1" />
+              )}
+              Apply Changes
+            </Button>
+          </div>
+          <DiffViewer patch={diffPatch} />
+        </div>
       )}
     </div>
   );
