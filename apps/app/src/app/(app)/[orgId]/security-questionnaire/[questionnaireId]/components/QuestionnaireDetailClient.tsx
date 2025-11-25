@@ -64,17 +64,17 @@ export function QuestionnaireDetailClient({
         question: r.question,
         answer: r.answer,
         sources: r.sources,
-        failedToGenerate: (r as any).failedToGenerate ?? false,
-        status: (r as any).status ?? 'untouched',
-        _originalIndex: (r as any).originalIndex ?? index,
+        failedToGenerate: r.failedToGenerate ?? false,
+        status: r.status ?? 'untouched',
+        _originalIndex: r.originalIndex ?? index,
       }))}
       filteredResults={filteredResults?.map((r, index) => ({
         question: r.question,
         answer: r.answer,
         sources: r.sources,
-        failedToGenerate: (r as any).failedToGenerate ?? false,
-        status: (r as any).status ?? 'untouched',
-        _originalIndex: (r as any).originalIndex ?? index,
+        failedToGenerate: r.failedToGenerate ?? false,
+        status: r.status ?? 'untouched',
+        _originalIndex: r.originalIndex ?? index,
       }))}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}

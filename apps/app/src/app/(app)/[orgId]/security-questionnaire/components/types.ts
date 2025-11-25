@@ -11,5 +11,8 @@ export interface QuestionAnswer {
   }>;
   failedToGenerate?: boolean; // Track if auto-generation was attempted but failed
   status?: 'untouched' | 'generated' | 'manual'; // Track answer source: untouched, AI-generated, or manually edited
+  // Optional field used when converting QuestionnaireResult to QuestionAnswer for orchestrator
+  // Preserves the original index from QuestionnaireResult.originalIndex
+  _originalIndex?: number;
 }
 

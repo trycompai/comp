@@ -39,6 +39,10 @@ export function useQuestionnaireDetailState({
   const [questionStatuses, setQuestionStatuses] = useState<
     Map<number, 'pending' | 'processing' | 'completed'>
   >(new Map());
+  // Use Set to track multiple questions being processed in parallel
+  const [answeringQuestionIndices, setAnsweringQuestionIndices] = useState<Set<number>>(new Set());
+  
+  // Keep answeringQuestionIndex for backward compatibility (will be removed)
   const [answeringQuestionIndex, setAnsweringQuestionIndex] = useState<number | null>(null);
   const [isAutoAnswerProcessStarted, setIsAutoAnswerProcessStarted] = useState(false);
   const [isParseProcessStarted, setIsParseProcessStarted] = useState(false);
@@ -100,18 +104,7 @@ export function useQuestionnaireDetailState({
 
   const deleteAnswerAction = useAction(deleteQuestionnaireAnswer);
 
-  // Create trigger token for auto-answer (single question answers now use server action)
-  useEffect(() => {
-    const fetchToken = async () => {
-      const autoTokenResult = await createTriggerToken('vendor-questionnaire-orchestrator');
-
-      if (autoTokenResult.success && autoTokenResult.token) {
-        setAutoAnswerToken(autoTokenResult.token);
-      }
-    };
-
-    fetchToken();
-  }, []);
+  // No longer need trigger tokens - using server actions instead of Trigger.dev
 
   // Sync queue ref with state
   useEffect(() => {
@@ -131,6 +124,8 @@ export function useQuestionnaireDetailState({
     setQuestionStatuses,
     answeringQuestionIndex,
     setAnsweringQuestionIndex,
+    answeringQuestionIndices,
+    setAnsweringQuestionIndices,
     isAutoAnswerProcessStarted,
     setIsAutoAnswerProcessStarted,
     isParseProcessStarted,
