@@ -5,7 +5,6 @@ import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
 import { useDataTable } from '@/hooks/use-data-table';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { useSession } from '@/utils/auth-client';
 import { Departments, Vendor } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
 import { Loader2 } from 'lucide-react';
@@ -13,7 +12,7 @@ import { parseAsInteger, parseAsString, parseAsStringEnum, useQueryState } from 
 import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import { CreateVendorSheet } from '../../components/create-vendor-sheet';
-import { getVendorsAction } from '../actions/get-vendors-action';
+import { getVendorsAction, type GetVendorsActionInput } from '../actions/get-vendors-action';
 import type { GetAssigneesResult, GetVendorsResult } from '../data/queries';
 import type { GetVendorsSchema } from '../data/validations';
 import { useOnboardingStatus } from '../hooks/use-onboarding-status';
@@ -24,6 +23,10 @@ export type VendorRow = GetVendorsResult['data'][number] & {
   isPending?: boolean;
   isAssessing?: boolean;
 };
+
+const callGetVendorsAction = getVendorsAction as unknown as (
+  input: GetVendorsActionInput,
+) => Promise<GetVendorsResult>;
 
 const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'> = [
   'pending',
@@ -38,6 +41,7 @@ interface VendorsTableProps {
   assignees: GetAssigneesResult;
   onboardingRunId?: string | null;
   searchParams: GetVendorsSchema;
+  orgId: string;
 }
 
 export function VendorsTable({
@@ -46,10 +50,8 @@ export function VendorsTable({
   assignees,
   onboardingRunId,
   searchParams: initialSearchParams,
+  orgId,
 }: VendorsTableProps) {
-  const session = useSession();
-  const orgId = session?.data?.session?.activeOrganizationId;
-
   const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
     onboardingRunId,
     'vendors',
@@ -103,8 +105,9 @@ export function VendorsTable({
 
   // Fetcher function for SWR
   const fetcher = useCallback(async () => {
-    return await getVendorsAction(currentSearchParams);
-  }, [currentSearchParams]);
+    if (!orgId) return { data: [], pageCount: 0 };
+    return await callGetVendorsAction({ orgId, searchParams: currentSearchParams });
+  }, [orgId, currentSearchParams]);
 
   // Use SWR to fetch vendors with polling when onboarding is active
   const { data: vendorsData } = useSWR(swrKey, fetcher, {
@@ -203,7 +206,7 @@ export function VendorsTable({
           residualProbability: 'very_unlikely' as const,
           residualImpact: 'insignificant' as const,
           website: null,
-          organizationId: orgId || '',
+          organizationId: orgId,
           assigneeId: null,
           assignee: null,
           createdAt: new Date(),
@@ -228,7 +231,7 @@ export function VendorsTable({
           residualProbability: 'very_unlikely' as const,
           residualImpact: 'insignificant' as const,
           website: null,
-          organizationId: orgId || '',
+          organizationId: orgId,
           assigneeId: null,
           assignee: null,
           createdAt: new Date(),
@@ -240,7 +243,7 @@ export function VendorsTable({
     return [...vendorsWithStatus, ...pendingVendors, ...tempVendors];
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
-  const columns = useMemo<ColumnDef<VendorRow>[]>(() => getColumns(orgId ?? ''), [orgId]);
+  const columns = useMemo<ColumnDef<VendorRow>[]>(() => getColumns(orgId), [orgId]);
 
   const { table } = useDataTable({
     data: mergedVendors,

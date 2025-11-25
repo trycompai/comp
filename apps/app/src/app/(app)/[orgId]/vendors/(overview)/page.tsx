@@ -90,6 +90,7 @@ export default async function Page({
         assignees={assignees}
         onboardingRunId={onboarding?.triggerJobId ?? null}
         searchParams={parsedSearchParams}
+        orgId={orgId}
       />
     </PageWithBreadcrumb>
   );
