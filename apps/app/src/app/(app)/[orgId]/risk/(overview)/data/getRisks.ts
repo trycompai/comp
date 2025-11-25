@@ -1,11 +1,14 @@
 import 'server-only';
 
-import { auth } from '@/utils/auth';
 import { db, Prisma, type User } from '@db';
-import { headers } from 'next/headers';
 import type { GetRiskSchema } from './validations';
 
-export async function getRisks(input: GetRiskSchema): Promise<{
+export type GetRisksInput = {
+  orgId: string;
+  searchParams: GetRiskSchema;
+};
+
+export async function getRisks({ orgId, searchParams }: GetRisksInput): Promise<{
   data: (Omit<
     Prisma.RiskGetPayload<{
       include: { assignee: { include: { user: true } } };
@@ -14,16 +17,11 @@ export async function getRisks(input: GetRiskSchema): Promise<{
   > & { assignee: User | null })[];
   pageCount: number;
 }> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    // In case of unauthorized or missing org, return empty data and 0 pageCount
+  if (!orgId) {
     return { data: [], pageCount: 0 };
   }
 
-  const { title, page, perPage, sort, filters, joinOperator } = input;
+  const { title, page, perPage, sort, filters, joinOperator } = searchParams;
 
   const orderBy = sort.map((s) => ({
     [s.id]: s.desc ? 'desc' : 'asc',
@@ -37,7 +35,7 @@ export async function getRisks(input: GetRiskSchema): Promise<{
   });
 
   const where: Prisma.RiskWhereInput = {
-    organizationId: session.session.activeOrganizationId,
+    organizationId: orgId,
     ...(title && {
       title: {
         contains: title,
