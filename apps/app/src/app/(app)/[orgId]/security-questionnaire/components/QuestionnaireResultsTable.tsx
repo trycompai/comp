@@ -66,8 +66,8 @@ export function QuestionnaireResultsTable({
         <TableBody>
           {filteredResults.map((qa, index) => {
             // Use originalIndex if available (from detail page), otherwise find by question text
-            const originalIndex = (qa as any)._originalIndex !== undefined 
-              ? (qa as any)._originalIndex 
+            const originalIndex = qa._originalIndex !== undefined 
+              ? qa._originalIndex 
               : results.findIndex((r) => r.question === qa.question);
             // Fallback to index if not found (shouldn't happen, but safety check)
             const safeIndex = originalIndex >= 0 ? originalIndex : index;

@@ -3,14 +3,16 @@ import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { SignOut } from './sign-out';
 
-export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
+export async function UserMenu({ onlySignOut, orgId }: { onlySignOut?: boolean; orgId?: string }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -49,6 +51,12 @@ export async function UserMenu({ onlySignOut }: { onlySignOut?: boolean }) {
                 </div>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {orgId && (
+              <DropdownMenuItem asChild>
+                <Link href={`/${orgId}/settings/user`}>User Settings</Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
           </>
         )}

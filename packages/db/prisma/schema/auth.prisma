@@ -1,12 +1,14 @@
 model User {
-  id            String    @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
-  name          String
-  email         String
-  emailVerified Boolean
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLogin     DateTime?
+  id                             String    @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
+  name                           String
+  email                          String
+  emailVerified                  Boolean
+  image                          String?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+  lastLogin                      DateTime?
+  emailNotificationsUnsubscribed Boolean   @default(false)
+  emailPreferences               Json?     @default("{\"policyNotifications\":true,\"taskReminders\":true,\"weeklyTaskDigest\":true,\"unassignedItemsNotifications\":true}")
 
   accounts           Account[]
   auditLog           AuditLog[]
@@ -93,7 +95,7 @@ model Member {
 
   department                      Departments                       @default(none)
   isActive                        Boolean                           @default(true)
-    deactivated                     Boolean                           @default(false)
+  deactivated                     Boolean                           @default(false)
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
   fleetDmLabelId                  Int?
 
@@ -124,11 +126,11 @@ model Invitation {
 // This is only for the app to consume, shouldn't be enforced by DB
 // Otherwise it won't work with Better Auth, as per https://www.better-auth.com/docs/plugins/organization#access-control
 enum Role {
-    owner
-    admin
-    auditor
-    employee
-    contractor
+  owner
+  admin
+  auditor
+  employee
+  contractor
 }
 
 enum PolicyStatus {
