@@ -48,12 +48,19 @@ export async function POST(req: NextRequest) {
 
         // Filter questions that need answers
         // Preserve original index if provided (for QuestionnaireResult with originalIndex)
+        type QuestionWithIndex = {
+          question: string;
+          answer: string | null;
+          _originalIndex?: number;
+          index: number;
+        };
+        
         const questionsToAnswer = questionsAndAnswers
-          .map((qa: { question: string; answer: string | null; _originalIndex?: number }, index: number) => ({
+          .map((qa: { question: string; answer: string | null; _originalIndex?: number }, index: number): QuestionWithIndex => ({
             ...qa,
             index: qa._originalIndex !== undefined ? qa._originalIndex : index,
           }))
-          .filter((qa) => !qa.answer || qa.answer.trim().length === 0);
+          .filter((qa: QuestionWithIndex) => !qa.answer || qa.answer.trim().length === 0);
 
         // Send initial progress
         send({
