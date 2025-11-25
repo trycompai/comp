@@ -17,14 +17,12 @@ import { useEffect, useRef, useState } from 'react';
 
 interface PolicyAiAssistantProps {
   policyId: string;
-  currentPolicyMarkdown: string;
   onProposedPolicyChange?: (content: string | null) => void;
   close?: () => void;
 }
 
 export function PolicyAiAssistant({
   policyId,
-  currentPolicyMarkdown,
   onProposedPolicyChange,
   close,
 }: PolicyAiAssistantProps) {

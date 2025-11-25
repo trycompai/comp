@@ -1,12 +1,12 @@
 'use client';
 
-import { Fade } from './diff/blur-fade/blur-fade';
 import React, { useLayoutEffect, useRef } from 'react';
 import { cn } from '../utils';
+import { Fade } from './diff/blur-fade';
 
-import { clamp } from '../utils/clamp';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { ChevronDown } from 'lucide-react';
+import { clamp } from '../utils/clamp';
 import { Button } from './button';
 import { CopyButton } from './copy-button';
 

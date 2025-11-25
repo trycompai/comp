@@ -13,7 +13,7 @@ import type { JSONContent } from '@tiptap/react';
 import { structuredPatch } from 'diff';
 import { CheckCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
 import { PdfViewer } from '../../components/PdfViewer';
@@ -52,43 +52,15 @@ export function PolicyContentManager({
     onError: () => toast.error('Failed to switch view.'),
   });
 
-  function handleTabChange(newFormat: string) {
-    switchFormat.execute({
-      policyId,
-      format: newFormat as 'EDITOR' | 'PDF',
-    });
-  }
-
-  function toggleAiAssistant() {
-    setShowAiAssistant(!showAiAssistant);
-  }
-
-  function closeAiAssistant() {
-    setShowAiAssistant(false);
-  }
-
-  const currentPolicyMarkdown = convertContentToMarkdown(currentContent);
+  const currentPolicyMarkdown = useMemo(
+    () => convertContentToMarkdown(currentContent),
+    [currentContent],
+  );
 
   const diffPatch = useMemo(() => {
     if (!proposedPolicyMarkdown) return null;
     return createGitPatch('Proposed Changes', currentPolicyMarkdown, proposedPolicyMarkdown);
   }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
-
-  const applyAiChanges = useCallback(
-    async (content: Array<JSONContent>) => {
-      try {
-        await updatePolicy({ policyId, content });
-        setCurrentContent(content);
-        setEditorKey((prev) => prev + 1);
-        toast.success('Policy updated with AI suggestions');
-      } catch (error) {
-        console.error('Failed to apply AI changes:', error);
-        toast.error('Failed to apply changes');
-        throw error;
-      }
-    },
-    [policyId],
-  );
 
   async function applyProposedChanges() {
     if (!proposedPolicyMarkdown) return;
@@ -96,17 +68,17 @@ export function PolicyContentManager({
     setIsApplying(true);
     try {
       const jsonContent = markdownToTipTapJSON(proposedPolicyMarkdown);
-      await applyAiChanges(jsonContent);
+      await updatePolicy({ policyId, content: jsonContent });
+      setCurrentContent(jsonContent);
+      setEditorKey((prev) => prev + 1);
       setProposedPolicyMarkdown(null);
+      toast.success('Policy updated with AI suggestions');
     } catch (err) {
       console.error('Failed to apply changes:', err);
+      toast.error('Failed to apply changes');
     } finally {
       setIsApplying(false);
     }
-  }
-
-  function dismissProposedChanges() {
-    setProposedPolicyMarkdown(null);
   }
 
   return (
@@ -115,7 +87,13 @@ export function PolicyContentManager({
         <CardContent className="p-4">
           <div className="flex gap-4">
             <div className="flex-1 min-w-0">
-              <Tabs defaultValue={displayFormat} onValueChange={handleTabChange} className="w-full">
+              <Tabs
+                defaultValue={displayFormat}
+                onValueChange={(format) =>
+                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' })
+                }
+                className="w-full"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <TabsList className="grid w-auto grid-cols-2">
                     <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
@@ -129,7 +107,7 @@ export function PolicyContentManager({
                     <Button
                       variant={showAiAssistant ? 'default' : 'outline'}
                       size="sm"
-                      onClick={toggleAiAssistant}
+                      onClick={() => setShowAiAssistant((prev) => !prev)}
                       className="gap-2"
                     >
                       <Sparkles className="h-4 w-4" />
@@ -160,9 +138,8 @@ export function PolicyContentManager({
               <div className="w-80 shrink-0 min-h-[400px] self-stretch flex flex-col">
                 <PolicyAiAssistant
                   policyId={policyId}
-                  currentPolicyMarkdown={currentPolicyMarkdown}
                   onProposedPolicyChange={setProposedPolicyMarkdown}
-                  close={closeAiAssistant}
+                  close={() => setShowAiAssistant(false)}
                 />
               </div>
             )}
@@ -173,7 +150,7 @@ export function PolicyContentManager({
       {proposedPolicyMarkdown && diffPatch && (
         <div className="space-y-2">
           <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={dismissProposedChanges}>
+            <Button variant="ghost" size="sm" onClick={() => setProposedPolicyMarkdown(null)}>
               <X className="h-3 w-3 mr-1" />
               Dismiss
             </Button>
