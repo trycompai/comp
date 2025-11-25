@@ -5235,6 +5235,70 @@
         ]
       }
     },
+    "/v1/policies/{id}/ai-chat": {
+      "post": {
+        "description": "Stream AI responses for policy editing assistance. Returns a text/event-stream with AI-generated suggestions.",
+        "operationId": "PoliciesController_aiChatPolicy_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AISuggestPolicyRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Streaming AI response",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Policy not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Chat with AI about a policy",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/device-agent/mac": {
       "get": {
         "description": "Downloads the Comp AI Device Agent installer for macOS as a DMG file. The agent helps monitor device compliance and security policies. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -9737,6 +9801,48 @@
             "example": false
           }
         }
+      },
+      "AISuggestPolicyRequestDto": {
+        "type": "object",
+        "properties": {
+          "instructions": {
+            "type": "string",
+            "description": "User instructions about what changes to make to the policy",
+            "example": "Update the data retention section to specify a 7-year retention period"
+          },
+          "chatHistory": {
+            "type": "array",
+            "description": "Chat history for context (array of messages with role and content)",
+            "example": [
+              {
+                "role": "user",
+                "content": "Update the data retention policy"
+              },
+              {
+                "role": "assistant",
+                "content": "I can help with that..."
+              }
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "instructions"
+        ]
       },
       "TaskResponseDto": {
         "type": "object",

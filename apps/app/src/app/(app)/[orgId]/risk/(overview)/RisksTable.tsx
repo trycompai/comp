@@ -5,7 +5,6 @@ import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { useSession } from '@/utils/auth-client';
 import type { Member, Risk, User } from '@db';
 import { Risk as RiskType } from '@db';
 import { ColumnDef } from '@tanstack/react-table';
@@ -42,15 +41,15 @@ export const RisksTable = ({
   pageCount: initialPageCount,
   onboardingRunId,
   searchParams: initialSearchParams,
+  orgId,
 }: {
   risks: RiskRow[];
   assignees: (Member & { user: User })[];
   pageCount: number;
   onboardingRunId?: string | null;
   searchParams: GetRiskSchema;
+  orgId: string;
 }) => {
-  const session = useSession();
-  const orgId = session?.data?.session?.activeOrganizationId;
   const [_, setOpenSheet] = useQueryState('create-risk-sheet');
 
   const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
@@ -99,8 +98,9 @@ export const RisksTable = ({
 
   // Fetcher function for SWR
   const fetcher = useCallback(async () => {
-    return await getRisksAction(currentSearchParams);
-  }, [currentSearchParams]);
+    if (!orgId) return { data: [], pageCount: 0 };
+    return await getRisksAction({ orgId, searchParams: currentSearchParams });
+  }, [orgId, currentSearchParams]);
 
   // Use SWR to fetch risks with polling when onboarding is active
   const { data: risksData } = useSWR(swrKey, fetcher, {
@@ -202,7 +202,7 @@ export const RisksTable = ({
           residualImpact: 'insignificant' as const,
           treatmentStrategy: 'accept' as const,
           treatmentStrategyDescription: null,
-          organizationId: orgId || '',
+          organizationId: orgId,
           assigneeId: null,
           assignee: null,
           createdAt: new Date(),
@@ -229,7 +229,7 @@ export const RisksTable = ({
           residualImpact: 'insignificant' as const,
           treatmentStrategy: 'accept' as const,
           treatmentStrategyDescription: null,
-          organizationId: orgId || '',
+          organizationId: orgId,
           assigneeId: null,
           assignee: null,
           createdAt: new Date(),
@@ -241,7 +241,7 @@ export const RisksTable = ({
     return [...risksWithStatus, ...pendingRisks, ...tempRisks];
   }, [risks, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
-  const columns = useMemo<ColumnDef<RiskRow>[]>(() => getColumns(orgId ?? ''), [orgId]);
+  const columns = useMemo<ColumnDef<RiskRow>[]>(() => getColumns(orgId), [orgId]);
 
   const { table } = useDataTable({
     data: mergedRisks,
