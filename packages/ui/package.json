@@ -282,6 +282,10 @@
       "types": "./dist/components/drawer.d.ts",
       "import": "./dist/components/drawer.js"
     },
+    "./diff-viewer": {
+      "types": "./dist/components/diff-viewer.d.ts",
+      "import": "./dist/components/diff-viewer.js"
+    },
     "./dialog": {
       "types": "./dist/components/dialog.d.ts",
       "import": "./dist/components/dialog.js"
@@ -297,6 +301,10 @@
     "./currency-input": {
       "types": "./dist/components/currency-input.d.ts",
       "import": "./dist/components/currency-input.js"
+    },
+    "./copy-button": {
+      "types": "./dist/components/copy-button.d.ts",
+      "import": "./dist/components/copy-button.js"
     },
     "./context-menu": {
       "types": "./dist/components/context-menu.d.ts",
@@ -317,6 +325,10 @@
     "./collapsible": {
       "types": "./dist/components/collapsible.d.ts",
       "import": "./dist/components/collapsible.js"
+    },
+    "./collapsible-card": {
+      "types": "./dist/components/collapsible-card.d.ts",
+      "import": "./dist/components/collapsible-card.js"
     },
     "./checkbox": {
       "types": "./dist/components/checkbox.d.ts",
@@ -353,6 +365,10 @@
     "./button-icon": {
       "types": "./dist/components/button-icon.d.ts",
       "import": "./dist/components/button-icon.js"
+    },
+    "./button-group": {
+      "types": "./dist/components/button-group.d.ts",
+      "import": "./dist/components/button-group.js"
     },
     "./breadcrumb": {
       "types": "./dist/components/breadcrumb.d.ts",
@@ -414,9 +430,41 @@
       "types": "./dist/components/editor/selectors/link-selector.d.ts",
       "import": "./dist/components/editor/selectors/link-selector.js"
     },
+    "./diff/index": {
+      "types": "./dist/components/diff/index.d.ts",
+      "import": "./dist/components/diff/index.js"
+    },
+    "./diff/blur-fade": {
+      "types": "./dist/components/diff/blur-fade.d.ts",
+      "import": "./dist/components/diff/blur-fade.js"
+    },
+    "./diff/utils/parse": {
+      "types": "./dist/components/diff/utils/parse.d.ts",
+      "import": "./dist/components/diff/utils/parse.js"
+    },
+    "./diff/utils/index": {
+      "types": "./dist/components/diff/utils/index.d.ts",
+      "import": "./dist/components/diff/utils/index.js"
+    },
+    "./diff/utils/guess-lang": {
+      "types": "./dist/components/diff/utils/guess-lang.d.ts",
+      "import": "./dist/components/diff/utils/guess-lang.js"
+    },
+    "./ai-elements/tool": {
+      "types": "./dist/components/ai-elements/tool.d.ts",
+      "import": "./dist/components/ai-elements/tool.js"
+    },
     "./ai-elements/prompt-input": {
       "types": "./dist/components/ai-elements/prompt-input.d.ts",
       "import": "./dist/components/ai-elements/prompt-input.js"
+    },
+    "./ai-elements/message": {
+      "types": "./dist/components/ai-elements/message.d.ts",
+      "import": "./dist/components/ai-elements/message.js"
+    },
+    "./ai-elements/conversation": {
+      "types": "./dist/components/ai-elements/conversation.d.ts",
+      "import": "./dist/components/ai-elements/conversation.js"
     },
     "./truncate": {
       "types": "./dist/utils/truncate.d.ts",
@@ -425,6 +473,10 @@
     "./cn": {
       "types": "./dist/utils/cn.d.ts",
       "import": "./dist/utils/cn.js"
+    },
+    "./clamp": {
+      "types": "./dist/utils/clamp.d.ts",
+      "import": "./dist/utils/clamp.js"
     },
     "./use-resize-observer": {
       "types": "./dist/hooks/use-resize-observer.d.ts",
@@ -445,14 +497,6 @@
     "./use-callback-ref": {
       "types": "./dist/hooks/use-callback-ref.d.ts",
       "import": "./dist/hooks/use-callback-ref.js"
-    },
-    "./diff-viewer": {
-      "types": "./dist/components/diff-viewer.d.ts",
-      "import": "./dist/components/diff-viewer.js"
-    },
-    "./diff": {
-      "types": "./dist/components/diff/index.d.ts",
-      "import": "./dist/components/diff/index.js"
     }
   },
   "files": [
