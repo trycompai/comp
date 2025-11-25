@@ -12,6 +12,8 @@ import {
 } from '@react-email/components';
 import { Footer } from '../components/footer';
 import { Logo } from '../components/logo';
+import { UnsubscribeLink } from '../components/unsubscribe-link';
+import { getUnsubscribeUrl } from '../lib/unsubscribe';
 
 interface UnassignedItem {
   type: 'task' | 'policy' | 'risk' | 'vendor';
@@ -25,6 +27,7 @@ interface Props {
   organizationId: string;
   removedMemberName: string;
   unassignedItems: UnassignedItem[];
+  email?: string;
 }
 
 export const UnassignedItemsNotificationEmail = ({
@@ -33,6 +36,7 @@ export const UnassignedItemsNotificationEmail = ({
   organizationId,
   removedMemberName,
   unassignedItems,
+  email,
 }: Props) => {
   const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL ?? 'https://app.trycomp.ai';
   const link = `${baseUrl}/${organizationId}`;
@@ -152,6 +156,8 @@ export const UnassignedItemsNotificationEmail = ({
                 View Organization
               </a>
             </Section>
+
+            {email && <UnsubscribeLink email={email} unsubscribeUrl={getUnsubscribeUrl(email)} />}
 
             <br />
 

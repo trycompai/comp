@@ -1,5 +1,7 @@
+import { db } from '@db';
 import { logger, queue, task } from '@trigger.dev/sdk';
 import { sendWeeklyTaskDigestEmail } from '@trycompai/email/lib/weekly-task-digest';
+import { isUserUnsubscribed } from '@comp/email/lib/check-unsubscribe';
 
 // Queue with concurrency limit to prevent rate limiting
 const weeklyTaskDigestQueue = queue({
@@ -29,6 +31,19 @@ export const sendWeeklyTaskDigestEmailTask = task({
     });
 
     try {
+      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'weeklyTaskDigest');
+      if (unsubscribed) {
+        logger.info('User is unsubscribed from email notifications, skipping', {
+          email: payload.email,
+        });
+        return {
+          success: true,
+          email: payload.email,
+          skipped: true,
+          reason: 'unsubscribed',
+        };
+      }
+
       await sendWeeklyTaskDigestEmail(payload);
 
       logger.info('Successfully sent weekly task digest email', {
