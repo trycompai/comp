@@ -251,7 +251,7 @@ Keep responses helpful and focused on the policy editing task.`;
     const messages: UIMessage[] = [
       ...(body.chatHistory || []).map((msg) => ({
         id: crypto.randomUUID(),
-        role: msg.role as 'user' | 'assistant',
+        role: msg.role,
         content: msg.content,
         parts: [{ type: 'text' as const, text: msg.content }],
       })),
@@ -264,7 +264,7 @@ Keep responses helpful and focused on the policy editing task.`;
     ];
 
     const result = streamText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.1'),
       system: systemPrompt,
       messages: convertToModelMessages(messages),
     });
@@ -290,9 +290,12 @@ Keep responses helpful and focused on the policy editing task.`;
         const texts = n.content.map(extractText).filter(Boolean);
 
         switch (n.type) {
-          case 'heading':
+          case 'heading': {
             const level = (n.attrs as Record<string, unknown>)?.level || 1;
-            return '\n' + '#'.repeat(Number(level)) + ' ' + texts.join('') + '\n';
+            return (
+              '\n' + '#'.repeat(Number(level)) + ' ' + texts.join('') + '\n'
+            );
+          }
           case 'paragraph':
             return texts.join('') + '\n';
           case 'bulletList':
