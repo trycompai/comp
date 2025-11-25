@@ -13,6 +13,7 @@ import type { JSONContent } from '@tiptap/react';
 import { structuredPatch } from 'diff';
 import { CheckCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
@@ -47,6 +48,7 @@ export function PolicyContentManager({
 
   const [proposedPolicyMarkdown, setProposedPolicyMarkdown] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const isAiPolicyAssistantEnabled = useFeatureFlagEnabled('is-ai-policy-assistant-enabled');
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
     onError: () => toast.error('Failed to switch view.'),
@@ -103,17 +105,19 @@ export function PolicyContentManager({
                       PDF View
                     </TabsTrigger>
                   </TabsList>
-                  {!isPendingApproval && displayFormat === 'EDITOR' && (
-                    <Button
-                      variant={showAiAssistant ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setShowAiAssistant((prev) => !prev)}
-                      className="gap-2"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      AI Assistant
-                    </Button>
-                  )}
+                  {!isPendingApproval &&
+                    displayFormat === 'EDITOR' &&
+                    isAiPolicyAssistantEnabled && (
+                      <Button
+                        variant={showAiAssistant ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setShowAiAssistant((prev) => !prev)}
+                        className="gap-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        AI Assistant
+                      </Button>
+                    )}
                 </div>
                 <TabsContent value="EDITOR" className="mt-4">
                   <PolicyEditorWrapper
@@ -134,7 +138,7 @@ export function PolicyContentManager({
               </Tabs>
             </div>
 
-            {showAiAssistant && (
+            {showAiAssistant && isAiPolicyAssistantEnabled && (
               <div className="w-80 shrink-0 min-h-[400px] self-stretch flex flex-col">
                 <PolicyAiAssistant
                   policyId={policyId}
