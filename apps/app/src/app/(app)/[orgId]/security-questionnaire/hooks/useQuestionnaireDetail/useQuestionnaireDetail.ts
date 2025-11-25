@@ -22,7 +22,6 @@ export function useQuestionnaireDetail({
 
   // Auto-answer hook
   const autoAnswer = useQuestionnaireAutoAnswer({
-    autoAnswerToken: state.autoAnswerToken,
     results: state.results as QuestionAnswer[] | null,
     answeringQuestionIndex: state.answeringQuestionIndex,
     isAutoAnswerProcessStarted: state.isAutoAnswerProcessStarted,
@@ -101,12 +100,12 @@ export function useQuestionnaireDetail({
       failedToGenerate: (r as any).failedToGenerate ?? false,
       _originalIndex: r.originalIndex,
     })) as QuestionAnswer[],
-    answeringQuestionIndex: state.answeringQuestionIndex,
+    answeringQuestionIndices: state.answeringQuestionIndices,
     setResults: setResultsWrapper,
     setQuestionStatuses: state.setQuestionStatuses as Dispatch<
       SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
     >,
-    setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    setAnsweringQuestionIndices: state.setAnsweringQuestionIndices,
     questionnaireId,
   });
 
@@ -210,14 +209,12 @@ export function useQuestionnaireDetail({
     return (
       state.isAutoAnswerProcessStarted &&
       state.hasClickedAutoAnswer &&
-      (autoAnswer.autoAnswerRun?.status === 'EXECUTING' ||
-        autoAnswer.autoAnswerRun?.status === 'QUEUED' ||
-        autoAnswer.autoAnswerRun?.status === 'WAITING')
+      autoAnswer.isAutoAnswerTriggering
     );
   }, [
     state.isAutoAnswerProcessStarted,
     state.hasClickedAutoAnswer,
-    autoAnswer.autoAnswerRun?.status,
+    autoAnswer.isAutoAnswerTriggering,
   ]);
 
   const isLoading = useMemo(() => {
@@ -226,22 +223,16 @@ export function useQuestionnaireDetail({
     );
     const isSingleAnswerTriggering = singleAnswer.isSingleAnswerTriggering;
     const isAutoAnswerTriggering = autoAnswer.isAutoAnswerTriggering;
-    const isAutoAnswerRunActive =
-      autoAnswer.autoAnswerRun?.status === 'EXECUTING' ||
-      autoAnswer.autoAnswerRun?.status === 'QUEUED' ||
-      autoAnswer.autoAnswerRun?.status === 'WAITING';
 
     return (
       hasProcessingQuestions ||
       isSingleAnswerTriggering ||
-      isAutoAnswerTriggering ||
-      isAutoAnswerRunActive
+      isAutoAnswerTriggering
     );
   }, [
     state.questionStatuses,
     singleAnswer.isSingleAnswerTriggering,
     autoAnswer.isAutoAnswerTriggering,
-    autoAnswer.autoAnswerRun?.status,
   ]);
 
   const isSaving = state.updateAnswerAction.status === 'executing';
