@@ -1,9 +1,9 @@
 'use server';
 
-import { db } from '@db';
 import { authActionClient } from '@/actions/safe-action';
-import { z } from 'zod';
+import { db } from '@db';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 const emailPreferencesSchema = z.object({
   preferences: z.object({
@@ -50,7 +50,7 @@ export const updateEmailPreferencesAction = authActionClient
 
       // Revalidate the settings page
       if (ctx.session.activeOrganizationId) {
-        revalidatePath(`/${ctx.session.activeOrganizationId}/settings/notifications`);
+        revalidatePath(`/${ctx.session.activeOrganizationId}/settings/user`);
       }
 
       return {
@@ -64,4 +64,3 @@ export const updateEmailPreferencesAction = authActionClient
       };
     }
   });
-

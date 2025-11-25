@@ -1,11 +1,19 @@
 'use client';
 
-import { Checkbox } from '@comp/ui/checkbox';
 import { Button } from '@comp/ui/button';
-import { useState } from 'react';
-import { updateEmailPreferencesAction } from '../actions/update-email-preferences';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@comp/ui/card';
+import { Checkbox } from '@comp/ui/checkbox';
 import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { updateEmailPreferencesAction } from '../actions/update-email-preferences';
 
 interface EmailPreferences {
   policyNotifications: boolean;
@@ -20,6 +28,7 @@ interface Props {
 }
 
 export function EmailNotificationPreferences({ initialPreferences, email }: Props) {
+  // Normal logic: true = subscribed (checked), false = unsubscribed (unchecked)
   const [preferences, setPreferences] = useState<EmailPreferences>(initialPreferences);
   const [saving, setSaving] = useState(false);
 
@@ -42,6 +51,8 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
   };
 
   const handleSelectAll = () => {
+    // If all are enabled (all true), disable all (set all to false)
+    // If any are disabled (some false), enable all (set all to true)
     const allEnabled = Object.values(preferences).every((v) => v === true);
     setPreferences({
       policyNotifications: !allEnabled,
@@ -56,28 +67,26 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
     execute({ preferences });
   };
 
+  // Check if all are disabled (all false)
   const allDisabled = Object.values(preferences).every((v) => v === false);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Email Notification Preferences</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage which email notifications you receive at <span className="font-medium">{email}</span>. These preferences apply to all organizations you're a member of.
-        </p>
-      </div>
-
-      <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>Email Notifications</CardTitle>
+        <CardDescription>
+          Manage which email notifications you receive at{' '}
+          <span className="font-medium">{email}</span>. These preferences apply to all organizations
+          you're a member of.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div className="flex items-center justify-between border-b pb-4">
           <div>
             <label className="text-base font-medium text-foreground">Enable All</label>
-            <p className="text-sm text-muted-foreground">Toggle all notifications at once</p>
+            <p className="text-sm text-muted-foreground">Toggle all notifications</p>
           </div>
-          <Button
-            onClick={handleSelectAll}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={handleSelectAll} variant="outline" size="sm">
             {Object.values(preferences).every((v) => v === true) ? 'Disable All' : 'Enable All'}
           </Button>
         </div>
@@ -87,7 +96,7 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
             <Checkbox
               checked={preferences.policyNotifications}
               onCheckedChange={(checked) => handleToggle('policyNotifications', checked === true)}
-              className="mt-1 flex-shrink-0"
+              className="mt-1 shrink-0"
             />
             <div className="flex-1 min-w-0">
               <div className="font-medium text-foreground">Policy Notifications</div>
@@ -101,7 +110,7 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
             <Checkbox
               checked={preferences.taskReminders}
               onCheckedChange={(checked) => handleToggle('taskReminders', checked === true)}
-              className="mt-1 flex-shrink-0"
+              className="mt-1 shrink-0"
             />
             <div className="flex-1 min-w-0">
               <div className="font-medium text-foreground">Task Reminders</div>
@@ -115,7 +124,7 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
             <Checkbox
               checked={preferences.weeklyTaskDigest}
               onCheckedChange={(checked) => handleToggle('weeklyTaskDigest', checked === true)}
-              className="mt-1 flex-shrink-0"
+              className="mt-1 shrink-0"
             />
             <div className="flex-1 min-w-0">
               <div className="font-medium text-foreground">Weekly Task Digest</div>
@@ -128,8 +137,10 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
           <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
             <Checkbox
               checked={preferences.unassignedItemsNotifications}
-              onCheckedChange={(checked) => handleToggle('unassignedItemsNotifications', checked === true)}
-              className="mt-1 flex-shrink-0"
+              onCheckedChange={(checked) =>
+                handleToggle('unassignedItemsNotifications', checked === true)
+              }
+              className="mt-1 shrink-0"
             />
             <div className="flex-1 min-w-0">
               <div className="font-medium text-foreground">Unassigned Items Notifications</div>
@@ -139,28 +150,16 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
             </div>
           </label>
         </div>
-      </div>
-
-      {allDisabled && (
-        <div className="rounded-md bg-yellow-500/10 border border-yellow-500/20 p-4 text-sm text-yellow-700 dark:text-yellow-400">
-          You have disabled all notifications. You won't receive any email notifications from any organization.
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <div className="text-muted-foreground text-xs">
+          You can also manage these preferences by clicking the unsubscribe link in any email
+          notification.
         </div>
-      )}
-
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? 'Saving...' : 'Save Preferences'}
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save'}
         </Button>
-      </div>
-
-      <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
-        <p className="font-medium mb-1">Note:</p>
-        <p>You can also manage these preferences by clicking the unsubscribe link in any email notification.</p>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }
-

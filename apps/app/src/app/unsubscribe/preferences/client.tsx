@@ -4,6 +4,7 @@ import { Button } from '@comp/ui/button';
 import { Checkbox } from '@comp/ui/checkbox';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { updateUnsubscribePreferencesAction } from './actions/update-preferences';
 
 export interface EmailPreferences {
@@ -27,14 +28,12 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
     weeklyTaskDigest: !initialPreferences.weeklyTaskDigest,
     unassignedItemsNotifications: !initialPreferences.unassignedItemsNotifications,
   });
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string>('');
 
   const { execute, status } = useAction(updateUnsubscribePreferencesAction, {
     onSuccess: () => {
-      setSaved(true);
+      toast.success('Preferences saved successfully');
       setError('');
-      setTimeout(() => setSaved(false), 3000);
     },
     onError: ({ error }) => {
       setError(error.serverError || 'Failed to save preferences');
@@ -177,18 +176,6 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
         {error && (
           <div className="mb-4 rounded-md bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
             {error}
-          </div>
-        )}
-
-        {saved && (
-          <div className="mb-4 rounded-md bg-green-500/10 border border-green-500/20 p-4 text-sm text-green-700 dark:text-green-400">
-            Preferences saved successfully!
-          </div>
-        )}
-
-        {allUnsubscribed && (
-          <div className="mb-4 rounded-md bg-yellow-500/10 border border-yellow-500/20 p-4 text-sm text-yellow-700 dark:text-yellow-400">
-            You have unsubscribed from all notifications. You won't receive any email notifications.
           </div>
         )}
 

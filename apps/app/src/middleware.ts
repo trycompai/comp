@@ -61,11 +61,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Allow unauthenticated access to unsubscribe routes
-    if (
-      nextUrl.pathname === '/unsubscribe' ||
-      nextUrl.pathname.startsWith('/unsubscribe/') ||
-      nextUrl.pathname.startsWith('/api/unsubscribe')
-    ) {
+    if (nextUrl.pathname === '/unsubscribe' || nextUrl.pathname.startsWith('/unsubscribe/')) {
       return response;
     }
 

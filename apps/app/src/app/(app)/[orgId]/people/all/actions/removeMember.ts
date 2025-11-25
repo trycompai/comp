@@ -6,7 +6,11 @@ import { z } from 'zod';
 // Adjust safe-action import for colocalized structure
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
-import { sendUnassignedItemsNotificationEmail, type UnassignedItem } from '@comp/email';
+import {
+  isUserUnsubscribed,
+  sendUnassignedItemsNotificationEmail,
+  type UnassignedItem,
+} from '@comp/email';
 
 const removeMemberSchema = z.object({
   memberId: z.string(),
@@ -253,29 +257,22 @@ export const removeMember = authActionClient
 
         if (owner) {
           // Check if owner is unsubscribed from unassigned items notifications
-          const ownerUser = await db.user.findUnique({
-            where: { email: owner.user.email },
-            select: { emailNotificationsUnsubscribed: true, emailPreferences: true },
-          });
+          const unsubscribed = await isUserUnsubscribed(
+            db,
+            owner.user.email,
+            'unassignedItemsNotifications',
+          );
 
-          if (ownerUser) {
-            const isUnsubscribed =
-              ownerUser.emailNotificationsUnsubscribed ||
-              (ownerUser.emailPreferences &&
-                typeof ownerUser.emailPreferences === 'object' &&
-                (ownerUser.emailPreferences as Record<string, boolean>).unassignedItemsNotifications === false);
-
-            if (!isUnsubscribed) {
-              // Send email to the org owner
-              sendUnassignedItemsNotificationEmail({
-                email: owner.user.email,
-                userName: owner.user.name || owner.user.email || 'Owner',
-                organizationName: organization.name,
-                organizationId: ctx.session.activeOrganizationId,
-                removedMemberName,
-                unassignedItems,
-              });
-            }
+          if (!unsubscribed) {
+            // Send email to the org owner
+            sendUnassignedItemsNotificationEmail({
+              email: owner.user.email,
+              userName: owner.user.name || owner.user.email || 'Owner',
+              organizationName: organization.name,
+              organizationId: ctx.session.activeOrganizationId,
+              removedMemberName,
+              unassignedItems,
+            });
           }
         }
       }
