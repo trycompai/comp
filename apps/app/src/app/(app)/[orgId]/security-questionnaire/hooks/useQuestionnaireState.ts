@@ -21,6 +21,8 @@ export function useQuestionnaireState() {
   >(new Map());
   const [hasClickedAutoAnswer, setHasClickedAutoAnswer] = useState(false);
   const [answeringQuestionIndex, setAnsweringQuestionIndex] = useState<number | null>(null);
+  // Use Set to track multiple questions being processed in parallel
+  const [answeringQuestionIndices, setAnsweringQuestionIndices] = useState<Set<number>>(new Set());
   const [parseTaskId, setParseTaskId] = useState<string | null>(null);
   const [parseToken, setParseToken] = useState<string | null>(null);
   const [autoAnswerToken, setAutoAnswerToken] = useState<string | null>(null);
@@ -70,6 +72,8 @@ export function useQuestionnaireState() {
     setHasClickedAutoAnswer,
     answeringQuestionIndex,
     setAnsweringQuestionIndex,
+    answeringQuestionIndices,
+    setAnsweringQuestionIndices,
     parseTaskId,
     setParseTaskId,
     parseToken,

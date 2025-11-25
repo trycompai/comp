@@ -145,54 +145,46 @@ export function useQuestionnaireDetailHandlers({
   };
 
   const processNextInQueue = useCallback(() => {
-    // If there's already a question being processed, don't start a new one
-    if (answeringQuestionIndex !== null) {
-      return;
-    }
-
     // Get the next question from queue
     const queue = answerQueueRef.current;
     if (queue.length === 0) {
       return;
     }
 
-    const nextIndex = queue[0];
-    const result = results.find((r) => r.originalIndex === nextIndex);
-    
-    if (!result) {
-      // Remove invalid index from queue
+    // Process all questions in queue in parallel (no blocking)
+    queue.forEach((nextIndex) => {
+      const result = results.find((r) => r.originalIndex === nextIndex);
+      
+      if (!result) {
+        // Remove invalid index from queue
+        setAnswerQueue((prev) => prev.filter((idx) => idx !== nextIndex));
+        return;
+      }
+
+      // Skip if already answered manually
+      if (result.status === 'manual' && result.answer && result.answer.trim().length > 0) {
+        // Remove from queue
+        setAnswerQueue((prev) => prev.filter((idx) => idx !== nextIndex));
+        return;
+      }
+
+      // Remove from queue and start processing immediately (parallel)
       setAnswerQueue((prev) => prev.filter((idx) => idx !== nextIndex));
-      // Try next one
-      setTimeout(() => processNextInQueue(), 0);
-      return;
-    }
 
-    // Skip if already answered manually
-    if (result.status === 'manual' && result.answer && result.answer.trim().length > 0) {
-      // Remove from queue
-      setAnswerQueue((prev) => prev.filter((idx) => idx !== nextIndex));
-      // Try next one
-      setTimeout(() => processNextInQueue(), 0);
-      return;
-    }
+      setQuestionStatuses((prev) => {
+        const newStatuses = new Map(prev);
+        newStatuses.set(nextIndex, 'processing');
+        return newStatuses;
+      });
 
-    // Remove from queue and start processing
-    setAnswerQueue((prev) => prev.filter((idx) => idx !== nextIndex));
-    setAnsweringQuestionIndex(nextIndex);
-
-    setQuestionStatuses((prev) => {
-      const newStatuses = new Map(prev);
-      newStatuses.set(nextIndex, 'processing');
-      return newStatuses;
+      triggerSingleAnswer({
+        question: result.question,
+        organizationId,
+        questionIndex: nextIndex,
+        totalQuestions: results.length,
+      });
     });
-
-    triggerSingleAnswer({
-      question: result.question,
-      organizationId,
-      questionIndex: nextIndex,
-      totalQuestions: results.length,
-    });
-  }, [answeringQuestionIndex, results, organizationId, setAnswerQueue, setAnsweringQuestionIndex, setQuestionStatuses, triggerSingleAnswer]);
+  }, [results, organizationId, setAnswerQueue, setQuestionStatuses, triggerSingleAnswer]);
 
   const handleAnswerSingleQuestion = (index: number) => {
     // Don't allow adding to queue if batch operation is running
@@ -218,29 +210,30 @@ export function useQuestionnaireDetailHandlers({
 
     // Check if currently being processed
     if (answeringQuestionIndex === index) {
-      return; // Already processing
+      return; // Already processing (backward compatibility check)
     }
 
-    // Add to queue
-    setAnswerQueue((prev) => [...prev, index]);
+    // Start processing immediately (no queue needed for parallel processing)
+    setQuestionStatuses((prev) => {
+      const newStatuses = new Map(prev);
+      newStatuses.set(index, 'processing');
+      return newStatuses;
+    });
 
-    // If no question is currently being processed, start processing immediately
-    if (answeringQuestionIndex === null) {
-      processNextInQueue();
-    }
+    triggerSingleAnswer({
+      question: result.question,
+      organizationId,
+      questionIndex: index,
+      totalQuestions: results.length,
+    });
   };
 
-  // Auto-process next question in queue when current question finishes
+  // Process questions in queue (no longer needed for parallel processing, but kept for backward compatibility)
   useEffect(() => {
-    // When answeringQuestionIndex becomes null (question finished), process next in queue
-    if (answeringQuestionIndex === null && answerQueue.length > 0) {
-      // Small delay to ensure state updates are complete
-      const timeoutId = setTimeout(() => {
-        processNextInQueue();
-      }, 100);
-      return () => clearTimeout(timeoutId);
+    if (answerQueue.length > 0) {
+      processNextInQueue();
     }
-  }, [answeringQuestionIndex, answerQueue, processNextInQueue]);
+  }, [answerQueue.length, processNextInQueue]);
 
   const handleDeleteAnswer = async (questionAnswerId: string, questionIndex: number) => {
     try {

@@ -1,4 +1,6 @@
+import { db } from '@db';
 import { sendAllPolicyNotificationEmail } from '@comp/email';
+import { isUserUnsubscribed } from '@comp/email/lib/check-unsubscribe';
 import { logger, queue, task } from '@trigger.dev/sdk';
 
 // Queue with concurrency limit to ensure rate limiting
@@ -24,6 +26,19 @@ export const sendPublishAllPoliciesEmail = task({
     });
 
     try {
+      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'policyNotifications');
+      if (unsubscribed) {
+        logger.info('User is unsubscribed from email notifications, skipping', {
+          email: payload.email,
+        });
+        return {
+          success: true,
+          email: payload.email,
+          skipped: true,
+          reason: 'unsubscribed',
+        };
+      }
+
       await sendAllPolicyNotificationEmail(payload);
 
       logger.info('Successfully sent all policies email', {
