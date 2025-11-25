@@ -2,8 +2,6 @@ import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { QuestionnaireResults } from '../components/QuestionnaireResults';
-import { useQuestionnaireDetail } from '../hooks/useQuestionnaireDetail';
 import { getQuestionnaireById } from './data/queries';
 import { QuestionnaireDetailClient } from './components/QuestionnaireDetailClient';
 

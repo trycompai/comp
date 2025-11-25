@@ -83,7 +83,18 @@ export const authActionClient = actionClientWithMeta
     const headersList = await headers();
     let remaining: number | undefined;
 
-    if (ratelimit) {
+    // Exclude answer saving actions from rate limiting
+    // These actions are user-initiated and should not be rate limited
+    const excludedActions = [
+      'save-questionnaire-answer',
+      'update-questionnaire-answer',
+      'save-manual-answer',
+      'save-questionnaire-answers-batch',
+    ];
+
+    const shouldRateLimit = !excludedActions.includes(metadata.name);
+
+    if (ratelimit && shouldRateLimit) {
       const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
         `${headersList.get('x-forwarded-for')}-${metadata.name}`,
       );
@@ -283,7 +294,18 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     const headersList = await headers();
     let remaining: number | undefined;
 
-    if (ratelimit) {
+    // Exclude answer saving actions from rate limiting
+    // These actions are user-initiated and should not be rate limited
+    const excludedActions = [
+      'save-questionnaire-answer',
+      'update-questionnaire-answer',
+      'save-manual-answer',
+      'save-questionnaire-answers-batch',
+    ];
+
+    const shouldRateLimit = !excludedActions.includes(metadata.name);
+
+    if (ratelimit && shouldRateLimit) {
       const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
         `${headersList.get('x-forwarded-for')}-${metadata.name}`,
       );

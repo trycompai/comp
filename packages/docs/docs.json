@@ -15,7 +15,13 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "automated-evidence", "device-agent", "trust-access"]
+            "pages": [
+              "introduction",
+              "automated-evidence",
+              "device-agent",
+              "security-questionnaire",
+              "trust-access"
+            ]
           }
         ]
       },

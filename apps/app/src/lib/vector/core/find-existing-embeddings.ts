@@ -48,7 +48,7 @@ export async function findEmbeddingsForSource(
       const orgQueryEmbedding = await generateEmbedding(organizationId);
       const orgResults = await vectorIndex.query({
         vector: orgQueryEmbedding,
-        topK: 1000,
+        topK: 100,
         includeMetadata: true,
       });
 
@@ -84,7 +84,7 @@ export async function findEmbeddingsForSource(
       const sourceQueryEmbedding = await generateEmbedding(sourceId);
       const sourceResults = await vectorIndex.query({
         vector: sourceQueryEmbedding,
-        topK: 1000,
+        topK: 100,
         includeMetadata: true,
       });
 
@@ -122,7 +122,7 @@ export async function findEmbeddingsForSource(
       const combinedQueryEmbedding = await generateEmbedding(combinedQuery);
       const combinedResults = await vectorIndex.query({
         vector: combinedQueryEmbedding,
-        topK: 1000,
+        topK: 100,
         includeMetadata: true,
       });
 
@@ -160,7 +160,7 @@ export async function findEmbeddingsForSource(
         const docNameQueryEmbedding = await generateEmbedding(documentName);
         const docNameResults = await vectorIndex.query({
           vector: docNameQueryEmbedding,
-          topK: 1000,
+          topK: 100,
           includeMetadata: true,
         });
 
@@ -221,7 +221,7 @@ export async function findEmbeddingsForSource(
                 const contentQueryEmbedding = await generateEmbedding(contentQuery);
                 const contentResults = await vectorIndex.query({
                   vector: contentQueryEmbedding,
-                  topK: 1000,
+                  topK: 100,
                   includeMetadata: true,
                 });
 
@@ -251,7 +251,7 @@ export async function findEmbeddingsForSource(
                 const filenameQueryEmbedding = await generateEmbedding(chunkDocumentName);
                 const filenameResults = await vectorIndex.query({
                   vector: filenameQueryEmbedding,
-                  topK: 1000,
+                  topK: 100,
                   includeMetadata: true,
                 });
 
@@ -306,7 +306,7 @@ export async function findEmbeddingsForSource(
           const genericQueryEmbedding = await generateEmbedding(genericQuery);
           const genericResults = await vectorIndex.query({
             vector: genericQueryEmbedding,
-            topK: 1000,
+            topK: 100,
             includeMetadata: true,
           });
 
@@ -389,7 +389,7 @@ export async function findAllOrganizationEmbeddings(
     // Respect Upstash Vector limit of 1000
     const results = await vectorIndex.query({
       vector: queryEmbedding,
-      topK: 1000, // Max allowed by Upstash Vector
+      topK: 100, // Max allowed by Upstash Vector
       includeMetadata: true,
     });
 

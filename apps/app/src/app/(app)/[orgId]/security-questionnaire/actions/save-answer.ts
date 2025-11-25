@@ -90,8 +90,10 @@ export const saveAnswerAction = authActionClient
           },
         });
 
-        // If status is manual and answer exists, also save to SecurityQuestionnaireManualAnswer
-        if (status === 'manual' && answer && answer.trim().length > 0 && existingQuestion.question) {
+        const shouldPersistManualAnswer =
+          status === 'manual' && answer && answer.trim().length > 0 && existingQuestion.question;
+
+        if (shouldPersistManualAnswer) {
           try {
             const manualAnswer = await db.securityQuestionnaireManualAnswer.upsert({
               where: {

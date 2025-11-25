@@ -1,7 +1,7 @@
 'use client';
 
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useTransition } from 'react';
 import type { FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { exportQuestionnaire } from '../actions/export-questionnaire';
@@ -20,6 +20,7 @@ interface UseQuestionnaireActionsProps {
   setEditingAnswer: (answer: string) => void;
   setResults: React.Dispatch<React.SetStateAction<QuestionAnswer[] | null>>;
   setExpandedSources: React.Dispatch<React.SetStateAction<Set<number>>>;
+  isParseProcessStarted: boolean;
   setIsParseProcessStarted: (started: boolean) => void;
   setIsAutoAnswerProcessStarted: (started: boolean) => void;
   isAutoAnswerProcessStartedRef: React.MutableRefObject<boolean>;
@@ -64,6 +65,7 @@ export function useQuestionnaireActions({
   setEditingAnswer,
   setResults,
   setExpandedSources,
+  isParseProcessStarted,
   setIsParseProcessStarted,
   setIsAutoAnswerProcessStarted,
   isAutoAnswerProcessStartedRef,
@@ -124,29 +126,78 @@ export function useQuestionnaireActions({
     }
   }, [setSelectedFile]);
 
+  // ✅ Double-click protection using useRef
+  const isParsingRef = useRef(false);
+
   const handleParse = async () => {
-    // Clear old parse state before starting new parse to prevent token mismatch
-    setParseTaskId(null);
-    setParseToken(null);
-    setIsParseProcessStarted(true);
+    // ✅ DOUBLE-CLICK PROTECTION
+    if (isParsingRef.current) {
+      toast.warning('Analysis is already in progress. Please wait...');
+      return;
+    }
 
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUrl = reader.result as string;
-        const base64 = dataUrl.split(',')[1];
-        const fileType = selectedFile.type || 'application/octet-stream';
+    // ✅ Check if parsing is already in progress via state
+    if (isParseProcessStarted) {
+      toast.warning('Please wait for the current analysis to complete');
+      return;
+    }
 
-        await uploadFileAction.execute({
-          fileName: selectedFile.name,
-          fileType,
-          fileData: base64,
-          organizationId: orgId,
-        });
-      };
-      reader.readAsDataURL(selectedFile);
+    // Set parsing flag
+    isParsingRef.current = true;
+
+    try {
+      // Clear old parse state before starting new parse to prevent token mismatch
+      setParseTaskId(null);
+      setParseToken(null);
+      setIsParseProcessStarted(true);
+
+      if (selectedFile) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const dataUrl = reader.result as string;
+            const base64 = dataUrl.split(',')[1];
+            const fileType = selectedFile.type || 'application/octet-stream';
+
+            await uploadFileAction.execute({
+              fileName: selectedFile.name,
+              fileType,
+              fileData: base64,
+              organizationId: orgId,
+            });
+          } catch (error) {
+            // Reset flag on error
+            isParsingRef.current = false;
+            setIsParseProcessStarted(false);
+            console.error('Error uploading file:', error);
+            toast.error('Failed to upload file. Please try again.');
+          }
+        };
+        reader.onerror = () => {
+          isParsingRef.current = false;
+          setIsParseProcessStarted(false);
+          toast.error('Failed to read file. Please try again.');
+        };
+        reader.readAsDataURL(selectedFile);
+      } else {
+        // If file is not selected, reset flag
+        isParsingRef.current = false;
+        setIsParseProcessStarted(false);
+      }
+    } catch (error) {
+      isParsingRef.current = false;
+      setIsParseProcessStarted(false);
+      console.error('Error in handleParse:', error);
+      toast.error('Failed to start analysis. Please try again.');
     }
   };
+
+  // ✅ Reset flag when parsing is completed
+  useEffect(() => {
+    if (!isParseProcessStarted) {
+      isParsingRef.current = false;
+    }
+  }, [isParseProcessStarted]);
 
   const handleAutoAnswer = () => {
     // Prevent "Auto Answer All" if a single question is currently being answered

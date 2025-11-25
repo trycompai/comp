@@ -8,6 +8,7 @@ import Link from 'next/link';
 import type { QuestionAnswer } from './types';
 import { deduplicateSources } from '../utils/deduplicate-sources';
 import { KnowledgeBaseDocumentLink } from './KnowledgeBaseDocumentLink';
+import { ManualAnswerLink } from './ManualAnswerLink';
 
 interface QuestionnaireResultsTableProps {
   orgId: string;
@@ -19,6 +20,7 @@ interface QuestionnaireResultsTableProps {
   expandedSources: Set<number>;
   questionStatuses: Map<number, 'pending' | 'processing' | 'completed'>;
   answeringQuestionIndex: number | null;
+  answerQueue?: number[];
   isAutoAnswering: boolean;
   hasClickedAutoAnswer: boolean;
   isSaving?: boolean;
@@ -40,6 +42,7 @@ export function QuestionnaireResultsTable({
   expandedSources,
   questionStatuses,
   answeringQuestionIndex,
+  answerQueue = [],
   isAutoAnswering,
   hasClickedAutoAnswer,
   isSaving,
@@ -63,13 +66,15 @@ export function QuestionnaireResultsTable({
         <TableBody>
           {filteredResults.map((qa, index) => {
             // Use originalIndex if available (from detail page), otherwise find by question text
-            const originalIndex = (qa as any)._originalIndex !== undefined 
-              ? (qa as any)._originalIndex 
+            const originalIndex = qa._originalIndex !== undefined 
+              ? qa._originalIndex 
               : results.findIndex((r) => r.question === qa.question);
             // Fallback to index if not found (shouldn't happen, but safety check)
             const safeIndex = originalIndex >= 0 ? originalIndex : index;
             const isEditing = editingIndex === safeIndex;
             const questionStatus = questionStatuses.get(safeIndex);
+            // Check if question is in queue (waiting to be processed)
+            const isQueued = answerQueue.includes(safeIndex);
             // Determine if this question is being processed
             // It's processing if:
             // 1. Status is explicitly 'processing'
@@ -145,6 +150,11 @@ export function QuestionnaireResultsTable({
                           <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
                           <span className="text-sm text-muted-foreground">Finding answer...</span>
                         </div>
+                      ) : isQueued ? (
+                        <div className="flex items-center justify-end gap-2 py-2 min-h-[40px]">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                          <span className="text-sm text-muted-foreground">Finding answer...</span>
+                        </div>
                       ) : qa.failedToGenerate ? (
                         <div className="flex items-center justify-between gap-4">
                           <p className="text-sm text-muted-foreground italic">
@@ -217,6 +227,8 @@ export function QuestionnaireResultsTable({
                                 const isPolicy = source.sourceType === 'policy' && source.sourceId;
                                 const isKnowledgeBaseDocument =
                                   source.sourceType === 'knowledge_base_document' && source.sourceId;
+                                const isManualAnswer =
+                                  source.sourceType === 'manual_answer' && source.sourceId;
                                 const sourceContent = source.sourceName || source.sourceType;
 
                                 return (
@@ -240,6 +252,13 @@ export function QuestionnaireResultsTable({
                                         sourceName={sourceContent}
                                         orgId={orgId}
                                         className="text-primary hover:underline flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      />
+                                    ) : isManualAnswer && source.sourceId ? (
+                                      <ManualAnswerLink
+                                        manualAnswerId={source.sourceId}
+                                        sourceName={sourceContent}
+                                        orgId={orgId}
+                                        className="text-primary hover:underline flex items-center gap-1"
                                       />
                                     ) : (
                                       <span className="text-muted-foreground">{sourceContent}</span>
