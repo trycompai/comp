@@ -25,6 +25,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
               label: 'General',
             },
             {
+              path: `/${orgId}/settings/notifications`,
+              label: 'Notifications',
+            },
+            {
               path: `/${orgId}/settings/trust-portal`,
               label: 'Trust Portal',
             },

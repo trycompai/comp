@@ -60,6 +60,15 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
+    // Allow unauthenticated access to unsubscribe routes
+    if (
+      nextUrl.pathname === '/unsubscribe' ||
+      nextUrl.pathname.startsWith('/unsubscribe/') ||
+      nextUrl.pathname.startsWith('/api/unsubscribe')
+    ) {
+      return response;
+    }
+
     // 1. Not authenticated
     if (!hasToken && nextUrl.pathname !== '/auth') {
       const url = new URL('/auth', request.url);

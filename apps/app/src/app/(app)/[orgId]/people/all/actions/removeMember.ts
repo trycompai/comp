@@ -252,15 +252,31 @@ export const removeMember = authActionClient
         const removedMemberName = targetMember.user.name || targetMember.user.email || 'Member';
 
         if (owner) {
-          // Send email to the org owner
-          sendUnassignedItemsNotificationEmail({
-            email: owner.user.email,
-            userName: owner.user.name || owner.user.email || 'Owner',
-            organizationName: organization.name,
-            organizationId: ctx.session.activeOrganizationId,
-            removedMemberName,
-            unassignedItems,
+          // Check if owner is unsubscribed from unassigned items notifications
+          const ownerUser = await db.user.findUnique({
+            where: { email: owner.user.email },
+            select: { emailNotificationsUnsubscribed: true, emailPreferences: true },
           });
+
+          if (ownerUser) {
+            const isUnsubscribed =
+              ownerUser.emailNotificationsUnsubscribed ||
+              (ownerUser.emailPreferences &&
+                typeof ownerUser.emailPreferences === 'object' &&
+                (ownerUser.emailPreferences as Record<string, boolean>).unassignedItemsNotifications === false);
+
+            if (!isUnsubscribed) {
+              // Send email to the org owner
+              sendUnassignedItemsNotificationEmail({
+                email: owner.user.email,
+                userName: owner.user.name || owner.user.email || 'Owner',
+                organizationName: organization.name,
+                organizationId: ctx.session.activeOrganizationId,
+                removedMemberName,
+                unassignedItems,
+              });
+            }
+          }
         }
       }
 
