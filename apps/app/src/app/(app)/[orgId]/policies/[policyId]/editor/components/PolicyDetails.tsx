@@ -1,15 +1,22 @@
 'use client';
 
 import { PolicyEditor } from '@/components/editor/policy-editor';
+import { useChat } from '@ai-sdk/react';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
-
 import { DiffViewer } from '@comp/ui/diff-viewer';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import '@comp/ui/editor.css';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
+import {
+  DefaultChatTransport,
+  getToolName,
+  isToolUIPart,
+  type ToolUIPart,
+  type UIMessage,
+} from 'ai';
 import { structuredPatch } from 'diff';
 import { CheckCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -21,6 +28,50 @@ import { PdfViewer } from '../../components/PdfViewer';
 import { updatePolicy } from '../actions/update-policy';
 import { markdownToTipTapJSON } from './ai/markdown-utils';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
+
+function mapChatErrorToMessage(error: unknown): string {
+  const e = error as { status?: number };
+  const status = e?.status;
+
+  if (status === 401 || status === 403) {
+    return "You don't have access to this policy's AI assistant.";
+  }
+  if (status === 404) {
+    return 'This policy could not be found. It may have been removed.';
+  }
+  if (status === 429) {
+    return 'Too many requests. Please wait a moment and try again.';
+  }
+  return 'The AI assistant is currently unavailable. Please try again.';
+}
+
+interface LatestProposal {
+  key: string;
+  content: string;
+  summary: string;
+}
+
+function getLatestProposedPolicy(messages: UIMessage[]): LatestProposal | null {
+  const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
+  if (!lastAssistantMessage?.parts) return null;
+
+  let latest: LatestProposal | null = null;
+
+  lastAssistantMessage.parts.forEach((part, index) => {
+    if (!isToolUIPart(part) || getToolName(part) !== 'proposePolicy') return;
+    const toolPart = part as ToolUIPart;
+    const input = toolPart.input as { content?: string; summary?: string } | undefined;
+    if (!input?.content) return;
+
+    latest = {
+      key: `${lastAssistantMessage.id}:${index}`,
+      content: input.content,
+      summary: input.summary ?? 'Proposing policy changes',
+    };
+  });
+
+  return latest;
+}
 
 interface PolicyContentManagerProps {
   policyId: string;
@@ -46,9 +97,36 @@ export function PolicyContentManager({
     return formattedContent;
   });
 
-  const [proposedPolicyMarkdown, setProposedPolicyMarkdown] = useState<string | null>(null);
+  const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const isAiPolicyAssistantEnabled = useFeatureFlagEnabled('is-ai-policy-assistant-enabled');
+
+  const {
+    messages,
+    status,
+    sendMessage: baseSendMessage,
+  } = useChat({
+    transport: new DefaultChatTransport({
+      api: `/api/policies/${policyId}/chat`,
+    }),
+    onError(error) {
+      console.error('Policy AI chat error:', error);
+      setChatErrorMessage(mapChatErrorToMessage(error));
+    },
+  });
+
+  const sendMessage = (payload: { text: string }) => {
+    setChatErrorMessage(null);
+    baseSendMessage(payload);
+  };
+
+  const latestProposal = useMemo(() => getLatestProposedPolicy(messages), [messages]);
+
+  const activeProposal =
+    latestProposal && latestProposal.key !== dismissedProposalKey ? latestProposal : null;
+
+  const proposedPolicyMarkdown = activeProposal?.content ?? null;
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
     onError: () => toast.error('Failed to switch view.'),
@@ -65,15 +143,17 @@ export function PolicyContentManager({
   }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
 
   async function applyProposedChanges() {
-    if (!proposedPolicyMarkdown) return;
+    if (!activeProposal) return;
+
+    const { content, key } = activeProposal;
 
     setIsApplying(true);
     try {
-      const jsonContent = markdownToTipTapJSON(proposedPolicyMarkdown);
+      const jsonContent = markdownToTipTapJSON(content);
       await updatePolicy({ policyId, content: jsonContent });
       setCurrentContent(jsonContent);
       setEditorKey((prev) => prev + 1);
-      setProposedPolicyMarkdown(null);
+      setDismissedProposalKey(key);
       toast.success('Policy updated with AI suggestions');
     } catch (err) {
       console.error('Failed to apply changes:', err);
@@ -141,8 +221,10 @@ export function PolicyContentManager({
             {showAiAssistant && isAiPolicyAssistantEnabled && (
               <div className="w-80 shrink-0 min-h-[400px] self-stretch flex flex-col">
                 <PolicyAiAssistant
-                  policyId={policyId}
-                  onProposedPolicyChange={setProposedPolicyMarkdown}
+                  messages={messages}
+                  status={status}
+                  errorMessage={chatErrorMessage}
+                  sendMessage={sendMessage}
                   close={() => setShowAiAssistant(false)}
                 />
               </div>
@@ -151,10 +233,14 @@ export function PolicyContentManager({
         </CardContent>
       </Card>
 
-      {proposedPolicyMarkdown && diffPatch && (
+      {proposedPolicyMarkdown && diffPatch && activeProposal && (
         <div className="space-y-2">
           <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setProposedPolicyMarkdown(null)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDismissedProposalKey(activeProposal.key)}
+            >
               <X className="h-3 w-3 mr-1" />
               Dismiss
             </Button>
