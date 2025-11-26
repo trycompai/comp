@@ -1,0 +1,671 @@
+[
+  {
+    "title": "Policies for information security",
+    "control_objective": "Information security policy and topic-specific policies shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel and relevant interested parties, and reviewed at planned intervals and if significant changes occur.",
+    "closure": "5.1",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security roles and responsibilities",
+    "control_objective": "Information security roles and responsibilities shall be defined and allocated according to the organization needs",
+    "closure": "5.2",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Segregation of duties",
+    "control_objective": "Conflicting duties and conflicting areas of responsibility shall be segregated.",
+    "closure": "5.3",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Management Responsibilities",
+    "control_objective": "Management shall require all personnel to apply information security in accordance with the established information security policy, topic-specific policies and procedures of the organization.",
+    "closure": "5.4",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Contact with Authorities",
+    "control_objective": "The organization shall establish and maintain contact with relevant authorities.",
+    "closure": "5.5",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Contact with special interest groups",
+    "control_objective": "The organization shall establish and maintain contact with special interest groups or other specialist security forums and professional associations.",
+    "closure": "5.6",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Threat intelligence",
+    "control_objective": "Information relating to information security threats shall be collected and analysed to produce threat intelligence.",
+    "closure": "5.7",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security in project management",
+    "control_objective": "Information security shall be integrated into project management.",
+    "closure": "5.8",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Inventory of information and other associated assets",
+    "control_objective": "An inventory of information and other associated assets, including owners, shall be developed and maintained.",
+    "closure": "5.9",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Acceptable use of information and other associated assets",
+    "control_objective": "Rules for the acceptable use and procedures for handling information and other associated assets shall be identified, documented and implemented.",
+    "closure": "5.10",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Return of Assets",
+    "control_objective": "Personnel and other interested parties as appropriate shall return all the organization's assets in their possession upon change or termination of their employment, contract or agreement.",
+    "closure": "5.11",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Classification Of Information",
+    "control_objective": "Information shall be classified according to the information security needs of the organization based on confidentiality, integrity, availability and relevant interested party requirements.",
+    "closure": "5.12",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Labelling of Information",
+    "control_objective": "An appropriate set of procedures for information labelling shall be developed and implemented in accordance with the information classification scheme adopted by the organization.",
+    "closure": "5.13",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information Transfer",
+    "control_objective": "Information transfer rules, procedures, or agreements shall be in place for all types of transfer facilities within the organization and between the organization and other parties.",
+    "closure": "5.14",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Access Control",
+    "control_objective": "Rules to control physical and logical access to information and other associated assets shall be established and implemented based on business and information security requirements.",
+    "closure": "5.15",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Identity Management",
+    "control_objective": "The full life cycle of identities shall be managed.",
+    "closure": "5.16",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Authentication information",
+    "control_objective": "Allocation and management of authentication information shall be controlled by a management process, including advising personnel on the appropriate handling of authentication information.",
+    "closure": "5.17",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Access rights",
+    "control_objective": "Access rights to information and other associated assets shall be provisioned, reviewed, modified and removed in accordance with the organization's topic-specific policy on and rules for access control.",
+    "closure": "5.18",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security in supplier relationships",
+    "control_objective": "Processes and procedures shall be defined and implemented to manage the information security risks associated with the use of supplier's products or services.",
+    "closure": "5.19",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Addressing information security within supplier agreements",
+    "control_objective": "Relevant information security requirements shall be established and agreed with each supplier based on the type of supplier relationship.",
+    "closure": "5.20",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Managing information security in the ICT supply chain",
+    "control_objective": "Processes and procedures shall be defined and implemented to manage the information security risks associated with the ICT products and services supply chain.",
+    "closure": "5.21",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Monitoring, review and change management of supplier services",
+    "control_objective": "The organization shall regularly monitor, review, evaluate and manage change in supplier information security practices and service delivery.",
+    "closure": "5.22",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security for use of cloud services",
+    "control_objective": "Processes for acquisition, use, management and exit from cloud services shall be established in accordance with the organization's information security requirements.",
+    "closure": "5.23",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security incident management planning and preparation",
+    "control_objective": "The organization shall plan and prepare for managing information security incidents by defining, establishing and communicating information security incident management processes, roles and responsibilities",
+    "closure": "5.24",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Assessment and decision on information security events",
+    "control_objective": "The organization shall assess information security events and decide if they are to be categorized as information security incidents.",
+    "closure": "5.25",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Response to information security incidents",
+    "control_objective": "Information security incidents shall be responded to in accordance with the documented procedures.",
+    "closure": "5.26",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Learning from information security incidents",
+    "control_objective": "Knowledge gained from information security incidents shall be used to strengthen and improve the information security controls.",
+    "closure": "5.27",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Collection of evidence",
+    "control_objective": "The organization shall establish and implement procedures for the identification, collection, acquisition and preservation of evidence related to information security events.",
+    "closure": "5.28",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security during disruption",
+    "control_objective": "The organization shall plan how to maintain information security at an appropriate level during disruption.",
+    "closure": "5.29",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "ICT readiness for business continuity",
+    "control_objective": "ICT readiness shall be planned, implemented, maintained and tested based on business continuity objectives and ICT continuity requirements.",
+    "closure": "5.30",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Legal, statutory, regulatory and contractual requirements",
+    "control_objective": "Legal, statutory, regulatory and contractual requirements relevant to information security and the organization's approach to meet these requirements shall be identified, documented and kept up to date.",
+    "closure": "5.31",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Intellectual property rights",
+    "control_objective": "The organization shall implement appropriate procedures to protect intellectual property rights.",
+    "closure": "5.32",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Protection of records",
+    "control_objective": "Records shall be protected from loss, destruction, falsification, unauthorized access and unauthorized release.",
+    "closure": "5.33",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Privacy and protection of PII",
+    "control_objective": "The organization shall identify and meet the requirements regarding the preservation of privacy and protection of PII according to applicable laws and regulations and contractual requirements.",
+    "closure": "5.34",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Independent review of information security",
+    "control_objective": "The organization's approach to managing information security and its implementation including people, processes and technologies shall be reviewed independently at planned intervals, or when significant changes occur.",
+    "closure": "5.35",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Compliance with policies, rules and standards for information security",
+    "control_objective": "Compliance with the organization's information security policy, topic-specific policies, rules and standards shall be regularly reviewed.",
+    "closure": "5.36",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Documented operating procedures",
+    "control_objective": "Operating procedures for information processing facilities shall be documented and made available to personnel who need them.",
+    "closure": "5.37",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "People Controls",
+    "control_objective": null,
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Screening",
+    "control_objective": "Background verification checks on all candidates to become personnel shall be carried out prior to joining the organization and on an ongoing basis taking into consideration applicable laws, regulations and ethics and be proportional to the business requirements, the classification of the information to be accessed and the perceived risks.",
+    "closure": "6.1",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Terms and conditions of employment",
+    "control_objective": "The employment contractual agreements shall state the personnel's and the organization's responsibilities for information security.",
+    "closure": "6.2",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security awareness, education and training",
+    "control_objective": "Personnel of the organization and relevant interested parties shall receive appropriate information security awareness, education and training and regular updates of the organization's information security policy, topic-specific policies and procedures, as relevant for their job function.",
+    "closure": "6.3",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Disciplinary process",
+    "control_objective": "A disciplinary process shall be formalized and communicated to take actions against personnel and other relevant interested parties who have committed an information security policy violation.",
+    "closure": "6.4",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Responsibilities after termination or change of employment",
+    "control_objective": "Information security responsibilities and duties that remain valid after termination or change of employment shall be defined, enforced and communicated to relevant personnel and other interested parties.",
+    "closure": "6.5",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Confidentiality or non-disclosure agreements",
+    "control_objective": "Confidentiality or non-disclosure agreements reflecting the organization's needs for the protection of information shall be identified, documented, regularly reviewed and signed by personnel and other relevant interested parties.",
+    "closure": "6.6",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Remote working",
+    "control_objective": "Security measures shall be implemented when personnel are working remotely to protect information accessed, processed or stored outside the organization's premises.",
+    "closure": "6.7",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information security event reporting",
+    "control_objective": "The organization shall provide a mechanism for personnel to report observed or suspected information security events through appropriate channels in a timely manner.",
+    "closure": "6.8",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Physical Controls",
+    "control_objective": null,
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Physical security perimeters",
+    "control_objective": "Security perimeters shall be defined and used to protect areas that contain information and other associated assets.",
+    "closure": "7.1",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Physical entry",
+    "control_objective": "Secure areas shall be protected by appropriate entry controls and access points.",
+    "closure": "7.2",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Securing offices, rooms and facilities",
+    "control_objective": "Physical security for offices, rooms and facilities shall be designed and implemented.",
+    "closure": "7.3",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Physical security monitoring",
+    "control_objective": "Premises shall be continuously monitored for unauthorized physical access.",
+    "closure": "7.4",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Protecting against physical and environmental threats",
+    "control_objective": "Protection against physical and environmental threats, such as natural disasters and other intentional or unintentional physical threats to infrastructure shall be designed and implemented.",
+    "closure": "7.5",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Working in secure areas",
+    "control_objective": "Security measures for working in secure areas shall be designed and implemented.",
+    "closure": "7.6",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Clear desk and clear screen",
+    "control_objective": "Clear desk rules for papers and removable storage media and clear screen rules for information processing facilities shall be defined and appropriately enforced.",
+    "closure": "7.7",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Equipment siting and protection",
+    "control_objective": "Equipment shall be sited securely and protected.",
+    "closure": "7.8",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Security of assets off-premises",
+    "control_objective": "Off-site assets shall be protected.",
+    "closure": "7.9",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Storage media",
+    "control_objective": "Storage media shall be managed through their life cycle of acquisition, use, transportation and disposal in accordance with the organization's classification scheme and handling requirements.",
+    "closure": "7.10",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Supporting utilities",
+    "control_objective": "Information processing facilities shall be protected from power failures and other disruptions caused by failures in supporting utilities.",
+    "closure": "7.11",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Cabling security",
+    "control_objective": "Cables carrying power, data or supporting information services shall be protected from interception, interference or damage.",
+    "closure": "7.12",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Equipment maintenance",
+    "control_objective": "Equipment shall be maintained correctly to ensure availability, integrity and confidentiality of information.",
+    "closure": "7.13",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Secure disposal or re-use of equipment",
+    "control_objective": "Items of equipment containing storage media shall be verified to ensure that any sensitive data and licensed software has been removed or securely overwritten prior to disposal or re-use.",
+    "closure": "7.14",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Technological Controls",
+    "control_objective": null,
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "User endpoint devices",
+    "control_objective": "Information stored on, processed by or accessible via user endpoint devices shall be protected.",
+    "closure": "8.1",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Privileged access rights",
+    "control_objective": "The allocation and use of privileged access rights shall be restricted and managed.",
+    "closure": "8.2",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information access restriction",
+    "control_objective": "Access to information and other associated assets shall be restricted in accordance with the established topic-specific policy on access control.",
+    "closure": "8.3",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Access to source code",
+    "control_objective": "Read and write access to source code, development tools and software libraries shall be appropriately managed.",
+    "closure": "8.4",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Secure authentication",
+    "control_objective": "Secure authentication technologies and procedures shall be implemented based on information access restrictions and the topic-specific policy on access control.",
+    "closure": "8.5",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Capacity management",
+    "control_objective": "The use of resources shall be monitored and adjusted in line with current and expected capacity requirements.",
+    "closure": "8.6",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Protection against malware",
+    "control_objective": "Protection against malware shall be implemented and supported by appropriate user awareness.",
+    "closure": "8.7",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Management of technical vulnerabilities",
+    "control_objective": "Information about technical vulnerabilities of information systems in use shall be obtained, the organization's exposure to such vulnerabilities shall be evaluated and appropriate measures shall be taken.",
+    "closure": "8.8",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Configuration management",
+    "control_objective": "Configurations, including security configurations, of hardware, software, services and networks shall be established, documented, implemented, monitored and reviewed.",
+    "closure": "8.9",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information deletion",
+    "control_objective": "Information stored in information systems, devices or in any other storage media shall be deleted when no longer required.",
+    "closure": "8.10",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Data masking",
+    "control_objective": "Data masking shall be used in accordance with the organization's topic-specific policy on access control and other related topic-specific policies, and business requirements, taking applicable legislation into consideration.",
+    "closure": "8.11",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Data leakage prevention",
+    "control_objective": "Data leakage prevention measures shall be applied to systems, networks and any other devices that process, store or transmit sensitive information.",
+    "closure": "8.12",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Information backup",
+    "control_objective": "Backup copies of information, software and systems shall be maintained and regularly tested in accordance with the agreed topic-specific policy on backup.",
+    "closure": "8.13",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Redundancy of information processing facilities",
+    "control_objective": "Information processing facilities shall be implemented with redundancy sufficient to meet availability requirements.",
+    "closure": "8.14",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Logging",
+    "control_objective": "Logs that record activities, exceptions, faults and other relevant events shall be produced, stored, protected and analysed.",
+    "closure": "8.15",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Monitoring activities",
+    "control_objective": "Networks, systems and applications shall be monitored for anomalous behaviour and appropriate actions taken to evaluate potential information security incidents.",
+    "closure": "8.16",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Clock synchronization",
+    "control_objective": "The clocks of information processing systems used by the organization shall be synchronized to approved time sources.",
+    "closure": "8.17",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Use of privileged utility programs",
+    "control_objective": "The use of utility programs that can be capable of overriding system and application controls shall be restricted and tightly controlled.",
+    "closure": "8.18",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Installation of software on operational systems",
+    "control_objective": "Procedures and measures shall be implemented to securely manage software installation on operational systems.",
+    "closure": "8.19",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Networks security",
+    "control_objective": "Networks and network devices shall be secured, managed and controlled to protect information in systems and applications.",
+    "closure": "8.20",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Security of network services",
+    "control_objective": "Security mechanisms, service levels and service requirements of network services shall be identified, implemented and monitored.",
+    "closure": "8.21",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Segregation of networks",
+    "control_objective": "Groups of information services, users and information systems shall be segregated in the organization's networks.",
+    "closure": "8.22",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Web filtering",
+    "control_objective": "Access to external websites shall be managed to reduce exposure to malicious content.",
+    "closure": "8.23",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Use of cryptography",
+    "control_objective": "Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.",
+    "closure": "8.24",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Secure development life cycle",
+    "control_objective": "Rules for the secure development of software and systems shall be established and applied.",
+    "closure": "8.25",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Application security requirements",
+    "control_objective": "Information security requirements shall be identified, specified and approved when developing or acquiring applications.",
+    "closure": "8.26",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Secure system architecture and engineering principles",
+    "control_objective": "Principles for engineering secure systems shall be established, documented, maintained and applied to any information system development activities.",
+    "closure": "8.27",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Secure coding",
+    "control_objective": "Secure coding principles shall be applied to software development.",
+    "closure": "8.28",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Security testing in development and acceptance",
+    "control_objective": "Security testing processes shall be defined and implemented in the development life cycle.",
+    "closure": "8.29",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Outsourced development",
+    "control_objective": "The organization shall direct, monitor and review the activities related to outsourced system development.",
+    "closure": "8.30",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Separation of development, test and production environments",
+    "control_objective": "Development, testing and production environments shall be separated and secured.",
+    "closure": "8.31",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Change management",
+    "control_objective": "Changes to information processing facilities and information systems shall be subject to change management procedures.",
+    "closure": "8.32",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Test information",
+    "control_objective": "Test information shall be appropriately selected, protected and managed.",
+    "closure": "8.33",
+    "isApplicable": null,
+    "justification": null
+  },
+  {
+    "title": "Protection of information systems during audit testing",
+    "control_objective": "Audit tests and other assurance activities involving assessment of operational systems shall be planned and agreed between the tester and appropriate management.",
+    "closure": "8.34",
+    "isApplicable": null,
+    "justification": null
+  }
+]

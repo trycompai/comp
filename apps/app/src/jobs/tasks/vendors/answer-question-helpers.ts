@@ -3,7 +3,7 @@ import type { SimilarContentResult } from '@/lib/vector';
 import { openai } from '@ai-sdk/openai';
 import { logger } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
-import { deduplicateSources } from '@/app/(app)/[orgId]/security-questionnaire/utils/deduplicate-sources';
+import { deduplicateSources } from '@/app/(app)/[orgId]/questionnaire/utils/deduplicate-sources';
 
 export interface AnswerWithSources {
   answer: string | null;

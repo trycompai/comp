@@ -101,6 +101,7 @@ model Member {
 
   assignedPolicies       Policy[]             @relation("PolicyAssignee") // Policies where this member is an assignee
   approvedPolicies       Policy[]             @relation("PolicyApprover") // Policies where this member is an approver
+  approvedSOADocuments   SOADocument[]        @relation("SOADocumentApprover") // SOA documents where this member is an approver
   risks                  Risk[]
   tasks                  Task[]
   vendors                Vendor[]
