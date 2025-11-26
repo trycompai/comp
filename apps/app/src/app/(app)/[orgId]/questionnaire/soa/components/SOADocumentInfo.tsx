@@ -2,7 +2,7 @@
 
 import { Card } from '@comp/ui';
 import { Button } from '@comp/ui/button';
-import { Zap, Loader2, ShieldX } from 'lucide-react';
+import { Zap, Loader2, ShieldCheck } from 'lucide-react';
 import { Member, User } from '@db';
 
 type Document = {
@@ -14,6 +14,8 @@ type Document = {
   preparedBy: string | null;
   approverId?: string | null;
   approvedAt?: Date | null;
+  declinedAt?: Date | null;
+  declinedBy?: (Member & { user: User }) | null;
 };
 
 interface SOADocumentInfoProps {
@@ -64,13 +66,15 @@ export function SOADocumentInfo({
           </div>
           <div className="h-8 w-px bg-border" />
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Approved</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Approval status</p>
             <p className="text-sm font-semibold text-foreground">
               {document.approvedAt
-                ? new Date(document.approvedAt).toLocaleDateString()
-                : approver
-                  ? 'Pending approval'
-                  : 'Not approved'}
+                ? `Approved on ${new Date(document.approvedAt).toLocaleDateString()}`
+                : document.status === 'needs_review' && document.declinedAt
+                  ? `Declined on ${new Date(document.declinedAt).toLocaleDateString()}`
+                  : approver
+                    ? 'Pending approval'
+                    : 'Not approved'}
             </p>
           </div>
           {approver && document.approvedAt && (
@@ -84,13 +88,28 @@ export function SOADocumentInfo({
               </div>
             </>
           )}
-          {approver && !document.approvedAt && (
+          {approver && !document.approvedAt && document.status !== 'needs_review' && (
             <>
               <div className="h-8 w-px bg-border" />
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pending approval by</p>
                 <p className="text-sm font-semibold text-foreground">
                   {approver.user.name || approver.user.email || 'Unknown'}
+                </p>
+              </div>
+            </>
+          )}
+          {document.status === 'needs_review' && document.declinedAt && (
+            <>
+              <div className="h-8 w-px bg-border" />
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Declined by</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {document.declinedBy?.user?.name ||
+                    document.declinedBy?.user?.email ||
+                    approver?.user.name ||
+                    approver?.user.email ||
+                    'Unknown'}
                 </p>
               </div>
             </>
@@ -104,7 +123,7 @@ export function SOADocumentInfo({
               variant="outline"
               disabled={!!document.approvedAt}
             >
-              <ShieldX className="mr-2 h-4 w-4" />
+              <ShieldCheck className="mr-2 h-4 w-4" />
               Submit for Approval
             </Button>
           )}

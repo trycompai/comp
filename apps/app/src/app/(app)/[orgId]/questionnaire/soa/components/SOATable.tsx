@@ -42,6 +42,13 @@ interface SOATableProps {
   isPendingApproval: boolean;
 }
 
+const columnLabelMap: Record<string, string> = {
+  title: 'Control',
+  control_objective: 'Control Objective',
+  isApplicable: 'Applicable',
+  justification: 'Justification',
+};
+
 export function SOATable({
   columns,
   questions,
@@ -94,7 +101,7 @@ export function SOATable({
                       index === 0 ? 'pl-6 pr-6' : index === columns.length - 1 ? 'px-6 pr-6' : 'px-6'
                     }`}
                   >
-                    {column.name.replace(/_/g, ' ')}
+                    {columnLabelMap[column.name] ?? column.name.replace(/_/g, ' ')}
                   </th>
                 );
               })}

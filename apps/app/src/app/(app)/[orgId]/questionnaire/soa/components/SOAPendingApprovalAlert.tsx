@@ -14,6 +14,8 @@ interface SOAPendingApprovalAlertProps {
   isDeclining: boolean;
   onApprove: () => void;
   onDecline: () => void;
+  lastDeclinedAt?: Date | null;
+  lastDeclinedBy?: (Member & { user: User }) | null;
 }
 
 export function SOAPendingApprovalAlert({
@@ -25,6 +27,8 @@ export function SOAPendingApprovalAlert({
   isDeclining,
   onApprove,
   onDecline,
+  lastDeclinedAt,
+  lastDeclinedBy,
 }: SOAPendingApprovalAlertProps) {
   return (
     <Alert variant="default">
@@ -33,8 +37,23 @@ export function SOAPendingApprovalAlert({
         {canCurrentUserApprove ? 'Action Required by You' : 'Pending Approval'}
       </AlertTitle>
       <AlertDescription className="flex flex-col gap-2">
+        {lastDeclinedAt && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            <div className="font-semibold flex items-center gap-2">
+              <XCircle className="h-4 w-4" />
+              Document was declined on{' '}
+              {new Date(lastDeclinedAt).toLocaleDateString()}
+              {lastDeclinedBy
+                ? ` by ${lastDeclinedBy.user.name || lastDeclinedBy.user.email || 'an approver'}`
+                : ''}
+            </div>
+            <p className="mt-1 text-xs text-destructive/80">
+              Review the comments and make necessary changes before resubmitting for approval.
+            </p>
+          </div>
+        )}
         <div>
-          This SOA document is awaiting approval from{' '}
+          This document is awaiting approval from{' '}
           <span className="font-semibold">
             {approverId === currentMemberId
               ? 'you'
@@ -45,7 +64,7 @@ export function SOAPendingApprovalAlert({
           .
         </div>
         {canCurrentUserApprove &&
-          ' Please review the details and approve the document.'}
+          ' Please review the details and approve or decline the document.'}
         {!canCurrentUserApprove && ' All fields are disabled until the document is approved.'}
         {canCurrentUserApprove && (
           <div className="flex items-center gap-2 mt-2">

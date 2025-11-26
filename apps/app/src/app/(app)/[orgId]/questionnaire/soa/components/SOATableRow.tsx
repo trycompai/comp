@@ -108,7 +108,7 @@ export function SOATableRow({
             key={column.name}
             className={`py-4 text-sm ${
               colIndex === 0 ? 'pl-6 pr-6' : colIndex === columns.length - 1 ? 'px-6 pr-6' : 'px-6'
-            } ${column.name === 'isApplicable' ? 'bg-muted/10' : ''}`}
+            } ${column.name === 'isApplicable' ? 'bg-muted/10 text-center' : ''}`}
           >
             {showSpinner ? (
               <div className="flex items-center gap-2">
