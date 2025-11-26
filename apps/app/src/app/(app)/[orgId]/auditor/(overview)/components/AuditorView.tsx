@@ -1,128 +1,34 @@
-'use client';
-
-import type { generateAuditorContentTask } from '@/jobs/tasks/auditor/generate-auditor-content';
-import { Button } from '@comp/ui/button';
-import { TriggerAuthContext, useRealtimeRun } from '@trigger.dev/react-hooks';
-import { CheckCircle2, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { triggerAuditorContentAction } from '../actions/trigger-auditor-content';
-
-// Section keys used for realtime metadata tracking
-type Section =
-  | 'company-background'
-  | 'services'
-  | 'mission-vision'
-  | 'system-description'
-  | 'critical-vendors'
-  | 'subservice-organizations';
-
-interface SectionConfig {
-  title: string; // Also used as the Context question
-  section: Section; // Used for realtime metadata tracking
-}
-
-const sections: SectionConfig[] = [
-  {
-    title: 'Company Background & Overview of Operations',
-    section: 'company-background',
-  },
-  {
-    title: 'Types of Services Provided',
-    section: 'services',
-  },
-  {
-    title: 'Mission & Vision',
-    section: 'mission-vision',
-  },
-  {
-    title: 'System Description',
-    section: 'system-description',
-  },
-  {
-    title: 'Critical Vendors',
-    section: 'critical-vendors',
-  },
-  {
-    title: 'Subservice Organizations',
-    section: 'subservice-organizations',
-  },
+const sections = [
+  'Company Background & Overview of Operations',
+  'Types of Services Provided',
+  'Mission & Vision',
+  'System Description',
+  'Critical Vendors',
+  'Subservice Organizations',
 ];
 
 interface AuditorViewProps {
-  orgId: string;
-  initialContent: Record<string, string>; // Keyed by question (title)
+  initialContent: Record<string, string>;
 }
 
-export function AuditorView({ orgId, initialContent }: AuditorViewProps) {
-  const [runId, setRunId] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [isTriggering, setIsTriggering] = useState(false);
-  const [savedContent, setSavedContent] = useState<Record<string, string>>(initialContent);
-
-  const { execute: triggerGenerate } = useAction(triggerAuditorContentAction, {
-    onSuccess: (result) => {
-      if (result.data?.success && result.data.runId && result.data.accessToken) {
-        setRunId(result.data.runId);
-        setAccessToken(result.data.accessToken);
-        toast.success('Generation started');
-      } else {
-        toast.error(result.data?.error || 'Failed to start generation');
-        setIsTriggering(false);
-      }
-    },
-    onError: (result) => {
-      toast.error(result.error.serverError || 'Something went wrong');
-      setIsTriggering(false);
-    },
-  });
-
-  const handleGenerate = () => {
-    setIsTriggering(true);
-    triggerGenerate({ orgId });
-  };
-
-  // If we have a run in progress, show the realtime tracker
-  if (runId && accessToken) {
-    return (
-      <TriggerAuthContext.Provider value={{ accessToken }}>
-        <AuditorRealtimeView
-          runId={runId}
-          onComplete={(newContent) => {
-            setIsTriggering(false);
-            // Merge new content with saved content
-            setSavedContent((prev) => ({ ...prev, ...newContent }));
-          }}
-          onReset={() => {
-            setRunId(null);
-            setAccessToken(null);
-            setIsTriggering(false);
-          }}
-        />
-      </TriggerAuthContext.Provider>
-    );
-  }
-
+export function AuditorView({ initialContent }: AuditorViewProps) {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Company Overview</h2>
-        <Button onClick={handleGenerate} disabled={isTriggering} size="default" variant="default">
-          {isTriggering ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Starting...
-            </>
-          ) : (
-            'Generate All Sections'
-          )}
-        </Button>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-foreground text-xl font-semibold tracking-tight">Company Overview</h1>
+        <p className="text-muted-foreground mt-0.5 text-sm">Documentation for audit purposes</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {sections.map(({ title, section }) => (
-          <AuditorSection key={section} title={title} content={savedContent[title] || ''} />
+      {/* Sections */}
+      <div className="space-y-1">
+        {sections.map((title, index) => (
+          <AuditorSection
+            key={title}
+            title={title}
+            content={initialContent[title] || ''}
+            isLast={index === sections.length - 1}
+          />
         ))}
       </div>
     </div>
@@ -132,164 +38,36 @@ export function AuditorView({ orgId, initialContent }: AuditorViewProps) {
 interface AuditorSectionProps {
   title: string;
   content: string;
+  isLast: boolean;
 }
 
-function AuditorSection({ title, content }: AuditorSectionProps) {
-  return (
-    <section className="rounded-xs border p-6 shadow-sm h-full flex flex-col">
-      <h2 className="text-base font-semibold mb-3">{title}</h2>
-      <div className="flex-1">
-        {content ? (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{content}</p>
-        ) : (
-          <p className="text-sm text-muted-foreground">No content yet</p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-interface AuditorRealtimeViewProps {
-  runId: string;
-  onComplete: (content: Record<string, string>) => void;
-  onReset: () => void;
-}
-
-function AuditorRealtimeView({ runId, onComplete, onReset }: AuditorRealtimeViewProps) {
-  const { run, error } = useRealtimeRun<typeof generateAuditorContentTask>(runId, {
-    onComplete: () => {
-      // Extract content from metadata - keyed by title (question)
-      const meta = run?.metadata as Record<string, unknown> | undefined;
-      const newContent: Record<string, string> = {};
-
-      for (const { title, section } of sections) {
-        const content = meta?.[`section_${section}_content`] as string | null;
-        if (content) {
-          newContent[title] = content;
-        }
-      }
-
-      onComplete(newContent);
-      toast.success('All sections generated successfully');
-    },
-  });
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <p className="text-destructive">Error: {error.message}</p>
-          <Button variant="outline" onClick={onReset}>
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const meta = run?.metadata as Record<string, unknown> | undefined;
-  const status = (meta?.status as string) || 'initializing';
-  const completedSections = (meta?.completedSections as number) || 0;
-  const totalSections = (meta?.totalSections as number) || 6;
-  const isCompleted = run?.status === 'COMPLETED';
-  const isFailed = run?.status === 'FAILED';
-
-  const getStatusMessage = () => {
-    if (isFailed) return 'Generation failed';
-    if (isCompleted) return 'Generation complete';
-    switch (status) {
-      case 'initializing':
-        return 'Initializing...';
-      case 'fetching-context':
-        return 'Fetching organization context...';
-      case 'scraping-website':
-        return 'Researching company website...';
-      case 'generating':
-        return `Generating sections (${completedSections}/${totalSections})...`;
-      case 'completed':
-        return 'Generation complete';
-      case 'error':
-        return 'Generation failed';
-      default:
-        return 'Processing...';
-    }
-  };
+function AuditorSection({ title, content, isLast }: AuditorSectionProps) {
+  const hasContent = content?.trim().length > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          {isCompleted ? (
-            <CheckCircle2 className="h-5 w-5 text-chart-positive" />
-          ) : isFailed ? (
-            <span className="text-destructive">✕</span>
+    <div className={`group py-4 ${!isLast ? 'border-b border-border/50' : ''}`}>
+      <div className="flex items-start gap-3">
+        {/* Status indicator */}
+        <div className="mt-1 shrink-0">
+          {hasContent ? (
+            <div className="h-2 w-2 rounded-full bg-primary" />
           ) : (
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <div className="h-2 w-2 rounded-full border border-muted-foreground/30" />
           )}
-          <span className="text-sm font-medium">{getStatusMessage()}</span>
         </div>
-        {(isCompleted || isFailed) && (
-          <Button variant="outline" onClick={onReset}>
-            Generate Again
-          </Button>
-        )}
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {sections.map(({ title, section }) => (
-          <AuditorSectionRealtime key={section} title={title} section={section} metadata={meta} />
-        ))}
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-medium text-foreground">{title}</h3>
+          {hasContent ? (
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              {content}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground/60">Not yet available</p>
+          )}
+        </div>
       </div>
     </div>
-  );
-}
-
-interface AuditorSectionRealtimeProps {
-  title: string;
-  section: Section;
-  metadata: Record<string, unknown> | undefined;
-}
-
-function AuditorSectionRealtime({ title, section, metadata }: AuditorSectionRealtimeProps) {
-  const sectionStatus = (metadata?.[`section_${section}_status`] as string) || 'pending';
-  const sectionContent = metadata?.[`section_${section}_content`] as string | null;
-  const sectionError = metadata?.[`section_${section}_error`] as string | null;
-
-  const getStatusIcon = () => {
-    switch (sectionStatus) {
-      case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-chart-positive shrink-0" />;
-      case 'generating':
-        return <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />;
-      case 'error':
-        return <span className="text-destructive text-sm shrink-0">✕</span>;
-      default:
-        return <div className="h-4 w-4 rounded-full border-2 border-muted shrink-0" />;
-    }
-  };
-
-  return (
-    <section className="rounded-xs border p-6 shadow-sm h-full flex flex-col">
-      <div className="flex items-center gap-2 mb-3">
-        {getStatusIcon()}
-        <h2 className="text-base font-semibold">{title}</h2>
-      </div>
-
-      <div className="flex-1">
-        {sectionError ? (
-          <p className="text-sm text-destructive">Error: {sectionError}</p>
-        ) : sectionContent &&
-          typeof sectionContent === 'string' &&
-          sectionContent.trim().length > 0 ? (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{sectionContent}</p>
-        ) : sectionStatus === 'generating' ? (
-          <p className="text-sm text-muted-foreground">Generating content...</p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            [Placeholder: content will be generated here]
-          </p>
-        )}
-      </div>
-    </section>
   );
 }

@@ -77,7 +77,7 @@ export default async function AuditorPage({ params }: { params: Promise<{ orgId:
     <PageWithBreadcrumb
       breadcrumbs={[{ label: 'Auditor View', href: `/${organizationId}/auditor`, current: true }]}
     >
-      <AuditorView orgId={organizationId} initialContent={initialContent} />
+      <AuditorView initialContent={initialContent} />
     </PageWithBreadcrumb>
   );
 }
