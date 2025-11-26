@@ -9,55 +9,68 @@ import { z } from 'zod';
 export const maxDuration = 60;
 
 export async function POST(req: Request, { params }: { params: Promise<{ policyId: string }> }) {
-  const { policyId } = await params;
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  try {
+    const { policyId } = await params;
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-  if (!session?.user) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
+    if (!session?.user) {
+      return NextResponse.json(
+        { message: 'You must be signed in to use the AI assistant.' },
+        { status: 401 },
+      );
+    }
 
-  const organizationId = session.session.activeOrganizationId;
+    const organizationId = session.session.activeOrganizationId;
 
-  if (!organizationId) {
-    return NextResponse.json({ message: 'No active organization' }, { status: 400 });
-  }
+    if (!organizationId) {
+      return NextResponse.json(
+        { message: 'You need an active organization to use the AI assistant.' },
+        { status: 400 },
+      );
+    }
 
-  const { messages }: { messages: Array<UIMessage> } = await req.json();
+    const { messages }: { messages: Array<UIMessage> } = await req.json();
 
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      organizationId,
-      deactivated: false,
-    },
-  });
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId,
+        deactivated: false,
+      },
+    });
 
-  if (!member) {
-    return NextResponse.json({ message: 'Not a member of this organization' }, { status: 403 });
-  }
+    if (!member) {
+      return NextResponse.json(
+        { message: "You don't have access to this policy's AI assistant." },
+        { status: 403 },
+      );
+    }
 
-  const policy = await db.policy.findFirst({
-    where: {
-      id: policyId,
-      organizationId,
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      content: true,
-    },
-  });
+    const policy = await db.policy.findFirst({
+      where: {
+        id: policyId,
+        organizationId,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        content: true,
+      },
+    });
 
-  if (!policy) {
-    return NextResponse.json({ message: 'Policy not found' }, { status: 404 });
-  }
+    if (!policy) {
+      return NextResponse.json(
+        { message: 'This policy could not be found. It may have been removed.' },
+        { status: 404 },
+      );
+    }
 
-  const policyContentText = convertPolicyContentToText(policy.content);
+    const policyContentText = convertPolicyContentToText(policy.content);
 
-  const systemPrompt = `You are an expert GRC (Governance, Risk, and Compliance) policy editor. You help users edit and improve their organizational policies to meet compliance requirements like SOC 2, ISO 27001, and GDPR.
+    const systemPrompt = `You are an expert GRC (Governance, Risk, and Compliance) policy editor. You help users edit and improve their organizational policies to meet compliance requirements like SOC 2, ISO 27001, and GDPR.
 
 Current Policy Name: ${policy.name}
 ${policy.description ? `Policy Description: ${policy.description}` : ''}
@@ -99,30 +112,37 @@ QUALITY CHECKLIST before submitting:
 
 Keep responses helpful and focused on the policy editing task.`;
 
-  const result = streamText({
-    model: openai('gpt-5.1'),
-    system: systemPrompt,
-    messages: convertToModelMessages(messages),
-    tools: {
-      proposePolicy: tool({
-        description:
-          'Propose an updated version of the policy. Use this tool whenever the user asks you to make changes, edits, or improvements to the policy. You must provide the COMPLETE policy content, not just the changes.',
-        inputSchema: z.object({
-          content: z
-            .string()
-            .describe(
-              'The complete updated policy content in markdown format. Must include the entire policy, not just the changed sections.',
-            ),
-          summary: z
-            .string()
-            .describe('One to two sentences summarizing the changes. No bullet points.'),
+    const result = streamText({
+      model: openai('gpt-5.1'),
+      system: systemPrompt,
+      messages: convertToModelMessages(messages),
+      tools: {
+        proposePolicy: tool({
+          description:
+            'Propose an updated version of the policy. Use this tool whenever the user asks you to make changes, edits, or improvements to the policy. You must provide the COMPLETE policy content, not just the changes.',
+          inputSchema: z.object({
+            content: z
+              .string()
+              .describe(
+                'The complete updated policy content in markdown format. Must include the entire policy, not just the changed sections.',
+              ),
+            summary: z
+              .string()
+              .describe('One to two sentences summarizing the changes. No bullet points.'),
+          }),
+          execute: async ({ summary }) => ({ success: true, summary }),
         }),
-        execute: async ({ summary }) => ({ success: true, summary }),
-      }),
-    },
-  });
+      },
+    });
 
-  return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error('Policy chat route error:', error);
+    return NextResponse.json(
+      { message: 'The AI assistant is currently unavailable. Please try again.' },
+      { status: 500 },
+    );
+  }
 }
 
 function convertPolicyContentToText(content: unknown): string {
