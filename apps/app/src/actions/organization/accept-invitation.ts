@@ -69,7 +69,6 @@ export const completeInvitation = authActionClientWithoutOrg
           where: {
             userId: user.id,
             organizationId: invitation.organizationId,
-            deactivated: false,
           },
         });
 
@@ -89,6 +88,16 @@ export const completeInvitation = authActionClientWithoutOrg
               status: 'accepted',
             },
           });
+
+          if (existingMembership.deactivated) {
+            await db.member.update({
+              where: { id: existingMembership.id },
+              data: {
+                deactivated: false,
+                role: invitation.role,
+              },
+            });
+          }
 
           // Server redirect to the organization's root
           redirect(`/${invitation.organizationId}/`);
