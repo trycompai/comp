@@ -1,5 +1,4 @@
 import { trainingVideos } from '@/lib/data/training-videos';
-import { getFleetInstance } from '@/lib/fleet';
 import { db } from '@db';
 
 export async function getPeopleScore(organizationId: string) {
@@ -50,7 +49,7 @@ export async function getPeopleScore(organizationId: string) {
   const requiredTrainingVideoIds = trainingVideos.map((video) => video.id);
 
   // Get fleet instance for device checks
-  const fleet = await getFleetInstance();
+  // const fleet = await getFleetInstance();
 
   // Check each employee's completion status
   let completedMembers = 0;
@@ -73,9 +72,9 @@ export async function getPeopleScore(organizationId: string) {
     );
 
     // 3. Check if device is secure
-    let hasSecureDevice = true;
+    // let hasSecureDevice = false;
 
-    if (employee.fleetDmLabelId) {
+    /*  if (employee.fleetDmLabelId) {
       try {
         const deviceResponse = await fleet.get(`/labels/${employee.fleetDmLabelId}/hosts`);
         const device = deviceResponse.data.hosts?.[0];
@@ -91,10 +90,9 @@ export async function getPeopleScore(organizationId: string) {
         // If there's an error fetching device, consider it not secure
         hasSecureDevice = false;
       }
-    }
+    } */
 
-    // Employee is "done" if all three conditions are met
-    if (hasAcceptedAllPolicies && hasCompletedAllTraining && hasSecureDevice) {
+    if (hasAcceptedAllPolicies && hasCompletedAllTraining) {
       completedMembers++;
     }
   }

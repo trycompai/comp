@@ -60,9 +60,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     },
   });
 
-  const publishedPoliciesScore = await getPublishedPoliciesScore(organizationId);
-  const doneTasksScore = await getDoneTasks(organizationId);
-  const peopleScore = await getPeopleScore(organizationId);
+  const scores = await getScores();
 
   return (
     <Overview
@@ -70,13 +68,52 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
       frameworksWithCompliance={frameworksWithCompliance}
       allFrameworks={allFrameworks}
       organizationId={organizationId}
-      publishedPoliciesScore={publishedPoliciesScore}
-      doneTasksScore={doneTasksScore}
-      peopleScore={peopleScore}
+      publishedPoliciesScore={scores.publishedPoliciesScore}
+      doneTasksScore={scores.doneTasksScore}
+      peopleScore={scores.peopleScore}
       currentMember={member}
     />
   );
 }
+
+const getScores = cache(async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    return {
+      publishedPoliciesScore: {
+        totalPolicies: 0,
+        publishedPolicies: 0,
+        draftPolicies: [],
+        policiesInReview: [],
+        unpublishedPolicies: [],
+      },
+      doneTasksScore: {
+        totalTasks: 0,
+        doneTasks: 0,
+        incompleteTasks: [],
+      },
+      peopleScore: {
+        totalMembers: 0,
+        completedMembers: 0,
+      },
+    };
+  }
+
+  const publishedPoliciesScore = await getPublishedPoliciesScore(organizationId);
+  const doneTasksScore = await getDoneTasks(organizationId);
+  const peopleScore = await getPeopleScore(organizationId);
+
+  return {
+    publishedPoliciesScore,
+    doneTasksScore,
+    peopleScore,
+  };
+});
 
 const getControlTasks = cache(async () => {
   const session = await auth.api.getSession({
