@@ -65,7 +65,6 @@ export function SOAPendingApprovalAlert({
         </div>
         {canCurrentUserApprove &&
           ' Please review the details and approve or decline the document.'}
-        {!canCurrentUserApprove && ' All fields are disabled until the document is approved.'}
         {canCurrentUserApprove && (
           <div className="flex items-center gap-2 mt-2">
             <Button onClick={onApprove} disabled={isApproving || isDeclining}>
