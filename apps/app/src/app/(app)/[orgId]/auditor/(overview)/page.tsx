@@ -1,5 +1,8 @@
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db, Role } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -49,21 +52,46 @@ export default async function AuditorPage({ params }: { params: Promise<{ orgId:
     notFound();
   }
 
-  // Auditor section questions that we look for in Context
-  const SECTION_QUESTIONS = [
+  // Fetch organization for name and logo
+  const organization = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { name: true, logo: true },
+  });
+
+  // Get signed URL for logo if it exists
+  let logoUrl: string | null = null;
+  if (organization?.logo && s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: organization.logo,
+      });
+      logoUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    } catch {
+      // Logo not available
+    }
+  }
+
+  // All context questions we need
+  const CONTEXT_QUESTIONS = [
+    // AI-generated sections
     'Company Background & Overview of Operations',
     'Types of Services Provided',
     'Mission & Vision',
     'System Description',
     'Critical Vendors',
     'Subservice Organizations',
+    // Onboarding data
+    'How many employees do you have?',
+    'Who are your C-Suite executives?',
+    'Who will sign off on the final report?',
   ];
 
   // Load existing content from Context
   const existingContext = await db.context.findMany({
     where: {
       organizationId,
-      question: { in: SECTION_QUESTIONS },
+      question: { in: CONTEXT_QUESTIONS },
     },
   });
 
@@ -73,11 +101,40 @@ export default async function AuditorPage({ params }: { params: Promise<{ orgId:
     initialContent[item.question] = item.answer;
   }
 
+  // Parse structured data
+  let cSuiteData: { name: string; title: string }[] = [];
+  let signatoryData: { fullName: string; jobTitle: string; email: string } | null = null;
+
+  try {
+    const cSuiteRaw = initialContent['Who are your C-Suite executives?'];
+    if (cSuiteRaw) {
+      cSuiteData = JSON.parse(cSuiteRaw);
+    }
+  } catch {
+    // Invalid JSON
+  }
+
+  try {
+    const signatoryRaw = initialContent['Who will sign off on the final report?'];
+    if (signatoryRaw) {
+      signatoryData = JSON.parse(signatoryRaw);
+    }
+  } catch {
+    // Invalid JSON
+  }
+
   return (
     <PageWithBreadcrumb
       breadcrumbs={[{ label: 'Auditor View', href: `/${organizationId}/auditor`, current: true }]}
     >
-      <AuditorView initialContent={initialContent} />
+      <AuditorView
+        initialContent={initialContent}
+        organizationName={organization?.name ?? 'Organization'}
+        logoUrl={logoUrl}
+        employeeCount={initialContent['How many employees do you have?'] || null}
+        cSuite={cSuiteData}
+        reportSignatory={signatoryData}
+      />
     </PageWithBreadcrumb>
   );
 }

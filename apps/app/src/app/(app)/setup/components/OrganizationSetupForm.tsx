@@ -105,7 +105,7 @@ export function OrganizationSetupForm({
           </AnimatedWrapper>
           <AnimatedWrapper delay={1000} animationKey={`subtitle-${step.key}`}>
             <p className="text-md md:text-lg text-muted-foreground flex items-center flex-wrap">
-              <Balancer>Our AI will personalize the platform based on your answers.</Balancer>
+              <Balancer>Your answers help us tailor your compliance program and reports.</Balancer>
             </p>
           </AnimatedWrapper>
         </div>
@@ -120,24 +120,36 @@ export function OrganizationSetupForm({
                 className="w-full"
                 autoComplete="off"
               >
-                <FormField
-                  name={step.key}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <OnboardingStepInput
-                          currentStep={step}
-                          form={form}
-                          savedAnswers={savedAnswers}
-                          onLoadingChange={setIsLoadingFrameworks}
-                        />
-                      </FormControl>
-                      <div className="min-h-[20px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+                {/* Complex fields handle their own validation UI */}
+                {step.key === 'reportSignatory' ||
+                step.key === 'shipping' ||
+                step.key === 'cSuite' ? (
+                  <OnboardingStepInput
+                    currentStep={step}
+                    form={form}
+                    savedAnswers={savedAnswers}
+                    onLoadingChange={setIsLoadingFrameworks}
+                  />
+                ) : (
+                  <FormField
+                    name={step.key}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <OnboardingStepInput
+                            currentStep={step}
+                            form={form}
+                            savedAnswers={savedAnswers}
+                            onLoadingChange={setIsLoadingFrameworks}
+                          />
+                        </FormControl>
+                        <div className="min-h-[20px]">
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </form>
             </Form>
           </AnimatedWrapper>

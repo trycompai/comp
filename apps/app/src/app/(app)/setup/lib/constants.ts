@@ -12,7 +12,20 @@ export const companyDetailsSchema = z.object({
     .min(1, 'Please provide a brief overview and description of what your company does')
     .max(300, 'Description must be less than 300 characters'),
   industry: z.string().min(1, 'Please select your industry'),
-  teamSize: z.string().min(1, 'Please select your team size'),
+  teamSize: z.string().min(1, 'Please enter your team size'),
+  cSuite: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Name is required'),
+        title: z.string().min(1, 'Title is required'),
+      }),
+    )
+    .min(1, 'Please add at least one executive'),
+  reportSignatory: z.object({
+    fullName: z.string().min(1, 'Full name is required'),
+    jobTitle: z.string().min(1, 'Job title is required'),
+    email: z.string().email('Please enter a valid email'),
+  }),
   software: z.string().min(1, 'Please select software you use'),
   infrastructure: z.string().min(1, 'Please select your infrastructure'),
   dataTypes: z.string().min(1, 'Please select types of data you handle'),
@@ -58,8 +71,22 @@ export const steps: Step[] = [
   {
     key: 'teamSize',
     question: 'How many employees do you have?',
-    placeholder: 'e.g., 11-50',
-    options: ['1-10', '11-50', '51-200', '201-500', '500+'],
+    placeholder: 'e.g., 25',
+    description:
+      'We need an approximate count for your compliance reports. You can update this in settings if it changes.',
+  },
+  {
+    key: 'cSuite',
+    question: 'Who are your C-Suite executives?',
+    placeholder: '',
+    description:
+      'These names and titles will appear in your compliance reports. You can update this in settings if it changes.',
+  },
+  {
+    key: 'reportSignatory',
+    question: 'Who will sign off on the final report?',
+    placeholder: '',
+    description: 'This person will be listed as the authorizing signatory on compliance reports.',
   },
   {
     key: 'devices',

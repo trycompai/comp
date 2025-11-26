@@ -1,6 +1,9 @@
 import { getFeatureFlags } from '@/app/posthog';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { cn } from '@comp/ui/cn';
 import { db, type Organization, Role } from '@db';
 import { cookies, headers } from 'next/headers';
@@ -28,6 +31,26 @@ export async function Sidebar({
   const cookieStore = await cookies();
   const isCollapsed = collapsed || cookieStore.get('sidebar-collapsed')?.value === 'true';
   const { organizations } = await getOrganizations();
+
+  // Generate logo URLs for all organizations
+  const logoUrls: Record<string, string> = {};
+  if (s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
+    await Promise.all(
+      organizations.map(async (org) => {
+        if (org.logo) {
+          try {
+            const command = new GetObjectCommand({
+              Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+              Key: org.logo,
+            });
+            logoUrls[org.id] = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+          } catch {
+            // Logo not available
+          }
+        }
+      }),
+    );
+  }
 
   // Check feature flags for menu items
   const session = await auth.api.getSession({
@@ -72,6 +95,7 @@ export async function Sidebar({
             organizations={organizations}
             organization={organization}
             isCollapsed={isCollapsed}
+            logoUrls={logoUrls}
           />
           <MainMenu
             organizationId={organization?.id ?? ''}
