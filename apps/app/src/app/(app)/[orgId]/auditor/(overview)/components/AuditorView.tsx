@@ -2,13 +2,11 @@
 
 import type { generateAuditorContentTask } from '@/jobs/tasks/auditor/generate-auditor-content';
 import { Button } from '@comp/ui/button';
-import { Textarea } from '@comp/ui/textarea';
 import { TriggerAuthContext, useRealtimeRun } from '@trigger.dev/react-hooks';
-import { CheckCircle2, Edit2, Loader2, Save, X } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { saveAuditorContentAction } from '../actions/save-auditor-content';
 import { triggerAuditorContentAction } from '../actions/trigger-auditor-content';
 
 // Section keys used for realtime metadata tracking
@@ -85,19 +83,11 @@ export function AuditorView({ orgId, initialContent }: AuditorViewProps) {
     triggerGenerate({ orgId });
   };
 
-  const handleContentUpdate = (question: string, content: string) => {
-    setSavedContent((prev) => ({
-      ...prev,
-      [question]: content,
-    }));
-  };
-
   // If we have a run in progress, show the realtime tracker
   if (runId && accessToken) {
     return (
       <TriggerAuthContext.Provider value={{ accessToken }}>
         <AuditorRealtimeView
-          orgId={orgId}
           runId={runId}
           onComplete={(newContent) => {
             setIsTriggering(false);
@@ -116,7 +106,8 @@ export function AuditorView({ orgId, initialContent }: AuditorViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Company Overview</h2>
         <Button onClick={handleGenerate} disabled={isTriggering} size="default" variant="default">
           {isTriggering ? (
             <>
@@ -131,119 +122,27 @@ export function AuditorView({ orgId, initialContent }: AuditorViewProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {sections.map(({ title, section }) => (
-          <AuditorSectionEditable
-            key={section}
-            orgId={orgId}
-            title={title}
-            content={savedContent[title] || ''}
-            onContentUpdate={handleContentUpdate}
-          />
+          <AuditorSection key={section} title={title} content={savedContent[title] || ''} />
         ))}
       </div>
     </div>
   );
 }
 
-interface AuditorSectionEditableProps {
-  orgId: string;
+interface AuditorSectionProps {
   title: string;
   content: string;
-  onContentUpdate: (question: string, content: string) => void;
 }
 
-function AuditorSectionEditable({
-  orgId,
-  title,
-  content,
-  onContentUpdate,
-}: AuditorSectionEditableProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(content);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const { execute: saveContent } = useAction(saveAuditorContentAction, {
-    onSuccess: (result) => {
-      if (result.data?.success) {
-        onContentUpdate(title, editContent);
-        setIsEditing(false);
-        toast.success('Content saved');
-      } else {
-        toast.error('Failed to save content');
-      }
-      setIsSaving(false);
-    },
-    onError: () => {
-      toast.error('Failed to save content');
-      setIsSaving(false);
-    },
-  });
-
-  const handleSave = () => {
-    setIsSaving(true);
-    saveContent({
-      orgId,
-      question: title, // Use the title as the Context question
-      content: editContent,
-    });
-  };
-
-  const handleCancel = () => {
-    setEditContent(content);
-    setIsEditing(false);
-  };
-
-  const handleStartEdit = () => {
-    setEditContent(content);
-    setIsEditing(true);
-  };
-
+function AuditorSection({ title, content }: AuditorSectionProps) {
   return (
     <section className="rounded-xs border p-6 shadow-sm h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold">{title}</h2>
-        {!isEditing && content && (
-          <Button variant="ghost" size="sm" onClick={handleStartEdit} className="h-8 w-8 p-0">
-            <Edit2 className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
+      <h2 className="text-base font-semibold mb-3">{title}</h2>
       <div className="flex-1">
-        {isEditing ? (
-          <div className="space-y-3">
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[150px] text-sm"
-              placeholder="Enter content..."
-            />
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </>
-                )}
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSaving}>
-                <X className="h-4 w-4 mr-1" />
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : content ? (
+        {content ? (
           <p className="whitespace-pre-wrap text-sm leading-relaxed">{content}</p>
         ) : (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground mb-2">No content yet</p>
-            <Button variant="outline" size="sm" onClick={handleStartEdit}>
-              <Edit2 className="h-4 w-4 mr-1" />
-              Add content
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">No content yet</p>
         )}
       </div>
     </section>
@@ -251,7 +150,6 @@ function AuditorSectionEditable({
 }
 
 interface AuditorRealtimeViewProps {
-  orgId: string;
   runId: string;
   onComplete: (content: Record<string, string>) => void;
   onReset: () => void;
@@ -387,7 +285,9 @@ function AuditorSectionRealtime({ title, section, metadata }: AuditorSectionReal
         ) : sectionStatus === 'generating' ? (
           <p className="text-sm text-muted-foreground">Generating content...</p>
         ) : (
-          <p className="text-sm text-muted-foreground">[Placeholder: content will be generated here]</p>
+          <p className="text-sm text-muted-foreground">
+            [Placeholder: content will be generated here]
+          </p>
         )}
       </div>
     </section>
