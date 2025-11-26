@@ -1,6 +1,7 @@
 import { db } from '@db';
 import { logger, metadata, queue, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
+import { generateAuditorContentTask } from '../auditor/generate-auditor-content';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
 import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
 import {
@@ -247,5 +248,11 @@ export const onboardOrganization = task({
     } catch (err) {
       logger.error('Error revalidating path', { err });
     }
+
+    // Generate auditor content in the background
+    await tasks.trigger<typeof generateAuditorContentTask>('generate-auditor-content', {
+      organizationId,
+    });
+    logger.info(`Triggered auditor content generation for organization ${organizationId}`);
   },
 });
