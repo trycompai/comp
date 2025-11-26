@@ -40,6 +40,7 @@ export const sendUnassignedItemsNotificationEmail = async (params: {
         organizationId,
         removedMemberName,
         unassignedItems,
+        email,
       }),
       system: true, // Use system email address
     });

@@ -1,44 +1,89 @@
 'use client';
 
-import { useAction } from 'next-safe-action/hooks';
-import { answerSingleQuestionAction } from '../actions/answer-single-question';
 import { saveAnswerAction } from '../actions/save-answer';
+import { useAction } from 'next-safe-action/hooks';
 import type { QuestionAnswer } from '../components/types';
 import { toast } from 'sonner';
-import { useTransition, useEffect } from 'react';
+import { useTransition, useRef } from 'react';
 
 interface UseQuestionnaireSingleAnswerProps {
   results: QuestionAnswer[] | null;
-  answeringQuestionIndex: number | null;
+  answeringQuestionIndices: Set<number>;
   setResults: React.Dispatch<React.SetStateAction<QuestionAnswer[] | null>>;
   setQuestionStatuses: React.Dispatch<
     React.SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
   >;
-  setAnsweringQuestionIndex: (index: number | null) => void;
+  setAnsweringQuestionIndices: React.Dispatch<React.SetStateAction<Set<number>>>;
   questionnaireId: string | null;
 }
 
 export function useQuestionnaireSingleAnswer({
   results,
-  answeringQuestionIndex,
+  answeringQuestionIndices,
   setResults,
   setQuestionStatuses,
-  setAnsweringQuestionIndex,
+  setAnsweringQuestionIndices,
   questionnaireId,
 }: UseQuestionnaireSingleAnswerProps) {
-  // Use server action to answer single question directly
-  const answerQuestion = useAction(answerSingleQuestionAction, {
-    onSuccess: ({ data }) => {
-      if (!data?.data || answeringQuestionIndex === null) return;
+  // Track active requests to prevent duplicate calls
+  const activeRequestsRef = useRef<Set<number>>(new Set());
 
-      const output = data.data;
+  // Action for saving answer
+  const saveAnswer = useAction(saveAnswerAction, {
+    onError: ({ error }) => {
+      console.error('Error saving answer:', error);
+    },
+  });
 
-      // Verify we're processing the correct question
-      if (output.questionIndex !== answeringQuestionIndex) {
-        return;
+  const [isPending, startTransition] = useTransition();
+
+  const triggerSingleAnswer = async (payload: {
+    question: string;
+    organizationId: string;
+    questionIndex: number;
+    totalQuestions: number;
+  }) => {
+    const { questionIndex } = payload;
+
+    // Prevent duplicate requests for the same question
+    if (activeRequestsRef.current.has(questionIndex)) {
+      return;
+    }
+
+    // Add to active requests and answering indices
+    activeRequestsRef.current.add(questionIndex);
+    setAnsweringQuestionIndices((prev) => new Set(prev).add(questionIndex));
+
+    // Set status to processing
+    setQuestionStatuses((prev) => {
+      const newStatuses = new Map(prev);
+      newStatuses.set(questionIndex, 'processing');
+      return newStatuses;
+    });
+
+    try {
+      // Call server action directly via fetch for parallel processing
+      const response = await fetch('/api/security-questionnaire/answer-single', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          question: payload.question,
+          questionIndex: payload.questionIndex,
+          totalQuestions: payload.totalQuestions,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      if (data.success && output.answer) {
+      const result = await response.json();
+
+      if (result.success && result.data?.answer) {
+        const output = result.data;
         const targetIndex = output.questionIndex;
 
         // Update the results with the answer
@@ -84,7 +129,7 @@ export function useQuestionnaireSingleAnswer({
             saveAnswer.execute({
               questionnaireId,
               questionIndex: targetIndex,
-              answer: output.answer!,
+              answer: output.answer,
               sources: output.sources,
               status: 'generated',
             });
@@ -94,9 +139,7 @@ export function useQuestionnaireSingleAnswer({
         // Mark question as completed
         setQuestionStatuses((prev) => {
           const newStatuses = new Map(prev);
-          if (output.questionIndex === answeringQuestionIndex) {
-            newStatuses.set(output.questionIndex, 'completed');
-          }
+          newStatuses.set(output.questionIndex, 'completed');
           return newStatuses;
         });
 
@@ -107,9 +150,9 @@ export function useQuestionnaireSingleAnswer({
           if (!prevResults) return prevResults;
 
           const updatedResults = [...prevResults];
-          const targetIndex = output.questionIndex;
+          const targetIndex = result.data?.questionIndex ?? questionIndex;
 
-          if (targetIndex === answeringQuestionIndex && targetIndex >= 0 && targetIndex < updatedResults.length) {
+          if (targetIndex >= 0 && targetIndex < updatedResults.length) {
             updatedResults[targetIndex] = {
               ...updatedResults[targetIndex],
               failedToGenerate: true,
@@ -122,71 +165,35 @@ export function useQuestionnaireSingleAnswer({
 
         setQuestionStatuses((prev) => {
           const newStatuses = new Map(prev);
-          if (output.questionIndex === answeringQuestionIndex) {
-            newStatuses.set(output.questionIndex, 'completed');
-          }
+          newStatuses.set(questionIndex, 'completed');
           return newStatuses;
         });
 
         toast.warning('Could not find relevant information in your policies for this question.');
       }
-
-      // Reset answering index
-      setAnsweringQuestionIndex(null);
-    },
-    onError: ({ error }) => {
-      if (answeringQuestionIndex !== null) {
-        setQuestionStatuses((prev) => {
-          const newStatuses = new Map(prev);
-          newStatuses.set(answeringQuestionIndex, 'completed');
-          return newStatuses;
-        });
-        setAnsweringQuestionIndex(null);
-        toast.error(`Failed to generate answer: ${error.serverError || 'Unknown error'}`);
-      }
-    },
-  });
-
-  // Action for saving answer
-  const saveAnswer = useAction(saveAnswerAction, {
-    onError: ({ error }) => {
-      console.error('Error saving answer:', error);
-    },
-  });
-
-  const [isPending, startTransition] = useTransition();
-
-  // Set status to processing when action is executing
-  useEffect(() => {
-    if (answeringQuestionIndex !== null && answerQuestion.status === 'executing') {
+    } catch (error) {
       setQuestionStatuses((prev) => {
         const newStatuses = new Map(prev);
-        const currentStatus = prev.get(answeringQuestionIndex);
-        if (currentStatus !== 'processing') {
-          newStatuses.set(answeringQuestionIndex, 'processing');
-          return newStatuses;
-        }
-        return prev;
+        newStatuses.set(questionIndex, 'completed');
+        return newStatuses;
+      });
+
+      toast.error(`Failed to generate answer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      // Remove from active requests and answering indices
+      activeRequestsRef.current.delete(questionIndex);
+      setAnsweringQuestionIndices((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(questionIndex);
+        return newSet;
       });
     }
-  }, [answeringQuestionIndex, answerQuestion.status, setQuestionStatuses]);
-
-  const triggerSingleAnswer = (payload: {
-    question: string;
-    organizationId: string;
-    questionIndex: number;
-    totalQuestions: number;
-  }) => {
-    answerQuestion.execute({
-      question: payload.question,
-      questionIndex: payload.questionIndex,
-      totalQuestions: payload.totalQuestions,
-    });
   };
+
+  const isSingleAnswerTriggering = answeringQuestionIndices.size > 0;
 
   return {
     triggerSingleAnswer,
-    isSingleAnswerTriggering: answerQuestion.status === 'executing',
+    isSingleAnswerTriggering,
   };
 }
-

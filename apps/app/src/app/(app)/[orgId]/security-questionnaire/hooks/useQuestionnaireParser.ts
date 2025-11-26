@@ -27,7 +27,6 @@ export function useQuestionnaireParser() {
   });
 
   const autoAnswer = useQuestionnaireAutoAnswer({
-    autoAnswerToken: state.autoAnswerToken,
     results: state.results,
     answeringQuestionIndex: state.answeringQuestionIndex,
     isAutoAnswerProcessStarted: state.isAutoAnswerProcessStarted,
@@ -43,12 +42,12 @@ export function useQuestionnaireParser() {
 
   const singleAnswer = useQuestionnaireSingleAnswer({
     results: state.results,
-    answeringQuestionIndex: state.answeringQuestionIndex,
+    answeringQuestionIndices: state.answeringQuestionIndices,
     setResults: state.setResults,
     setQuestionStatuses: state.setQuestionStatuses as Dispatch<
       SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
     >,
-    setAnsweringQuestionIndex: state.setAnsweringQuestionIndex,
+    setAnsweringQuestionIndices: state.setAnsweringQuestionIndices,
     questionnaireId: state.questionnaireId,
   });
 

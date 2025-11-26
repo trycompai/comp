@@ -3,6 +3,11 @@
 import { getRisks } from '../data/getRisks';
 import type { GetRiskSchema } from '../data/validations';
 
-export async function getRisksAction(input: GetRiskSchema) {
-  return await getRisks(input);
+type GetRisksActionInput = {
+  orgId: string;
+  searchParams: GetRiskSchema;
+};
+
+export async function getRisksAction({ orgId, searchParams }: GetRisksActionInput) {
+  return await getRisks({ orgId, searchParams });
 }

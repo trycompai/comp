@@ -20,6 +20,7 @@ import {
 import { structuredPatch } from 'diff';
 import { CheckCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useFeatureFlagEnabled } from 'posthog-js/react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
@@ -51,9 +52,7 @@ interface LatestProposal {
 }
 
 function getLatestProposedPolicy(messages: UIMessage[]): LatestProposal | null {
-  const lastAssistantMessage = [...messages]
-    .reverse()
-    .find((m) => m.role === 'assistant');
+  const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
   if (!lastAssistantMessage?.parts) return null;
 
   let latest: LatestProposal | null = null;
@@ -101,8 +100,13 @@ export function PolicyContentManager({
   const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
+  const isAiPolicyAssistantEnabled = useFeatureFlagEnabled('is-ai-policy-assistant-enabled');
 
-  const { messages, status, sendMessage: baseSendMessage } = useChat({
+  const {
+    messages,
+    status,
+    sendMessage: baseSendMessage,
+  } = useChat({
     transport: new DefaultChatTransport({
       api: `/api/policies/${policyId}/chat`,
     }),
@@ -181,17 +185,19 @@ export function PolicyContentManager({
                       PDF View
                     </TabsTrigger>
                   </TabsList>
-                  {!isPendingApproval && (
-                    <Button
-                      variant={showAiAssistant ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setShowAiAssistant((prev) => !prev)}
-                      className="gap-2"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      AI Assistant
-                    </Button>
-                  )}
+                  {!isPendingApproval &&
+                    displayFormat === 'EDITOR' &&
+                    isAiPolicyAssistantEnabled && (
+                      <Button
+                        variant={showAiAssistant ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setShowAiAssistant((prev) => !prev)}
+                        className="gap-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        AI Assistant
+                      </Button>
+                    )}
                 </div>
                 <TabsContent value="EDITOR" className="mt-4">
                   <PolicyEditorWrapper
@@ -212,7 +218,7 @@ export function PolicyContentManager({
               </Tabs>
             </div>
 
-            {showAiAssistant && (
+            {showAiAssistant && isAiPolicyAssistantEnabled && (
               <div className="w-80 shrink-0 min-h-[400px] self-stretch flex flex-col">
                 <PolicyAiAssistant
                   messages={messages}

@@ -39,7 +39,12 @@ export function PolicyAiAssistant({
   const isLoading = status === 'streaming' || status === 'submitted';
 
   const hasActiveTool = messages.some(
-    (m) => m.role === 'assistant' && m.parts.some((p) => isToolUIPart(p) && p.state !== 'result'),
+    (m) =>
+      m.role === 'assistant' &&
+      m.parts.some(
+        (p) =>
+          isToolUIPart(p) && (p.state === 'input-streaming' || p.state === 'input-available'),
+      ),
   );
 
   const handleSubmit = () => {
