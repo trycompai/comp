@@ -22,6 +22,11 @@ export interface DoneTasksScore {
   incompleteTasks: Task[];
 }
 
+export interface PeopleScore {
+  totalMembers: number;
+  completedMembers: number;
+}
+
 export interface OverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
   frameworksWithCompliance: FrameworkInstanceWithComplianceScore[];
@@ -29,6 +34,7 @@ export interface OverviewProps {
   organizationId: string;
   publishedPoliciesScore: PublishedPoliciesScore;
   doneTasksScore: DoneTasksScore;
+  peopleScore: PeopleScore;
   currentMember: { id: string; role: string } | null;
 }
 
@@ -39,6 +45,7 @@ export const Overview = ({
   organizationId,
   publishedPoliciesScore,
   doneTasksScore,
+  peopleScore,
   currentMember,
 }: OverviewProps) => {
   return (
@@ -49,6 +56,8 @@ export const Overview = ({
         publishedPolicies={publishedPoliciesScore.publishedPolicies}
         totalTasks={doneTasksScore.totalTasks}
         doneTasks={doneTasksScore.doneTasks}
+        totalMembers={peopleScore.totalMembers}
+        completedMembers={peopleScore.completedMembers}
       />
       <FrameworksOverview
         frameworksWithControls={frameworksWithControls}

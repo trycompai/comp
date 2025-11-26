@@ -1,13 +1,15 @@
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { SelectablePill } from '@/components/selectable-pill';
+import { Button } from '@comp/ui/button';
 import { FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
+import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
-import { X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Controller } from 'react-hook-form';
-import type { CompanyDetails, Step } from '../lib/types';
+import { Controller, useFieldArray } from 'react-hook-form';
+import type { CompanyDetails, CSuiteEntry, Step } from '../lib/types';
 import { FrameworkSelection } from './FrameworkSelection';
 import { WebsiteInput } from './WebsiteInput';
 
@@ -48,39 +50,44 @@ export function OnboardingStepInput({
   }
 
   if (currentStep.key === 'shipping') {
+    const { errors, isSubmitted } = form.formState;
+
     return (
       <div className="space-y-4" data-testid={`onboarding-input-${currentStep.key}`}>
         <AnimatedWrapper delay={100}>
           <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="flex-1">
-              <FormLabel>Full Name</FormLabel>
+            <div className="flex-1 space-y-1.5">
+              <Label>Full Name</Label>
               <Input
                 {...form.register('shipping.fullName')}
                 placeholder="John Doe"
                 autoFocus
                 data-testid={`onboarding-input-${currentStep.key}-fullName`}
               />
-              <p className="text-destructive text-[0.8rem] font-medium">
-                {form.formState.errors.shipping?.fullName?.message}
-              </p>
+              {isSubmitted && errors.shipping?.fullName?.message && (
+                <p className="text-destructive text-[0.8rem] font-medium">
+                  {errors.shipping.fullName.message}
+                </p>
+              )}
             </div>
-            <div className="flex-1">
-              <FormLabel>Phone</FormLabel>
+            <div className="flex-1 space-y-1.5">
+              <Label>Phone</Label>
               <Input
                 {...form.register('shipping.phone')}
                 placeholder="+1 (555) 123-4567"
-                autoFocus
                 data-testid={`onboarding-input-${currentStep.key}-phone`}
               />
-              <p className="text-destructive text-[0.8rem] font-medium">
-                {form.formState.errors.shipping?.phone?.message}
-              </p>
+              {isSubmitted && errors.shipping?.phone?.message && (
+                <p className="text-destructive text-[0.8rem] font-medium">
+                  {errors.shipping.phone.message}
+                </p>
+              )}
             </div>
           </div>
         </AnimatedWrapper>
         <AnimatedWrapper delay={200}>
-          <div>
-            <FormLabel>Address</FormLabel>
+          <div className="space-y-1.5">
+            <Label>Address</Label>
             <Textarea
               {...form.register('shipping.address')}
               placeholder="123 Main St, Apt 4B, Springfield, IL, USA"
@@ -88,9 +95,11 @@ export function OnboardingStepInput({
               maxLength={300}
               data-testid={`onboarding-input-${currentStep.key}-address`}
             />
-            <p className="text-destructive text-[0.8rem] font-medium">
-              {form.formState.errors.shipping?.address?.message}
-            </p>
+            {isSubmitted && errors.shipping?.address?.message && (
+              <p className="text-destructive text-[0.8rem] font-medium">
+                {errors.shipping.address.message}
+              </p>
+            )}
           </div>
         </AnimatedWrapper>
         <AnimatedWrapper delay={300}>
@@ -136,13 +145,83 @@ export function OnboardingStepInput({
     );
   }
 
+  if (currentStep.key === 'teamSize') {
+    return (
+      <AnimatedWrapper delay={100} animationKey={`teamSize-${currentStep.key}`}>
+        <div className="space-y-2" data-testid={`onboarding-input-${currentStep.key}`}>
+          <NumberInput
+            value={form.watch(currentStep.key) || ''}
+            onChange={(val) => form.setValue(currentStep.key, val)}
+            placeholder={currentStep.placeholder}
+          />
+          {currentStep.description && (
+            <p className="text-xs text-muted-foreground">{currentStep.description}</p>
+          )}
+        </div>
+      </AnimatedWrapper>
+    );
+  }
+
+  if (currentStep.key === 'cSuite') {
+    return <CSuiteInput form={form} description={currentStep.description} />;
+  }
+
+  if (currentStep.key === 'reportSignatory') {
+    const { errors, isSubmitted } = form.formState;
+
+    return (
+      <div className="space-y-4" data-testid={`onboarding-input-${currentStep.key}`}>
+        <AnimatedWrapper delay={100}>
+          <div className="flex flex-col gap-4">
+            <div className="space-y-1.5">
+              <Label>Full Name</Label>
+              <Input
+                {...form.register('reportSignatory.fullName')}
+                placeholder="John Doe"
+                autoFocus
+              />
+              {isSubmitted && errors.reportSignatory?.fullName?.message && (
+                <p className="text-destructive text-[0.8rem] font-medium">
+                  {errors.reportSignatory.fullName.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Job Title</Label>
+              <Input {...form.register('reportSignatory.jobTitle')} placeholder="CEO" />
+              {isSubmitted && errors.reportSignatory?.jobTitle?.message && (
+                <p className="text-destructive text-[0.8rem] font-medium">
+                  {errors.reportSignatory.jobTitle.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input
+                {...form.register('reportSignatory.email')}
+                type="email"
+                placeholder="john@company.com"
+              />
+              {isSubmitted && errors.reportSignatory?.email?.message && (
+                <p className="text-destructive text-[0.8rem] font-medium">
+                  {errors.reportSignatory.email.message}
+                </p>
+              )}
+            </div>
+          </div>
+        </AnimatedWrapper>
+        {currentStep.description && (
+          <AnimatedWrapper delay={200}>
+            <p className="text-xs text-muted-foreground">{currentStep.description}</p>
+          </AnimatedWrapper>
+        )}
+      </div>
+    );
+  }
+
   if (currentStep.options) {
     // Single-select fields
-    if (
-      currentStep.key === 'industry' ||
-      currentStep.key === 'teamSize' ||
-      currentStep.key === 'workLocation'
-    ) {
+    if (currentStep.key === 'industry' || currentStep.key === 'workLocation') {
       const selectedValue = form.watch(currentStep.key);
 
       return (
@@ -166,14 +245,16 @@ export function OnboardingStepInput({
     }
 
     // Multi-select fields with custom value support
-    const selectedValues = (form.watch(currentStep.key) || '').split(',').filter(Boolean);
+    // At this point we know the field is a comma-separated string
+    const rawValue = form.watch(currentStep.key) as string | undefined;
+    const selectedValues = (rawValue || '').split(',').filter(Boolean);
 
     const handlePillToggle = (option: string) => {
       const isSelected = selectedValues.includes(option);
-      let newValues;
+      let newValues: string[];
 
       if (isSelected) {
-        newValues = selectedValues.filter((v) => v !== option);
+        newValues = selectedValues.filter((v: string) => v !== option);
       } else {
         newValues = [...selectedValues, option];
       }
@@ -274,5 +355,146 @@ export function OnboardingStepInput({
         data-testid={`onboarding-input-${currentStep.key}`}
       />
     </AnimatedWrapper>
+  );
+}
+
+// C-Suite input component with dynamic list
+function CSuiteInput({
+  form,
+  description,
+}: {
+  form: UseFormReturn<OnboardingFormFields>;
+  description?: string;
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'cSuite',
+  });
+
+  // Initialize with one empty entry if none exist
+  if (fields.length === 0) {
+    append({ name: '', title: '' });
+  }
+
+  const commonTitles = ['CEO', 'CTO', 'CFO', 'COO', 'CMO', 'CISO', 'CPO', 'CRO'];
+
+  return (
+    <div className="space-y-4" data-testid="onboarding-input-cSuite">
+      <AnimatedWrapper delay={100}>
+        <div className="space-y-3">
+          {fields.map((field, index) => (
+            <div key={field.id} className="flex gap-2 items-start">
+              <div className="flex-1 space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    {...form.register(`cSuite.${index}.name`)}
+                    placeholder="Full name"
+                    autoFocus={index === 0}
+                  />
+                  <Input
+                    {...form.register(`cSuite.${index}.title`)}
+                    placeholder="Title (e.g., CEO)"
+                    list={`titles-${index}`}
+                  />
+                  <datalist id={`titles-${index}`}>
+                    {commonTitles.map((title) => (
+                      <option key={title} value={title} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+              {fields.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => remove(index)}
+                  className="text-muted-foreground hover:text-destructive shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      </AnimatedWrapper>
+
+      <AnimatedWrapper delay={200}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => append({ name: '', title: '' })}
+          className="gap-1"
+        >
+          <Plus className="h-4 w-4" />
+          Add Executive
+        </Button>
+      </AnimatedWrapper>
+
+      {description && (
+        <AnimatedWrapper delay={300}>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </AnimatedWrapper>
+      )}
+    </div>
+  );
+}
+
+// Custom number input with styled increment/decrement buttons
+function NumberInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) {
+  const increment = () => {
+    const num = Number.parseInt(value, 10) || 0;
+    onChange(String(num + 1));
+  };
+
+  const decrement = () => {
+    const num = Number.parseInt(value, 10) || 0;
+    if (num > 1) {
+      onChange(String(num - 1));
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '');
+    onChange(val);
+  };
+
+  return (
+    <div className="relative max-w-[200px]">
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={handleChange}
+        placeholder={placeholder}
+        autoFocus
+        className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring h-9 w-full rounded-sm border py-1 pl-3 pr-10 text-sm transition-colors focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:outline-hidden"
+      />
+      <div className="absolute right-0 top-0 flex h-full flex-col border-l border-input">
+        <button
+          type="button"
+          onClick={increment}
+          className="flex h-1/2 w-7 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground rounded-tr-sm"
+        >
+          <ChevronUp className="h-3 w-3" />
+        </button>
+        <button
+          type="button"
+          onClick={decrement}
+          className="flex h-1/2 w-7 items-center justify-center border-t border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground rounded-br-sm"
+        >
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
   );
 }

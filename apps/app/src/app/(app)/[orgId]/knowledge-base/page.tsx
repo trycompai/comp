@@ -2,17 +2,17 @@ import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { AdditionalDocumentsSection } from '../security-questionnaire/knowledge-base/additional-documents/components';
-import { ContextSection } from '../security-questionnaire/knowledge-base/context/components';
-import { ManualAnswersSection } from '../security-questionnaire/knowledge-base/manual-answers/components';
-import { PublishedPoliciesSection } from '../security-questionnaire/knowledge-base/published-policies/components';
-import { KnowledgeBaseHeader } from '../security-questionnaire/knowledge-base/components/KnowledgeBaseHeader';
+import { AdditionalDocumentsSection } from '../questionnaire/knowledge-base/additional-documents/components';
+import { ContextSection } from '../questionnaire/knowledge-base/context/components';
+import { ManualAnswersSection } from '../questionnaire/knowledge-base/manual-answers/components';
+import { PublishedPoliciesSection } from '../questionnaire/knowledge-base/published-policies/components';
+import { KnowledgeBaseHeader } from '../questionnaire/knowledge-base/components/KnowledgeBaseHeader';
 import {
   getContextEntries,
   getKnowledgeBaseDocuments,
   getManualAnswers,
   getPublishedPolicies,
-} from '../security-questionnaire/knowledge-base/data/queries';
+} from '../questionnaire/knowledge-base/data/queries';
 
 export default async function KnowledgeBasePage() {
   const session = await auth.api.getSession({

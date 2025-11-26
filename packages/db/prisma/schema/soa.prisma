@@ -1,0 +1,134 @@
+// Statement of Applicability (SOA) Auto-complete Configuration and Answers
+
+model SOAFrameworkConfiguration {
+  id          String                   @id @default(dbgenerated("generate_prefixed_cuid('soa_cfg'::text)"))
+  frameworkId String
+  framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  // Configuration versioning - allows multiple configurations per framework
+  version  Int     @default(1) // Version number for this configuration (increments when config changes)
+  isLatest Boolean @default(true) // Whether this is the latest configuration version
+
+  // Column definitions for SOA structure (template used when creating new documents)
+  columns Json // Array of { name: string, type: string } objects
+  // Example: [{ name: "Control ID", type: "string" }, { name: "Control Name", type: "string" }, { name: "Applicable", type: "boolean" }, { name: "Justification", type: "text" }]
+
+  // Predefined questions for this framework
+  // Documents reference a specific configuration version via SOADocument.configurationId
+  // Old documents keep their old config version, new documents use new config version
+  questions Json // Array of question objects with unique IDs
+  // Example: [{ id: "A.5.1.1", text: "Is this control applicable?", columnMapping: "Applicable", controlId: "A.5.1.1" }, ...]
+  // IMPORTANT: question.id must be unique and stable - this is what SOAAnswer.questionId references
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  documents SOADocument[]
+
+  @@unique([frameworkId, version]) // Prevent duplicate configuration versions
+  @@index([frameworkId])
+  @@index([frameworkId, version])
+  @@index([frameworkId, isLatest])
+}
+
+model SOADocument {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('soa_doc'::text)"))
+
+  // Framework and organization context
+  frameworkId    String
+  framework      FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Configuration reference - references a specific SOAFrameworkConfiguration version
+  // Each document version can use a different configuration version
+  // Old documents keep their old config, new documents use new config
+  configurationId String
+  configuration   SOAFrameworkConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+
+  // Document versioning
+  version  Int     @default(1) // Version number for this document (increments yearly)
+  isLatest Boolean @default(true) // Whether this is the latest version
+
+  // Document status
+  status SOADocumentStatus @default(draft) // draft, in_progress, completed
+
+  // Document metadata
+  totalQuestions    Int @default(0) // Total number of questions in this document
+  answeredQuestions Int @default(0) // Number of questions with answers
+
+  // Approval tracking
+  preparedBy String  @default("Comp AI") // Always "Comp AI"
+  approverId String? // Member ID who will approve this document (set when submitted for approval)
+  approver   Member? @relation("SOADocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approvedAt DateTime? // When document was approved
+
+  // Dates
+  completedAt DateTime? // When document was completed
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relationships
+  answers SOAAnswer[]
+
+  @@unique([frameworkId, organizationId, version]) // Prevent duplicate versions
+  @@index([frameworkId, organizationId])
+  @@index([frameworkId, organizationId, version])
+  @@index([frameworkId, organizationId, isLatest])
+  @@index([configurationId])
+  @@index([status])
+}
+
+model SOAAnswer {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('soa_ans'::text)"))
+
+  // Document context (replaces direct framework/organization link)
+  documentId String
+  document   SOADocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Question reference - references question.id from SOADocument.configuration.questions
+  // References the specific configuration version that the document uses
+  // If config changes, old documents still reference their old config version
+  questionId String // Must match a question.id from SOADocument.configuration.questions
+
+  // Answer data - simple text answer
+  answer String? // Text answer (nullable if not generated yet)
+
+  // Answer metadata
+  status      SOAAnswerStatus @default(untouched) // untouched, generated, manual
+  sources     Json? // Sources used for generated answers (similar to questionnaire)
+  generatedAt DateTime? // When answer was generated
+
+  // Answer versioning (within the document)
+  answerVersion  Int     @default(1) // Version number for this specific answer
+  isLatestAnswer Boolean @default(true) // Whether this is the latest version of this answer
+
+  // User tracking
+  createdBy String? // User ID who created this answer
+  updatedBy String? // User ID who last updated this answer
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([documentId, questionId, answerVersion]) // Prevent duplicate answer versions
+  @@index([documentId])
+  @@index([documentId, questionId])
+  @@index([documentId, questionId, isLatestAnswer])
+  @@index([status])
+}
+
+enum SOADocumentStatus {
+  draft // Document is being created/edited
+  in_progress // Document is being generated
+  needs_review // Document is submitted for approval
+  completed // Document is complete and approved
+}
+
+enum SOAAnswerStatus {
+  untouched // No answer yet (not generated)
+  generated // AI generated answer
+  manual // Manually written/edited by user
+}

@@ -131,7 +131,7 @@ export function SecondaryMenu({
   }, [activeIndex]);
 
   return (
-    <nav className={'pb-4'} key={pathname}>
+    <nav className={'pb-4 relative z-5 bg-background'}>
       <div className="flex items-center gap-2 overflow-auto p-[1px]">
         {showBackButton && (
           <Button variant="ghost" size="sm" asChild>
