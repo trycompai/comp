@@ -1,8 +1,12 @@
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { DeleteOrganization } from '@/components/forms/organization/delete-organization';
 import { UpdateOrganizationAdvancedMode } from '@/components/forms/organization/update-organization-advanced-mode';
+import { UpdateOrganizationLogo } from '@/components/forms/organization/update-organization-logo';
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
 import { auth } from '@/utils/auth';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -10,17 +14,33 @@ import { cache } from 'react';
 
 export default async function OrganizationSettings() {
   const organization = await organizationDetails();
+  const logoUrl = await getLogoUrl(organization?.logo);
 
   return (
     <div className="space-y-4">
       <UpdateOrganizationName organizationName={organization?.name ?? ''} />
       <UpdateOrganizationWebsite organizationWebsite={organization?.website ?? ''} />
+      <UpdateOrganizationLogo currentLogoUrl={logoUrl} />
       <UpdateOrganizationAdvancedMode
         advancedModeEnabled={organization?.advancedModeEnabled ?? false}
       />
       <DeleteOrganization organizationId={organization?.id ?? ''} />
     </div>
   );
+}
+
+async function getLogoUrl(logoKey: string | null | undefined): Promise<string | null> {
+  if (!logoKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) return null;
+
+  try {
+    const command = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: logoKey,
+    });
+    return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  } catch {
+    return null;
+  }
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -45,6 +65,7 @@ const organizationDetails = cache(async () => {
       id: true,
       website: true,
       advancedModeEnabled: true,
+      logo: true,
     },
   });
 

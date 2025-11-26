@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useEffect, useState } from 'react';
@@ -25,10 +26,12 @@ interface OrganizationSwitcherProps {
   organizations: Organization[];
   organization: Organization | null;
   isCollapsed?: boolean;
+  logoUrls?: Record<string, string>;
 }
 
-interface OrganizationInitialsAvatarProps {
+interface OrganizationAvatarProps {
   name: string | null | undefined;
+  logoUrl?: string | null;
   size?: 'sm' | 'default';
   className?: string;
 }
@@ -52,11 +55,24 @@ const COLOR_PAIRS = [
   'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/70 dark:text-cyan-200',
 ];
 
-function OrganizationInitialsAvatar({
+function OrganizationAvatar({
   name,
+  logoUrl,
   size = 'default',
   className,
-}: OrganizationInitialsAvatarProps) {
+}: OrganizationAvatarProps) {
+  const sizeClass = size === 'sm' ? 'h-6 w-6' : 'h-8 w-8';
+
+  // If logo URL exists, show the image
+  if (logoUrl) {
+    return (
+      <div className={cn('relative overflow-hidden rounded-sm border', sizeClass, className)}>
+        <Image src={logoUrl} alt={name || 'Organization'} fill className="object-contain" />
+      </div>
+    );
+  }
+
+  // Fallback to initials
   const initials = name?.slice(0, 2).toUpperCase() || '';
 
   let colorIndex = 0;
@@ -71,7 +87,8 @@ function OrganizationInitialsAvatar({
     <div
       className={cn(
         'flex items-center justify-center rounded-sm font-medium',
-        size === 'sm' ? 'h-6 w-6 text-xs' : 'h-8 w-8 text-sm',
+        sizeClass,
+        size === 'sm' ? 'text-xs' : 'text-sm',
         selectedColorClass,
         className,
       )}
@@ -85,6 +102,7 @@ export function OrganizationSwitcher({
   organizations,
   organization,
   isCollapsed = false,
+  logoUrls = {},
 }: OrganizationSwitcherProps) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -104,7 +122,7 @@ export function OrganizationSwitcher({
 
   const sortedOrganizations = [...organizations].sort((a, b) => {
     if (sortOrder === 'alphabetical') {
-      return (a.name).localeCompare(b.name);
+      return a.name.localeCompare(b.name);
     } else if (sortOrder === 'recent') {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
@@ -180,7 +198,10 @@ export function OrganizationSwitcher({
             )}
             disabled={status === 'executing'}
           >
-            <OrganizationInitialsAvatar name={currentOrganization?.name} />
+            <OrganizationAvatar
+              name={currentOrganization?.name}
+              logoUrl={currentOrganization?.id ? logoUrls[currentOrganization.id] : undefined}
+            />
             {!isCollapsed && (
               <>
                 <span className="ml-2 flex-1 truncate text-left">{currentOrganization?.name}</span>
@@ -235,7 +256,7 @@ export function OrganizationSwitcher({
                     ) : (
                       <div className="h-4 w-4" />
                     )}
-                    <OrganizationInitialsAvatar name={org.name} size="sm" />
+                    <OrganizationAvatar name={org.name} logoUrl={logoUrls[org.id]} size="sm" />
                     <span className="truncate">{getDisplayName(org)}</span>
                   </CommandItem>
                 ))}

@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/sidebar';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { SidebarProvider } from '@/context/sidebar-context';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db, Role } from '@db';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -14,6 +14,15 @@ import { Suspense } from 'react';
 import { ConditionalOnboardingTracker } from './components/ConditionalOnboardingTracker';
 import { ConditionalPaddingWrapper } from './components/ConditionalPaddingWrapper';
 import { DynamicMinHeight } from './components/DynamicMinHeight';
+
+// Helper to safely parse comma-separated roles string
+function parseRolesString(rolesStr: string | null | undefined): Role[] {
+  if (!rolesStr) return [];
+  return rolesStr
+    .split(',')
+    .map((r) => r.trim())
+    .filter((r) => r in Role) as Role[];
+}
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
   ssr: true,
@@ -65,7 +74,11 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  if (member.role === 'employee' || member.role === 'contractor') {
+  const roles = parseRolesString(member.role);
+  const hasAccess =
+    roles.includes(Role.owner) || roles.includes(Role.admin) || roles.includes(Role.auditor);
+
+  if (!hasAccess) {
     return redirect('/no-access');
   }
 

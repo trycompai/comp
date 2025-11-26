@@ -92,5 +92,11 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
   }
 
   // We'll use a modified version that starts at step 3
-  return <PostPaymentOnboarding organization={organization} initialData={initialData} />;
+  return (
+    <PostPaymentOnboarding
+      organization={organization}
+      initialData={initialData}
+      userEmail={session.user.email}
+    />
+  );
 }

@@ -16,6 +16,17 @@ const onboardingCompletionSchema = z.object({
   describe: z.string().min(1).max(300),
   industry: z.string().min(1),
   teamSize: z.string().min(1),
+  cSuite: z.array(
+    z.object({
+      name: z.string(),
+      title: z.string(),
+    }),
+  ),
+  reportSignatory: z.object({
+    fullName: z.string(),
+    jobTitle: z.string(),
+    email: z.string(),
+  }),
   devices: z.string().min(1),
   authentication: z.string().min(1),
   software: z.string().min(1),

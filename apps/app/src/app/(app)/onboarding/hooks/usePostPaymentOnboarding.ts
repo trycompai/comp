@@ -8,7 +8,7 @@ import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -18,20 +18,40 @@ interface UsePostPaymentOnboardingProps {
   organizationId: string;
   organizationName: string;
   initialData?: Record<string, any>;
+  userEmail?: string;
 }
 
 const showShippingStep = process.env.NEXT_PUBLIC_APP_ENV !== 'staging';
-// Use steps 4-12 (post-payment steps)
-const postPaymentSteps = showShippingStep
-  ? steps.slice(3)
-  : steps.slice(3).filter((step) => step.key !== 'shipping');
+
+// Filter steps based on environment and user
+function getPostPaymentSteps(userEmail?: string) {
+  let filteredSteps = steps.slice(3);
+
+  // Hide shipping step in staging
+  if (!showShippingStep) {
+    filteredSteps = filteredSteps.filter((step) => step.key !== 'shipping');
+  }
+
+  // Hide cSuite and reportSignatory for @trycomp.ai users
+  if (userEmail?.includes('@trycomp.ai')) {
+    filteredSteps = filteredSteps.filter(
+      (step) => step.key !== 'cSuite' && step.key !== 'reportSignatory',
+    );
+  }
+
+  return filteredSteps;
+}
 
 export function usePostPaymentOnboarding({
   organizationId,
   organizationName,
   initialData = {},
+  userEmail,
 }: UsePostPaymentOnboardingProps) {
   const router = useRouter();
+
+  // Get filtered steps based on user
+  const postPaymentSteps = useMemo(() => getPostPaymentSteps(userEmail), [userEmail]);
 
   // Create storage keys specific to this organization
   const storageKey = `onboarding-progress-${organizationId}`;
@@ -67,7 +87,7 @@ export function usePostPaymentOnboarding({
 
     setStepIndex(initialStep);
     setIsLoading(false);
-  }, [savedAnswers, savedStepIndex]);
+  }, [savedAnswers, savedStepIndex, postPaymentSteps]);
 
   const step = postPaymentSteps[stepIndex];
   const stepSchema = z.object({
@@ -130,6 +150,12 @@ export function usePostPaymentOnboarding({
       describe: allAnswers.describe || '',
       industry: allAnswers.industry || '',
       teamSize: allAnswers.teamSize || '',
+      cSuite: allAnswers.cSuite || [],
+      reportSignatory: allAnswers.reportSignatory || {
+        fullName: '',
+        jobTitle: '',
+        email: '',
+      },
       devices: allAnswers.devices || '',
       authentication: allAnswers.authentication || '',
       software: allAnswers.software || '',
@@ -161,9 +187,18 @@ export function usePostPaymentOnboarding({
 
     // Handle multi-select fields with "Other" option
     for (const key of Object.keys(newAnswers)) {
-      if (step.options && step.key === key && key !== 'frameworkIds' && key !== 'shipping') {
+      // Only process multi-select string fields (exclude objects/arrays)
+      if (
+        step.options &&
+        step.key === key &&
+        key !== 'frameworkIds' &&
+        key !== 'shipping' &&
+        key !== 'cSuite' &&
+        key !== 'reportSignatory'
+      ) {
         const customValue = newAnswers[`${key}Other`] || '';
-        const values = (newAnswers[key] || '').split(',').filter(Boolean);
+        const rawValue = newAnswers[key];
+        const values = (typeof rawValue === 'string' ? rawValue : '').split(',').filter(Boolean);
 
         if (customValue) {
           values.push(customValue);

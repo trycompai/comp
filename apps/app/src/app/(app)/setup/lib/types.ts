@@ -1,3 +1,14 @@
+export type CSuiteEntry = {
+  name: string;
+  title: string;
+};
+
+export type ReportSignatory = {
+  fullName: string;
+  jobTitle: string;
+  email: string;
+};
+
 export type CompanyDetails = {
   frameworkIds: string[];
   organizationName: string;
@@ -5,6 +16,8 @@ export type CompanyDetails = {
   describe: string;
   industry: string;
   teamSize: string;
+  cSuite: CSuiteEntry[];
+  reportSignatory: ReportSignatory;
   devices: string;
   authentication: string;
   workLocation: string;
@@ -31,4 +44,5 @@ export type Step = {
   question: string;
   placeholder: string;
   options?: string[];
+  description?: string;
 };
