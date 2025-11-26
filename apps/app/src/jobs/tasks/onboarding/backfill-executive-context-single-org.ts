@@ -1,12 +1,18 @@
 import { db } from '@db';
-import { logger, schemaTask } from '@trigger.dev/sdk';
+import { logger, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 
 const CSUITE_QUESTION = 'Who are your C-Suite executives?';
 const SIGNATORY_QUESTION = 'Who will sign off on the final report?';
 
+const backfillQueue = queue({
+  name: 'backfill-executive-context-single-org',
+  concurrencyLimit: 10,
+});
+
 export const backfillExecutiveContextSingleOrg = schemaTask({
   id: 'backfill-executive-context-single-org',
+  queue: backfillQueue,
   schema: z.object({
     organizationId: z.string(),
   }),
