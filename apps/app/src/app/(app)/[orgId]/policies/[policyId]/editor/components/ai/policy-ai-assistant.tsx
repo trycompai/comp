@@ -9,58 +9,43 @@ import {
 import { Tool, ToolHeader } from '@comp/ui/ai-elements/tool';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai';
-import type { ToolUIPart } from 'ai';
-import { useChat } from '@ai-sdk/react';
+import {
+  getToolName,
+  isToolUIPart,
+  type ChatStatus,
+  type ToolUIPart,
+  type UIMessage,
+} from 'ai';
 import { X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 interface PolicyAiAssistantProps {
-  policyId: string;
-  onProposedPolicyChange?: (content: string | null) => void;
+  messages: UIMessage[];
+  status: ChatStatus;
+  errorMessage?: string | null;
+  sendMessage: (payload: { text: string }) => void;
   close?: () => void;
 }
 
 export function PolicyAiAssistant({
-  policyId,
-  onProposedPolicyChange,
+  messages,
+  status,
+  errorMessage,
+  sendMessage,
   close,
 }: PolicyAiAssistantProps) {
   const [input, setInput] = useState('');
-  const lastProcessedToolCallRef = useRef<string | null>(null);
-  
-  const { messages, status, error, sendMessage } = useChat({
-    transport: new DefaultChatTransport({
-      api: `/api/policies/${policyId}/chat`,
-    }),
-  });
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
-  useEffect(() => {
-    const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
-    if (!lastAssistantMessage?.parts) return;
-
-    for (const part of lastAssistantMessage.parts) {
-      if (isToolUIPart(part) && getToolName(part) === 'proposePolicy') {
-        const toolInput = part.input as { content: string; summary: string };
-        
-        if (part.state === 'input-streaming') {
-          onProposedPolicyChange?.(toolInput?.content || '');
-          continue;
-        }
-        
-        if (lastProcessedToolCallRef.current === part.toolCallId) {
-          continue;
-        }
-        
-        if (toolInput?.content) {
-          lastProcessedToolCallRef.current = part.toolCallId;
-          onProposedPolicyChange?.(toolInput.content);
-        }
-      }
-    }
-  }, [messages, onProposedPolicyChange]);
+  const hasActiveTool = messages.some(
+    (m) =>
+      m.role === 'assistant' &&
+      m.parts.some(
+        (p) =>
+          isToolUIPart(p) && (p.state === 'input-streaming' || p.state === 'input-available'),
+      ),
+  );
 
   const handleSubmit = () => {
     if (!input.trim()) return;
@@ -108,10 +93,10 @@ export function PolicyAiAssistant({
                     </div>
                   );
                 }
-                
+
                 if (isToolUIPart(part) && getToolName(part) === 'proposePolicy') {
                   const toolPart = part as ToolUIPart;
-                  const toolInput = part.input as { content: string; summary: string };
+                  const toolInput = toolPart.input as { content?: string; summary?: string };
                   return (
                     <Tool key={`${message.id}-${index}`} className="mt-2">
                       <ToolHeader
@@ -122,20 +107,20 @@ export function PolicyAiAssistant({
                     </Tool>
                   );
                 }
-                
+
                 return null;
               })}
             </div>
           ))
         )}
-        {isLoading && (
+        {isLoading && !hasActiveTool && (
           <div className="text-sm text-muted-foreground">Thinking...</div>
         )}
       </div>
 
-      {error && (
+      {errorMessage && (
         <div className="border-t bg-destructive/10 px-3 py-2">
-          <p className="text-xs text-destructive">{error.message}</p>
+          <p className="text-xs text-destructive">{errorMessage}</p>
         </div>
       )}
 

@@ -137,7 +137,7 @@ async function extractContentFromFile(fileData: string, fileType: string): Promi
 
     try {
       const { text } = await generateText({
-        model: openai('gpt-5.1-mini'),
+        model: openai('gpt-5-mini'),
         messages: [
           {
             role: 'user',
