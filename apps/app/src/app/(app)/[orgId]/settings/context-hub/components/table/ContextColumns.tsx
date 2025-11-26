@@ -117,12 +117,22 @@ function EditableAnswerCell({ context }: { context: Context }) {
 
   // Add new item to array
   const addArrayItem = () => {
-    if (arrayValue && arrayValue.length > 0) {
-      // Clone the structure of the first item with empty values
-      const template = Object.keys(arrayValue[0]).reduce(
-        (acc, key) => ({ ...acc, [key]: '' }),
-        {},
-      );
+    if (arrayValue) {
+      let template: Record<string, string>;
+      if (arrayValue.length > 0) {
+        // Clone the structure of the first item with empty values
+        template = Object.keys(arrayValue[0]).reduce((acc, key) => ({ ...acc, [key]: '' }), {});
+      } else {
+        // For empty arrays, infer structure from question or use default
+        if (
+          context.question.toLowerCase().includes('c-suite') ||
+          context.question.toLowerCase().includes('executive')
+        ) {
+          template = { name: '', title: '' };
+        } else {
+          template = { name: '', value: '' };
+        }
+      }
       setArrayValue([...arrayValue, template]);
     }
   };
@@ -137,37 +147,44 @@ function EditableAnswerCell({ context }: { context: Context }) {
   if (isEditing) {
     // Render array editor (like cSuite)
     if (arrayValue) {
-      const keys = arrayValue.length > 0 ? Object.keys(arrayValue[0]) : [];
       return (
         <div className="flex flex-col gap-3">
           <div className="space-y-2">
-            {arrayValue.map((item, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
-                {keys.map((key) => (
-                  <input
-                    key={key}
-                    type="text"
-                    value={item[key] || ''}
-                    onChange={(e) => updateArrayItem(index, key, e.target.value)}
-                    placeholder={key}
-                    className="flex-1 px-2 py-1 text-sm rounded border border-input bg-background"
-                    disabled={status === 'executing'}
-                  />
-                ))}
-                {arrayValue.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeArrayItem(index)}
-                    disabled={status === 'executing'}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-            ))}
+            {arrayValue.length === 0 && (
+              <p className="text-sm text-muted-foreground italic">
+                No items. Click "Add Item" to start.
+              </p>
+            )}
+            {arrayValue.map((item, index) => {
+              const keys = Object.keys(item);
+              return (
+                <div key={index} className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
+                  {keys.map((key) => (
+                    <input
+                      key={key}
+                      type="text"
+                      value={item[key] || ''}
+                      onChange={(e) => updateArrayItem(index, key, e.target.value)}
+                      placeholder={key}
+                      className="flex-1 px-2 py-1 text-sm rounded border border-input bg-background"
+                      disabled={status === 'executing'}
+                    />
+                  ))}
+                  {arrayValue.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeArrayItem(index)}
+                      disabled={status === 'executing'}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <Button
             type="button"
@@ -180,11 +197,25 @@ function EditableAnswerCell({ context }: { context: Context }) {
             + Add Item
           </Button>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={handleCancel} disabled={status === 'executing'}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={status === 'executing'}
+            >
               Cancel
             </Button>
-            <Button size="sm" variant="default" onClick={handleSave} disabled={status === 'executing'}>
-              {status === 'executing' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleSave}
+              disabled={status === 'executing'}
+            >
+              {status === 'executing' ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : (
+                <Check className="h-4 w-4 mr-1" />
+              )}
               Save
             </Button>
           </div>
@@ -213,11 +244,25 @@ function EditableAnswerCell({ context }: { context: Context }) {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={handleCancel} disabled={status === 'executing'}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={status === 'executing'}
+            >
               Cancel
             </Button>
-            <Button size="sm" variant="default" onClick={handleSave} disabled={status === 'executing'}>
-              {status === 'executing' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleSave}
+              disabled={status === 'executing'}
+            >
+              {status === 'executing' ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : (
+                <Check className="h-4 w-4 mr-1" />
+              )}
               Save
             </Button>
           </div>
@@ -236,11 +281,25 @@ function EditableAnswerCell({ context }: { context: Context }) {
           disabled={status === 'executing'}
         />
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={handleCancel} disabled={status === 'executing'}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={status === 'executing'}
+          >
             Cancel
           </Button>
-          <Button size="sm" variant="default" onClick={handleSave} disabled={status === 'executing'}>
-            {status === 'executing' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+          <Button
+            size="sm"
+            variant="default"
+            onClick={handleSave}
+            disabled={status === 'executing'}
+          >
+            {status === 'executing' ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <Check className="h-4 w-4 mr-1" />
+            )}
             Save
           </Button>
         </div>
@@ -315,11 +374,7 @@ function DeleteCell({ context }: { context: Context }) {
   return (
     <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
       <AlertDialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-destructive hover:bg-destructive/10"
-        >
+        <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10">
           <Trash2 className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
