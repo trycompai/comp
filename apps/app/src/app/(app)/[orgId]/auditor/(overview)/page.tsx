@@ -1,5 +1,7 @@
+import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { db, Role } from '@db';
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { AuditorView } from './components/AuditorView';
@@ -13,7 +15,7 @@ function parseRolesString(rolesStr: string | null | undefined): Role[] {
     .filter((r) => r in Role) as Role[];
 }
 
-export async function generateMetadata() {
+export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'Auditor View',
   };
@@ -47,16 +49,35 @@ export default async function AuditorPage({ params }: { params: Promise<{ orgId:
     notFound();
   }
 
-  return (
-    <div className="container py-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Auditor View</h1>
-        <p className="text-muted-foreground">
-          Welcome to the auditor view. This area is restricted to authorized personnel.
-        </p>
-      </div>
+  // Auditor section questions that we look for in Context
+  const SECTION_QUESTIONS = [
+    'Company Background & Overview of Operations',
+    'Types of Services Provided',
+    'Mission & Vision',
+    'System Description',
+    'Critical Vendors',
+    'Subservice Organizations',
+  ];
 
-      <AuditorView orgId={organizationId} />
-    </div>
+  // Load existing content from Context
+  const existingContext = await db.context.findMany({
+    where: {
+      organizationId,
+      question: { in: SECTION_QUESTIONS },
+    },
+  });
+
+  // Map question -> answer for the frontend
+  const initialContent: Record<string, string> = {};
+  for (const item of existingContext) {
+    initialContent[item.question] = item.answer;
+  }
+
+  return (
+    <PageWithBreadcrumb
+      breadcrumbs={[{ label: 'Auditor View', href: `/${organizationId}/auditor`, current: true }]}
+    >
+      <AuditorView orgId={organizationId} initialContent={initialContent} />
+    </PageWithBreadcrumb>
   );
 }

@@ -1,5 +1,6 @@
 import { getOrganizationContext } from '@/jobs/tasks/onboarding/onboard-organization-helpers';
 import { openai } from '@ai-sdk/openai';
+import { db } from '@db';
 import { logger, metadata, schemaTask } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
 import { z } from 'zod';
@@ -15,51 +16,110 @@ const SECTIONS = [
 
 type Section = (typeof SECTIONS)[number];
 
-// Shared formatting rules for company overview sections
-const COMPANY_SECTION_FORMAT = `
-FORMATTING & TONE RULES:
-- Keep the heading exactly as written.
-- One concise paragraph per heading (approximately 80-120 words).
-- Integrate concrete facts from the site—founding year, HQ, product highlights, key metrics—without marketing hype.
-- Do NOT include tables, bullet lists, citations, or any extra sections.
-- Do NOT repeat the URL or add external links.
+// Map from section keys to Context question strings
+const SECTION_QUESTIONS: Record<Section, string> = {
+  'company-background': 'Company Background & Overview of Operations',
+  services: 'Types of Services Provided',
+  'mission-vision': 'Mission & Vision',
+  'system-description': 'System Description',
+  'critical-vendors': 'Critical Vendors',
+  'subservice-organizations': 'Subservice Organizations',
+};
 
-TONE GUARDRAILS:
-- Write in a direct, declarative voice. State facts without attribution.
-- Do NOT use evidentials or meta phrases: "the website says/notes/states," "according to," "they claim," "it appears," "seems," "we found," "our research."
-- Do NOT hedge: avoid "may," "might," "likely," "appears."
-- Use simple present tense and third person.
-- Treat the company site as the authoritative source. If a detail isn't verifiable on the site, OMIT it rather than hedging.
-- No marketing language or value judgments.
-
-EXAMPLES:
-- Instead of: "The site notes operations are in Finland." Write: "Operations are rooted in Finland."
-- Instead of: "According to the website, the mission is to…" Write: "The mission is to…"
-- Instead of: "Documentation states, an emphasis on..." Write: "There is an emphasis on..."
+// Shared tone rules
+const TONE_RULES = `
+TONE:
+- Direct, declarative voice. State facts without attribution.
+- No hedging ("may", "might", "likely", "appears").
+- No meta phrases ("the website says", "according to", "it appears").
+- Third person, simple present tense.
+- NEVER mention missing information - only write about what IS available.
 `;
 
 const sectionPrompts: Record<Section, string> = {
-  'company-background': `Write a section titled "Company Background & Overview of Operations".
+  'company-background': `Write ONE paragraph (~80 words) describing the company background and operations.
 
-Summarize the company background and overview of operations including: founding year, headquarters location, industry, business model, and operational overview.
+INCLUDE (where available): company name, what they do, headquarters location, certifications, workforce characteristics, strategic positioning, operational scope.
 
-${COMPANY_SECTION_FORMAT}`,
-  services: `Write a section titled "Types of Services Provided".
+EXAMPLE:
+"[Company] is a [type of business] headquartered in [location], with operations serving [markets/regions]. It holds [certifications] and describes itself as [self-description]. It supports [workforce details] and [strategic advantages]. Its services are structured to [delivery approach]."
 
-Describe the types of services and/or products the company provides, including key offerings and target markets.
+RULES:
+- Do NOT include the section title.
+- ONE paragraph only, ~80 words.
+- No bullet points.
+${TONE_RULES}`,
 
-${COMPANY_SECTION_FORMAT}`,
-  'mission-vision': `Write a section titled "Mission & Vision".
+  services: `Write ONE paragraph (~60 words) describing the services/products provided.
 
-State the company's mission and vision. If explicit mission or vision statements exist, use them. If not, summarize the company's stated purpose and goals.
+INCLUDE (where available): service categories, specific service types, technology approach, target markets, business model aspects.
 
-${COMPANY_SECTION_FORMAT}`,
-  'system-description':
-    "Extract information about the company's systems, technology stack, and technical infrastructure. Only include technologies and systems that are explicitly mentioned in the provided sources.",
-  'critical-vendors':
-    'Extract any mentions of critical vendors, third-party service providers, or technology partners. Only include vendors that are explicitly named in the provided sources.',
-  'subservice-organizations':
-    'Extract any mentions of subservice organizations, subsidiaries, or related entities. Only include organizations that are explicitly named in the provided sources.',
+EXAMPLE:
+"The company provides [service categories] including [specific services]. It also emphasises [technology/methodology approach]. Its service model includes [business model details]."
+
+RULES:
+- Do NOT include the section title.
+- ONE paragraph only, ~60 words.
+- No bullet points.
+${TONE_RULES}`,
+
+  'mission-vision': `Write ONE paragraph (~60 words) describing mission and vision.
+
+USE THIS STRUCTURE:
+"[Company] positions its mission around [mission focus], with an emphasis on [key values]. It envisions [vision/strategy for the future]."
+
+RULES:
+- Do NOT include the section title.
+- ONE paragraph only, ~60 words.
+- Use "positions its mission around" and "envisions" phrasing.
+- No bullet points.
+${TONE_RULES}`,
+
+  'system-description': `Write ONE paragraph (~80 words) describing the technical infrastructure.
+
+USE THIS STRUCTURE:
+"[Company] operates a [type of architecture] where [what flows] from [sources] through [network components], via [security/routing], to [destinations/segments]. External connectivity includes [integrations/platforms], and hosting includes [cloud/on-prem infrastructure]."
+
+Use parentheticals for specifics: "(including X, Y, Z)".
+
+RULES:
+- Do NOT include the section title.
+- ONE paragraph only, ~80 words.
+- Describe the FLOW of data/operations through infrastructure.
+- No bullet points.
+${TONE_RULES}`,
+
+  'critical-vendors': `List vendors in this EXACT format, one per line:
+
+[Vendor Name] – [Type: SaaS/IaaS/PaaS] – ([Brief description of service])
+
+EXAMPLE:
+Zoom – SaaS – (Video conferencing / collaboration)
+AWS – IaaS / PaaS – (Cloud infrastructure and hosting)
+Microsoft 365 – SaaS – (Office productivity and identity)
+
+RULES:
+- Do NOT include the section title.
+- Each vendor on its own line.
+- Follow the exact format: Name – Type – (Description)
+- Only include vendors explicitly mentioned in sources.
+${TONE_RULES}`,
+
+  'subservice-organizations': `List subservice organizations in this EXACT format:
+
+Subservice organisations: [Name1], [Name2], ...
+
+If only one: "Subservice organisations: [Name]"
+
+EXAMPLE:
+Subservice organisations: AWS
+
+RULES:
+- Do NOT include the section title.
+- Use "Subservice organisations:" prefix.
+- Just list the names, comma-separated if multiple.
+- Only include organizations explicitly mentioned as subservice providers in sources.
+${TONE_RULES}`,
 };
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -148,30 +208,33 @@ async function generateSectionContent(
     model: openai('gpt-4.1'),
     system: `You are an expert at extracting and organizing company information for audit purposes.
 
-CRITICAL RULES - YOU MUST FOLLOW THESE:
-1. ONLY use information that is EXPLICITLY stated in the provided Website Content or Organization Context.
-2. DO NOT make up, infer, assume, or hallucinate ANY information.
-3. DO NOT add generic industry information or common practices that are not explicitly mentioned.
-4. If information for a section is not available in the provided sources, clearly state: "This information was not found in the available sources."
-5. Use direct quotes or close paraphrasing from the source material when possible.
-6. Write in first-person plural (we, our, us) when describing the company.
-7. Be concise and factual. Quality over quantity.
+CRITICAL RULES:
+1. ONLY use information EXPLICITLY stated in the provided sources.
+2. DO NOT make up, infer, or hallucinate ANY information.
+3. DO NOT add generic industry information not explicitly mentioned.
+4. Write in third person and simple present tense.
+5. Be concise and factual.
 
-If you cannot find relevant information in the provided sources, DO NOT fill in the gaps with assumptions. Simply state what information is missing.`,
+ABSOLUTELY FORBIDDEN:
+- NEVER say "information not found", "not available", "no data provided", "could not be determined", or ANY similar phrases.
+- NEVER use hedging words: "may", "might", "likely", "appears", "seems".
+- NEVER use attribution phrases: "according to", "the website states", "documentation notes".
+- If information is not available, simply OMIT that topic and write about what IS available.
+- Always produce substantive content based on what you CAN find.`,
     prompt: `${sectionPrompts[section]}
 
-Organization Name: ${organization.name}
+Company: ${organization.name}
 Website: ${organization.website}
 
-=== WEBSITE CONTENT (Source 1) ===
+=== WEBSITE CONTENT ===
 ${websiteContent}
 
-=== ORGANIZATION CONTEXT (Source 2) ===
-${contextHubText || 'No additional context available.'}
+=== ORGANIZATION CONTEXT ===
+${contextHubText || 'No additional context.'}
 
 === END OF SOURCES ===
 
-Based ONLY on the information found in the sources above, generate the requested content. Do not include any information that is not explicitly present in these sources:`,
+Generate the content based on the sources above. Write substantively about what you find - never mention missing information:`,
   });
 
   return text;
@@ -245,8 +308,10 @@ export const generateAuditorContentTask = schemaTask({
         };
       }
 
-      // Build context from organization data
+      // Build context from organization data (excluding auditor sections to avoid circular reference)
+      const auditorQuestions = new Set(Object.values(SECTION_QUESTIONS));
       const contextHubText = questionsAndAnswers
+        .filter((qa) => !auditorQuestions.has(qa.question))
         .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
         .join('\n\n');
 
@@ -266,12 +331,41 @@ export const generateAuditorContentTask = schemaTask({
             contextHubText,
           );
 
+          const question = SECTION_QUESTIONS[section];
+
+          // Save to Context table (upsert based on question)
+          const existingContext = await db.context.findFirst({
+            where: {
+              organizationId,
+              question,
+            },
+          });
+
+          if (existingContext) {
+            await db.context.update({
+              where: { id: existingContext.id },
+              data: {
+                answer: content,
+                tags: ['auditor'],
+              },
+            });
+          } else {
+            await db.context.create({
+              data: {
+                organizationId,
+                question,
+                answer: content,
+                tags: ['auditor'],
+              },
+            });
+          }
+
           results[section] = content;
           metadata.set(`section_${section}_status`, 'completed');
           metadata.set(`section_${section}_content`, content);
           metadata.increment('completedSections', 1);
 
-          logger.info(`Completed section: ${section}`);
+          logger.info(`Completed section: ${section} and saved to Context`);
         } catch (error) {
           logger.error(`Failed to generate content for section: ${section}`, { error });
           metadata.set(`section_${section}_status`, 'error');
