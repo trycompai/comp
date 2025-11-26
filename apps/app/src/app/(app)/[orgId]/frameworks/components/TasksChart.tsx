@@ -31,7 +31,7 @@ export function TasksChart({ data }: TasksChartProps) {
     if (!data) return [];
     const items = [
       {
-        name: 'Done',
+        name: 'Compliant',
         value: data.done,
         fill: CHART_COLORS.done,
       },
@@ -71,10 +71,10 @@ export function TasksChart({ data }: TasksChartProps) {
   } satisfies ChartConfig;
 
   return (
-    <ChartContainer config={chartConfig} className="mx-auto h-[160px] max-w-[200px]">
+    <ChartContainer config={chartConfig} className="mx-auto h-[120px] max-w-[150px]">
       <PieChart
-        width={200}
-        height={160}
+        width={120}
+        height={120}
         margin={{
           top: 0,
           right: 0,
@@ -87,8 +87,8 @@ export function TasksChart({ data }: TasksChartProps) {
           data={chartData}
           dataKey="value"
           nameKey="name"
-          innerRadius={45}
-          outerRadius={62}
+          innerRadius={35}
+          outerRadius={50}
           paddingAngle={2}
           strokeWidth={2}
           cursor="pointer"
@@ -109,14 +109,14 @@ export function TasksChart({ data }: TasksChartProps) {
                       <tspan
                         x={viewBox.cx}
                         y={viewBox.cy}
-                        className="fill-foreground text-lg font-medium select-none"
+                        className="fill-foreground text-base font-medium select-none"
                       >
                         {data.done}%
                       </tspan>
                       <tspan
                         x={viewBox.cx}
-                        y={(viewBox.cy || 0) + 22}
-                        className="fill-muted-foreground text-[10px] select-none"
+                        y={(viewBox.cy || 0) + 18}
+                        className="fill-muted-foreground text-[9px] select-none"
                       >
                         Tasks
                       </tspan>
@@ -124,7 +124,7 @@ export function TasksChart({ data }: TasksChartProps) {
                     <circle
                       cx={viewBox.cx}
                       cy={viewBox.cy}
-                      r={42}
+                      r={32}
                       fill="none"
                       stroke="hsl(var(--border))"
                       strokeWidth={1}

@@ -6,6 +6,7 @@ import { cache } from 'react';
 import { Overview } from './components/Overview';
 import { getAllFrameworkInstancesWithControls } from './data/getAllFrameworkInstancesWithControls';
 import { getFrameworkWithComplianceScores } from './data/getFrameworkWithComplianceScores';
+import { getPeopleScore } from './lib/getPeople';
 import { getPublishedPoliciesScore } from './lib/getPolicies';
 import { getDoneTasks } from './lib/getTasks';
 
@@ -61,6 +62,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
 
   const publishedPoliciesScore = await getPublishedPoliciesScore(organizationId);
   const doneTasksScore = await getDoneTasks(organizationId);
+  const peopleScore = await getPeopleScore(organizationId);
 
   return (
     <Overview
@@ -70,6 +72,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
       organizationId={organizationId}
       publishedPoliciesScore={publishedPoliciesScore}
       doneTasksScore={doneTasksScore}
+      peopleScore={peopleScore}
       currentMember={member}
     />
   );

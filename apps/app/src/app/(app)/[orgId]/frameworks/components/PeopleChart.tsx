@@ -12,34 +12,32 @@ import {
 } from '@comp/ui/chart';
 import { Info } from 'lucide-react';
 
-interface ComplianceProgressData {
-  score: number;
+interface PeopleChartData {
+  completed: number;
   remaining: number;
 }
 
-interface ComplianceProgressChartProps {
-  data?: ComplianceProgressData | null;
+interface PeopleChartProps {
+  data?: PeopleChartData | null;
 }
 
 const CHART_COLORS = {
-  score: 'hsl(var(--chart-primary))',
+  completed: 'hsl(var(--chart-primary))',
   remaining: 'hsl(var(--muted))',
 };
 
-export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) {
+export function PeopleChart({ data }: PeopleChartProps) {
   const chartData = React.useMemo(() => {
     if (!data) return [];
     const items = [
       {
-        name: 'Completed',
-        value: data.score,
-        text: `${data.score}%`,
-        fill: CHART_COLORS.score,
+        name: 'Compliant',
+        value: data.completed,
+        fill: CHART_COLORS.completed,
       },
       {
         name: 'Remaining',
         value: data.remaining,
-        text: `${data.remaining} / 100%`,
         fill: CHART_COLORS.remaining,
       },
     ];
@@ -51,7 +49,7 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
       <Card className="flex flex-col overflow-hidden border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">Compliance Progress</CardTitle>
+            <CardTitle className="flex items-center gap-2">People</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="flex flex-1 items-center justify-center py-10">
@@ -68,7 +66,7 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
 
   const chartConfig = {
     value: {
-      label: 'Overall Progress',
+      label: 'People Status',
     },
   } satisfies ChartConfig;
 
@@ -113,14 +111,14 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
                         y={viewBox.cy}
                         className="fill-foreground text-base font-medium select-none"
                       >
-                        {data.score}%
+                        {data.completed}%
                       </tspan>
                       <tspan
                         x={viewBox.cx}
                         y={(viewBox.cy || 0) + 18}
                         className="fill-muted-foreground text-[9px] select-none"
                       >
-                        Overall
+                        People
                       </tspan>
                     </text>
                     <circle
