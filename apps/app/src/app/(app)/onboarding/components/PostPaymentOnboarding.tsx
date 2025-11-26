@@ -120,7 +120,7 @@ export function PostPaymentOnboarding({
           </AnimatedWrapper>
           <AnimatedWrapper delay={1000} animationKey={`subtitle-${step?.key}`}>
             <p className="text-md md:text-lg text-muted-foreground flex items-center flex-wrap">
-              <Balancer>Your answers help us tailor your compliance program and reports.</Balancer>
+              <Balancer>Our AI will personalize the platform based on your answers.</Balancer>
             </p>
           </AnimatedWrapper>
         </div>
