@@ -127,7 +127,7 @@ export function MainMenu({
     },
     {
       id: 'questionnaire',
-      path: '/:organizationId/security-questionnaire',
+      path: '/:organizationId/questionnaire',
       name: 'Questionnaire',
       disabled: false,
       icon: FileTextIcon,

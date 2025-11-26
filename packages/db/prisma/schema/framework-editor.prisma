@@ -20,6 +20,8 @@ model FrameworkEditorFramework {
 
   requirements       FrameworkEditorRequirement[]
   frameworkInstances FrameworkInstance[]
+  soaConfigurations  SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
+  soaDocuments       SOADocument[] // SOA documents from organizations
 
   // Dates
   createdAt DateTime @default(now())
