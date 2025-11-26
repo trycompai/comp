@@ -1,12 +1,14 @@
 model User {
-  id            String    @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
-  name          String
-  email         String
-  emailVerified Boolean
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLogin     DateTime?
+  id                             String    @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
+  name                           String
+  email                          String
+  emailVerified                  Boolean
+  image                          String?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+  lastLogin                      DateTime?
+  emailNotificationsUnsubscribed Boolean   @default(false)
+  emailPreferences               Json?     @default("{\"policyNotifications\":true,\"taskReminders\":true,\"weeklyTaskDigest\":true,\"unassignedItemsNotifications\":true}")
 
   accounts           Account[]
   auditLog           AuditLog[]
