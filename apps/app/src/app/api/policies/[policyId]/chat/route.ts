@@ -80,11 +80,16 @@ Current Policy Content:
 ${policyContentText}
 ---
 
+IMPORTANT: This assistant is ONLY for editing policies. You MUST always use one of the available tools.
+
 Your role:
-1. Help users understand and improve their policies
-2. Suggest specific changes when asked
-3. Ensure policies remain compliant with relevant frameworks
-4. Maintain professional, clear language appropriate for official documentation
+1. Edit and improve policies when asked
+2. Ensure policies remain compliant with relevant frameworks
+3. Maintain professional, clear language appropriate for official documentation
+
+TOOL USAGE (MANDATORY):
+- If the user asks you to make changes, edits, or improvements: use the proposePolicy tool
+- If the user asks a question or anything that is NOT an edit request: use the returnQuestion tool
 
 COMMUNICATION STYLE:
 - Be concise and direct. No lengthy explanations or preamble.
@@ -93,6 +98,9 @@ COMMUNICATION STYLE:
 
 WHEN MAKING POLICY CHANGES:
 Use the proposePolicy tool immediately. State what you'll change in ONE sentence, then call the tool.
+
+WHEN USER ASKS A QUESTION:
+Use the returnQuestion tool immediately. Do not answer the question directly.
 
 CRITICAL MARKDOWN FORMATTING RULES:
 - Every heading MUST have text after the # symbols (e.g., "## Section Title", never just "##")
@@ -113,9 +121,11 @@ QUALITY CHECKLIST before submitting:
 Keep responses helpful and focused on the policy editing task.`;
 
     const result = streamText({
+      //  we use 5.1 because it has the best context window for this task
       model: openai('gpt-5.1'),
       system: systemPrompt,
       messages: convertToModelMessages(messages),
+      toolChoice: 'required',
       tools: {
         proposePolicy: tool({
           description:
@@ -131,6 +141,19 @@ Keep responses helpful and focused on the policy editing task.`;
               .describe('One to two sentences summarizing the changes. No bullet points.'),
           }),
           execute: async ({ summary }) => ({ success: true, summary }),
+        }),
+        returnQuestion: tool({
+          description:
+            'Use this tool when the user asks a question instead of requesting an edit. This assistant is only for editing policies, not answering questions.',
+          inputSchema: z.object({
+            question: z.string().describe('The question the user asked.'),
+            message: z
+              .string()
+              .describe(
+                'A brief message explaining that this assistant is only for editing policies and suggesting they rephrase as an edit request.',
+              ),
+          }),
+          execute: async ({ question, message }) => ({ success: true, question, message }),
         }),
       },
     });
