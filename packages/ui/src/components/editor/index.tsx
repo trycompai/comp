@@ -103,29 +103,33 @@ export const Editor = ({
 
   return (
     <div className="bg-background relative w-full p-4">
-      <div className="relative">
+      <div className="relative flex flex-col gap-4">
         {showToolbar && !readOnly && editor && (
-          <div className="mb-4 border-muted rounded-sm bg-background flex items-center gap-1 p-2 border relative">
-            <NodeSelector open={openNode} onOpenChange={setOpenNode} editor={editor} />
-            <Separator orientation="vertical" className="h-6" />
-            <TextButtons editor={editor} />
-            <Separator orientation="vertical" className="h-6" />
-            <LinkSelector open={openLink} onOpenChange={setOpenLink} editor={editor} />
-
-            {(showSaveStatus || showWordCount) && (
-              <div className="absolute top-2 right-2 flex items-center gap-2">
-                {showSaveStatus && (
-                  <div className="bg-accent text-muted-foreground px-3 py-1 text-sm rounded-sm leading-6">
-                    {saveStatus}
-                  </div>
-                )}
-                {showWordCount && charsCount > 0 && (
-                  <div className="bg-accent text-muted-foreground px-3 py-1 text-sm rounded-sm leading-6">
-                    {charsCount} Words
-                  </div>
-                )}
+          <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
+            <div className="flex w-full items-center gap-2 overflow-x-auto overflow-y-hidden">
+              <div className="flex items-center gap-2 shrink-0">
+                <NodeSelector open={openNode} onOpenChange={setOpenNode} editor={editor} />
+                <Separator orientation="vertical" className="h-6 shrink-0" />
+                <TextButtons editor={editor} />
+                <Separator orientation="vertical" className="h-6 shrink-0" />
+                <LinkSelector open={openLink} onOpenChange={setOpenLink} editor={editor} />
               </div>
-            )}
+
+              {(showSaveStatus || showWordCount) && (
+                <div className="ml-auto flex shrink-0 items-center gap-2">
+                  {showSaveStatus && (
+                    <div className="rounded-sm bg-accent px-3 py-1 text-sm leading-6 text-muted-foreground">
+                      {saveStatus}
+                    </div>
+                  )}
+                  {showWordCount && charsCount > 0 && (
+                    <div className="rounded-sm bg-accent px-3 py-1 text-sm leading-6 text-muted-foreground">
+                      {charsCount} Words
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
         <EditorContent
