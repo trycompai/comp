@@ -19,6 +19,8 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
+import { QuestionnaireModule } from './questionnaire/questionnaire.module';
+import { VectorStoreModule } from './vector-store/vector-store.module';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { TaskTemplateModule } from './framework-editor/task-template/task-templa
     HealthModule,
     TrustPortalModule,
     TaskTemplateModule,
+    QuestionnaireModule,
+    VectorStoreModule,
   ],
   controllers: [AppController],
   providers: [AppService],

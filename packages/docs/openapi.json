@@ -7935,6 +7935,459 @@
           "Framework Editor Task Templates"
         ]
       }
+    },
+    "/v1/questionnaire/parse": {
+      "post": {
+        "operationId": "QuestionnaireController_parseQuestionnaire_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParseQuestionnaireDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Parsed questionnaire content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/answer-single": {
+      "post": {
+        "operationId": "QuestionnaireController_answerSingleQuestion_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerSingleQuestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generated single answer result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "questionIndex": {
+                          "type": "number"
+                        },
+                        "question": {
+                          "type": "string"
+                        },
+                        "answer": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "error": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/save-answer": {
+      "post": {
+        "operationId": "QuestionnaireController_saveAnswer_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Save manual or generated answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/delete-answer": {
+      "post": {
+        "operationId": "QuestionnaireController_deleteAnswer_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delete questionnaire answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/export": {
+      "post": {
+        "operationId": "QuestionnaireController_exportById_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportByIdDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export questionnaire by ID to specified format"
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/upload-and-parse": {
+      "post": {
+        "operationId": "QuestionnaireController_uploadAndParse_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadAndParseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload file, parse questions (no answers), save to DB, return questionnaireId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "questionnaireId": {
+                      "type": "string"
+                    },
+                    "totalQuestions": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/upload-and-parse/upload": {
+      "post": {
+        "operationId": "QuestionnaireController_uploadAndParseUpload_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Questionnaire file (PDF, image, XLSX, CSV, TXT)"
+                  },
+                  "organizationId": {
+                    "type": "string",
+                    "description": "Organization ID"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "internal",
+                      "external"
+                    ],
+                    "default": "internal",
+                    "description": "Source of the upload"
+                  }
+                },
+                "required": [
+                  "file",
+                  "organizationId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload file, parse questions (no answers), save to DB, return questionnaireId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "questionnaireId": {
+                      "type": "string"
+                    },
+                    "totalQuestions": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/parse/upload": {
+      "post": {
+        "operationId": "QuestionnaireController_parseQuestionnaireUpload_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Questionnaire file (PDF, image, XLSX, CSV, TXT)"
+                  },
+                  "organizationId": {
+                    "type": "string",
+                    "description": "Organization to use for generating answers"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "pdf",
+                      "csv",
+                      "xlsx"
+                    ],
+                    "default": "xlsx",
+                    "description": "Output format (defaults to XLSX)"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "internal",
+                      "external"
+                    ],
+                    "default": "internal",
+                    "description": "Indicates if the request originated from our UI (internal) or trust portal (external)."
+                  }
+                },
+                "required": [
+                  "file",
+                  "organizationId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/answers/export": {
+      "post": {
+        "operationId": "QuestionnaireController_autoAnswerAndExport_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportQuestionnaireDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/answers/export/upload": {
+      "post": {
+        "operationId": "QuestionnaireController_autoAnswerAndExportUpload_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Questionnaire file (PDF, image, XLSX, CSV, TXT)"
+                  },
+                  "organizationId": {
+                    "type": "string",
+                    "description": "Organization to use for answer generation"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "pdf",
+                      "csv",
+                      "xlsx"
+                    ],
+                    "default": "xlsx",
+                    "description": "Output format (defaults to XLSX)"
+                  }
+                },
+                "required": [
+                  "file",
+                  "organizationId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/auto-answer": {
+      "post": {
+        "operationId": "QuestionnaireController_autoAnswer_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
     }
   },
   "info": {
@@ -7945,6 +8398,10 @@
   },
   "tags": [],
   "servers": [
+    {
+      "url": "http://localhost:3333",
+      "description": "Local API Server"
+    },
     {
       "url": "https://api.trycomp.ai",
       "description": "API Server"
@@ -10335,6 +10792,38 @@
             "example": "it"
           }
         }
+      },
+      "ParseQuestionnaireDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AnswerSingleQuestionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SaveAnswerDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DeleteAnswerDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ExportByIdDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UploadAndParseDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ExportQuestionnaireDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AutoAnswerDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

@@ -5,6 +5,8 @@
   "author": "",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.65",
+    "@trigger.dev/sdk": "4.0.6",
+    "@upstash/vector": "^1.2.2",
     "@aws-sdk/client-s3": "^3.859.0",
     "ai": "^5.0.60",
     "@aws-sdk/s3-request-presigner": "^3.859.0",
@@ -33,6 +35,7 @@
     "resend": "^6.4.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
+    "xlsx": "^0.18.5",
     "zod": "^4.0.14"
   },
   "devDependencies": {

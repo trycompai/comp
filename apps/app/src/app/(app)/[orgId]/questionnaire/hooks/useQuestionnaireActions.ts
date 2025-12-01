@@ -1,12 +1,12 @@
 'use client';
 
-import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useRef, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import type { FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
-import { exportQuestionnaire } from '../actions/export-questionnaire';
-import { saveAnswerAction } from '../actions/save-answer';
 import type { QuestionAnswer } from '../components/types';
+import { api } from '@/lib/api-client';
+import { env } from '@/env.mjs';
+import { jwtManager } from '@/utils/jwt-manager';
 
 interface UseQuestionnaireActionsProps {
   orgId: string;
@@ -34,22 +34,23 @@ interface UseQuestionnaireActionsProps {
   setParseToken: (token: string | null) => void;
   uploadFileAction: {
     execute: (payload: any) => void;
-    status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
+    status: string;
   };
   parseAction: {
     execute: (payload: any) => void;
-    status: 'idle' | 'executing' | 'hasSucceeded' | 'hasErrored' | 'transitioning' | 'hasNavigated';
+    status: string;
   };
   triggerAutoAnswer: (payload: {
-    vendorId: string;
     organizationId: string;
     questionsAndAnswers: QuestionAnswer[];
+    questionnaireId?: string | null;
   }) => void;
   triggerSingleAnswer: (payload: {
     question: string;
     organizationId: string;
     questionIndex: number;
     totalQuestions: number;
+    questionnaireId?: string | null;
   }) => void;
 }
 
@@ -80,40 +81,8 @@ export function useQuestionnaireActions({
   triggerAutoAnswer,
   triggerSingleAnswer,
 }: UseQuestionnaireActionsProps) {
-  const saveAnswer = useAction(saveAnswerAction, {
-    onSuccess: () => {
-      // Answer saved successfully
-    },
-    onError: ({ error }) => {
-      console.error('Error saving answer:', error);
-      // Don't show toast for every save - too noisy
-    },
-  });
-
   const [isPending, startTransition] = useTransition();
-
-  const exportAction = useAction(exportQuestionnaire, {
-    onSuccess: ({ data }: { data: any }) => {
-      const responseData = data?.data || data;
-      const filename = responseData?.filename;
-      const downloadUrl = responseData?.downloadUrl;
-
-      if (downloadUrl && filename) {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        toast.success(`Exported as ${filename}`);
-      }
-    },
-    onError: ({ error }) => {
-      console.error('Export action error:', error);
-      toast.error(error.serverError || 'Failed to export questionnaire');
-    },
-  });
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleFileSelect = useCallback((acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
     if (rejectedFiles.length > 0) {
@@ -240,9 +209,9 @@ export function useQuestionnaireActions({
     // Then trigger the actual task
     // Real metadata updates will refine the statuses as tasks actually start/complete
     triggerAutoAnswer({
-      vendorId: `org_${orgId}`,
       organizationId: orgId,
       questionsAndAnswers: results,
+      questionnaireId,
     });
   };
 
@@ -272,6 +241,7 @@ export function useQuestionnaireActions({
       organizationId: orgId,
       questionIndex: index,
       totalQuestions: results.length,
+      questionnaireId,
     });
   };
 
@@ -294,13 +264,23 @@ export function useQuestionnaireActions({
     setEditingAnswer('');
 
     // Save to database (use startTransition to avoid rendering issues)
-    startTransition(() => {
-      saveAnswer.execute({
-        questionnaireId,
-        questionIndex: index,
-        answer: answerText,
-        status: 'manual',
-      });
+    startTransition(async () => {
+      const response = await api.post(
+        '/v1/questionnaire/save-answer',
+        {
+          questionnaireId,
+          questionIndex: index,
+          answer: answerText,
+          status: 'manual',
+          organizationId: orgId,
+        },
+        orgId,
+      );
+
+      if (response.error) {
+        console.error('Error saving answer:', response.error);
+        toast.error('Failed to save answer');
+      }
     });
 
     toast.success('Answer updated');
@@ -312,15 +292,68 @@ export function useQuestionnaireActions({
   };
 
   const handleExport = async (format: 'xlsx' | 'csv' | 'pdf') => {
-    if (!results || results.length === 0) {
-      toast.error('No data to export');
+    if (!questionnaireId) {
+      toast.error('No questionnaire to export');
       return;
     }
 
-    await exportAction.execute({
-      questionsAndAnswers: results,
-      format,
-    });
+    setIsExporting(true);
+
+    try {
+      // Get auth token for the request
+      const token = await jwtManager.getValidToken();
+
+      // Call the API to get the file as a blob
+      const response = await fetch(
+        `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/questionnaire/export`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'X-Organization-Id': orgId,
+          },
+          body: JSON.stringify({
+            questionnaireId,
+            organizationId: orgId,
+            format,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to export questionnaire');
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `questionnaire.${format}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) {
+          filename = match[1];
+        }
+      }
+
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Exported as ${filename}`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export questionnaire');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleToggleSource = (index: number) => {
@@ -331,6 +364,11 @@ export function useQuestionnaireActions({
       newExpanded.add(index);
     }
     setExpandedSources(newExpanded);
+  };
+
+  // Simulated exportAction for backward compatibility
+  const exportAction = {
+    status: isExporting ? 'executing' : 'idle',
   };
 
   return {

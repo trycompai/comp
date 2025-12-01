@@ -69,6 +69,7 @@ async function bootstrap(): Promise<void> {
     .setTitle('API Documentation')
     .setDescription('The API documentation for this application')
     .setVersion('1.0')
+    .addServer('http://localhost:3333', 'Local API Server')
     .addApiKey(
       {
         type: 'apiKey',

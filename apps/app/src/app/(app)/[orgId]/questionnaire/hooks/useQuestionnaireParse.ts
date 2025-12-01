@@ -1,14 +1,10 @@
 'use client';
 
-import type { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useAction } from 'next-safe-action/hooks';
+import { api } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { createRunReadToken, createTriggerToken } from '../actions/create-trigger-token';
-import { parseQuestionnaireAI } from '../actions/parse-questionnaire-ai';
-import { uploadQuestionnaireFile } from '../actions/upload-questionnaire-file';
+import { createTriggerToken } from '../actions/create-trigger-token';
 import type { QuestionAnswer } from '../components/types';
 
 interface UseQuestionnaireParseProps {
@@ -29,22 +25,20 @@ interface UseQuestionnaireParseProps {
   orgId: string;
 }
 
+type ParseStatus = 'idle' | 'executing';
+
 export function useQuestionnaireParse({
-  parseTaskId,
-  parseToken,
   autoAnswerToken,
   setAutoAnswerToken,
   setIsParseProcessStarted,
-  setParseTaskId,
-  setParseToken,
-  setResults,
-  setExtractedContent,
-  setQuestionStatuses,
-  setHasClickedAutoAnswer,
   setQuestionnaireId,
   orgId,
 }: UseQuestionnaireParseProps) {
   const router = useRouter();
+  const [uploadStatus, setUploadStatus] = useState<ParseStatus>('idle');
+  const [parseStatus, setParseStatus] = useState<ParseStatus>('idle');
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Get trigger token for auto-answer (can trigger and read)
   useEffect(() => {
     async function getAutoAnswerToken() {
@@ -58,145 +52,82 @@ export function useQuestionnaireParse({
     }
   }, [autoAnswerToken, setAutoAnswerToken]);
 
+  const executeUploadAndParse = useCallback(
+    async (input: { fileName: string; fileType: string; fileData: string; organizationId: string }) => {
+      // Cancel any previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
 
-  // Track parse task with realtime hook
-  const { run: parseRun, error: parseError } = useRealtimeRun<typeof parseQuestionnaireTask>(
-    parseTaskId || '',
-    {
-      accessToken: parseToken || undefined,
-      enabled: !!parseTaskId && !!parseToken,
-      onComplete: (run) => {
-        setIsParseProcessStarted(false);
+      setUploadStatus('executing');
+      setParseStatus('executing');
 
-        if (run.output) {
-          const questionsAndAnswers = run.output.questionsAndAnswers as
-            | Array<{
-                question: string;
-                answer: string | null;
-              }>
-            | undefined;
-          const extractedContent = run.output.extractedContent as string | undefined;
-          const questionnaireId = run.output.questionnaireId as string | undefined;
+      try {
+        const response = await api.post<{ questionnaireId: string; totalQuestions: number }>(
+          '/v1/questionnaire/upload-and-parse',
+          {
+            organizationId: input.organizationId,
+            fileName: input.fileName,
+            fileType: input.fileType,
+            fileData: input.fileData,
+            source: 'internal',
+          },
+          input.organizationId,
+        );
 
-          if (questionsAndAnswers && Array.isArray(questionsAndAnswers)) {
-            if (questionnaireId) {
-              // Navigate immediately to avoid showing results on new_questionnaire page
-              // The detail page will load the data from the database
-              setQuestionnaireId(questionnaireId);
-              toast.success(
-                `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
-              );
-              router.push(`/${orgId}/questionnaire/${questionnaireId}`);
-            } else {
-              // Fallback: if no questionnaireId, set results locally (shouldn't happen)
-              const initializedResults = questionsAndAnswers.map((qa) => ({
-                ...qa,
-                failedToGenerate: false,
-              }));
-              setResults(initializedResults);
-              setExtractedContent(extractedContent || null);
-              setQuestionStatuses(new Map());
-              setHasClickedAutoAnswer(false);
-              toast.success(
-                `Successfully parsed ${questionsAndAnswers.length} question-answer pairs`,
-              );
-            }
-          } else {
-            toast.error('Parsed data is missing questions');
-          }
+        if (response.error || !response.data) {
+          setIsParseProcessStarted(false);
+          toast.error(response.error || 'Failed to parse questionnaire');
+          return;
         }
-      },
+
+        const { questionnaireId, totalQuestions } = response.data;
+        setQuestionnaireId(questionnaireId);
+        toast.success(`Successfully parsed ${totalQuestions} questions`);
+        router.push(`/${orgId}/questionnaire/${questionnaireId}`);
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return; // Request was cancelled
+        }
+        setIsParseProcessStarted(false);
+        console.error('Parse error:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to parse questionnaire');
+      } finally {
+        setUploadStatus('idle');
+        setParseStatus('idle');
+      }
     },
+    [orgId, router, setIsParseProcessStarted, setQuestionnaireId],
   );
 
-  // Handle parse errors
+  // Cleanup on unmount
   useEffect(() => {
-    if (parseError) {
-      toast.error(`Failed to parse questionnaire: ${parseError.message}`);
-    }
-  }, [parseError]);
-
-  // Handle parse task completion/failure
-  useEffect(() => {
-    if (parseRun?.status === 'FAILED' || parseRun?.status === 'CANCELED') {
-      setIsParseProcessStarted(false);
-      const errorMessage =
-        parseRun.error instanceof Error
-          ? parseRun.error.message
-          : typeof parseRun.error === 'string'
-            ? parseRun.error
-            : 'Task failed or was canceled';
-      toast.error(`Failed to parse questionnaire: ${errorMessage}`);
-    }
-  }, [parseRun?.status, parseRun?.error, setIsParseProcessStarted]);
-
-  const parseAction = useAction(parseQuestionnaireAI, {
-    onSuccess: async ({ data }: { data: any }) => {
-      const responseData = data?.data || data;
-      const taskId = responseData?.taskId as string | undefined;
-
-      if (!taskId) {
-        setIsParseProcessStarted(false);
-        toast.error('Failed to start parse task');
-        return;
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
+    };
+  }, []);
 
-      // ✅ Do NOT reset isParseProcessStarted here - task is started, need to wait for completion
-      // Clear old token before setting new task ID to prevent using wrong token with new run
-      setParseToken(null);
-      setParseTaskId(taskId);
+  // Simulated action objects to maintain compatibility with existing code
+  const uploadFileAction = {
+    status: uploadStatus,
+    execute: (input: { fileName: string; fileType: string; fileData: string; organizationId: string }) => {
+      executeUploadAndParse(input);
+    },
+  };
 
-      const tokenResult = await createRunReadToken(taskId);
-      if (tokenResult.success && tokenResult.token) {
-        setParseToken(tokenResult.token);
-        // ✅ Token created successfully - useRealtimeRun will connect and track the task
-        // isParseProcessStarted remains true until task completion (in onComplete)
-      } else {
-        // ✅ Only if token creation failed - reset state
-        setIsParseProcessStarted(false);
-        toast.error('Failed to create read token for parse task. The task may still be running - please check Trigger.dev dashboard.');
-      }
+  const parseAction = {
+    status: parseStatus,
+    execute: () => {
+      // No-op - parsing is now handled in uploadFileAction
     },
-    onError: ({ error }) => {
-      // ✅ Only on task start error - reset state
-      setIsParseProcessStarted(false);
-      console.error('Parse action error:', error);
-      toast.error(error.serverError || 'Failed to start parse questionnaire');
-    },
-  });
-
-  const uploadFileAction = useAction(uploadQuestionnaireFile, {
-    onSuccess: ({ data }: { data: any }) => {
-      const responseData = data?.data || data;
-      const s3Key = responseData?.s3Key;
-      const fileName = responseData?.fileName;
-      const fileType = responseData?.fileType;
-
-      if (s3Key && fileType) {
-        // ✅ isParseProcessStarted remains true - task continues
-        parseAction.execute({
-          inputType: 's3',
-          s3Key,
-          fileName,
-          fileType,
-        });
-      } else {
-        // ✅ Only if S3 key is missing - reset state
-        setIsParseProcessStarted(false);
-        toast.error('Failed to get S3 key after upload');
-      }
-    },
-    onError: ({ error }) => {
-      // ✅ On upload error - reset state
-      setIsParseProcessStarted(false);
-      console.error('Upload action error:', error);
-      toast.error(error.serverError || 'Failed to upload file');
-    },
-  });
+  };
 
   return {
-    parseRun,
-    parseError,
+    parseRun: null,
+    parseError: null,
     parseAction,
     uploadFileAction,
   };

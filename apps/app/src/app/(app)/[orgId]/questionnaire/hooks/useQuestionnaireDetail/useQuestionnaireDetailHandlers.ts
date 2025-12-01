@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, type MutableRefObject } from 'react';
 import { toast } from 'sonner';
+import { api } from '@/lib/api-client';
 import type { QuestionnaireResult } from './types';
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -11,7 +12,7 @@ interface UseQuestionnaireDetailHandlersProps {
   results: QuestionnaireResult[];
   answeringQuestionIndex: number | null;
   isAutoAnswerProcessStarted: boolean;
-  isAutoAnswerProcessStartedRef: React.MutableRefObject<boolean>;
+  isAutoAnswerProcessStartedRef: MutableRefObject<boolean>;
   setHasClickedAutoAnswer: (clicked: boolean) => void;
   setIsAutoAnswerProcessStarted: (started: boolean) => void;
   setAnsweringQuestionIndex: (index: number | null) => void;
@@ -22,35 +23,23 @@ interface UseQuestionnaireDetailHandlersProps {
   editingAnswer: string;
   setEditingIndex: (index: number | null) => void;
   setEditingAnswer: (answer: string) => void;
-  saveIndexRef: React.MutableRefObject<number | null>;
-  saveAnswerRef: React.MutableRefObject<string>;
-  updateAnswerAction: {
-    execute: (payload: {
-      questionnaireId: string;
-      questionAnswerId: string;
-      answer: string;
-    }) => void;
-  };
-  deleteAnswerAction: {
-    execute: (
-      payload: { questionnaireId: string; questionAnswerId: string }
-    ) => Promise<any> | void;
-  };
+  setSavingIndex: (index: number | null) => void;
   router: { refresh: () => void };
   triggerAutoAnswer: (payload: {
-    vendorId: string;
     organizationId: string;
     questionsAndAnswers: any[];
+    questionnaireId?: string;
   }) => void;
   triggerSingleAnswer: (payload: {
     question: string;
     organizationId: string;
     questionIndex: number;
     totalQuestions: number;
+    questionnaireId?: string;
   }) => void;
   answerQueue: number[];
   setAnswerQueue: Dispatch<SetStateAction<number[]>>;
-  answerQueueRef: React.MutableRefObject<number[]>;
+  answerQueueRef: MutableRefObject<number[]>;
 }
 
 export function useQuestionnaireDetailHandlers({
@@ -63,15 +52,12 @@ export function useQuestionnaireDetailHandlers({
   setHasClickedAutoAnswer,
   setIsAutoAnswerProcessStarted,
   setAnsweringQuestionIndex,
-    setQuestionStatuses,
-    setResults,
-    editingAnswer,
-    setEditingIndex,
-    setEditingAnswer,
-    saveIndexRef,
-    saveAnswerRef,
-  updateAnswerAction,
-  deleteAnswerAction,
+  setQuestionStatuses,
+  setResults,
+  editingAnswer,
+  setEditingIndex,
+  setEditingAnswer,
+  setSavingIndex,
   router,
   triggerAutoAnswer,
   triggerSingleAnswer,
@@ -119,8 +105,8 @@ export function useQuestionnaireDetailHandlers({
 
     try {
       triggerAutoAnswer({
-        vendorId: `org_${organizationId}`,
         organizationId,
+        questionnaireId,
         questionsAndAnswers: questionsToAnswer.map((q) => ({
           question: q.question,
           answer: q.answer,
@@ -182,9 +168,10 @@ export function useQuestionnaireDetailHandlers({
         organizationId,
         questionIndex: nextIndex,
         totalQuestions: results.length,
+        questionnaireId,
       });
     });
-  }, [results, organizationId, setAnswerQueue, setQuestionStatuses, triggerSingleAnswer]);
+  }, [results, organizationId, questionnaireId, setAnswerQueue, setQuestionStatuses, triggerSingleAnswer]);
 
   const handleAnswerSingleQuestion = (index: number) => {
     // Don't allow adding to queue if batch operation is running
@@ -225,6 +212,7 @@ export function useQuestionnaireDetailHandlers({
       organizationId,
       questionIndex: index,
       totalQuestions: results.length,
+      questionnaireId,
     });
   };
 
@@ -237,19 +225,28 @@ export function useQuestionnaireDetailHandlers({
 
   const handleDeleteAnswer = async (questionAnswerId: string, questionIndex: number) => {
     try {
-      await Promise.resolve(
-        deleteAnswerAction.execute({
+      const response = await api.post(
+        '/v1/questionnaire/delete-answer',
+        {
           questionnaireId,
           questionAnswerId,
-        })
+          organizationId,
+        },
+        organizationId,
       );
+
+      if (response.error) {
+        console.error('Failed to delete answer:', response.error);
+        toast.error(response.error || 'Failed to delete answer');
+        return;
+      }
 
       setResults((prev) =>
         prev.map((r) =>
           r.originalIndex === questionIndex
-            ? { ...r, answer: '', status: 'untouched' as const }
-            : r
-        )
+            ? { ...r, answer: '', status: 'untouched' as const, sources: [] }
+            : r,
+        ),
       );
 
       toast.success('Answer deleted. You can now generate a new answer.');
@@ -260,7 +257,7 @@ export function useQuestionnaireDetailHandlers({
     }
   };
 
-  const handleSaveAnswer = (index: number) => {
+  const handleSaveAnswer = async (index: number) => {
     const result = results[index];
 
     if (!result) {
@@ -283,14 +280,53 @@ export function useQuestionnaireDetailHandlers({
       return;
     }
 
-    saveIndexRef.current = index;
-    saveAnswerRef.current = editingAnswer;
+    const trimmedAnswer = editingAnswer.trim();
+    setSavingIndex(index);
 
-    updateAnswerAction.execute({
-      questionnaireId,
-      questionAnswerId: result.questionAnswerId,
-      answer: editingAnswer.trim(),
-    });
+    try {
+      const response = await api.post(
+        '/v1/questionnaire/save-answer',
+        {
+          questionnaireId,
+          questionAnswerId: result.questionAnswerId,
+          organizationId,
+          answer: trimmedAnswer,
+          status: 'manual',
+          questionIndex: result.originalIndex,
+        },
+        organizationId,
+      );
+
+      if (response.error) {
+        console.error('Failed to save answer:', response.error);
+        toast.error(response.error || 'Failed to save answer');
+        return;
+      }
+
+      setResults((prev) =>
+        prev.map((r, i) => {
+          if (i === index) {
+            return {
+              ...r,
+              answer: trimmedAnswer || null,
+              status: trimmedAnswer ? ('manual' as const) : ('untouched' as const),
+              failedToGenerate: false,
+              sources: r.sources || [],
+            };
+          }
+          return r;
+        }),
+      );
+
+      setEditingIndex(null);
+      setEditingAnswer('');
+      toast.success('Answer saved');
+    } catch (error) {
+      console.error('Failed to save answer:', error);
+      toast.error('Failed to save answer');
+    } finally {
+      setSavingIndex(null);
+    }
   };
 
   return {
