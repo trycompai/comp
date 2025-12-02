@@ -3,6 +3,7 @@ description:
 globs: *.tsx
 alwaysApply: false
 ---
+
 When writing React code follow these standards:
 
 - Always export a named component
@@ -11,3 +12,5 @@ When writing React code follow these standards:
 - Always round corners to rounded-xs
 - Always try to keep components small and modular
 - Always use sonner instead of toast.
+
+- AVOID USING USEFFECT FOR EVERYTHING. ONLY USE IT WHEN YOU NEED TO.

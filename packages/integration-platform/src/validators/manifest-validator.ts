@@ -25,7 +25,7 @@ function validateManifest(manifest: IntegrationManifest): ValidationResult {
   if (!manifest.name) errors.push('Missing required field: name');
   if (!manifest.description) errors.push('Missing required field: description');
   if (!manifest.category) errors.push('Missing required field: category');
-  if (!manifest.logo) errors.push('Missing required field: logo');
+  if (!manifest.logoUrl) errors.push('Missing required field: logoUrl');
   if (!manifest.auth) errors.push('Missing required field: auth');
 
   // ID format

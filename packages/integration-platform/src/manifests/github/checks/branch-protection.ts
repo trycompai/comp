@@ -6,7 +6,7 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
 import type { GitHubBranchProtection, GitHubBranchRule, GitHubOrg, GitHubRepo, GitHubRuleset } from '../types';
-import { targetReposVariable } from '../variables';
+import { protectedBranchVariable, targetReposVariable } from '../variables';
 
 export const branchProtectionCheck: IntegrationCheck = {
   id: 'branch_protection',
@@ -15,18 +15,7 @@ export const branchProtectionCheck: IntegrationCheck = {
   taskMapping: TASK_TEMPLATES.codeChanges,
   defaultSeverity: 'high',
 
-  variables: [
-    targetReposVariable,
-    {
-      id: 'protected_branch',
-      label: 'Branch to check',
-      type: 'text',
-      required: false,
-      default: '',
-      placeholder: 'main',
-      helpText: 'Leave empty to check the default branch of each repository',
-    },
-  ],
+  variables: [targetReposVariable, protectedBranchVariable],
 
   run: async (ctx) => {
     const targetRepos = ctx.variables.target_repos as string[] | undefined;
@@ -106,7 +95,7 @@ export const branchProtectionCheck: IntegrationCheck = {
 
         if (rules.length > 0 && (hasPullRequestRule || hasNonFastForward)) {
           isProtected = true;
-          const protectionTypes = [];
+          const protectionTypes: string[] = [];
           if (hasPullRequestRule) protectionTypes.push('pull request reviews');
           if (hasNonFastForward) protectionTypes.push('non-fast-forward');
 

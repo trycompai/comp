@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '../../../prisma/client';
+import { db } from '@db';
 import type { IntegrationProvider } from '@prisma/client';
 
 export interface CreateProviderDto {

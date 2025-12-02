@@ -8300,6 +8300,37 @@
         ]
       }
     },
+    "/v1/integrations/connections/{id}/ensure-valid-credentials": {
+      "post": {
+        "operationId": "ConnectionsController_ensureValidCredentials_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
     "/v1/admin/integrations": {
       "get": {
         "operationId": "AdminIntegrationsController_listIntegrations_v1",
@@ -8701,6 +8732,37 @@
         },
         "tags": [
           "TaskIntegrations"
+        ]
+      }
+    },
+    "/v1/integrations/webhooks/{providerSlug}/{connectionId}": {
+      "post": {
+        "operationId": "WebhookController_handleWebhook_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Webhook"
         ]
       }
     }

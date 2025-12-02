@@ -99,7 +99,6 @@ export class AdminIntegrationsController {
       capabilities: manifest.capabilities,
       isActive: manifest.isActive,
       docsUrl: manifest.docsUrl,
-      sync: manifest.sync,
       // Credential status (don't expose actual credentials)
       hasCredentials: !!credential,
       credentialIsActive: credential?.isActive ?? false,

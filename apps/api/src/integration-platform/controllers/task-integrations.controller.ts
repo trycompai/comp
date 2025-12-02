@@ -14,21 +14,25 @@ import {
   getManifest,
   runAllChecks,
   type CheckRunResult,
+  type OAuthConfig,
 } from '@comp/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
+import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { db } from '@db';
 import type { Prisma } from '@prisma/client';
 
 interface TaskIntegrationCheck {
   integrationId: string;
   integrationName: string;
+  integrationLogoUrl: string;
   checkId: string;
   checkName: string;
   checkDescription: string;
   isConnected: boolean;
+  needsConfiguration: boolean;
   connectionId?: string;
   connectionStatus?: string;
   lastRunAt?: Date;
@@ -51,6 +55,7 @@ export class TaskIntegrationsController {
     private readonly providerRepository: ProviderRepository,
     private readonly checkRunRepository: CheckRunRepository,
     private readonly credentialVaultService: CredentialVaultService,
+    private readonly oauthCredentialsService: OAuthCredentialsService,
   ) {}
 
   /**
@@ -91,13 +96,36 @@ export class TaskIntegrationsController {
             (c) => c.provider?.slug === manifest.id,
           );
 
+          // Check if required variables are configured
+          let needsConfiguration = false;
+          if (connection && connection.status === 'active' && check.variables) {
+            const connectionVars =
+              (connection.variables as Record<string, unknown>) || {};
+            for (const variable of check.variables) {
+              if (variable.required) {
+                const value = connectionVars[variable.id];
+                if (
+                  value === undefined ||
+                  value === null ||
+                  value === '' ||
+                  (Array.isArray(value) && value.length === 0)
+                ) {
+                  needsConfiguration = true;
+                  break;
+                }
+              }
+            }
+          }
+
           checks.push({
             integrationId: manifest.id,
             integrationName: manifest.name,
+            integrationLogoUrl: manifest.logoUrl,
             checkId: check.id,
             checkName: check.name,
             checkDescription: check.description,
             isConnected: !!connection && connection.status === 'active',
+            needsConfiguration,
             connectionId: connection?.id,
             connectionStatus: connection?.status,
           });
@@ -115,7 +143,10 @@ export class TaskIntegrationsController {
   async getChecksForTask(
     @Param('taskId') taskId: string,
     @Query('organizationId') organizationId: string,
-  ): Promise<{ checks: TaskIntegrationCheck[]; task: { id: string; title: string; templateId: string | null } }> {
+  ): Promise<{
+    checks: TaskIntegrationCheck[];
+    task: { id: string; title: string; templateId: string | null };
+  }> {
     if (!organizationId) {
       throw new HttpException(
         'organizationId is required',
@@ -165,6 +196,7 @@ export class TaskIntegrationsController {
     result?: CheckRunResult;
     error?: string;
     checkRunId?: string;
+    taskStatus?: string | null;
   }> {
     if (!organizationId) {
       throw new HttpException(
@@ -229,7 +261,42 @@ export class TaskIntegrationsController {
     // Find the check definition to get the name
     const checkDef = manifest.checks?.find((c) => c.id === checkId);
     if (!checkDef) {
-      throw new HttpException(`Check ${checkId} not found`, HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        `Check ${checkId} not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // Build token refresh callback for OAuth integrations that support it
+    let onTokenRefresh: (() => Promise<string | null>) | undefined;
+    if (manifest.auth.type === 'oauth2') {
+      const oauthConfig = manifest.auth.config as OAuthConfig;
+
+      // Only set up refresh callback if provider supports refresh tokens
+      const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
+
+      if (supportsRefresh) {
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            provider.slug,
+            organizationId,
+          );
+
+        if (oauthCredentials) {
+          onTokenRefresh = async () => {
+            return this.credentialVaultService.refreshOAuthTokens(
+              connectionId,
+              {
+                tokenUrl: oauthConfig.tokenUrl,
+                refreshUrl: oauthConfig.refreshUrl,
+                clientId: oauthCredentials.clientId,
+                clientSecret: oauthCredentials.clientSecret,
+                clientAuthMethod: oauthConfig.clientAuthMethod,
+              },
+            );
+          };
+        }
+      }
     }
 
     // Create check run record
@@ -250,6 +317,7 @@ export class TaskIntegrationsController {
         connectionId,
         organizationId,
         checkId, // Only run this specific check
+        onTokenRefresh,
         logger: {
           info: (msg, data) => this.logger.log(msg, data),
           warn: (msg, data) => this.logger.warn(msg, data),
@@ -291,7 +359,12 @@ export class TaskIntegrationsController {
           resourceId: f.resourceId,
           title: f.title,
           description: f.description,
-          severity: f.severity as 'info' | 'low' | 'medium' | 'high' | 'critical',
+          severity: f.severity as
+            | 'info'
+            | 'low'
+            | 'medium'
+            | 'high'
+            | 'critical',
           remediation: f.remediation,
           evidence: f.evidence as Prisma.InputJsonValue,
         })),
@@ -305,22 +378,66 @@ export class TaskIntegrationsController {
       await this.checkRunRepository.complete(checkRun.id, {
         status: checkResult.status === 'error' ? 'failed' : checkResult.status,
         durationMs: checkResult.durationMs,
-        totalChecked: checkResult.result.summary?.totalChecked || 
-          checkResult.result.passingResults.length + checkResult.result.findings.length,
+        totalChecked:
+          checkResult.result.summary?.totalChecked ||
+          checkResult.result.passingResults.length +
+            checkResult.result.findings.length,
         passedCount: checkResult.result.passingResults.length,
         failedCount: checkResult.result.findings.length,
         errorMessage: checkResult.error,
-        logs: JSON.parse(JSON.stringify(checkResult.result.logs)) as Prisma.InputJsonValue,
+        logs: JSON.parse(
+          JSON.stringify(checkResult.result.logs),
+        ) as Prisma.InputJsonValue,
       });
 
       this.logger.log(
         `Check ${checkId} for task ${taskId}: ${checkResult.status} - ${checkResult.result.findings.length} findings, ${checkResult.result.passingResults.length} passing`,
       );
 
+      // Update task status based on check results
+      const hasFindings = checkResult.result.findings.length > 0;
+      const hasPassing = checkResult.result.passingResults.length > 0;
+      const newStatus = hasFindings ? 'failed' : hasPassing ? 'done' : null;
+
+      if (newStatus) {
+        // Only update review date if transitioning to done from a different status
+        const isTransitioningToDone =
+          newStatus === 'done' && task.status !== 'done';
+
+        // Calculate next review date based on frequency
+        let reviewDate: Date | undefined;
+        if (isTransitioningToDone && task.frequency) {
+          reviewDate = new Date();
+          switch (task.frequency) {
+            case 'monthly':
+              reviewDate.setMonth(reviewDate.getMonth() + 1);
+              break;
+            case 'quarterly':
+              reviewDate.setMonth(reviewDate.getMonth() + 3);
+              break;
+            case 'yearly':
+              reviewDate.setFullYear(reviewDate.getFullYear() + 1);
+              break;
+          }
+        }
+
+        await db.task.update({
+          where: { id: taskId },
+          data: {
+            status: newStatus,
+            ...(reviewDate ? { reviewDate } : {}),
+          },
+        });
+        this.logger.log(
+          `Updated task ${taskId} status to ${newStatus}${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
+        );
+      }
+
       return {
         success: true,
         result: checkResult,
         checkRunId: checkRun.id,
+        taskStatus: newStatus,
       };
     } catch (error) {
       // Mark run as failed
@@ -398,4 +515,3 @@ export class TaskIntegrationsController {
     };
   }
 }
-

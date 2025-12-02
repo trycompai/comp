@@ -210,21 +210,19 @@ export class VariablesController {
     const baseUrl = manifest.baseUrl || '';
     const defaultHeaders = manifest.defaultHeaders || {};
 
+    const buildHeaders = () => ({
+      ...defaultHeaders,
+      Authorization: `Bearer ${credentials.access_token}`,
+    });
+
     // Create minimal context for fetching options
     const fetchContext = {
       accessToken: credentials.access_token,
 
       fetch: async <T = unknown>(path: string): Promise<T> => {
         const url = new URL(path, baseUrl);
-        const response = await fetch(url.toString(), {
-          headers: {
-            ...defaultHeaders,
-            Authorization: `Bearer ${credentials.access_token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        const response = await fetch(url.toString(), { headers: buildHeaders() });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       },
 
@@ -238,16 +236,8 @@ export class VariablesController {
           url.searchParams.set('page', String(page));
           url.searchParams.set('per_page', String(perPage));
 
-          const response = await fetch(url.toString(), {
-            headers: {
-              ...defaultHeaders,
-              Authorization: `Bearer ${credentials.access_token}`,
-            },
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
+          const response = await fetch(url.toString(), { headers: buildHeaders() });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const items: T[] = await response.json();
           if (!Array.isArray(items) || items.length === 0) break;
@@ -258,6 +248,32 @@ export class VariablesController {
         }
 
         return allItems;
+      },
+
+      graphql: async <T = unknown>(
+        query: string,
+        variables?: Record<string, unknown>,
+      ): Promise<T> => {
+        const endpoint = `${baseUrl}/graphql`;
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { ...buildHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, variables }),
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = (await response.json()) as {
+          data?: T;
+          errors?: Array<{ message: string }>;
+        };
+
+        if (result.errors?.length) {
+          throw new Error(`GraphQL: ${result.errors.map((e) => e.message).join(', ')}`);
+        }
+        if (!result.data) throw new Error('GraphQL response missing data');
+
+        return result.data;
       },
     };
 

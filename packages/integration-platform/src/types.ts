@@ -1,4 +1,3 @@
-import type { ComponentType } from 'react';
 import { z } from 'zod';
 import type { TaskTemplateId } from './task-mappings';
 
@@ -26,6 +25,17 @@ export const OAuthConfigSchema = z.object({
   setupInstructions: z.string().optional(),
   /** URL to the provider's OAuth app creation page */
   createAppUrl: z.string().url().optional(),
+  /**
+   * Whether this provider supports refresh tokens.
+   * If false, tokens are assumed to be long-lived (like GitHub).
+   * Default: true
+   */
+  supportsRefreshToken: z.boolean().default(true),
+  /**
+   * Separate URL for token refresh (if different from tokenUrl).
+   * Most providers use the same tokenUrl for both.
+   */
+  refreshUrl: z.string().url().optional(),
 });
 
 export type OAuthConfig = z.infer<typeof OAuthConfigSchema>;
@@ -266,10 +276,67 @@ export interface CheckContext {
     },
   ) => Promise<T>;
 
+  /**
+   * Make an authenticated PUT request
+   */
+  put: <T = unknown>(
+    path: string,
+    body?: unknown,
+    options?: {
+      baseUrl?: string;
+      headers?: Record<string, string>;
+    },
+  ) => Promise<T>;
+
+  /**
+   * Make an authenticated PATCH request
+   */
+  patch: <T = unknown>(
+    path: string,
+    body?: unknown,
+    options?: {
+      baseUrl?: string;
+      headers?: Record<string, string>;
+    },
+  ) => Promise<T>;
+
+  /**
+   * Make an authenticated DELETE request
+   */
+  delete: <T = unknown>(
+    path: string,
+    options?: {
+      baseUrl?: string;
+      headers?: Record<string, string>;
+    },
+  ) => Promise<T>;
+
+  /**
+   * Make an authenticated GraphQL request
+   * @example
+   * const result = await ctx.graphql<{ user: User }>(`
+   *   query GetUser($login: String!) {
+   *     user(login: $login) {
+   *       id
+   *       name
+   *     }
+   *   }
+   * `, { login: 'octocat' });
+   */
+  graphql: <T = unknown>(
+    query: string,
+    variables?: Record<string, unknown>,
+    options?: {
+      /** Override the GraphQL endpoint (defaults to baseUrl + '/graphql') */
+      endpoint?: string;
+      headers?: Record<string, string>;
+    },
+  ) => Promise<T>;
+
   // ==================== Pagination Helpers ====================
 
   /**
-   * Fetch all pages of a paginated endpoint
+   * Fetch all pages of a paginated endpoint (page-number based)
    * @example
    * const allRepos = await ctx.fetchAllPages<Repo>('/user/repos', { perPage: 100 });
    */
@@ -281,6 +348,60 @@ export interface CheckContext {
       maxPages?: number;
       pageParam?: string;
       perPageParam?: string;
+    },
+  ) => Promise<T[]>;
+
+  /**
+   * Fetch all pages using cursor-based pagination
+   * @example
+   * // Slack-style pagination
+   * const messages = await ctx.fetchWithCursor<Message>('/conversations.history', {
+   *   cursorParam: 'cursor',
+   *   cursorPath: 'response_metadata.next_cursor',
+   *   dataPath: 'messages',
+   * });
+   *
+   * // AWS-style pagination
+   * const instances = await ctx.fetchWithCursor<Instance>('/ec2/instances', {
+   *   cursorParam: 'NextToken',
+   *   cursorPath: 'NextToken',
+   *   dataPath: 'Instances',
+   * });
+   */
+  fetchWithCursor: <T = unknown>(
+    path: string,
+    options?: {
+      baseUrl?: string;
+      /** Query param name for the cursor (e.g., 'cursor', 'NextToken', 'page_token') */
+      cursorParam?: string;
+      /** JSON path to extract next cursor from response (e.g., 'next_cursor', 'response_metadata.next_cursor') */
+      cursorPath?: string;
+      /** JSON path to extract data array from response (e.g., 'data', 'items', 'messages') */
+      dataPath?: string;
+      /** Additional query params to include */
+      params?: Record<string, string>;
+      /** Maximum pages to fetch */
+      maxPages?: number;
+    },
+  ) => Promise<T[]>;
+
+  /**
+   * Fetch all pages using Link header pagination (RFC 5988)
+   * Used by GitHub, GitLab, and other APIs that follow web linking standards.
+   * @example
+   * const allRepos = await ctx.fetchWithLinkHeader<Repo>('/user/repos');
+   * const allIssues = await ctx.fetchWithLinkHeader<Issue>('/repos/owner/repo/issues', {
+   *   params: { state: 'open' }
+   * });
+   */
+  fetchWithLinkHeader: <T = unknown>(
+    path: string,
+    options?: {
+      baseUrl?: string;
+      /** Additional query params to include */
+      params?: Record<string, string>;
+      /** Maximum pages to fetch (default: 100) */
+      maxPages?: number;
     },
   ) => Promise<T[]>;
 
@@ -357,6 +478,9 @@ export interface VariableFetchContext {
 
   /** Fetch all pages of a paginated endpoint */
   fetchAllPages: <T = unknown>(path: string) => Promise<T[]>;
+
+  /** Make a GraphQL request */
+  graphql: <T = unknown>(query: string, variables?: Record<string, unknown>) => Promise<T>;
 }
 
 /**
@@ -549,8 +673,8 @@ export interface IntegrationManifest {
   /** Category for grouping */
   category: IntegrationCategory;
 
-  /** Logo component */
-  logo: ComponentType<{ className?: string }>;
+  /** Logo URL (use logo.dev, e.g., 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ') */
+  logoUrl: string;
 
   /** URL to documentation */
   docsUrl?: string;
