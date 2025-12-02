@@ -2,7 +2,15 @@
 
 import { useTaskAttachmentActions, useTaskAttachments } from '@/hooks/use-tasks-api';
 import { Button } from '@comp/ui/button';
-import { FileIcon, FileText, ImageIcon, Loader2, Upload, X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
+import { Camera, FileIcon, FileText, ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -37,6 +45,8 @@ export function TaskBody({
   const [isUploading, setIsUploading] = useState(false);
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<FileList | File[] | null>(null);
 
   // Auto-resize function for textarea
   const autoResizeTextarea = useCallback(() => {
@@ -161,14 +171,39 @@ export function TaskBody({
     [uploadAttachment, refreshAttachments],
   );
 
+  // Intercept uploads to show reminder dialog first
+  const initiateUpload = useCallback((files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setPendingFiles(files);
+    setShowReminderDialog(true);
+  }, []);
+
+  // Handle reminder dialog confirmation
+  const handleReminderConfirm = useCallback(() => {
+    setShowReminderDialog(false);
+    if (pendingFiles) {
+      processFiles(pendingFiles);
+      setPendingFiles(null);
+    }
+  }, [pendingFiles, processFiles]);
+
+  // Handle reminder dialog close (cancel upload)
+  const handleReminderClose = useCallback(() => {
+    setShowReminderDialog(false);
+    setPendingFiles(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
   // Handle multiple file uploads using API
   const handleFileSelectMultiple = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = event.target.files;
       if (!files || files.length === 0) return;
-      await processFiles(files);
+      initiateUpload(files);
     },
-    [processFiles],
+    [initiateUpload],
   );
 
   const triggerFileInput = () => {
@@ -199,7 +234,7 @@ export function TaskBody({
   }, []);
 
   const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
+    (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(false);
@@ -208,10 +243,10 @@ export function TaskBody({
 
       const files = e.dataTransfer.files;
       if (files && files.length > 0) {
-        await processFiles(files);
+        initiateUpload(Array.from(files));
       }
     },
-    [isUploading, busyAttachmentId, processFiles],
+    [isUploading, busyAttachmentId, initiateUpload],
   );
 
   const handleDownloadClick = async (attachmentId: string) => {
@@ -395,6 +430,32 @@ export function TaskBody({
           </div>
         )}
       </div>
+
+      {/* Screenshot Reminder Dialog */}
+      <Dialog open={showReminderDialog} onOpenChange={(open) => !open && handleReminderClose()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Camera className="h-5 w-5 text-primary" />
+              </div>
+              <DialogTitle>Screenshot Requirements</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              Screenshots must include your organisation name visible in the corner.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This helps our team process exceptions efficiently.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleReminderClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleReminderConfirm}>Continue Upload</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
