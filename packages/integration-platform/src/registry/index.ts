@@ -8,6 +8,7 @@ import type {
 
 // Import all manifests (each in its own folder)
 import { manifest as githubManifest } from '../manifests/github';
+import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { manifest as linearManifest } from '../manifests/linear';
 
 // ============================================================================
@@ -92,6 +93,7 @@ class IntegrationRegistryImpl implements IntegrationRegistry {
 // All registered manifests
 const allManifests: IntegrationManifest[] = [
   githubManifest,
+  googleWorkspaceManifest,
   linearManifest,
 ];
 
