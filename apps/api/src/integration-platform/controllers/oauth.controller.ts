@@ -406,15 +406,20 @@ export class OAuthController {
     params: Record<string, string>,
     organizationId?: string,
   ): string {
-    // Build default URL with org ID if available
-    let defaultUrl = `${process.env.APP_URL || 'http://localhost:3000'}`;
-    if (organizationId) {
-      defaultUrl += `/${organizationId}/integrations/platform-test`;
+    // Use provided URL or build default with org ID
+    let targetUrl: string;
+    if (baseUrl) {
+      targetUrl = baseUrl;
     } else {
-      defaultUrl += '/integrations';
+      targetUrl = `${process.env.APP_URL || 'http://localhost:3000'}`;
+      if (organizationId) {
+        targetUrl += `/${organizationId}/integrations`;
+      } else {
+        targetUrl += '/integrations';
+      }
     }
 
-    const url = new URL(baseUrl || defaultUrl);
+    const url = new URL(targetUrl);
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
     }

@@ -6,34 +6,23 @@ import type {
   IntegrationManifest,
 } from '../types';
 
-// ============================================================================
-// Check Context Factory
-// ============================================================================
-
 export interface CheckContextOptions {
-  /** The integration manifest */
   manifest: IntegrationManifest;
-  /** OAuth access token */
   accessToken: string;
-  /** All credentials as key-value */
   credentials: Record<string, string>;
-  /** User-configured variables */
   variables?: CheckVariableValues;
-  /** Connection ID */
   connectionId: string;
-  /** Organization ID */
   organizationId: string;
-  /** Logger implementation */
   logger?: {
     info: (message: string, data?: Record<string, unknown>) => void;
     warn: (message: string, data?: Record<string, unknown>) => void;
     error: (message: string, data?: Record<string, unknown>) => void;
   };
-  /** State storage implementation */
   stateStorage?: {
     get: <T>(key: string) => Promise<T | null>;
     set: <T>(key: string, value: T) => Promise<void>;
   };
+  onTokenRefresh?: () => Promise<string | null>;
 }
 
 export interface CheckResultLog {
@@ -44,13 +33,9 @@ export interface CheckResultLog {
 }
 
 export interface CheckResult {
-  /** Issues found during the check */
   findings: Array<CheckFindingResult & { status: 'open' }>;
-  /** Resources that passed with evidence */
   passingResults: Array<CheckPassingResult & { collectedAt: Date }>;
-  /** Execution log for audit trail */
   logs: CheckResultLog[];
-  /** Summary stats */
   summary: {
     totalChecked: number;
     passed: number;
@@ -58,235 +43,378 @@ export interface CheckResult {
   };
 }
 
-/**
- * Creates a CheckContext for running integration checks.
- * Returns the context and a function to get the results.
- */
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
+const MAX_PAGES_DEFAULT = 100;
+const PER_PAGE_DEFAULT = 100;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+  return path.split('.').reduce((current: unknown, key) => {
+    if (current && typeof current === 'object' && key in current) {
+      return (current as Record<string, unknown>)[key];
+    }
+    return undefined;
+  }, obj);
+}
+
+function parseLinkHeader(header: string | null): { next?: string } {
+  if (!header) return {};
+  const links: { next?: string } = {};
+  for (const part of header.split(',')) {
+    const match = part.match(/<([^>]+)>;\s*rel="([^"]+)"/);
+    if (match && match[2] === 'next') {
+      links.next = match[1];
+    }
+  }
+  return links;
+}
+
 export function createCheckContext(options: CheckContextOptions): {
   ctx: CheckContext;
   getResults: () => CheckResult;
 } {
   const {
     manifest,
-    accessToken,
+    accessToken: initialAccessToken,
     credentials,
     variables = {},
     connectionId,
     organizationId,
     logger,
     stateStorage,
+    onTokenRefresh,
   } = options;
 
+  let currentAccessToken = initialAccessToken;
   const findings: CheckResult['findings'] = [];
   const passingResults: CheckResult['passingResults'] = [];
   const logs: CheckResult['logs'] = [];
   let totalChecked = 0;
-
   const baseUrl = manifest.baseUrl || '';
   const defaultHeaders = manifest.defaultHeaders || {};
 
-  // Create a logger that always captures logs for the result,
-  // and optionally delegates to an external logger
   const log = {
     info: (message: string, data?: Record<string, unknown>) => {
       logs.push({ level: 'info', message, data, timestamp: new Date() });
-      if (logger) {
-        logger.info(message, data);
-      } else {
-        console.log(`[INFO] ${message}`, data || '');
-      }
+      logger?.info(message, data);
     },
     warn: (message: string, data?: Record<string, unknown>) => {
       logs.push({ level: 'warn', message, data, timestamp: new Date() });
-      if (logger) {
-        logger.warn(message, data);
-      } else {
-        console.warn(`[WARN] ${message}`, data || '');
-      }
+      logger?.warn(message, data);
     },
     error: (message: string, data?: Record<string, unknown>) => {
       logs.push({ level: 'error', message, data, timestamp: new Date() });
-      if (logger) {
-        logger.error(message, data);
-      } else {
-        console.error(`[ERROR] ${message}`, data || '');
-      }
+      logger?.error(message, data);
     },
   };
 
-  // Default state storage (in-memory, for testing)
   const inMemoryState = new Map<string, unknown>();
-  const defaultStateStorage = {
-    get: async <T>(key: string): Promise<T | null> => {
-      return (inMemoryState.get(key) as T) || null;
-    },
+  const state = stateStorage ?? {
+    get: async <T>(key: string): Promise<T | null> => (inMemoryState.get(key) as T) ?? null,
     set: async <T>(key: string, value: T): Promise<void> => {
       inMemoryState.set(key, value);
     },
   };
 
-  const state = stateStorage || defaultStateStorage;
+  const buildHeaders = (extra?: Record<string, string>): Record<string, string> => ({
+    ...defaultHeaders,
+    Authorization: `Bearer ${currentAccessToken}`,
+    ...extra,
+  });
 
-  // Build headers for requests
-  const buildHeaders = (extraHeaders?: Record<string, string>): Record<string, string> => {
-    return {
-      ...defaultHeaders,
-      Authorization: `Bearer ${accessToken}`,
-      ...extraHeaders,
-    };
-  };
+  async function withRetry(requestFn: () => Promise<Response>, attempt = 0): Promise<Response> {
+    const response = await requestFn();
 
-  // Fetch helper
-  const fetchHelper = async <T = unknown>(
-    path: string,
-    options?: {
-      baseUrl?: string;
-      headers?: Record<string, string>;
-      params?: Record<string, string>;
-    },
-  ): Promise<T> => {
-    const url = new URL(path, options?.baseUrl || baseUrl);
+    if (response.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = response.headers.get('Retry-After');
+      let delayMs: number;
+      if (retryAfter) {
+        const seconds = parseInt(retryAfter, 10);
+        delayMs = isNaN(seconds)
+          ? Math.max(0, new Date(retryAfter).getTime() - Date.now())
+          : seconds * 1000;
+      } else {
+        delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+      }
+      log.warn(`Rate limited, retry in ${delayMs}ms`, { attempt: attempt + 1 });
+      await sleep(delayMs);
+      return withRetry(requestFn, attempt + 1);
+    }
 
-    if (options?.params) {
-      for (const [key, value] of Object.entries(options.params)) {
-        url.searchParams.set(key, value);
+    if (response.status >= 500 && attempt < MAX_RETRIES) {
+      const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+      log.warn(`Server error ${response.status}, retry in ${delayMs}ms`, { attempt: attempt + 1 });
+      await sleep(delayMs);
+      return withRetry(requestFn, attempt + 1);
+    }
+
+    return response;
+  }
+
+  async function executeRequest<T>(requestFn: () => Promise<Response>): Promise<T> {
+    let response = await withRetry(requestFn);
+
+    if (response.status === 401 && onTokenRefresh) {
+      log.info('Token expired, refreshing...');
+      const newToken = await onTokenRefresh();
+      if (newToken) {
+        currentAccessToken = newToken;
+        response = await withRetry(requestFn);
+      } else {
+        log.error('Token refresh failed');
       }
     }
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: buildHeaders(options?.headers),
-    });
-
     if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-      (error as Error & { status: number }).status = response.status;
-      throw error;
+      const err = new Error(`HTTP ${response.status}: ${response.statusText}`);
+      (err as Error & { status: number }).status = response.status;
+      throw err;
     }
 
     return response.json();
-  };
+  }
 
-  // Post helper
-  const postHelper = async <T = unknown>(
+  function buildUrl(path: string, base?: string, params?: Record<string, string>): URL {
+    const url = new URL(path, base || baseUrl);
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        url.searchParams.set(k, v);
+      }
+    }
+    return url;
+  }
+
+  async function httpGet<T>(
+    path: string,
+    opts?: { baseUrl?: string; headers?: Record<string, string>; params?: Record<string, string> },
+  ): Promise<T> {
+    const url = buildUrl(path, opts?.baseUrl, opts?.params);
+    return executeRequest<T>(() =>
+      fetch(url.toString(), { method: 'GET', headers: buildHeaders(opts?.headers) }),
+    );
+  }
+
+  async function httpPost<T>(
     path: string,
     body?: unknown,
-    options?: {
-      baseUrl?: string;
-      headers?: Record<string, string>;
-    },
-  ): Promise<T> => {
-    const url = new URL(path, options?.baseUrl || baseUrl);
+    opts?: { baseUrl?: string; headers?: Record<string, string> },
+  ): Promise<T> {
+    const url = buildUrl(path, opts?.baseUrl);
+    return executeRequest<T>(() =>
+      fetch(url.toString(), {
+        method: 'POST',
+        headers: { ...buildHeaders(opts?.headers), 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    );
+  }
 
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        ...buildHeaders(options?.headers),
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-      (error as Error & { status: number }).status = response.status;
-      throw error;
-    }
-
-    return response.json();
-  };
-
-  // Pagination helper
-  const fetchAllPages = async <T = unknown>(
+  async function httpPut<T>(
     path: string,
-    options?: {
+    body?: unknown,
+    opts?: { baseUrl?: string; headers?: Record<string, string> },
+  ): Promise<T> {
+    const url = buildUrl(path, opts?.baseUrl);
+    return executeRequest<T>(() =>
+      fetch(url.toString(), {
+        method: 'PUT',
+        headers: { ...buildHeaders(opts?.headers), 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    );
+  }
+
+  async function httpPatch<T>(
+    path: string,
+    body?: unknown,
+    opts?: { baseUrl?: string; headers?: Record<string, string> },
+  ): Promise<T> {
+    const url = buildUrl(path, opts?.baseUrl);
+    return executeRequest<T>(() =>
+      fetch(url.toString(), {
+        method: 'PATCH',
+        headers: { ...buildHeaders(opts?.headers), 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    );
+  }
+
+  async function httpDelete<T>(
+    path: string,
+    opts?: { baseUrl?: string; headers?: Record<string, string> },
+  ): Promise<T> {
+    const url = buildUrl(path, opts?.baseUrl);
+    return executeRequest<T>(() =>
+      fetch(url.toString(), { method: 'DELETE', headers: buildHeaders(opts?.headers) }),
+    );
+  }
+
+  async function graphql<T>(
+    query: string,
+    variables?: Record<string, unknown>,
+    opts?: { endpoint?: string; headers?: Record<string, string> },
+  ): Promise<T> {
+    const endpoint = opts?.endpoint || `${baseUrl}/graphql`;
+    const response = await executeRequest<{ data?: T; errors?: Array<{ message: string }> }>(() =>
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { ...buildHeaders(opts?.headers), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+      }),
+    );
+
+    if (response.errors?.length) {
+      throw new Error(`GraphQL: ${response.errors.map((e) => e.message).join(', ')}`);
+    }
+    if (!response.data) {
+      throw new Error('GraphQL response missing data');
+    }
+    return response.data;
+  }
+
+  async function fetchAllPages<T>(
+    path: string,
+    opts?: {
       baseUrl?: string;
       perPage?: number;
       maxPages?: number;
       pageParam?: string;
       perPageParam?: string;
     },
-  ): Promise<T[]> => {
-    const perPage = options?.perPage || 100;
-    const maxPages = options?.maxPages || 100;
-    const pageParam = options?.pageParam || 'page';
-    const perPageParam = options?.perPageParam || 'per_page';
+  ): Promise<T[]> {
+    const perPage = opts?.perPage ?? PER_PAGE_DEFAULT;
+    const maxPages = opts?.maxPages ?? MAX_PAGES_DEFAULT;
+    const pageParam = opts?.pageParam ?? 'page';
+    const perPageParam = opts?.perPageParam ?? 'per_page';
+    const results: T[] = [];
 
-    const allItems: T[] = [];
-    let page = 1;
-
-    while (page <= maxPages) {
-      const url = new URL(path, options?.baseUrl || baseUrl);
+    for (let page = 1; page <= maxPages; page++) {
+      const url = buildUrl(path, opts?.baseUrl);
       url.searchParams.set(pageParam, String(page));
       url.searchParams.set(perPageParam, String(perPage));
 
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: buildHeaders(),
-      });
+      const items = await executeRequest<T[]>(() =>
+        fetch(url.toString(), { method: 'GET', headers: buildHeaders() }),
+      );
+
+      if (!Array.isArray(items) || items.length === 0) break;
+      results.push(...items);
+      if (items.length < perPage) break;
+    }
+
+    return results;
+  }
+
+  async function fetchWithCursor<T>(
+    path: string,
+    opts?: {
+      baseUrl?: string;
+      cursorParam?: string;
+      cursorPath?: string;
+      dataPath?: string;
+      params?: Record<string, string>;
+      maxPages?: number;
+    },
+  ): Promise<T[]> {
+    const cursorParam = opts?.cursorParam ?? 'cursor';
+    const cursorPath = opts?.cursorPath ?? 'next_cursor';
+    const dataPath = opts?.dataPath ?? 'data';
+    const maxPages = opts?.maxPages ?? MAX_PAGES_DEFAULT;
+    const results: T[] = [];
+    let cursor: string | null = null;
+
+    for (let page = 0; page < maxPages; page++) {
+      const url = buildUrl(path, opts?.baseUrl, opts?.params);
+      if (cursor) url.searchParams.set(cursorParam, cursor);
+
+      const response = await executeRequest<Record<string, unknown>>(() =>
+        fetch(url.toString(), { method: 'GET', headers: buildHeaders() }),
+      );
+
+      const data = getNestedValue(response, dataPath);
+      if (!Array.isArray(data) || data.length === 0) break;
+
+      results.push(...(data as T[]));
+
+      const nextCursor = getNestedValue(response, cursorPath);
+      if (typeof nextCursor !== 'string' || !nextCursor) break;
+      cursor = nextCursor;
+    }
+
+    return results;
+  }
+
+  async function fetchWithLinkHeader<T>(
+    path: string,
+    opts?: { baseUrl?: string; params?: Record<string, string>; maxPages?: number },
+  ): Promise<T[]> {
+    const maxPages = opts?.maxPages ?? MAX_PAGES_DEFAULT;
+    const results: T[] = [];
+    let nextUrl: string | null = buildUrl(path, opts?.baseUrl, opts?.params).toString();
+
+    for (let page = 0; page < maxPages && nextUrl; page++) {
+      let response = await withRetry(() =>
+        fetch(nextUrl!, { method: 'GET', headers: buildHeaders() }),
+      );
+
+      if (response.status === 401 && onTokenRefresh) {
+        const newToken = await onTokenRefresh();
+        if (newToken) {
+          currentAccessToken = newToken;
+          response = await withRetry(() =>
+            fetch(nextUrl!, { method: 'GET', headers: buildHeaders() }),
+          );
+        }
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const items: T[] = await response.json();
+      if (!Array.isArray(items) || items.length === 0) break;
 
-      if (!Array.isArray(items) || items.length === 0) {
-        break;
-      }
-
-      allItems.push(...items);
-
-      if (items.length < perPage) {
-        break;
-      }
-
-      page++;
+      results.push(...items);
+      nextUrl = parseLinkHeader(response.headers.get('Link')).next ?? null;
     }
 
-    return allItems;
-  };
+    return results;
+  }
 
   const ctx: CheckContext = {
-    accessToken,
+    get accessToken() {
+      return currentAccessToken;
+    },
     credentials,
     variables,
     connectionId,
     organizationId,
+    log: log.info,
+    warn: log.warn,
+    error: log.error,
 
-    // Logging
-    log: (message, data) => log.info(message, data),
-    warn: (message, data) => log.warn(message, data),
-    error: (message, data) => log.error(message, data),
-
-    // New pass/fail methods (preferred)
-    pass: (result: CheckPassingResult) => {
+    pass(result: CheckPassingResult) {
       totalChecked++;
-      passingResults.push({
-        ...result,
-        collectedAt: new Date(),
-      });
-      log.info(`✓ PASS: ${result.title}`, {
+      passingResults.push({ ...result, collectedAt: new Date() });
+      log.info(`PASS: ${result.title}`, {
         resourceType: result.resourceType,
         resourceId: result.resourceId,
       });
     },
 
-    fail: (finding: CheckFindingResult) => {
+    fail(finding: CheckFindingResult) {
       totalChecked++;
-      findings.push({
-        ...finding,
-        status: 'open',
-      });
-      log.info(`✗ FAIL: ${finding.title}`, {
+      findings.push({ ...finding, status: 'open' });
+      log.info(`FAIL: ${finding.title}`, {
         resourceType: finding.resourceType,
         resourceId: finding.resourceId,
         severity: finding.severity,
       });
     },
 
-    // Legacy aliases (deprecated)
-    addFinding: (finding) => {
+    addFinding(finding) {
       totalChecked++;
       findings.push({
         title: finding.title,
@@ -294,13 +422,13 @@ export function createCheckContext(options: CheckContextOptions): {
         resourceType: finding.resourceType,
         resourceId: finding.resourceId,
         severity: finding.severity,
-        remediation: finding.remediation || 'No remediation provided',
+        remediation: finding.remediation || '',
         evidence: finding.rawPayload,
         status: 'open',
       });
     },
 
-    addPassingResult: (result) => {
+    addPassingResult(result) {
       totalChecked++;
       passingResults.push({
         title: result.title,
@@ -312,26 +440,26 @@ export function createCheckContext(options: CheckContextOptions): {
       });
     },
 
-    // HTTP helpers
-    fetch: fetchHelper,
-    post: postHelper,
+    fetch: httpGet,
+    post: httpPost,
+    put: httpPut,
+    patch: httpPatch,
+    delete: httpDelete,
+    graphql,
     fetchAllPages,
-
-    // State
+    fetchWithCursor,
+    fetchWithLinkHeader,
     getState: state.get,
     setState: state.set,
   };
 
-  const getResults = (): CheckResult => ({
-    findings,
-    passingResults,
-    logs,
-    summary: {
-      totalChecked,
-      passed: passingResults.length,
-      failed: findings.length,
-    },
-  });
-
-  return { ctx, getResults };
+  return {
+    ctx,
+    getResults: () => ({
+      findings,
+      passingResults,
+      logs,
+      summary: { totalChecked, passed: passingResults.length, failed: findings.length },
+    }),
+  };
 }

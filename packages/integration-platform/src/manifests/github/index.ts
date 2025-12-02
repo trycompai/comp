@@ -7,7 +7,6 @@
 
 import type { IntegrationManifest } from '../../types';
 import { branchProtectionCheck, dependabotCheck, secretScanningCheck } from './checks';
-import { GitHubLogo } from './logo';
 
 export const manifest: IntegrationManifest = {
   id: 'github',
@@ -15,7 +14,7 @@ export const manifest: IntegrationManifest = {
   description:
     'Connect GitHub to monitor repository security, branch protection, and organization settings.',
   category: 'Development',
-  logo: GitHubLogo,
+  logoUrl: 'https://img.logo.dev/github.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   docsUrl: 'https://docs.trycomp.ai/integrations/github',
 
   // API configuration for ctx.fetch helper
@@ -33,6 +32,8 @@ export const manifest: IntegrationManifest = {
       scopes: ['read:org', 'repo', 'read:user'],
       pkce: false,
       clientAuthMethod: 'body',
+      // GitHub tokens don't expire - they're valid until revoked
+      supportsRefreshToken: false,
       authorizationParams: {
         allow_signup: 'false',
       },

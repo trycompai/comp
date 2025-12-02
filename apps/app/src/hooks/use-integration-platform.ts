@@ -10,20 +10,17 @@ import useSWR, { mutate as globalMutate } from 'swr';
 // ============================================================================
 
 export interface IntegrationProvider {
-  id: string;
+  id: string; // This is the slug (e.g., 'github')
+  slug: string; // Alias for id
   name: string;
   description: string;
   category: string;
+  logoUrl: string; // Full logo URL (e.g., from logo.dev)
   authType: 'oauth2' | 'api_key' | 'basic' | 'jwt' | 'custom';
   capabilities: string[];
   isActive: boolean;
   docsUrl?: string;
   credentialFields?: CredentialField[];
-  sync?: {
-    defaultCadence?: string;
-    modes: string[];
-    resources: string[];
-  };
 }
 
 export interface CredentialField {
@@ -100,7 +97,8 @@ export function useIntegrationProviders(activeOnly = false) {
       if (response.error) {
         throw new Error(response.error);
       }
-      return response.data || [];
+      // Add slug alias for id
+      return (response.data || []).map((p) => ({ ...p, slug: p.id }));
     },
     {
       revalidateOnFocus: false,

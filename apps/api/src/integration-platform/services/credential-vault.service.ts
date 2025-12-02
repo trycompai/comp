@@ -1,13 +1,20 @@
-import { Injectable } from '@nestjs/common';
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scryptSync,
+} from 'crypto';
 import { CredentialRepository } from '../repositories/credential.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 const SALT_LENGTH = 16;
-const TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
+
+// Refresh tokens 5 minutes before expiry to avoid race conditions
+const REFRESH_BUFFER_SECONDS = 300;
 
 export interface EncryptedData {
   encrypted: string;
@@ -25,8 +32,19 @@ export interface OAuthTokens {
   scope?: string;
 }
 
+export interface TokenRefreshConfig {
+  tokenUrl: string;
+  clientId: string;
+  clientSecret: string;
+  clientAuthMethod?: 'body' | 'header';
+  /** If provider has a separate refresh URL (rare) */
+  refreshUrl?: string;
+}
+
 @Injectable()
 export class CredentialVaultService {
+  private readonly logger = new Logger(CredentialVaultService.name);
+
   constructor(
     private readonly credentialRepository: CredentialRepository,
     private readonly connectionRepository: ConnectionRepository,
@@ -55,7 +73,10 @@ export class CredentialVaultService {
     const key = this.deriveKey(secretKey, salt);
     const cipher = createCipheriv(ALGORITHM, key, iv);
 
-    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+    const encrypted = Buffer.concat([
+      cipher.update(text, 'utf8'),
+      cipher.final(),
+    ]);
     const tag = cipher.getAuthTag();
 
     return {
@@ -77,7 +98,10 @@ export class CredentialVaultService {
     const decipher = createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(tag);
 
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    const decrypted = Buffer.concat([
+      decipher.update(encrypted),
+      decipher.final(),
+    ]);
     return decrypted.toString('utf8');
   }
 
@@ -164,11 +188,17 @@ export class CredentialVaultService {
   /**
    * Get decrypted credentials for a connection
    */
-  async getDecryptedCredentials(connectionId: string): Promise<Record<string, string> | null> {
-    const latestVersion = await this.credentialRepository.findLatestByConnection(connectionId);
+  async getDecryptedCredentials(
+    connectionId: string,
+  ): Promise<Record<string, string> | null> {
+    const latestVersion =
+      await this.credentialRepository.findLatestByConnection(connectionId);
     if (!latestVersion) return null;
 
-    const encryptedPayload = latestVersion.encryptedPayload as Record<string, unknown>;
+    const encryptedPayload = latestVersion.encryptedPayload as Record<
+      string,
+      unknown
+    >;
     const decrypted: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(encryptedPayload)) {
@@ -186,7 +216,8 @@ export class CredentialVaultService {
    * Check if credentials are expired
    */
   async areCredentialsExpired(connectionId: string): Promise<boolean> {
-    const latestVersion = await this.credentialRepository.findLatestByConnection(connectionId);
+    const latestVersion =
+      await this.credentialRepository.findLatestByConnection(connectionId);
     if (!latestVersion) return true;
     if (!latestVersion.expiresAt) return false;
     return latestVersion.expiresAt < new Date();
@@ -199,7 +230,8 @@ export class CredentialVaultService {
     connectionId: string,
     newCredentials: Record<string, string>,
   ): Promise<void> {
-    const latestVersion = await this.credentialRepository.findLatestByConnection(connectionId);
+    const latestVersion =
+      await this.credentialRepository.findLatestByConnection(connectionId);
     if (latestVersion) {
       await this.credentialRepository.markRotated(latestVersion.id);
     }
@@ -217,5 +249,150 @@ export class CredentialVaultService {
       'salt' in value
     );
   }
-}
 
+  /**
+   * Check if credentials need to be refreshed (expired or expiring soon)
+   */
+  async needsRefresh(connectionId: string): Promise<boolean> {
+    const latestVersion =
+      await this.credentialRepository.findLatestByConnection(connectionId);
+    if (!latestVersion) return false;
+    if (!latestVersion.expiresAt) return false; // No expiry = no refresh needed (e.g., GitHub)
+
+    const now = new Date();
+    const bufferTime = new Date(now.getTime() + REFRESH_BUFFER_SECONDS * 1000);
+
+    return latestVersion.expiresAt <= bufferTime;
+  }
+
+  /**
+   * Get the refresh token for a connection (if available)
+   */
+  async getRefreshToken(connectionId: string): Promise<string | null> {
+    const credentials = await this.getDecryptedCredentials(connectionId);
+    return credentials?.refresh_token || null;
+  }
+
+  /**
+   * Refresh OAuth tokens using the refresh token
+   * Returns the new access token, or null if refresh failed
+   */
+  async refreshOAuthTokens(
+    connectionId: string,
+    config: TokenRefreshConfig,
+  ): Promise<string | null> {
+    const refreshToken = await this.getRefreshToken(connectionId);
+    if (!refreshToken) {
+      this.logger.warn(
+        `No refresh token available for connection ${connectionId}`,
+      );
+      return null;
+    }
+
+    try {
+      this.logger.log(`Refreshing OAuth tokens for connection ${connectionId}`);
+
+      // Build the token request
+      const body = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      });
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+      };
+
+      // Add client credentials based on auth method
+      if (config.clientAuthMethod === 'header') {
+        const credentials = Buffer.from(
+          `${config.clientId}:${config.clientSecret}`,
+        ).toString('base64');
+        headers['Authorization'] = `Basic ${credentials}`;
+      } else {
+        // Default: send in body
+        body.set('client_id', config.clientId);
+        body.set('client_secret', config.clientSecret);
+      }
+
+      // Use refreshUrl if provided, otherwise fall back to tokenUrl
+      const refreshEndpoint = config.refreshUrl || config.tokenUrl;
+
+      const response = await fetch(refreshEndpoint, {
+        method: 'POST',
+        headers,
+        body: body.toString(),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Token refresh failed for connection ${connectionId}: ${response.status} ${errorText}`,
+        );
+
+        // If refresh token is invalid/expired, mark connection as error
+        if (response.status === 400 || response.status === 401) {
+          await this.connectionRepository.update(connectionId, {
+            status: 'error',
+            errorMessage:
+              'OAuth token expired. Please reconnect the integration.',
+          });
+        }
+
+        return null;
+      }
+
+      const tokens: OAuthTokens = await response.json();
+
+      // Store the new tokens
+      // Note: Some providers return a new refresh token, some don't
+      const tokensToStore: OAuthTokens = {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token || refreshToken, // Keep old refresh token if not provided
+        token_type: tokens.token_type,
+        expires_in: tokens.expires_in,
+        scope: tokens.scope,
+      };
+
+      await this.storeOAuthTokens(connectionId, tokensToStore);
+
+      this.logger.log(
+        `Successfully refreshed OAuth tokens for connection ${connectionId}`,
+      );
+      return tokens.access_token;
+    } catch (error) {
+      this.logger.error(
+        `Error refreshing tokens for connection ${connectionId}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Get a valid access token, refreshing if necessary.
+   * This is the main method to use when making API calls.
+   */
+  async getValidAccessToken(
+    connectionId: string,
+    refreshConfig?: TokenRefreshConfig,
+  ): Promise<string | null> {
+    // Check if we need to refresh
+    const needsRefresh = await this.needsRefresh(connectionId);
+
+    if (needsRefresh && refreshConfig) {
+      const newToken = await this.refreshOAuthTokens(
+        connectionId,
+        refreshConfig,
+      );
+      if (newToken) {
+        return newToken;
+      }
+      // If refresh failed, try to use existing token (might still work briefly)
+    }
+
+    // Get current credentials
+    const credentials = await this.getDecryptedCredentials(connectionId);
+    return credentials?.access_token || null;
+  }
+}

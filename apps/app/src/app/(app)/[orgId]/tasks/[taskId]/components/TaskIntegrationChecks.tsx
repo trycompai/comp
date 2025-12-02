@@ -1,34 +1,42 @@
 'use client';
 
+import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
+import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { api } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
-import { Separator } from '@comp/ui/separator';
-import { formatDistanceToNow } from 'date-fns';
+import { addDays, formatDistanceToNow, isBefore, setHours, setMinutes } from 'date-fns';
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
+  Bot,
   CheckCircle2,
   ChevronDown,
   ExternalLink,
   Loader2,
   Play,
   PlugZap,
+  Settings2,
   TrendingUp,
   XCircle,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 interface TaskIntegrationCheck {
   integrationId: string;
   integrationName: string;
+  integrationLogoUrl: string;
   checkId: string;
   checkName: string;
   checkDescription: string;
   isConnected: boolean;
+  needsConfiguration: boolean;
   connectionId?: string;
   connectionStatus?: string;
 }
@@ -72,10 +80,12 @@ interface StoredCheckRun {
 
 interface TaskIntegrationChecksProps {
   taskId: string;
+  onTaskUpdated?: () => void;
 }
 
-export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
+export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegrationChecksProps) {
   const params = useParams();
+  const searchParams = useSearchParams();
   const orgId = params.orgId as string;
 
   const [checks, setChecks] = useState<TaskIntegrationCheck[]>([]);
@@ -84,6 +94,53 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
   const [runningCheck, setRunningCheck] = useState<string | null>(null);
   const [expandedCheck, setExpandedCheck] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // OAuth success handling - open config dialog after successful connection
+  const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
+  const [configureConnection, setConfigureConnection] = useState<{
+    connectionId: string;
+    integrationId: string;
+    integrationName: string;
+    integrationLogoUrl: string;
+  } | null>(null);
+  const hasHandledOAuthRef = useRef(false);
+
+  // Handle OAuth callback success - find the newly connected integration and open config dialog
+  useEffect(() => {
+    if (hasHandledOAuthRef.current || loading) return;
+
+    const success = searchParams.get('success');
+    const providerSlug = searchParams.get('provider');
+
+    if (success === 'true' && providerSlug && checks.length > 0) {
+      hasHandledOAuthRef.current = true;
+
+      // Find the connected check for this provider
+      const connectedCheck = checks.find(
+        (c) => c.integrationId === providerSlug && c.isConnected && c.connectionId,
+      );
+
+      if (connectedCheck) {
+        // Open the configure dialog
+        setConfigureConnection({
+          connectionId: connectedCheck.connectionId!,
+          integrationId: connectedCheck.integrationId,
+          integrationName: connectedCheck.integrationName,
+          integrationLogoUrl: connectedCheck.integrationLogoUrl,
+        });
+        setConfigureDialogOpen(true);
+        toast.success(
+          `${connectedCheck.integrationName} connected! Configure it to start automated checks.`,
+        );
+      }
+
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.searchParams.delete('success');
+      url.searchParams.delete('provider');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, checks, loading]);
 
   // Fetch checks and historical runs for this task
   useEffect(() => {
@@ -131,6 +188,20 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
     }
   }, [taskId, orgId]);
 
+  const refreshChecks = useCallback(async () => {
+    try {
+      const checksResponse = await api.get<{
+        checks: TaskIntegrationCheck[];
+        task: { id: string; title: string; templateId: string | null };
+      }>(`/v1/integrations/tasks/${taskId}/checks?organizationId=${orgId}`);
+      if (checksResponse.data?.checks) {
+        setChecks(checksResponse.data.checks);
+      }
+    } catch (err) {
+      console.error('Failed to refresh checks:', err);
+    }
+  }, [taskId, orgId]);
+
   const handleRunCheck = useCallback(
     async (connectionId: string, checkId: string) => {
       setRunningCheck(checkId);
@@ -141,6 +212,7 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
           success: boolean;
           error?: string;
           checkRunId?: string;
+          taskStatus?: string | null;
         }>(`/v1/integrations/tasks/${taskId}/run-check?organizationId=${orgId}`, {
           connectionId,
           checkId,
@@ -149,6 +221,10 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
         const data = response.data;
         if (data?.success) {
           await refreshRuns();
+          // Refresh task data if status was updated
+          if (data.taskStatus && onTaskUpdated) {
+            onTaskUpdated();
+          }
         } else if (data?.error) {
           setError(data.error);
         }
@@ -159,7 +235,7 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
         setRunningCheck(null);
       }
     },
-    [taskId, orgId, refreshRuns],
+    [taskId, orgId, refreshRuns, onTaskUpdated],
   );
 
   if (loading) {
@@ -199,39 +275,74 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
   const successfulRuns = storedRuns.filter(
     (r) => r.status === 'success' && r.failedCount === 0,
   ).length;
-  const failedRuns = storedRuns.filter(
-    (r) => r.status === 'failed' || r.failedCount > 0,
-  ).length;
+  const failedRuns = storedRuns.filter((r) => r.status === 'failed' || r.failedCount > 0).length;
   const successRate = totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
 
+  // Calculate next scheduled run (daily at 6 AM UTC)
+  const getNextScheduledRun = () => {
+    const now = new Date();
+    let nextRun = setMinutes(setHours(new Date(), 6), 0); // 6:00 AM UTC today
+
+    // If we're past 6 AM UTC today, schedule for tomorrow
+    if (isBefore(nextRun, now)) {
+      nextRun = addDays(nextRun, 1);
+    }
+
+    return nextRun;
+  };
+
+  const nextRun = connectedChecks.length > 0 ? getNextScheduledRun() : null;
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <PlugZap className="h-3.5 w-3.5 text-primary" />
-        <h3 className="text-[10px] font-semibold text-foreground uppercase tracking-[0.15em]">
-          Integration Checks
-        </h3>
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      {/* Card Header */}
+      <div className="px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-md bg-muted">
+              <PlugZap className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Integration Checks</h3>
+              <p className="text-xs text-muted-foreground">Automated compliance verification</p>
+            </div>
+          </div>
+          {connectedChecks.length > 0 && nextRun && (
+            <div className="text-right">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                Next run
+              </div>
+              <div className="text-sm font-medium text-foreground">
+                {formatDistanceToNow(nextRun, { addSuffix: true })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div>
+      {/* Card Content */}
+      <div className="p-5">
         {connectedChecks.length === 0 && disconnectedChecks.length === 0 ? (
           <IntegrationEmptyState
             disconnectedChecks={disconnectedChecks}
             hasNoMappedChecks={true}
             orgId={orgId}
+            taskId={taskId}
           />
         ) : connectedChecks.length === 0 ? (
           <IntegrationEmptyState
             disconnectedChecks={disconnectedChecks}
             hasNoMappedChecks={false}
             orgId={orgId}
+            taskId={taskId}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Metrics Summary */}
             {totalRuns > 0 && (
-              <div className="border-t border-border/50 pt-4">
+              <div className="border-b border-border/40 pb-4">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Total Runs */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
@@ -244,56 +355,41 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
                     </div>
                   </div>
 
-                  {totalRuns > 0 && (
+                  {/* Success Rate */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-[9px] text-muted-foreground uppercase tracking-[0.1em] font-medium">
+                        Success Rate
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-xl font-semibold text-foreground tabular-nums">
+                        {successRate}%
+                      </div>
+                      <div className="flex-1 max-w-[60px] bg-muted/50 h-1 rounded-full overflow-hidden">
+                        <div
+                          className="bg-primary h-full transition-all duration-500"
+                          style={{ width: `${successRate}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Failed */}
+                  {failedRuns > 0 && (
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                        <XCircle className="h-3.5 w-3.5 text-destructive" />
                         <span className="text-[9px] text-muted-foreground uppercase tracking-[0.1em] font-medium">
-                          Success Rate
+                          Issues
                         </span>
                       </div>
-                      <div className="flex items-baseline gap-2">
-                        <div className="text-xl font-semibold text-foreground tabular-nums">
-                          {successRate}%
-                        </div>
-                        <div className="flex-1 max-w-[60px] bg-muted/50 h-1 rounded-full overflow-hidden">
-                          <div
-                            className="bg-primary h-full transition-all duration-500"
-                            style={{ width: `${successRate}%` }}
-                          />
-                        </div>
+                      <div className="text-xl font-semibold text-destructive tabular-nums">
+                        {failedRuns}
                       </div>
                     </div>
                   )}
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      {failedRuns > 0 ? (
-                        <XCircle className="h-3.5 w-3.5 text-destructive" />
-                      ) : successfulRuns > 0 ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                      ) : (
-                        <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/30" />
-                      )}
-                      <span className="text-[9px] text-muted-foreground uppercase tracking-[0.1em] font-medium">
-                        Health
-                      </span>
-                    </div>
-                    <div className="text-xl font-semibold text-foreground tabular-nums">
-                      {successfulRuns > 0 && (
-                        <span className="text-primary">{successfulRuns}</span>
-                      )}
-                      {successfulRuns > 0 && failedRuns > 0 && (
-                        <span className="text-muted-foreground/50 mx-1">/</span>
-                      )}
-                      {failedRuns > 0 && (
-                        <span className="text-destructive">{failedRuns}</span>
-                      )}
-                      {successfulRuns === 0 && failedRuns === 0 && (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
@@ -312,6 +408,7 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
                 const latestRun = checkRuns[0]; // Already sorted by createdAt desc
                 const isRunning = runningCheck === check.checkId;
                 const isExpanded = expandedCheck === check.checkId;
+                const needsConfig = check.needsConfiguration;
 
                 // Determine status from latest run
                 const hasFailed = latestRun
@@ -321,11 +418,13 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
                   ? latestRun.status === 'success' && latestRun.failedCount === 0
                   : false;
 
-                const dotColor = hasFailed
-                  ? 'bg-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]'
-                  : hasSucceeded
-                    ? 'bg-primary shadow-[0_0_8px_rgba(0,77,64,0.4)]'
-                    : 'bg-muted-foreground';
+                const dotColor = needsConfig
+                  ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]'
+                  : hasFailed
+                    ? 'bg-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]'
+                    : hasSucceeded
+                      ? 'bg-primary shadow-[0_0_8px_rgba(0,77,64,0.4)]'
+                      : 'bg-muted-foreground';
 
                 const lastRan = latestRun
                   ? formatDistanceToNow(new Date(latestRun.completedAt || latestRun.createdAt), {
@@ -338,31 +437,65 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
                     key={`${check.integrationId}-${check.checkId}`}
                     className={cn(
                       'rounded-lg border transition-all duration-300',
-                      isExpanded
-                        ? 'border-primary/30 shadow-sm bg-primary/[0.02]'
-                        : 'border-border/50 hover:border-border',
+                      needsConfig
+                        ? 'border-yellow-500/30 bg-yellow-500/5'
+                        : isExpanded
+                          ? 'border-primary/30 shadow-sm bg-primary/[0.02]'
+                          : 'border-border/50 hover:border-border',
                     )}
                   >
+                    {/* Needs Configuration Banner */}
+                    {needsConfig && (
+                      <button
+                        onClick={() => {
+                          setConfigureConnection({
+                            connectionId: check.connectionId!,
+                            integrationId: check.integrationId,
+                            integrationName: check.integrationName,
+                            integrationLogoUrl: check.integrationLogoUrl,
+                          });
+                          setConfigureDialogOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/20 text-left hover:bg-yellow-500/15 transition-colors"
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 shrink-0" />
+                        <span className="text-xs text-yellow-700 dark:text-yellow-500 font-medium">
+                          Configuration required
+                        </span>
+                        <Settings2 className="h-3 w-3 text-yellow-600 ml-auto shrink-0" />
+                      </button>
+                    )}
+
                     {/* Check Header Row */}
                     <div className="flex items-center gap-3 px-4 py-3">
-                      <div
-                        className={cn(
-                          'h-2.5 w-2.5 rounded-full flex-shrink-0',
-                          dotColor,
-                          isRunning && 'animate-pulse',
-                        )}
-                      />
+                      <div className="relative shrink-0">
+                        <Image
+                          src={check.integrationLogoUrl}
+                          alt={check.integrationName}
+                          width={24}
+                          height={24}
+                          className="rounded"
+                        />
+                        <div
+                          className={cn(
+                            'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background',
+                            dotColor,
+                            isRunning && 'animate-pulse',
+                          )}
+                        />
+                      </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-foreground text-sm tracking-tight">
                             {check.checkName}
                           </p>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {check.integrationName}
-                          </Badge>
                         </div>
-                        {lastRan ? (
+                        {needsConfig ? (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Configure required settings to enable this check
+                          </p>
+                        ) : lastRan ? (
                           <p className="text-xs text-muted-foreground mt-0.5">
                             Last ran {lastRan}
                             {latestRun && (
@@ -382,32 +515,50 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 px-3"
-                          disabled={isRunning}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRunCheck(check.connectionId!, check.checkId);
-                          }}
-                        >
-                          {isRunning ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Play className="h-3.5 w-3.5" />
-                          )}
-                          <span className="ml-1.5 text-xs">Run</span>
-                        </Button>
+                        {needsConfig ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-3 border-yellow-500/30 text-yellow-700 dark:text-yellow-500 hover:bg-yellow-500/10"
+                            onClick={() => {
+                              setConfigureConnection({
+                                connectionId: check.connectionId!,
+                                integrationId: check.integrationId,
+                                integrationName: check.integrationName,
+                                integrationLogoUrl: check.integrationLogoUrl,
+                              });
+                              setConfigureDialogOpen(true);
+                            }}
+                          >
+                            <Settings2 className="h-3.5 w-3.5" />
+                            <span className="ml-1.5 text-xs">Configure</span>
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-3"
+                            disabled={isRunning}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRunCheck(check.connectionId!, check.checkId);
+                            }}
+                          >
+                            {isRunning ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Play className="h-3.5 w-3.5" />
+                            )}
+                            <span className="ml-1.5 text-xs">Run</span>
+                          </Button>
+                        )}
 
                         {checkRuns.length > 0 && (
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0"
-                            onClick={() =>
-                              setExpandedCheck(isExpanded ? null : check.checkId)
-                            }
+                            onClick={() => setExpandedCheck(isExpanded ? null : check.checkId)}
                           >
                             <ChevronDown
                               className={cn(
@@ -428,15 +579,8 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
                       )}
                     >
                       <div className="overflow-hidden">
-                        <div className="px-4 pb-4 pt-2 border-t border-border/50 space-y-3">
-                          {checkRuns.slice(0, 5).map((run, idx) => (
-                            <CheckRunItem key={run.id} run={run} isLatest={idx === 0} />
-                          ))}
-                          {checkRuns.length > 5 && (
-                            <p className="text-[10px] text-muted-foreground text-center py-1">
-                              +{checkRuns.length - 5} older runs
-                            </p>
-                          )}
+                        <div className="px-4 pb-4 pt-2 border-t border-border/50 space-y-4">
+                          <GroupedCheckRuns runs={checkRuns} maxRuns={5} />
                         </div>
                       </div>
                     </div>
@@ -447,40 +591,144 @@ export function TaskIntegrationChecks({ taskId }: TaskIntegrationChecksProps) {
 
             {/* Disconnected Checks as Suggestions */}
             {disconnectedChecks.length > 0 && (
-              <>
-                <Separator className="my-3" />
-                <div className="space-y-2">
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.1em]">
-                    Available Integrations
-                  </p>
+              <div className="pt-4 border-t border-border/40">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
+                  More integrations available
+                </p>
+                <div className="space-y-1">
                   {disconnectedChecks.map((check) => (
                     <Link
                       key={`${check.integrationId}-${check.checkId}`}
-                      href={`/${orgId}/integrations/platform-test`}
+                      href={`/${orgId}/integrations`}
                       className={cn(
-                        'flex flex-row items-center justify-between py-2 px-1',
-                        'hover:bg-muted/30 transition-colors',
-                        'cursor-pointer group opacity-60 hover:opacity-100',
+                        'flex flex-row items-center justify-between py-2 px-3 rounded-md',
+                        'hover:bg-muted/50 transition-colors',
+                        'cursor-pointer group',
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full flex-shrink-0 bg-muted-foreground/30" />
+                        <Image
+                          src={check.integrationLogoUrl}
+                          alt={check.integrationName}
+                          width={20}
+                          height={20}
+                          className="rounded opacity-50 group-hover:opacity-100 transition-opacity"
+                        />
                         <div>
-                          <p className="text-sm text-foreground">{check.checkName}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            Connect {check.integrationName} to enable
+                          <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                            {check.checkName}
                           </p>
                         </div>
                       </div>
-                      <ExternalLink className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
                     </Link>
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Configure Integration Dialog - opens after OAuth success or when clicking Configure */}
+      {configureConnection && (
+        <ManageIntegrationDialog
+          open={configureDialogOpen}
+          onOpenChange={setConfigureDialogOpen}
+          connectionId={configureConnection.connectionId}
+          integrationId={configureConnection.integrationId}
+          integrationName={configureConnection.integrationName}
+          integrationLogoUrl={configureConnection.integrationLogoUrl}
+          configureOnly={true}
+          onSaved={() => {
+            // Refresh the checks data after saving to update needsConfiguration status
+            refreshChecks();
+            setConfigureDialogOpen(false);
+            setConfigureConnection(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Group runs by date for display
+function GroupedCheckRuns({ runs, maxRuns = 5 }: { runs: StoredCheckRun[]; maxRuns?: number }) {
+  const [showAll, setShowAll] = useState(false);
+
+  // Group runs by date
+  const groupedRuns = useMemo(() => {
+    const groups: Record<string, StoredCheckRun[]> = {};
+
+    runs.forEach((run) => {
+      const date = new Date(run.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(run);
+    });
+
+    return groups;
+  }, [runs]);
+
+  // Get the runs to display (limited or all)
+  const displayRuns = showAll ? runs : runs.slice(0, maxRuns);
+  const hasMore = runs.length > maxRuns;
+
+  // Build grouped display from displayRuns
+  const displayGrouped = useMemo((): Record<string, StoredCheckRun[]> => {
+    const groups: Record<string, StoredCheckRun[]> = {};
+
+    displayRuns.forEach((run) => {
+      const date = new Date(run.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(run);
+    });
+
+    return groups;
+  }, [displayRuns]);
+
+  if (runs.length === 0) {
+    return <p className="text-xs text-muted-foreground text-center py-2">No runs yet</p>;
+  }
+
+  let runIndex = 0;
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(displayGrouped).map(([date, dateRuns]) => (
+        <div key={date} className="space-y-2">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            {date}
+          </p>
+          <div className="space-y-2">
+            {dateRuns.map((run: StoredCheckRun) => {
+              const isLatest = runIndex === 0;
+              runIndex++;
+              return <CheckRunItem key={run.id} run={run} isLatest={isLatest} />;
+            })}
+          </div>
+        </div>
+      ))}
+
+      {hasMore && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+        >
+          {showAll ? 'Show less' : `Show ${runs.length - maxRuns} more runs`}
+        </button>
+      )}
     </div>
   );
 }
@@ -502,11 +750,7 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
       ? 'text-yellow-600'
       : 'text-primary';
 
-  const statusText = hasError
-    ? 'Error'
-    : hasFailed
-      ? 'Issues Found'
-      : 'Passed';
+  const statusText = hasError ? 'Error' : hasFailed ? 'Issues Found' : 'Passed';
 
   return (
     <div
@@ -522,11 +766,7 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
         <div
           className={cn(
             'h-1.5 w-1.5 rounded-full flex-shrink-0',
-            hasError
-              ? 'bg-destructive'
-              : hasFailed
-                ? 'bg-yellow-500'
-                : 'bg-primary',
+            hasError ? 'bg-destructive' : hasFailed ? 'bg-yellow-500' : 'bg-primary',
           )}
         />
 
@@ -610,9 +850,7 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
                   </div>
                 ))}
                 {findings.length > 3 && (
-                  <p className="text-[10px] text-muted-foreground">
-                    +{findings.length - 3} more
-                  </p>
+                  <p className="text-[10px] text-muted-foreground">+{findings.length - 3} more</p>
                 )}
               </div>
             )}
@@ -687,18 +925,27 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
   );
 }
 
-// Empty state when no integrations are connected
+// Empty state when no integrations are connected - matches AutomationEmptyState style
 function IntegrationEmptyState({
   disconnectedChecks,
   hasNoMappedChecks,
   orgId,
+  taskId,
 }: {
   disconnectedChecks: TaskIntegrationCheck[];
   hasNoMappedChecks: boolean;
   orgId: string;
+  taskId?: string;
 }) {
+  const params = useParams();
+  const router = useRouter();
+  const currentTaskId = taskId || (params.taskId as string);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
+
+  // Dialog state for connecting integrations
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+  const [selectedIntegration, setSelectedIntegration] = useState<TaskIntegrationCheck | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -722,13 +969,13 @@ function IntegrationEmptyState({
       time += 0.005;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Primary color: hsl(165, 100%, 15%) = rgb(0, 77, 64)
       const primaryR = 0;
       const primaryG = 77;
       const primaryB = 64;
 
       ctx.strokeStyle = `rgba(${primaryR}, ${primaryG}, ${primaryB}, 0.06)`;
       ctx.lineWidth = 0.5;
-
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
         const y = (canvas.height / 4) * (i + 1);
@@ -754,65 +1001,170 @@ function IntegrationEmptyState({
     };
   }, []);
 
-  return (
-    <Link
-      href={`/${orgId}/integrations/platform-test`}
-      className="block relative overflow-hidden border-t-2 border-t-primary/20 bg-primary/[0.02] py-8 px-6 group hover:border-t-primary/30 hover:bg-primary/[0.04] transition-all cursor-pointer"
-    >
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full opacity-10"
-        style={{ mixBlendMode: 'multiply' }}
-      />
+  // Get unique integrations from disconnected checks
+  const uniqueIntegrations = Array.from(
+    new Map(disconnectedChecks.map((c) => [c.integrationId, c])).values(),
+  );
 
-      <div className="relative z-10 text-center space-y-3">
-        <div className="inline-flex">
-          <div className="w-12 h-12 rounded-md bg-primary/8 flex items-center justify-center mx-auto group-hover:bg-primary/12 transition-colors">
-            <PlugZap className="w-6 h-6 text-primary" />
-          </div>
-        </div>
+  const handleConnectClick = (integration: TaskIntegrationCheck) => {
+    setSelectedIntegration(integration);
+    setConnectDialogOpen(true);
+  };
 
-        <div className="space-y-1.5">
-          <h4 className="text-base font-semibold text-foreground tracking-tight">
-            {hasNoMappedChecks ? 'No Checks Available' : 'Connect Integrations'}
-          </h4>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            {hasNoMappedChecks
-              ? 'No integration checks are mapped to this task template yet'
-              : 'Connect integrations to automatically verify compliance for this task'}
-          </p>
-        </div>
+  const handleAutomationClick = () => {
+    router.push(`/${orgId}/tasks/${currentTaskId}/automation/new`);
+  };
 
-        {disconnectedChecks.length > 0 && (
-          <div className="pt-2">
-            <p className="text-[10px] text-muted-foreground mb-2">
-              {disconnectedChecks.length} integration
-              {disconnectedChecks.length > 1 ? 's' : ''} available:
-            </p>
-            <div className="flex flex-wrap gap-1.5 justify-center">
-              {disconnectedChecks.slice(0, 3).map((check) => (
-                <Badge
-                  key={`${check.integrationId}-${check.checkId}`}
-                  variant="secondary"
-                  className="text-[10px]"
-                >
-                  {check.integrationName}
-                </Badge>
-              ))}
-              {disconnectedChecks.length > 3 && (
-                <Badge variant="outline" className="text-[10px]">
-                  +{disconnectedChecks.length - 3} more
-                </Badge>
-              )}
+  // If no mapped checks, show simple automation CTA
+  if (hasNoMappedChecks) {
+    return (
+      <div
+        className="relative overflow-hidden border-t-2 border-t-primary/20 bg-primary/2 py-8 px-6 group hover:border-t-primary/30 hover:bg-primary/4 transition-all cursor-pointer"
+        onClick={handleAutomationClick}
+      >
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full opacity-10"
+          style={{ mixBlendMode: 'multiply' }}
+        />
+
+        <div className="relative z-10 text-center space-y-3">
+          <div className="inline-flex">
+            <div className="w-12 h-12 rounded-md bg-primary/8 flex items-center justify-center mx-auto group-hover:bg-primary/12 transition-colors">
+              <Bot className="w-6 h-6 text-primary" />
             </div>
           </div>
-        )}
 
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-5 py-4">
-          Connect
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
+          <div className="space-y-1.5">
+            <h4 className="text-base font-semibold text-foreground tracking-tight">
+              Automate This Task
+            </h4>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+              No pre-built integrations are available. Launch an AI agent that continuously
+              collects, verifies, and refreshes evidence for this requirement.
+            </p>
+          </div>
+
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-5 py-4">
+            Continue
+          </Button>
+        </div>
       </div>
-    </Link>
+    );
+  }
+
+  // Has disconnected integrations available
+  return (
+    <>
+      <div className="relative overflow-hidden border-t-2 border-t-primary/20 bg-primary/2 group hover:border-t-primary/30 hover:bg-primary/4 transition-all">
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full opacity-10"
+          style={{ mixBlendMode: 'multiply' }}
+        />
+
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="text-center py-6 px-6">
+            <div className="inline-flex mb-3 gap-2">
+              {uniqueIntegrations.slice(0, 3).map((integration) => (
+                <div
+                  key={integration.integrationId}
+                  className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center overflow-hidden"
+                >
+                  <Image
+                    src={integration.integrationLogoUrl}
+                    alt={integration.integrationName}
+                    width={24}
+                    height={24}
+                    className="object-contain"
+                  />
+                </div>
+              ))}
+              {uniqueIntegrations.length > 3 && (
+                <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center text-xs font-medium text-muted-foreground">
+                  +{uniqueIntegrations.length - 3}
+                </div>
+              )}
+            </div>
+
+            <h4 className="text-base font-semibold text-foreground tracking-tight">
+              Automate This Task
+            </h4>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed mt-1.5">
+              Connect an integration to automatically verify compliance, or build a custom
+              automation
+            </p>
+          </div>
+
+          {/* Options */}
+          <div className="border-t border-primary/10 divide-y divide-primary/10">
+            {/* Pre-built integrations */}
+            {uniqueIntegrations.map((integration) => {
+              const checksForIntegration = disconnectedChecks.filter(
+                (c) => c.integrationId === integration.integrationId,
+              );
+              return (
+                <button
+                  key={integration.integrationId}
+                  onClick={() => handleConnectClick(integration)}
+                  className="w-full flex items-center gap-4 px-6 py-3 hover:bg-primary/5 transition-colors group/item text-left"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                    <Image
+                      src={integration.integrationLogoUrl}
+                      alt={integration.integrationName}
+                      width={20}
+                      height={20}
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground group-hover/item:text-primary transition-colors">
+                      Connect {integration.integrationName}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {checksForIntegration.length} automated check
+                      {checksForIntegration.length > 1 ? 's' : ''} available
+                    </p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover/item:text-primary transition-colors shrink-0" />
+                </button>
+              );
+            })}
+
+            {/* Custom automation option */}
+            <Link
+              href={`/${orgId}/tasks/${currentTaskId}/automation/new`}
+              className="flex items-center gap-4 px-6 py-3 hover:bg-primary/5 transition-colors group/item"
+            >
+              <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0 group-hover/item:bg-muted transition-colors">
+                <Bot className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground group-hover/item:text-foreground/80 transition-colors">
+                  Build Custom Automation
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Use the AI agent to create a tailored automation
+                </p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover/item:text-foreground/80 transition-colors shrink-0" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Connect Integration Dialog */}
+      {selectedIntegration && (
+        <ConnectIntegrationDialog
+          open={connectDialogOpen}
+          onOpenChange={setConnectDialogOpen}
+          integrationId={selectedIntegration.integrationId}
+          integrationName={selectedIntegration.integrationName}
+          integrationLogoUrl={selectedIntegration.integrationLogoUrl}
+        />
+      )}
+    </>
   );
 }

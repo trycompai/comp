@@ -34,15 +34,9 @@ export const runTaskIntegrationChecks = task({
       return { success: false, error: `Manifest not found: ${providerSlug}` };
     }
 
-    // Get connection with credentials
+    // Get connection
     const connection = await db.integrationConnection.findUnique({
       where: { id: connectionId },
-      include: {
-        credentialVersions: {
-          orderBy: { version: 'desc' },
-          take: 1,
-        },
-      },
     });
 
     if (!connection || connection.status !== 'active') {
@@ -50,32 +44,55 @@ export const runTaskIntegrationChecks = task({
       return { success: false, error: 'Connection not found or inactive' };
     }
 
-    const latestCredential = connection.credentialVersions[0];
-    if (!latestCredential) {
-      logger.error(`No credentials found for connection: ${connectionId}`);
-      return { success: false, error: 'No credentials found' };
-    }
+    // Ensure we have valid credentials (refresh OAuth tokens if needed)
+    // Call the API to handle token refresh since it has access to OAuth client credentials
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    let credentials: Record<string, string>;
 
-    // Decrypt credentials
-    const { decrypt } = await import('@comp/app/src/lib/encryption');
-    const encryptedPayload = latestCredential.encryptedPayload as Record<string, unknown>;
-    const credentials: Record<string, string> = {};
+    try {
+      logger.info('Ensuring valid credentials (refreshing if needed)...');
+      const response = await fetch(
+        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials?organizationId=${organizationId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
 
-    for (const [key, value] of Object.entries(encryptedPayload)) {
-      if (
-        value &&
-        typeof value === 'object' &&
-        'encrypted' in value &&
-        'iv' in value &&
-        'tag' in value &&
-        'salt' in value
-      ) {
-        credentials[key] = await decrypt(
-          value as { encrypted: string; iv: string; tag: string; salt: string },
-        );
-      } else if (typeof value === 'string') {
-        credentials[key] = value;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+          (errorData as { message?: string }).message ||
+          `Failed to get valid credentials: ${response.status}`;
+        logger.error(errorMessage);
+
+        // If unauthorized, mark connection as error
+        if (response.status === 401) {
+          await db.integrationConnection.update({
+            where: { id: connectionId },
+            data: {
+              status: 'error',
+              errorMessage: 'OAuth token expired. Please reconnect the integration.',
+            },
+          });
+        }
+
+        return { success: false, error: errorMessage };
       }
+
+      const result = (await response.json()) as {
+        success: boolean;
+        credentials: Record<string, string>;
+      };
+      credentials = result.credentials;
+      logger.info('Credentials validated successfully');
+    } catch (error) {
+      logger.error('Failed to ensure valid credentials', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { success: false, error: 'Failed to validate credentials' };
     }
 
     if (!credentials.access_token) {
@@ -86,6 +103,10 @@ export const runTaskIntegrationChecks = task({
     const variables =
       (connection.variables as Record<string, string | number | boolean | string[] | undefined>) ||
       {};
+
+    // Track overall results across all checks for this task
+    let totalFindings = 0;
+    let totalPassing = 0;
 
     // Run only the checks that apply to this task
     try {
@@ -107,6 +128,10 @@ export const runTaskIntegrationChecks = task({
 
         const checkResult = result.results[0];
         if (!checkResult) continue;
+
+        // Accumulate results
+        totalFindings += checkResult.result.findings.length;
+        totalPassing += checkResult.result.passingResults.length;
 
         // Store check run
         const checkRun = await db.integrationCheckRun.create({
@@ -169,10 +194,59 @@ export const runTaskIntegrationChecks = task({
         data: { lastSyncAt: new Date() },
       });
 
+      // Update task status based on check results
+      // If any findings (failures), mark as failed
+      // If all passing and no findings, mark as done (only if not already done)
+      if (totalFindings > 0) {
+        await db.task.update({
+          where: { id: taskId },
+          data: { status: 'failed' },
+        });
+        logger.info(`Task ${taskId} marked as failed due to ${totalFindings} findings`);
+      } else if (totalPassing > 0) {
+        // Only update to done if not already done
+        const currentTask = await db.task.findUnique({
+          where: { id: taskId },
+          select: { status: true, frequency: true },
+        });
+        if (currentTask && currentTask.status !== 'done') {
+          // Calculate next review date based on frequency
+          let reviewDate: Date | undefined;
+          if (currentTask.frequency) {
+            reviewDate = new Date();
+            switch (currentTask.frequency) {
+              case 'monthly':
+                reviewDate.setMonth(reviewDate.getMonth() + 1);
+                break;
+              case 'quarterly':
+                reviewDate.setMonth(reviewDate.getMonth() + 3);
+                break;
+              case 'yearly':
+                reviewDate.setFullYear(reviewDate.getFullYear() + 1);
+                break;
+            }
+          }
+
+          await db.task.update({
+            where: { id: taskId },
+            data: {
+              status: 'done',
+              ...(reviewDate ? { reviewDate } : {}),
+            },
+          });
+          logger.info(
+            `Task ${taskId} marked as done - all ${totalPassing} checks passed${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
+          );
+        }
+      }
+
       return {
         success: true,
         taskId,
         checksRun: checkIds.length,
+        totalPassing,
+        totalFindings,
+        taskStatus: totalFindings > 0 ? 'failed' : totalPassing > 0 ? 'done' : null,
       };
     } catch (error) {
       logger.error(`Failed to run checks for task ${taskId}`, {

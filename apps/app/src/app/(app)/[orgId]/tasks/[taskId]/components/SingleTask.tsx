@@ -186,18 +186,16 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
             </div>
           </div>
 
-          {/* Integration Checks Section */}
-          <TaskIntegrationChecks taskId={task.id} />
-
-          {/* Automations Section - Front & Center */}
-          <div>
-            <TaskAutomations automations={automations || []} />
-          </div>
-
-          {/* Attachments - De-emphasized */}
+          {/* Attachments */}
           <div className="space-y-3">
             <TaskMainContent task={task} showComments={false} />
           </div>
+
+          {/* Integration Checks Section */}
+          <TaskIntegrationChecks taskId={task.id} onTaskUpdated={() => mutateTask()} />
+
+          {/* Custom Automations Section - always show so users can create custom automations */}
+          <TaskAutomations automations={automations || []} />
 
           {/* Comments Section */}
           <div>

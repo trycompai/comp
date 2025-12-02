@@ -12,12 +12,13 @@ import {
 } from '@nestjs/common';
 import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
+import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import {
   getManifest,
   getAllManifests,
   getActiveManifests,
-  type IntegrationManifest,
+  type OAuthConfig,
 } from '@comp/integration-platform';
 
 interface CreateConnectionDto {
@@ -37,6 +38,7 @@ export class ConnectionsController {
   constructor(
     private readonly connectionService: ConnectionService,
     private readonly credentialVaultService: CredentialVaultService,
+    private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly providerRepository: ProviderRepository,
   ) {}
 
@@ -53,6 +55,7 @@ export class ConnectionsController {
       name: m.name,
       description: m.description,
       category: m.category,
+      logoUrl: m.logoUrl,
       authType: m.auth.type,
       capabilities: m.capabilities,
       isActive: m.isActive,
@@ -78,12 +81,12 @@ export class ConnectionsController {
       name: manifest.name,
       description: manifest.description,
       category: manifest.category,
+      logoUrl: manifest.logoUrl,
       authType: manifest.auth.type,
       capabilities: manifest.capabilities,
       isActive: manifest.isActive,
       docsUrl: manifest.docsUrl,
       credentialFields: manifest.credentialFields,
-      sync: manifest.sync,
     };
   }
 
@@ -296,5 +299,125 @@ export class ConnectionsController {
   async deleteConnection(@Param('id') id: string) {
     await this.connectionService.deleteConnection(id);
     return { success: true };
+  }
+
+  /**
+   * Get valid credentials for a connection, refreshing OAuth tokens if needed.
+   * Used by scheduled jobs to ensure tokens are valid before running checks.
+   */
+  @Post(':id/ensure-valid-credentials')
+  async ensureValidCredentials(
+    @Param('id') id: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    if (!organizationId) {
+      throw new HttpException(
+        'organizationId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const connection = await this.connectionService.getConnection(id);
+
+    if (connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (connection.status !== 'active') {
+      throw new HttpException(
+        'Connection is not active',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const providerSlug = (connection as { provider?: { slug: string } })
+      .provider?.slug;
+    if (!providerSlug) {
+      throw new HttpException(
+        'Provider not found for connection',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const manifest = getManifest(providerSlug);
+    if (!manifest) {
+      throw new HttpException(
+        `Manifest not found for ${providerSlug}`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // Check if token needs refresh (for OAuth integrations that support it)
+    if (manifest.auth.type === 'oauth2') {
+      const oauthConfig = manifest.auth.config as OAuthConfig;
+
+      // Skip refresh for providers that don't support refresh tokens (e.g., GitHub)
+      const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
+
+      if (supportsRefresh) {
+        const needsRefresh = await this.credentialVaultService.needsRefresh(id);
+
+        if (needsRefresh) {
+          this.logger.log(
+            `Token needs refresh for connection ${id}, attempting refresh...`,
+          );
+
+          const oauthCredentials =
+            await this.oauthCredentialsService.getCredentials(
+              providerSlug,
+              organizationId,
+            );
+
+          if (!oauthCredentials) {
+            throw new HttpException(
+              'OAuth credentials not configured',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+
+          const newToken = await this.credentialVaultService.refreshOAuthTokens(
+            id,
+            {
+              tokenUrl: oauthConfig.tokenUrl,
+              refreshUrl: oauthConfig.refreshUrl,
+              clientId: oauthCredentials.clientId,
+              clientSecret: oauthCredentials.clientSecret,
+              clientAuthMethod: oauthConfig.clientAuthMethod,
+            },
+          );
+
+          if (!newToken) {
+            // Refresh failed - connection needs to be re-established
+            await this.connectionService.setConnectionError(
+              id,
+              'OAuth token expired and refresh failed. Please reconnect.',
+            );
+            throw new HttpException(
+              'Token refresh failed. Please reconnect the integration.',
+              HttpStatus.UNAUTHORIZED,
+            );
+          }
+
+          this.logger.log(`Successfully refreshed token for connection ${id}`);
+        }
+      }
+    }
+
+    // Get current credentials
+    const credentials =
+      await this.credentialVaultService.getDecryptedCredentials(id);
+
+    if (!credentials?.access_token) {
+      throw new HttpException(
+        'No valid credentials found',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return {
+      success: true,
+      accessToken: credentials.access_token,
+      credentials,
+    };
   }
 }
