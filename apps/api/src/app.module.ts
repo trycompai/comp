@@ -23,6 +23,7 @@ import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { SOAModule } from './soa/soa.module';
+import { IntegrationPlatformModule } from './integration-platform/integration-platform.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { SOAModule } from './soa/soa.module';
     VectorStoreModule,
     KnowledgeBaseModule,
     SOAModule,
+    IntegrationPlatformModule,
   ],
   controllers: [AppController],
   providers: [AppService],
