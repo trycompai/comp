@@ -21,6 +21,7 @@ import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
+import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { VectorStoreModule } from './vector-store/vector-store.module';
     TaskTemplateModule,
     QuestionnaireModule,
     VectorStoreModule,
+    KnowledgeBaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

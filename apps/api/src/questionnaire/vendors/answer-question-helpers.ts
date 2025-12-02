@@ -111,8 +111,6 @@ export async function generateAnswerWithRAG(
         } else {
           sourceInfo = `Source: Knowledge Base Document`;
         }
-      } else if ((r.sourceType as string) === 'knowledge_base_document') {
-        sourceInfo = `Source: Knowledge Base Document`;
       } else if ((r.sourceType as string) === 'manual_answer') {
         sourceInfo = `Source: Manual Answer`;
       } else {

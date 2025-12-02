@@ -74,13 +74,13 @@ export function useQuestionnaireParse({
             source: 'internal',
           },
           input.organizationId,
-        );
+  );
 
         if (response.error || !response.data) {
-          setIsParseProcessStarted(false);
+      setIsParseProcessStarted(false);
           toast.error(response.error || 'Failed to parse questionnaire');
-          return;
-        }
+        return;
+      }
 
         const { questionnaireId, totalQuestions } = response.data;
         setQuestionnaireId(questionnaireId);

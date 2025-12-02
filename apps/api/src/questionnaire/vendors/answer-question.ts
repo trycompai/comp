@@ -28,6 +28,11 @@ export interface AnswerQuestionOptions {
    * Disable when running outside of a Trigger task (e.g. server actions).
    */
   useMetadata?: boolean;
+  /**
+   * Whether to skip syncing organization embeddings.
+   * Set to true when sync has already been performed (e.g., in batch operations).
+   */
+  skipSync?: boolean;
 }
 
 /**
@@ -37,7 +42,7 @@ export async function answerQuestion(
   payload: AnswerQuestionPayload,
   options: AnswerQuestionOptions = {},
 ): Promise<AnswerQuestionResult> {
-  const { useMetadata = true } = options;
+  const { useMetadata = true, skipSync = false } = options;
 
   const withMetadata = (fn: () => void) => {
     if (!useMetadata) {
@@ -80,17 +85,24 @@ export async function answerQuestion(
     // Sync organization embeddings before generating answer
     // Uses incremental sync: only updates what changed (much faster than full sync)
     // Lock mechanism prevents concurrent syncs for the same organization
-    try {
-      await syncOrganizationEmbeddings(payload.organizationId);
-      logger.info('Organization embeddings synced successfully', {
+    // Skip sync if already performed (e.g., in batch operations)
+    if (!skipSync) {
+      try {
+        await syncOrganizationEmbeddings(payload.organizationId);
+        logger.info('Organization embeddings synced successfully', {
+          organizationId: payload.organizationId,
+        });
+      } catch (error) {
+        logger.warn('Failed to sync organization embeddings', {
+          organizationId: payload.organizationId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        // Continue with existing embeddings if sync fails
+      }
+    } else {
+      logger.info('Skipping sync (already performed)', {
         organizationId: payload.organizationId,
       });
-    } catch (error) {
-      logger.warn('Failed to sync organization embeddings', {
-        organizationId: payload.organizationId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      // Continue with existing embeddings if sync fails
     }
 
     logger.info('🔍 Calling generateAnswerWithRAG', {

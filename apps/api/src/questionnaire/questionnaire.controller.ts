@@ -341,6 +341,9 @@ export class QuestionnaireController {
     if (!file) {
       throw new BadRequestException('file is required');
     }
+    if (!body.organizationId) {
+      throw new BadRequestException('organizationId is required');
+    }
 
     const dto: ExportQuestionnaireDto = {
       fileData: file.buffer.toString('base64'),
@@ -351,7 +354,13 @@ export class QuestionnaireController {
       format: body.format || 'xlsx',
     };
 
-    await this.autoAnswerAndExport(dto, res);
+    const result = await this.questionnaireService.autoAnswerAndExport(dto);
+
+    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader('X-Question-Count', String(result.questionsAndAnswers.length));
+
+    res.send(result.fileBuffer);
   }
 
   @Post('auto-answer')
@@ -386,7 +395,7 @@ export class QuestionnaireController {
           answer: qa.answer ?? null,
           index: qa._originalIndex ?? index,
         }))
-        .filter((qa) => !qa.answer || qa.answer.trim().length === 0);
+        .filter((qa) => !qa.answer || (qa.answer && qa.answer.trim().length === 0));
 
       send({
         type: 'progress',
@@ -406,13 +415,16 @@ export class QuestionnaireController {
       await Promise.all(
         questionsToAnswer.map(async (qa) => {
           try {
-            const result = await this.questionnaireService.answerSingleQuestion({
-              question: qa.question,
-              organizationId: dto.organizationId,
-              questionIndex: qa.index,
-              totalQuestions: dto.questionsAndAnswers.length,
-              questionnaireId: dto.questionnaireId,
-            });
+            const result = await this.questionnaireService.answerSingleQuestion(
+              {
+                question: qa.question,
+                organizationId: dto.organizationId,
+                questionIndex: qa.index,
+                totalQuestions: dto.questionsAndAnswers.length,
+                questionnaireId: dto.questionnaireId,
+              },
+              { skipSync: true }, // Skip sync since we already synced at the beginning
+            );
 
             send({
               type: 'answer',

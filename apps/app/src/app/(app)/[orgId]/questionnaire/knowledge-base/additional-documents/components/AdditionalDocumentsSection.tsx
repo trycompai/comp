@@ -17,10 +17,7 @@ import { Card } from '@comp/ui';
 import { ChevronLeft, ChevronRight, Download, FileText, Trash2, Upload } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
-import { uploadKnowledgeBaseDocumentAction } from '../actions/upload-document';
-import { downloadKnowledgeBaseDocumentAction } from '../actions/download-document';
-import { deleteKnowledgeBaseDocumentAction } from '../actions/delete-document';
-import { processKnowledgeBaseDocumentsAction } from '../actions/process-documents';
+import { api } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { usePagination } from '../../hooks/usePagination';
 import { format } from 'date-fns';
@@ -119,20 +116,32 @@ export function AdditionalDocumentsSection({
           setUploadProgress({ ...newProgress });
 
           // Upload file
-          const result = await uploadKnowledgeBaseDocumentAction({
-            fileName: file.name,
-            fileType: file.type,
-            fileData,
+          const response = await api.post<{
+            id: string;
+            name: string;
+            s3Key: string;
+          }>(
+            '/v1/knowledge-base/documents/upload',
+            {
+              fileName: file.name,
+              fileType: file.type,
+              fileData,
+              organizationId,
+            },
             organizationId,
-          });
+          );
 
-          if (result?.data?.success && result.data.data?.id) {
-            uploadedDocumentIds.push(result.data.data.id);
+          if (response.error) {
+            throw new Error(response.error || 'Failed to upload file');
+          }
+
+          if (response.data?.id) {
+            uploadedDocumentIds.push(response.data.id);
             newProgress[file.name] = 100;
             setUploadProgress({ ...newProgress });
             toast.success(`Successfully uploaded ${file.name}`);
           } else {
-            throw new Error(result?.data?.error || 'Failed to upload file');
+            throw new Error('Failed to upload file: invalid response');
           }
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
@@ -147,14 +156,27 @@ export function AdditionalDocumentsSection({
       // Trigger processing for uploaded documents (orchestrator for multiple, individual for single)
       if (uploadedDocumentIds.length > 0) {
         try {
-          const result = await processKnowledgeBaseDocumentsAction({
-            documentIds: uploadedDocumentIds,
+          const response = await api.post<{
+            success: boolean;
+            runId?: string;
+            message?: string;
+          }>(
+            '/v1/knowledge-base/documents/process',
+            {
+              documentIds: uploadedDocumentIds,
+              organizationId,
+            },
             organizationId,
-          });
+          );
 
-          if (result?.data?.success) {
+          if (response.error) {
+            console.error('Failed to trigger document processing:', response.error);
+            return;
+          }
+
+          if (response.data?.success) {
             // Store run ID for tracking progress
-            const runId = result.data.runId;
+            const runId = response.data.runId;
             if (runId) {
               const newProcessingRunIds = new Map(processingRunIds);
               // For orchestrator, track all documents with the same run ID
@@ -163,9 +185,7 @@ export function AdditionalDocumentsSection({
               });
               setProcessingRunIds(newProcessingRunIds);
             }
-            toast.success(result.data.message || 'Processing documents...');
-          } else {
-            console.error('Failed to trigger document processing:', result?.data?.error);
+            toast.success(response.data.message || 'Processing documents...');
           }
         } catch (error) {
           console.error('Failed to trigger document processing:', error);
@@ -195,19 +215,33 @@ export function AdditionalDocumentsSection({
     setDownloadingIds((prev) => new Set(prev).add(documentId));
 
     try {
-      const result = await downloadKnowledgeBaseDocumentAction({ documentId });
+      const response = await api.post<{
+        signedUrl: string;
+        fileName: string;
+      }>(
+        `/v1/knowledge-base/documents/${documentId}/download`,
+        {
+          organizationId,
+        },
+        organizationId,
+      );
 
-      if (result?.data?.success && result.data.data?.signedUrl) {
+      if (response.error) {
+        toast.error(response.error || 'Failed to download file');
+        return;
+      }
+
+      if (response.data?.signedUrl) {
         // Create a temporary link and trigger download
         const link = document.createElement('a');
-        link.href = result.data.data.signedUrl;
+        link.href = response.data.signedUrl;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         toast.success(`Downloading ${fileName}...`);
       } else {
-        toast.error(result?.data?.error || 'Failed to download file');
+        toast.error('Failed to download file: invalid response');
       }
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -234,13 +268,25 @@ export function AdditionalDocumentsSection({
     setIsDeleteDialogOpen(false);
 
     try {
-      const result = await deleteKnowledgeBaseDocumentAction({
-        documentId: documentToDelete.id,
-      });
+      const response = await api.post<{
+        success: boolean;
+        vectorDeletionRunId?: string;
+      }>(
+        `/v1/knowledge-base/documents/${documentToDelete.id}/delete`,
+        {
+          organizationId,
+        },
+        organizationId,
+      );
 
-      if (result?.data?.success) {
+      if (response.error) {
+        toast.error(response.error || 'Failed to delete document');
+        return;
+      }
+
+      if (response.data?.success) {
         // Store deletion run ID for tracking progress
-        const vectorDeletionRunId = result.data.vectorDeletionRunId;
+        const vectorDeletionRunId = response.data.vectorDeletionRunId;
         if (vectorDeletionRunId) {
           const newDeletionRunIds = new Map(deletionRunIds);
           newDeletionRunIds.set(documentToDelete.id, vectorDeletionRunId);
@@ -250,7 +296,7 @@ export function AdditionalDocumentsSection({
         toast.success(`Successfully deleted ${documentToDelete.name}`);
         router.refresh();
       } else {
-        toast.error(result?.data?.error || 'Failed to delete document');
+        toast.error('Failed to delete document: invalid response');
       }
     } catch (error) {
       console.error('Error deleting document:', error);

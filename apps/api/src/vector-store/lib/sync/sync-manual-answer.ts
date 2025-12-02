@@ -1,6 +1,5 @@
 import { upsertEmbedding } from '../core/upsert-embedding';
 import { vectorIndex } from '../core/client';
-import { findEmbeddingsForSource } from '../core/find-existing-embeddings';
 import { db } from '@db';
 import { logger } from '../../logger';
 
@@ -64,46 +63,64 @@ export async function syncManualAnswerToVector(
       updatedAt: manualAnswer.updatedAt.toISOString(),
     });
 
-    // Verify the embedding was actually added by querying for it
-    try {
-      const foundEmbeddings = await findEmbeddingsForSource(
-        manualAnswerId,
-        'manual_answer',
-        organizationId,
-      );
-      
-      const wasFound = foundEmbeddings.some((e) => e.id === embeddingId);
-      
-      logger.info('✅ Successfully synced manual answer to vector DB', {
-        manualAnswerId,
-        organizationId,
-        embeddingId,
-        question: manualAnswer.question.substring(0, 100),
-        answer: manualAnswer.answer.substring(0, 100),
-        verified: wasFound,
-        foundEmbeddingsCount: foundEmbeddings.length,
-        foundEmbeddingIds: foundEmbeddings.map((e) => e.id),
-        metadata: {
-          organizationId,
-          sourceType: 'manual_answer',
-          sourceId: manualAnswerId,
-          updatedAt: manualAnswer.updatedAt.toISOString(),
-        },
-      });
-
-      if (!wasFound) {
-        logger.warn('⚠️ Embedding was upserted but not found in verification query', {
-          embeddingId,
-          manualAnswerId,
-          organizationId,
-        });
+    // Verify the embedding was actually added by fetching it directly by ID
+    // Using direct fetch with retry to handle eventual consistency in Upstash Vector
+    // Even direct fetch can have slight delays, so we retry a few times with exponential backoff
+    let wasFound = false;
+    const maxRetries = 3;
+    const initialDelay = 100; // 100ms
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const fetchedEmbeddings = await vectorIndex.fetch([embeddingId]);
+        wasFound = fetchedEmbeddings && fetchedEmbeddings.length > 0 && fetchedEmbeddings[0] !== null;
+        
+        if (wasFound) {
+          break; // Found it, exit retry loop
+        }
+        
+        // If not found and not the last attempt, wait before retrying
+        if (attempt < maxRetries - 1) {
+          const delay = initialDelay * Math.pow(2, attempt); // Exponential backoff: 100ms, 200ms, 400ms
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      } catch (verifyError) {
+        // If it's the last attempt, log the error
+        if (attempt === maxRetries - 1) {
+          logger.warn('Failed to verify embedding after upsert (final attempt)', {
+            embeddingId,
+            manualAnswerId,
+            attempt: attempt + 1,
+            error: verifyError instanceof Error ? verifyError.message : 'Unknown error',
+          });
+        }
+        // Continue to next retry
       }
-    } catch (verifyError) {
-      logger.warn('Failed to verify embedding after upsert', {
-        embeddingId,
-        manualAnswerId,
-        error: verifyError instanceof Error ? verifyError.message : 'Unknown error',
-      });
+    }
+    
+    logger.info('✅ Successfully synced manual answer to vector DB', {
+      manualAnswerId,
+      organizationId,
+      embeddingId,
+      question: manualAnswer.question.substring(0, 100),
+      answer: manualAnswer.answer.substring(0, 100),
+      verified: wasFound,
+      verificationAttempts: wasFound ? 'success' : `${maxRetries} attempts`,
+      metadata: {
+        organizationId,
+        sourceType: 'manual_answer',
+        sourceId: manualAnswerId,
+        updatedAt: manualAnswer.updatedAt.toISOString(),
+      },
+    });
+
+    // Only log info if verification failed after all retries (non-critical)
+    // This is non-critical - upsert succeeded, so embedding will be available soon
+    // Upstash Vector has eventual consistency, so immediate fetch might not find it
+    // We don't log this as a warning since it's expected behavior
+    if (!wasFound) {
+      // Silently continue - upsert succeeded, embedding will be available soon
+      // No need to log as this is normal eventual consistency behavior
     }
     return {
       success: true,

@@ -146,6 +146,7 @@ export class QuestionnaireService {
 
   async answerSingleQuestion(
     dto: AnswerSingleQuestionDto,
+    options?: { skipSync?: boolean },
   ): Promise<AnswerQuestionResult> {
     const result = await answerQuestion(
       {
@@ -154,7 +155,7 @@ export class QuestionnaireService {
         questionIndex: dto.questionIndex,
         totalQuestions: dto.totalQuestions,
       },
-      { useMetadata: false },
+      { useMetadata: false, skipSync: options?.skipSync },
     );
 
     if (result.success && result.answer && dto.questionnaireId) {

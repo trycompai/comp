@@ -3,9 +3,6 @@
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useEffect, useState } from 'react';
 import { createRunReadToken } from '../../../actions/create-trigger-token';
-import type { processKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/process-knowledge-base-document';
-import type { processKnowledgeBaseDocumentsOrchestratorTask } from '@/jobs/tasks/vector/process-knowledge-base-documents-orchestrator';
-import type { deleteKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/delete-knowledge-base-document';
 
 interface UseDocumentProcessingOptions {
   processingRunId?: string | null;
@@ -50,9 +47,7 @@ export function useDocumentProcessing({
   }, [deletionRunId]);
 
   // Track processing run
-  const { run: processingRun } = useRealtimeRun<
-    typeof processKnowledgeBaseDocumentTask | typeof processKnowledgeBaseDocumentsOrchestratorTask
-  >(processingRunId || '', {
+  const { run: processingRun } = useRealtimeRun(processingRunId || '', {
     accessToken: processingToken || undefined,
     enabled: !!processingRunId && !!processingToken,
     onComplete: () => {
@@ -61,16 +56,13 @@ export function useDocumentProcessing({
   });
 
   // Track deletion run
-  const { run: deletionRun } = useRealtimeRun<typeof deleteKnowledgeBaseDocumentTask>(
-    deletionRunId || '',
-    {
-      accessToken: deletionToken || undefined,
-      enabled: !!deletionRunId && !!deletionToken,
-      onComplete: () => {
-        onDeletionComplete?.();
-      },
+  const { run: deletionRun } = useRealtimeRun(deletionRunId || '', {
+    accessToken: deletionToken || undefined,
+    enabled: !!deletionRunId && !!deletionToken,
+    onComplete: () => {
+      onDeletionComplete?.();
     },
-  );
+  });
 
   return {
     processingRun,

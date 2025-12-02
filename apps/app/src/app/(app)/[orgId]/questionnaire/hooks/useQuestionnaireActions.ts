@@ -268,10 +268,10 @@ export function useQuestionnaireActions({
       const response = await api.post(
         '/v1/questionnaire/save-answer',
         {
-          questionnaireId,
-          questionIndex: index,
-          answer: answerText,
-          status: 'manual',
+        questionnaireId,
+        questionIndex: index,
+        answer: answerText,
+        status: 'manual',
           organizationId: orgId,
         },
         orgId,
@@ -316,7 +316,7 @@ export function useQuestionnaireActions({
           body: JSON.stringify({
             questionnaireId,
             organizationId: orgId,
-            format,
+      format,
           }),
         },
       );
