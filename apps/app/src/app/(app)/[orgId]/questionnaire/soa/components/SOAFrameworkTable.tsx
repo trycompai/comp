@@ -3,28 +3,25 @@
 import { Card } from '@comp/ui';
 import { Button } from '@comp/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { getFrameworksWithLatestDocuments } from '../data/queries';
-import { approveSOADocument } from '../actions/approve-soa-document';
-import { declineSOADocument } from '../actions/decline-soa-document';
-import { submitSOAForApproval } from '../actions/submit-soa-for-approval';
-import { useAction } from 'next-safe-action/hooks';
 import { useSOAAutoFill } from '../hooks/useSOAAutoFill';
+import { api } from '@/lib/api-client';
 import { Member, User } from '@db';
 import { SOADocumentInfo } from './SOADocumentInfo';
 import { SOAPendingApprovalAlert } from './SOAPendingApprovalAlert';
 import { SubmitApprovalDialog } from './SubmitApprovalDialog';
 import { SOATable } from './SOATable';
+import type { FrameworkWithLatestDocument } from '../types';
 
-type Framework = Awaited<ReturnType<typeof getFrameworksWithLatestDocuments>>[number]['framework'];
-type Configuration = Awaited<ReturnType<typeof getFrameworksWithLatestDocuments>>[number]['configuration'];
-type Document = Awaited<ReturnType<typeof getFrameworksWithLatestDocuments>>[number]['document'];
+type Framework = FrameworkWithLatestDocument['framework'];
+type Configuration = FrameworkWithLatestDocument['configuration'];
+type Document = FrameworkWithLatestDocument['document'];
 
 // More flexible configuration type that doesn't require framework property
-type FlexibleConfiguration = Omit<Configuration, 'framework'> & {
-  framework?: Configuration['framework'];
+type FlexibleConfiguration = Configuration & {
+  framework?: Framework;
 };
 
 interface SOAFrameworkTableProps {
@@ -107,14 +104,38 @@ export function SOAFrameworkTable({
   
   // Create answers map from document answers (for justification and to check if answer exists)
   // Memoize to prevent hydration mismatches
-  const answersMap = useMemo<Map<string, { answer: string | null; answerVersion: number }>>(() => {
+  const [answersMap, setAnswersMap] = useState<Map<string, { answer: string | null; answerVersion: number }>>(() => {
     return new Map(
       (document?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
         answer.questionId,
         { answer: answer.answer, answerVersion: answer.answerVersion },
       ])
     );
+  });
+
+  // Update answersMap when document changes
+  useEffect(() => {
+    setAnswersMap(
+      new Map(
+        (document?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
+          answer.questionId,
+          { answer: answer.answer, answerVersion: answer.answerVersion },
+        ])
+      )
+    );
   }, [document?.answers]);
+
+  const handleAnswerUpdate = (questionId: string, answer: string | null) => {
+    setAnswersMap((prev) => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(questionId);
+      newMap.set(questionId, {
+        answer,
+        answerVersion: existing ? existing.answerVersion + 1 : 1,
+      });
+      return newMap;
+    });
+  };
   
   // Create a map to check if question has a latest answer
   const hasAnswerMap = useMemo(() => {
@@ -129,38 +150,9 @@ export function SOAFrameworkTable({
 
   const [isSubmitApprovalDialogOpen, setIsSubmitApprovalDialogOpen] = useState(false);
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
-
-  const approveAction = useAction(approveSOADocument, {
-    onSuccess: () => {
-      toast.success('SOA document approved successfully');
-      router.refresh();
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to approve SOA document');
-    },
-  });
-
-  const declineAction = useAction(declineSOADocument, {
-    onSuccess: () => {
-      toast.success('SOA document declined successfully');
-      router.refresh();
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to decline SOA document');
-    },
-  });
-
-  const submitForApprovalAction = useAction(submitSOAForApproval, {
-    onSuccess: () => {
-      toast.success('SOA document submitted for approval successfully');
-      setIsSubmitApprovalDialogOpen(false);
-      setSelectedApproverId(null);
-      router.refresh();
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to submit SOA document for approval');
-    },
-  });
+  const [isApproving, setIsApproving] = useState(false);
+  const [isDeclining, setIsDeclining] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use SSE hook for real-time updates
   // Map questions to match hook's expected type
@@ -177,8 +169,11 @@ export function SOAFrameworkTable({
   const { isAutoFilling: isAutoFillingSSE, questionStatuses, processedResults, triggerAutoFill } = useSOAAutoFill({
     questions: questionsForHook,
     documentId: document?.id || '',
+    organizationId,
     onUpdate: () => {
-      window.location.reload();
+      // Refresh server-side data without full page reload
+      // The UI state is already updated via SSE, so we just need to sync server state
+      router.refresh();
     },
   });
 
@@ -228,20 +223,83 @@ export function SOAFrameworkTable({
 
   const handleApprove = async () => {
     if (!document) return;
-    approveAction.execute({ documentId: document.id });
+    setIsApproving(true);
+    try {
+      const response = await api.post<{ success: boolean; data?: unknown }>(
+        '/v1/soa/approve',
+        {
+          organizationId,
+          documentId: document.id,
+        },
+        organizationId,
+      );
+
+      if (response.error) {
+        toast.error(response.error || 'Failed to approve SOA document');
+      } else if (response.data?.success) {
+        toast.success('SOA document approved successfully');
+        router.refresh();
+      }
+    } catch (error) {
+      toast.error('Failed to approve SOA document');
+    } finally {
+      setIsApproving(false);
+    }
   };
 
   const handleDecline = async () => {
     if (!document) return;
-    declineAction.execute({ documentId: document.id });
+    setIsDeclining(true);
+    try {
+      const response = await api.post<{ success: boolean; data?: unknown }>(
+        '/v1/soa/decline',
+        {
+          organizationId,
+          documentId: document.id,
+        },
+        organizationId,
+      );
+
+      if (response.error) {
+        toast.error(response.error || 'Failed to decline SOA document');
+      } else if (response.data?.success) {
+        toast.success('SOA document declined successfully');
+        router.refresh();
+      }
+    } catch (error) {
+      toast.error('Failed to decline SOA document');
+    } finally {
+      setIsDeclining(false);
+    }
   };
 
-  const handleSubmitForApproval = () => {
+  const handleSubmitForApproval = async () => {
     if (!document || !selectedApproverId) return;
-    submitForApprovalAction.execute({
-      documentId: document.id,
-      approverId: selectedApproverId,
-    });
+    setIsSubmitting(true);
+    try {
+      const response = await api.post<{ success: boolean; data?: unknown }>(
+        '/v1/soa/submit-for-approval',
+        {
+          organizationId,
+          documentId: document.id,
+          approverId: selectedApproverId,
+        },
+        organizationId,
+      );
+
+      if (response.error) {
+        toast.error(response.error || 'Failed to submit SOA document for approval');
+      } else if (response.data?.success) {
+        toast.success('SOA document submitted for approval successfully');
+        setIsSubmitApprovalDialogOpen(false);
+        setSelectedApproverId(null);
+        router.refresh();
+      }
+    } catch (error) {
+      toast.error('Failed to submit SOA document for approval');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -253,8 +311,8 @@ export function SOAFrameworkTable({
           currentMemberId={currentMemberId}
           approverId={(document as any).approverId}
           canCurrentUserApprove={canCurrentUserApprove}
-          isApproving={approveAction.status === 'executing'}
-          isDeclining={declineAction.status === 'executing'}
+          isApproving={isApproving}
+          isDeclining={isDeclining}
           onApprove={handleApprove}
           onDecline={handleDecline}
         />
@@ -283,6 +341,8 @@ export function SOAFrameworkTable({
         onToggleExpand={() => setIsExpanded(!isExpanded)}
         documentId={document.id}
         isPendingApproval={isPendingApproval}
+        organizationId={organizationId}
+        onAnswerUpdate={handleAnswerUpdate}
       />
 
       {/* Submit for Approval Dialog */}
@@ -293,7 +353,7 @@ export function SOAFrameworkTable({
         selectedApproverId={selectedApproverId}
         onApproverChange={setSelectedApproverId}
         onSubmit={handleSubmitForApproval}
-        isSubmitting={submitForApprovalAction.status === 'executing'}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

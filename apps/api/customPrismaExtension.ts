@@ -116,9 +116,11 @@ export class PrismaExtension implements BuildExtension {
 
     // Copy the prisma schema from the published package to the build output path
     const schemaDestinationPath = join(manifest.outputPath, 'prisma', 'schema.prisma');
+    const schemaDestinationDir = dirname(schemaDestinationPath);
     context.logger.debug(
       `Copying the prisma schema from ${schemaPath} to ${schemaDestinationPath}`,
     );
+    await mkdir(schemaDestinationDir, { recursive: true });
     await cp(schemaPath, schemaDestinationPath);
 
     // Add prisma generate command to generate the client from the copied schema

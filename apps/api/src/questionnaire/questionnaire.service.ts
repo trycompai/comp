@@ -507,7 +507,7 @@ export class QuestionnaireService {
       { wch: 60 },
     ];
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Questionnaire');
-    return Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }));
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
 
   private generateCSV(questionsAndAnswers: QuestionnaireAnswer[]): string {

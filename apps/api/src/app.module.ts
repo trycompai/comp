@@ -22,6 +22,7 @@ import { TaskTemplateModule } from './framework-editor/task-template/task-templa
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
+import { SOAModule } from './soa/soa.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
     QuestionnaireModule,
     VectorStoreModule,
     KnowledgeBaseModule,
+    SOAModule,
   ],
   controllers: [AppController],
   providers: [AppService],

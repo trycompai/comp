@@ -8761,6 +8761,299 @@
           "Knowledge Base"
         ]
       }
+    },
+    "/v1/soa/save-answer": {
+      "post": {
+        "operationId": "SOAController_saveAnswer_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSOAAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer saved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Save a SOA answer",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/auto-fill": {
+      "post": {
+        "description": "Streams SOA answers via Server-Sent Events (SSE)",
+        "operationId": "SOAController_autoFill_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoFillSOADto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Auto-fill SOA document",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/create-document": {
+      "post": {
+        "operationId": "SOAController_createDocument_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSOADocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document created successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a new SOA document",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/ensure-setup": {
+      "post": {
+        "operationId": "SOAController_ensureSetup_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureSOASetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Setup ensured"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Ensure SOA configuration and document exist",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/approve": {
+      "post": {
+        "operationId": "SOAController_approveDocument_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveSOADocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document approved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Approve a SOA document",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/decline": {
+      "post": {
+        "operationId": "SOAController_declineDocument_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineSOADocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document declined successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Decline a SOA document",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/submit-for-approval": {
+      "post": {
+        "operationId": "SOAController_submitForApproval_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitSOAForApprovalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document submitted for approval successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Submit SOA document for approval",
+        "tags": [
+          "SOA"
+        ]
+      }
     }
   },
   "info": {
@@ -11211,6 +11504,34 @@
         "properties": {}
       },
       "DeleteAllManualAnswersDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SaveSOAAnswerDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AutoFillSOADto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateSOADocumentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "EnsureSOASetupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ApproveSOADocumentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DeclineSOADocumentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubmitSOAForApprovalDto": {
         "type": "object",
         "properties": {}
       }
