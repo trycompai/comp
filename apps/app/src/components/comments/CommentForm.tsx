@@ -3,9 +3,17 @@
 import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
 import { Textarea } from '@comp/ui/textarea';
 import type { CommentEntityType } from '@db';
-import { FileIcon, Loader2, Paperclip, X } from 'lucide-react';
+import { Camera, FileIcon, Loader2, Paperclip, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,6 +34,8 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [filesToAdd, setFilesToAdd] = useState<File[]>([]);
 
   // Use SWR hooks for generic comments
   const { mutate: refreshComments } = useComments(entityId, entityType);
@@ -52,17 +62,34 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     for (const file of newFiles) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
         toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
     }
 
-    // Add files to pending list
-    setPendingFiles((prev) => [...prev, ...newFiles]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    // Store files and show reminder dialog
+    setFilesToAdd(newFiles);
+    setShowReminderDialog(true);
+  }, []);
 
-    newFiles.forEach((file) => {
-      toast.success(`File "${file.name}" ready for attachment.`);
-    });
+  // Handle reminder dialog confirmation
+  const handleReminderConfirm = useCallback(() => {
+    setShowReminderDialog(false);
+    if (filesToAdd.length > 0) {
+      setPendingFiles((prev) => [...prev, ...filesToAdd]);
+      filesToAdd.forEach((file) => {
+        toast.success(`File "${file.name}" ready for attachment.`);
+      });
+      setFilesToAdd([]);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [filesToAdd]);
+
+  // Handle reminder dialog close (cancel)
+  const handleReminderClose = useCallback(() => {
+    setShowReminderDialog(false);
+    setFilesToAdd([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
 
   const handleRemovePendingFile = (fileIndexToRemove: number) => {
@@ -202,6 +229,33 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
           </div>
         </div>
       </div>
+
+      {/* Screenshot Reminder Dialog */}
+      <Dialog open={showReminderDialog} onOpenChange={(open) => !open && handleReminderClose()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Camera className="h-5 w-5 text-primary" />
+              </div>
+              <DialogTitle>Screenshot Requirements</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              Ensure your organisation name is clearly visible within the screenshot.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Auditors require this to verify the source of the data; without it, evidence may be
+            rejected.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleReminderClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleReminderConfirm}>Continue</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

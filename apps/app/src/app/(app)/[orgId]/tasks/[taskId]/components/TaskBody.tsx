@@ -442,11 +442,12 @@ export function TaskBody({
               <DialogTitle>Screenshot Requirements</DialogTitle>
             </div>
             <DialogDescription className="pt-2">
-              Screenshots must include your organisation name visible in the corner.
+              Ensure your organisation name is clearly visible within the screenshot.
             </DialogDescription>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This helps our team process exceptions efficiently.
+            Auditors require this to verify the source of the data; without it, evidence may be
+            rejected.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={handleReminderClose}>
