@@ -15,8 +15,6 @@ import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-// Removed ApiAttachment interface - using database Attachment type directly
-
 interface TaskBodyProps {
   taskId: string;
   title?: string;
@@ -171,14 +169,12 @@ export function TaskBody({
     [uploadAttachment, refreshAttachments],
   );
 
-  // Intercept uploads to show reminder dialog first
   const initiateUpload = useCallback((files: FileList | File[]) => {
     if (!files || files.length === 0) return;
     setPendingFiles(files);
     setShowReminderDialog(true);
   }, []);
 
-  // Handle reminder dialog confirmation
   const handleReminderConfirm = useCallback(() => {
     setShowReminderDialog(false);
     if (pendingFiles) {
@@ -187,7 +183,6 @@ export function TaskBody({
     }
   }, [pendingFiles, processFiles]);
 
-  // Handle reminder dialog close (cancel upload)
   const handleReminderClose = useCallback(() => {
     setShowReminderDialog(false);
     setPendingFiles(null);
@@ -196,7 +191,6 @@ export function TaskBody({
     }
   }, []);
 
-  // Handle multiple file uploads using API
   const handleFileSelectMultiple = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = event.target.files;
@@ -431,7 +425,6 @@ export function TaskBody({
         )}
       </div>
 
-      {/* Screenshot Reminder Dialog */}
       <Dialog open={showReminderDialog} onOpenChange={(open) => !open && handleReminderClose()}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

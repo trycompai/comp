@@ -1,7 +1,6 @@
 'use client';
 
 import { useComments, useCommentWithAttachments } from '@/hooks/use-comments-api';
-import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -14,9 +13,8 @@ import {
 import { Textarea } from '@comp/ui/textarea';
 import type { CommentEntityType } from '@db';
 import { Camera, FileIcon, Loader2, Paperclip, X } from 'lucide-react';
-import { useParams } from 'next/navigation';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface CommentFormProps {
@@ -24,26 +22,17 @@ interface CommentFormProps {
   entityType: CommentEntityType;
 }
 
-// Removed PendingAttachment interface - using File objects directly with API hooks
-
 export function CommentForm({ entityId, entityType }: CommentFormProps) {
-  const session = authClient.useSession();
-  const params = useParams();
   const [newComment, setNewComment] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [hasMounted, setHasMounted] = useState(false);
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [filesToAdd, setFilesToAdd] = useState<File[]>([]);
 
   // Use SWR hooks for generic comments
   const { mutate: refreshComments } = useComments(entityId, entityType);
   const { createCommentWithFiles } = useCommentWithAttachments();
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -67,12 +56,10 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
       }
     }
 
-    // Store files and show reminder dialog
     setFilesToAdd(newFiles);
     setShowReminderDialog(true);
   }, []);
 
-  // Handle reminder dialog confirmation
   const handleReminderConfirm = useCallback(() => {
     setShowReminderDialog(false);
     if (filesToAdd.length > 0) {
@@ -85,7 +72,6 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [filesToAdd]);
 
-  // Handle reminder dialog close (cancel)
   const handleReminderClose = useCallback(() => {
     setShowReminderDialog(false);
     setFilesToAdd([]);
@@ -95,24 +81,6 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const handleRemovePendingFile = (fileIndexToRemove: number) => {
     setPendingFiles((prev) => prev.filter((_, index) => index !== fileIndexToRemove));
     toast.info('File removed from comment draft.');
-  };
-
-  const handlePendingFileClick = (fileIndex: number) => {
-    const file = pendingFiles[fileIndex];
-    if (!file) {
-      console.error('Could not find pending file for index:', fileIndex);
-      toast.error('Could not find file data.');
-      return;
-    }
-
-    // Create object URL for preview
-    const url = URL.createObjectURL(file);
-
-    // Open in new tab
-    window.open(url, '_blank', 'noopener,noreferrer');
-
-    // Clean up the object URL after a short delay
-    setTimeout(() => URL.revokeObjectURL(url), 100);
   };
 
   const handleCommentSubmit = async () => {
@@ -142,7 +110,6 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
 
   // Always show the actual form - no loading gate
   // Users can start typing immediately, authentication is checked on submit
-
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
       (event.metaKey || event.ctrlKey) &&
@@ -194,7 +161,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
                     <button
                       onClick={() => handleRemovePendingFile(index)}
                       disabled={isSubmitting}
-                      className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                      className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
                       aria-label={`Remove ${file.name}`}
                     >
                       <X className="h-3 w-3" />
@@ -230,7 +197,6 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
         </div>
       </div>
 
-      {/* Screenshot Reminder Dialog */}
       <Dialog open={showReminderDialog} onOpenChange={(open) => !open && handleReminderClose()}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
