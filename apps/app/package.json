@@ -2,6 +2,7 @@
   "name": "@comp/app",
   "version": "0.1.0",
   "dependencies": {
+    "@comp/integration-platform": "workspace:*",
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/groq": "^2.0.0",
     "@ai-sdk/openai": "^2.0.65",

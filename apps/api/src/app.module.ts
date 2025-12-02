@@ -19,6 +19,7 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
+import { IntegrationPlatformModule } from './integration-platform/integration-platform.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { TaskTemplateModule } from './framework-editor/task-template/task-templa
     HealthModule,
     TrustPortalModule,
     TaskTemplateModule,
+    IntegrationPlatformModule,
   ],
   controllers: [AppController],
   providers: [AppService],

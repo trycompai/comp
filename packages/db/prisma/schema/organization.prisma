@@ -39,5 +39,9 @@ model Organization {
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
   soaDocuments                       SOADocument[]
 
+  // Integration Platform
+  integrationConnections IntegrationConnection[]
+  integrationOAuthApps   IntegrationOAuthApp[]
+
   @@index([slug])
 }

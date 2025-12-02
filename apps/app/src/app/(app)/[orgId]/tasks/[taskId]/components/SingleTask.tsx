@@ -38,6 +38,7 @@ import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
+import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
@@ -184,6 +185,9 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
               </div>
             </div>
           </div>
+
+          {/* Integration Checks Section */}
+          <TaskIntegrationChecks taskId={task.id} />
 
           {/* Automations Section - Front & Center */}
           <div>
