@@ -1,5 +1,6 @@
 'use client';
 
+import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import {
   ConnectionListItem,
@@ -13,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp
 import { Skeleton } from '@comp/ui/skeleton';
 import { AlertCircle, CheckCircle2, Loader2, PlugZap, Settings2 } from 'lucide-react';
 import Image from 'next/image';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { SearchInput } from './SearchInput';
@@ -23,7 +24,6 @@ interface PlatformIntegrationsProps {
 }
 
 export function PlatformIntegrations({ className }: PlatformIntegrationsProps) {
-  const { orgId } = useParams<{ orgId: string }>();
   const searchParams = useSearchParams();
   const { providers, isLoading: loadingProviders } = useIntegrationProviders(true);
   const {
@@ -42,19 +42,41 @@ export function PlatformIntegrations({ className }: PlatformIntegrationsProps) {
   const [selectedConnection, setSelectedConnection] = useState<ConnectionListItem | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<IntegrationProvider | null>(null);
 
-  const handleConnect = async (providerSlug: string) => {
-    setConnectingProvider(providerSlug);
-    try {
-      // Pass current URL so we redirect back here after OAuth
-      const redirectUrl = window.location.href;
-      const result = await startOAuth(providerSlug, redirectUrl);
-      if (result.authorizationUrl) {
-        window.location.href = result.authorizationUrl;
+  // Connect dialog state (for non-OAuth)
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+  const [connectingProviderInfo, setConnectingProviderInfo] = useState<IntegrationProvider | null>(
+    null,
+  );
+
+  const handleConnect = async (provider: IntegrationProvider) => {
+    // For OAuth, redirect to authorization URL
+    if (provider.authType === 'oauth2') {
+      setConnectingProvider(provider.id);
+      try {
+        const redirectUrl = window.location.href;
+        const result = await startOAuth(provider.id, redirectUrl);
+        if (result.authorizationUrl) {
+          window.location.href = result.authorizationUrl;
+        } else {
+          toast.error(result.error || 'Failed to start connection');
+          setConnectingProvider(null);
+        }
+      } catch {
+        toast.error('Failed to start connection');
+        setConnectingProvider(null);
       }
-    } catch {
-      toast.error('Failed to start connection');
-      setConnectingProvider(null);
+      return;
     }
+
+    // For non-OAuth (api_key, basic, custom), open the connect dialog
+    setConnectingProviderInfo(provider);
+    setConnectDialogOpen(true);
+  };
+
+  const handleConnectDialogSuccess = () => {
+    refreshConnections();
+    setConnectDialogOpen(false);
+    setConnectingProviderInfo(null);
   };
 
   const handleOpenManageDialog = (
@@ -251,7 +273,7 @@ export function PlatformIntegrations({ className }: PlatformIntegrationsProps) {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={() => handleConnect(provider.id)}
+                          onClick={() => handleConnect(provider)}
                           disabled={isConnecting}
                         >
                           {isConnecting ? (
@@ -268,7 +290,7 @@ export function PlatformIntegrations({ className }: PlatformIntegrationsProps) {
                       <Button
                         size="sm"
                         className="w-full"
-                        onClick={() => handleConnect(provider.id)}
+                        onClick={() => handleConnect(provider)}
                         disabled={isConnecting}
                       >
                         {isConnecting ? (
@@ -304,6 +326,23 @@ export function PlatformIntegrations({ className }: PlatformIntegrationsProps) {
           onDisconnected={refreshConnections}
           onDeleted={refreshConnections}
           onSaved={refreshConnections}
+        />
+      )}
+
+      {/* Connect Dialog (for non-OAuth integrations) */}
+      {connectingProviderInfo && (
+        <ConnectIntegrationDialog
+          open={connectDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setConnectDialogOpen(false);
+              setConnectingProviderInfo(null);
+            }
+          }}
+          integrationId={connectingProviderInfo.id}
+          integrationName={connectingProviderInfo.name}
+          integrationLogoUrl={connectingProviderInfo.logoUrl}
+          onConnected={handleConnectDialogSuccess}
         />
       )}
     </div>

@@ -95,9 +95,15 @@ export const runTaskIntegrationChecks = task({
       return { success: false, error: 'Failed to validate credentials' };
     }
 
-    if (!credentials.access_token) {
-      logger.error(`No access token found for connection: ${connectionId}`);
-      return { success: false, error: 'No access token found' };
+    // Validate credentials based on auth type
+    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
+      logger.error(`No OAuth access token found for connection: ${connectionId}`);
+      return { success: false, error: 'No OAuth access token found. Please reconnect.' };
+    }
+
+    if (manifest.auth.type === 'custom' && Object.keys(credentials).length === 0) {
+      logger.error(`No credentials found for custom integration: ${connectionId}`);
+      return { success: false, error: 'No credentials found for custom integration' };
     }
 
     const variables =
@@ -113,7 +119,7 @@ export const runTaskIntegrationChecks = task({
       for (const checkId of checkIds) {
         const result = await runAllChecks({
           manifest,
-          accessToken: credentials.access_token,
+          accessToken: credentials.access_token ?? undefined,
           credentials,
           variables,
           connectionId,

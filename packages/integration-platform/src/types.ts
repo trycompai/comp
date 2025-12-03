@@ -75,7 +75,25 @@ export type JwtConfig = z.infer<typeof JwtConfigSchema>;
 
 export const CustomAuthConfigSchema = z.object({
   /** Description of what the custom auth requires */
-  description: z.string(),
+  description: z.string().optional(),
+  /** Credential fields for the custom auth form */
+  credentialFields: z
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        type: z.enum(['text', 'password', 'textarea', 'select', 'number', 'url']),
+        required: z.boolean().default(true),
+        placeholder: z.string().optional(),
+        helpText: z.string().optional(),
+        options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
+      }),
+    )
+    .optional(),
+  /** Validation schema for credentials (optional, for runtime validation) */
+  validationSchema: z.any().optional(),
+  /** Setup instructions (markdown) */
+  setupInstructions: z.string().optional(),
 });
 
 export type CustomAuthConfig = z.infer<typeof CustomAuthConfigSchema>;
@@ -176,10 +194,10 @@ export interface IntegrationFinding {
  * Provides helper methods and access to credentials.
  */
 export interface CheckContext {
-  /** The OAuth access token (for oauth2 auth) */
+  /** The OAuth access token (for oauth2 auth). Empty for custom auth types like AWS. */
   accessToken: string;
 
-  /** All credentials as key-value pairs */
+  /** All credentials as key-value pairs (form fields for custom auth, or token data for OAuth) */
   credentials: Record<string, string>;
 
   /** User-configured variables for this integration */

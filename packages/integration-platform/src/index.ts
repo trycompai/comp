@@ -95,3 +95,20 @@ export {
 
 // Individual manifests (for direct import if needed)
 export { manifest as githubManifest } from './manifests/github';
+
+// API Response types (for frontend and API type sharing)
+export type {
+  CheckRunFindingResponse,
+  CheckRunHistoryItemResponse,
+  CheckRunPassingResponse,
+  ConnectionListItemResponse,
+  ConnectionStatusValue,
+  CreateConnectionResponse,
+  IntegrationConnectionResponse,
+  IntegrationProviderResponse,
+  OAuthAvailabilityResponse,
+  OAuthStartResponse,
+  TaskIntegrationCheckResponse,
+  TestConnectionResponse,
+  VariableOptionResponse,
+} from './api-types';

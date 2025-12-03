@@ -63,7 +63,9 @@ export class ChecksController {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
     }
 
-    const provider = await this.providerRepository.findById(connection.providerId);
+    const provider = await this.providerRepository.findById(
+      connection.providerId,
+    );
     if (!provider) {
       throw new HttpException('Provider not found', HttpStatus.NOT_FOUND);
     }
@@ -105,7 +107,9 @@ export class ChecksController {
       );
     }
 
-    const provider = await this.providerRepository.findById(connection.providerId);
+    const provider = await this.providerRepository.findById(
+      connection.providerId,
+    );
     if (!provider) {
       throw new HttpException('Provider not found', HttpStatus.NOT_FOUND);
     }
@@ -129,9 +133,27 @@ export class ChecksController {
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(connectionId);
 
-    if (!credentials || !credentials.access_token) {
+    if (!credentials) {
       throw new HttpException(
-        'No valid credentials found for connection',
+        'No credentials found for connection',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Validate credentials based on auth type
+    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
+      throw new HttpException(
+        'No valid OAuth credentials found. Please reconnect.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (
+      manifest.auth.type === 'custom' &&
+      Object.keys(credentials).length === 0
+    ) {
+      throw new HttpException(
+        'No valid credentials found for custom integration',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -151,7 +173,7 @@ export class ChecksController {
       // Run checks
       const result = await runAllChecks({
         manifest,
-        accessToken: credentials.access_token,
+        accessToken: credentials.access_token ?? undefined,
         credentials: credentials as Record<string, string>,
         variables,
         connectionId,
@@ -193,4 +215,3 @@ export class ChecksController {
     return this.runConnectionChecks(connectionId, { checkId });
   }
 }
-

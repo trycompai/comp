@@ -142,6 +142,10 @@ export function ConnectIntegrationDialog({
         },
       ];
     }
+    // For custom auth, use the credential fields from the manifest
+    if (authType === 'custom' && credentialFields.length > 0) {
+      return credentialFields;
+    }
     return credentialFields;
   })();
 
@@ -188,16 +192,26 @@ export function ConnectIntegrationDialog({
         return;
       }
 
-      // Test the connection
+      // Test the connection (optional - some integrations don't support testing)
       if (result.connectionId) {
-        const testResult = await testConnection(result.connectionId);
-        if (!testResult.success) {
-          toast.error(`Connection created but test failed: ${testResult.message}`);
-        } else {
-          toast.success(`${integrationName} connected successfully!`);
+        try {
+          const testResult = await testConnection(result.connectionId);
+          if (!testResult.success) {
+            // Check if it's just "not supported" vs actual failure
+            if (testResult.message?.includes('does not support')) {
+              toast.success(`${integrationName} connected! Credentials saved.`);
+            } else {
+              toast.warning(`${integrationName} connected but test failed: ${testResult.message}`);
+            }
+          } else {
+            toast.success(`${integrationName} connected and verified!`);
+          }
+        } catch {
+          // Test failed but connection was created
+          toast.success(`${integrationName} connected! Credentials saved.`);
         }
       } else {
-        toast.success(`${integrationName} connected successfully!`);
+        toast.success(`${integrationName} connected!`);
       }
 
       onConnected?.();
@@ -298,6 +312,48 @@ export function ConnectIntegrationDialog({
         );
 
       case 'custom':
+        // If custom auth has credential fields, show a form
+        if (allFields.length > 0) {
+          return (
+            <div className="space-y-4">
+              {provider?.setupInstructions && (
+                <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md max-h-48 overflow-y-auto prose prose-sm dark:prose-invert">
+                  <p className="whitespace-pre-wrap text-xs">{provider.setupInstructions}</p>
+                </div>
+              )}
+              {allFields.map((field) => (
+                <div key={field.id} className="space-y-2">
+                  <Label htmlFor={field.id}>
+                    {field.label}
+                    {field.required && <span className="text-destructive ml-1">*</span>}
+                  </Label>
+                  <CredentialInput
+                    field={field}
+                    value={credentials[field.id] || ''}
+                    onChange={(value) => updateCredential(field.id, value)}
+                  />
+                  {field.helpText && (
+                    <p className="text-xs text-muted-foreground">{field.helpText}</p>
+                  )}
+                  {errors[field.id] && (
+                    <p className="text-xs text-destructive">{errors[field.id]}</p>
+                  )}
+                </div>
+              ))}
+              <Button onClick={handleCredentialConnect} disabled={connecting} className="w-full">
+                {connecting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  'Connect'
+                )}
+              </Button>
+            </div>
+          );
+        }
+        // Fallback if no credential fields
         return (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -328,7 +384,10 @@ export function ConnectIntegrationDialog({
     api_key: `Enter your ${integrationName} API key to connect.`,
     basic: `Enter your ${integrationName} credentials to connect.`,
     jwt: 'This integration requires service account authentication.',
-    custom: 'This integration requires custom configuration.',
+    custom:
+      allFields.length > 0
+        ? `Configure your ${integrationName} connection.`
+        : 'This integration requires custom configuration.',
   };
   const description = (authType && descriptions[authType]) || 'Configure your connection settings.';
 

@@ -8,7 +8,8 @@ import type {
 
 export interface CheckContextOptions {
   manifest: IntegrationManifest;
-  accessToken: string;
+  /** Access token for OAuth integrations. Optional for custom auth types (e.g., AWS IAM). */
+  accessToken?: string;
   credentials: Record<string, string>;
   variables?: CheckVariableValues;
   connectionId: string;
@@ -87,7 +88,7 @@ export function createCheckContext(options: CheckContextOptions): {
     onTokenRefresh,
   } = options;
 
-  let currentAccessToken = initialAccessToken;
+  let currentAccessToken = initialAccessToken ?? '';
   const findings: CheckResult['findings'] = [];
   const passingResults: CheckResult['passingResults'] = [];
   const logs: CheckResult['logs'] = [];
@@ -120,7 +121,8 @@ export function createCheckContext(options: CheckContextOptions): {
 
   const buildHeaders = (extra?: Record<string, string>): Record<string, string> => ({
     ...defaultHeaders,
-    Authorization: `Bearer ${currentAccessToken}`,
+    // Only add Authorization header if we have an access token (OAuth integrations)
+    ...(currentAccessToken ? { Authorization: `Bearer ${currentAccessToken}` } : {}),
     ...extra,
   });
 
