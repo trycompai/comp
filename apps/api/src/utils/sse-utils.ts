@@ -1,60 +1,51 @@
 import type { Response } from 'express';
 
 /**
- * Sanitizes a string to prevent XSS attacks when sent via SSE
- * Removes potentially dangerous HTML/script content
+ * Escapes special characters in JSON strings using Unicode escapes.
+ * This prevents potential XSS if JSON is ever interpreted as HTML,
+ * while keeping the JSON valid.
+ *
+ * JSON.stringify handles standard JSON escaping, but doesn't escape
+ * <, >, & which could be problematic if the response is misinterpreted.
  */
-function sanitizeString(str: string): string {
-  return str
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+function escapeJsonString(jsonStr: string): string {
+  return jsonStr
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
 }
 
 /**
- * Recursively sanitizes all string values in an object
- */
-function sanitizeObject(obj: unknown): unknown {
-  if (typeof obj === 'string') {
-    return sanitizeString(obj);
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map(sanitizeObject);
-  }
-
-  if (obj !== null && typeof obj === 'object') {
-    const sanitized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj)) {
-      sanitized[key] = sanitizeObject(value);
-    }
-    return sanitized;
-  }
-
-  return obj;
-}
-
-/**
- * Creates a safe SSE sender function that sanitizes data before sending
- * This prevents XSS attacks from user-provided or error message content
+ * Creates a safe SSE sender function.
+ *
+ * Security measures:
+ * 1. JSON.stringify handles escaping for JSON context
+ * 2. Unicode escapes for <, >, & prevent HTML interpretation
+ * 3. Content-Type: text/event-stream prevents browser HTML rendering
+ * 4. X-Content-Type-Options: nosniff prevents MIME sniffing
  */
 export function createSafeSSESender(res: Response) {
   return (data: object) => {
-    // Sanitize all string values in the data to prevent XSS
-    const sanitizedData = sanitizeObject(data);
-    res.write(`data: ${JSON.stringify(sanitizedData)}\n\n`);
+    // JSON.stringify provides safe JSON encoding
+    // Additional unicode escapes for <, >, & as defense-in-depth
+    const jsonData = escapeJsonString(JSON.stringify(data));
+    res.write(`data: ${jsonData}\n\n`);
   };
 }
 
 /**
- * Sanitizes an error message for safe inclusion in SSE responses
+ * Sanitizes an error message for safe inclusion in responses.
+ * Uses Unicode escapes instead of HTML entities to keep the message
+ * valid for JSON contexts while preventing XSS.
  */
 export function sanitizeErrorMessage(error: unknown): string {
   const message =
     error instanceof Error ? error.message : 'An unexpected error occurred';
-  return sanitizeString(message);
+  // Use unicode escapes for safety (same as escapeJsonString but for plain strings)
+  return message
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
 }
 
 /**
