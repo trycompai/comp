@@ -4,4 +4,3 @@ export class DeleteManualAnswerDto {
   @IsString()
   organizationId!: string;
 }
-

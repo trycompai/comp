@@ -50,6 +50,35 @@ enum FrameworkStatus {
   compliant
 }
 
+enum TrustComplianceFramework {
+  iso_27001
+  iso_42001
+  gdpr
+  hipaa
+  soc2_type1
+  soc2_type2
+  pci_dss
+  nen_7510
+  iso_9001
+}
+
+model TrustComplianceResource {
+  id             String                  @id @default(dbgenerated("generate_prefixed_cuid('tcr'::text)"))
+  organizationId String
+  organization   Organization            @relation("OrganizationTrustComplianceResources", fields: [organizationId], references: [id], onDelete: Cascade)
+  framework      TrustComplianceFramework
+  s3Key          String
+  fileName       String
+  fileSize       Int
+  uploadedById   String?
+  uploadedBy     Member?                 @relation("MemberUploadedComplianceResources", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@unique([organizationId, framework])
+  @@index([organizationId])
+}
+
 model TrustAccessRequest {
   id             String       @id @default(dbgenerated("generate_prefixed_cuid('tar'::text)"))
   organizationId String

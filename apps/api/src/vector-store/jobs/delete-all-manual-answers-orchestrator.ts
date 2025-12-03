@@ -26,7 +26,7 @@ export const deleteAllManualAnswersOrchestratorTask = task({
     try {
       // Use provided IDs if available, otherwise fetch from DB
       let manualAnswers: Array<{ id: string }>;
-      
+
       if (payload.manualAnswerIds && payload.manualAnswerIds.length > 0) {
         // Use IDs passed directly (avoids race condition with DB deletion)
         manualAnswers = payload.manualAnswerIds.map((id) => ({ id }));
@@ -45,7 +45,7 @@ export const deleteAllManualAnswersOrchestratorTask = task({
             id: true,
           },
         });
-        
+
         logger.info('Fetched manual answers from DB', {
           organizationId: payload.organizationId,
           count: manualAnswers.length,
@@ -67,7 +67,10 @@ export const deleteAllManualAnswersOrchestratorTask = task({
       metadata.set('deletedCount', 0);
       metadata.set('failedCount', 0);
       metadata.set('currentBatch', 0);
-      metadata.set('totalBatches', Math.ceil(manualAnswers.length / BATCH_SIZE));
+      metadata.set(
+        'totalBatches',
+        Math.ceil(manualAnswers.length / BATCH_SIZE),
+      );
 
       let deletedCount = 0;
       let failedCount = 0;
@@ -78,10 +81,13 @@ export const deleteAllManualAnswersOrchestratorTask = task({
         const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
         const totalBatches = Math.ceil(manualAnswers.length / BATCH_SIZE);
 
-        logger.info(`Processing deletion batch ${batchNumber}/${totalBatches}`, {
-          batchSize: batch.length,
-          manualAnswerIds: batch.map((ma) => ma.id),
-        });
+        logger.info(
+          `Processing deletion batch ${batchNumber}/${totalBatches}`,
+          {
+            batchSize: batch.length,
+            manualAnswerIds: batch.map((ma) => ma.id),
+          },
+        );
 
         // Update metadata
         metadata.set('currentBatch', batchNumber);
@@ -94,7 +100,8 @@ export const deleteAllManualAnswersOrchestratorTask = task({
           },
         }));
 
-        const batchHandle = await deleteManualAnswerTask.batchTriggerAndWait(batchItems);
+        const batchHandle =
+          await deleteManualAnswerTask.batchTriggerAndWait(batchItems);
 
         // Process batch results
         batchHandle.runs.forEach((run, batchIdx) => {
@@ -164,4 +171,3 @@ export const deleteAllManualAnswersOrchestratorTask = task({
     }
   },
 });
-

@@ -12,10 +12,7 @@ export const processKnowledgeBaseDocumentsOrchestratorTask = task({
   retry: {
     maxAttempts: 3,
   },
-  run: async (payload: {
-    documentIds: string[];
-    organizationId: string;
-  }) => {
+  run: async (payload: { documentIds: string[]; organizationId: string }) => {
     logger.info('Starting Knowledge Base documents processing orchestrator', {
       organizationId: payload.organizationId,
       documentCount: payload.documentIds.length,
@@ -36,7 +33,10 @@ export const processKnowledgeBaseDocumentsOrchestratorTask = task({
     metadata.set('documentsFailed', 0);
     metadata.set('documentsRemaining', payload.documentIds.length);
     metadata.set('currentBatch', 0);
-    metadata.set('totalBatches', Math.ceil(payload.documentIds.length / BATCH_SIZE));
+    metadata.set(
+      'totalBatches',
+      Math.ceil(payload.documentIds.length / BATCH_SIZE),
+    );
 
     // Initialize individual document statuses - all start as 'pending'
     payload.documentIds.forEach((documentId, index) => {
@@ -77,7 +77,8 @@ export const processKnowledgeBaseDocumentsOrchestratorTask = task({
         },
       }));
 
-      const batchHandle = await processKnowledgeBaseDocumentTask.batchTriggerAndWait(batchItems);
+      const batchHandle =
+        await processKnowledgeBaseDocumentTask.batchTriggerAndWait(batchItems);
 
       // Process batch results
       batchHandle.runs.forEach((run, batchIdx) => {
@@ -126,8 +127,13 @@ export const processKnowledgeBaseDocumentsOrchestratorTask = task({
       });
 
       // Update remaining count
-      const completed = results.filter((r) => r.success).length + results.filter((r) => !r.success).length;
-      metadata.set('documentsRemaining', payload.documentIds.length - completed);
+      const completed =
+        results.filter((r) => r.success).length +
+        results.filter((r) => !r.success).length;
+      metadata.set(
+        'documentsRemaining',
+        payload.documentIds.length - completed,
+      );
 
       logger.info(`Batch ${batchNumber}/${totalBatches} completed`, {
         batchSize: batch.length,
@@ -157,4 +163,3 @@ export const processKnowledgeBaseDocumentsOrchestratorTask = task({
     };
   },
 });
-

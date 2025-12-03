@@ -10,10 +10,10 @@ if (!upstashUrl || !upstashToken) {
   );
 }
 
-export const vectorIndex: Index | null = upstashUrl && upstashToken
-  ? new Index({
-      url: upstashUrl,
-      token: upstashToken,
-    })
-  : null;
-
+export const vectorIndex: Index | null =
+  upstashUrl && upstashToken
+    ? new Index({
+        url: upstashUrl,
+        token: upstashToken,
+      })
+    : null;

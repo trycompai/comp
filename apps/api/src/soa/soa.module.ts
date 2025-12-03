@@ -10,4 +10,3 @@ import { AuthModule } from '../auth/auth.module';
   exports: [SOAService],
 })
 export class SOAModule {}
-

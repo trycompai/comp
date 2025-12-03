@@ -7,4 +7,3 @@ export class CreateSOADocumentDto {
   @IsString()
   frameworkId!: string;
 }
-

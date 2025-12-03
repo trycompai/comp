@@ -1,5 +1,6 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Logger } from '@nestjs/common';
+import '../config/load-env';
 
 const logger = new Logger('S3');
 
@@ -10,15 +11,25 @@ const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
 export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 export const APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET =
   process.env.APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET;
-export const APP_AWS_KNOWLEDGE_BASE_BUCKET = process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET;
+export const APP_AWS_KNOWLEDGE_BASE_BUCKET =
+  process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET;
 export const APP_AWS_ORG_ASSETS_BUCKET = process.env.APP_AWS_ORG_ASSETS_BUCKET;
 
 let s3ClientInstance: S3Client | null = null;
 
 try {
-  if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
-    logger.error('[S3] AWS S3 credentials or configuration missing. Check environment variables.');
-    throw new Error('AWS S3 credentials or configuration missing. Check environment variables.');
+  if (
+    !APP_AWS_ACCESS_KEY_ID ||
+    !APP_AWS_SECRET_ACCESS_KEY ||
+    !BUCKET_NAME ||
+    !APP_AWS_REGION
+  ) {
+    logger.error(
+      '[S3] AWS S3 credentials or configuration missing. Check environment variables.',
+    );
+    throw new Error(
+      'AWS S3 credentials or configuration missing. Check environment variables.',
+    );
   }
 
   s3ClientInstance = new S3Client({
@@ -29,9 +40,14 @@ try {
     },
   });
 } catch (error) {
-  logger.error('FAILED TO INITIALIZE S3 CLIENT', error instanceof Error ? error.stack : error);
+  logger.error(
+    'FAILED TO INITIALIZE S3 CLIENT',
+    error instanceof Error ? error.stack : error,
+  );
   s3ClientInstance = null;
-  logger.error('[S3] Creating dummy S3 client - file uploads will fail until credentials are fixed');
+  logger.error(
+    '[S3] Creating dummy S3 client - file uploads will fail until credentials are fixed',
+  );
 }
 
 export const s3Client = s3ClientInstance;
@@ -96,7 +112,11 @@ export function extractS3KeyFromUrl(url: string): string {
   return key;
 }
 
-export async function getFleetAgent({ os }: { os: 'macos' | 'windows' | 'linux' }) {
+export async function getFleetAgent({
+  os,
+}: {
+  os: 'macos' | 'windows' | 'linux';
+}) {
   if (!s3Client) {
     throw new Error('S3 client not configured');
   }
@@ -116,4 +136,3 @@ export async function getFleetAgent({ os }: { os: 'macos' | 'windows' | 'linux' 
   const response = await s3Client.send(getFleetAgentCommand);
   return response.Body;
 }
-

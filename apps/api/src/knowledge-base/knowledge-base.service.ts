@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
-import { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomBytes } from 'crypto';
 import { tasks } from '@trigger.dev/sdk';
@@ -62,7 +66,9 @@ export class KnowledgeBaseService {
     // Validate file size (10MB limit)
     const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
     if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
-      throw new Error(`File exceeds the ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`);
+      throw new Error(
+        `File exceeds the ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
+      );
     }
 
     // Generate unique file key
@@ -239,19 +245,21 @@ export class KnowledgeBaseService {
     // Delete embeddings from vector database first (async, non-blocking)
     let vectorDeletionRunId: string | undefined;
     try {
-      const handle = await tasks.trigger<typeof deleteKnowledgeBaseDocumentTask>(
-        'delete-knowledge-base-document-from-vector',
-        {
-          documentId: document.id,
-          organizationId: dto.organizationId,
-        },
-      );
+      const handle = await tasks.trigger<
+        typeof deleteKnowledgeBaseDocumentTask
+      >('delete-knowledge-base-document-from-vector', {
+        documentId: document.id,
+        organizationId: dto.organizationId,
+      });
       vectorDeletionRunId = handle.id;
     } catch (triggerError) {
       // Log error but continue with deletion
       this.logger.warn('Failed to trigger vector deletion task', {
         documentId: document.id,
-        error: triggerError instanceof Error ? triggerError.message : 'Unknown error',
+        error:
+          triggerError instanceof Error
+            ? triggerError.message
+            : 'Unknown error',
       });
     }
 
@@ -288,22 +296,20 @@ export class KnowledgeBaseService {
 
     // Use orchestrator for multiple documents, individual task for single document
     if (dto.documentIds.length > 1) {
-      const handle = await tasks.trigger<typeof processKnowledgeBaseDocumentsOrchestratorTask>(
-        'process-knowledge-base-documents-orchestrator',
-        {
-          documentIds: dto.documentIds,
-          organizationId: dto.organizationId,
-        },
-      );
+      const handle = await tasks.trigger<
+        typeof processKnowledgeBaseDocumentsOrchestratorTask
+      >('process-knowledge-base-documents-orchestrator', {
+        documentIds: dto.documentIds,
+        organizationId: dto.organizationId,
+      });
       runId = handle.id;
     } else {
-      const handle = await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
-        'process-knowledge-base-document',
-        {
-          documentId: dto.documentIds[0]!,
-          organizationId: dto.organizationId,
-        },
-      );
+      const handle = await tasks.trigger<
+        typeof processKnowledgeBaseDocumentTask
+      >('process-knowledge-base-document', {
+        documentId: dto.documentIds[0],
+        organizationId: dto.organizationId,
+      });
       runId = handle.id;
     }
 
@@ -317,7 +323,9 @@ export class KnowledgeBaseService {
     };
   }
 
-  async deleteManualAnswer(dto: DeleteManualAnswerDto & { manualAnswerId: string }) {
+  async deleteManualAnswer(
+    dto: DeleteManualAnswerDto & { manualAnswerId: string },
+  ) {
     // Verify manual answer exists and belongs to organization
     const manualAnswer = await db.securityQuestionnaireManualAnswer.findUnique({
       where: {
@@ -349,11 +357,14 @@ export class KnowledgeBaseService {
       });
     } catch (error) {
       // Log error but continue with DB deletion
-      this.logger.warn('Failed to trigger delete manual answer from vector DB task', {
-        manualAnswerId: dto.manualAnswerId,
-        organizationId: dto.organizationId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      this.logger.warn(
+        'Failed to trigger delete manual answer from vector DB task',
+        {
+          manualAnswerId: dto.manualAnswerId,
+          organizationId: dto.organizationId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      );
       // Continue with DB deletion even if task trigger fails
     }
 
@@ -400,16 +411,22 @@ export class KnowledgeBaseService {
             manualAnswerIds: manualAnswers.map((ma) => ma.id), // Pass IDs directly
           },
         );
-        this.logger.log('Triggered delete all manual answers orchestrator task', {
-          organizationId: dto.organizationId,
-          count: manualAnswers.length,
-        });
+        this.logger.log(
+          'Triggered delete all manual answers orchestrator task',
+          {
+            organizationId: dto.organizationId,
+            count: manualAnswers.length,
+          },
+        );
       } catch (error) {
         // Log error but continue with DB deletion
-        this.logger.warn('Failed to trigger delete all manual answers orchestrator', {
-          organizationId: dto.organizationId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
+        this.logger.warn(
+          'Failed to trigger delete all manual answers orchestrator',
+          {
+            organizationId: dto.organizationId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+        );
         // Continue with DB deletion even if orchestrator trigger fails
       }
     } else {
@@ -431,5 +448,3 @@ export class KnowledgeBaseService {
     };
   }
 }
-
-

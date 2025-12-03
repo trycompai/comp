@@ -110,6 +110,7 @@ model Member {
   reviewedAccessRequests TrustAccessRequest[] @relation("TrustAccessRequestReviewer")
   issuedGrants           TrustAccessGrant[]   @relation("IssuedGrants")
   revokedGrants          TrustAccessGrant[]   @relation("RevokedGrants")
+  uploadedComplianceResources TrustComplianceResource[] @relation("MemberUploadedComplianceResources")
 }
 
 model Invitation {

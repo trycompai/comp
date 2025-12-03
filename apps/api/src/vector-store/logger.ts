@@ -26,4 +26,3 @@ export const logger = {
     baseLogger.error(formatMessage(message, payload));
   },
 };
-

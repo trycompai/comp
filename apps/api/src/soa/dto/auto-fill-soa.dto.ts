@@ -7,4 +7,3 @@ export class AutoFillSOADto {
   @IsString()
   documentId!: string;
 }
-

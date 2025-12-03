@@ -26,9 +26,8 @@ export class VectorStoreService {
   async searchSimilarContent(
     question: string,
     organizationId: string,
-    limit?: number,
   ): Promise<SimilarContentResult[]> {
-    return findSimilarContent(question, organizationId, limit);
+    return findSimilarContent(question, organizationId);
   }
 
   async countOrganizationEmbeddings(

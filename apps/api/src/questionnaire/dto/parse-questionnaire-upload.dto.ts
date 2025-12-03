@@ -9,4 +9,3 @@ export class ParseQuestionnaireUploadDto {
   @IsString()
   fileName?: string;
 }
-

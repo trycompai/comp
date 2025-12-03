@@ -7,5 +7,3 @@ export class DeleteDocumentDto {
   @IsString()
   documentId!: string;
 }
-
-

@@ -34,6 +34,7 @@ model Organization {
   trustAccessRequests                TrustAccessRequest[]
   trustNdaAgreements                 TrustNDAAgreement[]
   trustDocuments                     TrustDocument[]
+  trustComplianceResources           TrustComplianceResource[] @relation("OrganizationTrustComplianceResources")
   knowledgeBaseDocuments             KnowledgeBaseDocument[]
   questionnaires                     Questionnaire[]
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]

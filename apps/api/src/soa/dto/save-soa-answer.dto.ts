@@ -22,4 +22,3 @@ export class SaveSOAAnswerDto {
   @IsString()
   justification?: string | null;
 }
-

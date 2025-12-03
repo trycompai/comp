@@ -46,7 +46,7 @@ App (`apps/app`):
 - **APP_AWS_REGION**, **APP_AWS_ACCESS_KEY_ID**, **APP_AWS_SECRET_ACCESS_KEY**, **APP_AWS_BUCKET_NAME**: AWS S3 credentials for file storage (attachments, general uploads).
 - **APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET**: AWS S3 bucket name specifically for questionnaire file uploads. Required for the Security Questionnaire feature. If not set, users will see an error when trying to parse questionnaires.
 - **APP_AWS_KNOWLEDGE_BASE_BUCKET**: AWS S3 bucket name specifically for knowledge base documents. Required for the Knowledge Base feature in Security Questionnaire. If not set, users will see an error when trying to upload knowledge base documents.
-- **APP_AWS_ORG_ASSETS_BUCKET**: AWS S3 bucket name for organization static assets (e.g., company logos). Required for logo uploads in organization settings. If not set, logo upload will fail.
+- **APP_AWS_ORG_ASSETS_BUCKET**: AWS S3 bucket name for organization static assets (e.g., company logos, compliance certificates). Required for logo uploads in organization settings and Trust Portal compliance certificate uploads. If not set, these features will fail.
 - **OPENAI_API_KEY**: Enables AI features that call OpenAI models.
 - **UPSTASH_REDIS_REST_URL**, **UPSTASH_REDIS_REST_TOKEN**: Optional Redis (Upstash) used for rate limiting/queues/caching.
 - **NEXT_PUBLIC_POSTHOG_KEY**, **NEXT_PUBLIC_POSTHOG_HOST**: Client analytics via PostHog; leave unset to disable.
@@ -58,6 +58,17 @@ App (`apps/app`):
 - **SLACK_SALES_WEBHOOK**: Slack webhook for sales/lead notifications.
 - **GA4_API_SECRET**, **GA4_MEASUREMENT_ID**: Google Analytics 4 server/client tracking.
 - **NEXT_PUBLIC_API_URL**: Override client API base URL (defaults to same origin).
+
+API (`apps/api`):
+
+- **APP_AWS_REGION**, **APP_AWS_ACCESS_KEY_ID**, **APP_AWS_SECRET_ACCESS_KEY**, **APP_AWS_BUCKET_NAME**: AWS S3 credentials for file storage (attachments, general uploads).
+- **APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET**: AWS S3 bucket name specifically for questionnaire file uploads. Required for the Security Questionnaire feature.
+- **APP_AWS_KNOWLEDGE_BASE_BUCKET**: AWS S3 bucket name specifically for knowledge base documents. Required for the Knowledge Base feature in Security Questionnaire.
+- **APP_AWS_ORG_ASSETS_BUCKET**: AWS S3 bucket name for organization static assets (e.g., company logos, compliance certificates). Required for Trust Portal compliance certificate uploads and organization logo uploads. If not set, these features will fail.
+- **OPENAI_API_KEY**: Enables AI features that call OpenAI models.
+- **UPSTASH_VECTOR_REST_URL**, **UPSTASH_VECTOR_REST_TOKEN**: Required for vector database operations (questionnaire auto-answer, SOA auto-fill, knowledge base search).
+- **BETTER_AUTH_URL**: URL of the Better Auth instance (usually the same as the app URL).
+- **DATABASE_URL**: PostgreSQL database connection string.
 
 Portal (`apps/portal`):
 

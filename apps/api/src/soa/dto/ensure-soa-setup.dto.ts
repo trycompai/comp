@@ -7,4 +7,3 @@ export class EnsureSOASetupDto {
   @IsString()
   frameworkId!: string;
 }
-

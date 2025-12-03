@@ -3,7 +3,10 @@ import { batchUpsertEmbeddings } from '../core/upsert-embedding';
 import { chunkText } from '../utils/chunk-text';
 import { extractTextFromPolicy } from '../utils/extract-policy-text';
 import { deleteOrganizationEmbeddings } from '../core/delete-embeddings';
-import { findAllOrganizationEmbeddings, type ExistingEmbedding } from '../core/find-existing-embeddings';
+import {
+  findAllOrganizationEmbeddings,
+  type ExistingEmbedding,
+} from '../core/find-existing-embeddings';
 import { findEmbeddingsForSource } from '../core/find-existing-embeddings';
 import { vectorIndex } from '../core/client';
 import { logger } from '../../logger';
@@ -47,9 +50,11 @@ async function extractContentFromKnowledgeBaseDocument(
   fileType: string,
 ): Promise<string> {
   const knowledgeBaseBucket = process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET;
-  
+
   if (!knowledgeBaseBucket) {
-    throw new Error('Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.');
+    throw new Error(
+      'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.',
+    );
   }
 
   const s3Client = createKnowledgeBaseS3Client();
@@ -58,13 +63,13 @@ async function extractContentFromKnowledgeBaseDocument(
     Bucket: knowledgeBaseBucket,
     Key: s3Key,
   });
-  
+
   const response = await s3Client.send(getCommand);
-  
+
   if (!response.Body) {
     throw new Error('Failed to retrieve file from S3');
   }
-  
+
   // Convert stream to buffer
   const chunks: Uint8Array[] = [];
   for await (const chunk of response.Body as any) {
@@ -72,12 +77,13 @@ async function extractContentFromKnowledgeBaseDocument(
   }
   const buffer = Buffer.concat(chunks);
   const base64Data = buffer.toString('base64');
-  
+
   // Use provided fileType or determine from content type
-  const detectedFileType = response.ContentType || fileType || 'application/octet-stream';
-  
+  const detectedFileType =
+    response.ContentType || fileType || 'application/octet-stream';
+
   const content = await extractContentFromFile(base64Data, detectedFileType);
-  
+
   return content;
 }
 
@@ -85,11 +91,13 @@ async function extractContentFromKnowledgeBaseDocument(
  * Full resync of organization embeddings: deletes all old embeddings and creates new ones
  * Simple approach that guarantees data freshness
  * Optimized for small to medium volumes (100-200 policies)
- * 
+ *
  * Uses a lock mechanism to prevent concurrent syncs for the same organization.
  * If a sync is already in progress, subsequent calls will wait for it to complete.
  */
-export async function syncOrganizationEmbeddings(organizationId: string): Promise<void> {
+export async function syncOrganizationEmbeddings(
+  organizationId: string,
+): Promise<void> {
   if (!organizationId || organizationId.trim().length === 0) {
     logger.warn('Invalid organizationId provided for sync');
     return;
@@ -98,7 +106,9 @@ export async function syncOrganizationEmbeddings(organizationId: string): Promis
   // Check if sync is already in progress for this organization
   const existingSync = syncLocks.get(organizationId);
   if (existingSync) {
-    logger.info('Sync already in progress, waiting for completion', { organizationId });
+    logger.info('Sync already in progress, waiting for completion', {
+      organizationId,
+    });
     return existingSync;
   }
 
@@ -126,12 +136,15 @@ export async function syncOrganizationEmbeddings(organizationId: string): Promis
  * Uses incremental sync: only updates what changed
  */
 async function performSync(organizationId: string): Promise<void> {
-  logger.info('Starting incremental organization embeddings sync', { organizationId });
+  logger.info('Starting incremental organization embeddings sync', {
+    organizationId,
+  });
 
   try {
     // Step 1: Fetch all existing embeddings once (respects 1000 limit)
     // This is much faster than checking each policy/context individually
-    const existingEmbeddings = await findAllOrganizationEmbeddings(organizationId);
+    const existingEmbeddings =
+      await findAllOrganizationEmbeddings(organizationId);
     logger.info('Fetched existing embeddings', {
       organizationId,
       totalSources: existingEmbeddings.size,
@@ -166,10 +179,10 @@ async function performSync(organizationId: string): Promise<void> {
 
     // Process policies in parallel batches for better performance
     const POLICY_BATCH_SIZE = 100; // Process 100 policies in parallel (increased from 10 for better performance)
-    
+
     for (let i = 0; i < policies.length; i += POLICY_BATCH_SIZE) {
       const batch = policies.slice(i, i + POLICY_BATCH_SIZE);
-      
+
       // Process batch in parallel
       await Promise.all(
         batch.map(async (policy) => {
@@ -177,10 +190,14 @@ async function performSync(organizationId: string): Promise<void> {
             // Get embeddings from our pre-fetched map (fast - no API call)
             const policyEmbeddings = existingEmbeddings.get(policy.id) || [];
             const policyUpdatedAt = policy.updatedAt.toISOString();
-            
+
             // Check if policy needs update
-            const needsUpdate = policyEmbeddings.length === 0 || 
-              policyEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < policyUpdatedAt);
+            const needsUpdate =
+              policyEmbeddings.length === 0 ||
+              policyEmbeddings.some(
+                (e: ExistingEmbedding) =>
+                  !e.updatedAt || e.updatedAt < policyUpdatedAt,
+              );
 
             if (!needsUpdate) {
               policiesSkipped++;
@@ -189,26 +206,29 @@ async function performSync(organizationId: string): Promise<void> {
 
             // Delete old embeddings if they exist
             if (policyEmbeddings.length > 0 && vectorIndex) {
-              const idsToDelete = policyEmbeddings.map((e: ExistingEmbedding) => e.id);
+              const idsToDelete = policyEmbeddings.map(
+                (e: ExistingEmbedding) => e.id,
+              );
               try {
                 await vectorIndex.delete(idsToDelete);
               } catch (error) {
                 logger.warn('Failed to delete old policy embeddings', {
                   policyId: policy.id,
-                  error: error instanceof Error ? error.message : 'Unknown error',
+                  error:
+                    error instanceof Error ? error.message : 'Unknown error',
                 });
               }
             }
 
             // Create new embeddings
             const policyText = extractTextFromPolicy(policy as any);
-            
+
             if (!policyText || policyText.trim().length === 0) {
               return; // Skip empty policy
             }
 
             const chunks = chunkText(policyText, 500, 50);
-            
+
             if (chunks.length === 0) {
               return; // Skip if no chunks
             }
@@ -245,7 +265,7 @@ async function performSync(organizationId: string): Promise<void> {
             });
             // Continue with other policies
           }
-        })
+        }),
       );
     }
 
@@ -282,10 +302,10 @@ async function performSync(organizationId: string): Promise<void> {
 
     // Process context entries in parallel batches for better performance
     const CONTEXT_BATCH_SIZE = 100; // Process 100 context entries in parallel (increased from 10 for better performance)
-    
+
     for (let i = 0; i < contextEntries.length; i += CONTEXT_BATCH_SIZE) {
       const batch = contextEntries.slice(i, i + CONTEXT_BATCH_SIZE);
-      
+
       // Process batch in parallel
       await Promise.all(
         batch.map(async (context) => {
@@ -293,10 +313,14 @@ async function performSync(organizationId: string): Promise<void> {
             // Get embeddings from our pre-fetched map (fast - no API call)
             const contextEmbeddings = existingEmbeddings.get(context.id) || [];
             const contextUpdatedAt = context.updatedAt.toISOString();
-            
+
             // Check if context needs update
-            const needsUpdate = contextEmbeddings.length === 0 || 
-              contextEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < contextUpdatedAt);
+            const needsUpdate =
+              contextEmbeddings.length === 0 ||
+              contextEmbeddings.some(
+                (e: ExistingEmbedding) =>
+                  !e.updatedAt || e.updatedAt < contextUpdatedAt,
+              );
 
             if (!needsUpdate) {
               contextSkipped++;
@@ -305,26 +329,29 @@ async function performSync(organizationId: string): Promise<void> {
 
             // Delete old embeddings if they exist
             if (contextEmbeddings.length > 0 && vectorIndex) {
-              const idsToDelete = contextEmbeddings.map((e: ExistingEmbedding) => e.id);
+              const idsToDelete = contextEmbeddings.map(
+                (e: ExistingEmbedding) => e.id,
+              );
               try {
                 await vectorIndex.delete(idsToDelete);
               } catch (error) {
                 logger.warn('Failed to delete old context embeddings', {
                   contextId: context.id,
-                  error: error instanceof Error ? error.message : 'Unknown error',
+                  error:
+                    error instanceof Error ? error.message : 'Unknown error',
                 });
               }
             }
 
             // Create new embeddings
             const contextText = `Question: ${context.question}\n\nAnswer: ${context.answer}`;
-            
+
             if (!contextText || contextText.trim().length === 0) {
               return; // Skip empty context
             }
 
             const chunks = chunkText(contextText, 8000, 50);
-            
+
             if (chunks.length === 0) {
               return; // Skip if no chunks
             }
@@ -361,7 +388,7 @@ async function performSync(organizationId: string): Promise<void> {
             });
             // Continue with other context entries
           }
-        })
+        }),
       );
     }
 
@@ -399,10 +426,12 @@ async function performSync(organizationId: string): Promise<void> {
           const embeddingId = `manual_answer_${ma.id}`;
           const text = `${ma.question}\n\n${ma.answer}`;
           const updatedAt = ma.updatedAt.toISOString();
-          
+
           // Check if embedding exists and needs update
-          const existingManualAnswerEmbeddings = existingEmbeddings.get(ma.id) || [];
-          const needsUpdate = existingManualAnswerEmbeddings.length === 0 || 
+          const existingManualAnswerEmbeddings =
+            existingEmbeddings.get(ma.id) || [];
+          const needsUpdate =
+            existingManualAnswerEmbeddings.length === 0 ||
             existingManualAnswerEmbeddings[0]?.updatedAt !== updatedAt;
 
           if (!needsUpdate) {
@@ -473,22 +502,28 @@ async function performSync(organizationId: string): Promise<void> {
     const documentsToProcess = knowledgeBaseDocuments.filter((document) => {
       const documentEmbeddings = existingEmbeddings.get(document.id) || [];
       const documentUpdatedAt = document.updatedAt.toISOString();
-      
-      return document.processingStatus === 'pending' || 
-             document.processingStatus === 'failed' ||
-             documentEmbeddings.length === 0 || 
-             documentEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < documentUpdatedAt);
+
+      return (
+        document.processingStatus === 'pending' ||
+        document.processingStatus === 'failed' ||
+        documentEmbeddings.length === 0 ||
+        documentEmbeddings.some(
+          (e: ExistingEmbedding) =>
+            !e.updatedAt || e.updatedAt < documentUpdatedAt,
+        )
+      );
     });
 
-    documentsSkipped = knowledgeBaseDocuments.length - documentsToProcess.length;
+    documentsSkipped =
+      knowledgeBaseDocuments.length - documentsToProcess.length;
 
     // Process documents in parallel batches for better performance
     // Use smaller batch size (10) for Knowledge Base documents since they involve S3 downloads and content extraction
     const DOCUMENT_BATCH_SIZE = 20;
-    
+
     for (let i = 0; i < documentsToProcess.length; i += DOCUMENT_BATCH_SIZE) {
       const batch = documentsToProcess.slice(i, i + DOCUMENT_BATCH_SIZE);
-      
+
       // Process batch in parallel
       await Promise.all(
         batch.map(async (document) => {
@@ -547,7 +582,8 @@ async function performSync(organizationId: string): Promise<void> {
               } catch (error) {
                 logger.warn('Failed to delete existing embeddings', {
                   documentId: document.id,
-                  error: error instanceof Error ? error.message : 'Unknown error',
+                  error:
+                    error instanceof Error ? error.message : 'Unknown error',
                 });
               }
             }
@@ -622,7 +658,10 @@ async function performSync(organizationId: string): Promise<void> {
             } catch (updateError) {
               logger.error('Failed to update document status to failed', {
                 documentId: document.id,
-                error: updateError instanceof Error ? updateError.message : 'Unknown error',
+                error:
+                  updateError instanceof Error
+                    ? updateError.message
+                    : 'Unknown error',
               });
             }
 
@@ -642,10 +681,12 @@ async function performSync(organizationId: string): Promise<void> {
 
     // Step 8: Delete orphaned embeddings (policies/context/manual_answers/knowledge_base_documents that no longer exist in DB)
     // Use the embeddings we already fetched (no additional API call needed)
-    const dbPolicyIds = new Set(policies.map(p => p.id));
-    const dbContextIds = new Set(contextEntries.map(c => c.id));
-    const dbManualAnswerIds = new Set(manualAnswers.map(ma => ma.id));
-    const dbKnowledgeBaseDocumentIds = new Set(knowledgeBaseDocuments.map(d => d.id));
+    const dbPolicyIds = new Set(policies.map((p) => p.id));
+    const dbContextIds = new Set(contextEntries.map((c) => c.id));
+    const dbManualAnswerIds = new Set(manualAnswers.map((ma) => ma.id));
+    const dbKnowledgeBaseDocumentIds = new Set(
+      knowledgeBaseDocuments.map((d) => d.id),
+    );
     let orphanedDeleted = 0;
 
     // Check for orphaned embeddings using the pre-fetched map
@@ -654,12 +695,14 @@ async function performSync(organizationId: string): Promise<void> {
         const isPolicy = embeddings[0]?.sourceType === 'policy';
         const isContext = embeddings[0]?.sourceType === 'context';
         const isManualAnswer = embeddings[0]?.sourceType === 'manual_answer';
-        const isKnowledgeBaseDocument = embeddings[0]?.sourceType === 'knowledge_base_document';
-        
-        const shouldExist = (isPolicy && dbPolicyIds.has(sourceId)) || 
-                            (isContext && dbContextIds.has(sourceId)) ||
-                            (isManualAnswer && dbManualAnswerIds.has(sourceId)) ||
-                            (isKnowledgeBaseDocument && dbKnowledgeBaseDocumentIds.has(sourceId));
+        const isKnowledgeBaseDocument =
+          embeddings[0]?.sourceType === 'knowledge_base_document';
+
+        const shouldExist =
+          (isPolicy && dbPolicyIds.has(sourceId)) ||
+          (isContext && dbContextIds.has(sourceId)) ||
+          (isManualAnswer && dbManualAnswerIds.has(sourceId)) ||
+          (isKnowledgeBaseDocument && dbKnowledgeBaseDocumentIds.has(sourceId));
 
         if (!shouldExist && vectorIndex) {
           // Delete orphaned embeddings
@@ -669,7 +712,13 @@ async function performSync(organizationId: string): Promise<void> {
             orphanedDeleted += idsToDelete.length;
             logger.info('Deleted orphaned embeddings', {
               sourceId,
-              sourceType: isPolicy ? 'policy' : isContext ? 'context' : isManualAnswer ? 'manual_answer' : 'knowledge_base_document',
+              sourceType: isPolicy
+                ? 'policy'
+                : isContext
+                  ? 'context'
+                  : isManualAnswer
+                    ? 'manual_answer'
+                    : 'knowledge_base_document',
               deletedCount: idsToDelete.length,
             });
           } catch (error) {
@@ -725,4 +774,3 @@ async function performSync(organizationId: string): Promise<void> {
     throw error;
   }
 }
-

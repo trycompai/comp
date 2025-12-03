@@ -17,4 +17,3 @@ export class UploadAndParseDto {
   @IsIn(['internal', 'external'])
   source?: 'internal' | 'external';
 }
-

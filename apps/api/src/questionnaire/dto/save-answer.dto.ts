@@ -63,4 +63,3 @@ export class SaveAnswerDto {
   @IsIn(['generated', 'manual'])
   status!: 'generated' | 'manual';
 }
-

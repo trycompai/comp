@@ -6964,6 +6964,154 @@
         ]
       }
     },
+    "/v1/trust-portal/compliance-resources/upload": {
+      "post": {
+        "description": "Stores the compliance certificate in the organization assets bucket and replaces any previous file for the same framework.",
+        "operationId": "TrustPortalController_uploadComplianceResource_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadComplianceResourceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Compliance certificate uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceResourceResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Framework not compliant, PDF validation failed, or organization mismatch"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload or replace a compliance certificate (PDF only)",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/compliance-resources/signed-url": {
+      "post": {
+        "operationId": "TrustPortalController_getComplianceResourceUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplianceResourceSignedUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed URL generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceResourceUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Generate a temporary signed URL for a compliance certificate",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/compliance-resources/list": {
+      "post": {
+        "operationId": "TrustPortalController_listComplianceResources_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListComplianceResourcesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compliance certificates retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComplianceResourceResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List uploaded compliance certificates for the organization",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
     "/v1/trust-access/{friendlyUrl}/requests": {
       "post": {
         "description": "External users submit request for data access from trust site",
@@ -7438,6 +7586,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "query",
+            "required": false,
+            "in": "query",
+            "description": "Query parameter to append to the access link (e.g., security-questionnaire)",
+            "schema": {
+              "example": "security-questionnaire",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -7531,6 +7689,82 @@
           }
         },
         "summary": "Download all policies as watermarked PDF",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/compliance-resources": {
+      "get": {
+        "description": "Get list of uploaded compliance certificates for the organization",
+        "operationId": "TrustAccessController_getComplianceResourcesByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compliance resources list returned"
+          }
+        },
+        "summary": "List compliance resources by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/compliance-resources/{framework}": {
+      "get": {
+        "description": "Get signed URL to download a specific compliance certificate file",
+        "operationId": "TrustAccessController_getComplianceResourceUrlByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "framework",
+            "required": true,
+            "in": "path",
+            "description": "Compliance framework identifier",
+            "schema": {
+              "enum": [
+                "iso_27001",
+                "iso_42001",
+                "gdpr",
+                "hipaa",
+                "soc2_type1",
+                "soc2_type2",
+                "pci_dss",
+                "nen_7510",
+                "iso_9001"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL for compliance resource returned"
+          },
+          "400": {
+            "description": "Invalid framework or access token"
+          },
+          "404": {
+            "description": "Compliance resource not found"
+          }
+        },
+        "summary": "Download compliance resource by access token",
         "tags": [
           "Trust Access"
         ]
@@ -8277,6 +8511,60 @@
                 "required": [
                   "file",
                   "organizationId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/parse/upload/token": {
+      "post": {
+        "operationId": "QuestionnaireController_parseQuestionnaireUploadByToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "description": "Trust access token for authentication",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Questionnaire file (PDF, image, XLSX, CSV, TXT)"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "pdf",
+                      "csv",
+                      "xlsx"
+                    ],
+                    "default": "xlsx",
+                    "description": "Output format (defaults to XLSX)"
+                  }
+                },
+                "required": [
+                  "file"
                 ]
               }
             }
@@ -11329,6 +11617,152 @@
         "required": [
           "domain",
           "verified"
+        ]
+      },
+      "UploadComplianceResourceDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the compliance resource",
+            "example": "org_6914cd0e16e4c7dccbb54426"
+          },
+          "framework": {
+            "type": "string",
+            "description": "Compliance framework identifier",
+            "enum": [
+              "iso_27001",
+              "iso_42001",
+              "gdpr",
+              "hipaa",
+              "soc2_type1",
+              "soc2_type2",
+              "pci_dss",
+              "nen_7510",
+              "iso_9001"
+            ],
+            "example": "iso_27001"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original file name (PDF only)",
+            "example": "iso-27001-certificate.pdf"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded PDF content"
+          }
+        },
+        "required": [
+          "organizationId",
+          "framework",
+          "fileName",
+          "fileType",
+          "fileData"
+        ]
+      },
+      "ComplianceResourceResponseDto": {
+        "type": "object",
+        "properties": {
+          "framework": {
+            "type": "string",
+            "enum": [
+              "iso_27001",
+              "iso_42001",
+              "gdpr",
+              "hipaa",
+              "soc2_type1",
+              "soc2_type2",
+              "pci_dss",
+              "nen_7510",
+              "iso_9001"
+            ]
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "File size in bytes"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "ISO timestamp when the certificate was last updated"
+          }
+        },
+        "required": [
+          "framework",
+          "fileName",
+          "fileSize",
+          "updatedAt"
+        ]
+      },
+      "ComplianceResourceSignedUrlDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the compliance resource",
+            "example": "org_6914cd0e16e4c7dccbb54426"
+          },
+          "framework": {
+            "type": "string",
+            "description": "Compliance framework identifier",
+            "enum": [
+              "iso_27001",
+              "iso_42001",
+              "gdpr",
+              "hipaa",
+              "soc2_type1",
+              "soc2_type2",
+              "pci_dss",
+              "nen_7510",
+              "iso_9001"
+            ],
+            "example": "iso_27001"
+          }
+        },
+        "required": [
+          "organizationId",
+          "framework"
+        ]
+      },
+      "ComplianceResourceUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "signedUrl": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "File size in bytes"
+          }
+        },
+        "required": [
+          "signedUrl",
+          "fileName",
+          "fileSize"
+        ]
+      },
+      "ListComplianceResourcesDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the compliance resources",
+            "example": "org_6914cd0e16e4c7dccbb54426"
+          }
+        },
+        "required": [
+          "organizationId"
         ]
       },
       "CreateAccessRequestDto": {

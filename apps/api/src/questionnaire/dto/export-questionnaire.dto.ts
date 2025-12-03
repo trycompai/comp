@@ -14,4 +14,3 @@ export class ExportQuestionnaireDto extends ParseQuestionnaireDto {
   @IsIn(['internal', 'external'])
   source?: 'internal' | 'external';
 }
-

@@ -15,4 +15,3 @@ export class ParseQuestionnaireDto {
   @IsString()
   vendorName?: string;
 }
-

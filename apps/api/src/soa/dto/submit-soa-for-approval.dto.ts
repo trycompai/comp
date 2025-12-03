@@ -10,4 +10,3 @@ export class SubmitSOAForApprovalDto {
   @IsString()
   approverId!: string;
 }
-

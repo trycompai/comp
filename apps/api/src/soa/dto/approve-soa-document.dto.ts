@@ -7,4 +7,3 @@ export class ApproveSOADocumentDto {
   @IsString()
   documentId!: string;
 }
-

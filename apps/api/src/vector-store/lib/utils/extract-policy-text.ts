@@ -44,7 +44,9 @@ export function extractTextFromPolicy(policy: Policy): string {
 
     // Handle paragraphs
     if (node.type === 'paragraph' && node.content) {
-      const paraText = node.content.map((child: any) => processNode(child)).join('');
+      const paraText = node.content
+        .map((child: any) => processNode(child))
+        .join('');
       if (paraText.trim()) {
         parts.push(paraText);
       }
@@ -103,4 +105,3 @@ export function extractTextFromPolicy(policy: Policy): string {
 
   return textParts.join('\n\n');
 }
-

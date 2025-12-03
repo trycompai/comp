@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import type { AnswerQuestionResult } from './vendors/answer-question';
 import { answerQuestion } from './vendors/answer-question';
+import { generateAnswerWithRAGBatch } from './vendors/answer-question-helpers';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import {
   ExportQuestionnaireDto,
@@ -16,10 +17,14 @@ import { DeleteAnswerDto } from './dto/delete-answer.dto';
 import { UploadAndParseDto } from './dto/upload-and-parse.dto';
 import { ExportByIdDto } from './dto/export-by-id.dto';
 import { db, Prisma } from '@db';
-import { s3Client, APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET, BUCKET_NAME } from '../app/s3';
+import {
+  s3Client,
+  APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,
+  BUCKET_NAME,
+} from '../app/s3';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomBytes } from 'crypto';
-import { syncManualAnswerToVector } from '@/vector-store/lib';
+import { syncManualAnswerToVector, syncOrganizationEmbeddings } from '@/vector-store/lib';
 
 export interface QuestionnaireAnswer {
   question: string;
@@ -45,8 +50,13 @@ export interface QuestionnaireExportResult {
 export class QuestionnaireService {
   private readonly logger = new Logger(QuestionnaireService.name);
 
-  async parseQuestionnaire(dto: ParseQuestionnaireDto): Promise<ParsedQuestionnaireResult> {
-    const content = await this.extractContentFromFile(dto.fileData, dto.fileType);
+  async parseQuestionnaire(
+    dto: ParseQuestionnaireDto,
+  ): Promise<ParsedQuestionnaireResult> {
+    const content = await this.extractContentFromFile(
+      dto.fileData,
+      dto.fileType,
+    );
     const questionsAndAnswers = await this.parseQuestionsAndAnswers(content);
 
     return {
@@ -57,7 +67,9 @@ export class QuestionnaireService {
     };
   }
 
-  async autoAnswerAndExport(dto: ExportQuestionnaireDto): Promise<QuestionnaireExportResult> {
+  async autoAnswerAndExport(
+    dto: ExportQuestionnaireDto,
+  ): Promise<QuestionnaireExportResult> {
     let uploadInfo: { s3Key: string; fileSize: number } | null = null;
     if (dto.fileData) {
       uploadInfo = await this.uploadQuestionnaireFile({
@@ -68,9 +80,12 @@ export class QuestionnaireService {
         source: dto.source || 'internal',
       });
     } else {
-      this.logger.warn('No fileData provided for autoAnswerAndExport; original file will not be saved.', {
-        organizationId: dto.organizationId,
-      });
+      this.logger.warn(
+        'No fileData provided for autoAnswerAndExport; original file will not be saved.',
+        {
+          organizationId: dto.organizationId,
+        },
+      );
     }
 
     const parsed = await this.parseQuestionnaire(dto);
@@ -81,13 +96,19 @@ export class QuestionnaireService {
 
     const vendorName =
       dto.vendorName || dto.fileName || parsed.vendorName || 'questionnaire';
-    const exportFile = this.generateExportFile(answered, dto.format, vendorName);
+    const exportFile = this.generateExportFile(
+      answered,
+      dto.format,
+      vendorName,
+    );
 
     await this.persistQuestionnaireResult({
       organizationId: dto.organizationId,
       fileName: dto.fileName || vendorName,
       fileType: dto.fileType,
-      fileSize: uploadInfo?.fileSize ?? (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
+      fileSize:
+        uploadInfo?.fileSize ??
+        (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
       s3Key: uploadInfo?.s3Key ?? null,
       questionsAndAnswers: answered,
       source: dto.source || 'internal',
@@ -116,7 +137,10 @@ export class QuestionnaireService {
     });
 
     // 2. Parse questions from file (no answer generation)
-    const content = await this.extractContentFromFile(dto.fileData, dto.fileType);
+    const content = await this.extractContentFromFile(
+      dto.fileData,
+      dto.fileType,
+    );
     const questionsAndAnswers = await this.parseQuestionsAndAnswers(content);
 
     // 3. Persist to DB
@@ -124,7 +148,8 @@ export class QuestionnaireService {
       organizationId: dto.organizationId,
       fileName: dto.fileName,
       fileType: dto.fileType,
-      fileSize: uploadInfo?.fileSize ?? Buffer.from(dto.fileData, 'base64').length,
+      fileSize:
+        uploadInfo?.fileSize ?? Buffer.from(dto.fileData, 'base64').length,
       s3Key: uploadInfo?.s3Key ?? null,
       questionsAndAnswers: questionsAndAnswers.map((qa) => ({
         question: qa.question,
@@ -170,9 +195,14 @@ export class QuestionnaireService {
     return result;
   }
 
-  async saveAnswer(dto: SaveAnswerDto): Promise<{ success: boolean; error?: string }> {
+  async saveAnswer(
+    dto: SaveAnswerDto,
+  ): Promise<{ success: boolean; error?: string }> {
     if (!dto.questionAnswerId && dto.questionIndex === undefined) {
-      return { success: false, error: 'questionIndex or questionAnswerId is required' };
+      return {
+        success: false,
+        error: 'questionIndex or questionAnswerId is required',
+      };
     }
 
     const questionnaire = await db.questionnaire.findUnique({
@@ -193,8 +223,9 @@ export class QuestionnaireService {
       return { success: false, error: 'Questionnaire not found' };
     }
 
-    let existingQuestion: Awaited<ReturnType<typeof db.questionnaireQuestionAnswer.findUnique>> =
-      questionnaire.questions[0] ?? null;
+    let existingQuestion: Awaited<
+      ReturnType<typeof db.questionnaireQuestionAnswer.findUnique>
+    > = questionnaire.questions[0] ?? null;
     let questionIndex = dto.questionIndex;
 
     if (!existingQuestion && dto.questionAnswerId) {
@@ -230,7 +261,9 @@ export class QuestionnaireService {
       data: {
         answer: normalizedAnswer,
         status: dto.status === 'generated' ? 'generated' : 'manual',
-        sources: dto.sources ? (dto.sources as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+        sources: dto.sources
+          ? (dto.sources as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
         generatedAt: dto.status === 'generated' ? new Date() : null,
         updatedBy: null,
         updatedAt: new Date(),
@@ -320,10 +353,11 @@ export class QuestionnaireService {
       throw new Error('Questionnaire not found');
     }
 
-    const questionsAndAnswers: QuestionnaireAnswer[] = questionnaire.questions.map((q) => ({
-      question: q.question,
-      answer: q.answer,
-    }));
+    const questionsAndAnswers: QuestionnaireAnswer[] =
+      questionnaire.questions.map((q) => ({
+        question: q.question,
+        answer: q.answer,
+      }));
 
     const originalFilename = questionnaire.filename;
     this.logger.log('Exporting questionnaire', {
@@ -332,10 +366,16 @@ export class QuestionnaireService {
       format: dto.format,
     });
 
-    return this.generateExportFile(questionsAndAnswers, dto.format, originalFilename);
+    return this.generateExportFile(
+      questionsAndAnswers,
+      dto.format,
+      originalFilename,
+    );
   }
 
-  async deleteAnswer(dto: DeleteAnswerDto): Promise<{ success: boolean; error?: string }> {
+  async deleteAnswer(
+    dto: DeleteAnswerDto,
+  ): Promise<{ success: boolean; error?: string }> {
     const questionnaire = await db.questionnaire.findUnique({
       where: {
         id: dto.questionnaireId,
@@ -405,31 +445,44 @@ export class QuestionnaireService {
     this.logger.log(
       `Generating answers for ${questionsNeedingAnswers.length} of ${questionsAndAnswers.length} questions`,
     );
-
-    const results = await Promise.all(
-      questionsNeedingAnswers.map(async ({ question, index }) => {
-        try {
-          return await answerQuestion(
-            {
-              question,
+    
+    // Sync/Check organization embeddings before generating answers
+    try {
+      await syncOrganizationEmbeddings(organizationId);
+    } catch (error) {
+      this.logger.error('Failed to sync organization embeddings', {
+        organizationId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+    
+    // Use batch processing for efficiency:
+    // - Batch embedding generation (1 API call instead of N)
+    // - Parallel LLM calls for answer generation
+    const startTime = Date.now();
+    const questionsToAnswer = questionsNeedingAnswers.map((qa) => qa.question);
+    
+    const batchResults = await generateAnswerWithRAGBatch(
+      questionsToAnswer,
               organizationId,
-              questionIndex: index,
-              totalQuestions: questionsAndAnswers.length,
-            },
-            { useMetadata: false },
-          );
-        } catch (error) {
-          this.logger.error('Failed to answer question', error instanceof Error ? error.stack : error);
-          return {
-            success: false,
+    );
+
+    // Map batch results to AnswerQuestionResult format
+    const results: AnswerQuestionResult[] = questionsNeedingAnswers.map(
+      ({ question, index }, i) => ({
+        success: batchResults[i]?.answer !== null,
             questionIndex: index,
             question,
-            answer: null,
-            sources: [],
-            error: error instanceof Error ? error.message : 'Unknown error',
-          } satisfies AnswerQuestionResult;
-        }
+        answer: batchResults[i]?.answer ?? null,
+        sources: batchResults[i]?.sources ?? [],
       }),
+    );
+
+    const answeredCount = results.filter((r) => r.answer !== null).length;
+    const totalTime = Date.now() - startTime;
+    
+    this.logger.log(
+      `Batch answer generation completed: ${answeredCount}/${questionsNeedingAnswers.length} answered in ${totalTime}ms`,
     );
 
     const answeredMap = new Map<number, AnswerQuestionResult>();
@@ -466,7 +519,8 @@ export class QuestionnaireService {
         const buffer = this.generateXLSX(questionsAndAnswers);
         return {
           fileBuffer: buffer,
-          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          mimeType:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           filename: `${sanitizedBaseName}.xlsx`,
         };
       }
@@ -501,11 +555,7 @@ export class QuestionnaireService {
       ]),
     ];
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    worksheet['!cols'] = [
-      { wch: 5 },
-      { wch: 60 },
-      { wch: 60 },
-    ];
+    worksheet['!cols'] = [{ wch: 5 }, { wch: 60 }, { wch: 60 }];
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Questionnaire');
     return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
@@ -519,10 +569,15 @@ export class QuestionnaireService {
         (qa.answer || '').replace(/"/g, '""'),
       ]),
     ];
-    return rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+    return rows
+      .map((row) => row.map((cell) => `"${cell}"`).join(','))
+      .join('\n');
   }
 
-  private generatePDF(questionsAndAnswers: QuestionnaireAnswer[], vendorName?: string): Buffer {
+  private generatePDF(
+    questionsAndAnswers: QuestionnaireAnswer[],
+    vendorName?: string,
+  ): Buffer {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -539,7 +594,11 @@ export class QuestionnaireService {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, yPosition);
+    doc.text(
+      `Generated: ${new Date().toLocaleDateString()}`,
+      margin,
+      yPosition,
+    );
     yPosition += lineHeight * 2;
 
     doc.setFontSize(11);
@@ -557,7 +616,10 @@ export class QuestionnaireService {
 
       doc.setFont('helvetica', 'normal');
       const answerText = qa.answer || 'No answer provided';
-      const answerLines = doc.splitTextToSize(`A${index + 1}: ${answerText}`, contentWidth);
+      const answerLines = doc.splitTextToSize(
+        `A${index + 1}: ${answerText}`,
+        contentWidth,
+      );
       doc.text(answerLines, margin, yPosition);
       yPosition += answerLines.length * lineHeight + 4;
     });
@@ -565,12 +627,16 @@ export class QuestionnaireService {
     return Buffer.from(doc.output('arraybuffer'));
   }
 
-  private async extractContentFromFile(fileData: string, fileType: string): Promise<string> {
+  private async extractContentFromFile(
+    fileData: string,
+    fileType: string,
+  ): Promise<string> {
     const fileBuffer = Buffer.from(fileData, 'base64');
 
     if (
       fileType === 'application/vnd.ms-excel' ||
-      fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      fileType ===
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
       fileType === 'application/vnd.ms-excel.sheet.macroEnabled.12'
     ) {
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
@@ -578,11 +644,19 @@ export class QuestionnaireService {
 
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as string[][];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: '',
+        });
         const sheetText = jsonData
           .map((row) =>
             Array.isArray(row)
-              ? row.filter((cell) => cell !== null && cell !== undefined && cell !== '').join(' | ')
+              ? row
+                  .filter(
+                    (cell) =>
+                      cell !== null && cell !== undefined && cell !== '',
+                  )
+                  .join(' | ')
               : String(row),
           )
           .filter((line) => line.trim() !== '')
@@ -610,7 +684,8 @@ export class QuestionnaireService {
 
     if (
       fileType === 'application/msword' ||
-      fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      fileType ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ) {
       throw new Error(
         'Word documents (.docx) are best converted to PDF or image format for parsing. Alternatively, use a URL to view the document.',
@@ -650,7 +725,9 @@ export class QuestionnaireService {
     );
   }
 
-  private async parseQuestionsAndAnswers(content: string): Promise<QuestionnaireAnswer[]> {
+  private async parseQuestionsAndAnswers(
+    content: string,
+  ): Promise<QuestionnaireAnswer[]> {
     const MAX_CHUNK_SIZE_CHARS = 80_000;
     const MIN_CHUNK_SIZE_CHARS = 5_000;
     const MAX_QUESTIONS_PER_CHUNK = 1;
@@ -671,7 +748,11 @@ export class QuestionnaireService {
 
     const allResults = await Promise.all(
       chunkInfos.map((chunk, index) =>
-        this.parseChunkQuestionsAndAnswers(chunk.content, index, chunkInfos.length),
+        this.parseChunkQuestionsAndAnswers(
+          chunk.content,
+          index,
+          chunkInfos.length,
+        ),
       ),
     );
 
@@ -740,7 +821,8 @@ Content:
 ${chunk}`,
     });
 
-    const parsed = (object as { questionsAndAnswers: QuestionnaireAnswer[] }).questionsAndAnswers;
+    const parsed = (object as { questionsAndAnswers: QuestionnaireAnswer[] })
+      .questionsAndAnswers;
     return parsed.map((qa) => ({
       question: qa.question,
       answer: qa.answer && qa.answer.trim() !== '' ? qa.answer : null,
@@ -781,9 +863,14 @@ ${chunk}`,
     for (const line of lines) {
       const trimmedLine = line.trim();
       const isEmpty = trimmedLine.length === 0;
-      const looksLikeQuestion = !isEmpty && this.looksLikeQuestionLine(trimmedLine);
+      const looksLikeQuestion =
+        !isEmpty && this.looksLikeQuestionLine(trimmedLine);
 
-      if (looksLikeQuestion && currentQuestionFound && currentChunk.length > 0) {
+      if (
+        looksLikeQuestion &&
+        currentQuestionFound &&
+        currentChunk.length > 0
+      ) {
         pushChunk();
       }
 
@@ -828,7 +915,9 @@ ${chunk}`,
     if (questionMarks > 0) {
       return questionMarks;
     }
-    const lines = text.split(/\r?\n/).filter((line) => this.looksLikeQuestionLine(line.trim()));
+    const lines = text
+      .split(/\r?\n/)
+      .filter((line) => this.looksLikeQuestionLine(line.trim()));
     if (lines.length > 0) {
       return lines.length;
     }
@@ -867,7 +956,9 @@ ${chunk}`,
               questionIndex: index,
               status: qa.answer ? 'generated' : 'untouched',
               generatedAt: qa.answer ? new Date() : undefined,
-              sources: qa.sources ? (qa.sources as Prisma.InputJsonValue) : Prisma.JsonNull,
+              sources: qa.sources
+                ? (qa.sources as Prisma.InputJsonValue)
+                : Prisma.JsonNull,
             })),
           },
         },
@@ -899,8 +990,7 @@ ${chunk}`,
     if (!s3Client) {
       throw new Error('S3 client not configured for questionnaire uploads');
     }
-    const bucket =
-      APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET || BUCKET_NAME;
+    const bucket = APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET || BUCKET_NAME;
     if (!bucket) {
       throw new Error(
         'APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET or APP_AWS_BUCKET_NAME must be configured for questionnaire uploads',
@@ -911,7 +1001,9 @@ ${chunk}`,
 
     const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
     if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
-      throw new Error(`File exceeds the ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`);
+      throw new Error(
+        `File exceeds the ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
+      );
     }
 
     const fileId = randomBytes(16).toString('hex');
@@ -939,7 +1031,11 @@ ${chunk}`,
     };
   }
 
-  private async saveGeneratedAnswer(params: {
+  /**
+   * Saves a generated answer to the database
+   * Public wrapper for batch answer generation endpoints
+   */
+  async saveGeneratedAnswer(params: {
     questionnaireId: string;
     questionIndex: number;
     answer: string;
@@ -958,7 +1054,9 @@ ${chunk}`,
         data: {
           answer: params.answer,
           status: 'generated',
-          sources: params.sources ? (params.sources as Prisma.InputJsonValue) : Prisma.JsonNull,
+          sources: params.sources
+            ? (params.sources as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           generatedAt: new Date(),
         },
       });
@@ -970,7 +1068,9 @@ ${chunk}`,
           question: '', // Unknown at this point
           answer: params.answer,
           status: 'generated',
-          sources: params.sources ? (params.sources as Prisma.InputJsonValue) : Prisma.JsonNull,
+          sources: params.sources
+            ? (params.sources as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           generatedAt: new Date(),
         },
       });

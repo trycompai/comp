@@ -10,4 +10,3 @@ export class DeleteAnswerDto {
   @IsString()
   questionAnswerId!: string;
 }
-

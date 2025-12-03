@@ -34,7 +34,9 @@ type SOAConfiguration = {
   questions: SOAQuestion[];
 };
 
-export function transformISOConfigToSOA(controls: ISOControl[]): SOAConfiguration {
+export function transformISOConfigToSOA(
+  controls: ISOControl[],
+): SOAConfiguration {
   const columns: SOAColumn[] = [
     { name: 'closure', type: 'string' },
     { name: 'title', type: 'string' },
@@ -45,11 +47,15 @@ export function transformISOConfigToSOA(controls: ISOControl[]): SOAConfiguratio
 
   const questions: SOAQuestion[] = controls
     .filter((control) => {
-      return control.title && control.control_objective !== null && control.control_objective.trim() !== '';
+      return (
+        control.title &&
+        control.control_objective !== null &&
+        control.control_objective.trim() !== ''
+      );
     })
     .map((control, index) => {
       const id = `iso-control-${index}-${control.title.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}`;
-      
+
       return {
         id,
         text: control.control_objective || control.title,
@@ -80,14 +86,17 @@ export async function loadISOConfig(): Promise<SOAConfiguration> {
   // From dist/src/soa/utils, go up to dist/src, then replace 'dist' with 'src'
   const sourceDir = __dirname.replace(/dist[\\/]src/, 'src');
   const configPath = join(sourceDir, '../seedJson/ISO/config.json');
-  
+
   try {
     const configContent = readFileSync(configPath, 'utf-8');
     const isoControls: ISOControl[] = JSON.parse(configContent);
     return transformISOConfigToSOA(isoControls);
   } catch (error) {
     // Fallback: try using process.cwd() (should be apps/api when running)
-    const fallbackPath = join(process.cwd(), 'src/soa/seedJson/ISO/config.json');
+    const fallbackPath = join(
+      process.cwd(),
+      'src/soa/seedJson/ISO/config.json',
+    );
     try {
       const configContent = readFileSync(fallbackPath, 'utf-8');
       const isoControls: ISOControl[] = JSON.parse(configContent);
@@ -95,8 +104,8 @@ export async function loadISOConfig(): Promise<SOAConfiguration> {
     } catch {
       throw new Error(
         `Failed to load ISO config: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
-        `Tried paths: ${configPath}, ${fallbackPath}. ` +
-        `__dirname: ${__dirname}, process.cwd(): ${process.cwd()}`
+          `Tried paths: ${configPath}, ${fallbackPath}. ` +
+          `__dirname: ${__dirname}, process.cwd(): ${process.cwd()}`,
       );
     }
   }

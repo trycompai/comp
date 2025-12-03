@@ -48,17 +48,21 @@ import { findSimilarContent } from '@/vector-store/lib';
 const results = await findSimilarContent(
   "How do we handle encryption?",
   organizationId,
-  5 // limit
 );
 
+// Returns ALL results above similarity threshold (0.2)
+// No artificial limit - all relevant data reaches the LLM
+//
 // Results contain:
 // - id: embedding ID
 // - score: similarity score (0-1)
 // - content: text content
-// - sourceType: 'policy' | 'context' | 'document_hub' | 'attachment'
+// - sourceType: 'policy' | 'context' | 'manual_answer' | 'knowledge_base_document'
 // - sourceId: ID of the source document
 // - policyName: (if sourceType is 'policy')
 // - contextQuestion: (if sourceType is 'context')
+// - manualAnswerQuestion: (if sourceType is 'manual_answer')
+// - documentName: (if sourceType is 'knowledge_base_document')
 ```
 
 ### Upsert Embedding

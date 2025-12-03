@@ -8,7 +8,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DeleteDocumentDto } from './dto/delete-document.dto';
@@ -23,7 +28,9 @@ export class KnowledgeBaseController {
   constructor(private readonly knowledgeBaseService: KnowledgeBaseService) {}
 
   @Get('documents')
-  @ApiOperation({ summary: 'List all knowledge base documents for an organization' })
+  @ApiOperation({
+    summary: 'List all knowledge base documents for an organization',
+  })
   @ApiOkResponse({
     description: 'List of knowledge base documents',
     schema: {
@@ -37,7 +44,10 @@ export class KnowledgeBaseController {
           s3Key: { type: 'string' },
           fileType: { type: 'string' },
           fileSize: { type: 'number' },
-          processingStatus: { type: 'string', enum: ['pending', 'processing', 'completed', 'failed'] },
+          processingStatus: {
+            type: 'string',
+            enum: ['pending', 'processing', 'completed', 'failed'],
+          },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
@@ -67,7 +77,9 @@ export class KnowledgeBaseController {
   }
 
   @Post('documents/:documentId/download')
-  @ApiOperation({ summary: 'Get a signed download URL for a knowledge base document' })
+  @ApiOperation({
+    summary: 'Get a signed download URL for a knowledge base document',
+  })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Signed download URL generated',
@@ -90,7 +102,9 @@ export class KnowledgeBaseController {
   }
 
   @Post('documents/:documentId/view')
-  @ApiOperation({ summary: 'Get a signed view URL for a knowledge base document' })
+  @ApiOperation({
+    summary: 'Get a signed view URL for a knowledge base document',
+  })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Signed view URL generated',
@@ -198,5 +212,3 @@ export class KnowledgeBaseController {
     return this.knowledgeBaseService.deleteAllManualAnswers(dto);
   }
 }
-
-

@@ -2,7 +2,13 @@ import { vectorIndex } from './client';
 import { generateEmbedding } from './generate-embedding';
 import { logger } from '../../logger';
 
-export type SourceType = 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer' | 'knowledge_base_document';
+export type SourceType =
+  | 'policy'
+  | 'context'
+  | 'document_hub'
+  | 'attachment'
+  | 'manual_answer'
+  | 'knowledge_base_document';
 
 export interface EmbeddingMetadata {
   organizationId: string;
@@ -11,9 +17,6 @@ export interface EmbeddingMetadata {
   content: string;
   policyName?: string;
   contextQuestion?: string;
-  vendorId?: string;
-  vendorName?: string;
-  questionnaireQuestion?: string;
   documentName?: string;
   manualAnswerQuestion?: string;
   updatedAt?: string; // ISO timestamp for incremental sync comparison
@@ -31,7 +34,8 @@ export async function upsertEmbedding(
   metadata: EmbeddingMetadata,
 ): Promise<void> {
   if (!vectorIndex) {
-    const errorMsg = 'Upstash Vector is not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN';
+    const errorMsg =
+      'Upstash Vector is not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN';
     logger.error(errorMsg, {
       id,
       sourceType: metadata.sourceType,
@@ -42,7 +46,10 @@ export async function upsertEmbedding(
   }
 
   if (!text || text.trim().length === 0) {
-    logger.warn('Skipping empty text for embedding', { id, sourceType: metadata.sourceType });
+    logger.warn('Skipping empty text for embedding', {
+      id,
+      sourceType: metadata.sourceType,
+    });
     return;
   }
 
@@ -57,11 +64,12 @@ export async function upsertEmbedding(
       sourceId: metadata.sourceId,
       content: text.substring(0, 1000), // Store first 1000 chars for reference
       ...(metadata.policyName && { policyName: metadata.policyName }),
-      ...(metadata.contextQuestion && { contextQuestion: metadata.contextQuestion }),
-      ...(metadata.vendorId && { vendorId: metadata.vendorId }),
-      ...(metadata.vendorName && { vendorName: metadata.vendorName }),
-      ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
-      ...(metadata.manualAnswerQuestion && { manualAnswerQuestion: metadata.manualAnswerQuestion }),
+      ...(metadata.contextQuestion && {
+        contextQuestion: metadata.contextQuestion,
+      }),
+      ...(metadata.manualAnswerQuestion && {
+        manualAnswerQuestion: metadata.manualAnswerQuestion,
+      }),
       ...(metadata.documentName && { documentName: metadata.documentName }),
       ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
     };
@@ -72,7 +80,7 @@ export async function upsertEmbedding(
         id,
         embeddingId: id,
         vectorLength: embedding.length,
-        vectorPreview: embedding.slice(0, 5).map(v => v.toFixed(6)), // First 5 dimensions
+        vectorPreview: embedding.slice(0, 5).map((v) => v.toFixed(6)), // First 5 dimensions
         vectorStats: {
           min: Math.min(...embedding),
           max: Math.max(...embedding),
@@ -132,7 +140,9 @@ export async function batchUpsertEmbeddings(
   }
 
   // Filter out empty texts
-  const validItems = items.filter((item) => item.text && item.text.trim().length > 0);
+  const validItems = items.filter(
+    (item) => item.text && item.text.trim().length > 0,
+  );
 
   if (validItems.length === 0) {
     return;
@@ -164,18 +174,21 @@ export async function batchUpsertEmbeddings(
             sourceType: item.metadata.sourceType,
             sourceId: item.metadata.sourceId,
             content: item.text.substring(0, 1000), // Store first 1000 chars for reference
-            ...(item.metadata.policyName && { policyName: item.metadata.policyName }),
-            ...(item.metadata.contextQuestion && { contextQuestion: item.metadata.contextQuestion }),
-            ...(item.metadata.vendorId && { vendorId: item.metadata.vendorId }),
-            ...(item.metadata.vendorName && { vendorName: item.metadata.vendorName }),
-            ...(item.metadata.questionnaireQuestion && {
-              questionnaireQuestion: item.metadata.questionnaireQuestion,
+            ...(item.metadata.policyName && {
+              policyName: item.metadata.policyName,
+            }),
+            ...(item.metadata.contextQuestion && {
+              contextQuestion: item.metadata.contextQuestion,
             }),
             ...(item.metadata.manualAnswerQuestion && {
               manualAnswerQuestion: item.metadata.manualAnswerQuestion,
             }),
-            ...(item.metadata.documentName && { documentName: item.metadata.documentName }),
-            ...(item.metadata.updatedAt && { updatedAt: item.metadata.updatedAt }),
+            ...(item.metadata.documentName && {
+              documentName: item.metadata.documentName,
+            }),
+            ...(item.metadata.updatedAt && {
+              updatedAt: item.metadata.updatedAt,
+            }),
           },
         });
       }),
@@ -188,4 +201,3 @@ export async function batchUpsertEmbeddings(
     throw error;
   }
 }
-

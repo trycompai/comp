@@ -38,9 +38,11 @@ async function extractContentFromKnowledgeBaseDocument(
   fileType: string,
 ): Promise<string> {
   const knowledgeBaseBucket = process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET;
-  
+
   if (!knowledgeBaseBucket) {
-    throw new Error('Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable in Trigger.dev.');
+    throw new Error(
+      'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable in Trigger.dev.',
+    );
   }
 
   const s3Client = createS3Client();
@@ -49,13 +51,13 @@ async function extractContentFromKnowledgeBaseDocument(
     Bucket: knowledgeBaseBucket,
     Key: s3Key,
   });
-  
+
   const response = await s3Client.send(getCommand);
-  
+
   if (!response.Body) {
     throw new Error('Failed to retrieve file from S3');
   }
-  
+
   // Convert stream to buffer
   const chunks: Uint8Array[] = [];
   for await (const chunk of response.Body as any) {
@@ -63,12 +65,13 @@ async function extractContentFromKnowledgeBaseDocument(
   }
   const buffer = Buffer.concat(chunks);
   const base64Data = buffer.toString('base64');
-  
+
   // Use provided fileType or determine from content type
-  const detectedFileType = response.ContentType || fileType || 'application/octet-stream';
-  
+  const detectedFileType =
+    response.ContentType || fileType || 'application/octet-stream';
+
   const content = await extractContentFromFile(base64Data, detectedFileType);
-  
+
   return content;
 }
 
@@ -82,10 +85,7 @@ export const processKnowledgeBaseDocumentTask = task({
     maxAttempts: 3,
   },
   maxDuration: 1000 * 60 * 30, // 30 minutes for large files
-  run: async (payload: {
-    documentId: string;
-    organizationId: string;
-  }) => {
+  run: async (payload: { documentId: string; organizationId: string }) => {
     logger.info('Processing Knowledge Base document', {
       documentId: payload.documentId,
       organizationId: payload.organizationId,
@@ -268,7 +268,10 @@ export const processKnowledgeBaseDocumentTask = task({
       } catch (updateError) {
         logger.error('Failed to update document status to failed', {
           documentId: payload.documentId,
-          error: updateError instanceof Error ? updateError.message : 'Unknown error',
+          error:
+            updateError instanceof Error
+              ? updateError.message
+              : 'Unknown error',
         });
       }
 
@@ -280,4 +283,3 @@ export const processKnowledgeBaseDocumentTask = task({
     }
   },
 });
-

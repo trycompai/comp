@@ -10,4 +10,3 @@ export class ExportByIdDto {
   @IsIn(['xlsx', 'csv', 'pdf'])
   format!: 'xlsx' | 'csv' | 'pdf';
 }
-

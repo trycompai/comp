@@ -14,12 +14,15 @@ export async function syncManualAnswerToVector(
 ): Promise<{ success: boolean; error?: string; embeddingId?: string }> {
   // Check if vectorIndex is configured
   if (!vectorIndex) {
-    logger.error('❌ Upstash Vector not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN', {
-      manualAnswerId,
-      organizationId,
-      hasUrl: !!process.env.UPSTASH_VECTOR_REST_URL,
-      hasToken: !!process.env.UPSTASH_VECTOR_REST_TOKEN,
-    });
+    logger.error(
+      '❌ Upstash Vector not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN',
+      {
+        manualAnswerId,
+        organizationId,
+        hasUrl: !!process.env.UPSTASH_VECTOR_REST_URL,
+        hasToken: !!process.env.UPSTASH_VECTOR_REST_TOKEN,
+      },
+    );
     return { success: false, error: 'Vector DB not configured' };
   }
 
@@ -35,13 +38,16 @@ export async function syncManualAnswerToVector(
     });
 
     if (!manualAnswer) {
-      logger.warn('Manual answer not found for sync', { manualAnswerId, organizationId });
+      logger.warn('Manual answer not found for sync', {
+        manualAnswerId,
+        organizationId,
+      });
       return { success: false, error: 'Manual answer not found' };
     }
 
     // Create embedding ID: manual_answer_{id}
     const embeddingId = `manual_answer_${manualAnswerId}`;
-    
+
     // Combine question and answer for better semantic search
     const text = `${manualAnswer.question}\n\n${manualAnswer.answer}`;
 
@@ -69,35 +75,44 @@ export async function syncManualAnswerToVector(
     let wasFound = false;
     const maxRetries = 3;
     const initialDelay = 100; // 100ms
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const fetchedEmbeddings = await vectorIndex.fetch([embeddingId]);
-        wasFound = fetchedEmbeddings && fetchedEmbeddings.length > 0 && fetchedEmbeddings[0] !== null;
-        
+        wasFound =
+          fetchedEmbeddings &&
+          fetchedEmbeddings.length > 0 &&
+          fetchedEmbeddings[0] !== null;
+
         if (wasFound) {
           break; // Found it, exit retry loop
         }
-        
+
         // If not found and not the last attempt, wait before retrying
         if (attempt < maxRetries - 1) {
           const delay = initialDelay * Math.pow(2, attempt); // Exponential backoff: 100ms, 200ms, 400ms
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       } catch (verifyError) {
         // If it's the last attempt, log the error
         if (attempt === maxRetries - 1) {
-          logger.warn('Failed to verify embedding after upsert (final attempt)', {
-            embeddingId,
-            manualAnswerId,
-            attempt: attempt + 1,
-            error: verifyError instanceof Error ? verifyError.message : 'Unknown error',
-          });
+          logger.warn(
+            'Failed to verify embedding after upsert (final attempt)',
+            {
+              embeddingId,
+              manualAnswerId,
+              attempt: attempt + 1,
+              error:
+                verifyError instanceof Error
+                  ? verifyError.message
+                  : 'Unknown error',
+            },
+          );
         }
         // Continue to next retry
       }
     }
-    
+
     logger.info('✅ Successfully synced manual answer to vector DB', {
       manualAnswerId,
       organizationId,
@@ -155,7 +170,7 @@ export async function deleteManualAnswerFromVector(
     // Find existing embeddings for this manual answer
     // We need to search for embeddings with this sourceId
     const embeddingId = `manual_answer_${manualAnswerId}`;
-    
+
     // Try to delete directly by ID (most efficient)
     try {
       await vectorIndex.delete([embeddingId]);
@@ -170,7 +185,8 @@ export async function deleteManualAnswerFromVector(
       logger.warn('Failed to delete manual answer embedding (may not exist)', {
         manualAnswerId,
         embeddingId,
-        error: deleteError instanceof Error ? deleteError.message : 'Unknown error',
+        error:
+          deleteError instanceof Error ? deleteError.message : 'Unknown error',
       });
       // Still return success - embedding might not exist
       return { success: true };
@@ -187,4 +203,3 @@ export async function deleteManualAnswerFromVector(
     };
   }
 }
-

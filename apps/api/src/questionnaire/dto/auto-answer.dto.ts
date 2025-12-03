@@ -35,4 +35,3 @@ export class AutoAnswerDto {
   @Type(() => AutoAnswerQuestionDto)
   questionsAndAnswers!: AutoAnswerQuestionDto[];
 }
-

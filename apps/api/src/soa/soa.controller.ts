@@ -42,7 +42,8 @@ import { ApiSecurity, ApiHeader } from '@nestjs/swagger';
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
-  description: 'Organization ID (required for session auth, optional for API key auth)',
+  description:
+    'Organization ID (required for session auth, optional for API key auth)',
   required: false,
 })
 export class SOAController {
@@ -121,7 +122,10 @@ export class SOAController {
       }
 
       // Get document with configuration first
-      const fullDocument = await this.soaService.getDocument(dto.documentId, dto.organizationId);
+      const fullDocument = await this.soaService.getDocument(
+        dto.documentId,
+        dto.organizationId,
+      );
       if (!fullDocument) {
         send({
           type: 'error',
@@ -150,10 +154,34 @@ export class SOAController {
         total: questions.length,
         completed: 0,
         remaining: questions.length,
+        phase: 'searching',
       });
 
       // Check if organization is fully remote
-      const isFullyRemote = await this.soaService.checkIfFullyRemote(dto.organizationId);
+      const isFullyRemote = await this.soaService.checkIfFullyRemote(
+        dto.organizationId,
+      );
+
+      // Step 1: Batch search all questions (generates all embeddings in 1 API call)
+      const searchStartTime = Date.now();
+      const similarContentMap = await this.soaService.batchSearchSOAQuestions(
+        questions,
+        dto.organizationId,
+      );
+      const searchTime = Date.now() - searchStartTime;
+
+      this.logger.log(
+        `Batch search completed in ${searchTime}ms for ${questions.length} SOA questions`,
+      );
+
+      send({
+        type: 'progress',
+        total: questions.length,
+        completed: 0,
+        remaining: questions.length,
+        phase: 'generating',
+        searchTimeMs: searchTime,
+      });
 
       // Send 'processing' status for all questions immediately for instant UI feedback
       questions.forEach((question, index) => {
@@ -174,13 +202,14 @@ export class SOAController {
         insufficientData?: boolean;
       }> = [];
 
-      // Process all questions in parallel
+      // Step 2: Process all questions in parallel using pre-fetched content
       const promises = questions.map(async (question, index) => {
         try {
-          return await this.soaService.processSOAQuestion(
+          const similarContent = similarContentMap.get(question.id) || [];
+          return await this.soaService.processSOAQuestionWithContent(
             question,
             index,
-            dto.organizationId,
+            similarContent,
             isFullyRemote,
             send,
           );
@@ -223,24 +252,28 @@ export class SOAController {
       });
 
       // Save answers to database
-      const successfulResults = results.filter((r) => r.success && r.isApplicable !== null);
-      
+      const successfulResults = results.filter(
+        (r) => r.success && r.isApplicable !== null,
+      );
+
       await this.soaService.saveAnswersToDatabase(
         dto.documentId,
         questions,
         successfulResults,
         userId,
       );
-      
+
       // Update configuration with results
       await this.soaService.updateConfigurationWithResults(
         configuration.id,
         questions,
         successfulResults,
       );
-      
+
       // Update document
-      const answeredCount = successfulResults.filter((r) => r.isApplicable !== null).length;
+      const answeredCount = successfulResults.filter(
+        (r) => r.isApplicable !== null,
+      ).length;
       await this.soaService.updateDocumentAfterAutoFill(
         dto.documentId,
         questions.length,
@@ -253,6 +286,7 @@ export class SOAController {
         total: questions.length,
         answered: successfulResults.length,
         results: successfulResults,
+        searchTimeMs: searchTime,
       });
 
       this.logger.log('Auto-fill SOA completed via SSE', {
@@ -260,6 +294,7 @@ export class SOAController {
         documentId: dto.documentId,
         totalQuestions: questions.length,
         answered: successfulResults.length,
+        searchTimeMs: searchTime,
       });
 
       res.end();
@@ -358,4 +393,3 @@ export class SOAController {
     return this.soaService.submitForApproval(dto);
   }
 }
-

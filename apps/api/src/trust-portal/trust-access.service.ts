@@ -1,9 +1,10 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { randomBytes } from 'crypto';
 import {
   ApproveAccessRequestDto,
@@ -16,6 +17,10 @@ import { TrustEmailService } from './email.service';
 import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import { TRUST_COMPLIANCE_FRAMEWORK_ENUM, type TrustComplianceFramework } from './dto/compliance-resource.dto';
 
 @Injectable()
 export class TrustAccessService {
@@ -840,7 +845,7 @@ export class TrustAccessService {
     };
   }
 
-  async reclaimAccess(id: string, email: string) {
+  async reclaimAccess(id: string, email: string, query?: string) {
     const trust = await this.findPublishedTrustByRouteId(id);
 
     const grant = await db.trustAccessGrant.findFirst({
@@ -892,7 +897,13 @@ export class TrustAccessService {
     }
 
     const urlId = trust.friendlyUrl || trust.organizationId;
-    const accessLink = `${this.TRUST_APP_URL}/${urlId}/access/${accessToken}`;
+    let accessLink = `${this.TRUST_APP_URL}/${urlId}/access/${accessToken}`;
+
+    // Append query parameter if provided
+    if (query) {
+      const separator = accessLink.includes('?') ? '&' : '?';
+      accessLink = `${accessLink}${separator}query=${encodeURIComponent(query)}`;
+    }
 
     await this.emailService.sendAccessReclaimEmail({
       toEmail: email,
@@ -951,6 +962,11 @@ export class TrustAccessService {
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
     };
+  }
+
+  async validateAccessTokenAndGetOrganizationId(token: string): Promise<string> {
+    const grant = await this.validateAccessToken(token);
+    return grant.accessRequest.organizationId;
   }
 
   private async validateAccessToken(token: string) {
@@ -1035,6 +1051,144 @@ export class TrustAccessService {
     });
 
     return policies;
+  }
+
+  async getComplianceResourcesByAccessToken(token: string) {
+    const grant = await db.trustAccessGrant.findUnique({
+      where: { accessToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Invalid access token');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException('Access grant is not active');
+    }
+
+    if (grant.expiresAt < new Date()) {
+      throw new BadRequestException('Access grant has expired');
+    }
+
+    if (
+      !grant.accessTokenExpiresAt ||
+      grant.accessTokenExpiresAt < new Date()
+    ) {
+      throw new BadRequestException('Access token has expired');
+    }
+
+    const complianceResources = await db.trustComplianceResource.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+      },
+      select: {
+        framework: true,
+        fileName: true,
+        fileSize: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    return complianceResources.map((resource) => ({
+      framework: resource.framework,
+      fileName: resource.fileName,
+      fileSize: resource.fileSize,
+      updatedAt: resource.updatedAt.toISOString(),
+    }));
+  }
+
+  async getComplianceResourceUrlByAccessToken(
+    token: string,
+    framework: TrustComplianceFramework,
+  ) {
+    const grant = await this.validateAccessToken(token);
+
+    // Validate framework enum
+    if (!Object.values(TRUST_COMPLIANCE_FRAMEWORK_ENUM).includes(framework)) {
+      throw new BadRequestException(`Invalid framework: ${framework}`);
+    }
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const record = await db.trustComplianceResource.findUnique({
+      where: {
+        organizationId_framework: {
+          organizationId: grant.accessRequest.organizationId,
+          framework,
+        },
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException(
+        `No certificate uploaded for framework ${framework}`,
+      );
+    }
+
+    // Download the original PDF from S3
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: record.s3Key,
+    });
+
+    const response = await s3Client.send(getCommand);
+    const chunks: Uint8Array[] = [];
+
+    if (!response.Body) {
+      throw new InternalServerErrorException('No file data received from S3');
+    }
+
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+
+    const originalPdfBuffer = Buffer.concat(chunks);
+
+    // Watermark the PDF
+    const docId = `compliance-${grant.id}-${framework}-${Date.now()}`;
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      originalPdfBuffer,
+      {
+        name: grant.accessRequest.name,
+        email: grant.subjectEmail,
+        docId,
+        watermarkText: 'Comp AI',
+      },
+    );
+
+    // Upload watermarked PDF to S3
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      `compliance-${framework}-grant-${grant.id}-${Date.now()}.pdf`,
+      'application/pdf',
+      grant.accessRequest.organizationId,
+      'trust_compliance_downloads',
+      `${grant.id}`,
+    );
+
+    // Generate signed URL for the watermarked PDF
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(key);
+
+    return {
+      signedUrl: downloadUrl,
+      fileName: record.fileName,
+      fileSize: watermarked.length,
+    };
   }
 
   async downloadAllPoliciesByAccessToken(token: string) {

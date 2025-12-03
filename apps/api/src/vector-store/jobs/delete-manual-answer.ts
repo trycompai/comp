@@ -10,10 +10,7 @@ export const deleteManualAnswerTask = task({
   retry: {
     maxAttempts: 3,
   },
-  run: async (payload: {
-    manualAnswerId: string;
-    organizationId: string;
-  }) => {
+  run: async (payload: { manualAnswerId: string; organizationId: string }) => {
     logger.info('Deleting manual answer from vector DB', {
       manualAnswerId: payload.manualAnswerId,
       organizationId: payload.organizationId,
@@ -58,4 +55,3 @@ export const deleteManualAnswerTask = task({
     }
   },
 });
-

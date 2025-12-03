@@ -4,7 +4,8 @@ import { IsString, IsOptional, IsArray } from 'class-validator';
 export class AISuggestPolicyRequestDto {
   @ApiProperty({
     description: 'User instructions about what changes to make to the policy',
-    example: 'Update the data retention section to specify a 7-year retention period',
+    example:
+      'Update the data retention section to specify a 7-year retention period',
   })
   @IsString()
   instructions: string;

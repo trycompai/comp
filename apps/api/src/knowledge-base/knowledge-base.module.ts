@@ -7,5 +7,3 @@ import { KnowledgeBaseService } from './knowledge-base.service';
   providers: [KnowledgeBaseService],
 })
 export class KnowledgeBaseModule {}
-
-

@@ -51,7 +51,8 @@ export function deduplicateSources(sources: Source[]): Source[] {
       const normalizedSource: Source = {
         ...source,
         documentName: source.documentName || existing?.documentName,
-        manualAnswerQuestion: source.manualAnswerQuestion || existing?.manualAnswerQuestion,
+        manualAnswerQuestion:
+          source.manualAnswerQuestion || existing?.manualAnswerQuestion,
         sourceName: undefined,
       };
       normalizedSource.sourceName = getSourceDisplayName(normalizedSource);
@@ -66,7 +67,11 @@ export function deduplicateSources(sources: Source[]): Source[] {
         existing.manualAnswerQuestion = source.manualAnswerQuestion;
         needsUpdate = true;
       }
-      if (needsUpdate || !existing.sourceName || existing.sourceType === 'manual_answer') {
+      if (
+        needsUpdate ||
+        !existing.sourceName ||
+        existing.sourceType === 'manual_answer'
+      ) {
         existing.sourceName = getSourceDisplayName(existing);
       }
     }
@@ -115,4 +120,3 @@ function getSourceDisplayName(source: Source): string {
 
   return source.sourceType || 'Unknown Source';
 }
-

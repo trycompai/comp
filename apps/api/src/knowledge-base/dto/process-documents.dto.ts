@@ -10,5 +10,3 @@ export class ProcessDocumentsDto {
   @MinLength(1, { each: true })
   documentIds!: string[];
 }
-
-

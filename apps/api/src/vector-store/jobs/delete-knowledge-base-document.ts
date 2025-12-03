@@ -11,10 +11,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
   retry: {
     maxAttempts: 3,
   },
-  run: async (payload: {
-    documentId: string;
-    organizationId: string;
-  }) => {
+  run: async (payload: { documentId: string; organizationId: string }) => {
     logger.info('Deleting Knowledge Base document from vector DB', {
       documentId: payload.documentId,
       organizationId: payload.organizationId,
@@ -72,7 +69,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
       }
 
       const idsToDelete = existingEmbeddings.map((e) => e.id);
-      
+
       if (idsToDelete.length === 0) {
         logger.info('No embeddings to delete for document', {
           documentId: payload.documentId,
@@ -87,7 +84,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
       // Delete all embeddings in batches (Upstash Vector supports batch delete)
       const batchSize = 100;
       let deletedCount = 0;
-      
+
       for (let i = 0; i < idsToDelete.length; i += batchSize) {
         const batch = idsToDelete.slice(i, i + batchSize);
         try {
@@ -103,7 +100,10 @@ export const deleteKnowledgeBaseDocumentTask = task({
           logger.error('Error deleting batch of embeddings', {
             documentId: payload.documentId,
             batchSize: batch.length,
-            error: batchError instanceof Error ? batchError.message : 'Unknown error',
+            error:
+              batchError instanceof Error
+                ? batchError.message
+                : 'Unknown error',
           });
           // Continue with next batch even if one fails
         }
@@ -128,20 +128,25 @@ export const deleteKnowledgeBaseDocumentTask = task({
       // Retry deletion up to 3 times if chunks remain
       let retryAttempt = 0;
       const maxRetries = 3;
-      
+
       while (remainingEmbeddings.length > 0 && retryAttempt < maxRetries) {
         retryAttempt++;
-        logger.warn('Some embeddings were not deleted, attempting retry deletion', {
-          documentId: payload.documentId,
-          remainingCount: remainingEmbeddings.length,
-          remainingIds: remainingEmbeddings.map((e) => e.id),
-          retryAttempt,
-          maxRetries,
-        });
-        
+        logger.warn(
+          'Some embeddings were not deleted, attempting retry deletion',
+          {
+            documentId: payload.documentId,
+            remainingCount: remainingEmbeddings.length,
+            remainingIds: remainingEmbeddings.map((e) => e.id),
+            retryAttempt,
+            maxRetries,
+          },
+        );
+
         // Wait before retry to allow propagation
-        await new Promise((resolve) => setTimeout(resolve, 2000 * retryAttempt)); // Increasing delay
-        
+        await new Promise((resolve) =>
+          setTimeout(resolve, 2000 * retryAttempt),
+        ); // Increasing delay
+
         // Try deleting remaining chunks
         const remainingIds = remainingEmbeddings.map((e) => e.id);
         try {
@@ -152,7 +157,7 @@ export const deleteKnowledgeBaseDocumentTask = task({
             await vectorIndex.delete(batch);
             deletedCount += batch.length;
           }
-          
+
           logger.info('Deleted remaining embeddings in retry attempt', {
             documentId: payload.documentId,
             deletedCount: remainingIds.length,
@@ -162,10 +167,13 @@ export const deleteKnowledgeBaseDocumentTask = task({
           logger.error('Error deleting remaining embeddings in retry attempt', {
             documentId: payload.documentId,
             retryAttempt,
-            error: retryError instanceof Error ? retryError.message : 'Unknown error',
+            error:
+              retryError instanceof Error
+                ? retryError.message
+                : 'Unknown error',
           });
         }
-        
+
         // Query again to check if deletion was successful
         await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for propagation
         remainingEmbeddings = await findEmbeddingsForSource(
@@ -178,11 +186,14 @@ export const deleteKnowledgeBaseDocumentTask = task({
 
       // Final verification - if chunks still remain, try one more aggressive search
       if (remainingEmbeddings.length > 0) {
-        logger.warn('Chunks still remain after retries, attempting final aggressive search', {
-          documentId: payload.documentId,
-          remainingCount: remainingEmbeddings.length,
-          remainingIds: remainingEmbeddings.map((e) => e.id),
-        });
+        logger.warn(
+          'Chunks still remain after retries, attempting final aggressive search',
+          {
+            documentId: payload.documentId,
+            remainingCount: remainingEmbeddings.length,
+            remainingIds: remainingEmbeddings.map((e) => e.id),
+          },
+        );
 
         // Wait a bit longer for final attempt
         await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -208,7 +219,10 @@ export const deleteKnowledgeBaseDocumentTask = task({
           } catch (finalError) {
             logger.error('Error in final deletion attempt', {
               documentId: payload.documentId,
-              error: finalError instanceof Error ? finalError.message : 'Unknown error',
+              error:
+                finalError instanceof Error
+                  ? finalError.message
+                  : 'Unknown error',
             });
           }
 
@@ -222,26 +236,32 @@ export const deleteKnowledgeBaseDocumentTask = task({
           );
 
           if (trulyRemaining.length > 0) {
-            logger.error('CRITICAL: Some embeddings still remain after all deletion attempts', {
-              documentId: payload.documentId,
-              remainingCount: trulyRemaining.length,
-              remainingIds: trulyRemaining.map((e) => e.id),
-              remainingChunks: trulyRemaining.map((e) => ({
-                id: e.id,
-                sourceId: e.sourceId,
-                updatedAt: e.updatedAt,
-              })),
-              note: 'These chunks may need manual deletion or there may be a synchronization issue with Upstash Vector',
-            });
+            logger.error(
+              'CRITICAL: Some embeddings still remain after all deletion attempts',
+              {
+                documentId: payload.documentId,
+                remainingCount: trulyRemaining.length,
+                remainingIds: trulyRemaining.map((e) => e.id),
+                remainingChunks: trulyRemaining.map((e) => ({
+                  id: e.id,
+                  sourceId: e.sourceId,
+                  updatedAt: e.updatedAt,
+                })),
+                note: 'These chunks may need manual deletion or there may be a synchronization issue with Upstash Vector',
+              },
+            );
           }
         }
       }
 
-      logger.info('Successfully deleted Knowledge Base document embeddings from vector DB', {
-        documentId: payload.documentId,
-        deletedCount,
-        totalFound: idsToDelete.length,
-      });
+      logger.info(
+        'Successfully deleted Knowledge Base document embeddings from vector DB',
+        {
+          documentId: payload.documentId,
+          deletedCount,
+          totalFound: idsToDelete.length,
+        },
+      );
 
       return {
         success: true,
@@ -261,4 +281,3 @@ export const deleteKnowledgeBaseDocumentTask = task({
     }
   },
 });
-

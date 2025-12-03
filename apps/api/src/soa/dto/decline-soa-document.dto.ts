@@ -7,4 +7,3 @@ export class DeclineSOADocumentDto {
   @IsString()
   documentId!: string;
 }
-

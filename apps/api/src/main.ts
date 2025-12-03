@@ -1,27 +1,13 @@
+import './config/load-env';
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
-import { config } from 'dotenv';
 import path from 'path';
 import { AppModule } from './app.module';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-
-// Load .env file from apps/api directory before anything else
-// This ensures .env values override any shell environment variables
-// __dirname in compiled code is dist/src, so go up two levels to apps/api
-const envPath = path.join(__dirname, '..', '..', '.env');
-if (existsSync(envPath)) {
-  config({ path: envPath, override: true });
-} else {
-  // Fallback: try current working directory (when run from apps/api)
-  const cwdEnvPath = path.join(process.cwd(), '.env');
-  if (existsSync(cwdEnvPath)) {
-    config({ path: cwdEnvPath, override: true });
-  }
-}
+import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);

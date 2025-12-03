@@ -7,5 +7,3 @@ export class GetDocumentUrlDto {
   @IsString()
   documentId!: string;
 }
-
-

@@ -7,7 +7,7 @@ import { ApproveSOADocumentDto } from './dto/approve-soa-document.dto';
 import { DeclineSOADocumentDto } from './dto/decline-soa-document.dto';
 import { SubmitSOAForApprovalDto } from './dto/submit-soa-for-approval.dto';
 import { syncOrganizationEmbeddings } from '@/vector-store/lib';
-import { findSimilarContent } from '@/vector-store/lib';
+import { findSimilarContent, findSimilarContentBatch } from '@/vector-store/lib';
 import { deduplicateSources } from '@/questionnaire/utils/deduplicate-sources';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -60,7 +60,10 @@ export class SOAService {
     let finalAnswer: string | null = null;
     if (dto.isApplicable !== undefined) {
       // If isApplicable is provided, use justification if NO, otherwise null
-      finalAnswer = dto.isApplicable === false ? (dto.justification || dto.answer || null) : null;
+      finalAnswer =
+        dto.isApplicable === false
+          ? dto.justification || dto.answer || null
+          : null;
     } else {
       // Fallback to provided answer
       finalAnswer = dto.answer || null;
@@ -72,7 +75,8 @@ export class SOAService {
         documentId: dto.documentId,
         questionId: dto.questionId,
         answer: finalAnswer,
-        status: finalAnswer && finalAnswer.trim().length > 0 ? 'manual' : 'untouched',
+        status:
+          finalAnswer && finalAnswer.trim().length > 0 ? 'manual' : 'untouched',
         answerVersion: nextVersion,
         isLatestAnswer: true,
         createdBy: existingAnswer ? undefined : userId,
@@ -101,8 +105,14 @@ export class SOAService {
             ...q,
             columnMapping: {
               ...q.columnMapping,
-              isApplicable: dto.isApplicable !== undefined ? dto.isApplicable : q.columnMapping.isApplicable,
-              justification: dto.justification !== undefined ? dto.justification : q.columnMapping.justification,
+              isApplicable:
+                dto.isApplicable !== undefined
+                  ? dto.isApplicable
+                  : q.columnMapping.isApplicable,
+              justification:
+                dto.justification !== undefined
+                  ? dto.justification
+                  : q.columnMapping.justification,
             },
           };
         }
@@ -121,7 +131,7 @@ export class SOAService {
     const updatedConfiguration = await db.sOAFrameworkConfiguration.findUnique({
       where: { id: document.configurationId },
     });
-    
+
     let answeredCount = 0;
     if (updatedConfiguration) {
       const configQuestions = updatedConfiguration.questions as Array<{
@@ -130,15 +140,21 @@ export class SOAService {
           isApplicable: boolean | null;
         };
       }>;
-      answeredCount = configQuestions.filter(q => q.columnMapping.isApplicable !== null).length;
+      answeredCount = configQuestions.filter(
+        (q) => q.columnMapping.isApplicable !== null,
+      ).length;
     }
 
     await db.sOADocument.update({
       where: { id: dto.documentId },
       data: {
         answeredQuestions: answeredCount,
-        status: answeredCount === document.totalQuestions ? 'completed' : 'in_progress',
-        completedAt: answeredCount === document.totalQuestions ? new Date() : null,
+        status:
+          answeredCount === document.totalQuestions
+            ? 'completed'
+            : 'in_progress',
+        completedAt:
+          answeredCount === document.totalQuestions ? new Date() : null,
         // Clear approval when answers are edited
         approverId: null,
         approvedAt: null,
@@ -240,7 +256,9 @@ export class SOAService {
     }
 
     // Check if framework is ISO 27001 (currently only supported framework)
-    const isISO27001 = ['ISO 27001', 'iso27001', 'ISO27001'].includes(framework.name);
+    const isISO27001 = ['ISO 27001', 'iso27001', 'ISO27001'].includes(
+      framework.name,
+    );
 
     if (!isISO27001) {
       return {
@@ -264,7 +282,9 @@ export class SOAService {
       try {
         configuration = await this.seedISO27001SOAConfig();
       } catch (error) {
-        throw new Error(`Failed to create SOA configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to create SOA configuration: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     }
 
@@ -287,9 +307,15 @@ export class SOAService {
     // Create document if it doesn't exist
     if (!document && configuration) {
       try {
-        document = await this.createSOADocumentDirect(dto.frameworkId, dto.organizationId, configuration.id);
+        document = await this.createSOADocumentDirect(
+          dto.frameworkId,
+          dto.organizationId,
+          configuration.id,
+        );
       } catch (error) {
-        throw new Error(`Failed to create SOA document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to create SOA document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     }
 
@@ -315,7 +341,8 @@ export class SOAService {
     }
 
     // Check if user has owner or admin role
-    const isOwnerOrAdmin = member.role.includes('owner') || member.role.includes('admin');
+    const isOwnerOrAdmin =
+      member.role.includes('owner') || member.role.includes('admin');
 
     if (!isOwnerOrAdmin) {
       throw new Error('Only owners and admins can approve SOA documents');
@@ -372,7 +399,8 @@ export class SOAService {
     }
 
     // Check if user has owner or admin role
-    const isOwnerOrAdmin = member.role.includes('owner') || member.role.includes('admin');
+    const isOwnerOrAdmin =
+      member.role.includes('owner') || member.role.includes('admin');
 
     if (!isOwnerOrAdmin) {
       throw new Error('Only owners and admins can decline SOA documents');
@@ -430,7 +458,9 @@ export class SOAService {
     }
 
     // Check if approver is owner or admin
-    const isOwnerOrAdmin = approverMember.role.includes('owner') || approverMember.role.includes('admin');
+    const isOwnerOrAdmin =
+      approverMember.role.includes('owner') ||
+      approverMember.role.includes('admin');
     if (!isOwnerOrAdmin) {
       throw new Error('Approver must be an owner or admin');
     }
@@ -466,7 +496,11 @@ export class SOAService {
     };
   }
 
-  private async createSOADocumentDirect(frameworkId: string, organizationId: string, configurationId: string) {
+  private async createSOADocumentDirect(
+    frameworkId: string,
+    organizationId: string,
+    configurationId: string,
+  ) {
     // Check if there's already a latest document for this framework and organization
     const existingLatestDocument = await db.sOADocument.findFirst({
       where: {
@@ -527,11 +561,7 @@ export class SOAService {
     // Find ISO 27001 framework by name
     const iso27001Framework = await db.frameworkEditorFramework.findFirst({
       where: {
-        OR: [
-          { name: 'ISO 27001' },
-          { name: 'iso27001' },
-          { name: 'ISO27001' },
-        ],
+        OR: [{ name: 'ISO 27001' }, { name: 'iso27001' }, { name: 'ISO27001' }],
       },
     });
 
@@ -571,7 +601,10 @@ export class SOAService {
   async generateSOAAnswerWithRAG(question: string, organizationId: string) {
     try {
       // Find similar content from vector database
-      const similarContent = await findSimilarContent(question, organizationId, 5) as SimilarContentResult[];
+      const similarContent = await findSimilarContent(
+        question,
+        organizationId,
+      );
 
       this.logger.log('Vector search results for SOA', {
         question: question.substring(0, 100),
@@ -581,10 +614,13 @@ export class SOAService {
 
       // If no relevant content found, return null
       if (similarContent.length === 0) {
-        this.logger.warn('No similar content found in vector database for SOA', {
-          question: question.substring(0, 100),
-          organizationId,
-        });
+        this.logger.warn(
+          'No similar content found in vector database for SOA',
+          {
+            question: question.substring(0, 100),
+            organizationId,
+          },
+        );
         return { answer: null, sources: [] };
       }
 
@@ -594,8 +630,6 @@ export class SOAService {
         let sourceName: string | undefined;
         if (r.policyName) {
           sourceName = `Policy: ${r.policyName}`;
-        } else if (r.vendorName && r.questionnaireQuestion) {
-          sourceName = `Questionnaire: ${r.vendorName}`;
         } else if (r.contextQuestion) {
           sourceName = 'Context Q&A';
         } else if ((r.sourceType as string) === 'manual_answer') {
@@ -621,8 +655,6 @@ export class SOAService {
         let sourceInfo = '';
         if (r.policyName) {
           sourceInfo = `Source: Policy "${r.policyName}"`;
-        } else if (r.vendorName && r.questionnaireQuestion) {
-          sourceInfo = `Source: Questionnaire from "${r.vendorName}"`;
         } else if (r.contextQuestion) {
           sourceInfo = `Source: Context Q&A`;
         } else if ((r.sourceType as string) === 'knowledge_base_document') {
@@ -683,7 +715,7 @@ IMPORTANT: Answer the question based ONLY on the provided context above. DO NOT 
       });
 
       const trimmedAnswer = text.trim();
-      
+
       // Check if the answer indicates insufficient data
       const upperAnswer = trimmedAnswer.toUpperCase();
       if (
@@ -698,7 +730,10 @@ IMPORTANT: Answer the question based ONLY on the provided context above. DO NOT 
         try {
           const parsed = JSON.parse(trimmedAnswer);
           const isApplicableUpper = parsed.isApplicable?.toUpperCase();
-          if (parsed.isApplicable === 'INSUFFICIENT_DATA' || (isApplicableUpper && isApplicableUpper.includes('INSUFFICIENT'))) {
+          if (
+            parsed.isApplicable === 'INSUFFICIENT_DATA' ||
+            (isApplicableUpper && isApplicableUpper.includes('INSUFFICIENT'))
+          ) {
             return {
               answer: null,
               sources,
@@ -749,7 +784,9 @@ IMPORTANT: Answer the question based ONLY on the provided context above. DO NOT 
 
       if (teamWorkContext?.answer) {
         const answerLower = teamWorkContext.answer.toLowerCase();
-        const isFullyRemote = answerLower.includes('fully remote') || answerLower.includes('fully-remote');
+        const isFullyRemote =
+          answerLower.includes('fully remote') ||
+          answerLower.includes('fully-remote');
         return isFullyRemote;
       }
       return false;
@@ -803,7 +840,8 @@ IMPORTANT: Answer the question based ONLY on the provided context above. DO NOT 
         questionId: question.id,
         questionIndex: index,
         isApplicable: false,
-        justification: 'This control is not applicable as our organization operates fully remotely.',
+        justification:
+          'This control is not applicable as our organization operates fully remotely.',
         success: true,
         insufficientData: false,
       });
@@ -811,7 +849,8 @@ IMPORTANT: Answer the question based ONLY on the provided context above. DO NOT 
       return {
         questionId: question.id,
         isApplicable: false,
-        justification: 'This control is not applicable as our organization operates fully remotely.',
+        justification:
+          'This control is not applicable as our organization operates fully remotely.',
         success: true,
         insufficientData: false,
       };
@@ -848,7 +887,10 @@ If you cannot find sufficient information in the provided context to answer eith
 
 IMPORTANT: Base your answer ONLY on information found in our organization's documentation. Do NOT use general knowledge or make assumptions.`;
 
-    const soaResult = await this.generateSOAAnswerWithRAG(soaQuestion, organizationId);
+    const soaResult = await this.generateSOAAnswerWithRAG(
+      soaQuestion,
+      organizationId,
+    );
 
     // If no answer or insufficient data, default to YES (no justification needed)
     if (!soaResult.answer) {
@@ -871,7 +913,12 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
       };
     }
 
-    return this.parseAndProcessSOAAnswer(question.id, index, soaResult.answer, send);
+    return this.parseAndProcessSOAAnswer(
+      question.id,
+      index,
+      soaResult.answer,
+      send,
+    );
   }
 
   private parseAndProcessSOAAnswer(
@@ -895,12 +942,15 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
     insufficientData: boolean;
   } {
     // Parse JSON response
-    let parsedAnswer: { isApplicable?: string; justification?: string | null } | null = null;
+    let parsedAnswer: {
+      isApplicable?: string;
+      justification?: string | null;
+    } | null = null;
     try {
       parsedAnswer = JSON.parse(answerText);
     } catch {
       const trimmedAnswer = answerText.trim();
-      
+
       // Check for insufficient data indicators - if insufficient, default to YES
       if (
         trimmedAnswer.toUpperCase().includes('INSUFFICIENT_DATA') ||
@@ -928,11 +978,17 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
       }
 
       // Try to extract YES/NO and justification from text
-      const isApplicableMatch = trimmedAnswer.match(/(?:isApplicable|applicable)[:\s]*["']?(YES|NO|INSUFFICIENT_DATA)["']?/i);
-      const justificationMatch = trimmedAnswer.match(/(?:justification)[:\s]*["']?([^"']{20,})["']?/i);
-      
+      const isApplicableMatch = trimmedAnswer.match(
+        /(?:isApplicable|applicable)[:\s]*["']?(YES|NO|INSUFFICIENT_DATA)["']?/i,
+      );
+      const justificationMatch = trimmedAnswer.match(
+        /(?:justification)[:\s]*["']?([^"']{20,})["']?/i,
+      );
+
       parsedAnswer = {
-        isApplicable: isApplicableMatch ? isApplicableMatch[1].toUpperCase() : undefined,
+        isApplicable: isApplicableMatch
+          ? isApplicableMatch[1].toUpperCase()
+          : undefined,
         justification: justificationMatch ? justificationMatch[1].trim() : null,
       };
     }
@@ -965,8 +1021,12 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
 
     // Parse isApplicable
     const isApplicableText = parsedAnswer.isApplicable.toUpperCase();
-    const isApplicable = isApplicableText.includes('YES') || isApplicableText.includes('APPLICABLE');
-    const isNotApplicable = isApplicableText.includes('NO') || isApplicableText.includes('NOT APPLICABLE');
+    const isApplicable =
+      isApplicableText.includes('YES') ||
+      isApplicableText.includes('APPLICABLE');
+    const isNotApplicable =
+      isApplicableText.includes('NO') ||
+      isApplicableText.includes('NOT APPLICABLE');
 
     let finalIsApplicable: boolean | null = null;
     if (isApplicable && !isNotApplicable) {
@@ -995,9 +1055,8 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
     }
 
     // Get justification (only if NO)
-    const justification = finalIsApplicable === false
-      ? (parsedAnswer.justification || null)
-      : null;
+    const justification =
+      finalIsApplicable === false ? parsedAnswer.justification || null : null;
 
     send({
       type: 'answer',
@@ -1039,7 +1098,9 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
     }>,
     userId: string,
   ): Promise<void> {
-    const successfulResults = results.filter((r) => r.success && r.isApplicable !== null);
+    const successfulResults = results.filter(
+      (r) => r.success && r.isApplicable !== null,
+    );
 
     for (const result of successfulResults) {
       const question = questions.find((q) => q.id === result.questionId);
@@ -1058,7 +1119,9 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
           },
         });
 
-        const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
+        const nextVersion = existingAnswer
+          ? existingAnswer.answerVersion + 1
+          : 1;
 
         // Mark existing answer as not latest if it exists
         if (existingAnswer) {
@@ -1069,7 +1132,8 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
         }
 
         // Store justification in answer field only if isApplicable is NO
-        const answerValue = result.isApplicable === false ? result.justification : null;
+        const answerValue =
+          result.isApplicable === false ? result.justification : null;
 
         // Create new answer
         await db.sOAAnswer.create({
@@ -1114,7 +1178,9 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
     }>,
   ): Promise<void> {
     const resultsMap = new Map(
-      results.filter((r) => r.success && r.isApplicable !== null).map((r) => [r.questionId, r])
+      results
+        .filter((r) => r.success && r.isApplicable !== null)
+        .map((r) => [r.questionId, r]),
     );
 
     const updatedQuestions = configurationQuestions.map((q) => {
@@ -1156,5 +1222,289 @@ IMPORTANT: Base your answer ONLY on information found in our organization's docu
       },
     });
   }
+
+  /**
+   * Batch fetch similar content for all SOA questions
+   * Uses batch embedding generation for significant speedup
+   */
+  async batchSearchSOAQuestions(
+    questions: Array<{
+      id: string;
+      text: string;
+      columnMapping: {
+        closure: string;
+        title: string;
+        control_objective: string | null;
+      };
+    }>,
+    organizationId: string,
+  ): Promise<Map<string, SimilarContentResult[]>> {
+    // Build the SOA question texts (same format as processSOAQuestion)
+    const questionTexts = questions.map((question) => {
+      return `Analyze the control "${question.columnMapping.title}" (${question.text}) for our organization.
+
+Based EXCLUSIVELY on our organization's policies, documentation, business context, and operations, determine:
+
+1. Is this control applicable to our organization? Consider:
+   - Our business type and industry
+   - Our operational scope and scale
+   - Our risk profile
+   - Our regulatory requirements
+   - Our technical infrastructure
+   - Our existing policies and governance structure
+
+2. Provide a justification:
+   - If applicable: Explain how this control is currently implemented in our organization, including our policies, procedures, or technical measures that address this control.
+   - If not applicable: Explain why this control does not apply to our business context, our operational characteristics that make it irrelevant, and our risk profile considerations.`;
+    });
+
+    // Batch search all questions
+    const allSimilarContent = await findSimilarContentBatch(
+      questionTexts,
+      organizationId,
+    );
+
+    // Create map by question ID
+    const contentMap = new Map<string, SimilarContentResult[]>();
+    questions.forEach((question, index) => {
+      contentMap.set(question.id, allSimilarContent[index] || []);
+    });
+
+    return contentMap;
+  }
+
+  /**
+   * Process SOA question with pre-fetched similar content
+   * Used for batch processing - skips individual vector search
+   */
+  async processSOAQuestionWithContent(
+    question: {
+      id: string;
+      text: string;
+      columnMapping: {
+        closure: string;
+        title: string;
+        control_objective: string | null;
+        isApplicable: boolean | null;
+        justification: string | null;
+      };
+    },
+    index: number,
+    similarContent: SimilarContentResult[],
+    isFullyRemote: boolean,
+    send: (data: {
+      type: string;
+      questionId?: string;
+      questionIndex?: number;
+      isApplicable?: boolean | null;
+      justification?: string | null;
+      success?: boolean;
+      insufficientData?: boolean;
+    }) => void,
+  ): Promise<{
+    questionId: string;
+    isApplicable: boolean | null;
+    justification: string | null;
+    success: boolean;
+    insufficientData: boolean;
+  }> {
+    const controlClosure = question.columnMapping.closure || '';
+    const isControl7 = controlClosure.startsWith('7.');
+
+    // If fully remote and control starts with "7.", skip generation and return NO
+    if (isFullyRemote && isControl7) {
+      send({
+        type: 'answer',
+        questionId: question.id,
+        questionIndex: index,
+        isApplicable: false,
+        justification:
+          'This control is not applicable as our organization operates fully remotely.',
+        success: true,
+        insufficientData: false,
+      });
+
+      return {
+        questionId: question.id,
+        isApplicable: false,
+        justification:
+          'This control is not applicable as our organization operates fully remotely.',
+        success: true,
+        insufficientData: false,
+      };
+    }
+
+    // Generate answer from pre-fetched content (no additional vector search needed)
+    const soaResult = await this.generateSOAAnswerFromContent(
+      question,
+      similarContent,
+    );
+
+    // If no answer or insufficient data, default to YES (no justification needed)
+    if (!soaResult.answer) {
+      send({
+        type: 'answer',
+        questionId: question.id,
+        questionIndex: index,
+        isApplicable: true,
+        justification: null,
+        success: true,
+        insufficientData: false,
+      });
+
+      return {
+        questionId: question.id,
+        isApplicable: true,
+        justification: null,
+        success: true,
+        insufficientData: false,
+      };
+    }
+
+    return this.parseAndProcessSOAAnswer(
+      question.id,
+      index,
+      soaResult.answer,
+      send,
+    );
+  }
+
+  /**
+   * Generate SOA answer from pre-fetched similar content
+   * Skips the vector search step for batch processing
+   */
+  private async generateSOAAnswerFromContent(
+    question: {
+      id: string;
+      text: string;
+      columnMapping: {
+        closure: string;
+        title: string;
+        control_objective: string | null;
+      };
+    },
+    similarContent: SimilarContentResult[],
+  ): Promise<{ answer: string | null; sources: unknown[] }> {
+    // If no relevant content found, return null
+    if (similarContent.length === 0) {
+      return { answer: null, sources: [] };
+    }
+
+    // Extract sources information and deduplicate
+    const sourcesBeforeDedup = similarContent.map((result) => {
+      const r = result as SimilarContentResult;
+      let sourceName: string | undefined;
+      if (r.policyName) {
+        sourceName = `Policy: ${r.policyName}`;
+      } else if (r.contextQuestion) {
+        sourceName = 'Context Q&A';
+      } else if (r.sourceType === 'manual_answer') {
+        sourceName = undefined;
+      }
+
+      return {
+        sourceType: r.sourceType,
+        sourceName,
+        sourceId: r.sourceId,
+        policyName: r.policyName,
+        documentName: r.documentName,
+        manualAnswerQuestion: r.manualAnswerQuestion,
+        score: r.score,
+      };
+    });
+
+    const sources = deduplicateSources(sourcesBeforeDedup);
+
+    // Build context from retrieved content
+    const contextParts = similarContent.map((result, idx) => {
+      const r = result as SimilarContentResult;
+      let sourceInfo = '';
+      if (r.policyName) {
+        sourceInfo = `Source: Policy "${r.policyName}"`;
+      } else if (r.contextQuestion) {
+        sourceInfo = `Source: Context Q&A`;
+      } else if (r.sourceType === 'knowledge_base_document') {
+        sourceInfo = r.documentName
+          ? `Source: Knowledge Base Document "${r.documentName}"`
+          : `Source: Knowledge Base Document`;
+      } else if (r.sourceType === 'manual_answer') {
+        sourceInfo = `Source: Manual Answer`;
+      } else {
+        sourceInfo = `Source: ${r.sourceType}`;
+      }
+
+      return `[${idx + 1}] ${sourceInfo}\n${r.content}`;
+    });
+
+    const context = contextParts.join('\n\n');
+
+    // Build the SOA question prompt
+    const soaQuestion = `Analyze the control "${question.columnMapping.title}" (${question.text}) for our organization.
+
+Based EXCLUSIVELY on our organization's policies, documentation, business context, and operations, determine:
+
+1. Is this control applicable to our organization? Consider:
+   - Our business type and industry
+   - Our operational scope and scale
+   - Our risk profile
+   - Our regulatory requirements
+   - Our technical infrastructure
+   - Our existing policies and governance structure
+
+2. Provide a justification:
+   - If applicable: Explain how this control is currently implemented in our organization, including our policies, procedures, or technical measures that address this control.
+   - If not applicable: Explain why this control does not apply to our business context, our operational characteristics that make it irrelevant, and our risk profile considerations.
+
+Respond in the following JSON format:
+{
+  "isApplicable": "YES" or "NO",
+  "justification": "Your justification text here (2-3 sentences)"
 }
 
+If you cannot find sufficient information in the provided context to answer either question, respond with:
+{
+  "isApplicable": "INSUFFICIENT_DATA",
+  "justification": null
+}
+
+IMPORTANT: Base your answer ONLY on information found in our organization's documentation. Do NOT use general knowledge or make assumptions.`;
+
+    // Generate answer using LLM with ISO 27001 compliance analysis prompt
+    const { text } = await generateText({
+      model: openai('gpt-4o-mini'),
+      system: `You are an expert organizational analyst conducting a comprehensive assessment of a company for ISO 27001 compliance.
+
+Your task is to analyze the provided context entries and create a structured organizational profile.
+
+ANALYSIS FRAMEWORK:
+
+Extract and categorize information about the organization across these dimensions:
+- Business type and industry
+- Operational scope and scale
+- Risk profile and risk management approach
+- Regulatory requirements and compliance posture
+- Technical infrastructure and security controls
+- Organizational policies and procedures
+- Governance structure
+
+CRITICAL RULES - YOU MUST FOLLOW THESE STRICTLY:
+1. Answer based EXCLUSIVELY on the provided context from the organization's policies and documentation.
+2. If the context does not contain enough information to answer, respond with exactly: "N/A - no evidence found"
+3. BE CONCISE. Give SHORT, direct answers. Do NOT provide detailed explanations or elaborate unnecessarily.
+4. Use enterprise-ready language appropriate for SOA documents.
+5. If multiple sources provide information, synthesize them into ONE concise answer.
+6. Always write in first person plural (we, our, us) as if speaking on behalf of the organization.
+7. Justifications should be 2-3 sentences maximum, directly referencing organizational capabilities or documentation.`,
+      prompt: `Based on the following context from our organization's policies and documentation, analyze this SOA question:
+
+Question: ${soaQuestion}
+
+Context:
+${context}
+
+Provide your analysis in the exact JSON format specified. If the context doesn't contain sufficient information, respond with "INSUFFICIENT_DATA".`,
+    });
+
+    return { answer: text.trim(), sources };
+  }
+}

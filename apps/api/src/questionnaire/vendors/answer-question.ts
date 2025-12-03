@@ -109,7 +109,10 @@ export async function answerQuestion(
       questionIndex: payload.questionIndex,
     });
 
-    const result = await generateAnswerWithRAG(payload.question, payload.organizationId);
+    const result = await generateAnswerWithRAG(
+      payload.question,
+      payload.organizationId,
+    );
 
     // Update metadata with this answer immediately
     // This allows frontend to show answers as they complete individually

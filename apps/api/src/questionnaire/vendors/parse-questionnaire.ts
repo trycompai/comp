@@ -15,13 +15,17 @@ interface QuestionAnswer {
 /**
  * Extracts content from a file using various methods based on file type
  */
-async function extractContentFromFile(fileData: string, fileType: string): Promise<string> {
+async function extractContentFromFile(
+  fileData: string,
+  fileType: string,
+): Promise<string> {
   const fileBuffer = Buffer.from(fileData, 'base64');
 
   // Handle Excel files (.xlsx, .xls)
   if (
     fileType === 'application/vnd.ms-excel' ||
-    fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    fileType ===
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
     fileType === 'application/vnd.ms-excel.sheet.macroEnabled.12'
   ) {
     try {
@@ -41,14 +45,19 @@ async function extractContentFromFile(fileData: string, fileType: string): Promi
 
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: '',
+        });
 
         // Convert to readable text format
         const sheetText = jsonData
           .map((row: any) => {
             if (Array.isArray(row)) {
               return row
-                .filter((cell) => cell !== null && cell !== undefined && cell !== '')
+                .filter(
+                  (cell) => cell !== null && cell !== undefined && cell !== '',
+                )
                 .join(' | ');
             }
             return String(row);
@@ -105,7 +114,8 @@ async function extractContentFromFile(fileData: string, fileType: string): Promi
   // Handle Word documents - try to use OpenAI vision API
   if (
     fileType === 'application/msword' ||
-    fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    fileType ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ) {
     throw new Error(
       'Word documents (.docx) are best converted to PDF or image format for parsing. Alternatively, use a URL to view the document.',
@@ -125,7 +135,10 @@ async function extractContentFromFile(fileData: string, fileType: string): Promi
   if (isImage || isPdf) {
     const base64Data = fileData;
     const mimeType = fileType;
-    const fileSizeMB = (Buffer.from(fileData, 'base64').length / (1024 * 1024)).toFixed(2);
+    const fileSizeMB = (
+      Buffer.from(fileData, 'base64').length /
+      (1024 * 1024)
+    ).toFixed(2);
 
     logger.info('Extracting content from PDF/image using vision API', {
       fileType: mimeType,
@@ -191,22 +204,25 @@ async function extractContentFromUrl(url: string): Promise<string> {
   }
 
   try {
-    const initialResponse = await fetch('https://api.firecrawl.dev/v1/extract', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.FIRECRAWL_API_KEY}`,
-      },
-      body: JSON.stringify({
-        urls: [url],
-        prompt:
-          'Extract all text content from this page, including any questions and answers, forms, or questionnaire data.',
-        scrapeOptions: {
-          onlyMainContent: true,
-          removeBase64Images: true,
+    const initialResponse = await fetch(
+      'https://api.firecrawl.dev/v1/extract',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.FIRECRAWL_API_KEY}`,
         },
-      }),
-    });
+        body: JSON.stringify({
+          urls: [url],
+          prompt:
+            'Extract all text content from this page, including any questions and answers, forms, or questionnaire data.',
+          scrapeOptions: {
+            onlyMainContent: true,
+            removeBase64Images: true,
+          },
+        }),
+      },
+    );
 
     const initialData = await initialResponse.json();
 
@@ -222,13 +238,16 @@ async function extractContentFromUrl(url: string): Promise<string> {
     while (Date.now() - startTime < maxWaitTime) {
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
-      const statusResponse = await fetch(`https://api.firecrawl.dev/v1/extract/${jobId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.FIRECRAWL_API_KEY}`,
+      const statusResponse = await fetch(
+        `https://api.firecrawl.dev/v1/extract/${jobId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.FIRECRAWL_API_KEY}`,
+          },
         },
-      });
+      );
 
       const statusData = await statusResponse.json();
 
@@ -257,7 +276,9 @@ async function extractContentFromUrl(url: string): Promise<string> {
 
     throw new Error('Firecrawl extraction timed out');
   } catch (error) {
-    throw error instanceof Error ? error : new Error('Failed to extract content from URL');
+    throw error instanceof Error
+      ? error
+      : new Error('Failed to extract content from URL');
   }
 }
 
@@ -281,7 +302,9 @@ async function extractContentFromAttachment(
 
   const bucketName = process.env.APP_AWS_BUCKET_NAME;
   if (!bucketName) {
-    throw new Error('APP_AWS_BUCKET_NAME environment variable is not set in Trigger.dev.');
+    throw new Error(
+      'APP_AWS_BUCKET_NAME environment variable is not set in Trigger.dev.',
+    );
   }
 
   const key = extractS3KeyFromUrl(attachment.url);
@@ -307,7 +330,8 @@ async function extractContentFromAttachment(
 
   // Determine file type from attachment or content type
   const fileType =
-    response.ContentType || (attachment.type === 'image' ? 'image/png' : 'application/pdf');
+    response.ContentType ||
+    (attachment.type === 'image' ? 'image/png' : 'application/pdf');
 
   const content = await extractContentFromFile(base64Data, fileType);
 
@@ -375,7 +399,8 @@ async function extractContentFromS3Key(
   const base64Data = buffer.toString('base64');
 
   // Use provided fileType or determine from content type
-  const detectedFileType = response.ContentType || fileType || 'application/octet-stream';
+  const detectedFileType =
+    response.ContentType || fileType || 'application/octet-stream';
 
   const content = await extractContentFromFile(base64Data, detectedFileType);
 
@@ -407,7 +432,8 @@ async function parseChunkQuestionsAndAnswers(
               },
               answer: {
                 anyOf: [{ type: 'string' }, { type: 'null' }],
-                description: 'The answer to the question. Use null if no answer is provided.',
+                description:
+                  'The answer to the question. Use null if no answer is provided.',
               },
             },
             required: ['question'],
@@ -441,7 +467,8 @@ Content:
 ${chunk}`,
   });
 
-  const parsed = (object as { questionsAndAnswers: QuestionAnswer[] }).questionsAndAnswers;
+  const parsed = (object as { questionsAndAnswers: QuestionAnswer[] })
+    .questionsAndAnswers;
 
   // Post-process to ensure empty strings are converted to null
   return parsed.map((qa) => ({
@@ -454,7 +481,9 @@ ${chunk}`,
  * Parses questions and answers from extracted content using LLM
  * Optimized to handle large content by chunking and processing in parallel
  */
-async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer[]> {
+async function parseQuestionsAndAnswers(
+  content: string,
+): Promise<QuestionAnswer[]> {
   // GPT-5-mini can handle ~128k tokens. Chunk by individual questions (1 question = 1 chunk) for parallel processing.
   const MAX_CHUNK_SIZE_CHARS = 80_000;
   const MIN_CHUNK_SIZE_CHARS = 5_000;
@@ -479,13 +508,19 @@ async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer
     return parseChunkQuestionsAndAnswers(chunkInfos[0].content, 0, 1);
   }
 
-  const totalEstimatedQuestions = chunkInfos.reduce((sum, chunk) => sum + chunk.questionCount, 0);
+  const totalEstimatedQuestions = chunkInfos.reduce(
+    (sum, chunk) => sum + chunk.questionCount,
+    0,
+  );
 
-  logger.info('Chunking content by individual questions (1 question per chunk) for parallel processing', {
-    contentLength: content.length,
-    totalChunks: chunkInfos.length,
-    questionsPerChunk: 1, // Each chunk contains exactly one question
-  });
+  logger.info(
+    'Chunking content by individual questions (1 question per chunk) for parallel processing',
+    {
+      contentLength: content.length,
+      totalChunks: chunkInfos.length,
+      questionsPerChunk: 1, // Each chunk contains exactly one question
+    },
+  );
 
   // Process all chunks in parallel for maximum speed
   const parseStartTime = Date.now();
@@ -496,7 +531,10 @@ async function parseQuestionsAndAnswers(content: string): Promise<QuestionAnswer
   const allResults = await Promise.all(allPromises);
   const parseTime = ((Date.now() - parseStartTime) / 1000).toFixed(2);
 
-  const totalRawQuestions = allResults.reduce((sum, chunk) => sum + chunk.length, 0);
+  const totalRawQuestions = allResults.reduce(
+    (sum, chunk) => sum + chunk.length,
+    0,
+  );
 
   logger.info('All chunks processed in parallel', {
     totalChunks: chunkInfos.length,
@@ -608,7 +646,9 @@ function looksLikeQuestionLine(line: string): boolean {
     /^(?:what|why|how|when|where|is|are|does|do|can|will|should|list|describe|explain)\b/i;
 
   return (
-    questionSuffix.test(line) || explicitQuestionPrefix.test(line) || interrogativePrefix.test(line)
+    questionSuffix.test(line) ||
+    explicitQuestionPrefix.test(line) ||
+    interrogativePrefix.test(line)
   );
 }
 
@@ -617,7 +657,9 @@ function estimateQuestionCount(text: string): number {
   if (questionMarks > 0) {
     return questionMarks;
   }
-  const lines = text.split(/\r?\n/).filter((line) => looksLikeQuestionLine(line.trim()));
+  const lines = text
+    .split(/\r?\n/)
+    .filter((line) => looksLikeQuestionLine(line.trim()));
   if (lines.length > 0) {
     return lines.length;
   }
@@ -661,9 +703,14 @@ export const parseQuestionnaireTask = task({
       switch (payload.inputType) {
         case 'file': {
           if (!payload.fileData || !payload.fileType) {
-            throw new Error('File data and file type are required for file input');
+            throw new Error(
+              'File data and file type are required for file input',
+            );
           }
-          extractedContent = await extractContentFromFile(payload.fileData, payload.fileType);
+          extractedContent = await extractContentFromFile(
+            payload.fileData,
+            payload.fileType,
+          );
           break;
         }
 
@@ -691,7 +738,10 @@ export const parseQuestionnaireTask = task({
           if (!payload.s3Key || !payload.fileType) {
             throw new Error('S3 key and file type are required for S3 input');
           }
-          const result = await extractContentFromS3Key(payload.s3Key, payload.fileType);
+          const result = await extractContentFromS3Key(
+            payload.s3Key,
+            payload.fileType,
+          );
           extractedContent = result.content;
           break;
         }
@@ -707,7 +757,8 @@ export const parseQuestionnaireTask = task({
 
       // Parse questions and answers from extracted content
       const parseStartTime = Date.now();
-      const questionsAndAnswers = await parseQuestionsAndAnswers(extractedContent);
+      const questionsAndAnswers =
+        await parseQuestionsAndAnswers(extractedContent);
       const parseTime = ((Date.now() - parseStartTime) / 1000).toFixed(2);
 
       const totalTime = ((Date.now() - taskStartTime) / 1000).toFixed(2);
@@ -721,12 +772,18 @@ export const parseQuestionnaireTask = task({
       // Create questionnaire record in database
       let questionnaireId: string;
       try {
-        const fileName = payload.fileName || payload.url || payload.attachmentId || 'questionnaire';
+        const fileName =
+          payload.fileName ||
+          payload.url ||
+          payload.attachmentId ||
+          'questionnaire';
         const s3Key = payload.s3Key || '';
         const fileType = payload.fileType || 'application/octet-stream';
         // For s3 input, we don't have fileData, so estimate size or use 0
         // The actual file size isn't critical for questionnaire records
-        const fileSize = payload.fileData ? Buffer.from(payload.fileData, 'base64').length : 0;
+        const fileSize = payload.fileData
+          ? Buffer.from(payload.fileData, 'base64').length
+          : 0;
 
         const questionnaire = await db.questionnaire.create({
           data: {
@@ -765,61 +822,6 @@ export const parseQuestionnaireTask = task({
         questionnaireId = '';
       }
 
-      // NOTE: We no longer add questionnaire Q&A pairs to the vector database
-      // They are not used as a source for generating answers (only Policy and Context are used)
-      // This prevents cluttering the vector DB with potentially outdated questionnaire answers
-      //
-      // If you need to use questionnaire Q&A as a source in the future, uncomment this block:
-      /*
-      const vendorName = 'Security Questionnaire';
-      const sourcePrefix = `org_${payload.organizationId}`;
-      
-      // Add parsed questionnaire Q&A pairs to vector database
-      try {
-        for (let i = 0; i < questionsAndAnswers.length; i++) {
-          const qa = questionsAndAnswers[i];
-          
-          // Skip if no answer (we can't use empty answers as context)
-          if (!qa.answer || qa.answer.trim().length === 0) {
-            continue;
-          }
-          
-          try {
-            // Create text representation: "Question: X\n\nAnswer: Y"
-            const qaText = `Question: ${qa.question}\n\nAnswer: ${qa.answer}`;
-            
-            // Chunk if needed (though Q&A pairs are usually short)
-            const chunks = chunkText(qaText, 500, 50);
-            
-            for (let j = 0; j < chunks.length; j++) {
-              const chunk = chunks[j];
-              const embeddingId = `questionnaire_${sourcePrefix}_qa${i}_chunk${j}`;
-              
-              await upsertEmbedding(embeddingId, chunk, {
-                organizationId: payload.organizationId,
-                sourceType: 'questionnaire',
-                sourceId: `${sourcePrefix}_qa${i}`,
-                content: chunk,
-                vendorName,
-                questionnaireQuestion: qa.question,
-              });
-            }
-          } catch (error) {
-            logger.error('Failed to add Q&A to vector DB', {
-              questionIndex: i,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-            // Continue with other Q&A pairs even if one fails
-          }
-        }
-      } catch (error) {
-        logger.warn('Failed to add questionnaire to vector DB', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        // Don't fail parsing if vector DB addition fails
-      }
-      */
-
       return {
         success: true,
         questionnaireId,
@@ -831,7 +833,9 @@ export const parseQuestionnaireTask = task({
         error: error instanceof Error ? error.message : 'Unknown error',
         errorStack: error instanceof Error ? error.stack : undefined,
       });
-      throw error instanceof Error ? error : new Error('Failed to parse questionnaire');
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to parse questionnaire');
     }
   },
 });
