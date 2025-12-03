@@ -1,10 +1,10 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { answerQuestion } from '@/jobs/tasks/vendors/answer-question';
-import { z } from 'zod';
-import { headers } from 'next/headers';
+import { answerQuestion } from '@/trigger/tasks/vendors/answer-question';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 const inputSchema = z.object({
   question: z.string(),
@@ -68,4 +68,3 @@ export const answerSingleQuestionAction = authActionClient
       };
     }
   });
-

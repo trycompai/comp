@@ -1,9 +1,9 @@
+import { answerQuestion } from '@/trigger/tasks/vendors/answer-question';
 import { auth } from '@/utils/auth';
-import { answerQuestion } from '@/jobs/tasks/vendors/answer-question';
 import { logger } from '@/utils/logger';
-import { NextRequest, NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const inputSchema = z.object({
@@ -79,4 +79,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

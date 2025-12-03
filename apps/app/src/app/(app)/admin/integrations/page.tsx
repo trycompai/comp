@@ -15,9 +15,8 @@ import {
   RefreshCw,
   Settings,
   Trash2,
-  XCircle,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
 
 interface Integration {
@@ -35,6 +34,7 @@ interface Integration {
   setupInstructions?: string;
   createAppUrl?: string;
   requiredScopes?: string[];
+  authorizeUrl?: string;
 }
 
 function IntegrationCard({
@@ -47,12 +47,17 @@ function IntegrationCard({
   const [showConfig, setShowConfig] = useState(false);
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
+  const [appName, setAppName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if this integration needs an app name (has {APP_NAME} placeholder in authorize URL)
+  const needsAppName = integration.authorizeUrl?.includes('{APP_NAME}');
+
   const handleSave = async () => {
     if (!clientId || !clientSecret) return;
+    if (needsAppName && !appName) return;
 
     setIsSaving(true);
     setError(null);
@@ -61,6 +66,7 @@ function IntegrationCard({
       providerSlug: integration.id,
       clientId,
       clientSecret,
+      customSettings: needsAppName ? { appName } : undefined,
     });
 
     if (response.error) {
@@ -81,9 +87,7 @@ function IntegrationCard({
     setIsDeleting(true);
     setError(null);
 
-    const response = await api.delete(
-      `/v1/admin/integrations/credentials/${integration.id}`,
-    );
+    const response = await api.delete(`/v1/admin/integrations/credentials/${integration.id}`);
 
     if (response.error) {
       setError(response.error);
@@ -100,9 +104,7 @@ function IntegrationCard({
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-base">{integration.name}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {integration.description}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{integration.description}</p>
           </div>
           <div className="flex items-center gap-2">
             {integration.hasCredentials ? (
@@ -139,11 +141,7 @@ function IntegrationCard({
           {integration.authType === 'oauth2' && (
             <>
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowConfig(!showConfig)}
-                >
+                <Button size="sm" variant="outline" onClick={() => setShowConfig(!showConfig)}>
                   <Settings className="h-3 w-3 mr-1" />
                   {showConfig ? 'Hide' : 'Configure'}
                 </Button>
@@ -165,11 +163,7 @@ function IntegrationCard({
                 )}
 
                 {integration.createAppUrl && (
-                  <a
-                    href={integration.createAppUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href={integration.createAppUrl} target="_blank" rel="noopener noreferrer">
                     <Button size="sm" variant="ghost">
                       <ExternalLink className="h-3 w-3 mr-1" />
                       Create OAuth App
@@ -181,9 +175,7 @@ function IntegrationCard({
               {showConfig && (
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                   {error && (
-                    <div className="text-sm text-red-500 p-2 bg-red-500/10 rounded">
-                      {error}
-                    </div>
+                    <div className="text-sm text-red-500 p-2 bg-red-500/10 rounded">{error}</div>
                   )}
 
                   {integration.setupInstructions && (
@@ -197,15 +189,14 @@ function IntegrationCard({
                     </details>
                   )}
 
-                  {integration.requiredScopes &&
-                    integration.requiredScopes.length > 0 && (
-                      <div className="text-sm">
-                        <span className="font-medium">Required Scopes: </span>
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                          {integration.requiredScopes.join(', ')}
-                        </code>
-                      </div>
-                    )}
+                  {integration.requiredScopes && integration.requiredScopes.length > 0 && (
+                    <div className="text-sm">
+                      <span className="font-medium">Required Scopes: </span>
+                      <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                        {integration.requiredScopes.join(', ')}
+                      </code>
+                    </div>
+                  )}
 
                   <div className="grid gap-3">
                     <div>
@@ -227,11 +218,26 @@ function IntegrationCard({
                         onChange={(e) => setClientSecret(e.target.value)}
                       />
                     </div>
+                    {needsAppName && (
+                      <div>
+                        <Label className="text-sm">App Name</Label>
+                        <Input
+                          className="font-mono text-sm"
+                          placeholder="e.g., compai533c"
+                          value={appName}
+                          onChange={(e) => setAppName(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          The app name from your Rippling developer portal (used in the authorize
+                          URL)
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Button
                     onClick={handleSave}
-                    disabled={!clientId || !clientSecret || isSaving}
+                    disabled={!clientId || !clientSecret || (needsAppName && !appName) || isSaving}
                   >
                     {isSaving ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -262,13 +268,10 @@ export default function AdminIntegrationsPage() {
     return response.data || [];
   });
 
-  const oauthIntegrations =
-    integrations?.filter((i) => i.authType === 'oauth2') || [];
-  const otherIntegrations =
-    integrations?.filter((i) => i.authType !== 'oauth2') || [];
+  const oauthIntegrations = integrations?.filter((i) => i.authType === 'oauth2') || [];
+  const otherIntegrations = integrations?.filter((i) => i.authType !== 'oauth2') || [];
 
-  const configuredCount =
-    integrations?.filter((i) => i.hasCredentials).length || 0;
+  const configuredCount = integrations?.filter((i) => i.hasCredentials).length || 0;
   const totalOAuth = oauthIntegrations.length;
 
   return (
@@ -276,8 +279,8 @@ export default function AdminIntegrationsPage() {
       <div>
         <h2 className="text-2xl font-bold">Integration Credentials</h2>
         <p className="text-muted-foreground mt-1">
-          Configure platform-wide OAuth credentials for integrations. These
-          credentials will be used as the default for all organizations.
+          Configure platform-wide OAuth credentials for integrations. These credentials will be used
+          as the default for all organizations.
         </p>
       </div>
 
@@ -286,27 +289,19 @@ export default function AdminIntegrationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{integrations?.length || 0}</div>
-            <div className="text-sm text-muted-foreground">
-              Total Integrations
-            </div>
+            <div className="text-sm text-muted-foreground">Total Integrations</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
-              {configuredCount}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{configuredCount}</div>
             <div className="text-sm text-muted-foreground">Configured</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-yellow-600">
-              {totalOAuth - configuredCount}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              OAuth Pending Setup
-            </div>
+            <div className="text-2xl font-bold text-yellow-600">{totalOAuth - configuredCount}</div>
+            <div className="text-sm text-muted-foreground">OAuth Pending Setup</div>
           </CardContent>
         </Card>
       </div>
@@ -314,9 +309,7 @@ export default function AdminIntegrationsPage() {
       {/* Refresh button */}
       <div className="flex justify-end">
         <Button variant="outline" onClick={() => mutate()} disabled={isLoading}>
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
-          />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
@@ -375,4 +368,3 @@ export default function AdminIntegrationsPage() {
     </div>
   );
 }
-

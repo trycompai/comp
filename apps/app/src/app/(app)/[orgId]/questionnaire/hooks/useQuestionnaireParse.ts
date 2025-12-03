@@ -1,6 +1,6 @@
 'use client';
 
-import type { parseQuestionnaireTask } from '@/jobs/tasks/vendors/parse-questionnaire';
+import type { parseQuestionnaireTask } from '@/trigger/tasks/vendors/parse-questionnaire';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
@@ -57,7 +57,6 @@ export function useQuestionnaireParse({
       getAutoAnswerToken();
     }
   }, [autoAnswerToken, setAutoAnswerToken]);
-
 
   // Track parse task with realtime hook
   const { run: parseRun, error: parseError } = useRealtimeRun<typeof parseQuestionnaireTask>(
@@ -154,7 +153,9 @@ export function useQuestionnaireParse({
       } else {
         // ✅ Only if token creation failed - reset state
         setIsParseProcessStarted(false);
-        toast.error('Failed to create read token for parse task. The task may still be running - please check Trigger.dev dashboard.');
+        toast.error(
+          'Failed to create read token for parse task. The task may still be running - please check Trigger.dev dashboard.',
+        );
       }
     },
     onError: ({ error }) => {

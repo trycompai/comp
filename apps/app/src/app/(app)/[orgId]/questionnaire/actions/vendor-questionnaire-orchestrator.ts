@@ -1,11 +1,11 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { answerQuestion } from '@/jobs/tasks/vendors/answer-question';
 import { syncOrganizationEmbeddings } from '@/lib/vector';
+import { answerQuestion } from '@/trigger/tasks/vendors/answer-question';
 import { logger } from '@/utils/logger';
-import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const inputSchema = z.object({
@@ -128,9 +128,6 @@ export const vendorQuestionnaireOrchestrator = authActionClient
         organizationId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw error instanceof Error
-        ? error
-        : new Error('Failed to answer questions');
+      throw error instanceof Error ? error : new Error('Failed to answer questions');
     }
   });
-

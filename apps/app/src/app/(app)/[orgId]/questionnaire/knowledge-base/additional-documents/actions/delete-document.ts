@@ -2,12 +2,12 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { APP_AWS_KNOWLEDGE_BASE_BUCKET, s3Client } from '@/app/s3';
-import { db } from '@db';
+import { deleteKnowledgeBaseDocumentTask } from '@/trigger/tasks/vector/delete-knowledge-base-document';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { db } from '@db';
+import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { tasks } from '@trigger.dev/sdk';
-import { deleteKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/delete-knowledge-base-document';
 
 const deleteDocumentSchema = z.object({
   documentId: z.string(),
@@ -113,4 +113,3 @@ export const deleteKnowledgeBaseDocumentAction = authActionClient
       };
     }
   });
-

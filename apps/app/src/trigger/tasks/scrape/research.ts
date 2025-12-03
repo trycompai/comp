@@ -1,4 +1,4 @@
-import { researchJobCore } from '@/jobs/lib/research';
+import { researchJobCore } from '@/trigger/lib/research';
 import { db } from '@db';
 import { schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';

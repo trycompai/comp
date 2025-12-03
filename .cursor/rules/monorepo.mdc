@@ -1,0 +1,263 @@
+---
+description: Turborepo monorepo structure and best practices
+globs: **/*.{ts,tsx,json}
+alwaysApply: true
+---
+
+# Monorepo Structure (Turborepo)
+
+## Overview
+
+This is a **Turborepo monorepo** with bun as the package manager.
+
+```
+comp/
+├── apps/                    # Deployable applications
+│   ├── api/                 # NestJS backend API
+│   ├── app/                 # Next.js main application
+│   └── portal/              # Next.js trust portal
+├── packages/                # Shared libraries
+│   ├── db/                  # Prisma database package
+│   ├── ui/                  # Shared UI components (shadcn)
+│   ├── email/               # Email templates
+│   ├── utils/               # Shared utilities
+│   ├── tsconfig/            # Shared TypeScript configs
+│   └── ...
+├── turbo.json               # Turborepo configuration
+└── package.json             # Root package.json
+```
+
+## Package Naming
+
+All packages use the `@comp/` or `@trycompai/` scope:
+
+```json
+// packages/ui/package.json
+{ "name": "@trycompai/ui" }
+
+// packages/db/package.json
+{ "name": "@comp/db" }
+```
+
+## Running Commands
+
+### ✅ Always Use Turbo for Multi-Package Commands
+
+```bash
+# Run across all packages
+bun run build          # turbo build
+bun run lint           # turbo lint
+bun run typecheck      # turbo typecheck
+bun run dev            # turbo dev --parallel
+
+# Run for specific package with filter
+turbo build --filter=@trycompai/ui
+turbo dev --filter=apps/app
+```
+
+### ✅ Use Workspace Filter for Single Package
+
+```bash
+# Run script in specific package
+bun run -F @comp/db prisma:generate
+bun run -F apps/app dev
+bun run -F @trycompai/ui build
+```
+
+### ❌ Never Do This
+
+```bash
+# Don't cd into package and run directly
+cd apps/app && bun run dev  # ❌ Breaks turborepo caching
+
+# Don't use npm/yarn
+npm install  # ❌ Use bun
+yarn add     # ❌ Use bun
+```
+
+## Importing Between Packages
+
+### ✅ Always Import from Package Name
+
+```tsx
+// In apps/app - importing from packages
+import { Button } from '@trycompai/ui';
+import { prisma } from '@comp/db';
+import { formatDate } from '@trycompai/utils';
+```
+
+### ❌ Never Use Relative Paths Across Packages
+
+```tsx
+// ❌ Don't do this
+import { Button } from '../../../packages/ui/src/button';
+import { prisma } from '../../packages/db';
+```
+
+## Adding Dependencies
+
+### To a Specific Package
+
+```bash
+# Add to specific workspace
+bun add axios -F apps/app
+bun add -D vitest -F @trycompai/ui
+```
+
+### To Root (Dev Dependencies Only)
+
+```bash
+# Only for tools used across all packages
+bun add -D -w prettier typescript turbo
+```
+
+### ❌ Never Add App Dependencies to Root
+
+```bash
+# ❌ Don't add app-specific deps to root
+bun add -w next react  # Wrong! Add to apps/app
+```
+
+## Shared Configurations
+
+### TypeScript
+
+Extend from shared tsconfig:
+
+```json
+// apps/app/tsconfig.json
+{
+  "extends": "@comp/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] }
+  }
+}
+```
+
+### ESLint & Prettier
+
+Configurations live at root and are shared across all packages.
+
+## Turbo Task Dependencies
+
+```json
+// turbo.json
+{
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"], // Build dependencies first
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "dev": {
+      "persistent": true,
+      "cache": false
+    }
+  }
+}
+```
+
+### Understanding `^` Prefix
+
+```json
+{
+  "build": {
+    "dependsOn": ["^build"] // Run build in dependencies FIRST
+  },
+  "lint": {
+    "dependsOn": ["^lint"] // Run lint in dependencies FIRST
+  }
+}
+```
+
+## Creating a New Package
+
+1. Create directory in `packages/`:
+
+```bash
+mkdir packages/my-package
+```
+
+2. Add `package.json`:
+
+```json
+{
+  "name": "@trycompai/my-package",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit"
+  }
+}
+```
+
+3. Add `tsconfig.json`:
+
+```json
+{
+  "extends": "@comp/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}
+```
+
+4. Install dependencies:
+
+```bash
+bun install
+```
+
+## Package Boundaries
+
+### ✅ Packages Should Be
+
+- **Self-contained** - All dependencies declared in own package.json
+- **Reusable** - Used by 2+ apps/packages to justify extraction
+- **Focused** - Single responsibility (ui, db, utils, etc.)
+
+### ❌ Don't Create Packages For
+
+- Code only used in one app (colocate instead)
+- Temporary utilities
+- App-specific business logic
+
+## Dependency Syncing
+
+Keep versions consistent across packages:
+
+```bash
+# Check for mismatched versions
+bun run deps:check
+
+# Fix mismatches automatically
+bun run deps:fix
+```
+
+## CI/CD Considerations
+
+Turborepo enables:
+
+- **Caching** - Only rebuild changed packages
+- **Parallelization** - Run independent tasks simultaneously
+- **Affected filtering** - Only test/build what changed
+
+```bash
+# Only build affected packages
+turbo build --filter=[origin/main]
+```
+
+## Checklist
+
+Before committing:
+
+- [ ] Dependencies added to correct package (not root)
+- [ ] Imports use package names, not relative paths
+- [ ] New packages have proper package.json and tsconfig.json
+- [ ] Used `turbo` or `bun run -F` for package-specific commands
+- [ ] Version mismatches resolved with `bun run deps:fix`

@@ -1,9 +1,9 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { processKnowledgeBaseDocumentTask } from '@/trigger/tasks/vector/process-knowledge-base-document';
+import { processKnowledgeBaseDocumentsOrchestratorTask } from '@/trigger/tasks/vector/process-knowledge-base-documents-orchestrator';
 import { tasks } from '@trigger.dev/sdk';
-import { processKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/process-knowledge-base-document';
-import { processKnowledgeBaseDocumentsOrchestratorTask } from '@/jobs/tasks/vector/process-knowledge-base-documents-orchestrator';
 import { z } from 'zod';
 
 const processDocumentsSchema = z.object({
@@ -38,7 +38,7 @@ export const processKnowledgeBaseDocumentsAction = authActionClient
 
     try {
       let runId: string | undefined;
-      
+
       // Use orchestrator for multiple documents, individual task for single document
       if (documentIds.length > 1) {
         const handle = await tasks.trigger<typeof processKnowledgeBaseDocumentsOrchestratorTask>(
@@ -63,9 +63,10 @@ export const processKnowledgeBaseDocumentsAction = authActionClient
       return {
         success: true,
         runId,
-        message: documentIds.length > 1 
-          ? `Processing ${documentIds.length} documents in parallel...`
-          : 'Processing document...',
+        message:
+          documentIds.length > 1
+            ? `Processing ${documentIds.length} documents in parallel...`
+            : 'Processing document...',
       };
     } catch (error) {
       console.error('Failed to trigger document processing:', error);
@@ -75,4 +76,3 @@ export const processKnowledgeBaseDocumentsAction = authActionClient
       };
     }
   });
-

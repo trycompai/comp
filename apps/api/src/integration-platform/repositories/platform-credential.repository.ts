@@ -7,6 +7,7 @@ export interface CreatePlatformCredentialDto {
   encryptedClientId: Prisma.InputJsonValue;
   encryptedClientSecret: Prisma.InputJsonValue;
   customScopes?: string[];
+  customSettings?: Prisma.InputJsonValue;
   createdById?: string;
 }
 
@@ -14,6 +15,7 @@ export interface UpdatePlatformCredentialDto {
   encryptedClientId?: Prisma.InputJsonValue;
   encryptedClientSecret?: Prisma.InputJsonValue;
   customScopes?: string[];
+  customSettings?: Prisma.InputJsonValue;
   isActive?: boolean;
   updatedById?: string;
 }
@@ -81,6 +83,7 @@ export class PlatformCredentialRepository {
         encryptedClientId: data.encryptedClientId,
         encryptedClientSecret: data.encryptedClientSecret,
         customScopes: data.customScopes || [],
+        customSettings: data.customSettings,
         createdById: data.createdById,
         updatedById: data.createdById,
       },
@@ -88,6 +91,7 @@ export class PlatformCredentialRepository {
         encryptedClientId: data.encryptedClientId,
         encryptedClientSecret: data.encryptedClientSecret,
         customScopes: data.customScopes || [],
+        customSettings: data.customSettings,
         updatedById: data.createdById,
       },
     });

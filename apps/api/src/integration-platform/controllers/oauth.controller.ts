@@ -144,8 +144,18 @@ export class OAuthController {
       redirectUrl,
     });
 
-    // Build authorization URL
-    const authUrl = new URL(oauthConfig.authorizeUrl);
+    // Build authorization URL, replacing any placeholders with custom settings
+    let authorizeUrl = oauthConfig.authorizeUrl;
+    if (credentials.customSettings) {
+      // Replace {APP_NAME} placeholder with custom setting (used by Rippling, etc.)
+      if (credentials.customSettings.appName) {
+        authorizeUrl = authorizeUrl.replace(
+          '{APP_NAME}',
+          String(credentials.customSettings.appName),
+        );
+      }
+    }
+    const authUrl = new URL(authorizeUrl);
 
     // Standard OAuth2 params
     authUrl.searchParams.set('client_id', credentials.clientId);

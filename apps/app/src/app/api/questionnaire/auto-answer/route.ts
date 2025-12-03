@@ -1,9 +1,9 @@
-import { auth } from '@/utils/auth';
-import { answerQuestion } from '@/jobs/tasks/vendors/answer-question';
 import { syncOrganizationEmbeddings } from '@/lib/vector';
+import { answerQuestion } from '@/trigger/tasks/vendors/answer-question';
+import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
-import { NextRequest } from 'next/server';
 import { headers } from 'next/headers';
+import { NextRequest } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const sessionResponse = await auth.api.getSession({
@@ -54,12 +54,17 @@ export async function POST(req: NextRequest) {
           _originalIndex?: number;
           index: number;
         };
-        
+
         const questionsToAnswer = questionsAndAnswers
-          .map((qa: { question: string; answer: string | null; _originalIndex?: number }, index: number): QuestionWithIndex => ({
-            ...qa,
-            index: qa._originalIndex !== undefined ? qa._originalIndex : index,
-          }))
+          .map(
+            (
+              qa: { question: string; answer: string | null; _originalIndex?: number },
+              index: number,
+            ): QuestionWithIndex => ({
+              ...qa,
+              index: qa._originalIndex !== undefined ? qa._originalIndex : index,
+            }),
+          )
           .filter((qa: QuestionWithIndex) => !qa.answer || qa.answer.trim().length === 0);
 
         // Send initial progress
@@ -188,4 +193,3 @@ export async function POST(req: NextRequest) {
     },
   });
 }
-
