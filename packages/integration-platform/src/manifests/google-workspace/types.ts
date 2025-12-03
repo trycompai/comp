@@ -51,3 +51,32 @@ export interface GoogleWorkspaceDomainsResponse {
   domains: GoogleWorkspaceDomain[];
 }
 
+// Role types
+export interface GoogleWorkspaceRole {
+  roleId: string;
+  roleName: string;
+  roleDescription?: string;
+  isSystemRole: boolean;
+  isSuperAdminRole: boolean;
+}
+
+export interface GoogleWorkspaceRolesResponse {
+  kind: string;
+  items: GoogleWorkspaceRole[];
+  nextPageToken?: string;
+}
+
+export interface GoogleWorkspaceRoleAssignment {
+  roleAssignmentId: string;
+  roleId: string;
+  assignedTo: string; // User ID
+  scopeType: 'CUSTOMER' | 'ORG_UNIT';
+  orgUnitId?: string;
+}
+
+export interface GoogleWorkspaceRoleAssignmentsResponse {
+  kind: string;
+  items: GoogleWorkspaceRoleAssignment[];
+  nextPageToken?: string;
+}
+
