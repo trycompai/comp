@@ -10,6 +10,7 @@ import type {
 import { manifest as githubManifest } from '../manifests/github';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { manifest as linearManifest } from '../manifests/linear';
+import { ripplingManifest } from '../manifests/rippling';
 
 // ============================================================================
 // Registry Implementation
@@ -95,6 +96,7 @@ const allManifests: IntegrationManifest[] = [
   githubManifest,
   googleWorkspaceManifest,
   linearManifest,
+  ripplingManifest,
 ];
 
 // Create and export the registry singleton

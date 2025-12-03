@@ -6,6 +6,7 @@ import {
   EncryptedData,
 } from './credential-vault.service';
 import { getManifest, type OAuthConfig } from '@comp/integration-platform';
+import type { Prisma } from '@prisma/client';
 
 export interface OAuthCredentials {
   clientId: string;
@@ -13,6 +14,8 @@ export interface OAuthCredentials {
   scopes: string[];
   /** Where the credentials came from */
   source: 'organization' | 'platform';
+  /** Provider-specific custom settings (e.g., Rippling app name) */
+  customSettings?: Record<string, unknown>;
 }
 
 export interface OAuthCredentialsAvailability {
@@ -124,6 +127,7 @@ export class OAuthCredentialsService {
     clientId: string,
     clientSecret: string,
     customScopes?: string[],
+    customSettings?: Prisma.InputJsonValue,
   ): Promise<void> {
     const encryptedClientId =
       await this.credentialVaultService.encrypt(clientId);
@@ -136,6 +140,7 @@ export class OAuthCredentialsService {
       encryptedClientId,
       encryptedClientSecret,
       customScopes,
+      customSettings: customSettings as Prisma.InputJsonValue | undefined,
     });
 
     this.logger.log(
@@ -164,6 +169,7 @@ export class OAuthCredentialsService {
     clientId: string,
     clientSecret: string,
     customScopes?: string[],
+    customSettings?: Record<string, unknown>,
     userId?: string,
   ): Promise<void> {
     const encryptedClientId =
@@ -176,6 +182,7 @@ export class OAuthCredentialsService {
       encryptedClientId,
       encryptedClientSecret,
       customScopes,
+      customSettings: customSettings as Prisma.InputJsonValue | undefined,
       createdById: userId,
     });
 
@@ -233,6 +240,8 @@ export class OAuthCredentialsService {
         clientSecret,
         scopes,
         source: 'organization',
+        customSettings:
+          (orgApp.customSettings as Record<string, unknown>) || undefined,
       };
     } catch (error) {
       this.logger.error(`Failed to decrypt org OAuth credentials: ${error}`);
@@ -275,6 +284,9 @@ export class OAuthCredentialsService {
         clientSecret,
         scopes,
         source: 'platform',
+        customSettings: (
+          platformCred as { customSettings?: Record<string, unknown> }
+        ).customSettings,
       };
     } catch (error) {
       this.logger.error(

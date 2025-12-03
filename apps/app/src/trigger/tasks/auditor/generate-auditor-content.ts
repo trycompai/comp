@@ -1,4 +1,4 @@
-import { getOrganizationContext } from '@/jobs/tasks/onboarding/onboard-organization-helpers';
+import { getOrganizationContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
 import { logger, metadata, schemaTask } from '@trigger.dev/sdk';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
+import type { runIntegrationTests } from '@/trigger/tasks/integration/run-integration-tests';
 import { Button } from '@comp/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Integration } from '@db';

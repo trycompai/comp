@@ -119,7 +119,7 @@ export type CredentialField = z.infer<typeof CredentialFieldSchema>;
 // Integration Capabilities
 // ============================================================================
 
-export type IntegrationCapability = 'checks' | 'webhook';
+export type IntegrationCapability = 'checks' | 'webhook' | 'sync';
 
 export const WebhookConfigSchema = z.object({
   /** Webhook endpoint path suffix */

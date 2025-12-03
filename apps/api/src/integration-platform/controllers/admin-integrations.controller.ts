@@ -20,6 +20,7 @@ interface SavePlatformCredentialDto {
   clientId: string;
   clientSecret: string;
   customScopes?: string[];
+  customSettings?: Record<string, unknown>;
 }
 
 @Controller({ path: 'admin/integrations', version: '1' })
@@ -69,6 +70,7 @@ export class AdminIntegrationsController {
           setupInstructions: manifest.auth.config.setupInstructions,
           createAppUrl: manifest.auth.config.createAppUrl,
           requiredScopes: manifest.auth.config.scopes,
+          authorizeUrl: manifest.auth.config.authorizeUrl,
         }),
       };
     });
@@ -123,7 +125,7 @@ export class AdminIntegrationsController {
     @Body() body: SavePlatformCredentialDto,
     // TODO: Get userId from auth context
   ) {
-    const { providerSlug, clientId, clientSecret, customScopes } = body;
+    const { providerSlug, clientId, clientSecret, customScopes, customSettings } = body;
 
     // Validate provider exists
     const manifest = getManifest(providerSlug);
@@ -155,6 +157,7 @@ export class AdminIntegrationsController {
       clientId,
       clientSecret,
       customScopes,
+      customSettings,
       // userId from auth context would go here
     );
 

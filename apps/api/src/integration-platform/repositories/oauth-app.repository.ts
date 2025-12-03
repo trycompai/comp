@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import type { IntegrationOAuthApp } from '@prisma/client';
+import type { IntegrationOAuthApp, Prisma } from '@prisma/client';
 
 export interface CreateOAuthAppDto {
   providerSlug: string;
@@ -8,12 +8,14 @@ export interface CreateOAuthAppDto {
   encryptedClientId: object;
   encryptedClientSecret: object;
   customScopes?: string[];
+  customSettings?: Prisma.InputJsonValue;
 }
 
 export interface UpdateOAuthAppDto {
   encryptedClientId?: object;
   encryptedClientSecret?: object;
   customScopes?: string[];
+  customSettings?: Prisma.InputJsonValue;
   isActive?: boolean;
 }
 
@@ -80,7 +82,13 @@ export class OAuthAppRepository {
           organizationId,
         },
       },
-      data,
+      data: {
+        encryptedClientId: data.encryptedClientId,
+        encryptedClientSecret: data.encryptedClientSecret,
+        customScopes: data.customScopes,
+        customSettings: data.customSettings,
+        isActive: data.isActive,
+      },
     });
   }
 
@@ -98,12 +106,14 @@ export class OAuthAppRepository {
         encryptedClientId: data.encryptedClientId,
         encryptedClientSecret: data.encryptedClientSecret,
         customScopes: data.customScopes || [],
+        customSettings: data.customSettings || undefined,
         isActive: true,
       },
       update: {
         encryptedClientId: data.encryptedClientId,
         encryptedClientSecret: data.encryptedClientSecret,
         customScopes: data.customScopes || [],
+        customSettings: data.customSettings || undefined,
         isActive: true,
       },
     });

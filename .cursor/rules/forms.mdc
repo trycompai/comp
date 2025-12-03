@@ -1,0 +1,423 @@
+---
+description: Form handling with React Hook Form, Zod validation, and shadcn/ui
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Forms: React Hook Form + Zod
+
+## Core Principle
+
+**All forms MUST use React Hook Form with Zod validation. No exceptions.**
+
+## Required Stack
+
+- `react-hook-form` - Form state management
+- `zod` - Schema validation
+- `@hookform/resolvers` - Zod resolver for RHF
+
+## Basic Pattern
+
+```tsx
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+// 1. Define schema with Zod
+const formSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+// 2. Infer TypeScript type from schema
+type FormData = z.infer<typeof formSchema>;
+
+// 3. Use in component
+function MyForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (data: FormData) => {
+    // data is fully typed and validated
+    await submitToApi(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" {...register('email')} />
+        {errors.email && (
+          <p className="text-sm text-destructive">{errors.email.message}</p>
+        )}
+      </div>
+
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? 'Submitting...' : 'Submit'}
+      </Button>
+    </form>
+  );
+}
+```
+
+## Schema Best Practices
+
+### String Validation
+
+```tsx
+const schema = z.object({
+  // Required string with min length
+  name: z.string().min(1, 'Name is required'),
+
+  // Email validation
+  email: z.string().email('Invalid email'),
+
+  // URL validation
+  website: z.string().url('Invalid URL'),
+
+  // Optional string
+  bio: z.string().optional(),
+
+  // String with regex
+  slug: z.string().regex(/^[a-z0-9-]+$/, 'Only lowercase letters, numbers, and hyphens'),
+
+  // Trimmed string (removes whitespace)
+  title: z.string().trim().min(1, 'Title is required'),
+});
+```
+
+### Number Validation
+
+```tsx
+const schema = z.object({
+  // Integer with range
+  age: z.number().int().min(0).max(150),
+
+  // Positive number
+  price: z.number().positive('Must be positive'),
+
+  // Coerce string to number (for inputs)
+  quantity: z.coerce.number().int().min(1),
+});
+```
+
+### Array & Object Validation
+
+```tsx
+const schema = z.object({
+  // Array of strings
+  tags: z.array(z.string()).min(1, 'At least one tag required'),
+
+  // Array of objects
+  items: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.number(),
+    })
+  ),
+
+  // Nested object
+  address: z.object({
+    street: z.string(),
+    city: z.string(),
+    zip: z.string(),
+  }),
+});
+```
+
+### Conditional Validation
+
+```tsx
+const schema = z
+  .object({
+    hasAccount: z.boolean(),
+    accountId: z.string().optional(),
+  })
+  .refine((data) => !data.hasAccount || data.accountId, {
+    message: 'Account ID required when has account',
+    path: ['accountId'],
+  });
+```
+
+## shadcn/ui Form Components
+
+### Basic Input
+
+```tsx
+<div className="flex flex-col gap-2">
+  <Label htmlFor="name">Name</Label>
+  <Input id="name" {...register('name')} />
+  {errors.name && (
+    <p className="text-sm text-destructive">{errors.name.message}</p>
+  )}
+</div>
+```
+
+### With Controller (for complex components)
+
+```tsx
+import { Controller } from 'react-hook-form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+<Controller
+  name="status"
+  control={control}
+  render={({ field }) => (
+    <Select onValueChange={field.onChange} defaultValue={field.value}>
+      <SelectTrigger>
+        <SelectValue placeholder="Select status" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="inactive">Inactive</SelectItem>
+      </SelectContent>
+    </Select>
+  )}
+/>
+```
+
+### Textarea
+
+```tsx
+import { Textarea } from '@/components/ui/textarea';
+
+<div className="flex flex-col gap-2">
+  <Label htmlFor="description">Description</Label>
+  <Textarea id="description" {...register('description')} rows={5} />
+  {errors.description && (
+    <p className="text-sm text-destructive">{errors.description.message}</p>
+  )}
+</div>
+```
+
+### Checkbox
+
+```tsx
+import { Checkbox } from '@/components/ui/checkbox';
+
+<Controller
+  name="acceptTerms"
+  control={control}
+  render={({ field }) => (
+    <div className="flex items-center gap-2">
+      <Checkbox
+        id="terms"
+        checked={field.value}
+        onCheckedChange={field.onChange}
+      />
+      <Label htmlFor="terms">Accept terms and conditions</Label>
+    </div>
+  )}
+/>
+```
+
+## Form State Management
+
+### Accessing Form State
+
+```tsx
+const {
+  register,
+  handleSubmit,
+  control,
+  watch,
+  setValue,
+  reset,
+  formState: {
+    errors,       // Field errors
+    isSubmitting, // Form is being submitted
+    isValid,      // All fields valid
+    isDirty,      // Form has been modified
+    dirtyFields,  // Which fields were modified
+  },
+} = useForm<FormData>({
+  resolver: zodResolver(schema),
+  mode: 'onChange', // Validate on change (default is 'onSubmit')
+});
+```
+
+### Watching Values
+
+```tsx
+// Watch single field
+const email = watch('email');
+
+// Watch multiple fields
+const [firstName, lastName] = watch(['firstName', 'lastName']);
+
+// Watch all fields
+const allValues = watch();
+```
+
+### Setting Values Programmatically
+
+```tsx
+// Set single value
+setValue('email', 'new@example.com');
+
+// Set and trigger validation
+setValue('email', 'new@example.com', { shouldValidate: true });
+
+// Reset entire form
+reset();
+
+// Reset to specific values
+reset({ email: 'default@example.com', name: '' });
+```
+
+## Error Handling
+
+### API Errors
+
+```tsx
+const { setError, formState: { errors } } = useForm<FormData>();
+
+const onSubmit = async (data: FormData) => {
+  try {
+    await submitToApi(data);
+  } catch (error) {
+    if (error.field) {
+      // Set field-specific error
+      setError(error.field, { message: error.message });
+    } else {
+      // Set root error for general errors
+      setError('root', { message: 'Something went wrong' });
+    }
+  }
+};
+
+// Display root error
+{errors.root && (
+  <div className="text-sm text-destructive">{errors.root.message}</div>
+)}
+```
+
+### Form-Level Validation
+
+```tsx
+const schema = z
+  .object({
+    password: z.string().min(8),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+```
+
+## Common Patterns
+
+### Form with Loading State
+
+```tsx
+<Button type="submit" disabled={isSubmitting || !isValid}>
+  {isSubmitting ? 'Saving...' : 'Save'}
+</Button>
+```
+
+### Dynamic Form Fields
+
+```tsx
+import { useFieldArray } from 'react-hook-form';
+
+const { fields, append, remove } = useFieldArray({
+  control,
+  name: 'items',
+});
+
+return (
+  <div className="flex flex-col gap-2">
+    {fields.map((field, index) => (
+      <div key={field.id} className="flex items-center gap-2">
+        <Input {...register(`items.${index}.name`)} />
+        <Button type="button" variant="ghost" onClick={() => remove(index)}>
+          Remove
+        </Button>
+      </div>
+    ))}
+    <Button type="button" variant="outline" onClick={() => append({ name: '' })}>
+      Add Item
+    </Button>
+  </div>
+);
+```
+
+## Anti-Patterns to Avoid
+
+### ❌ Don't Use useState for Form Fields
+
+```tsx
+// BAD
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+
+// GOOD
+const { register } = useForm<FormData>();
+```
+
+### ❌ Don't Validate Manually
+
+```tsx
+// BAD
+const handleSubmit = (e) => {
+  e.preventDefault();
+  if (email.length < 5) {
+    setError('Email too short');
+    return;
+  }
+  // ...
+};
+
+// GOOD
+const schema = z.object({
+  email: z.string().min(5, 'Email too short'),
+});
+```
+
+### ❌ Don't Mix Controlled/Uncontrolled
+
+```tsx
+// BAD - mixing value prop with register
+<Input value={someState} {...register('field')} />
+
+// GOOD - use setValue for external changes
+useEffect(() => {
+  setValue('field', someState);
+}, [someState, setValue]);
+```
+
+### ❌ Don't Forget Button Type
+
+```tsx
+// BAD - buttons without type default to submit
+<button onClick={handleOtherAction}>Other Action</button>
+
+// GOOD - explicit type="button" for non-submit buttons
+<Button type="button" onClick={handleOtherAction}>Other Action</Button>
+<Button type="submit">Submit</Button>
+```
+
+## Checklist Before Committing Forms
+
+- [ ] Schema defined with Zod
+- [ ] TypeScript types inferred from schema (`z.infer<typeof schema>`)
+- [ ] `useForm` with `zodResolver`
+- [ ] All inputs use `register` or `Controller`
+- [ ] Error messages displayed for each field
+- [ ] Submit button has `type="submit"` and disabled state
+- [ ] Other buttons have `type="button"`
+- [ ] Loading state handled (`isSubmitting`)
+- [ ] API errors handled with `setError`

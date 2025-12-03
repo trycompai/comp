@@ -276,6 +276,10 @@ model IntegrationOAuthApp {
     /// Optional: custom scopes (overrides manifest defaults)
     customScopes String[]
 
+    /// Provider-specific settings (e.g., Rippling app name for authorize URL)
+    /// Stored as JSON: { "appName": "compai533c" }
+    customSettings Json?
+
     /// Whether this config is active
     isActive Boolean @default(true)
 
@@ -390,6 +394,10 @@ model IntegrationPlatformCredential {
 
     /// Optional: custom scopes (overrides manifest defaults)
     customScopes String[]
+
+    /// Provider-specific settings (e.g., Rippling app name for authorize URL)
+    /// Stored as JSON: { "appName": "compai533c" }
+    customSettings Json?
 
     /// Whether this credential is active
     isActive Boolean @default(true)
