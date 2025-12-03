@@ -300,6 +300,13 @@ export class OAuthController {
       // Store tokens
       await this.credentialVaultService.storeOAuthTokens(connection.id, tokens);
 
+      // Provider-specific post-OAuth actions
+      if (oauthState.providerSlug === 'rippling') {
+        // Rippling requires calling mark_app_installed to finalize
+        // See: https://developer.rippling.com/documentation/developer-portal/v2-guides/installation
+        await this.markRipplingAppInstalled(tokens.access_token);
+      }
+
       // Clean up state
       await this.oauthStateRepository.delete(state);
 
@@ -409,6 +416,41 @@ export class OAuthController {
     }
 
     return tokens;
+  }
+
+  /**
+   * Mark Rippling app as installed (required by Rippling)
+   * See: https://developer.rippling.com/documentation/developer-portal/v2-guides/installation
+   */
+  private async markRipplingAppInstalled(accessToken: string): Promise<void> {
+    try {
+      const response = await fetch(
+        'https://api.rippling.com/platform/api/mark_app_installed',
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.warn(
+          `Failed to mark Rippling app as installed: ${response.status} - ${errorText}`,
+        );
+        // Don't throw - the OAuth flow itself succeeded
+      } else {
+        const result = await response.json();
+        this.logger.log(
+          `Rippling app marked as installed: ${JSON.stringify(result)}`,
+        );
+      }
+    } catch (error) {
+      this.logger.warn(`Error marking Rippling app as installed: ${error}`);
+      // Don't throw - the OAuth flow itself succeeded
+    }
   }
 
   private buildRedirectUrl(
