@@ -44,7 +44,6 @@ import { SOAModule } from './soa/soa.module';
     DevicesModule,
     PoliciesModule,
     DeviceAgentModule,
-    DevicesModule,
     AttachmentsModule,
     TasksModule,
     CommentsModule,
