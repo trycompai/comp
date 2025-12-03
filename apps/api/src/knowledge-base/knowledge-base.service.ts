@@ -246,7 +246,7 @@ export class KnowledgeBaseService {
       await this.triggerBatchManualAnswerDeletion(
         dto.organizationId,
         manualAnswers.map((ma) => ma.id),
-      );
+        );
     } else {
       this.logger.log('No manual answers to delete', {
         organizationId: dto.organizationId,

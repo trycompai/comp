@@ -61,16 +61,16 @@ const createLogger = () => {
     const baseLogger = new Logger('VectorStore');
 
     return {
-      info: (message: string, payload?: LogPayload): void => {
-        baseLogger.log(formatMessage(message, payload));
-      },
-      warn: (message: string, payload?: LogPayload): void => {
-        baseLogger.warn(formatMessage(message, payload));
-      },
-      error: (message: string, payload?: LogPayload): void => {
-        baseLogger.error(formatMessage(message, payload));
-      },
-    };
+  info: (message: string, payload?: LogPayload): void => {
+    baseLogger.log(formatMessage(message, payload));
+  },
+  warn: (message: string, payload?: LogPayload): void => {
+    baseLogger.warn(formatMessage(message, payload));
+  },
+  error: (message: string, payload?: LogPayload): void => {
+    baseLogger.error(formatMessage(message, payload));
+  },
+};
   } catch {
     // Fallback to console if NestJS is not available
     return {

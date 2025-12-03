@@ -86,15 +86,15 @@ async function performSync(organizationId: string): Promise<void> {
       knowledgeBaseDocuments: kbDocStats,
       orphanedDeleted,
     });
-  } catch (error) {
+              } catch (error) {
     logger.error('Failed to sync organization embeddings', {
       organizationId,
       error: error instanceof Error ? error.message : 'Unknown error',
       errorStack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
-  }
-}
+              }
+            }
 
 /**
  * Sync manual answers for an organization
@@ -103,71 +103,71 @@ async function syncManualAnswers(
   organizationId: string,
   existingEmbeddings: Map<string, ExistingEmbedding[]>,
 ): Promise<{ created: number; updated: number; skipped: number; total: number }> {
-  const manualAnswers = await db.securityQuestionnaireManualAnswer.findMany({
-    where: { organizationId },
-    select: {
-      id: true,
-      question: true,
-      answer: true,
-      updatedAt: true,
-    },
-  });
+    const manualAnswers = await db.securityQuestionnaireManualAnswer.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        question: true,
+        answer: true,
+        updatedAt: true,
+      },
+    });
 
-  logger.info('Syncing manual answers', {
-    organizationId,
-    count: manualAnswers.length,
-  });
+    logger.info('Syncing manual answers', {
+      organizationId,
+      count: manualAnswers.length,
+    });
 
   let created = 0;
   let updated = 0;
   let skipped = 0;
 
-  if (manualAnswers.length > 0) {
+    if (manualAnswers.length > 0) {
     const itemsToUpsert = manualAnswers
-      .map((ma) => {
-        const embeddingId = `manual_answer_${ma.id}`;
-        const text = `${ma.question}\n\n${ma.answer}`;
-        const updatedAt = ma.updatedAt.toISOString();
+        .map((ma) => {
+          const embeddingId = `manual_answer_${ma.id}`;
+          const text = `${ma.question}\n\n${ma.answer}`;
+          const updatedAt = ma.updatedAt.toISOString();
 
         const existing = existingEmbeddings.get(ma.id) || [];
-        const needsUpdate =
+          const needsUpdate =
           existing.length === 0 || existing[0]?.updatedAt !== updatedAt;
 
-        if (!needsUpdate) {
+          if (!needsUpdate) {
           skipped++;
           return null;
-        }
+          }
 
         if (existing.length === 0) created++;
         else updated++;
 
-        return {
-          id: embeddingId,
-          text,
-          metadata: {
-            organizationId,
-            sourceType: 'manual_answer' as const,
-            sourceId: ma.id,
-            content: text,
+          return {
+            id: embeddingId,
+            text,
+            metadata: {
+              organizationId,
+              sourceType: 'manual_answer' as const,
+              sourceId: ma.id,
+              content: text,
             manualAnswerQuestion: ma.question,
-            updatedAt,
-          },
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+              updatedAt,
+            },
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
 
     if (itemsToUpsert.length > 0) {
       await batchUpsertEmbeddings(itemsToUpsert);
+      }
     }
-  }
 
-  logger.info('Manual answers sync completed', {
-    organizationId,
+    logger.info('Manual answers sync completed', {
+      organizationId,
     created,
     updated,
     skipped,
-    total: manualAnswers.length,
-  });
+      total: manualAnswers.length,
+    });
 
   return { created, updated, skipped, total: manualAnswers.length };
 }
@@ -190,41 +190,41 @@ async function deleteOrphanedEmbeddings(
     fetchKnowledgeBaseDocuments(organizationId),
   ]);
 
-  const dbPolicyIds = new Set(policies.map((p) => p.id));
-  const dbContextIds = new Set(contextEntries.map((c) => c.id));
-  const dbManualAnswerIds = new Set(manualAnswers.map((ma) => ma.id));
+    const dbPolicyIds = new Set(policies.map((p) => p.id));
+    const dbContextIds = new Set(contextEntries.map((c) => c.id));
+    const dbManualAnswerIds = new Set(manualAnswers.map((ma) => ma.id));
   const dbKbDocIds = new Set(kbDocuments.map((d) => d.id));
 
-  let orphanedDeleted = 0;
+    let orphanedDeleted = 0;
 
-  for (const [sourceId, embeddings] of existingEmbeddings.entries()) {
+      for (const [sourceId, embeddings] of existingEmbeddings.entries()) {
     const sourceType = embeddings[0]?.sourceType;
     if (!sourceType) continue;
 
-    const shouldExist =
+        const shouldExist =
       (sourceType === 'policy' && dbPolicyIds.has(sourceId)) ||
       (sourceType === 'context' && dbContextIds.has(sourceId)) ||
       (sourceType === 'manual_answer' && dbManualAnswerIds.has(sourceId)) ||
       (sourceType === 'knowledge_base_document' && dbKbDocIds.has(sourceId));
 
-    if (!shouldExist && vectorIndex) {
+        if (!shouldExist && vectorIndex) {
       const idsToDelete = embeddings.map((e) => e.id);
-      try {
-        await vectorIndex.delete(idsToDelete);
-        orphanedDeleted += idsToDelete.length;
-        logger.info('Deleted orphaned embeddings', {
-          sourceId,
+          try {
+            await vectorIndex.delete(idsToDelete);
+            orphanedDeleted += idsToDelete.length;
+            logger.info('Deleted orphaned embeddings', {
+              sourceId,
           sourceType,
-          deletedCount: idsToDelete.length,
-        });
-      } catch (error) {
-        logger.warn('Failed to delete orphaned embeddings', {
-          sourceId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
+              deletedCount: idsToDelete.length,
+            });
+          } catch (error) {
+            logger.warn('Failed to delete orphaned embeddings', {
+              sourceId,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        }
       }
-    }
-  }
 
   return orphanedDeleted;
 }

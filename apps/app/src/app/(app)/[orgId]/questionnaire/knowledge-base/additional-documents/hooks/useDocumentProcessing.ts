@@ -29,12 +29,12 @@ export function useDocumentProcessing({
   // Use refs to avoid stale closure issues
   const onProcessingCompleteRef = useRef(onProcessingComplete);
   const onDeletionCompleteRef = useRef(onDeletionComplete);
-  
+
   // Keep refs updated
   useEffect(() => {
     onProcessingCompleteRef.current = onProcessingComplete;
   }, [onProcessingComplete]);
-  
+
   useEffect(() => {
     onDeletionCompleteRef.current = onDeletionComplete;
   }, [onDeletionComplete]);

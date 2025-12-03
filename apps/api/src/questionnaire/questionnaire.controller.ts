@@ -34,6 +34,11 @@ import {
 import { syncOrganizationEmbeddings, findSimilarContentBatch } from '@/vector-store/lib';
 import { generateAnswerFromContent } from './vendors/answer-question-helpers';
 import { TrustAccessService } from '../trust-portal/trust-access.service';
+import {
+  createSafeSSESender,
+  setupSSEHeaders,
+  sanitizeErrorMessage,
+} from '../utils/sse-utils';
 
 @ApiTags('Questionnaire')
 @Controller({
@@ -491,14 +496,8 @@ export class QuestionnaireController {
     @Body() dto: AutoAnswerDto,
     @Res() res: Response,
   ): Promise<void> {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    (res as any).flushHeaders?.();
-
-    const send = (data: object) => {
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
-    };
+    setupSSEHeaders(res);
+    const send = createSafeSSESender(res);
 
     try {
       // Step 1: Sync organization embeddings once
@@ -620,7 +619,7 @@ export class QuestionnaireController {
               question: qa.question,
               answer: null,
               sources: [],
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: sanitizeErrorMessage(error),
             };
 
             send({
@@ -642,13 +641,14 @@ export class QuestionnaireController {
         searchTimeMs: searchTime,
       });
     } catch (error) {
+      const safeErrorMessage = sanitizeErrorMessage(error);
       this.logger.error('Error in auto-answer stream', {
         organizationId: dto.organizationId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: safeErrorMessage,
       });
       send({
         type: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: safeErrorMessage,
       });
     } finally {
       res.end();

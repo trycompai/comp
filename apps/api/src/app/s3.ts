@@ -94,9 +94,18 @@ export function extractS3KeyFromUrl(url: string): string {
     return key;
   }
 
+  // Reject inputs that look like URLs or domains but weren't parsed as valid S3 URLs above
+  // This catches malformed URLs and prevents URL injection attacks
   const lowerInput = url.toLowerCase();
-  if (lowerInput.includes('://') || lowerInput.includes('amazonaws.com')) {
+  if (lowerInput.includes('://')) {
     throw new Error('Invalid input: Malformed URL detected');
+  }
+
+  // Check for domain-like patterns (e.g., "example.com", "sub.example.com")
+  // S3 keys should not contain domain patterns
+  const domainPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}(\/|$)/i;
+  if (domainPattern.test(url)) {
+    throw new Error('Invalid input: Domain-like pattern detected in S3 key');
   }
 
   if (url.includes('../') || url.includes('..\\')) {

@@ -32,6 +32,11 @@ import type { AuthContext as AuthContextType } from '@/auth/types';
 import { UseGuards } from '@nestjs/common';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
 import { ApiSecurity, ApiHeader } from '@nestjs/swagger';
+import {
+  createSafeSSESender,
+  setupSSEHeaders,
+  sanitizeErrorMessage,
+} from '../utils/sse-utils';
 
 @ApiTags('SOA')
 @Controller({
@@ -94,14 +99,8 @@ export class SOAController {
     }
 
     const userId = authContext.userId;
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    (res as any).flushHeaders?.();
-
-    const send = (data: object) => {
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
-    };
+    setupSSEHeaders(res);
+    const send = createSafeSSESender(res);
 
     try {
       this.logger.log('Starting auto-fill SOA via SSE', {
@@ -299,14 +298,15 @@ export class SOAController {
 
       res.end();
     } catch (error) {
+      const safeErrorMessage = sanitizeErrorMessage(error);
       this.logger.error('Error in auto-fill SOA SSE stream', {
         organizationId: dto.organizationId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: safeErrorMessage,
       });
 
       send({
         type: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: safeErrorMessage,
       });
 
       res.end();
