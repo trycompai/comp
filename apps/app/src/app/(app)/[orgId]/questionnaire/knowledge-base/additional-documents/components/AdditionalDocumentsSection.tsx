@@ -15,7 +15,7 @@ import {
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui';
 import { ChevronLeft, ChevronRight, Download, FileText, Trash2, Upload } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
@@ -33,6 +33,13 @@ interface AdditionalDocumentsSectionProps {
   documents: Awaited<ReturnType<typeof import('../../data/queries').getKnowledgeBaseDocuments>>;
 }
 
+// Simple state for active run tracking
+interface ActiveRun {
+  runId: string;
+  token: string;
+  documentIds: string[];
+}
+
 export function AdditionalDocumentsSection({
   organizationId,
   documents,
@@ -48,31 +55,28 @@ export function AdditionalDocumentsSection({
     null,
   );
   
-  // Track processing and deletion run IDs
-  const [processingRunIds, setProcessingRunIds] = useState<Map<string, string>>(new Map()); // documentId -> runId
-  const [deletionRunIds, setDeletionRunIds] = useState<Map<string, string>>(new Map()); // documentId -> runId
+  // Simple state for active processing and deletion runs
+  const [activeProcessingRun, setActiveProcessingRun] = useState<ActiveRun | null>(null);
+  const [activeDeletionRun, setActiveDeletionRun] = useState<ActiveRun | null>(null);
   
-  // Track processing/deletion progress for current document
-  const currentProcessingRunId = Array.from(processingRunIds.values())[0] || null;
-  const currentDeletionRunId = deletionRunIds.get(deletingId || '') || null;
+  // Stable callbacks for the hook
+  const handleProcessingComplete = useCallback(() => {
+    setActiveProcessingRun(null);
+    router.refresh();
+    toast.success('Document processing completed');
+  }, [router]);
   
-  const { isProcessing, isDeleting, processingStatus, deletionStatus } = useDocumentProcessing({
-    processingRunId: currentProcessingRunId,
-    deletionRunId: currentDeletionRunId,
-    onProcessingComplete: () => {
-      // Clear processing run ID and refresh
-      setProcessingRunIds(new Map());
-      router.refresh();
-      toast.success('Document processed successfully');
-    },
-    onDeletionComplete: () => {
-      // Clear deletion run ID
-      const newDeletionRunIds = new Map(deletionRunIds);
-      if (deletingId) {
-        newDeletionRunIds.delete(deletingId);
-      }
-      setDeletionRunIds(newDeletionRunIds);
-    },
+  const handleDeletionComplete = useCallback(() => {
+    setActiveDeletionRun(null);
+  }, []);
+  
+  const { isProcessing, isDeleting } = useDocumentProcessing({
+    processingRunId: activeProcessingRun?.runId || null,
+    processingToken: activeProcessingRun?.token || null,
+    deletionRunId: activeDeletionRun?.runId || null,
+    deletionToken: activeDeletionRun?.token || null,
+    onProcessingComplete: handleProcessingComplete,
+    onDeletionComplete: handleDeletionComplete,
   });
 
   const { currentPage, totalPages, paginatedItems, handlePageChange } = usePagination<KnowledgeBaseDocument>({
@@ -88,7 +92,7 @@ export function AdditionalDocumentsSection({
           behavior: 'smooth',
           block: 'start',
         });
-      }, 100); // Small delay to allow accordion animation to start
+      }, 100);
     }
   };
 
@@ -153,12 +157,13 @@ export function AdditionalDocumentsSection({
         }
       }
 
-      // Trigger processing for uploaded documents (orchestrator for multiple, individual for single)
+      // Trigger processing for uploaded documents
       if (uploadedDocumentIds.length > 0) {
         try {
           const response = await api.post<{
             success: boolean;
             runId?: string;
+            publicAccessToken?: string;
             message?: string;
           }>(
             '/v1/knowledge-base/documents/process',
@@ -174,17 +179,13 @@ export function AdditionalDocumentsSection({
             return;
           }
 
-          if (response.data?.success) {
-            // Store run ID for tracking progress
-            const runId = response.data.runId;
-            if (runId) {
-              const newProcessingRunIds = new Map(processingRunIds);
-              // For orchestrator, track all documents with the same run ID
-              uploadedDocumentIds.forEach((docId) => {
-                newProcessingRunIds.set(docId, runId);
-              });
-              setProcessingRunIds(newProcessingRunIds);
-            }
+          if (response.data?.success && response.data.runId && response.data.publicAccessToken) {
+            // Set active processing run
+            setActiveProcessingRun({
+              runId: response.data.runId,
+              token: response.data.publicAccessToken,
+              documentIds: uploadedDocumentIds,
+            });
             toast.success(response.data.message || 'Processing documents...');
           }
         } catch (error) {
@@ -271,6 +272,7 @@ export function AdditionalDocumentsSection({
       const response = await api.post<{
         success: boolean;
         vectorDeletionRunId?: string;
+        publicAccessToken?: string;
       }>(
         `/v1/knowledge-base/documents/${documentToDelete.id}/delete`,
         {
@@ -285,12 +287,13 @@ export function AdditionalDocumentsSection({
       }
 
       if (response.data?.success) {
-        // Store deletion run ID for tracking progress
-        const vectorDeletionRunId = response.data.vectorDeletionRunId;
-        if (vectorDeletionRunId) {
-          const newDeletionRunIds = new Map(deletionRunIds);
-          newDeletionRunIds.set(documentToDelete.id, vectorDeletionRunId);
-          setDeletionRunIds(newDeletionRunIds);
+        // Set active deletion run if we have the run info
+        if (response.data.vectorDeletionRunId && response.data.publicAccessToken) {
+          setActiveDeletionRun({
+            runId: response.data.vectorDeletionRunId,
+            token: response.data.publicAccessToken,
+            documentIds: [documentToDelete.id],
+          });
         }
         
         toast.success(`Successfully deleted ${documentToDelete.name}`);
@@ -321,6 +324,16 @@ export function AdditionalDocumentsSection({
     });
   };
 
+  // Helper to check if a document is being processed
+  const isDocumentProcessing = (docId: string) => {
+    return activeProcessingRun?.documentIds.includes(docId) && isProcessing;
+  };
+  
+  // Helper to check if a document's vectors are being deleted
+  const isDocumentDeletingVectors = (docId: string) => {
+    return activeDeletionRun?.documentIds.includes(docId) && isDeleting;
+  };
+
   return (
     <>
       <Card ref={sectionRef} id="additional-documents">
@@ -346,8 +359,8 @@ export function AdditionalDocumentsSection({
                   {paginatedItems.map((document: KnowledgeBaseDocument) => {
                     const isDownloading = downloadingIds.has(document.id);
                     const isDeleting = deletingId === document.id;
-                    const isProcessingDocument = processingRunIds.has(document.id);
-                    const isDeletingVector = deletionRunIds.has(document.id);
+                    const isProcessingDoc = isDocumentProcessing(document.id);
+                    const isDeletingVector = isDocumentDeletingVectors(document.id);
                     const formattedDate = format(new Date(document.createdAt), 'MMM dd, yyyy');
 
                     return (
@@ -377,7 +390,7 @@ export function AdditionalDocumentsSection({
                               </div>
                             </div>
                           </div>
-                          {(isProcessingDocument || isDeletingVector) ? (
+                          {(isProcessingDoc || isDeletingVector) ? (
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                             </div>

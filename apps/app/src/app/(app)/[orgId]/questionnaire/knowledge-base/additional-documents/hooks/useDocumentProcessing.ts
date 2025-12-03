@@ -1,76 +1,82 @@
 'use client';
 
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useEffect, useState } from 'react';
-import { createRunReadToken } from '../../../actions/create-trigger-token';
+import { useCallback, useRef, useEffect } from 'react';
 
 interface UseDocumentProcessingOptions {
   processingRunId?: string | null;
+  processingToken?: string | null;
   deletionRunId?: string | null;
+  deletionToken?: string | null;
   onProcessingComplete?: () => void;
   onDeletionComplete?: () => void;
 }
 
+/**
+ * Hook to track document processing and deletion runs using Trigger.dev realtime
+ * 
+ * The tokens should be obtained from the API response (e.g., from processDocuments or deleteDocument endpoints)
+ * which return `publicAccessToken` along with the `runId`.
+ */
 export function useDocumentProcessing({
   processingRunId,
+  processingToken,
   deletionRunId,
+  deletionToken,
   onProcessingComplete,
   onDeletionComplete,
 }: UseDocumentProcessingOptions) {
-  const [processingToken, setProcessingToken] = useState<string | null>(null);
-  const [deletionToken, setDeletionToken] = useState<string | null>(null);
-
-  // Get read token for processing run
+  // Use refs to avoid stale closure issues
+  const onProcessingCompleteRef = useRef(onProcessingComplete);
+  const onDeletionCompleteRef = useRef(onDeletionComplete);
+  
+  // Keep refs updated
   useEffect(() => {
-    async function getProcessingToken() {
-      if (processingRunId) {
-        const result = await createRunReadToken(processingRunId);
-        if (result.success && result.token) {
-          setProcessingToken(result.token);
-        }
-      }
-    }
-    getProcessingToken();
-  }, [processingRunId]);
-
-  // Get read token for deletion run
+    onProcessingCompleteRef.current = onProcessingComplete;
+  }, [onProcessingComplete]);
+  
   useEffect(() => {
-    async function getDeletionToken() {
-      if (deletionRunId) {
-        const result = await createRunReadToken(deletionRunId);
-        if (result.success && result.token) {
-          setDeletionToken(result.token);
-        }
-      }
-    }
-    getDeletionToken();
-  }, [deletionRunId]);
+    onDeletionCompleteRef.current = onDeletionComplete;
+  }, [onDeletionComplete]);
+
+  // Stable callbacks that use refs
+  const handleProcessingComplete = useCallback(() => {
+    onProcessingCompleteRef.current?.();
+  }, []);
+  
+  const handleDeletionComplete = useCallback(() => {
+    onDeletionCompleteRef.current?.();
+  }, []);
 
   // Track processing run
   const { run: processingRun } = useRealtimeRun(processingRunId || '', {
     accessToken: processingToken || undefined,
     enabled: !!processingRunId && !!processingToken,
-    onComplete: () => {
-      onProcessingComplete?.();
-    },
+    onComplete: handleProcessingComplete,
   });
 
   // Track deletion run
   const { run: deletionRun } = useRealtimeRun(deletionRunId || '', {
     accessToken: deletionToken || undefined,
     enabled: !!deletionRunId && !!deletionToken,
-    onComplete: () => {
-      onDeletionComplete?.();
-    },
+    onComplete: handleDeletionComplete,
   });
+
+  // Check if processing is active (handle orchestrator child tasks)
+  const isProcessing = processingRun 
+    ? ['EXECUTING', 'QUEUED', 'PENDING', 'WAITING'].includes(processingRun.status)
+    : false;
+    
+  const isDeleting = deletionRun
+    ? ['EXECUTING', 'QUEUED', 'PENDING', 'WAITING'].includes(deletionRun.status)
+    : false;
 
   return {
     processingRun,
     deletionRun,
-    isProcessing: processingRun?.status === 'EXECUTING' || processingRun?.status === 'QUEUED',
-    isDeleting: deletionRun?.status === 'EXECUTING' || deletionRun?.status === 'QUEUED',
+    isProcessing,
+    isDeleting,
     processingStatus: processingRun?.status,
     deletionStatus: deletionRun?.status,
   };
 }
-

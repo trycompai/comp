@@ -1,14 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
-import {
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { randomBytes } from 'crypto';
-import { tasks } from '@trigger.dev/sdk';
-import { s3Client, APP_AWS_KNOWLEDGE_BASE_BUCKET } from '@/app/s3';
+import { tasks, auth } from '@trigger.dev/sdk';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DeleteDocumentDto } from './dto/delete-document.dto';
 import { GetDocumentUrlDto } from './dto/get-document-url.dto';
@@ -20,16 +12,21 @@ import { processKnowledgeBaseDocumentsOrchestratorTask } from '@/vector-store/jo
 import { deleteKnowledgeBaseDocumentTask } from '@/vector-store/jobs/delete-knowledge-base-document';
 import { deleteManualAnswerTask } from '@/vector-store/jobs/delete-manual-answer';
 import { deleteAllManualAnswersOrchestratorTask } from '@/vector-store/jobs/delete-all-manual-answers-orchestrator';
+import { isViewableInBrowser } from './utils/constants';
+import {
+  uploadToS3,
+  generateDownloadUrl,
+  generateViewUrl,
+  deleteFromS3,
+} from './utils/s3-operations';
 
 @Injectable()
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);
 
   async listDocuments(organizationId: string) {
-    const documents = await db.knowledgeBaseDocument.findMany({
-      where: {
-        organizationId,
-      },
+    return db.knowledgeBaseDocument.findMany({
+      where: { organizationId },
       select: {
         id: true,
         name: true,
@@ -41,63 +38,18 @@ export class KnowledgeBaseService {
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
-
-    return documents;
   }
 
   async uploadDocument(dto: UploadDocumentDto) {
-    if (!s3Client) {
-      throw new Error('S3 client not configured');
-    }
-
-    if (!APP_AWS_KNOWLEDGE_BASE_BUCKET) {
-      throw new Error(
-        'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.',
-      );
-    }
-
-    // Convert base64 to buffer
-    const fileBuffer = Buffer.from(dto.fileData, 'base64');
-
-    // Validate file size (10MB limit)
-    const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-    if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
-      throw new Error(
-        `File exceeds the ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
-      );
-    }
-
-    // Generate unique file key
-    const fileId = randomBytes(16).toString('hex');
-    const sanitizedFileName = dto.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const timestamp = Date.now();
-    const s3Key = `${dto.organizationId}/knowledge-base-documents/${timestamp}-${fileId}-${sanitizedFileName}`;
-
-    // Sanitize filename for S3 metadata
-    const sanitizedMetadataFileName = Buffer.from(dto.fileName, 'utf8')
-      .toString('ascii')
-      .replace(/[\x00-\x1F\x7F]/g, '')
-      .replace(/\?/g, '_')
-      .trim()
-      .substring(0, 1024);
-
     // Upload to S3
-    const putCommand = new PutObjectCommand({
-      Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET,
-      Key: s3Key,
-      Body: fileBuffer,
-      ContentType: dto.fileType,
-      Metadata: {
-        originalFileName: sanitizedMetadataFileName,
-        organizationId: dto.organizationId,
-      },
-    });
-
-    await s3Client.send(putCommand);
+    const { s3Key, fileSize } = await uploadToS3(
+      dto.organizationId,
+      dto.fileName,
+      dto.fileType,
+      dto.fileData,
+    );
 
     // Create database record
     const document = await db.knowledgeBaseDocument.create({
@@ -106,7 +58,7 @@ export class KnowledgeBaseService {
         description: dto.description || null,
         s3Key,
         fileType: dto.fileType,
-        fileSize: fileBuffer.length,
+        fileSize,
         organizationId: dto.organizationId,
         processingStatus: 'pending',
       },
@@ -120,40 +72,9 @@ export class KnowledgeBaseService {
   }
 
   async getDownloadUrl(dto: GetDocumentUrlDto) {
-    if (!s3Client) {
-      throw new Error('S3 client not configured');
-    }
+    const document = await this.findDocument(dto.documentId, dto.organizationId);
 
-    if (!APP_AWS_KNOWLEDGE_BASE_BUCKET) {
-      throw new Error('Knowledge base bucket is not configured');
-    }
-
-    const document = await db.knowledgeBaseDocument.findUnique({
-      where: {
-        id: dto.documentId,
-        organizationId: dto.organizationId,
-      },
-      select: {
-        s3Key: true,
-        name: true,
-        fileType: true,
-      },
-    });
-
-    if (!document) {
-      throw new Error('Document not found');
-    }
-
-    // Generate signed URL for download
-    const command = new GetObjectCommand({
-      Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET,
-      Key: document.s3Key,
-      ResponseContentDisposition: `attachment; filename="${encodeURIComponent(document.name)}"`,
-    });
-
-    const signedUrl = await getSignedUrl(s3Client, command, {
-      expiresIn: 3600, // URL expires in 1 hour
-    });
+    const { signedUrl } = await generateDownloadUrl(document.s3Key, document.name);
 
     return {
       signedUrl,
@@ -162,75 +83,23 @@ export class KnowledgeBaseService {
   }
 
   async getViewUrl(dto: GetDocumentUrlDto) {
-    if (!s3Client) {
-      throw new Error('S3 client not configured');
-    }
+    const document = await this.findDocument(dto.documentId, dto.organizationId);
 
-    if (!APP_AWS_KNOWLEDGE_BASE_BUCKET) {
-      throw new Error('Knowledge base bucket is not configured');
-    }
-
-    const document = await db.knowledgeBaseDocument.findUnique({
-      where: {
-        id: dto.documentId,
-        organizationId: dto.organizationId,
-      },
-      select: {
-        s3Key: true,
-        name: true,
-        fileType: true,
-      },
-    });
-
-    if (!document) {
-      throw new Error('Document not found');
-    }
-
-    // Generate signed URL for viewing in browser
-    const command = new GetObjectCommand({
-      Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET,
-      Key: document.s3Key,
-      ResponseContentDisposition: `inline; filename="${encodeURIComponent(document.name)}"`,
-      ResponseContentType: document.fileType || 'application/octet-stream',
-    });
-
-    const signedUrl = await getSignedUrl(s3Client, command, {
-      expiresIn: 3600, // URL expires in 1 hour
-    });
-
-    // Determine if file can be viewed inline in browser
-    const viewableInBrowser = [
-      'application/pdf',
-      'image/png',
-      'image/jpeg',
-      'image/jpg',
-      'image/gif',
-      'image/webp',
-      'image/svg+xml',
-      'text/plain',
-      'text/html',
-      'text/csv',
-      'text/markdown',
-    ].includes(document.fileType);
+    const { signedUrl } = await generateViewUrl(
+      document.s3Key,
+      document.name,
+      document.fileType,
+    );
 
     return {
       signedUrl,
       fileName: document.name,
       fileType: document.fileType,
-      viewableInBrowser,
+      viewableInBrowser: isViewableInBrowser(document.fileType),
     };
   }
 
   async deleteDocument(dto: DeleteDocumentDto) {
-    if (!s3Client) {
-      throw new Error('S3 client not configured');
-    }
-
-    if (!APP_AWS_KNOWLEDGE_BASE_BUCKET) {
-      throw new Error('Knowledge base bucket is not configured');
-    }
-
-    // Find the document
     const document = await db.knowledgeBaseDocument.findUnique({
       where: {
         id: dto.documentId,
@@ -242,59 +111,38 @@ export class KnowledgeBaseService {
       throw new Error('Document not found');
     }
 
-    // Delete embeddings from vector database first (async, non-blocking)
-    let vectorDeletionRunId: string | undefined;
-    try {
-      const handle = await tasks.trigger<
-        typeof deleteKnowledgeBaseDocumentTask
-      >('delete-knowledge-base-document-from-vector', {
-        documentId: document.id,
-        organizationId: dto.organizationId,
-      });
-      vectorDeletionRunId = handle.id;
-    } catch (triggerError) {
-      // Log error but continue with deletion
-      this.logger.warn('Failed to trigger vector deletion task', {
-        documentId: document.id,
-        error:
-          triggerError instanceof Error
-            ? triggerError.message
-            : 'Unknown error',
-      });
-    }
+    // Delete embeddings from vector database (async, non-blocking)
+    const vectorDeletionRunId = await this.triggerVectorDeletion(
+      document.id,
+      dto.organizationId,
+    );
 
-    // Delete from S3
-    try {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET,
-        Key: document.s3Key,
-      });
-      await s3Client.send(deleteCommand);
-    } catch (s3Error) {
-      // Log error but continue with database deletion
-      this.logger.warn('Error deleting file from S3', {
-        documentId: document.id,
-        error: s3Error instanceof Error ? s3Error.message : 'Unknown error',
-      });
+    // Create public access token for the deletion run
+    const publicAccessToken = vectorDeletionRunId
+      ? await this.createRunReadToken(vectorDeletionRunId)
+      : undefined;
+
+    // Delete from S3 (non-blocking)
+    const s3Deleted = await deleteFromS3(document.s3Key);
+    if (!s3Deleted) {
+      this.logger.warn('Error deleting file from S3', { documentId: document.id });
     }
 
     // Delete from database
     await db.knowledgeBaseDocument.delete({
-      where: {
-        id: dto.documentId,
-      },
+      where: { id: dto.documentId },
     });
 
     return {
       success: true,
-      vectorDeletionRunId, // Return run ID for tracking deletion progress
+      vectorDeletionRunId,
+      publicAccessToken,
     };
   }
 
   async processDocuments(dto: ProcessDocumentsDto) {
     let runId: string | undefined;
 
-    // Use orchestrator for multiple documents, individual task for single document
     if (dto.documentIds.length > 1) {
       const handle = await tasks.trigger<
         typeof processKnowledgeBaseDocumentsOrchestratorTask
@@ -313,9 +161,15 @@ export class KnowledgeBaseService {
       runId = handle.id;
     }
 
+    // Create public access token for the run
+    const publicAccessToken = runId
+      ? await this.createRunReadToken(runId)
+      : undefined;
+
     return {
       success: true,
       runId,
+      publicAccessToken,
       message:
         dto.documentIds.length > 1
           ? `Processing ${dto.documentIds.length} documents in parallel...`
@@ -323,10 +177,32 @@ export class KnowledgeBaseService {
     };
   }
 
+  /**
+   * Creates a public access token for reading a specific run
+   */
+  async createRunReadToken(runId: string): Promise<string | undefined> {
+    try {
+      const token = await auth.createPublicToken({
+        scopes: {
+          read: {
+            runs: [runId],
+          },
+        },
+        expirationTime: '1hr',
+      });
+      return token;
+    } catch (error) {
+      this.logger.warn('Failed to create run read token', {
+        runId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return undefined;
+    }
+  }
+
   async deleteManualAnswer(
     dto: DeleteManualAnswerDto & { manualAnswerId: string },
   ) {
-    // Verify manual answer exists and belongs to organization
     const manualAnswer = await db.securityQuestionnaireManualAnswer.findUnique({
       where: {
         id: dto.manualAnswerId,
@@ -335,61 +211,28 @@ export class KnowledgeBaseService {
     });
 
     if (!manualAnswer) {
-      return {
-        success: false,
-        error: 'Manual answer not found',
-      };
+      return { success: false, error: 'Manual answer not found' };
     }
 
-    // Trigger Trigger.dev task to delete from vector DB in background
-    // This runs asynchronously and doesn't block the main DB deletion
-    try {
-      await tasks.trigger<typeof deleteManualAnswerTask>(
-        'delete-manual-answer-from-vector',
-        {
-          manualAnswerId: dto.manualAnswerId,
-          organizationId: dto.organizationId,
-        },
-      );
-      this.logger.log('Triggered delete manual answer from vector DB task', {
-        manualAnswerId: dto.manualAnswerId,
-        organizationId: dto.organizationId,
-      });
-    } catch (error) {
-      // Log error but continue with DB deletion
-      this.logger.warn(
-        'Failed to trigger delete manual answer from vector DB task',
-        {
-          manualAnswerId: dto.manualAnswerId,
-          organizationId: dto.organizationId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
-      );
-      // Continue with DB deletion even if task trigger fails
-    }
+    // Trigger vector DB deletion (async)
+    await this.triggerManualAnswerVectorDeletion(
+      dto.manualAnswerId,
+      dto.organizationId,
+    );
 
-    // Delete the manual answer from main DB
+    // Delete from main DB
     await db.securityQuestionnaireManualAnswer.delete({
-      where: {
-        id: dto.manualAnswerId,
-      },
+      where: { id: dto.manualAnswerId },
     });
 
-    return {
-      success: true,
-    };
+    return { success: true };
   }
 
   async deleteAllManualAnswers(dto: DeleteAllManualAnswersDto) {
-    // First, get all manual answer IDs BEFORE deletion
-    // This ensures the orchestrator has the IDs to delete from vector DB
+    // Get all manual answer IDs before deletion
     const manualAnswers = await db.securityQuestionnaireManualAnswer.findMany({
-      where: {
-        organizationId: dto.organizationId,
-      },
-      select: {
-        id: true,
-      },
+      where: { organizationId: dto.organizationId },
+      select: { id: true },
     });
 
     this.logger.log('Found manual answers to delete', {
@@ -398,53 +241,115 @@ export class KnowledgeBaseService {
       ids: manualAnswers.map((ma) => ma.id),
     });
 
-    // Trigger ONLY the orchestrator task - it will handle all deletions internally
-    // The orchestrator uses batchTriggerAndWait to create child tasks for parallel processing
-    // We do NOT trigger individual delete tasks here - only the orchestrator
-    // Pass the IDs directly to avoid race condition with DB deletion
+    // Trigger orchestrator for batch vector deletion
     if (manualAnswers.length > 0) {
-      try {
-        await tasks.trigger<typeof deleteAllManualAnswersOrchestratorTask>(
-          'delete-all-manual-answers-orchestrator',
-          {
-            organizationId: dto.organizationId,
-            manualAnswerIds: manualAnswers.map((ma) => ma.id), // Pass IDs directly
-          },
-        );
-        this.logger.log(
-          'Triggered delete all manual answers orchestrator task',
-          {
-            organizationId: dto.organizationId,
-            count: manualAnswers.length,
-          },
-        );
-      } catch (error) {
-        // Log error but continue with DB deletion
-        this.logger.warn(
-          'Failed to trigger delete all manual answers orchestrator',
-          {
-            organizationId: dto.organizationId,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          },
-        );
-        // Continue with DB deletion even if orchestrator trigger fails
-      }
+      await this.triggerBatchManualAnswerDeletion(
+        dto.organizationId,
+        manualAnswers.map((ma) => ma.id),
+      );
     } else {
       this.logger.log('No manual answers to delete', {
         organizationId: dto.organizationId,
       });
     }
 
-    // Delete all manual answers from main DB
-    // Vector DB deletion happens in background via orchestrator
+    // Delete all from main DB
     await db.securityQuestionnaireManualAnswer.deleteMany({
+      where: { organizationId: dto.organizationId },
+    });
+
+    return { success: true };
+  }
+
+  // Private helper methods
+
+  private async findDocument(documentId: string, organizationId: string) {
+    const document = await db.knowledgeBaseDocument.findUnique({
       where: {
-        organizationId: dto.organizationId,
+        id: documentId,
+        organizationId,
+      },
+      select: {
+        s3Key: true,
+        name: true,
+        fileType: true,
       },
     });
 
-    return {
-      success: true,
-    };
+    if (!document) {
+      throw new Error('Document not found');
+    }
+
+    return document;
+  }
+
+  private async triggerVectorDeletion(
+    documentId: string,
+    organizationId: string,
+  ): Promise<string | undefined> {
+    try {
+      const handle = await tasks.trigger<
+        typeof deleteKnowledgeBaseDocumentTask
+      >('delete-knowledge-base-document-from-vector', {
+        documentId,
+        organizationId,
+      });
+      return handle.id;
+    } catch (error) {
+      this.logger.warn('Failed to trigger vector deletion task', {
+        documentId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return undefined;
+    }
+  }
+
+  private async triggerManualAnswerVectorDeletion(
+    manualAnswerId: string,
+    organizationId: string,
+  ): Promise<void> {
+    try {
+      await tasks.trigger<typeof deleteManualAnswerTask>(
+        'delete-manual-answer-from-vector',
+        { manualAnswerId, organizationId },
+      );
+      this.logger.log('Triggered delete manual answer from vector DB task', {
+        manualAnswerId,
+        organizationId,
+      });
+    } catch (error) {
+      this.logger.warn(
+        'Failed to trigger delete manual answer from vector DB task',
+        {
+          manualAnswerId,
+          organizationId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      );
+    }
+  }
+
+  private async triggerBatchManualAnswerDeletion(
+    organizationId: string,
+    manualAnswerIds: string[],
+  ): Promise<void> {
+    try {
+      await tasks.trigger<typeof deleteAllManualAnswersOrchestratorTask>(
+        'delete-all-manual-answers-orchestrator',
+        { organizationId, manualAnswerIds },
+      );
+      this.logger.log('Triggered delete all manual answers orchestrator task', {
+        organizationId,
+        count: manualAnswerIds.length,
+      });
+    } catch (error) {
+      this.logger.warn(
+        'Failed to trigger delete all manual answers orchestrator',
+        {
+          organizationId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      );
+    }
   }
 }

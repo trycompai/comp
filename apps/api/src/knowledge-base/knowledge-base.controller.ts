@@ -139,6 +139,7 @@ export class KnowledgeBaseController {
       properties: {
         success: { type: 'boolean' },
         vectorDeletionRunId: { type: 'string', nullable: true },
+        publicAccessToken: { type: 'string', nullable: true },
       },
     },
   })
@@ -162,12 +163,34 @@ export class KnowledgeBaseController {
       properties: {
         success: { type: 'boolean' },
         runId: { type: 'string' },
+        publicAccessToken: { type: 'string', nullable: true },
         message: { type: 'string' },
       },
     },
   })
   async processDocuments(@Body() dto: ProcessDocumentsDto) {
     return this.knowledgeBaseService.processDocuments(dto);
+  }
+
+  @Post('runs/:runId/token')
+  @ApiOperation({ summary: 'Create a public access token for a Trigger.dev run' })
+  @ApiConsumes('application/json')
+  @ApiOkResponse({
+    description: 'Public access token created',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        token: { type: 'string', nullable: true },
+      },
+    },
+  })
+  async createRunToken(@Param('runId') runId: string) {
+    const token = await this.knowledgeBaseService.createRunReadToken(runId);
+    return {
+      success: !!token,
+      token,
+    };
   }
 
   @Post('manual-answers/:manualAnswerId/delete')

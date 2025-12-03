@@ -8903,6 +8903,10 @@
                     "vectorDeletionRunId": {
                       "type": "string",
                       "nullable": true
+                    },
+                    "publicAccessToken": {
+                      "type": "string",
+                      "nullable": true
                     }
                   }
                 }
@@ -8944,6 +8948,10 @@
                     "runId": {
                       "type": "string"
                     },
+                    "publicAccessToken": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "message": {
                       "type": "string"
                     }
@@ -8954,6 +8962,46 @@
           }
         },
         "summary": "Trigger processing of knowledge base documents",
+        "tags": [
+          "Knowledge Base"
+        ]
+      }
+    },
+    "/v1/knowledge-base/runs/{runId}/token": {
+      "post": {
+        "operationId": "KnowledgeBaseController_createRunToken_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public access token created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "token": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a public access token for a Trigger.dev run",
         "tags": [
           "Knowledge Base"
         ]

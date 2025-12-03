@@ -119,15 +119,15 @@ export class QuestionnaireService {
 
     await persistQuestionnaireResult(
       {
-        organizationId: dto.organizationId,
-        fileName: dto.fileName || vendorName,
-        fileType: dto.fileType,
-        fileSize:
-          uploadInfo?.fileSize ??
-          (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
-        s3Key: uploadInfo?.s3Key ?? null,
-        questionsAndAnswers: answered,
-        source: dto.source || 'internal',
+      organizationId: dto.organizationId,
+      fileName: dto.fileName || vendorName,
+      fileType: dto.fileType,
+      fileSize:
+        uploadInfo?.fileSize ??
+        (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
+      s3Key: uploadInfo?.s3Key ?? null,
+      questionsAndAnswers: answered,
+      source: dto.source || 'internal',
       },
       this.storageLogger,
     );
@@ -158,17 +158,17 @@ export class QuestionnaireService {
 
     const questionnaireId = await persistQuestionnaireResult(
       {
-        organizationId: dto.organizationId,
-        fileName: dto.fileName,
-        fileType: dto.fileType,
+      organizationId: dto.organizationId,
+      fileName: dto.fileName,
+      fileType: dto.fileType,
         fileSize: uploadInfo?.fileSize ?? Buffer.from(dto.fileData, 'base64').length,
-        s3Key: uploadInfo?.s3Key ?? null,
-        questionsAndAnswers: questionsAndAnswers.map((qa) => ({
-          question: qa.question,
+      s3Key: uploadInfo?.s3Key ?? null,
+      questionsAndAnswers: questionsAndAnswers.map((qa) => ({
+        question: qa.question,
           answer: null,
-          sources: undefined,
-        })),
-        source: dto.source || 'internal',
+        sources: undefined,
+      })),
+      source: dto.source || 'internal',
       },
       this.storageLogger,
     );
@@ -351,9 +351,9 @@ export class QuestionnaireService {
     }
 
     const questionsAndAnswers = questionnaire.questions.map((q) => ({
-      question: q.question,
-      answer: q.answer,
-    }));
+        question: q.question,
+        answer: q.answer,
+      }));
 
     this.logger.log('Exporting questionnaire', {
       questionnaireId: dto.questionnaireId,
@@ -448,7 +448,7 @@ export class QuestionnaireService {
     this.logger.log(
       `Generating answers for ${questionsNeedingAnswers.length} of ${questionsAndAnswers.length} questions`,
     );
-
+    
     // Sync organization embeddings before generating answers
     try {
       await syncOrganizationEmbeddings(organizationId);
@@ -458,22 +458,22 @@ export class QuestionnaireService {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
-
+    
     // Use batch processing for efficiency
     const startTime = Date.now();
     const questionsToAnswer = questionsNeedingAnswers.map((qa) => qa.question);
-
+    
     const batchResults = await generateAnswerWithRAGBatch(
       questionsToAnswer,
-      organizationId,
+              organizationId,
     );
 
     // Map batch results
     const results: AnswerQuestionResult[] = questionsNeedingAnswers.map(
       ({ question, index }, i) => ({
         success: batchResults[i]?.answer !== null,
-        questionIndex: index,
-        question,
+            questionIndex: index,
+            question,
         answer: batchResults[i]?.answer ?? null,
         sources: batchResults[i]?.sources ?? [],
       }),
@@ -481,7 +481,7 @@ export class QuestionnaireService {
 
     const answeredCount = results.filter((r) => r.answer !== null).length;
     const totalTime = Date.now() - startTime;
-
+    
     this.logger.log(
       `Batch answer generation completed: ${answeredCount}/${questionsNeedingAnswers.length} answered in ${totalTime}ms`,
     );
