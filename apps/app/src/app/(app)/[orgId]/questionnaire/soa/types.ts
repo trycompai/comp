@@ -25,6 +25,7 @@ export type FrameworkWithSOAData = {
     id: string;
     name: string;
     description: string | null;
+    visible: boolean;
   };
   configuration: SOAFrameworkConfiguration['framework'] extends null
     ? null
