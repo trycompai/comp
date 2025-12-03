@@ -23,14 +23,14 @@ import {
   ComplianceResourceResponseDto,
   ComplianceResourceSignedUrlDto,
   ComplianceResourceUrlResponseDto,
-  TRUST_COMPLIANCE_FRAMEWORK_ENUM,
+  TRUST_FRAMEWORK_ENUM,
   UploadComplianceResourceDto,
-  type TrustComplianceFramework,
+  type TrustFramework,
 } from './dto/compliance-resource.dto';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
 
 const prisma = db as typeof db & {
-  trustComplianceResource: any;
+  trustResource: any;
 };
 
 interface VercelDomainVerification {
@@ -71,7 +71,7 @@ export class TrustPortalService {
   }
 
   private static readonly FRAMEWORK_CONFIG: Record<
-    TrustComplianceFramework,
+    TrustFramework,
     {
       statusField:
         | 'iso27001_status'
@@ -96,47 +96,47 @@ export class TrustPortalService {
       slug: string;
     }
   > = {
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.iso_27001]: {
+    [TRUST_FRAMEWORK_ENUM.iso_27001]: {
       statusField: 'iso27001_status',
       enabledField: 'iso27001',
       slug: 'iso_27001',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.iso_42001]: {
+    [TRUST_FRAMEWORK_ENUM.iso_42001]: {
       statusField: 'iso42001_status',
       enabledField: 'iso42001',
       slug: 'iso_42001',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.gdpr]: {
+    [TRUST_FRAMEWORK_ENUM.gdpr]: {
       statusField: 'gdpr_status',
       enabledField: 'gdpr',
       slug: 'gdpr',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.hipaa]: {
+    [TRUST_FRAMEWORK_ENUM.hipaa]: {
       statusField: 'hipaa_status',
       enabledField: 'hipaa',
       slug: 'hipaa',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.soc2_type1]: {
+    [TRUST_FRAMEWORK_ENUM.soc2_type1]: {
       statusField: 'soc2type1_status',
       enabledField: 'soc2type1',
       slug: 'soc2_type1',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.soc2_type2]: {
+    [TRUST_FRAMEWORK_ENUM.soc2_type2]: {
       statusField: 'soc2type2_status',
       enabledField: 'soc2type2',
       slug: 'soc2_type2',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.pci_dss]: {
+    [TRUST_FRAMEWORK_ENUM.pci_dss]: {
       statusField: 'pci_dss_status',
       enabledField: 'pci_dss',
       slug: 'pci_dss',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.nen_7510]: {
+    [TRUST_FRAMEWORK_ENUM.nen_7510]: {
       statusField: 'nen7510_status',
       enabledField: 'nen7510',
       slug: 'nen_7510',
     },
-    [TRUST_COMPLIANCE_FRAMEWORK_ENUM.iso_9001]: {
+    [TRUST_FRAMEWORK_ENUM.iso_9001]: {
       statusField: 'iso9001_status',
       enabledField: 'iso9001',
       slug: 'iso_9001',
@@ -214,7 +214,6 @@ export class TrustPortalService {
 
   async uploadComplianceResource(
     dto: UploadComplianceResourceDto,
-    uploadedByUserId?: string,
   ): Promise<ComplianceResourceResponseDto> {
     this.ensureS3Availability();
     await this.assertFrameworkIsCompliant(dto.organizationId, dto.framework);
@@ -224,12 +223,8 @@ export class TrustPortalService {
     const timestamp = Date.now();
     const s3Prefix = `${dto.organizationId}/resources/${slug}`;
     const s3Key = `${s3Prefix}/${timestamp}-${sanitizedFileName}`;
-    const uploaderMemberId = await this.findMemberIdForUser(
-      dto.organizationId,
-      uploadedByUserId,
-    );
 
-    const existingResource = await prisma.trustComplianceResource.findUnique({
+    const existingResource = await prisma.trustResource.findUnique({
       where: {
         organizationId_framework: {
           organizationId: dto.organizationId,
@@ -256,7 +251,7 @@ export class TrustPortalService {
 
     await s3Client!.send(putCommand);
 
-    const record = await prisma.trustComplianceResource.upsert({
+    const record = await prisma.trustResource.upsert({
       where: {
         organizationId_framework: {
           organizationId: dto.organizationId,
@@ -267,7 +262,6 @@ export class TrustPortalService {
         s3Key,
         fileName: dto.fileName,
         fileSize: fileBuffer.length,
-        uploadedById: uploaderMemberId,
       },
       create: {
         organizationId: dto.organizationId,
@@ -275,7 +269,6 @@ export class TrustPortalService {
         s3Key,
         fileName: dto.fileName,
         fileSize: fileBuffer.length,
-        uploadedById: uploaderMemberId,
       },
     });
 
@@ -290,7 +283,7 @@ export class TrustPortalService {
   async listComplianceResources(
     organizationId: string,
   ): Promise<ComplianceResourceResponseDto[]> {
-    const records = await prisma.trustComplianceResource.findMany({
+    const records = await prisma.trustResource.findMany({
       where: {
         organizationId,
       },
@@ -307,31 +300,12 @@ export class TrustPortalService {
     }));
   }
 
-  private async findMemberIdForUser(
-    organizationId: string,
-    userId?: string,
-  ): Promise<string | null> {
-    if (!userId) {
-      return null;
-    }
-
-    const member = await prisma.member.findFirst({
-      where: {
-        organizationId,
-        userId,
-      },
-      select: { id: true },
-    });
-
-    return member?.id ?? null;
-  }
-
   async getComplianceResourceUrl(
     dto: ComplianceResourceSignedUrlDto,
   ): Promise<ComplianceResourceUrlResponseDto> {
     this.ensureS3Availability();
 
-    const record = await prisma.trustComplianceResource.findUnique({
+    const record = await prisma.trustResource.findUnique({
       where: {
         organizationId_framework: {
           organizationId: dto.organizationId,
@@ -364,7 +338,7 @@ export class TrustPortalService {
 
   private async assertFrameworkIsCompliant(
     organizationId: string,
-    framework: TrustComplianceFramework,
+    framework: TrustFramework,
   ): Promise<void> {
     const config = TrustPortalService.FRAMEWORK_CONFIG[framework];
     const trustRecord = await prisma.trust.findUnique({

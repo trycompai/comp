@@ -112,10 +112,7 @@ export class TrustPortalController {
     @AuthContext() authContext: AuthContextType,
   ): Promise<ComplianceResourceResponseDto> {
     this.assertOrganizationAccess(dto.organizationId, authContext);
-    return this.trustPortalService.uploadComplianceResource(
-      dto,
-      authContext.userId,
-    );
+    return this.trustPortalService.uploadComplianceResource(dto);
   }
 
   @Post('compliance-resources/signed-url')

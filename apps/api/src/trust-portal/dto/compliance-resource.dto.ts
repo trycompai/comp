@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 
-export const TRUST_COMPLIANCE_FRAMEWORK_ENUM = {
+export const TRUST_FRAMEWORK_ENUM = {
   iso_27001: 'iso_27001',
   iso_42001: 'iso_42001',
   gdpr: 'gdpr',
@@ -13,8 +13,8 @@ export const TRUST_COMPLIANCE_FRAMEWORK_ENUM = {
   iso_9001: 'iso_9001',
 } as const;
 
-export type TrustComplianceFramework =
-  (typeof TRUST_COMPLIANCE_FRAMEWORK_ENUM)[keyof typeof TRUST_COMPLIANCE_FRAMEWORK_ENUM];
+export type TrustFramework =
+  (typeof TRUST_FRAMEWORK_ENUM)[keyof typeof TRUST_FRAMEWORK_ENUM];
 
 export class ComplianceResourceBaseDto {
   @ApiProperty({
@@ -26,11 +26,11 @@ export class ComplianceResourceBaseDto {
 
   @ApiProperty({
     description: 'Compliance framework identifier',
-    enum: TRUST_COMPLIANCE_FRAMEWORK_ENUM,
-    example: TRUST_COMPLIANCE_FRAMEWORK_ENUM.iso_27001,
+    enum: TRUST_FRAMEWORK_ENUM,
+    example: TRUST_FRAMEWORK_ENUM.iso_27001,
   })
-  @IsEnum(TRUST_COMPLIANCE_FRAMEWORK_ENUM)
-  framework!: TrustComplianceFramework;
+  @IsEnum(TRUST_FRAMEWORK_ENUM)
+  framework!: TrustFramework;
 }
 
 export class UploadComplianceResourceDto extends ComplianceResourceBaseDto {
@@ -58,8 +58,8 @@ export class UploadComplianceResourceDto extends ComplianceResourceBaseDto {
 export class ComplianceResourceSignedUrlDto extends ComplianceResourceBaseDto {}
 
 export class ComplianceResourceResponseDto {
-  @ApiProperty({ enum: TRUST_COMPLIANCE_FRAMEWORK_ENUM })
-  framework!: TrustComplianceFramework;
+  @ApiProperty({ enum: TRUST_FRAMEWORK_ENUM })
+  framework!: TrustFramework;
 
   @ApiProperty()
   fileName!: string;

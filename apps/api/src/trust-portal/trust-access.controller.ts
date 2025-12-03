@@ -31,7 +31,7 @@ import {
   ReclaimAccessDto,
   RevokeGrantDto,
 } from './dto/trust-access.dto';
-import { TRUST_COMPLIANCE_FRAMEWORK_ENUM } from './dto/compliance-resource.dto';
+import { TRUST_FRAMEWORK_ENUM } from './dto/compliance-resource.dto';
 import { SignNdaDto } from './dto/nda.dto';
 import { TrustAccessService } from './trust-access.service';
 
@@ -461,7 +461,7 @@ export class TrustAccessController {
   })
   @ApiParam({
     name: 'framework',
-    enum: Object.values(TRUST_COMPLIANCE_FRAMEWORK_ENUM),
+    enum: Object.values(TRUST_FRAMEWORK_ENUM),
     description: 'Compliance framework identifier',
   })
   @ApiResponse({

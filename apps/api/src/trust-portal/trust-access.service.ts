@@ -20,7 +20,7 @@ import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
-import { TRUST_COMPLIANCE_FRAMEWORK_ENUM, type TrustComplianceFramework } from './dto/compliance-resource.dto';
+import { TRUST_FRAMEWORK_ENUM, type TrustFramework } from './dto/compliance-resource.dto';
 
 @Injectable()
 export class TrustAccessService {
@@ -1084,7 +1084,7 @@ export class TrustAccessService {
       throw new BadRequestException('Access token has expired');
     }
 
-    const complianceResources = await db.trustComplianceResource.findMany({
+    const complianceResources = await db.trustResource.findMany({
       where: {
         organizationId: grant.accessRequest.organizationId,
       },
@@ -1109,12 +1109,12 @@ export class TrustAccessService {
 
   async getComplianceResourceUrlByAccessToken(
     token: string,
-    framework: TrustComplianceFramework,
+    framework: TrustFramework,
   ) {
     const grant = await this.validateAccessToken(token);
 
     // Validate framework enum
-    if (!Object.values(TRUST_COMPLIANCE_FRAMEWORK_ENUM).includes(framework)) {
+    if (!Object.values(TRUST_FRAMEWORK_ENUM).includes(framework)) {
       throw new BadRequestException(`Invalid framework: ${framework}`);
     }
 
@@ -1124,7 +1124,7 @@ export class TrustAccessService {
       );
     }
 
-    const record = await db.trustComplianceResource.findUnique({
+    const record = await db.trustResource.findUnique({
       where: {
         organizationId_framework: {
           organizationId: grant.accessRequest.organizationId,
