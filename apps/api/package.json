@@ -5,6 +5,10 @@
   "author": "",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.65",
+    "@prisma/instrumentation": "^6.13.0",
+    "@trigger.dev/build": "4.0.6",
+    "@trigger.dev/sdk": "4.0.6",
+    "@upstash/vector": "^1.2.2",
     "@aws-sdk/client-s3": "^3.859.0",
     "ai": "^5.0.60",
     "@aws-sdk/s3-request-presigner": "^3.859.0",
@@ -33,6 +37,7 @@
     "resend": "^6.4.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
+    "xlsx": "^0.18.5",
     "zod": "^4.0.14"
   },
   "devDependencies": {
@@ -87,7 +92,10 @@
     "db:generate": "bun run db:getschema && bunx prisma generate",
     "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
     "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/api",
-    "dev": "nest start --watch",
+    "deploy:trigger-prod": "npx trigger.dev@4.0.6 deploy",
+    "dev": "bunx concurrently --kill-others --names \"nest,trigger\" --prefix-colors \"green,blue\" \"nest start --watch\" \"bunx trigger.dev@4.0.6 dev\"",
+    "dev:nest": "nest start --watch",
+    "dev:trigger": "bunx trigger.dev@4.0.6 dev",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prebuild": "bun run db:generate",

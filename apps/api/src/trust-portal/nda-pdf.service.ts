@@ -137,12 +137,15 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
     name: string,
     email: string,
     agreementId: string,
+    customWatermarkText?: string,
   ) {
     const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const pages = pdfDoc.getPages();
 
     const timestamp = new Date().toISOString();
-    const watermarkText = `For: ${name} <${email}> | ${timestamp} | ID: ${agreementId}`;
+    const watermarkText =
+      customWatermarkText ||
+      `For: ${name} <${email}> | ${timestamp} | ID: ${agreementId}`;
 
     for (const page of pages) {
       const { width, height } = page.getSize();
@@ -235,11 +238,12 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
       name: string;
       email: string;
       docId: string;
+      watermarkText?: string;
     },
   ): Promise<Buffer> {
-    const { name, email, docId } = params;
+    const { name, email, docId, watermarkText } = params;
     const pdfDoc = await PDFDocument.load(pdfBuffer);
-    await this.addWatermark(pdfDoc, name, email, docId);
+    await this.addWatermark(pdfDoc, name, email, docId, watermarkText);
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
   }

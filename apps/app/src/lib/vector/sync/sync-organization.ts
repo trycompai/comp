@@ -8,8 +8,6 @@ import { deleteOrganizationEmbeddings } from '../core/delete-embeddings';
 import { findAllOrganizationEmbeddings, type ExistingEmbedding } from '../core/find-existing-embeddings';
 import { vectorIndex } from '../core/client';
 import { logger } from '@/utils/logger';
-import { tasks } from '@trigger.dev/sdk';
-import { processKnowledgeBaseDocumentTask } from '@/jobs/tasks/vector/process-knowledge-base-document';
 
 /**
  * Lock map to prevent concurrent syncs for the same organization
@@ -403,57 +401,57 @@ async function performSync(organizationId: string): Promise<void> {
     let documentsSkipped = 0;
 
     // Trigger processing for pending/failed documents
-    for (const document of knowledgeBaseDocuments) {
-      if (document.processingStatus === 'pending' || document.processingStatus === 'failed') {
-        try {
-          // Trigger Trigger.dev task to process document
-          await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
-            'process-knowledge-base-document',
-            {
-              documentId: document.id,
-              organizationId,
-            },
-          );
-          documentsTriggered++;
-        } catch (error) {
-          logger.warn('Failed to trigger document processing', {
-            documentId: document.id,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
-      } else if (document.processingStatus === 'completed') {
-        // Check if embeddings exist and are up-to-date
-        const documentEmbeddings = existingEmbeddings.get(document.id) || [];
-        const documentUpdatedAt = document.updatedAt.toISOString();
+    // for (const document of knowledgeBaseDocuments) {
+    //   if (document.processingStatus === 'pending' || document.processingStatus === 'failed') {
+    //     try {
+    //       // Trigger Trigger.dev task to process document
+    //       await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
+    //         'process-knowledge-base-document',
+    //         {
+    //           documentId: document.id,
+    //           organizationId,
+    //         },
+    //       );
+    //       documentsTriggered++;
+    //     } catch (error) {
+    //       logger.warn('Failed to trigger document processing', {
+    //         documentId: document.id,
+    //         error: error instanceof Error ? error.message : 'Unknown error',
+    //       });
+    //     }
+    //   } else if (document.processingStatus === 'completed') {
+    //     // Check if embeddings exist and are up-to-date
+    //     const documentEmbeddings = existingEmbeddings.get(document.id) || [];
+    //     const documentUpdatedAt = document.updatedAt.toISOString();
         
-        const needsUpdate = documentEmbeddings.length === 0 || 
-          documentEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < documentUpdatedAt);
+    //     const needsUpdate = documentEmbeddings.length === 0 || 
+    //       documentEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < documentUpdatedAt);
 
-        if (needsUpdate) {
-          // Trigger reprocessing if embeddings are outdated
-          try {
-            await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
-              'process-knowledge-base-document',
-              {
-                documentId: document.id,
-                organizationId,
-              },
-            );
-            documentsTriggered++;
-          } catch (error) {
-            logger.warn('Failed to trigger document reprocessing', {
-              documentId: document.id,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-          }
-        } else {
-          documentsSkipped++;
-        }
-        documentsProcessed++;
-      } else {
-        documentsSkipped++;
-      }
-    }
+    //     if (needsUpdate) {
+    //       // Trigger reprocessing if embeddings are outdated
+    //       try {
+    //         await tasks.trigger<typeof processKnowledgeBaseDocumentTask>(
+    //           'process-knowledge-base-document',
+    //           {
+    //             documentId: document.id,
+    //             organizationId,
+    //           },
+    //         );
+    //         documentsTriggered++;
+    //       } catch (error) {
+    //         logger.warn('Failed to trigger document reprocessing', {
+    //           documentId: document.id,
+    //           error: error instanceof Error ? error.message : 'Unknown error',
+    //         });
+    //       }
+    //     } else {
+    //       documentsSkipped++;
+    //     }
+    //     documentsProcessed++;
+    //   } else {
+    //     documentsSkipped++;
+    //   }
+    // }
 
     logger.info('Knowledge Base documents sync completed', {
       organizationId,
