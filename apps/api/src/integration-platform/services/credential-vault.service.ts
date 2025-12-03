@@ -325,9 +325,9 @@ export class CredentialVaultService {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
+        await response.text(); // consume body
         this.logger.error(
-          `Token refresh failed for connection ${connectionId}: ${response.status} ${errorText}`,
+          `Token refresh failed for connection ${connectionId}: ${response.status}`,
         );
 
         // If refresh token is invalid/expired, mark connection as error

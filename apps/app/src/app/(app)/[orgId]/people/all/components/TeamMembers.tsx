@@ -6,6 +6,7 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { removeMember } from '../actions/removeMember';
 import { revokeInvitation } from '../actions/revokeInvitation';
+import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
 
 export interface MemberWithUser extends Member {
@@ -74,6 +75,9 @@ export async function TeamMembers() {
     pendingInvitations: pendingInvitations,
   };
 
+  // Fetch employee sync connections server-side
+  const employeeSyncData = await getEmployeeSyncConnections(organizationId);
+
   return (
     <TeamMembersClient
       data={data}
@@ -81,6 +85,7 @@ export async function TeamMembers() {
       removeMemberAction={removeMember}
       revokeInvitationAction={revokeInvitation}
       canManageMembers={canManageMembers}
+      employeeSyncData={employeeSyncData}
     />
   );
 }

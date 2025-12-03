@@ -8839,6 +8839,50 @@
           "Sync"
         ]
       }
+    },
+    "/v1/integrations/sync/employee-sync-provider": {
+      "get": {
+        "operationId": "SyncController_getEmployeeSyncProvider_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      },
+      "post": {
+        "operationId": "SyncController_setEmployeeSyncProvider_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
     }
   },
   "info": {

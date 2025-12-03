@@ -91,15 +91,29 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
   const newConnectionIds = newConnections.map((c) => c.id);
   const connectionToSlug = Object.fromEntries(newConnections.map((c) => [c.id, c.provider.slug]));
 
-  const newResults =
+  // Get the latest check run for each connection
+  const latestRuns =
     newConnectionIds.length > 0
+      ? await db.integrationCheckRun.findMany({
+          where: {
+            connectionId: { in: newConnectionIds },
+            status: { in: ['success', 'failed'] },
+          },
+          orderBy: { completedAt: 'desc' },
+          distinct: ['connectionId'],
+          select: { id: true, connectionId: true, status: true },
+        })
+      : [];
+
+  const latestRunIds = latestRuns.map((r) => r.id);
+  const checkRunMap = Object.fromEntries(latestRuns.map((cr) => [cr.id, cr]));
+
+  // Fetch results only from the latest runs
+  const newResults =
+    latestRunIds.length > 0
       ? await db.integrationCheckResult.findMany({
           where: {
-            checkRun: {
-              connectionId: {
-                in: newConnectionIds,
-              },
-            },
+            checkRunId: { in: latestRunIds },
             passed: false,
           },
           select: {
@@ -114,19 +128,8 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
           orderBy: {
             collectedAt: 'desc',
           },
-          take: 500,
         })
       : [];
-
-  const checkRunIds = [...new Set(newResults.map((r) => r.checkRunId))];
-  const checkRuns =
-    checkRunIds.length > 0
-      ? await db.integrationCheckRun.findMany({
-          where: { id: { in: checkRunIds } },
-          select: { id: true, connectionId: true, status: true },
-        })
-      : [];
-  const checkRunMap = Object.fromEntries(checkRuns.map((cr) => [cr.id, cr]));
 
   const newFindings = newResults.map((result) => {
     const checkRun = checkRunMap[result.checkRunId];

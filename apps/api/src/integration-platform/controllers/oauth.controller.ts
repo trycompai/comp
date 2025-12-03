@@ -402,10 +402,8 @@ export class OAuthController {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      this.logger.error(
-        `Token exchange failed: ${response.status} - ${errorText}`,
-      );
+      await response.text(); // consume body
+      this.logger.error(`Token exchange failed: ${response.status}`);
       throw new Error(`Token exchange failed: ${response.status}`);
     }
 
@@ -442,10 +440,8 @@ export class OAuthController {
         );
         // Don't throw - the OAuth flow itself succeeded
       } else {
-        const result = await response.json();
-        this.logger.log(
-          `Rippling app marked as installed: ${JSON.stringify(result)}`,
-        );
+        await response.json(); // consume body
+        this.logger.log('Rippling app marked as installed');
       }
     } catch (error) {
       this.logger.warn(`Error marking Rippling app as installed: ${error}`);

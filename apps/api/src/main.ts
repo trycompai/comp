@@ -23,8 +23,10 @@ if (existsSync(envPath)) {
   }
 }
 
+let app: INestApplication | null = null;
+
 async function bootstrap(): Promise<void> {
-  const app: INestApplication = await NestFactory.create(AppModule);
+  app = await NestFactory.create(AppModule);
 
   // Enable global validation pipe
   app.useGlobalPipes(
@@ -114,6 +116,20 @@ async function bootstrap(): Promise<void> {
     console.log('OpenAPI documentation written to packages/docs/openapi.json');
   }
 }
+
+// Graceful shutdown handler
+async function shutdown(signal: string): Promise<void> {
+  console.log(`\n${signal} received, shutting down gracefully...`);
+  if (app) {
+    await app.close();
+    console.log('Application closed');
+  }
+  process.exit(0);
+}
+
+// Handle shutdown signals (important for hot reload)
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));
 
 // Handle bootstrap errors properly
 void bootstrap().catch((error: unknown) => {

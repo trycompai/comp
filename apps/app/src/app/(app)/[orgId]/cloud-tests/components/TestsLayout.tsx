@@ -4,7 +4,7 @@ import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Plus, RefreshCw, Settings } from 'lucide-react';
+import { Plus, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
@@ -100,7 +100,11 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
 
       // Run checks for NEW platform providers
       for (const provider of newProviders) {
-        const response = await api.post(`/v1/integrations/checks/${provider.id}/run`, {}, orgId);
+        const response = await api.post(
+          `/v1/integrations/checks/connections/${provider.id}/run`,
+          {},
+          orgId,
+        );
         if (response.error) {
           console.error(`Error running checks for ${provider.name}:`, response.error);
         }
@@ -176,10 +180,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
             )}
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleRunScan} disabled={isScanning}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
-              {isScanning ? 'Scanning...' : 'Run Scan'}
-            </Button>
             {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
               <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -229,10 +229,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           )}
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={handleRunScan} disabled={isScanning}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
-            {isScanning ? 'Scanning...' : 'Run Scan'}
-          </Button>
           {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
             <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
               <Plus className="mr-2 h-4 w-4" />

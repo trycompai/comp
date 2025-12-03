@@ -1,6 +1,6 @@
+import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
-import { getManifest } from '@comp/integration-platform';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
@@ -18,34 +18,66 @@ export const syncEmployeesSchedule = schedules.task({
       lastRun: payload.lastTimestamp,
     });
 
-    // Find all active connections with sync capability
-    const connections = await db.integrationConnection.findMany({
-      where: { status: 'active' },
-      include: {
-        provider: true,
-        organization: {
-          select: { id: true, name: true },
-        },
+    // Find all organizations that have selected an employee sync provider
+    const orgsWithSyncProvider = await db.organization.findMany({
+      where: {
+        employeeSyncProvider: { not: null },
+      },
+      select: {
+        id: true,
+        name: true,
+        employeeSyncProvider: true,
       },
     });
 
-    if (connections.length === 0) {
-      logger.info('No active integration connections found');
+    if (orgsWithSyncProvider.length === 0) {
+      logger.info('No organizations have selected an employee sync provider');
       return { success: true, syncsTriggered: 0, results: [] };
     }
 
-    // Filter to only connections with sync capability
-    const syncConnections = connections.filter((conn) => {
-      const manifest = getManifest(conn.provider.slug);
-      return manifest?.capabilities?.includes('sync');
-    });
+    // Find the matching active connections for each org's selected provider
+    const syncConnections: Array<{
+      id: string;
+      organizationId: string;
+      provider: { slug: string };
+      organization: { id: string; name: string };
+    }> = [];
+
+    for (const org of orgsWithSyncProvider) {
+      const connection = await db.integrationConnection.findFirst({
+        where: {
+          organizationId: org.id,
+          status: 'active',
+          provider: {
+            slug: org.employeeSyncProvider!,
+          },
+        },
+        include: {
+          provider: true,
+          organization: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      if (connection) {
+        const manifest = getManifest(connection.provider.slug);
+        if (manifest?.capabilities?.includes('sync')) {
+          syncConnections.push(connection);
+        }
+      } else {
+        logger.warn(
+          `Organization ${org.name} has sync provider ${org.employeeSyncProvider} but no active connection`,
+        );
+      }
+    }
 
     if (syncConnections.length === 0) {
-      logger.info('No connections with sync capability found');
+      logger.info('No valid sync connections found for selected providers');
       return { success: true, syncsTriggered: 0, results: [] };
     }
 
-    logger.info(`Found ${syncConnections.length} connections with sync capability`);
+    logger.info(`Found ${syncConnections.length} organizations with valid sync connections`);
 
     const results: Array<{
       connectionId: string;
@@ -231,4 +263,3 @@ async function syncRippling({
     errors: data.errors || 0,
   };
 }
-
