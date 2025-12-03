@@ -8765,6 +8765,43 @@
           "Webhook"
         ]
       }
+    },
+    "/v1/integrations/sync/google-workspace/employees": {
+      "post": {
+        "operationId": "SyncController_syncGoogleWorkspaceEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/google-workspace/status": {
+      "post": {
+        "operationId": "SyncController_getGoogleWorkspaceStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
     }
   },
   "info": {

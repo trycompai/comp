@@ -3,7 +3,7 @@
 import { api } from '@/lib/api-client';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import {
@@ -13,9 +13,11 @@ import {
   Key,
   Loader2,
   RefreshCw,
+  Search,
   Settings,
   Trash2,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 import useSWR from 'swr';
 
@@ -24,6 +26,7 @@ interface Integration {
   name: string;
   description: string;
   category: string;
+  logoUrl: string;
   authType: string;
   capabilities: string[];
   isActive: boolean;
@@ -99,42 +102,48 @@ function IntegrationCard({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-base">{integration.name}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{integration.description}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {integration.hasCredentials ? (
-              <Badge className="bg-green-500/10 text-green-600 gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                Configured
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Not configured
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <Card className="overflow-hidden">
+      <CardContent className="p-4">
         <div className="space-y-4">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>
-              <strong>Category:</strong> {integration.category}
-            </span>
-            <span>
-              <strong>Auth:</strong> {integration.authType}
-            </span>
+          {/* Header with logo */}
+          <div className="flex items-start gap-3">
+            <div className="relative h-10 w-10 shrink-0 rounded-lg border bg-muted/50 p-1.5">
+              <Image
+                src={integration.logoUrl}
+                alt={integration.name}
+                fill
+                className="object-contain p-1"
+                unoptimized
+              />
+              {integration.hasCredentials && (
+                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-background flex items-center justify-center">
+                  <CheckCircle2 className="h-2.5 w-2.5 text-white" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-sm truncate">{integration.name}</h3>
+                {!integration.hasCredentials && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    Not configured
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                {integration.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Meta info */}
+          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+              {integration.category}
+            </Badge>
+            <span className="uppercase tracking-wide">{integration.authType}</span>
             {integration.hasCredentials && integration.credentialUpdatedAt && (
-              <span>
-                <strong>Updated:</strong>{' '}
-                {new Date(integration.credentialUpdatedAt).toLocaleDateString()}
-              </span>
+              <span>Updated {new Date(integration.credentialUpdatedAt).toLocaleDateString()}</span>
             )}
           </div>
 
@@ -257,6 +266,8 @@ function IntegrationCard({
 }
 
 export default function AdminIntegrationsPage() {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const {
     data: integrations,
     error,
@@ -268,8 +279,18 @@ export default function AdminIntegrationsPage() {
     return response.data || [];
   });
 
-  const oauthIntegrations = integrations?.filter((i) => i.authType === 'oauth2') || [];
-  const otherIntegrations = integrations?.filter((i) => i.authType !== 'oauth2') || [];
+  const filteredIntegrations = integrations?.filter((i) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      i.name.toLowerCase().includes(query) ||
+      i.description.toLowerCase().includes(query) ||
+      i.category.toLowerCase().includes(query)
+    );
+  });
+
+  const oauthIntegrations = filteredIntegrations?.filter((i) => i.authType === 'oauth2') || [];
+  const otherIntegrations = filteredIntegrations?.filter((i) => i.authType !== 'oauth2') || [];
 
   const configuredCount = integrations?.filter((i) => i.hasCredentials).length || 0;
   const totalOAuth = oauthIntegrations.length;
@@ -306,8 +327,17 @@ export default function AdminIntegrationsPage() {
         </Card>
       </div>
 
-      {/* Refresh button */}
-      <div className="flex justify-end">
+      {/* Search and Refresh */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search integrations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <Button variant="outline" onClick={() => mutate()} disabled={isLoading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
@@ -334,7 +364,7 @@ export default function AdminIntegrationsPage() {
               <h3 className="text-lg font-semibold mb-4">
                 OAuth Integrations ({oauthIntegrations.length})
               </h3>
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {oauthIntegrations.map((integration) => (
                   <IntegrationCard
                     key={integration.id}
@@ -352,7 +382,7 @@ export default function AdminIntegrationsPage() {
               <h3 className="text-lg font-semibold mb-4">
                 Other Integrations ({otherIntegrations.length})
               </h3>
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {otherIntegrations.map((integration) => (
                   <IntegrationCard
                     key={integration.id}

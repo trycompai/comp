@@ -1,9 +1,11 @@
 'use client';
 
-import { Mail, Search, UserPlus, X } from 'lucide-react';
+import { api } from '@/lib/api-client';
+import { Loader2, Mail, Search, UserPlus, X } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { authClient } from '@/utils/auth-client';
@@ -57,6 +59,69 @@ export function TeamMembersClient({
 
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+
+  // Google Workspace sync state
+  const [gwConnectionId, setGwConnectionId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Check if Google Workspace is connected
+  useEffect(() => {
+    const checkGoogleWorkspaceConnection = async () => {
+      const response = await api.post<{ connected: boolean; connectionId: string | null }>(
+        `/v1/integrations/sync/google-workspace/status?organizationId=${organizationId}`,
+      );
+      if (response.data?.connected && response.data.connectionId) {
+        setGwConnectionId(response.data.connectionId);
+      }
+    };
+    checkGoogleWorkspaceConnection();
+  }, [organizationId]);
+
+  const handleGoogleWorkspaceSync = async () => {
+    if (!gwConnectionId) return;
+
+    setIsSyncing(true);
+    try {
+      const response = await api.post<{
+        success: boolean;
+        totalFound: number;
+        totalSuspended: number;
+        imported: number;
+        reactivated: number;
+        deactivated: number;
+        skipped: number;
+        errors: number;
+      }>(
+        `/v1/integrations/sync/google-workspace/employees?organizationId=${organizationId}&connectionId=${gwConnectionId}`,
+      );
+
+      if (response.data?.success) {
+        const { imported, reactivated, deactivated, skipped, errors } = response.data;
+        if (imported > 0) {
+          toast.success(`Imported ${imported} new employee${imported > 1 ? 's' : ''}`);
+        }
+        if (reactivated > 0) {
+          toast.success(`Reactivated ${reactivated} employee${reactivated > 1 ? 's' : ''}`);
+        }
+        if (deactivated > 0) {
+          toast.info(`Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (suspended in Google)`);
+        }
+        if (imported === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
+          toast.info('All employees are already synced');
+        }
+        if (errors > 0) {
+          toast.warning(`${errors} employee${errors > 1 ? 's' : ''} failed to sync`);
+        }
+        router.refresh();
+      } else if (response.error) {
+        toast.error(response.error);
+      }
+    } catch (error) {
+      toast.error('Failed to sync employees from Google Workspace');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Combine and type members and invitations for filtering/display
   const allItems: DisplayItem[] = [
@@ -235,6 +300,27 @@ export function TeamMembersClient({
             <SelectItem value="employee">{'Employee'}</SelectItem>
           </SelectContent>
         </Select>
+        {gwConnectionId && (
+          <Button
+            variant="outline"
+            onClick={handleGoogleWorkspaceSync}
+            disabled={isSyncing || !canManageMembers}
+          >
+            {isSyncing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Image
+                src="https://img.logo.dev/google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true"
+                alt="Google"
+                width={16}
+                height={16}
+                className="rounded-sm"
+                unoptimized
+              />
+            )}
+            {isSyncing ? 'Importing...' : 'Import from Google'}
+          </Button>
+        )}
         <Button onClick={() => setIsInviteModalOpen(true)} disabled={!canManageMembers}>
           <UserPlus className="h-4 w-4" />
           {'Add User'}

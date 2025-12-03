@@ -57,6 +57,7 @@ export class AdminIntegrationsController {
         name: manifest.name,
         description: manifest.description,
         category: manifest.category,
+        logoUrl: manifest.logoUrl,
         authType: manifest.auth.type,
         capabilities: manifest.capabilities,
         isActive: manifest.isActive,
