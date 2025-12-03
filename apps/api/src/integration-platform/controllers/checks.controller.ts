@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Param,
-  Query,
   Body,
   HttpException,
   HttpStatus,
@@ -13,11 +12,11 @@ import {
   getManifest,
   getAvailableChecks,
   runAllChecks,
-  runCheck,
 } from '@comp/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { ProviderRepository } from '../repositories/provider.repository';
+import { CheckRunRepository } from '../repositories/check-run.repository';
 
 interface RunChecksDto {
   checkId?: string;
@@ -31,6 +30,7 @@ export class ChecksController {
     private readonly connectionRepository: ConnectionRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly credentialVaultService: CredentialVaultService,
+    private readonly checkRunRepository: CheckRunRepository,
   ) {}
 
   /**
@@ -169,6 +169,13 @@ export class ChecksController {
       `Running checks for connection ${connectionId} (${provider.slug})${body.checkId ? ` - check: ${body.checkId}` : ''}`,
     );
 
+    // Create a check run record
+    const checkRun = await this.checkRunRepository.create({
+      connectionId,
+      checkId: body.checkId || 'all',
+      checkName: body.checkId || 'All Checks',
+    });
+
     try {
       // Run checks
       const result = await runAllChecks({
@@ -190,12 +197,64 @@ export class ChecksController {
         `Checks completed for ${connectionId}: ${result.totalFindings} findings, ${result.totalPassing} passing`,
       );
 
+      // Store all results (findings and passing)
+      const resultsToStore = result.results.flatMap((checkResult) => [
+        ...checkResult.result.findings.map((finding) => ({
+          checkRunId: checkRun.id,
+          passed: false,
+          title: finding.title,
+          description: finding.description || '',
+          resourceType: finding.resourceType,
+          resourceId: finding.resourceId,
+          severity: finding.severity,
+          remediation: finding.remediation,
+          evidence: JSON.parse(JSON.stringify(finding.evidence || {})),
+        })),
+        ...checkResult.result.passingResults.map((passing) => ({
+          checkRunId: checkRun.id,
+          passed: true,
+          title: passing.title,
+          description: passing.description || '',
+          resourceType: passing.resourceType,
+          resourceId: passing.resourceId,
+          severity: 'info' as const,
+          remediation: undefined,
+          evidence: JSON.parse(JSON.stringify(passing.evidence || {})),
+        })),
+      ]);
+
+      if (resultsToStore.length > 0) {
+        await this.checkRunRepository.addResults(resultsToStore);
+      }
+
+      // Update the check run status
+      const startTime = checkRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepository.complete(checkRun.id, {
+        status: result.totalFindings > 0 ? 'failed' : 'success',
+        durationMs: Date.now() - startTime,
+        totalChecked: result.results.length,
+        passedCount: result.totalPassing,
+        failedCount: result.totalFindings,
+      });
+
       return {
         connectionId,
         providerSlug: provider.slug,
+        checkRunId: checkRun.id,
         ...result,
       };
     } catch (error) {
+      // Mark the check run as failed
+      const startTime = checkRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepository.complete(checkRun.id, {
+        status: 'failed',
+        durationMs: Date.now() - startTime,
+        totalChecked: 0,
+        passedCount: 0,
+        failedCount: 0,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+
       this.logger.error(`Check execution failed: ${error}`);
       throw new HttpException(
         `Check execution failed: ${error instanceof Error ? error.message : String(error)}`,

@@ -1,7 +1,9 @@
 import {
   Controller,
   Post,
+  Get,
   Query,
+  Body,
   HttpException,
   HttpStatus,
   Logger,
@@ -183,7 +185,9 @@ export class SyncController {
             );
           }
           const errorText = await response.text();
-          this.logger.error(`Google API error: ${errorText}`);
+          this.logger.error(
+            `Google API error: ${response.status} ${response.statusText}`,
+          );
           throw new HttpException(
             'Failed to fetch users from Google Workspace',
             HttpStatus.BAD_GATEWAY,
@@ -308,9 +312,7 @@ export class SyncController {
           status: 'imported',
         });
       } catch (error) {
-        this.logger.error(
-          `Error importing user ${gwUser.primaryEmail}: ${error}`,
-        );
+        this.logger.error(`Error importing Google Workspace user: ${error}`);
         results.errors++;
         results.details.push({
           email: gwUser.primaryEmail,
@@ -366,9 +368,7 @@ export class SyncController {
               : 'User was removed from Google Workspace',
           });
         } catch (error) {
-          this.logger.error(
-            `Error deactivating member ${member.user.email}: ${error}`,
-          );
+          this.logger.error(`Error deactivating member: ${error}`);
         }
       }
     }
@@ -548,7 +548,7 @@ export class SyncController {
       let nextUrl: string | null = 'https://rest.ripplingapis.com/workers';
 
       while (nextUrl) {
-        this.logger.log(`Fetching Rippling workers from: ${nextUrl}`);
+        this.logger.log('Fetching Rippling workers...');
 
         const response = await fetch(nextUrl, {
           headers: {
@@ -558,9 +558,9 @@ export class SyncController {
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
+          await response.text(); // consume body
           this.logger.error(
-            `Rippling API error: Status ${response.status}, Body: ${errorText.slice(0, 500)}`,
+            `Rippling API error: ${response.status} ${response.statusText}`,
           );
 
           if (response.status === 401) {
@@ -578,15 +578,12 @@ export class SyncController {
           }
 
           throw new HttpException(
-            `Rippling API error: ${response.status} - ${errorText.slice(0, 200)}`,
+            `Rippling API error: ${response.status} ${response.statusText}`,
             HttpStatus.BAD_GATEWAY,
           );
         }
 
         const data: RipplingResponse = await response.json();
-        this.logger.log(
-          `Rippling API response: ${JSON.stringify(data).slice(0, 500)}...`,
-        );
 
         // V2 API returns { results: [...], next_link: "..." }
         if (data.results && Array.isArray(data.results)) {
@@ -737,7 +734,7 @@ export class SyncController {
           results.details.push({ email, status: 'imported' });
         }
       } catch (error) {
-        this.logger.error(`Error importing Rippling worker ${email}: ${error}`);
+        this.logger.error(`Error importing Rippling worker: ${error}`);
         results.errors++;
         results.details.push({
           email,
@@ -815,6 +812,90 @@ export class SyncController {
     return {
       connected: true,
       connectionId: connection.id,
+    };
+  }
+
+  /**
+   * Get the current employee sync provider for an organization
+   */
+  @Get('employee-sync-provider')
+  async getEmployeeSyncProvider(
+    @Query('organizationId') organizationId: string,
+  ) {
+    if (!organizationId) {
+      throw new HttpException(
+        'organizationId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { employeeSyncProvider: true },
+    });
+
+    if (!org) {
+      throw new HttpException('Organization not found', HttpStatus.NOT_FOUND);
+    }
+
+    return {
+      provider: org.employeeSyncProvider,
+    };
+  }
+
+  /**
+   * Set the employee sync provider for an organization
+   */
+  @Post('employee-sync-provider')
+  async setEmployeeSyncProvider(
+    @Query('organizationId') organizationId: string,
+    @Body() body: { provider: string | null },
+  ) {
+    if (!organizationId) {
+      throw new HttpException(
+        'organizationId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const { provider } = body;
+
+    // Validate provider if set
+    if (provider) {
+      const validProviders = ['google-workspace', 'rippling'];
+      if (!validProviders.includes(provider)) {
+        throw new HttpException(
+          `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Check if the provider is actually connected
+      const connection = await this.connectionRepository.findBySlugAndOrg(
+        provider,
+        organizationId,
+      );
+
+      if (!connection || connection.status !== 'active') {
+        throw new HttpException(
+          `Provider ${provider} is not connected`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    await db.organization.update({
+      where: { id: organizationId },
+      data: { employeeSyncProvider: provider },
+    });
+
+    this.logger.log(
+      `Set employee sync provider to ${provider || 'none'} for org ${organizationId}`,
+    );
+
+    return {
+      success: true,
+      provider,
     };
   }
 }
