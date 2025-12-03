@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, TrustFramework } from '@prisma/client';
 import {
   BadRequestException,
   Injectable,
@@ -23,15 +23,9 @@ import {
   ComplianceResourceResponseDto,
   ComplianceResourceSignedUrlDto,
   ComplianceResourceUrlResponseDto,
-  TRUST_FRAMEWORK_ENUM,
   UploadComplianceResourceDto,
-  type TrustFramework,
 } from './dto/compliance-resource.dto';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
-
-const prisma = db as typeof db & {
-  trustResource: any;
-};
 
 interface VercelDomainVerification {
   type: string;
@@ -96,47 +90,47 @@ export class TrustPortalService {
       slug: string;
     }
   > = {
-    [TRUST_FRAMEWORK_ENUM.iso_27001]: {
+    [TrustFramework.iso_27001]: {
       statusField: 'iso27001_status',
       enabledField: 'iso27001',
       slug: 'iso_27001',
     },
-    [TRUST_FRAMEWORK_ENUM.iso_42001]: {
+    [TrustFramework.iso_42001]: {
       statusField: 'iso42001_status',
       enabledField: 'iso42001',
       slug: 'iso_42001',
     },
-    [TRUST_FRAMEWORK_ENUM.gdpr]: {
+    [TrustFramework.gdpr]: {
       statusField: 'gdpr_status',
       enabledField: 'gdpr',
       slug: 'gdpr',
     },
-    [TRUST_FRAMEWORK_ENUM.hipaa]: {
+    [TrustFramework.hipaa]: {
       statusField: 'hipaa_status',
       enabledField: 'hipaa',
       slug: 'hipaa',
     },
-    [TRUST_FRAMEWORK_ENUM.soc2_type1]: {
+    [TrustFramework.soc2_type1]: {
       statusField: 'soc2type1_status',
       enabledField: 'soc2type1',
       slug: 'soc2_type1',
     },
-    [TRUST_FRAMEWORK_ENUM.soc2_type2]: {
+    [TrustFramework.soc2_type2]: {
       statusField: 'soc2type2_status',
       enabledField: 'soc2type2',
       slug: 'soc2_type2',
     },
-    [TRUST_FRAMEWORK_ENUM.pci_dss]: {
+    [TrustFramework.pci_dss]: {
       statusField: 'pci_dss_status',
       enabledField: 'pci_dss',
       slug: 'pci_dss',
     },
-    [TRUST_FRAMEWORK_ENUM.nen_7510]: {
+    [TrustFramework.nen_7510]: {
       statusField: 'nen7510_status',
       enabledField: 'nen7510',
       slug: 'nen_7510',
     },
-    [TRUST_FRAMEWORK_ENUM.iso_9001]: {
+    [TrustFramework.iso_9001]: {
       statusField: 'iso9001_status',
       enabledField: 'iso9001',
       slug: 'iso_9001',
@@ -224,7 +218,7 @@ export class TrustPortalService {
     const s3Prefix = `${dto.organizationId}/resources/${slug}`;
     const s3Key = `${s3Prefix}/${timestamp}-${sanitizedFileName}`;
 
-    const existingResource = await prisma.trustResource.findUnique({
+    const existingResource = await db.trustResource.findUnique({
       where: {
         organizationId_framework: {
           organizationId: dto.organizationId,
@@ -251,7 +245,7 @@ export class TrustPortalService {
 
     await s3Client!.send(putCommand);
 
-    const record = await prisma.trustResource.upsert({
+    const record = await db.trustResource.upsert({
       where: {
         organizationId_framework: {
           organizationId: dto.organizationId,
@@ -283,7 +277,7 @@ export class TrustPortalService {
   async listComplianceResources(
     organizationId: string,
   ): Promise<ComplianceResourceResponseDto[]> {
-    const records = await prisma.trustResource.findMany({
+    const records = await db.trustResource.findMany({
       where: {
         organizationId,
       },
@@ -305,7 +299,7 @@ export class TrustPortalService {
   ): Promise<ComplianceResourceUrlResponseDto> {
     this.ensureS3Availability();
 
-    const record = await prisma.trustResource.findUnique({
+    const record = await db.trustResource.findUnique({
       where: {
         organizationId_framework: {
           organizationId: dto.organizationId,
@@ -341,7 +335,7 @@ export class TrustPortalService {
     framework: TrustFramework,
   ): Promise<void> {
     const config = TrustPortalService.FRAMEWORK_CONFIG[framework];
-    const trustRecord = await prisma.trust.findUnique({
+    const trustRecord = await db.trust.findUnique({
       where: { organizationId },
     });
 

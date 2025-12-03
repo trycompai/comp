@@ -20,7 +20,7 @@ import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
-import { TRUST_FRAMEWORK_ENUM, type TrustFramework } from './dto/compliance-resource.dto';
+import { TrustFramework } from '@prisma/client';
 
 @Injectable()
 export class TrustAccessService {
@@ -1114,7 +1114,7 @@ export class TrustAccessService {
     const grant = await this.validateAccessToken(token);
 
     // Validate framework enum
-    if (!Object.values(TRUST_FRAMEWORK_ENUM).includes(framework)) {
+    if (!Object.values(TrustFramework).includes(framework)) {
       throw new BadRequestException(`Invalid framework: ${framework}`);
     }
 

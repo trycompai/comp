@@ -1,20 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
-
-export const TRUST_FRAMEWORK_ENUM = {
-  iso_27001: 'iso_27001',
-  iso_42001: 'iso_42001',
-  gdpr: 'gdpr',
-  hipaa: 'hipaa',
-  soc2_type1: 'soc2_type1',
-  soc2_type2: 'soc2_type2',
-  pci_dss: 'pci_dss',
-  nen_7510: 'nen_7510',
-  iso_9001: 'iso_9001',
-} as const;
-
-export type TrustFramework =
-  (typeof TRUST_FRAMEWORK_ENUM)[keyof typeof TRUST_FRAMEWORK_ENUM];
+import { TrustFramework } from '@prisma/client';
 
 export class ComplianceResourceBaseDto {
   @ApiProperty({
@@ -26,10 +12,10 @@ export class ComplianceResourceBaseDto {
 
   @ApiProperty({
     description: 'Compliance framework identifier',
-    enum: TRUST_FRAMEWORK_ENUM,
-    example: TRUST_FRAMEWORK_ENUM.iso_27001,
+    enum: TrustFramework,
+    example: TrustFramework.iso_27001,
   })
-  @IsEnum(TRUST_FRAMEWORK_ENUM)
+  @IsEnum(TrustFramework)
   framework!: TrustFramework;
 }
 
@@ -58,7 +44,7 @@ export class UploadComplianceResourceDto extends ComplianceResourceBaseDto {
 export class ComplianceResourceSignedUrlDto extends ComplianceResourceBaseDto {}
 
 export class ComplianceResourceResponseDto {
-  @ApiProperty({ enum: TRUST_FRAMEWORK_ENUM })
+  @ApiProperty({ enum: TrustFramework })
   framework!: TrustFramework;
 
   @ApiProperty()
