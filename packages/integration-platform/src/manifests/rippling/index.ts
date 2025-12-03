@@ -44,7 +44,7 @@ export const ripplingManifest: IntegrationManifest = {
   },
 
   // Sync capability - this integration syncs employee data
-  capabilities: ['checks'],
+  capabilities: ['sync'],
 
   // No checks defined - custom UI handles the sync
   checks: [],

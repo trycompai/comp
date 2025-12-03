@@ -45,7 +45,7 @@ Note: The user authorizing must be a Google Workspace admin.`,
     'Content-Type': 'application/json',
   },
 
-  capabilities: ['checks'],
+  capabilities: ['checks', 'sync'],
 
   checks: [twoFactorAuthCheck, adminUsersCheck],
 };

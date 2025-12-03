@@ -41,9 +41,10 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
   displayName: string;
   displayEmail: string;
   displayRole: string | string[]; // Simplified role display, could be comma-separated
-  displayStatus: 'active' | 'pending';
+  displayStatus: 'active' | 'pending' | 'deactivated';
   displayId: string; // Use member.id or invitation.id
   processedRoles: Role[];
+  isDeactivated?: boolean;
 }
 
 export function TeamMembersClient({
@@ -56,6 +57,7 @@ export function TeamMembersClient({
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
+  const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
 
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -104,7 +106,9 @@ export function TeamMembersClient({
           toast.success(`Reactivated ${reactivated} employee${reactivated > 1 ? 's' : ''}`);
         }
         if (deactivated > 0) {
-          toast.info(`Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (suspended in Google)`);
+          toast.info(
+            `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (suspended in Google)`,
+          );
         }
         if (imported === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
           toast.info('All employees are already synced');
@@ -140,10 +144,11 @@ export function TeamMembersClient({
         displayName: member.user.name || member.user.email || '',
         displayEmail: member.user.email || '',
         displayRole: member.role, // Keep original for filtering
-        displayStatus: 'active' as const,
+        displayStatus: member.deactivated ? ('deactivated' as const) : ('active' as const),
         displayId: member.id,
         // Add processed roles for rendering
         processedRoles: roles,
+        isDeactivated: member.deactivated,
       };
     }),
     ...data.pendingInvitations.map((invitation) => {
@@ -174,12 +179,18 @@ export function TeamMembersClient({
       item.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesRole =
-      roleFilter === 'all' ||
-      (item.type === 'member' && item.role === roleFilter) ||
-      (item.type === 'invitation' && item.role === roleFilter);
+    // Check if the role filter matches any of the member's roles
+    const matchesRole = roleFilter === 'all' || item.processedRoles.includes(roleFilter as Role);
 
-    return matchesSearch && matchesRole;
+    // Status filter: 'active' shows non-deactivated members + pending invitations
+    // 'deactivated' shows only deactivated members
+    // 'all' shows everything
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && item.displayStatus !== 'deactivated') ||
+      (statusFilter === 'deactivated' && item.displayStatus === 'deactivated');
+
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   const activeMembers = filteredItems.filter((item) => item.type === 'member');
@@ -223,7 +234,7 @@ export function TeamMembersClient({
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map(r => r.trim()) ?? [];
+    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');
@@ -284,6 +295,20 @@ export function TeamMembersClient({
             </Button>
           )}
         </div>
+        {/* Status Filter Select */}
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}
+        >
+          <SelectTrigger className="hidden w-[140px] sm:flex">
+            <SelectValue placeholder={'All People'} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{'All People'}</SelectItem>
+            <SelectItem value="active">{'Active'}</SelectItem>
+            <SelectItem value="deactivated">{'Deactivated'}</SelectItem>
+          </SelectContent>
+        </Select>
         {/* Role Filter Select: Hidden on mobile, block on sm+ */}
         <Select
           value={roleFilter}
