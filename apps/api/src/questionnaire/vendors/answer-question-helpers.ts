@@ -3,7 +3,8 @@ import type { SimilarContentResult } from '@/vector-store/lib';
 import { openai } from '@ai-sdk/openai';
 import { logger } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
-import { deduplicateSources } from '@/questionnaire/utils/deduplicate-sources';
+import { deduplicateSources, type Source } from '@/questionnaire/utils/deduplicate-sources';
+import { ANSWER_MODEL, ANSWER_SYSTEM_PROMPT } from '@/questionnaire/utils/constants';
 
 export interface AnswerWithSources {
   answer: string | null;
@@ -15,8 +16,102 @@ export interface AnswerWithSources {
 }
 
 /**
+ * Extracts source information from similar content results and deduplicates them
+ */
+function extractAndDeduplicateSources(similarContent: SimilarContentResult[]): Source[] {
+  const sourcesBeforeDedup = similarContent.map((result) => {
+    const r = result as SimilarContentResult;
+    let sourceName: string | undefined;
+    
+    if (r.policyName) {
+      sourceName = `Policy: ${r.policyName}`;
+    } else if (r.contextQuestion) {
+      sourceName = 'Context Q&A';
+    } else if (r.sourceType === 'manual_answer') {
+      // Don't set sourceName here - let deduplicateSources handle it with manualAnswerQuestion
+      sourceName = undefined;
+    }
+    // Don't set sourceName for knowledge_base_document - let deduplication function handle it with filename
+
+    return {
+      sourceType: r.sourceType,
+      sourceName,
+      sourceId: r.sourceId,
+      policyName: r.policyName,
+      documentName: r.documentName,
+      manualAnswerQuestion: r.manualAnswerQuestion,
+      score: r.score,
+    };
+  });
+
+  return deduplicateSources(sourcesBeforeDedup);
+}
+
+/**
+ * Builds context string from similar content for LLM prompt
+ */
+function buildContextFromContent(similarContent: SimilarContentResult[]): string {
+  const contextParts = similarContent.map((result, index) => {
+    const r = result as SimilarContentResult;
+    let sourceInfo = '';
+    
+    if (r.policyName) {
+      sourceInfo = `Source: Policy "${r.policyName}"`;
+    } else if (r.contextQuestion) {
+      sourceInfo = `Source: Context Q&A`;
+    } else if (r.sourceType === 'knowledge_base_document') {
+      sourceInfo = r.documentName
+        ? `Source: Knowledge Base Document "${r.documentName}"`
+        : `Source: Knowledge Base Document`;
+    } else if (r.sourceType === 'manual_answer') {
+      sourceInfo = `Source: Manual Answer`;
+    } else {
+      sourceInfo = `Source: ${r.sourceType}`;
+    }
+
+    return `[${index + 1}] ${sourceInfo}\n${r.content}`;
+  });
+
+  return contextParts.join('\n\n');
+}
+
+/**
+ * Generates answer using LLM with the provided context
+ */
+async function generateAnswerWithLLM(
+  question: string,
+  context: string,
+): Promise<string> {
+  const { text } = await generateText({
+    model: openai(ANSWER_MODEL),
+    system: ANSWER_SYSTEM_PROMPT,
+    prompt: `Based on the following context from our organization's policies and documentation, answer this question:
+
+Question: ${question}
+
+Context:
+${context}
+
+Answer the question based ONLY on the provided context, using first person plural (we, our, us). If the context doesn't contain enough information, respond with exactly "N/A - no evidence found".`,
+  });
+
+  return text.trim();
+}
+
+/**
+ * Checks if an answer indicates no evidence was found
+ */
+function isNoEvidenceAnswer(answer: string): boolean {
+  const lowerAnswer = answer.toLowerCase();
+  return (
+    lowerAnswer.includes('n/a') ||
+    lowerAnswer.includes('no evidence') ||
+    lowerAnswer.includes('not found in the context')
+  );
+}
+
+/**
  * Generates an answer for a question using RAG (Retrieval-Augmented Generation)
- * This is extracted from vendor-questionnaire-orchestrator.ts to be used in Trigger.dev tasks
  */
 export async function generateAnswerWithRAG(
   question: string,
@@ -24,10 +119,7 @@ export async function generateAnswerWithRAG(
 ): Promise<AnswerWithSources> {
   try {
     // Find similar content from vector database
-    const similarContent = await findSimilarContent(
-      question,
-      organizationId,
-    );
+    const similarContent = await findSimilarContent(question, organizationId);
 
     logger.info('Vector search results', {
       question: question.substring(0, 100),
@@ -49,42 +141,13 @@ export async function generateAnswerWithRAG(
       return { answer: null, sources: [] };
     }
 
-    // Extract sources information and deduplicate using universal utility
-    // Multiple chunks from the same source (same policy/context/manual answer/knowledge base document) should appear as a single source
-    // Note: sourceName is set for some types, but knowledge_base_document will be handled by deduplication function
-    const sourcesBeforeDedup = similarContent.map((result) => {
-      // Use any to avoid TypeScript narrowing issues, then assert correct type
-      const r = result as any as SimilarContentResult;
-      let sourceName: string | undefined;
-      if (r.policyName) {
-        sourceName = `Policy: ${r.policyName}`;
-      } else if (r.contextQuestion) {
-        sourceName = 'Context Q&A';
-      } else if ((r.sourceType as string) === 'manual_answer') {
-        // Don't set sourceName here - let deduplicateSources handle it with manualAnswerQuestion
-        // This ensures we show the question preview if available
-        sourceName = undefined;
-      }
-      // Don't set sourceName for knowledge_base_document - let deduplication function handle it with filename
-
-      return {
-        sourceType: r.sourceType,
-        sourceName,
-        sourceId: r.sourceId,
-        policyName: r.policyName,
-        documentName: r.documentName,
-        manualAnswerQuestion: r.manualAnswerQuestion,
-        score: r.score,
-      };
-    });
-
-    const sources = deduplicateSources(sourcesBeforeDedup);
+    // Extract and deduplicate sources
+    const sources = extractAndDeduplicateSources(similarContent);
 
     logger.info('Sources extracted and deduplicated', {
       question: question.substring(0, 100),
       organizationId,
       similarContentCount: similarContent.length,
-      sourcesBeforeDedupCount: sourcesBeforeDedup.length,
       sourcesAfterDedupCount: sources.length,
       sources: sources.map((s) => ({
         type: s.sourceType,
@@ -94,91 +157,33 @@ export async function generateAnswerWithRAG(
       })),
     });
 
-    // Build context from retrieved content
-    const contextParts = similarContent.map((result, index) => {
-      // Use any to avoid TypeScript narrowing issues, then assert correct type
-      const r = result as any as SimilarContentResult;
-      let sourceInfo = '';
-      if (r.policyName) {
-        sourceInfo = `Source: Policy "${r.policyName}"`;
-      } else if (r.contextQuestion) {
-        sourceInfo = `Source: Context Q&A`;
-      } else if ((r.sourceType as string) === 'knowledge_base_document') {
-        const docName = r.documentName;
-        if (docName) {
-          sourceInfo = `Source: Knowledge Base Document "${docName}"`;
-        } else {
-          sourceInfo = `Source: Knowledge Base Document`;
-        }
-      } else if ((r.sourceType as string) === 'manual_answer') {
-        sourceInfo = `Source: Manual Answer`;
-      } else {
-        sourceInfo = `Source: ${r.sourceType}`;
-      }
-
-      return `[${index + 1}] ${sourceInfo}\n${r.content}`;
-    });
-
-    const context = contextParts.join('\n\n');
-
-    // Generate answer using LLM with RAG
-    const { text } = await generateText({
-      model: openai('gpt-4o-mini'), // Faster model for answer generation
-      system: `You are an expert at answering security and compliance questions for vendor questionnaires.
-
-Your task is to answer questions based ONLY on the provided context from the organization's policies and documentation.
-
-CRITICAL RULES:
-1. Answer based ONLY on the provided context. Do not make up facts or use general knowledge.
-2. If the context does not contain enough information to answer the question, respond with exactly: "N/A - no evidence found"
-3. BE CONCISE. Give SHORT, direct answers. Do NOT provide detailed explanations or elaborate unnecessarily.
-4. Use enterprise-ready language appropriate for vendor questionnaires.
-5. If multiple sources provide information, synthesize them into ONE concise answer.
-6. Do not include disclaimers or notes about the source unless specifically relevant.
-7. Format your answer as a clear, professional response suitable for a vendor questionnaire.
-8. Always write in first person plural (we, our, us) as if speaking on behalf of the organization.
-9. Keep answers to 1-3 sentences maximum unless the question explicitly requires more detail.`,
-      prompt: `Based on the following context from our organization's policies and documentation, answer this question:
-
-Question: ${question}
-
-Context:
-${context}
-
-Answer the question based ONLY on the provided context, using first person plural (we, our, us). If the context doesn't contain enough information, respond with exactly "N/A - no evidence found".`,
-    });
+    // Build context and generate answer
+    const context = buildContextFromContent(similarContent);
+    const answer = await generateAnswerWithLLM(question, context);
 
     // Check if the answer indicates no evidence
-    const trimmedAnswer = text.trim();
-    if (
-      trimmedAnswer.toLowerCase().includes('n/a') ||
-      trimmedAnswer.toLowerCase().includes('no evidence') ||
-      trimmedAnswer.toLowerCase().includes('not found in the context')
-    ) {
+    if (isNoEvidenceAnswer(answer)) {
       logger.warn('Answer indicates no evidence found', {
         question: question.substring(0, 100),
-        answer: trimmedAnswer.substring(0, 100),
+        answer: answer.substring(0, 100),
         sourcesCount: sources.length,
       });
       return { answer: null, sources: [] };
     }
 
     // Safety check: if we have an answer but no sources, log a warning
-    // This shouldn't happen if LLM follows instructions, but we log it for debugging
-    if (sources.length === 0 && trimmedAnswer) {
+    if (sources.length === 0 && answer) {
       logger.warn(
         'Answer generated but no sources found - this may indicate LLM used general knowledge',
         {
           question: question.substring(0, 100),
-          answer: trimmedAnswer.substring(0, 100),
+          answer: answer.substring(0, 100),
           similarContentCount: similarContent.length,
-          sourcesBeforeDedupCount: sourcesBeforeDedup.length,
         },
       );
-      // Still return the answer, but without sources
     }
 
-    return { answer: trimmedAnswer, sources };
+    return { answer, sources };
   } catch (error) {
     logger.error('Failed to generate answer with RAG', {
       question: question.substring(0, 100),
@@ -191,11 +196,7 @@ Answer the question based ONLY on the provided context, using first person plura
 
 /**
  * Batch version of generateAnswerWithRAG - processes multiple questions efficiently
- * Uses batch embedding generation for significant speedup (~5-10 seconds saved for 100+ questions)
- *
- * @param questions - Array of questions to answer
- * @param organizationId - Organization ID for filtering vector search
- * @returns Array of answers with sources in the same order as input questions
+ * Uses batch embedding generation for significant speedup
  */
 export async function generateAnswerWithRAGBatch(
   questions: string[],
@@ -208,17 +209,14 @@ export async function generateAnswerWithRAGBatch(
   const startTime = Date.now();
 
   try {
-    // Step 1: Find similar content for ALL questions at once (batch embeddings)
     logger.info('Starting batch RAG generation', {
       questionCount: questions.length,
       organizationId,
     });
 
+    // Step 1: Find similar content for ALL questions at once (batch embeddings)
     const searchStartTime = Date.now();
-    const allSimilarContent = await findSimilarContentBatch(
-      questions,
-      organizationId,
-    );
+    const allSimilarContent = await findSimilarContentBatch(questions, organizationId);
     const searchTime = Date.now() - searchStartTime;
 
     logger.info('Batch search completed', {
@@ -272,92 +270,19 @@ export async function generateAnswerFromContent(
       return { answer: null, sources: [] };
     }
 
-    // Extract sources information and deduplicate
-    const sourcesBeforeDedup = similarContent.map((result) => {
-      const r = result as SimilarContentResult;
-      let sourceName: string | undefined;
-      if (r.policyName) {
-        sourceName = `Policy: ${r.policyName}`;
-      } else if (r.contextQuestion) {
-        sourceName = 'Context Q&A';
-      } else if (r.sourceType === 'manual_answer') {
-        sourceName = undefined;
-      }
+    // Extract and deduplicate sources
+    const sources = extractAndDeduplicateSources(similarContent);
 
-      return {
-        sourceType: r.sourceType,
-        sourceName,
-        sourceId: r.sourceId,
-        policyName: r.policyName,
-        documentName: r.documentName,
-        manualAnswerQuestion: r.manualAnswerQuestion,
-        score: r.score,
-      };
-    });
-
-    const sources = deduplicateSources(sourcesBeforeDedup);
-
-    // Build context from retrieved content
-    const contextParts = similarContent.map((result, index) => {
-      const r = result as SimilarContentResult;
-      let sourceInfo = '';
-      if (r.policyName) {
-        sourceInfo = `Source: Policy "${r.policyName}"`;
-      } else if (r.contextQuestion) {
-        sourceInfo = `Source: Context Q&A`;
-      } else if (r.sourceType === 'knowledge_base_document') {
-        sourceInfo = r.documentName
-          ? `Source: Knowledge Base Document "${r.documentName}"`
-          : `Source: Knowledge Base Document`;
-      } else if (r.sourceType === 'manual_answer') {
-        sourceInfo = `Source: Manual Answer`;
-      } else {
-        sourceInfo = `Source: ${r.sourceType}`;
-      }
-
-      return `[${index + 1}] ${sourceInfo}\n${r.content}`;
-    });
-
-    const context = contextParts.join('\n\n');
-
-    // Generate answer using LLM with RAG
-    const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
-      system: `You are an expert at answering security and compliance questions for vendor questionnaires.
-
-Your task is to answer questions based ONLY on the provided context from the organization's policies and documentation.
-
-CRITICAL RULES:
-1. Answer based ONLY on the provided context. Do not make up facts or use general knowledge.
-2. If the context does not contain enough information to answer the question, respond with exactly: "N/A - no evidence found"
-3. BE CONCISE. Give SHORT, direct answers. Do NOT provide detailed explanations or elaborate unnecessarily.
-4. Use enterprise-ready language appropriate for vendor questionnaires.
-5. If multiple sources provide information, synthesize them into ONE concise answer.
-6. Do not include disclaimers or notes about the source unless specifically relevant.
-7. Format your answer as a clear, professional response suitable for a vendor questionnaire.
-8. Always write in first person plural (we, our, us) as if speaking on behalf of the organization.
-9. Keep answers to 1-3 sentences maximum unless the question explicitly requires more detail.`,
-      prompt: `Based on the following context from our organization's policies and documentation, answer this question:
-
-Question: ${question}
-
-Context:
-${context}
-
-Answer the question based ONLY on the provided context, using first person plural (we, our, us). If the context doesn't contain enough information, respond with exactly "N/A - no evidence found".`,
-    });
+    // Build context and generate answer
+    const context = buildContextFromContent(similarContent);
+    const answer = await generateAnswerWithLLM(question, context);
 
     // Check if the answer indicates no evidence
-    const trimmedAnswer = text.trim();
-    if (
-      trimmedAnswer.toLowerCase().includes('n/a') ||
-      trimmedAnswer.toLowerCase().includes('no evidence') ||
-      trimmedAnswer.toLowerCase().includes('not found in the context')
-    ) {
+    if (isNoEvidenceAnswer(answer)) {
       return { answer: null, sources: [] };
     }
 
-    return { answer: trimmedAnswer, sources };
+    return { answer, sources };
   } catch (error) {
     logger.error('Failed to generate answer from content', {
       question: question.substring(0, 100),

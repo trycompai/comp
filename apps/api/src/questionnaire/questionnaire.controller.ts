@@ -581,7 +581,7 @@ export class QuestionnaireController {
             // Save answer to database if questionnaireId is provided
             if (dto.questionnaireId && result.answer) {
               try {
-                await this.questionnaireService.saveGeneratedAnswer({
+                await this.questionnaireService.saveGeneratedAnswerPublic({
                   questionnaireId: dto.questionnaireId,
                 questionIndex: qa.index,
                   answer: result.answer,
