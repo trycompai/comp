@@ -30,22 +30,60 @@ import {
   type ListMFADevicesCommandOutput,
   type ListUsersCommandOutput,
 } from '@aws-sdk/client-iam';
+import {
+  GetFindingsCommand,
+  SecurityHubClient,
+  type GetFindingsCommandInput,
+} from '@aws-sdk/client-securityhub';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 
-export interface AWSCredentials {
+/**
+ * IAM Role credentials (new method - more secure)
+ */
+export interface AWSRoleCredentials {
   roleArn: string;
   externalId: string;
   region: string;
 }
 
-export interface AWSClients {
-  iam: IAMClient;
-  cloudtrail: CloudTrailClient;
+/**
+ * Access Key credentials (legacy method)
+ */
+export interface AWSAccessKeyCredentials {
+  access_key_id: string;
+  secret_access_key: string;
   region: string;
 }
 
 /**
- * Creates authenticated AWS clients by assuming the configured IAM role.
+ * Union type for all supported AWS credential types
+ */
+export type AWSCredentials = AWSRoleCredentials | AWSAccessKeyCredentials;
+
+/**
+ * Type guard to check if credentials are IAM Role based
+ */
+export function isRoleCredentials(creds: AWSCredentials): creds is AWSRoleCredentials {
+  return 'roleArn' in creds && 'externalId' in creds;
+}
+
+/**
+ * Type guard to check if credentials are Access Key based (legacy)
+ */
+export function isAccessKeyCredentials(creds: AWSCredentials): creds is AWSAccessKeyCredentials {
+  return 'access_key_id' in creds && 'secret_access_key' in creds;
+}
+
+export interface AWSClients {
+  iam: IAMClient;
+  cloudtrail: CloudTrailClient;
+  securityHub: SecurityHubClient;
+  region: string;
+}
+
+/**
+ * Creates authenticated AWS clients.
+ * Supports both IAM Role assumption (new) and direct access keys (legacy).
  *
  * @param credentials - The AWS credentials from the integration connection
  * @param log - Logger function from check context
@@ -55,39 +93,63 @@ export async function createAWSClients(
   credentials: AWSCredentials,
   log: (message: string) => void,
 ): Promise<AWSClients> {
-  const { roleArn, externalId, region } = credentials;
-
-  log(`Assuming role ${roleArn} in region ${region}`);
-
-  // Create STS client (no credentials needed - uses environment/instance role)
-  const sts = new STSClient({ region });
-
-  // Assume the cross-account role
-  const assumeRoleResponse = await sts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleArn,
-      ExternalId: externalId,
-      RoleSessionName: 'CompSecurityAudit',
-      DurationSeconds: 3600, // 1 hour
-    }),
-  );
-
-  if (!assumeRoleResponse.Credentials) {
-    throw new Error('Failed to assume role - no credentials returned');
-  }
-
-  const tempCredentials = {
-    accessKeyId: assumeRoleResponse.Credentials.AccessKeyId!,
-    secretAccessKey: assumeRoleResponse.Credentials.SecretAccessKey!,
-    sessionToken: assumeRoleResponse.Credentials.SessionToken!,
+  let awsCredentials: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    sessionToken?: string;
   };
+  let region: string;
 
-  log('Successfully assumed role, creating service clients');
+  if (isRoleCredentials(credentials)) {
+    // New method: IAM Role assumption
+    const { roleArn, externalId, region: credRegion } = credentials;
+    region = credRegion;
+
+    log(`Assuming role ${roleArn} in region ${region}`);
+
+    const sts = new STSClient({ region });
+    const assumeRoleResponse = await sts.send(
+      new AssumeRoleCommand({
+        RoleArn: roleArn,
+        ExternalId: externalId,
+        RoleSessionName: 'CompSecurityAudit',
+        DurationSeconds: 3600,
+      }),
+    );
+
+    if (!assumeRoleResponse.Credentials) {
+      throw new Error('Failed to assume role - no credentials returned');
+    }
+
+    awsCredentials = {
+      accessKeyId: assumeRoleResponse.Credentials.AccessKeyId!,
+      secretAccessKey: assumeRoleResponse.Credentials.SecretAccessKey!,
+      sessionToken: assumeRoleResponse.Credentials.SessionToken!,
+    };
+
+    log('Successfully assumed role, creating service clients');
+  } else if (isAccessKeyCredentials(credentials)) {
+    // Legacy method: Direct access keys
+    const { access_key_id, secret_access_key, region: credRegion } = credentials;
+    region = credRegion;
+
+    log(`Using direct access keys in region ${region}`);
+
+    awsCredentials = {
+      accessKeyId: access_key_id,
+      secretAccessKey: secret_access_key,
+    };
+
+    log('Using access key credentials, creating service clients');
+  } else {
+    throw new Error('Invalid AWS credentials - must provide either roleArn or access_key_id');
+  }
 
   // Create authenticated clients
   return {
-    iam: new IAMClient({ region, credentials: tempCredentials }),
-    cloudtrail: new CloudTrailClient({ region, credentials: tempCredentials }),
+    iam: new IAMClient({ region, credentials: awsCredentials }),
+    cloudtrail: new CloudTrailClient({ region, credentials: awsCredentials }),
+    securityHub: new SecurityHubClient({ region, credentials: awsCredentials }),
     region,
   };
 }
@@ -194,4 +256,108 @@ export async function lookupIAMEvents(
   );
 
   return response.Events || [];
+}
+
+/**
+ * Security Hub finding as returned by the API
+ */
+export interface SecurityHubFinding {
+  id: string;
+  title: string;
+  description: string;
+  remediation: string;
+  status: string;
+  severity: string;
+  resourceType: string;
+  resourceId: string;
+  awsAccountId: string;
+  region: string;
+  complianceStatus: string;
+  generatorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Fetch all Security Hub findings with pagination
+ */
+export async function getSecurityHubFindings(
+  securityHub: SecurityHubClient,
+  options: {
+    maxResults?: number;
+    onlyFailed?: boolean;
+  } = {},
+): Promise<SecurityHubFinding[]> {
+  const { maxResults = 100, onlyFailed = true } = options;
+  const allFindings: SecurityHubFinding[] = [];
+
+  const params: GetFindingsCommandInput = {
+    Filters: {
+      WorkflowStatus: [{ Value: 'NEW', Comparison: 'EQUALS' }],
+      ...(onlyFailed && {
+        ComplianceStatus: [{ Value: 'FAILED', Comparison: 'EQUALS' }],
+      }),
+    },
+    MaxResults: Math.min(maxResults, 100),
+  };
+
+  let response = await securityHub.send(new GetFindingsCommand(params));
+
+  if (response.Findings) {
+    for (const finding of response.Findings) {
+      allFindings.push({
+        id: finding.Id || '',
+        title: finding.Title || 'Untitled Finding',
+        description: finding.Description || 'No description available',
+        remediation: finding.Remediation?.Recommendation?.Text || 'No remediation available',
+        status: finding.Workflow?.Status || 'unknown',
+        severity: finding.Severity?.Label || 'INFO',
+        resourceType: finding.Resources?.[0]?.Type || 'unknown',
+        resourceId: finding.Resources?.[0]?.Id || 'unknown',
+        awsAccountId: finding.AwsAccountId || '',
+        region: finding.Region || '',
+        complianceStatus: finding.Compliance?.Status || 'unknown',
+        generatorId: finding.GeneratorId || '',
+        createdAt: finding.CreatedAt || '',
+        updatedAt: finding.UpdatedAt || '',
+      });
+    }
+  }
+
+  // Paginate if needed
+  let nextToken = response.NextToken;
+  while (nextToken && allFindings.length < maxResults) {
+    response = await securityHub.send(
+      new GetFindingsCommand({
+        ...params,
+        NextToken: nextToken,
+      }),
+    );
+
+    if (response.Findings) {
+      for (const finding of response.Findings) {
+        if (allFindings.length >= maxResults) break;
+        allFindings.push({
+          id: finding.Id || '',
+          title: finding.Title || 'Untitled Finding',
+          description: finding.Description || 'No description available',
+          remediation: finding.Remediation?.Recommendation?.Text || 'No remediation available',
+          status: finding.Workflow?.Status || 'unknown',
+          severity: finding.Severity?.Label || 'INFO',
+          resourceType: finding.Resources?.[0]?.Type || 'unknown',
+          resourceId: finding.Resources?.[0]?.Id || 'unknown',
+          awsAccountId: finding.AwsAccountId || '',
+          region: finding.Region || '',
+          complianceStatus: finding.Compliance?.Status || 'unknown',
+          generatorId: finding.GeneratorId || '',
+          createdAt: finding.CreatedAt || '',
+          updatedAt: finding.UpdatedAt || '',
+        });
+      }
+    }
+
+    nextToken = response.NextToken;
+  }
+
+  return allFindings;
 }

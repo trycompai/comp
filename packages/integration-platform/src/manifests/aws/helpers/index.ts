@@ -11,11 +11,17 @@
 export {
   createAWSClients,
   getAccessKeyLastUsed,
+  getSecurityHubFindings,
   getUserAccessKeys,
   getUserMFADevices,
+  isAccessKeyCredentials,
+  isRoleCredentials,
   listAllUsers,
   listUserGroups,
   lookupIAMEvents,
+  type AWSAccessKeyCredentials,
   type AWSClients,
   type AWSCredentials,
+  type AWSRoleCredentials,
+  type SecurityHubFinding,
 } from './aws-client';
