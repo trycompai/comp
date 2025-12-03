@@ -349,7 +349,7 @@ export function AdditionalDocumentsSection({
             <AccordionContent className="px-6 pb-4">
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Upload documents or images to enhance your knowledge base. Supported formats: PDF, Word (.docx), Excel, CSV, text files, and images (PNG, JPG, GIF, WebP, SVG). Click on a document to download it.
+                  Upload documents or images to enhance your knowledge base. Supported formats: PDF, Word (.doc, .docx), Excel (.xlsx, .xls), CSV, text files (.txt, .md), and images (PNG, JPG, GIF, WebP, SVG). Click on a document to download it.
                 </p>
               </div>
 
@@ -423,6 +423,9 @@ export function AdditionalDocumentsSection({
                   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
                     '.docx',
                   ],
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+                  'application/vnd.ms-excel': ['.xls'],
+                  'text/csv': ['.csv'],
                   'text/plain': ['.txt'],
                   'text/markdown': ['.md'],
                   'image/png': ['.png'],
