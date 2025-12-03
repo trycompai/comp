@@ -7,6 +7,7 @@ import { ChecksController } from './controllers/checks.controller';
 import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
+import { SyncController } from './controllers/sync.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
 import { OAuthCredentialsService } from './services/oauth-credentials.service';
@@ -28,6 +29,7 @@ import { CheckRunRepository } from './repositories/check-run.repository';
     VariablesController,
     TaskIntegrationsController,
     WebhookController,
+    SyncController,
   ],
   providers: [
     // Services

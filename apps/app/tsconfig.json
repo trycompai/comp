@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -11,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -19,36 +23,96 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@db": ["./prisma"],
-      "@/trigger": ["./src/trigger"],
-      "@/trigger/*": ["./src/trigger/*"],
-      "@comp/email": ["../../packages/email/index.ts"],
-      "@comp/email/*": ["../../packages/email/*"],
-      "@comp/utils": ["../../packages/utils/src/index.ts"],
-      "@comp/utils/*": ["../../packages/utils/src/*"],
-      "@comp/integrations": ["../../packages/integrations/src/index.ts"],
-      "@comp/integrations/*": ["../../packages/integrations/src/*"],
-      "@comp/integration-platform": ["../../packages/integration-platform/src/index.ts"],
-      "@comp/integration-platform/*": ["../../packages/integration-platform/src/*"],
-      "@comp/analytics": ["../../packages/analytics/src/index.ts"],
-      "@comp/analytics/*": ["../../packages/analytics/src/*"],
-      "@comp/ui": ["../../packages/ui/src/components/index.ts"],
-      "@comp/ui/*": ["../../packages/ui/src/components/*"],
-      "@comp/ui/hooks": ["../../packages/ui/src/hooks/index.ts"],
-      "@comp/ui/hooks/*": ["../../packages/ui/src/hooks/*"],
-      "@comp/ui/utils/*": ["../../packages/ui/src/utils/*"],
-      "@comp/ui/cn": ["../../packages/ui/src/utils/cn.ts"],
-      "@comp/ui/truncate": ["../../packages/ui/src/utils/truncate.ts"],
-      "@comp/ui/globals.css": ["../../packages/ui/src/globals.css"],
-      "@comp/ui/editor.css": ["../../packages/ui/src/editor.css"],
-      "@comp/ui/tailwind.config": ["../../packages/ui/tailwind.config.ts"],
-      "@comp/kv": ["../../packages/kv/src/index.ts"],
-      "@comp/kv/*": ["../../packages/kv/src/*"],
-      "@comp/tsconfig": ["../../packages/tsconfig/index.ts"],
-      "@comp/tsconfig/*": ["../../packages/tsconfig/*"],
-      "@trycompai/email": ["../../packages/email/index.ts"],
-      "@trycompai/email/*": ["../../packages/email/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@db": [
+        "./prisma"
+      ],
+      "@/trigger": [
+        "./src/trigger"
+      ],
+      "@/trigger/*": [
+        "./src/trigger/*"
+      ],
+      "@comp/email": [
+        "../../packages/email/index.ts"
+      ],
+      "@comp/email/*": [
+        "../../packages/email/*"
+      ],
+      "@comp/utils": [
+        "../../packages/utils/src/index.ts"
+      ],
+      "@comp/utils/*": [
+        "../../packages/utils/src/*"
+      ],
+      "@comp/integrations": [
+        "../../packages/integrations/src/index.ts"
+      ],
+      "@comp/integrations/*": [
+        "../../packages/integrations/src/*"
+      ],
+      "@comp/integration-platform": [
+        "../../packages/integration-platform/src/index.ts"
+      ],
+      "@comp/integration-platform/*": [
+        "../../packages/integration-platform/src/*"
+      ],
+      "@comp/analytics": [
+        "../../packages/analytics/src/index.ts"
+      ],
+      "@comp/analytics/*": [
+        "../../packages/analytics/src/*"
+      ],
+      "@comp/ui": [
+        "../../packages/ui/src/components/index.ts"
+      ],
+      "@comp/ui/*": [
+        "../../packages/ui/src/components/*"
+      ],
+      "@comp/ui/hooks": [
+        "../../packages/ui/src/hooks/index.ts"
+      ],
+      "@comp/ui/hooks/*": [
+        "../../packages/ui/src/hooks/*"
+      ],
+      "@comp/ui/utils/*": [
+        "../../packages/ui/src/utils/*"
+      ],
+      "@comp/ui/cn": [
+        "../../packages/ui/src/utils/cn.ts"
+      ],
+      "@comp/ui/truncate": [
+        "../../packages/ui/src/utils/truncate.ts"
+      ],
+      "@comp/ui/globals.css": [
+        "../../packages/ui/src/globals.css"
+      ],
+      "@comp/ui/editor.css": [
+        "../../packages/ui/src/editor.css"
+      ],
+      "@comp/ui/tailwind.config": [
+        "../../packages/ui/tailwind.config.ts"
+      ],
+      "@comp/kv": [
+        "../../packages/kv/src/index.ts"
+      ],
+      "@comp/kv/*": [
+        "../../packages/kv/src/*"
+      ],
+      "@comp/tsconfig": [
+        "../../packages/tsconfig/index.ts"
+      ],
+      "@comp/tsconfig/*": [
+        "../../packages/tsconfig/*"
+      ],
+      "@trycompai/email": [
+        "../../packages/email/index.ts"
+      ],
+      "@trycompai/email/*": [
+        "../../packages/email/*"
+      ]
     }
   },
   "include": [
@@ -59,5 +123,8 @@
     "trigger.config.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next"]
+  "exclude": [
+    "node_modules",
+    ".next"
+  ]
 }

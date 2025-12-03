@@ -165,8 +165,8 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
           setStoredRuns(runsResponse.data.runs);
         }
       } catch (err) {
-        console.error('Failed to fetch integration checks:', err);
-        setError('Failed to load integration checks');
+        console.error('Failed to fetch app automations:', err);
+        setError('Failed to load app automations');
       } finally {
         setLoading(false);
       }
@@ -244,7 +244,7 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
         <div className="flex items-center gap-2">
           <PlugZap className="h-3.5 w-3.5 text-primary" />
           <h3 className="text-[10px] font-semibold text-foreground uppercase tracking-[0.15em]">
-            Integration Checks
+            App Automations
           </h3>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
@@ -257,6 +257,11 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
 
   const connectedChecks = checks.filter((c) => c.isConnected);
   const disconnectedChecks = checks.filter((c) => !c.isConnected);
+
+  // If there are no checks at all for this task, don't render anything
+  if (checks.length === 0) {
+    return null;
+  }
 
   // Group runs by check
   const runsByCheck = storedRuns.reduce(
@@ -303,8 +308,10 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
               <PlugZap className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Integration Checks</h3>
-              <p className="text-xs text-muted-foreground">Automated compliance verification</p>
+              <h3 className="text-sm font-semibold text-foreground">App Automations</h3>
+              <p className="text-xs text-muted-foreground">
+                Pre-built automations from connected integrations
+              </p>
             </div>
           </div>
           {connectedChecks.length > 0 && nextRun && (

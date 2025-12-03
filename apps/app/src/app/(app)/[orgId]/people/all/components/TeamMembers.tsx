@@ -42,19 +42,18 @@ export async function TeamMembers() {
   let pendingInvitations: Invitation[] = [];
 
   if (organizationId) {
+    // Fetch all members including deactivated ones
     const fetchedMembers = await db.member.findMany({
       where: {
         organizationId: organizationId,
-        deactivated: false,
       },
       include: {
         user: true,
       },
-      orderBy: {
-        user: {
-          email: 'asc',
-        },
-      },
+      orderBy: [
+        { deactivated: 'asc' }, // Active members first
+        { user: { email: 'asc' } },
+      ],
     });
 
     members = fetchedMembers;
