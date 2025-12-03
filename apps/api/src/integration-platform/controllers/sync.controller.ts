@@ -473,10 +473,11 @@ export class SyncController {
 
     if (oauthConfig?.supportsRefreshToken && credentials.refresh_token) {
       try {
-        const oauthCredentials = await this.oauthCredentialsService.getCredentials(
-          'rippling',
-          organizationId,
-        );
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            'rippling',
+            organizationId,
+          );
 
         if (oauthCredentials) {
           const newToken = await this.credentialVaultService.refreshOAuthTokens(
@@ -514,97 +515,129 @@ export class SyncController {
       );
     }
 
-    // Fetch employees from Rippling
-    interface RipplingEmployee {
+    // Fetch workers from Rippling V2 REST API
+    // See: https://developer.rippling.com/documentation/developer-portal/v2-guides/user-management
+    interface RipplingWorker {
       id: string;
       name?: string;
-      firstName?: string;
-      lastName?: string;
-      workEmail?: string;
-      personalEmail?: string;
-      employmentStatus?: string;
-      role?: {
-        isAdmin?: boolean;
+      first_name?: string;
+      last_name?: string;
+      work_email?: string;
+      personal_email?: string;
+      status?: string; // 'ACTIVE', 'TERMINATED', etc.
+      employment_type?: string;
+      start_date?: string;
+      termination_date?: string;
+      user?: {
+        number?: string; // unique employee identifier
       };
+    }
+
+    interface RipplingResponse {
+      results?: RipplingWorker[];
+      next_link?: string;
     }
 
     const accessToken = credentials.access_token;
 
-    const employees: RipplingEmployee[] = [];
+    const workers: RipplingWorker[] = [];
 
     try {
-      // Rippling API endpoint for listing employees
-      const response = await fetch(
-        'https://api.rippling.com/platform/api/employees',
-        {
+      // Rippling V2 REST API endpoint for listing workers
+      // See: https://developer.rippling.com/documentation/developer-portal/v2-guides/user-management
+      let nextUrl: string | null = 'https://rest.ripplingapis.com/workers';
+
+      while (nextUrl) {
+        this.logger.log(`Fetching Rippling workers from: ${nextUrl}`);
+
+        const response = await fetch(nextUrl, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+            Accept: 'application/json',
           },
-        },
-      );
+        });
 
-      if (!response.ok) {
-        if (response.status === 401) {
+        if (!response.ok) {
+          const errorText = await response.text();
+          this.logger.error(
+            `Rippling API error: Status ${response.status}, Body: ${errorText.slice(0, 500)}`,
+          );
+
+          if (response.status === 401) {
+            throw new HttpException(
+              'Rippling credentials expired. Please reconnect.',
+              HttpStatus.UNAUTHORIZED,
+            );
+          }
+
+          if (response.status === 403) {
+            throw new HttpException(
+              'Access denied. Make sure the Rippling app has the required scopes and is properly authorized.',
+              HttpStatus.FORBIDDEN,
+            );
+          }
+
           throw new HttpException(
-            'Rippling credentials expired. Please reconnect.',
-            HttpStatus.UNAUTHORIZED,
+            `Rippling API error: ${response.status} - ${errorText.slice(0, 200)}`,
+            HttpStatus.BAD_GATEWAY,
           );
         }
-        const errorBody = await response.json();
-        throw new Error(
-          `Rippling API error: ${errorBody.error?.message || response.statusText}`,
-        );
-      }
 
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        employees.push(...data);
-      } else if (data.employees) {
-        employees.push(...data.employees);
+        const data: RipplingResponse = await response.json();
+        this.logger.log(
+          `Rippling API response: ${JSON.stringify(data).slice(0, 500)}...`,
+        );
+
+        // V2 API returns { results: [...], next_link: "..." }
+        if (data.results && Array.isArray(data.results)) {
+          workers.push(...data.results);
+        } else if (Array.isArray(data)) {
+          // Fallback if API returns array directly
+          workers.push(...(data as unknown as RipplingWorker[]));
+          break;
+        }
+
+        // Handle pagination
+        nextUrl = data.next_link || null;
       }
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error fetching Rippling employees: ${error}`);
+      this.logger.error(`Error fetching Rippling workers: ${error}`);
       throw new HttpException(
-        'Failed to fetch employees from Rippling',
+        `Failed to fetch workers from Rippling: ${error instanceof Error ? error.message : 'Unknown error'}`,
         HttpStatus.BAD_GATEWAY,
       );
     }
 
-    // Filter to active employees only
-    const activeEmployees = employees.filter(
-      (e) =>
-        !e.employmentStatus ||
-        e.employmentStatus === 'ACTIVE' ||
-        e.employmentStatus === 'active',
-    );
+    // Helper to get email from worker (V2 uses snake_case)
+    const getWorkerEmail = (w: RipplingWorker): string =>
+      (w.work_email || w.personal_email || '').toLowerCase();
+
+    // Helper to check if worker is active
+    const isWorkerActive = (w: RipplingWorker): boolean => {
+      const status = w.status || '';
+      return status.toUpperCase() === 'ACTIVE';
+    };
+
+    // Filter to active workers only
+    const activeWorkers = workers.filter(isWorkerActive);
     const inactiveEmails = new Set(
-      employees
-        .filter(
-          (e) =>
-            e.employmentStatus &&
-            e.employmentStatus !== 'ACTIVE' &&
-            e.employmentStatus !== 'active',
-        )
-        .map((e) => (e.workEmail || e.personalEmail || '').toLowerCase())
+      workers
+        .filter((w) => !isWorkerActive(w))
+        .map(getWorkerEmail)
         .filter(Boolean),
     );
     const activeEmails = new Set(
-      activeEmployees
-        .map((e) => (e.workEmail || e.personalEmail || '').toLowerCase())
-        .filter(Boolean),
+      activeWorkers.map(getWorkerEmail).filter(Boolean),
     );
 
     this.logger.log(
-      `Found ${activeEmployees.length} active employees and ${inactiveEmails.size} inactive employees in Rippling`,
+      `Found ${activeWorkers.length} active workers and ${inactiveEmails.size} inactive/terminated workers in Rippling`,
     );
 
-    // Derive domains from Rippling employees to match against our members
+    // Derive domains from Rippling workers to match against our members
     const ripplingDomains = new Set(
-      activeEmployees
-        .map((e) => (e.workEmail || e.personalEmail || '').split('@')[1]?.toLowerCase())
-        .filter(Boolean),
+      activeWorkers.map((w) => getWorkerEmail(w).split('@')[1]).filter(Boolean),
     );
 
     // Get all existing members
@@ -624,14 +657,19 @@ export class SyncController {
       errors: 0,
       details: [] as Array<{
         email: string;
-        status: 'imported' | 'skipped' | 'deactivated' | 'reactivated' | 'error';
+        status:
+          | 'imported'
+          | 'skipped'
+          | 'deactivated'
+          | 'reactivated'
+          | 'error';
         reason?: string;
       }>,
     };
 
-    // Process active employees
-    for (const employee of activeEmployees) {
-      const email = employee.workEmail || employee.personalEmail;
+    // Process active workers
+    for (const worker of activeWorkers) {
+      const email = getWorkerEmail(worker);
       if (!email) {
         results.skipped++;
         continue;
@@ -646,9 +684,10 @@ export class SyncController {
         if (existingUser) {
           userId = existingUser.id;
         } else {
+          // V2 API uses snake_case (first_name, last_name)
           const name =
-            employee.name ||
-            [employee.firstName, employee.lastName].filter(Boolean).join(' ') ||
+            worker.name ||
+            [worker.first_name, worker.last_name].filter(Boolean).join(' ') ||
             email.split('@')[0];
 
           const newUser = await db.user.create({
@@ -675,7 +714,7 @@ export class SyncController {
             results.details.push({
               email,
               status: 'reactivated',
-              reason: 'Employee reactivated in Rippling',
+              reason: 'Worker reactivated in Rippling',
             });
           } else {
             results.skipped++;
@@ -698,7 +737,7 @@ export class SyncController {
           results.details.push({ email, status: 'imported' });
         }
       } catch (error) {
-        this.logger.error(`Error importing Rippling employee ${email}: ${error}`);
+        this.logger.error(`Error importing Rippling worker ${email}: ${error}`);
         results.errors++;
         results.details.push({
           email,
@@ -743,7 +782,7 @@ export class SyncController {
 
     return {
       success: true,
-      totalFound: employees.length,
+      totalFound: workers.length,
       totalInactive: inactiveEmails.size,
       ...results,
     };

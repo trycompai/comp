@@ -62,39 +62,51 @@ export function TeamMembersClient({
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
-  // Google Workspace sync state
+  // Employee import sync state
   const [gwConnectionId, setGwConnectionId] = useState<string | null>(null);
+  const [ripplingConnectionId, setRipplingConnectionId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Check if Google Workspace is connected
+  // Check which integrations are connected
   useEffect(() => {
-    const checkGoogleWorkspaceConnection = async () => {
-      const response = await api.post<{ connected: boolean; connectionId: string | null }>(
+    const checkConnections = async () => {
+      // Check Google Workspace
+      const gwResponse = await api.post<{ connected: boolean; connectionId: string | null }>(
         `/v1/integrations/sync/google-workspace/status?organizationId=${organizationId}`,
       );
-      if (response.data?.connected && response.data.connectionId) {
-        setGwConnectionId(response.data.connectionId);
+      if (gwResponse.data?.connected && gwResponse.data.connectionId) {
+        setGwConnectionId(gwResponse.data.connectionId);
+      }
+
+      // Check Rippling
+      const ripplingResponse = await api.post<{ connected: boolean; connectionId: string | null }>(
+        `/v1/integrations/sync/rippling/status?organizationId=${organizationId}`,
+      );
+      if (ripplingResponse.data?.connected && ripplingResponse.data.connectionId) {
+        setRipplingConnectionId(ripplingResponse.data.connectionId);
       }
     };
-    checkGoogleWorkspaceConnection();
+    checkConnections();
   }, [organizationId]);
 
-  const handleGoogleWorkspaceSync = async () => {
-    if (!gwConnectionId) return;
+  const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling') => {
+    const connectionId = provider === 'google-workspace' ? gwConnectionId : ripplingConnectionId;
+    if (!connectionId) return;
 
     setIsSyncing(true);
+    const providerName = provider === 'google-workspace' ? 'Google Workspace' : 'Rippling';
+
     try {
       const response = await api.post<{
         success: boolean;
         totalFound: number;
-        totalSuspended: number;
         imported: number;
         reactivated: number;
         deactivated: number;
         skipped: number;
         errors: number;
       }>(
-        `/v1/integrations/sync/google-workspace/employees?organizationId=${organizationId}&connectionId=${gwConnectionId}`,
+        `/v1/integrations/sync/${provider}/employees?organizationId=${organizationId}&connectionId=${connectionId}`,
       );
 
       if (response.data?.success) {
@@ -107,7 +119,7 @@ export function TeamMembersClient({
         }
         if (deactivated > 0) {
           toast.info(
-            `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (suspended in Google)`,
+            `Deactivated ${deactivated} employee${deactivated > 1 ? 's' : ''} (no longer in ${providerName})`,
           );
         }
         if (imported === 0 && reactivated === 0 && deactivated === 0 && skipped > 0) {
@@ -121,7 +133,7 @@ export function TeamMembersClient({
         toast.error(response.error);
       }
     } catch (error) {
-      toast.error('Failed to sync employees from Google Workspace');
+      toast.error(`Failed to sync employees from ${providerName}`);
     } finally {
       setIsSyncing(false);
     }
@@ -325,26 +337,54 @@ export function TeamMembersClient({
             <SelectItem value="employee">{'Employee'}</SelectItem>
           </SelectContent>
         </Select>
-        {gwConnectionId && (
-          <Button
-            variant="outline"
-            onClick={handleGoogleWorkspaceSync}
+        {(gwConnectionId || ripplingConnectionId) && (
+          <Select
+            onValueChange={(value) => handleEmployeeSync(value as 'google-workspace' | 'rippling')}
             disabled={isSyncing || !canManageMembers}
           >
-            {isSyncing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Image
-                src="https://img.logo.dev/google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true"
-                alt="Google"
-                width={16}
-                height={16}
-                className="rounded-sm"
-                unoptimized
-              />
-            )}
-            {isSyncing ? 'Importing...' : 'Import from Google'}
-          </Button>
+            <SelectTrigger className="w-[180px]">
+              {isSyncing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <SelectValue placeholder="Import from..." />
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              {gwConnectionId && (
+                <SelectItem value="google-workspace">
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src="https://img.logo.dev/google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true"
+                      alt="Google"
+                      width={16}
+                      height={16}
+                      className="rounded-sm"
+                      unoptimized
+                    />
+                    Google Workspace
+                  </div>
+                </SelectItem>
+              )}
+              {ripplingConnectionId && (
+                <SelectItem value="rippling">
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src="https://img.logo.dev/rippling.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true"
+                      alt="Rippling"
+                      width={16}
+                      height={16}
+                      className="rounded-sm"
+                      unoptimized
+                    />
+                    Rippling
+                  </div>
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
         )}
         <Button onClick={() => setIsInviteModalOpen(true)} disabled={!canManageMembers}>
           <UserPlus className="h-4 w-4" />
