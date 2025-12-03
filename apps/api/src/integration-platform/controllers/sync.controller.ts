@@ -292,12 +292,12 @@ export class SyncController {
           continue;
         }
 
-        // Create member
+        // Create member - always as employee, admins can be promoted manually
         await db.member.create({
           data: {
             organizationId,
             userId,
-            role: gwUser.isAdmin ? 'admin' : 'employee',
+            role: 'employee',
             isActive: true,
           },
         });
@@ -401,6 +401,368 @@ export class SyncController {
 
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'google-workspace',
+      organizationId,
+    );
+
+    if (!connection || connection.status !== 'active') {
+      return {
+        connected: false,
+        connectionId: null,
+      };
+    }
+
+    return {
+      connected: true,
+      connectionId: connection.id,
+    };
+  }
+
+  /**
+   * Sync employees from Rippling
+   */
+  @Post('rippling/employees')
+  async syncRipplingEmployees(@Query() query: SyncQuery) {
+    const { organizationId, connectionId } = query;
+
+    if (!organizationId || !connectionId) {
+      throw new HttpException(
+        'organizationId and connectionId are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Get the connection
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Get the provider to check the slug
+    const provider = await db.integrationProvider.findUnique({
+      where: { id: connection.providerId },
+    });
+
+    if (!provider || provider.slug !== 'rippling') {
+      throw new HttpException(
+        'This endpoint only supports Rippling connections',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Get credentials
+    let credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+
+    if (!credentials?.access_token) {
+      throw new HttpException(
+        'No valid credentials found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // Try to refresh the token if it might be expired
+    const manifest = getManifest('rippling');
+    const oauthConfig =
+      manifest?.auth.type === 'oauth2'
+        ? (manifest.auth.config as OAuthConfig)
+        : null;
+
+    if (oauthConfig?.supportsRefreshToken && credentials.refresh_token) {
+      try {
+        const oauthCredentials = await this.oauthCredentialsService.getCredentials(
+          'rippling',
+          organizationId,
+        );
+
+        if (oauthCredentials) {
+          const newToken = await this.credentialVaultService.refreshOAuthTokens(
+            connectionId,
+            {
+              tokenUrl: oauthConfig.tokenUrl,
+              clientId: oauthCredentials.clientId,
+              clientSecret: oauthCredentials.clientSecret,
+              clientAuthMethod: oauthConfig.clientAuthMethod,
+            },
+          );
+          if (newToken) {
+            credentials =
+              await this.credentialVaultService.getDecryptedCredentials(
+                connectionId,
+              );
+            if (!credentials?.access_token) {
+              throw new Error('Failed to get refreshed credentials');
+            }
+            this.logger.log('Successfully refreshed Rippling OAuth token');
+          }
+        }
+      } catch (refreshError) {
+        this.logger.warn(
+          `Token refresh failed, trying with existing token: ${refreshError}`,
+        );
+      }
+    }
+
+    // Verify we still have valid credentials after potential refresh
+    if (!credentials?.access_token) {
+      throw new HttpException(
+        'No valid credentials found after refresh attempt. Please reconnect.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // Fetch employees from Rippling
+    interface RipplingEmployee {
+      id: string;
+      name?: string;
+      firstName?: string;
+      lastName?: string;
+      workEmail?: string;
+      personalEmail?: string;
+      employmentStatus?: string;
+      role?: {
+        isAdmin?: boolean;
+      };
+    }
+
+    const accessToken = credentials.access_token;
+
+    const employees: RipplingEmployee[] = [];
+
+    try {
+      // Rippling API endpoint for listing employees
+      const response = await fetch(
+        'https://api.rippling.com/platform/api/employees',
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new HttpException(
+            'Rippling credentials expired. Please reconnect.',
+            HttpStatus.UNAUTHORIZED,
+          );
+        }
+        const errorBody = await response.json();
+        throw new Error(
+          `Rippling API error: ${errorBody.error?.message || response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        employees.push(...data);
+      } else if (data.employees) {
+        employees.push(...data.employees);
+      }
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(`Error fetching Rippling employees: ${error}`);
+      throw new HttpException(
+        'Failed to fetch employees from Rippling',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    // Filter to active employees only
+    const activeEmployees = employees.filter(
+      (e) =>
+        !e.employmentStatus ||
+        e.employmentStatus === 'ACTIVE' ||
+        e.employmentStatus === 'active',
+    );
+    const inactiveEmails = new Set(
+      employees
+        .filter(
+          (e) =>
+            e.employmentStatus &&
+            e.employmentStatus !== 'ACTIVE' &&
+            e.employmentStatus !== 'active',
+        )
+        .map((e) => (e.workEmail || e.personalEmail || '').toLowerCase())
+        .filter(Boolean),
+    );
+    const activeEmails = new Set(
+      activeEmployees
+        .map((e) => (e.workEmail || e.personalEmail || '').toLowerCase())
+        .filter(Boolean),
+    );
+
+    this.logger.log(
+      `Found ${activeEmployees.length} active employees and ${inactiveEmails.size} inactive employees in Rippling`,
+    );
+
+    // Derive domains from Rippling employees to match against our members
+    const ripplingDomains = new Set(
+      activeEmployees
+        .map((e) => (e.workEmail || e.personalEmail || '').split('@')[1]?.toLowerCase())
+        .filter(Boolean),
+    );
+
+    // Get all existing members
+    const allOrgMembers = await db.member.findMany({
+      where: {
+        organizationId,
+        deactivated: false,
+      },
+      include: { user: true },
+    });
+
+    const results = {
+      imported: 0,
+      reactivated: 0,
+      deactivated: 0,
+      skipped: 0,
+      errors: 0,
+      details: [] as Array<{
+        email: string;
+        status: 'imported' | 'skipped' | 'deactivated' | 'reactivated' | 'error';
+        reason?: string;
+      }>,
+    };
+
+    // Process active employees
+    for (const employee of activeEmployees) {
+      const email = employee.workEmail || employee.personalEmail;
+      if (!email) {
+        results.skipped++;
+        continue;
+      }
+
+      try {
+        let userId: string;
+        const existingUser = await db.user.findUnique({
+          where: { email },
+        });
+
+        if (existingUser) {
+          userId = existingUser.id;
+        } else {
+          const name =
+            employee.name ||
+            [employee.firstName, employee.lastName].filter(Boolean).join(' ') ||
+            email.split('@')[0];
+
+          const newUser = await db.user.create({
+            data: {
+              email,
+              name,
+              emailVerified: true,
+            },
+          });
+          userId = newUser.id;
+        }
+
+        const existingMember = await db.member.findFirst({
+          where: { organizationId, userId },
+        });
+
+        if (existingMember) {
+          if (existingMember.deactivated) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { deactivated: false, isActive: true },
+            });
+            results.reactivated++;
+            results.details.push({
+              email,
+              status: 'reactivated',
+              reason: 'Employee reactivated in Rippling',
+            });
+          } else {
+            results.skipped++;
+            results.details.push({
+              email,
+              status: 'skipped',
+              reason: 'Already an active member',
+            });
+          }
+        } else {
+          await db.member.create({
+            data: {
+              organizationId,
+              userId,
+              role: 'employee',
+              isActive: true,
+            },
+          });
+          results.imported++;
+          results.details.push({ email, status: 'imported' });
+        }
+      } catch (error) {
+        this.logger.error(`Error importing Rippling employee ${email}: ${error}`);
+        results.errors++;
+        results.details.push({
+          email,
+          status: 'error',
+          reason: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // Deactivate members no longer in Rippling
+    for (const member of allOrgMembers) {
+      const memberEmail = member.user.email.toLowerCase();
+      const memberDomain = memberEmail.split('@')[1];
+
+      // Only check members whose email domain matches one of the Rippling domains
+      if (!memberDomain || !ripplingDomains.has(memberDomain)) {
+        continue;
+      }
+
+      if (!activeEmails.has(memberEmail)) {
+        const isInactive = inactiveEmails.has(memberEmail);
+        const reason = isInactive
+          ? 'Employee is inactive in Rippling'
+          : 'Employee was removed from Rippling';
+
+        await db.member.update({
+          where: { id: member.id },
+          data: { deactivated: true, isActive: false },
+        });
+        results.deactivated++;
+        results.details.push({
+          email: member.user.email,
+          status: 'deactivated',
+          reason,
+        });
+      }
+    }
+
+    this.logger.log(
+      `Rippling sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
+    );
+
+    return {
+      success: true,
+      totalFound: employees.length,
+      totalInactive: inactiveEmails.size,
+      ...results,
+    };
+  }
+
+  /**
+   * Check if Rippling is connected for an organization
+   */
+  @Post('rippling/status')
+  async getRipplingStatus(@Query('organizationId') organizationId: string) {
+    if (!organizationId) {
+      throw new HttpException(
+        'organizationId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const connection = await this.connectionRepository.findBySlugAndOrg(
+      'rippling',
       organizationId,
     );
 

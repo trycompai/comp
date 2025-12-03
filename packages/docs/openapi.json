@@ -8802,6 +8802,43 @@
           "Sync"
         ]
       }
+    },
+    "/v1/integrations/sync/rippling/employees": {
+      "post": {
+        "operationId": "SyncController_syncRipplingEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/rippling/status": {
+      "post": {
+        "operationId": "SyncController_getRipplingStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
     }
   },
   "info": {
