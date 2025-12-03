@@ -1,5 +1,5 @@
 import type { IntegrationManifest } from '../../types';
-import { adminUsersCheck, twoFactorAuthCheck } from './checks';
+import { twoFactorAuthCheck } from './checks';
 
 export const googleWorkspaceManifest: IntegrationManifest = {
   id: 'google-workspace',
@@ -47,5 +47,5 @@ Note: The user authorizing must be a Google Workspace admin.`,
 
   capabilities: ['checks', 'sync'],
 
-  checks: [twoFactorAuthCheck, adminUsersCheck],
+  checks: [twoFactorAuthCheck],
 };

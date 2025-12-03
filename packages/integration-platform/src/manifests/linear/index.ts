@@ -1,5 +1,5 @@
 import type { IntegrationManifest } from '../../types';
-import { ssoEnabledCheck, adminUsersCheck, privateTeamsCheck } from './checks';
+import { privateTeamsCheck, ssoEnabledCheck } from './checks';
 
 export const manifest: IntegrationManifest = {
   id: 'linear',
@@ -35,10 +35,9 @@ export const manifest: IntegrationManifest = {
   },
 
   capabilities: ['checks'],
-  checks: [ssoEnabledCheck, adminUsersCheck, privateTeamsCheck],
+  checks: [ssoEnabledCheck, privateTeamsCheck],
   isActive: true,
 };
 
 export default manifest;
 export * from './types';
-

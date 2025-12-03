@@ -1,4 +1,5 @@
 import type { IntegrationManifest } from '../../types';
+import { securityHubCheck } from './checks';
 import { awsCredentialFields, awsCredentialSchema, awsSetupInstructions } from './credentials';
 
 export const awsManifest: IntegrationManifest = {
@@ -24,4 +25,5 @@ export const awsManifest: IntegrationManifest = {
   baseUrl: '',
 
   capabilities: ['checks'],
+  checks: [securityHubCheck],
 };

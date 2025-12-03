@@ -40,6 +40,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudtrail": "^3.943.0",
     "@aws-sdk/client-iam": "^3.943.0",
+    "@aws-sdk/client-securityhub": "^3.943.0",
     "@aws-sdk/client-sts": "^3.943.0",
     "zod": "^3.25.76"
   },
