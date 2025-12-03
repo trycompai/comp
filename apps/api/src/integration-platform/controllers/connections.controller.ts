@@ -50,17 +50,31 @@ export class ConnectionsController {
     const manifests =
       activeOnly === 'true' ? getActiveManifests() : getAllManifests();
 
-    return manifests.map((m) => ({
-      id: m.id,
-      name: m.name,
-      description: m.description,
-      category: m.category,
-      logoUrl: m.logoUrl,
-      authType: m.auth.type,
-      capabilities: m.capabilities,
-      isActive: m.isActive,
-      docsUrl: m.docsUrl,
-    }));
+    return manifests.map((m) => {
+      // Get credential fields - from custom auth config or from manifest
+      const credentialFields =
+        m.auth.type === 'custom' && m.auth.config.credentialFields
+          ? m.auth.config.credentialFields
+          : m.credentialFields;
+
+      // Get setup instructions for custom auth
+      const setupInstructions =
+        m.auth.type === 'custom' ? m.auth.config.setupInstructions : undefined;
+
+      return {
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        category: m.category,
+        logoUrl: m.logoUrl,
+        authType: m.auth.type,
+        capabilities: m.capabilities,
+        isActive: m.isActive,
+        docsUrl: m.docsUrl,
+        credentialFields,
+        setupInstructions,
+      };
+    });
   }
 
   /**
@@ -76,6 +90,18 @@ export class ConnectionsController {
       );
     }
 
+    // Get credential fields - from custom auth config or from manifest
+    const credentialFields =
+      manifest.auth.type === 'custom' && manifest.auth.config.credentialFields
+        ? manifest.auth.config.credentialFields
+        : manifest.credentialFields;
+
+    // Get setup instructions for custom auth
+    const setupInstructions =
+      manifest.auth.type === 'custom'
+        ? manifest.auth.config.setupInstructions
+        : undefined;
+
     return {
       id: manifest.id,
       name: manifest.name,
@@ -86,7 +112,8 @@ export class ConnectionsController {
       capabilities: manifest.capabilities,
       isActive: manifest.isActive,
       docsUrl: manifest.docsUrl,
-      credentialFields: manifest.credentialFields,
+      credentialFields,
+      setupInstructions,
     };
   }
 
@@ -407,16 +434,32 @@ export class ConnectionsController {
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(id);
 
-    if (!credentials?.access_token) {
+    if (!credentials) {
       throw new HttpException(
-        'No valid credentials found',
+        'No credentials found for connection',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // For OAuth, validate access_token exists
+    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
+      throw new HttpException(
+        'No valid OAuth credentials found. Please reconnect.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // For custom auth (like AWS), validate credentials exist
+    if (manifest.auth.type === 'custom' && Object.keys(credentials).length === 0) {
+      throw new HttpException(
+        'No valid credentials found for custom integration',
         HttpStatus.BAD_REQUEST,
       );
     }
 
     return {
       success: true,
-      accessToken: credentials.access_token,
+      accessToken: credentials.access_token ?? undefined,
       credentials,
     };
   }

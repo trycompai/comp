@@ -7,6 +7,7 @@ import type {
 } from '../types';
 
 // Import all manifests (each in its own folder)
+import { awsManifest } from '../manifests/aws';
 import { manifest as githubManifest } from '../manifests/github';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { manifest as linearManifest } from '../manifests/linear';
@@ -93,6 +94,7 @@ class IntegrationRegistryImpl implements IntegrationRegistry {
 
 // All registered manifests
 const allManifests: IntegrationManifest[] = [
+  awsManifest,
   githubManifest,
   googleWorkspaceManifest,
   linearManifest,

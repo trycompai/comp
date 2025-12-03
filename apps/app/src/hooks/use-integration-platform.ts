@@ -1,84 +1,39 @@
 'use client';
 
 import { api } from '@/lib/api-client';
+import type {
+  ConnectionListItemResponse,
+  CredentialField,
+  IntegrationConnectionResponse,
+  IntegrationProviderResponse,
+  OAuthAvailabilityResponse,
+  OAuthStartResponse,
+  TestConnectionResponse,
+} from '@comp/integration-platform';
 import { useParams } from 'next/navigation';
 import { useCallback } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 // ============================================================================
-// Types
+// Type aliases for internal use and re-export for consumers
 // ============================================================================
 
-export interface IntegrationProvider {
-  id: string; // This is the slug (e.g., 'github')
-  slug: string; // Alias for id
-  name: string;
-  description: string;
-  category: string;
-  logoUrl: string; // Full logo URL (e.g., from logo.dev)
-  authType: 'oauth2' | 'api_key' | 'basic' | 'jwt' | 'custom';
-  capabilities: string[];
-  isActive: boolean;
-  docsUrl?: string;
-  credentialFields?: CredentialField[];
-}
+// Internal aliases (keep existing names for backwards compatibility)
+type IntegrationProvider = IntegrationProviderResponse;
+type IntegrationConnection = IntegrationConnectionResponse;
+type ConnectionListItem = ConnectionListItemResponse;
+type OAuthAvailability = OAuthAvailabilityResponse;
 
-export interface CredentialField {
-  id: string;
-  label: string;
-  type: 'text' | 'password' | 'textarea' | 'select' | 'number' | 'url';
-  required: boolean;
-  placeholder?: string;
-  helpText?: string;
-  options?: { value: string; label: string }[];
-}
-
-export interface IntegrationConnection {
-  id: string;
-  providerId: string;
-  providerSlug: string;
-  providerName: string;
-  status: 'pending' | 'active' | 'error' | 'paused' | 'disconnected';
-  authStrategy: string;
-  lastSyncAt: string | null;
-  nextSyncAt: string | null;
-  syncCadence: string | null;
-  metadata: Record<string, unknown> | null;
-  errorMessage: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ConnectionListItem {
-  id: string;
-  providerId: string;
-  providerSlug: string;
-  providerName: string;
-  status: 'pending' | 'active' | 'error' | 'paused' | 'disconnected';
-  authStrategy: string;
-  lastSyncAt: string | null;
-  nextSyncAt: string | null;
-  errorMessage: string | null;
-  variables: Record<string, string | number | boolean | string[]> | null;
-  createdAt: string;
-}
-
-export interface OAuthStartResponse {
-  authorizationUrl: string;
-}
-
-export interface OAuthAvailability {
-  available: boolean;
-  hasOrgCredentials: boolean;
-  hasPlatformCredentials: boolean;
-  setupInstructions?: string;
-  createAppUrl?: string;
-}
-
-export interface TestConnectionResponse {
-  success: boolean;
-  message: string;
-}
+// Re-export for consumers using the familiar names
+export type {
+  ConnectionListItem,
+  CredentialField,
+  IntegrationConnection,
+  IntegrationProvider,
+  OAuthAvailability,
+  OAuthStartResponse,
+  TestConnectionResponse,
+};
 
 // ============================================================================
 // Hooks

@@ -245,9 +245,30 @@ export class TaskIntegrationsController {
     // Get credentials
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(connectionId);
-    if (!credentials?.access_token) {
+
+    // Validate credentials based on auth type
+    if (!credentials) {
       throw new HttpException(
-        'No valid credentials found',
+        'No credentials found for connection',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // For OAuth, require access_token. For custom auth (like AWS), check for required fields
+    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
+      throw new HttpException(
+        'No valid OAuth credentials found. Please reconnect.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // For custom auth, the credentials are the form field values directly
+    if (
+      manifest.auth.type === 'custom' &&
+      Object.keys(credentials).length === 0
+    ) {
+      throw new HttpException(
+        'No valid credentials found for custom integration',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -311,7 +332,7 @@ export class TaskIntegrationsController {
       // Run the specific check
       const result = await runAllChecks({
         manifest,
-        accessToken: credentials.access_token,
+        accessToken: credentials.access_token ?? undefined,
         credentials: credentials as Record<string, string>,
         variables,
         connectionId,
