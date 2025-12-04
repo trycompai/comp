@@ -1,0 +1,38 @@
+---
+description: Always run typecheck and lint after making code changes
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# After Code Changes
+
+After making any code changes, **always run these checks**:
+
+```bash
+# TypeScript type checking
+bun run typecheck
+
+# ESLint linting
+bun run lint
+```
+
+## Fix Errors Before Committing
+
+If either check fails:
+
+1. Fix all TypeScript errors first (they break the build)
+2. Fix ESLint errors/warnings
+3. Re-run checks until both pass
+4. Only then commit or deploy
+
+## Common TypeScript Fixes
+
+- **Property does not exist**: Check interface/type definitions, ensure correct property names
+- **Type mismatch**: Verify the expected type vs actual type being passed
+- **Empty interface extends**: Use `type X = SomeType` instead of `interface X extends SomeType {}`
+
+## Common ESLint Fixes
+
+- **Unused variables**: Remove or prefix with `_`
+- **Any type**: Add proper typing
+- **Empty object type**: Use `type` instead of `interface` for type aliases

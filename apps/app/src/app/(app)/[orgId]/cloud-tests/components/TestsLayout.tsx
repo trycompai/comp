@@ -1,15 +1,13 @@
 'use client';
 
-import type { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
+import { useIntegrationMutations } from '@/hooks/use-integration-platform';
+import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Integration } from '@db';
-import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks';
 import { Plus, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import type { IntegrationRunOutput } from '../types';
 import { CloudSettingsModal } from './CloudSettingsModal';
 import { EmptyState } from './EmptyState';
 import { ResultsView } from './ResultsView';
@@ -27,36 +25,36 @@ interface Finding {
   };
 }
 
+interface Provider {
+  id: string;
+  integrationId: string;
+  name: string;
+  organizationId: string;
+  lastRunAt: Date | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isLegacy?: boolean;
+}
+
 interface TestsLayoutProps {
   initialFindings: Finding[];
-  initialProviders: Integration[];
-  triggerToken: string;
+  initialProviders: Provider[];
   orgId: string;
 }
 
 type SupportedProviderId = 'aws' | 'gcp' | 'azure';
-type SupportedIntegration = Integration & { integrationId: SupportedProviderId };
 
 const SUPPORTED_PROVIDER_IDS: readonly SupportedProviderId[] = ['aws', 'gcp', 'azure'];
 
 const isSupportedProviderId = (id: string): id is SupportedProviderId =>
   SUPPORTED_PROVIDER_IDS.includes(id as SupportedProviderId);
 
-const isIntegrationRunOutput = (value: unknown): value is IntegrationRunOutput => {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  return typeof (value as { success?: unknown }).success === 'boolean';
-};
-
-export function TestsLayout({
-  initialFindings,
-  initialProviders,
-  triggerToken,
-  orgId,
-}: TestsLayoutProps) {
+export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsLayoutProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const { disconnectConnection } = useIntegrationMutations();
 
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
     '/api/cloud-tests/findings',
@@ -72,7 +70,7 @@ export function TestsLayout({
     },
   );
 
-  const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Integration[]>(
+  const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Provider[]>(
     '/api/cloud-tests/providers',
     async (url) => {
       const res = await fetch(url);
@@ -85,62 +83,7 @@ export function TestsLayout({
     },
   );
 
-  const connectedProviders = providers.filter((p): p is SupportedIntegration =>
-    isSupportedProviderId(p.integrationId),
-  );
-
-  const { submit, run, error, isLoading } = useRealtimeTaskTrigger<typeof runIntegrationTests>(
-    'run-integration-tests',
-    {
-      accessToken: triggerToken,
-    },
-  );
-
-  const isCompleted = run?.status === 'COMPLETED';
-  const isFailed =
-    run?.status === 'FAILED' ||
-    run?.status === 'CRASHED' ||
-    run?.status === 'SYSTEM_FAILURE' ||
-    run?.status === 'TIMED_OUT' ||
-    run?.status === 'CANCELED' ||
-    run?.status === 'EXPIRED';
-
-  const isTerminal = isCompleted || isFailed;
-  const isScanning = Boolean(run && !isTerminal) || isLoading;
-
-  const runOutput = isCompleted && isIntegrationRunOutput(run?.output) ? run.output : null;
-
-  useEffect(() => {
-    if (!run || !isTerminal) {
-      return;
-    }
-
-    void mutateFindings();
-
-    if (runOutput && !runOutput.success) {
-      const errorMessage =
-        runOutput.errors?.[0] ??
-        runOutput.failedIntegrations?.[0]?.error ??
-        'Scan completed with errors';
-      toast.error(errorMessage);
-      return;
-    }
-
-    if (isFailed || run.error) {
-      const errorMessage =
-        typeof run.error === 'object' && run.error && 'message' in run.error
-          ? String(run.error.message)
-          : typeof run.error === 'string'
-            ? run.error
-            : 'Scan failed. Please try again.';
-      toast.error(errorMessage);
-      return;
-    }
-
-    if (isCompleted) {
-      toast.success('Scan completed! Results updated.');
-    }
-  }, [run, isTerminal, isFailed, isCompleted, runOutput, mutateFindings]);
+  const connectedProviders = providers.filter((p) => isSupportedProviderId(p.integrationId));
 
   const handleRunScan = async (): Promise<string | null> => {
     if (!orgId) {
@@ -148,14 +91,43 @@ export function TestsLayout({
       return null;
     }
 
+    setIsScanning(true);
+    toast.message('Starting cloud security scan...');
+
     try {
-      await submit({ organizationId: orgId });
-      toast.message('Scan started. Checking your cloud infrastructure...');
-      return run?.id || null;
+      const newProviders = connectedProviders.filter((p) => !p.isLegacy);
+      const legacyProviders = connectedProviders.filter((p) => p.isLegacy);
+
+      // Run checks for NEW platform providers
+      for (const provider of newProviders) {
+        const response = await api.post(
+          `/v1/integrations/checks/connections/${provider.id}/run`,
+          {},
+          orgId,
+        );
+        if (response.error) {
+          console.error(`Error running checks for ${provider.name}:`, response.error);
+        }
+      }
+
+      // Run checks for LEGACY providers using the old trigger task
+      if (legacyProviders.length > 0) {
+        const { runTests } = await import('../actions/run-tests');
+        const result = await runTests();
+        if (!result.success) {
+          console.error('Legacy scan error:', result.errors);
+        }
+      }
+
+      toast.success('Scan completed! Results updated.');
+      await mutateFindings();
+      return 'completed';
     } catch (error) {
-      console.error('🚀 Submit error:', error);
-      toast.error('Failed to start scan. Please try again.');
+      console.error('Scan error:', error);
+      toast.error('Failed to complete scan. Please try again.');
       return null;
+    } finally {
+      setIsScanning(false);
     }
   };
 
@@ -168,12 +140,6 @@ export function TestsLayout({
   const handleCloudConnected = async () => {
     mutateProviders();
     mutateFindings();
-
-    if (orgId) {
-      await submit({ organizationId: orgId });
-      toast.message('Scan started. Checking your cloud infrastructure...');
-    }
-
     setViewingResults(true);
   };
 
@@ -230,7 +196,6 @@ export function TestsLayout({
           findings={providerFindings}
           onRunScan={handleRunScan}
           isScanning={isScanning}
-          run={run}
         />
 
         <CloudSettingsModal
@@ -238,8 +203,8 @@ export function TestsLayout({
           onOpenChange={setShowSettings}
           connectedProviders={connectedProviders.map((p) => ({
             id: p.integrationId,
+            connectionId: p.id,
             name: p.name,
-            fields: getProviderFields(p.integrationId),
           }))}
           onUpdate={handleProvidersUpdate}
         />
@@ -298,7 +263,6 @@ export function TestsLayout({
                 findings={providerFindings}
                 onRunScan={handleRunScan}
                 isScanning={isScanning}
-                run={run}
               />
             </TabsContent>
           );
@@ -310,34 +274,11 @@ export function TestsLayout({
         onOpenChange={setShowSettings}
         connectedProviders={connectedProviders.map((p) => ({
           id: p.integrationId,
+          connectionId: p.id,
           name: p.name,
-          fields: getProviderFields(p.integrationId),
         }))}
         onUpdate={handleProvidersUpdate}
       />
     </div>
   );
-}
-
-function getProviderFields(providerId: SupportedProviderId) {
-  switch (providerId) {
-    case 'aws':
-      return [
-        { id: 'region', label: 'AWS Region' },
-        { id: 'access_key_id', label: 'Access Key ID' },
-        { id: 'secret_access_key', label: 'Secret Access Key' },
-      ];
-    case 'gcp':
-      return [
-        { id: 'organization_id', label: 'Organization ID' },
-        { id: 'service_account_key', label: 'Service Account Key' },
-      ];
-    case 'azure':
-      return [
-        { id: 'AZURE_CLIENT_ID', label: 'Client ID' },
-        { id: 'AZURE_TENANT_ID', label: 'Tenant ID' },
-        { id: 'AZURE_CLIENT_SECRET', label: 'Client Secret' },
-        { id: 'AZURE_SUBSCRIPTION_ID', label: 'Subscription ID' },
-      ];
-  }
 }

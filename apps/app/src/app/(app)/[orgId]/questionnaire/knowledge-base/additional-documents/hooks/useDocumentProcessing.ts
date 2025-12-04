@@ -1,7 +1,7 @@
 'use client';
 
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface UseDocumentProcessingOptions {
   processingRunId?: string | null;
@@ -14,7 +14,7 @@ interface UseDocumentProcessingOptions {
 
 /**
  * Hook to track document processing and deletion runs using Trigger.dev realtime
- * 
+ *
  * The tokens should be obtained from the API response (e.g., from processDocuments or deleteDocument endpoints)
  * which return `publicAccessToken` along with the `runId`.
  */
@@ -43,7 +43,7 @@ export function useDocumentProcessing({
   const handleProcessingComplete = useCallback(() => {
     onProcessingCompleteRef.current?.();
   }, []);
-  
+
   const handleDeletionComplete = useCallback(() => {
     onDeletionCompleteRef.current?.();
   }, []);
@@ -63,10 +63,10 @@ export function useDocumentProcessing({
   });
 
   // Check if processing is active (handle orchestrator child tasks)
-  const isProcessing = processingRun 
+  const isProcessing = processingRun
     ? ['EXECUTING', 'QUEUED', 'PENDING', 'WAITING'].includes(processingRun.status)
     : false;
-    
+
   const isDeleting = deletionRun
     ? ['EXECUTING', 'QUEUED', 'PENDING', 'WAITING'].includes(deletionRun.status)
     : false;
