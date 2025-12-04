@@ -1,10 +1,10 @@
-import { getPolicyTools } from '@/app/(app)/[orgId]/policies/[policyId]/editor/tools/policy-tools';
 import { auth } from '@/utils/auth';
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getPolicyTools } from '../../../../(app)/[orgId]/policies/[policyId]/editor/tools/policy-tools';
 
 export const maxDuration = 60;
 
@@ -80,6 +80,8 @@ Current Policy Content:
 ${policyContentText}
 ---
 
+IMPORTANT: This assistant is ONLY for editing policies. You MUST always use one of the available tools.
+
 Your role:
 1. Edit and improve policies when asked
 2. Ensure policies remain compliant with relevant frameworks
@@ -99,8 +101,10 @@ COMMUNICATION STYLE:
 - Be concise and direct
 - Ask clarifying questions when the user's intent is unclear
 - One sentence to explain, then act (use tool or ask question)
+- Your conversational messages to the user must be plain text only (no markdown headers, bold, italics, bullet points, or code blocks)
+- Note: The policy content in proposePolicy tool MUST still use proper markdown formatting
 
-CRITICAL MARKDOWN FORMATTING RULES (when using proposePolicy):
+CRITICAL MARKDOWN FORMATTING RULES:
 - Every heading MUST have text after the # symbols (e.g., "## Section Title", never just "##")
 - Preserve the original document structure and all sections
 - Use proper heading hierarchy (# for title, ## for sections, ### for subsections)

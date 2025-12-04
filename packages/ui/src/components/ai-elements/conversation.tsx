@@ -12,7 +12,7 @@ export type ConversationProps = ComponentProps<typeof StickToBottom>;
 export const Conversation = ({ className, ...props }: ConversationProps) => (
   <StickToBottom
     className={cn(
-      'relative flex-1 overflow-y-hidden bg-gradient-to-b from-background via-background to-muted/60',
+      'relative flex-1 overflow-hidden bg-linear-to-b from-background via-background to-muted/60',
       className,
     )}
     initial="smooth"
