@@ -188,8 +188,8 @@ export function PolicyContentManager({
     <div className="space-y-4">
       <Card>
         <CardContent className="p-4">
-          <div className="flex gap-4">
-            <div className="flex-1 min-w-0">
+          <div className="flex gap-4 h-[60vh]">
+            <div className="flex-1 min-w-0 h-full overflow-y-auto">
               <Tabs
                 defaultValue={displayFormat}
                 onValueChange={(format) =>
@@ -240,7 +240,7 @@ export function PolicyContentManager({
             </div>
 
             {showAiAssistant && isAiPolicyAssistantEnabled && (
-              <div className="w-80 shrink-0 min-h-[400px] self-stretch flex flex-col">
+              <div className="w-80 shrink-0 self-stretch flex flex-col overflow-hidden">
                 <PolicyAiAssistant
                   messages={messages}
                   status={status}

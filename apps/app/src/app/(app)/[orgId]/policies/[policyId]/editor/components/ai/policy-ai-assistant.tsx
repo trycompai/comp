@@ -69,7 +69,7 @@ export function PolicyAiAssistant({
   };
 
   return (
-    <div className="flex h-full flex-col border-l bg-background">
+    <div className="flex h-full min-h-0 flex-col border-l bg-background">
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-sm font-medium">AI Assistant</span>
         {close && (
@@ -79,7 +79,7 @@ export function PolicyAiAssistant({
         )}
       </div>
 
-      <Conversation>
+      <Conversation className="min-h-0" aria-label="Policy AI assistant conversation">
         <ConversationContent className="gap-3 p-3">
           {messages.length === 0 ? (
             <div className="text-sm text-muted-foreground py-4">
