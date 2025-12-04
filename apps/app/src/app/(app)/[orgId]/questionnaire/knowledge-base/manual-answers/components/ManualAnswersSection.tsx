@@ -19,10 +19,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
 import { usePagination } from '../../hooks/usePagination';
 import { format } from 'date-fns';
-import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
-import { deleteManualAnswer } from '../actions/delete-manual-answer';
-import { deleteAllManualAnswers } from '../actions/delete-all-manual-answers';
+import { api } from '@/lib/api-client';
 
 interface ManualAnswersSectionProps {
   manualAnswers: Awaited<ReturnType<typeof import('../../data/queries').getManualAnswers>>;
@@ -38,41 +36,8 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [answerIdToDelete, setAnswerIdToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [accordionValue, setAccordionValue] = useState<string>('');
-
-  const deleteAction = useAction(deleteManualAnswer, {
-    onSuccess: ({ data }) => {
-      if (data?.success) {
-        toast.success('Manual answer deleted successfully');
-        setDeleteDialogOpen(false);
-        setAnswerIdToDelete(null);
-        setIsDeleting(false);
-        router.refresh();
-      } else {
-        toast.error(data?.error || 'Failed to delete manual answer');
-        setIsDeleting(false);
-      }
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to delete manual answer');
-      setIsDeleting(false);
-    },
-  });
-
-  const deleteAllAction = useAction(deleteAllManualAnswers, {
-    onSuccess: ({ data }) => {
-      if (data?.success) {
-        toast.success('All manual answers deleted successfully');
-        setDeleteAllDialogOpen(false);
-        router.refresh();
-      } else {
-        toast.error(data?.error || 'Failed to delete all manual answers');
-      }
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to delete all manual answers');
-    },
-  });
 
   const { currentPage, totalPages, paginatedItems, handlePageChange } = usePagination({
     items: manualAnswers,
@@ -84,10 +49,38 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (answerIdToDelete) {
-      setIsDeleting(true);
-      deleteAction.execute({ manualAnswerId: answerIdToDelete });
+  const handleConfirmDelete = async () => {
+    if (!answerIdToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await api.post<{ success: boolean; error?: string }>(
+        `/v1/knowledge-base/manual-answers/${answerIdToDelete}/delete`,
+        {
+          organizationId: orgId,
+        },
+        orgId,
+      );
+
+      if (response.error) {
+        toast.error(response.error || 'Failed to delete manual answer');
+        setIsDeleting(false);
+        return;
+      }
+
+      if (response.data?.success) {
+        toast.success('Manual answer deleted successfully');
+        setDeleteDialogOpen(false);
+        setAnswerIdToDelete(null);
+        router.refresh();
+      } else {
+        toast.error(response.data?.error || 'Failed to delete manual answer');
+      }
+    } catch (error) {
+      console.error('Error deleting manual answer:', error);
+      toast.error('Failed to delete manual answer');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -95,8 +88,36 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
     setDeleteAllDialogOpen(true);
   };
 
-  const handleConfirmDeleteAll = () => {
-    deleteAllAction.execute({});
+  const handleConfirmDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      const response = await api.post<{ success: boolean; error?: string }>(
+        '/v1/knowledge-base/manual-answers/delete-all',
+        {
+          organizationId: orgId,
+        },
+        orgId,
+      );
+
+      if (response.error) {
+        toast.error(response.error || 'Failed to delete all manual answers');
+        setIsDeletingAll(false);
+        return;
+      }
+
+      if (response.data?.success) {
+        toast.success('All manual answers deleted successfully');
+        setDeleteAllDialogOpen(false);
+        router.refresh();
+      } else {
+        toast.error(response.data?.error || 'Failed to delete all manual answers');
+      }
+    } catch (error) {
+      console.error('Error deleting all manual answers:', error);
+      toast.error('Failed to delete all manual answers');
+    } finally {
+      setIsDeletingAll(false);
+    }
   };
 
   const handleAccordionChange = (value: string) => {
@@ -323,13 +344,13 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingAll}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDeleteAll}
-              disabled={deleteAllAction.status === 'executing'}
+              disabled={isDeletingAll}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteAllAction.status === 'executing' ? 'Deleting...' : 'Delete All'}
+              {isDeletingAll ? 'Deleting...' : 'Delete All'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

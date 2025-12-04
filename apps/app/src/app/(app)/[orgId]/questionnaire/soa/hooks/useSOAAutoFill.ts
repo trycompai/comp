@@ -2,6 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
+import { env } from '@/env.mjs';
+import { jwtManager } from '@/utils/jwt-manager';
 
 interface UseSOAAutoFillProps {
   questions: Array<{
@@ -15,10 +17,11 @@ interface UseSOAAutoFillProps {
     };
   }>;
   documentId: string;
+  organizationId: string;
   onUpdate: () => void;
 }
 
-export function useSOAAutoFill({ questions, documentId, onUpdate }: UseSOAAutoFillProps) {
+export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate }: UseSOAAutoFillProps) {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [questionStatuses, setQuestionStatuses] = useState<Map<string, 'pending' | 'processing' | 'completed' | 'failed' | 'insufficient_data'>>(new Map());
   const [processedResults, setProcessedResults] = useState<Map<string, { isApplicable: boolean | null; justification: string | null; success: boolean; insufficientData?: boolean }>>(new Map());
@@ -32,17 +35,25 @@ export function useSOAAutoFill({ questions, documentId, onUpdate }: UseSOAAutoFi
     setProcessedResults(new Map());
 
     try {
-      // Use fetch with ReadableStream for SSE
-      const response = await fetch('/api/questionnaire/soa/auto-fill', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Use fetch with ReadableStream for SSE (EventSource only supports GET)
+      // credentials: 'include' is required to send cookies for authentication
+      const token = await jwtManager.getValidToken();
+      const response = await fetch(
+        `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/soa/auto-fill`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'X-Organization-Id': organizationId,
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            documentId,
+            organizationId,
+          }),
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          documentId,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

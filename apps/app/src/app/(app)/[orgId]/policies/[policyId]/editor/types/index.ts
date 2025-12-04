@@ -1,4 +1,8 @@
+import type { UIMessage } from 'ai';
 import { z } from 'zod';
+import type { PolicyToolSet } from '../tools/policy-tools';
+
+export type PolicyChatUIMessage = UIMessage<never, never, PolicyToolSet>;
 
 export const policyDetailsSchema = z.object({
   id: z.string(),

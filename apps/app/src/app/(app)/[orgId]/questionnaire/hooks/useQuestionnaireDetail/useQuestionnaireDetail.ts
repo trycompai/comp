@@ -5,7 +5,6 @@ import { useQuestionnaireActions } from '../useQuestionnaireActions';
 import { useQuestionnaireAutoAnswer } from '../useQuestionnaireAutoAnswer';
 import { useQuestionnaireSingleAnswer } from '../useQuestionnaireSingleAnswer';
 import type { QuestionAnswer } from '../../components/types';
-import { usePersistGeneratedAnswers } from '../usePersistGeneratedAnswers';
 import { useQuestionnaireDetailState } from './useQuestionnaireDetailState';
 import { useQuestionnaireDetailHandlers } from './useQuestionnaireDetailHandlers';
 import type { UseQuestionnaireDetailProps } from './types';
@@ -36,7 +35,7 @@ export function useQuestionnaireDetail({
   });
 
   // Wrapper for setResults that handles QuestionnaireResult[] with originalIndex
-  const setResultsWrapper = useCallback((updater: React.SetStateAction<QuestionAnswer[] | null>) => {
+  const setResultsWrapper = useCallback((updater: SetStateAction<QuestionAnswer[] | null>) => {
     state.setResults((prevResults) => {
       if (!prevResults) {
         const newResults = typeof updater === 'function' ? updater(null) : updater;
@@ -140,23 +139,6 @@ export function useQuestionnaireDetail({
     triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
   });
 
-  const persistenceAction = {
-    execute: () => {},
-    executeAsync: (input: Parameters<typeof state.updateAnswerAction.executeAsync>[0]) =>
-      state.updateAnswerAction.executeAsync(input),
-  };
-
-  usePersistGeneratedAnswers({
-    questionnaireId,
-    results: state.results as QuestionAnswer[] | null,
-    setResults: state.setResults as Dispatch<SetStateAction<QuestionAnswer[] | null>>,
-    autoAnswerRun: autoAnswer.autoAnswerRun ?? null,
-    updateAnswerAction: persistenceAction as any,
-    setQuestionStatuses: state.setQuestionStatuses as Dispatch<
-      SetStateAction<Map<number, 'pending' | 'processing' | 'completed'>>
-    >,
-  });
-
   // Handlers
   const handlers = useQuestionnaireDetailHandlers({
     questionnaireId,
@@ -173,10 +155,7 @@ export function useQuestionnaireDetail({
     editingAnswer: state.editingAnswer,
     setEditingIndex: state.setEditingIndex,
     setEditingAnswer: state.setEditingAnswer,
-    saveIndexRef: state.saveIndexRef,
-    saveAnswerRef: state.saveAnswerRef,
-    updateAnswerAction: state.updateAnswerAction,
-    deleteAnswerAction: state.deleteAnswerAction,
+    setSavingIndex: state.setSavingIndex,
     router: state.router,
     triggerAutoAnswer: autoAnswer.triggerAutoAnswer,
     triggerSingleAnswer: singleAnswer.triggerSingleAnswer,
@@ -235,9 +214,8 @@ export function useQuestionnaireDetail({
     autoAnswer.isAutoAnswerTriggering,
   ]);
 
-  const isSaving = state.updateAnswerAction.status === 'executing';
-  const savingIndex =
-    isSaving && state.saveIndexRef.current !== null ? state.saveIndexRef.current : null;
+  const isSaving = state.savingIndex !== null;
+  const savingIndex = state.savingIndex;
 
   return {
     orgId: organizationId,

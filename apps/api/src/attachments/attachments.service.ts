@@ -27,7 +27,10 @@ export class AttachmentsService {
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
 
-    if (!process.env.APP_AWS_ACCESS_KEY_ID || !process.env.APP_AWS_SECRET_ACCESS_KEY) {
+    if (
+      !process.env.APP_AWS_ACCESS_KEY_ID ||
+      !process.env.APP_AWS_SECRET_ACCESS_KEY
+    ) {
       console.warn('AWS credentials are missing, S3 client may fail');
     }
 

@@ -2,7 +2,6 @@
 
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
 import type { JSONContent } from '@tiptap/react';
-import { useState } from 'react';
 import AdvancedEditor from './advanced-editor';
 
 interface PolicyEditorProps {
@@ -12,16 +11,10 @@ interface PolicyEditorProps {
 }
 
 export function PolicyEditor({ content, readOnly = false, onSave }: PolicyEditorProps) {
-  const [editorContent, setEditorContent] = useState<JSONContent | null>(null);
-
   const documentContent = validateAndFixTipTapContent({
     type: 'doc',
     content: Array.isArray(content) && content.length > 0 ? content : [],
   });
-
-  const handleUpdate = (updatedContent: JSONContent) => {
-    setEditorContent(updatedContent);
-  };
 
   const handleSave = async (contentToSave: JSONContent): Promise<void> => {
     if (!contentToSave || !onSave) return;
@@ -38,12 +31,7 @@ export function PolicyEditor({ content, readOnly = false, onSave }: PolicyEditor
 
   return (
     <>
-      <AdvancedEditor
-        initialContent={documentContent}
-        onUpdate={handleUpdate}
-        onSave={handleSave}
-        readOnly={readOnly}
-      />
+      <AdvancedEditor initialContent={documentContent} onSave={handleSave} readOnly={readOnly} />
     </>
   );
 }

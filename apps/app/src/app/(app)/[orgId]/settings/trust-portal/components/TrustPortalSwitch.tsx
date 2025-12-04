@@ -1,13 +1,16 @@
 'use client';
 
+import { api } from '@/lib/api-client';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Button } from '@comp/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, FileText, Upload, Download, Eye, FileCheck2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -53,6 +56,31 @@ const trustPortalSwitchSchema = z.object({
   iso9001Status: z.enum(['started', 'in_progress', 'compliant']),
 });
 
+const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
+  iso27001: 'iso_27001',
+  iso42001: 'iso_42001',
+  gdpr: 'gdpr',
+  hipaa: 'hipaa',
+  soc2type1: 'soc2_type1',
+  soc2type2: 'soc2_type2',
+  pcidss: 'pci_dss',
+  nen7510: 'nen_7510',
+  iso9001: 'iso_9001',
+};
+
+interface ComplianceResourceResponse {
+  framework: string;
+  fileName: string;
+  fileSize: number;
+  updatedAt: string;
+}
+
+interface ComplianceResourceUrlResponse {
+  signedUrl: string;
+  fileName: string;
+  fileSize: number;
+}
+
 export function TrustPortalSwitch({
   enabled,
   slug,
@@ -79,6 +107,16 @@ export function TrustPortalSwitch({
   iso9001,
   iso9001Status,
   friendlyUrl,
+  // File props - will be passed from page.tsx later
+  iso27001FileName,
+  iso42001FileName,
+  gdprFileName,
+  hipaaFileName,
+  soc2type1FileName,
+  soc2type2FileName,
+  pcidssFileName,
+  nen7510FileName,
+  iso9001FileName,
 }: {
   enabled: boolean;
   slug: string;
@@ -105,7 +143,126 @@ export function TrustPortalSwitch({
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
+  iso27001FileName?: string | null;
+  iso42001FileName?: string | null;
+  gdprFileName?: string | null;
+  hipaaFileName?: string | null;
+  soc2type1FileName?: string | null;
+  soc2type2FileName?: string | null;
+  pcidssFileName?: string | null;
+  nen7510FileName?: string | null;
+  iso9001FileName?: string | null;
 }) {
+  const [certificateFiles, setCertificateFiles] = useState<Record<string, string | null>>({
+    iso27001: iso27001FileName ?? null,
+    iso42001: iso42001FileName ?? null,
+    gdpr: gdprFileName ?? null,
+    hipaa: hipaaFileName ?? null,
+    soc2type1: soc2type1FileName ?? null,
+    soc2type2: soc2type2FileName ?? null,
+    pcidss: pcidssFileName ?? null,
+    nen7510: nen7510FileName ?? null,
+    iso9001: iso9001FileName ?? null,
+  });
+
+  useEffect(() => {
+    setCertificateFiles({
+      iso27001: iso27001FileName ?? null,
+      iso42001: iso42001FileName ?? null,
+      gdpr: gdprFileName ?? null,
+      hipaa: hipaaFileName ?? null,
+      soc2type1: soc2type1FileName ?? null,
+      soc2type2: soc2type2FileName ?? null,
+      pcidss: pcidssFileName ?? null,
+      nen7510: nen7510FileName ?? null,
+      iso9001: iso9001FileName ?? null,
+    });
+  }, [
+    iso27001FileName,
+    iso42001FileName,
+    gdprFileName,
+    hipaaFileName,
+    soc2type1FileName,
+    soc2type2FileName,
+    pcidssFileName,
+    nen7510FileName,
+    iso9001FileName,
+  ]);
+
+  const convertFileToBase64 = async (file: File): Promise<string> => {
+    const buffer = await file.arrayBuffer();
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  };
+
+  const handleFileUpload = async (file: File, frameworkKey: string) => {
+    const apiFramework = FRAMEWORK_KEY_TO_API_SLUG[frameworkKey];
+    if (!apiFramework) {
+      throw new Error('Unsupported framework');
+    }
+
+    const fileData = await convertFileToBase64(file);
+    const response = await api.post<ComplianceResourceResponse>(
+      '/v1/trust-portal/compliance-resources/upload',
+      {
+        organizationId: orgId,
+        framework: apiFramework,
+        fileName: file.name,
+        fileType: file.type || 'application/pdf',
+        fileData,
+      },
+      orgId,
+    );
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    const payload = response.data;
+    if (!payload) {
+      throw new Error('Unexpected API response');
+    }
+
+    setCertificateFiles((prev) => ({
+      ...prev,
+      [frameworkKey]: payload.fileName,
+    }));
+  };
+
+  const handleFilePreview = async (frameworkKey: string) => {
+    const apiFramework = FRAMEWORK_KEY_TO_API_SLUG[frameworkKey];
+    if (!apiFramework) {
+      throw new Error('Unsupported framework');
+    }
+    if (!certificateFiles[frameworkKey]) {
+      throw new Error('No certificate uploaded yet');
+    }
+
+    const response = await api.post<ComplianceResourceUrlResponse>(
+      '/v1/trust-portal/compliance-resources/signed-url',
+      {
+        organizationId: orgId,
+        framework: apiFramework,
+      },
+      orgId,
+    );
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    const payload = response.data;
+    if (!payload?.signedUrl) {
+      throw new Error('Preview link unavailable');
+    }
+
+    window.open(payload.signedUrl, '_blank', 'noopener,noreferrer');
+  };
   const trustPortalSwitch = useAction(trustPortalSwitchAction, {
     onSuccess: () => {
       toast.success('Trust portal status updated');
@@ -392,6 +549,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update ISO 27001 status');
                         }
                       }}
+                      fileName={certificateFiles.iso27001}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="iso27001"
+                      orgId={orgId}
                     />
                     {/* ISO 42001 */}
                     <ComplianceFramework
@@ -421,6 +583,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update ISO 42001 status');
                         }
                       }}
+                      fileName={certificateFiles.iso42001}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="iso42001"
+                      orgId={orgId}
                     />
                     {/* GDPR */}
                     <ComplianceFramework
@@ -450,6 +617,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update GDPR status');
                         }
                       }}
+                      fileName={certificateFiles.gdpr}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="gdpr"
+                      orgId={orgId}
                     />
                     {/* HIPAA */}
                     <ComplianceFramework
@@ -479,6 +651,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update HIPAA status');
                         }
                       }}
+                      fileName={certificateFiles.hipaa}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="hipaa"
+                      orgId={orgId}
                     />
                     {/* SOC 2 Type 1*/}
                     <ComplianceFramework
@@ -508,6 +685,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update SOC 2 Type 1 status');
                         }
                       }}
+                      fileName={certificateFiles.soc2type1}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="soc2type1"
+                      orgId={orgId}
                     />
                     {/* SOC 2 Type 2*/}
                     <ComplianceFramework
@@ -537,6 +719,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update SOC 2 Type 2 status');
                         }
                       }}
+                      fileName={certificateFiles.soc2type2}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="soc2type2"
+                      orgId={orgId}
                     />
                     {/* PCI DSS */}
                     <ComplianceFramework
@@ -566,6 +753,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update PCI DSS status');
                         }
                       }}
+                      fileName={certificateFiles.pcidss}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="pcidss"
+                      orgId={orgId}
                     />
                     {/* NEN 7510 */}
                     <ComplianceFramework
@@ -595,6 +787,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update NEN 7510 status');
                         }
                       }}
+                      fileName={certificateFiles.nen7510}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="nen7510"
+                      orgId={orgId}
                     />
                     {/* ISO 9001 */}
                     <ComplianceFramework
@@ -624,6 +821,11 @@ export function TrustPortalSwitch({
                           toast.error('Failed to update ISO 9001 status');
                         }
                       }}
+                      fileName={certificateFiles.iso9001}
+                      onFileUpload={handleFileUpload}
+                      onFilePreview={handleFilePreview}
+                      frameworkKey="iso9001"
+                      orgId={orgId}
                     />
                   </div>
                 </div>
@@ -644,6 +846,11 @@ function ComplianceFramework({
   status,
   onStatusChange,
   onToggle,
+  fileName,
+  onFileUpload,
+  onFilePreview,
+  frameworkKey,
+  orgId,
 }: {
   title: string;
   description: string;
@@ -651,7 +858,82 @@ function ComplianceFramework({
   status: string;
   onStatusChange: (value: string) => Promise<void>;
   onToggle: (checked: boolean) => Promise<void>;
+  fileName?: string | null;
+  onFileUpload?: (file: File, frameworkKey: string) => Promise<void>;
+  onFilePreview?: (frameworkKey: string) => Promise<void>;
+  frameworkKey: string;
+  orgId: string;
 }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+
+  const processFile = async (file: File) => {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Please upload a PDF file');
+      return;
+    }
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    if (onFileUpload) {
+      setIsUploading(true);
+      try {
+        await onFileUpload(file, frameworkKey);
+        toast.success('Certificate uploaded successfully');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to upload certificate';
+        toast.error(message);
+        console.error('File upload error:', error);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounterRef.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await processFile(files[0]);
+    }
+  };
+
   const logo =
     title === 'ISO 27001' ? (
       <div className="h-16 w-16 flex items-center justify-center">
@@ -706,7 +988,7 @@ function ComplianceFramework({
           </div>
         </CardHeader>
         <div className="mt-4 border-t" />
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 space-y-4">
           <div className="flex flex-row items-center justify-between gap-6">
             <div className="min-w-0 flex-1">
               {isEnabled ? (
@@ -745,6 +1027,174 @@ function ComplianceFramework({
               <Switch checked={isEnabled} onCheckedChange={onToggle} />
             </div>
           </div>
+          
+          {/* File Upload Section - Only show when status is "compliant" */}
+          {isEnabled && status === 'compliant' && (
+            <div className="mt-4 border-t pt-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    await processFile(file);
+                  }
+                }}
+                disabled={isUploading}
+              />
+              
+              {/* Section Header */}
+              <h4 className="text-sm font-semibold text-foreground mb-3">
+                Compliance Certificate
+              </h4>
+
+              {/* Certificate Content */}
+              {fileName ? (
+                /* File Uploaded State */
+                <div className="rounded-lg bg-muted/40 border border-border/50 p-4 space-y-3">
+                  <div className="flex items-center gap-3 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <FileCheck2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {fileName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Certificate uploaded
+                      </p>
+                    </div>
+                    {onFilePreview && (
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await onFilePreview(frameworkKey);
+                                } catch (error) {
+                                  const message =
+                                    error instanceof Error ? error.message : 'Failed to preview certificate';
+                                  toast.error(message);
+                                }
+                              }}
+                              className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors flex items-center gap-1"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              View
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Open certificate in new tab</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="h-8 gap-1.5 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            Replace
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Replace current certificate (PDF)</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    {onFilePreview && (
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await onFilePreview(frameworkKey);
+                                } catch (error) {
+                                  const message =
+                                    error instanceof Error ? error.message : 'Failed to download certificate';
+                                  toast.error(message);
+                                }
+                              }}
+                              className="h-8 gap-1.5 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Download
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Download certificate</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Empty State - Drop zone matching uploaded state height (122px) */
+                <div
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  className={`
+                    relative rounded-lg bg-muted/40 border border-border/50 p-4 cursor-pointer
+                    h-[122px] flex items-center
+                    transition-all duration-200 ease-in-out
+                    ${isDragging ? 'border-primary bg-primary/5' : ''}
+                    ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`
+                      flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
+                      transition-all duration-200
+                      ${isDragging ? 'bg-primary/10' : 'bg-background'}
+                    `}>
+                      <Upload className={`
+                        h-5 w-5 transition-all duration-200
+                        ${isDragging ? 'text-primary scale-110' : 'text-muted-foreground'}
+                      `} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`
+                        text-sm font-medium transition-colors duration-200
+                        ${isDragging ? 'text-primary' : 'text-foreground'}
+                      `}>
+                        {isDragging ? 'Drop your certificate here' : 'Drag & drop certificate'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        or click to browse • PDF only, max 10MB
+                      </p>
+                    </div>
+                  </div>
+
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        Uploading...
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </>
