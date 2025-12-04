@@ -15,12 +15,9 @@ import {
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui';
 import { ChevronLeft, ChevronRight, Download, FileText, Trash2, Upload } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
-import { uploadKnowledgeBaseDocumentAction } from '../actions/upload-document';
-import { downloadKnowledgeBaseDocumentAction } from '../actions/download-document';
-import { deleteKnowledgeBaseDocumentAction } from '../actions/delete-document';
-import { processKnowledgeBaseDocumentsAction } from '../actions/process-documents';
+import { api } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { usePagination } from '../../hooks/usePagination';
 import { format } from 'date-fns';
@@ -34,6 +31,13 @@ type KnowledgeBaseDocument = Awaited<
 interface AdditionalDocumentsSectionProps {
   organizationId: string;
   documents: Awaited<ReturnType<typeof import('../../data/queries').getKnowledgeBaseDocuments>>;
+}
+
+// Simple state for active run tracking
+interface ActiveRun {
+  runId: string;
+  token: string;
+  documentIds: string[];
 }
 
 export function AdditionalDocumentsSection({
@@ -51,31 +55,28 @@ export function AdditionalDocumentsSection({
     null,
   );
   
-  // Track processing and deletion run IDs
-  const [processingRunIds, setProcessingRunIds] = useState<Map<string, string>>(new Map()); // documentId -> runId
-  const [deletionRunIds, setDeletionRunIds] = useState<Map<string, string>>(new Map()); // documentId -> runId
+  // Simple state for active processing and deletion runs
+  const [activeProcessingRun, setActiveProcessingRun] = useState<ActiveRun | null>(null);
+  const [activeDeletionRun, setActiveDeletionRun] = useState<ActiveRun | null>(null);
   
-  // Track processing/deletion progress for current document
-  const currentProcessingRunId = Array.from(processingRunIds.values())[0] || null;
-  const currentDeletionRunId = deletionRunIds.get(deletingId || '') || null;
+  // Stable callbacks for the hook
+  const handleProcessingComplete = useCallback(() => {
+    setActiveProcessingRun(null);
+    router.refresh();
+    toast.success('Document processing completed');
+  }, [router]);
   
-  const { isProcessing, isDeleting, processingStatus, deletionStatus } = useDocumentProcessing({
-    processingRunId: currentProcessingRunId,
-    deletionRunId: currentDeletionRunId,
-    onProcessingComplete: () => {
-      // Clear processing run ID and refresh
-      setProcessingRunIds(new Map());
-      router.refresh();
-      toast.success('Document processed successfully');
-    },
-    onDeletionComplete: () => {
-      // Clear deletion run ID
-      const newDeletionRunIds = new Map(deletionRunIds);
-      if (deletingId) {
-        newDeletionRunIds.delete(deletingId);
-      }
-      setDeletionRunIds(newDeletionRunIds);
-    },
+  const handleDeletionComplete = useCallback(() => {
+    setActiveDeletionRun(null);
+  }, []);
+  
+  const { isProcessing, isDeleting } = useDocumentProcessing({
+    processingRunId: activeProcessingRun?.runId || null,
+    processingToken: activeProcessingRun?.token || null,
+    deletionRunId: activeDeletionRun?.runId || null,
+    deletionToken: activeDeletionRun?.token || null,
+    onProcessingComplete: handleProcessingComplete,
+    onDeletionComplete: handleDeletionComplete,
   });
 
   const { currentPage, totalPages, paginatedItems, handlePageChange } = usePagination<KnowledgeBaseDocument>({
@@ -91,7 +92,7 @@ export function AdditionalDocumentsSection({
           behavior: 'smooth',
           block: 'start',
         });
-      }, 100); // Small delay to allow accordion animation to start
+      }, 100);
     }
   };
 
@@ -119,20 +120,32 @@ export function AdditionalDocumentsSection({
           setUploadProgress({ ...newProgress });
 
           // Upload file
-          const result = await uploadKnowledgeBaseDocumentAction({
-            fileName: file.name,
-            fileType: file.type,
-            fileData,
+          const response = await api.post<{
+            id: string;
+            name: string;
+            s3Key: string;
+          }>(
+            '/v1/knowledge-base/documents/upload',
+            {
+              fileName: file.name,
+              fileType: file.type,
+              fileData,
+              organizationId,
+            },
             organizationId,
-          });
+          );
 
-          if (result?.data?.success && result.data.data?.id) {
-            uploadedDocumentIds.push(result.data.data.id);
+          if (response.error) {
+            throw new Error(response.error || 'Failed to upload file');
+          }
+
+          if (response.data?.id) {
+            uploadedDocumentIds.push(response.data.id);
             newProgress[file.name] = 100;
             setUploadProgress({ ...newProgress });
             toast.success(`Successfully uploaded ${file.name}`);
           } else {
-            throw new Error(result?.data?.error || 'Failed to upload file');
+            throw new Error('Failed to upload file: invalid response');
           }
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
@@ -144,28 +157,36 @@ export function AdditionalDocumentsSection({
         }
       }
 
-      // Trigger processing for uploaded documents (orchestrator for multiple, individual for single)
+      // Trigger processing for uploaded documents
       if (uploadedDocumentIds.length > 0) {
         try {
-          const result = await processKnowledgeBaseDocumentsAction({
-            documentIds: uploadedDocumentIds,
+          const response = await api.post<{
+            success: boolean;
+            runId?: string;
+            publicAccessToken?: string;
+            message?: string;
+          }>(
+            '/v1/knowledge-base/documents/process',
+            {
+              documentIds: uploadedDocumentIds,
+              organizationId,
+            },
             organizationId,
-          });
+          );
 
-          if (result?.data?.success) {
-            // Store run ID for tracking progress
-            const runId = result.data.runId;
-            if (runId) {
-              const newProcessingRunIds = new Map(processingRunIds);
-              // For orchestrator, track all documents with the same run ID
-              uploadedDocumentIds.forEach((docId) => {
-                newProcessingRunIds.set(docId, runId);
-              });
-              setProcessingRunIds(newProcessingRunIds);
-            }
-            toast.success(result.data.message || 'Processing documents...');
-          } else {
-            console.error('Failed to trigger document processing:', result?.data?.error);
+          if (response.error) {
+            console.error('Failed to trigger document processing:', response.error);
+            return;
+          }
+
+          if (response.data?.success && response.data.runId && response.data.publicAccessToken) {
+            // Set active processing run
+            setActiveProcessingRun({
+              runId: response.data.runId,
+              token: response.data.publicAccessToken,
+              documentIds: uploadedDocumentIds,
+            });
+            toast.success(response.data.message || 'Processing documents...');
           }
         } catch (error) {
           console.error('Failed to trigger document processing:', error);
@@ -195,19 +216,33 @@ export function AdditionalDocumentsSection({
     setDownloadingIds((prev) => new Set(prev).add(documentId));
 
     try {
-      const result = await downloadKnowledgeBaseDocumentAction({ documentId });
+      const response = await api.post<{
+        signedUrl: string;
+        fileName: string;
+      }>(
+        `/v1/knowledge-base/documents/${documentId}/download`,
+        {
+          organizationId,
+        },
+        organizationId,
+      );
 
-      if (result?.data?.success && result.data.data?.signedUrl) {
+      if (response.error) {
+        toast.error(response.error || 'Failed to download file');
+        return;
+      }
+
+      if (response.data?.signedUrl) {
         // Create a temporary link and trigger download
         const link = document.createElement('a');
-        link.href = result.data.data.signedUrl;
+        link.href = response.data.signedUrl;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         toast.success(`Downloading ${fileName}...`);
       } else {
-        toast.error(result?.data?.error || 'Failed to download file');
+        toast.error('Failed to download file: invalid response');
       }
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -234,23 +269,37 @@ export function AdditionalDocumentsSection({
     setIsDeleteDialogOpen(false);
 
     try {
-      const result = await deleteKnowledgeBaseDocumentAction({
-        documentId: documentToDelete.id,
-      });
+      const response = await api.post<{
+        success: boolean;
+        vectorDeletionRunId?: string;
+        publicAccessToken?: string;
+      }>(
+        `/v1/knowledge-base/documents/${documentToDelete.id}/delete`,
+        {
+          organizationId,
+        },
+        organizationId,
+      );
 
-      if (result?.data?.success) {
-        // Store deletion run ID for tracking progress
-        const vectorDeletionRunId = result.data.vectorDeletionRunId;
-        if (vectorDeletionRunId) {
-          const newDeletionRunIds = new Map(deletionRunIds);
-          newDeletionRunIds.set(documentToDelete.id, vectorDeletionRunId);
-          setDeletionRunIds(newDeletionRunIds);
+      if (response.error) {
+        toast.error(response.error || 'Failed to delete document');
+        return;
+      }
+
+      if (response.data?.success) {
+        // Set active deletion run if we have the run info
+        if (response.data.vectorDeletionRunId && response.data.publicAccessToken) {
+          setActiveDeletionRun({
+            runId: response.data.vectorDeletionRunId,
+            token: response.data.publicAccessToken,
+            documentIds: [documentToDelete.id],
+          });
         }
         
         toast.success(`Successfully deleted ${documentToDelete.name}`);
         router.refresh();
       } else {
-        toast.error(result?.data?.error || 'Failed to delete document');
+        toast.error('Failed to delete document: invalid response');
       }
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -275,6 +324,16 @@ export function AdditionalDocumentsSection({
     });
   };
 
+  // Helper to check if a document is being processed
+  const isDocumentProcessing = (docId: string) => {
+    return activeProcessingRun?.documentIds.includes(docId) && isProcessing;
+  };
+  
+  // Helper to check if a document's vectors are being deleted
+  const isDocumentDeletingVectors = (docId: string) => {
+    return activeDeletionRun?.documentIds.includes(docId) && isDeleting;
+  };
+
   return (
     <>
       <Card ref={sectionRef} id="additional-documents">
@@ -290,7 +349,7 @@ export function AdditionalDocumentsSection({
             <AccordionContent className="px-6 pb-4">
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Upload documents or images to enhance your knowledge base. Supported formats: PDF, Word (.docx), Excel, CSV, text files, and images (PNG, JPG, GIF, WebP, SVG). Click on a document to download it.
+                  Upload documents or images to enhance your knowledge base. Supported formats: PDF, Word (.doc, .docx), Excel (.xlsx, .xls), CSV, text files (.txt, .md), and images (PNG, JPG, GIF, WebP, SVG). Click on a document to download it.
                 </p>
               </div>
 
@@ -300,8 +359,8 @@ export function AdditionalDocumentsSection({
                   {paginatedItems.map((document: KnowledgeBaseDocument) => {
                     const isDownloading = downloadingIds.has(document.id);
                     const isDeleting = deletingId === document.id;
-                    const isProcessingDocument = processingRunIds.has(document.id);
-                    const isDeletingVector = deletionRunIds.has(document.id);
+                    const isProcessingDoc = isDocumentProcessing(document.id);
+                    const isDeletingVector = isDocumentDeletingVectors(document.id);
                     const formattedDate = format(new Date(document.createdAt), 'MMM dd, yyyy');
 
                     return (
@@ -331,7 +390,7 @@ export function AdditionalDocumentsSection({
                               </div>
                             </div>
                           </div>
-                          {(isProcessingDocument || isDeletingVector) ? (
+                          {(isProcessingDoc || isDeletingVector) ? (
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                             </div>
@@ -364,6 +423,9 @@ export function AdditionalDocumentsSection({
                   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
                     '.docx',
                   ],
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+                  'application/vnd.ms-excel': ['.xls'],
+                  'text/csv': ['.csv'],
                   'text/plain': ['.txt'],
                   'text/markdown': ['.md'],
                   'image/png': ['.png'],

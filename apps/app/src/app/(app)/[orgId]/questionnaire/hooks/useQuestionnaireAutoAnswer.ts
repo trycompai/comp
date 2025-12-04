@@ -1,10 +1,10 @@
 'use client';
 
-import { saveAnswersBatchAction } from '../actions/save-answers-batch';
-import { useAction } from 'next-safe-action/hooks';
-import { useTransition, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { QuestionAnswer } from '../components/types';
+import { env } from '@/env.mjs';
+import { jwtManager } from '@/utils/jwt-manager';
 
 interface UseQuestionnaireAutoAnswerProps {
   results: QuestionAnswer[] | null;
@@ -35,21 +35,14 @@ export function useQuestionnaireAutoAnswer({
   const [autoAnswerError, setAutoAnswerError] = useState<Error | null>(null);
   const completedAnswersRef = useRef<Set<number>>(new Set());
 
-  // Action for saving answers batch
-  const saveAnswersBatch = useAction(saveAnswersBatchAction, {
-    onError: ({ error }) => {
-      console.error('Error saving answers batch:', error);
-    },
-  });
-
-  const [isPending, startTransition] = useTransition();
-
   const triggerAutoAnswer = async (payload: {
-    vendorId: string;
     organizationId: string;
+    questionnaireId?: string | null;
     questionsAndAnswers: Array<{
       question: string;
       answer: string | null;
+      _originalIndex?: number;
+      originalIndex?: number;
     }>;
   }) => {
     // Reset state
@@ -85,16 +78,27 @@ export function useQuestionnaireAutoAnswer({
     try {
       // Use fetch with ReadableStream for SSE (EventSource only supports GET)
       // credentials: 'include' is required to send cookies for authentication
-      const response = await fetch('/api/questionnaire/auto-answer', {
+      const token = await jwtManager.getValidToken();
+      const response = await fetch(
+        `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/questionnaire/auto-answer`,
+        {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'X-Organization-Id': payload.organizationId,
+          },
         body: JSON.stringify({
-          questionsAndAnswers: payload.questionsAndAnswers,
-        }),
-      });
+            organizationId: payload.organizationId,
+            questionnaireId: payload.questionnaireId ?? questionnaireId,
+            questionsAndAnswers: payload.questionsAndAnswers.map((qa, index) => ({
+              question: qa.question,
+              answer: qa.answer ?? null,
+              _originalIndex: qa._originalIndex ?? qa.originalIndex ?? index,
+            })),
+          }),
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -200,32 +204,6 @@ export function useQuestionnaireAutoAnswer({
                   isAutoAnswerProcessStartedRef.current = false;
                   setIsAutoAnswerProcessStarted(false);
                   setAnsweringQuestionIndex(null);
-
-                  // Save all answers in batch
-                  if (questionnaireId && data.answers) {
-                    const answersToSave = data.answers
-                      .map((answer: any) => {
-                        if (answer.answer) {
-                          return {
-                            questionIndex: answer.questionIndex,
-                            answer: answer.answer,
-                            sources: answer.sources || [],
-                            status: 'generated' as const,
-                          };
-                        }
-                        return null;
-                      })
-                      .filter((a: any): a is NonNullable<typeof a> => a !== null);
-
-                    if (answersToSave.length > 0) {
-                      startTransition(() => {
-                        saveAnswersBatch.execute({
-                          questionnaireId,
-                          answers: answersToSave,
-                        });
-                      });
-                    }
-                  }
 
                   // Show final toast
                   const totalQuestions = data.total;

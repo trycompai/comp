@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { SOAFrameworkTable } from './SOAFrameworkTable';
-import { getOrganizationFrameworksWithSOAData } from '../data/queries';
-import { ensureSOASetup } from '../actions/ensure-soa-setup';
+import { api } from '@/lib/api-client';
+import type { FrameworkWithSOAData } from '../types';
 
 interface SOAFrameworkTabsProps {
-  frameworksWithSOAData: Awaited<ReturnType<typeof getOrganizationFrameworksWithSOAData>>;
+  frameworksWithSOAData: FrameworkWithSOAData[];
   organizationId: string;
 }
 
@@ -57,9 +57,23 @@ export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAF
 
     startTransition(async () => {
       try {
-        const result = await ensureSOASetup(frameworkId, organizationId);
+        const response = await api.post<{
+          success: boolean;
+          configuration?: FrameworkWithSOAData['configuration'] | null;
+          document?: FrameworkWithSOAData['document'] | null;
+          error?: string;
+        }>(
+          '/v1/soa/ensure-setup',
+          {
+            frameworkId,
+            organizationId,
+          },
+          organizationId,
+        );
 
-        if (result.success && result.configuration) {
+        if (response.error) {
+          toast.error(response.error || 'Failed to setup SOA');
+        } else if (response.data?.success) {
           // Update framework data
           const existingData = frameworkData.get(frameworkId);
           if (existingData) {
@@ -67,14 +81,14 @@ export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAF
               const newMap = new Map(prev);
               newMap.set(frameworkId, {
                 ...existingData,
-                configuration: result.configuration,
-                document: result.document,
+                configuration: (response.data?.configuration ?? null) as FrameworkWithSOAData['configuration'],
+                document: (response.data?.document ?? null) as FrameworkWithSOAData['document'],
               });
               return newMap;
             });
           }
-        } else if (result.error) {
-          toast.error(result.error);
+        } else if (response.data?.error) {
+          toast.error(response.data.error);
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to setup SOA');

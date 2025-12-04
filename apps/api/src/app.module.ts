@@ -19,6 +19,10 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
+import { QuestionnaireModule } from './questionnaire/questionnaire.module';
+import { VectorStoreModule } from './vector-store/vector-store.module';
+import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
+import { SOAModule } from './soa/soa.module';
 
 @Module({
   imports: [
@@ -40,13 +44,16 @@ import { TaskTemplateModule } from './framework-editor/task-template/task-templa
     DevicesModule,
     PoliciesModule,
     DeviceAgentModule,
-    DevicesModule,
     AttachmentsModule,
     TasksModule,
     CommentsModule,
     HealthModule,
     TrustPortalModule,
     TaskTemplateModule,
+    QuestionnaireModule,
+    VectorStoreModule,
+    KnowledgeBaseModule,
+    SOAModule,
   ],
   controllers: [AppController],
   providers: [AppService],

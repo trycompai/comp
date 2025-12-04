@@ -1,63 +1,40 @@
 'use client';
 
 import type { ToolUIPart } from 'ai';
-import {
-  CheckCircleIcon,
-  CircleIcon,
-  ClockIcon,
-  WrenchIcon,
-  XCircleIcon,
-} from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../../utils';
-import { Badge } from '../badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible';
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
 export const Tool = ({ className, ...props }: ToolProps) => (
-  <Collapsible className={cn('not-prose mb-4 w-full rounded-md border', className)} {...props} />
+  <Collapsible
+    className={cn(
+      'not-prose mb-3 w-full rounded-[6px] border border-border/70 bg-linear-to-b',
+      className,
+    )}
+    {...props}
+  />
 );
 
-export type ToolHeaderProps = {
+export type ToolHeaderProps = ComponentProps<typeof CollapsibleTrigger> & {
   title?: string;
-  type: ToolUIPart['type'];
-  state: ToolUIPart['state'];
-  className?: string;
+  meta?: ReactNode;
 };
 
-const getStatusBadge = (status: ToolUIPart['state']) => {
-  const labels: Record<ToolUIPart['state'], string> = {
-    'input-streaming': 'Pending',
-    'input-available': 'Running',
-    'output-available': 'Completed',
-    'output-error': 'Error',
-  };
-
-  const icons: Record<ToolUIPart['state'], ReactNode> = {
-    'input-streaming': <CircleIcon className="size-4" />,
-    'input-available': <ClockIcon className="size-4 animate-pulse" />,
-    'output-available': <CheckCircleIcon className="size-4 text-green-600" />,
-    'output-error': <XCircleIcon className="size-4 text-red-600" />,
-  };
-
-  return (
-    <Badge className="gap-1.5 rounded-full text-xs" variant="secondary">
-      {icons[status]}
-      {labels[status]}
-    </Badge>
-  );
-};
-
-export const ToolHeader = ({ className, title, type, state, ...props }: ToolHeaderProps) => (
+export const ToolHeader = ({ className, title, meta, ...props }: ToolHeaderProps) => (
   <CollapsibleTrigger
-    className={cn('flex w-full items-center justify-between gap-4 p-3', className)}
+    className={cn(
+      'flex w-full items-center justify-between gap-3 border-b border-border/60 px-3 py-2',
+      className,
+    )}
     {...props}
   >
-    <div className="flex items-center gap-2 min-w-0 flex-1">
-      <WrenchIcon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="font-medium text-sm truncate">{title ?? type.split('-').slice(1).join('-')}</span>
-      {getStatusBadge(state)}
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <span className="truncate text-[11px] font-semibold uppercase tracking-[0.18em]">
+        {title}
+      </span>
+      {meta}
     </div>
   </CollapsibleTrigger>
 );
@@ -79,12 +56,12 @@ export type ToolInputProps = ComponentProps<'div'> & {
 };
 
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-  <div className={cn('space-y-2 overflow-hidden p-4', className)} {...props}>
-    <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+  <div className={cn('space-y-2 overflow-hidden px-3 py-2', className)} {...props}>
+    <h4 className="font-medium text-muted-foreground text-[10px] uppercase tracking-[0.18em]">
       Parameters
     </h4>
-    <div className="rounded-md bg-muted/50 p-2">
-      <pre className="text-xs overflow-auto">{JSON.stringify(input, null, 2)}</pre>
+    <div className="rounded bg-muted/50 px-2 py-1.5">
+      <pre className="overflow-auto text-[11px] leading-snug">{JSON.stringify(input, null, 2)}</pre>
     </div>
   </div>
 );
@@ -102,13 +79,13 @@ export const ToolOutput = ({ className, output, errorText, ...props }: ToolOutpu
   let Output = <div>{output as ReactNode}</div>;
 
   return (
-    <div className={cn('space-y-2 p-4', className)} {...props}>
-      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+    <div className={cn('space-y-2 px-3 py-2', className)} {...props}>
+      <h4 className="font-medium text-muted-foreground text-[10px] tracking-[0.18em]">
         {errorText ? 'Error' : 'Result'}
       </h4>
       <div
         className={cn(
-          'overflow-x-auto rounded-md text-xs [&_table]:w-full',
+          'overflow-x-auto rounded-[4px] text-[11px] leading-snug [&_table]:w-full',
           errorText ? 'bg-destructive/10 text-destructive' : 'bg-muted/50 text-foreground',
         )}
       >

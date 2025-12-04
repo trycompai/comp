@@ -40,6 +40,8 @@ interface SOATableProps {
   onToggleExpand: () => void;
   documentId: string;
   isPendingApproval: boolean;
+  organizationId: string;
+  onAnswerUpdate?: (questionId: string, answer: string | null) => void;
 }
 
 const columnLabelMap: Record<string, string> = {
@@ -60,6 +62,8 @@ export function SOATable({
   onToggleExpand,
   documentId,
   isPendingApproval,
+  organizationId,
+  onAnswerUpdate,
 }: SOATableProps) {
   const displayedQuestions = isExpanded ? questions : questions.slice(0, 5);
   const hasMoreQuestions = questions.length > 5;
@@ -124,6 +128,13 @@ export function SOATable({
                   isFullyRemote={isFullyRemote}
                   documentId={documentId}
                   isPendingApproval={isPendingApproval}
+                  organizationId={organizationId}
+                  onUpdate={(savedAnswer) => {
+                    // Update the answer in the parent's answersMap optimistically
+                    if (onAnswerUpdate) {
+                      onAnswerUpdate(question.id, savedAnswer);
+                    }
+                  }}
                 />
               );
             })}

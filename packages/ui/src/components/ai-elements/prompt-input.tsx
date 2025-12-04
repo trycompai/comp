@@ -697,7 +697,13 @@ export const PromptInput = ({
         type="file"
       />
       <form className={cn('w-full', className)} onSubmit={handleSubmit} {...props}>
-        <InputGroup className="overflow-hidden">{children}</InputGroup>
+        <InputGroup
+          className={cn(
+            'overflow-hidden rounded-none border-x-0 border-b-0 border-t border-border/70 bg-background/95 shadow-none',
+          )}
+        >
+          {children}
+        </InputGroup>
       </form>
     </>
   );

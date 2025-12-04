@@ -1,10 +1,9 @@
 'use client';
 
-import { saveAnswerAction } from '../actions/save-answer';
-import { useAction } from 'next-safe-action/hooks';
 import type { QuestionAnswer } from '../components/types';
 import { toast } from 'sonner';
-import { useTransition, useRef } from 'react';
+import { useRef } from 'react';
+import { api } from '@/lib/api-client';
 
 interface UseQuestionnaireSingleAnswerProps {
   results: QuestionAnswer[] | null;
@@ -29,19 +28,12 @@ export function useQuestionnaireSingleAnswer({
   const activeRequestsRef = useRef<Set<number>>(new Set());
 
   // Action for saving answer
-  const saveAnswer = useAction(saveAnswerAction, {
-    onError: ({ error }) => {
-      console.error('Error saving answer:', error);
-    },
-  });
-
-  const [isPending, startTransition] = useTransition();
-
   const triggerSingleAnswer = async (payload: {
     question: string;
     organizationId: string;
     questionIndex: number;
     totalQuestions: number;
+    questionnaireId?: string | null;
   }) => {
     const { questionIndex } = payload;
 
@@ -63,24 +55,33 @@ export function useQuestionnaireSingleAnswer({
 
     try {
       // Call server action directly via fetch for parallel processing
-      const response = await fetch('/api/questionnaire/answer-single', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+      const response = await api.post<{
+        success: boolean;
+        data?: {
+          questionIndex: number;
+          question: string;
+          answer: string | null;
+          sources?: QuestionAnswer['sources'];
+          error?: string;
+        };
+        error?: string;
+      }>(
+        '/v1/questionnaire/answer-single',
+        {
           question: payload.question,
           questionIndex: payload.questionIndex,
           totalQuestions: payload.totalQuestions,
-        }),
-      });
+          organizationId: payload.organizationId,
+          questionnaireId: payload.questionnaireId,
+        },
+        payload.organizationId,
+      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'Failed to generate answer');
       }
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success && result.data?.answer) {
         const output = result.data;
@@ -124,18 +125,6 @@ export function useQuestionnaireSingleAnswer({
         });
 
         // Save answer to database
-        if (questionnaireId && output.answer) {
-          startTransition(() => {
-            saveAnswer.execute({
-              questionnaireId,
-              questionIndex: targetIndex,
-              answer: output.answer,
-              sources: output.sources,
-              status: 'generated',
-            });
-          });
-        }
-
         // Mark question as completed
         setQuestionStatuses((prev) => {
           const newStatuses = new Map(prev);

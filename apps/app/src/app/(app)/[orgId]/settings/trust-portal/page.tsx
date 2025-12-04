@@ -1,4 +1,5 @@
 import { auth } from '@/utils/auth';
+import { env } from '@/env.mjs';
 import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -13,6 +14,7 @@ export default async function TrustPortalSettings({
 }) {
   const { orgId } = await params;
   const trustPortal = await getTrustPortal(orgId);
+  const certificateFiles = await fetchComplianceCertificates(orgId);
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
@@ -42,6 +44,15 @@ export default async function TrustPortalSettings({
         nen7510Status={trustPortal?.nen7510Status ?? 'started'}
         iso9001Status={trustPortal?.iso9001Status ?? 'started'}
         friendlyUrl={trustPortal?.friendlyUrl ?? null}
+        iso27001FileName={certificateFiles.iso27001FileName}
+        iso42001FileName={certificateFiles.iso42001FileName}
+        gdprFileName={certificateFiles.gdprFileName}
+        hipaaFileName={certificateFiles.hipaaFileName}
+        soc2type1FileName={certificateFiles.soc2type1FileName}
+        soc2type2FileName={certificateFiles.soc2type2FileName}
+        pcidssFileName={certificateFiles.pcidssFileName}
+        nen7510FileName={certificateFiles.nen7510FileName}
+        iso9001FileName={certificateFiles.iso9001FileName}
       />
       <TrustPortalDomain
         domain={trustPortal?.domain ?? ''}
@@ -100,6 +111,113 @@ const getTrustPortal = cache(async (orgId: string) => {
     friendlyUrl: trustPortal?.friendlyUrl,
   };
 });
+
+type CertificateFiles = {
+  iso27001FileName: string | null;
+  iso42001FileName: string | null;
+  gdprFileName: string | null;
+  hipaaFileName: string | null;
+  soc2type1FileName: string | null;
+  soc2type2FileName: string | null;
+  pcidssFileName: string | null;
+  nen7510FileName: string | null;
+  iso9001FileName: string | null;
+};
+
+const API_FRAMEWORK_TO_PROP: Record<string, keyof CertificateFiles> = {
+  iso_27001: 'iso27001FileName',
+  iso_42001: 'iso42001FileName',
+  gdpr: 'gdprFileName',
+  hipaa: 'hipaaFileName',
+  soc2_type1: 'soc2type1FileName',
+  soc2_type2: 'soc2type2FileName',
+  pci_dss: 'pcidssFileName',
+  nen_7510: 'nen7510FileName',
+  iso_9001: 'iso9001FileName',
+};
+
+const DEFAULT_CERTIFICATE_FILES: CertificateFiles = {
+  iso27001FileName: null,
+  iso42001FileName: null,
+  gdprFileName: null,
+  hipaaFileName: null,
+  soc2type1FileName: null,
+  soc2type2FileName: null,
+  pcidssFileName: null,
+  nen7510FileName: null,
+  iso9001FileName: null,
+};
+
+async function fetchComplianceCertificates(orgId: string): Promise<CertificateFiles> {
+  const result: CertificateFiles = { ...DEFAULT_CERTIFICATE_FILES };
+  const headersList = await headers();
+  const cookieHeader = headersList.get('cookie') || '';
+
+  const jwtToken = await getJwtToken(cookieHeader);
+  const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+
+  try {
+    const response = await fetch(`${apiUrl}/v1/trust-portal/compliance-resources/list`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Organization-Id': orgId,
+        ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
+      },
+      body: JSON.stringify({ organizationId: orgId }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      console.warn('Failed to fetch compliance resources:', response.statusText);
+      return result;
+    }
+
+    const payload = await response.json();
+    const resources = Array.isArray(payload) ? payload : payload?.resources;
+
+    if (!Array.isArray(resources)) {
+      return result;
+    }
+
+    for (const resource of resources) {
+      const propKey = resource?.framework ? API_FRAMEWORK_TO_PROP[resource.framework] : undefined;
+      if (propKey) {
+        result[propKey] = resource.fileName ?? null;
+      }
+    }
+  } catch (error) {
+    console.warn('Error fetching compliance resources:', error);
+  }
+
+  return result;
+}
+
+async function getJwtToken(cookieHeader: string): Promise<string | null> {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  try {
+    const authUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000';
+    const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
+      method: 'GET',
+      headers: {
+        Cookie: cookieHeader,
+      },
+    });
+
+    if (!tokenResponse.ok) {
+      return null;
+    }
+
+    const tokenData = await tokenResponse.json();
+    return tokenData?.token ?? null;
+  } catch (error) {
+    console.warn('Failed to get JWT token for compliance resources:', error);
+    return null;
+  }
+}
 
 export async function generateMetadata({
   params,
