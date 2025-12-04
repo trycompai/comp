@@ -10,22 +10,16 @@ import '@comp/ui/editor.css';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import {
-  DefaultChatTransport,
-  getToolName,
-  isToolUIPart,
-  type ToolUIPart,
-  type UIMessage,
-} from 'ai';
+import { DefaultChatTransport } from 'ai';
 import { structuredPatch } from 'diff';
 import { CheckCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useFeatureFlagEnabled } from 'posthog-js/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
 import { PdfViewer } from '../../components/PdfViewer';
 import { updatePolicy } from '../actions/update-policy';
+import type { PolicyChatUIMessage } from '../types';
 import { markdownToTipTapJSON } from './ai/markdown-utils';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 
@@ -49,24 +43,32 @@ interface LatestProposal {
   key: string;
   content: string;
   summary: string;
+  title: string;
+  detail: string;
+  reviewHint: string;
 }
 
-function getLatestProposedPolicy(messages: UIMessage[]): LatestProposal | null {
+function getLatestProposedPolicy(messages: PolicyChatUIMessage[]): LatestProposal | null {
   const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
   if (!lastAssistantMessage?.parts) return null;
 
   let latest: LatestProposal | null = null;
 
   lastAssistantMessage.parts.forEach((part, index) => {
-    if (!isToolUIPart(part) || getToolName(part) !== 'proposePolicy') return;
-    const toolPart = part as ToolUIPart;
-    const input = toolPart.input as { content?: string; summary?: string } | undefined;
+    if (part.type !== 'tool-proposePolicy') return;
+    if (part.state === 'input-streaming' || part.state === 'output-error') return;
+    const input = part.input;
     if (!input?.content) return;
 
     latest = {
       key: `${lastAssistantMessage.id}:${index}`,
       content: input.content,
       summary: input.summary ?? 'Proposing policy changes',
+      title: input.title ?? input.summary ?? 'Policy updates ready for your review',
+      detail:
+        input.detail ??
+        'I have prepared an updated version of this policy based on your instructions.',
+      reviewHint: input.reviewHint ?? 'Review the proposed changes below before applying them.',
     };
   });
 
@@ -100,13 +102,18 @@ export function PolicyContentManager({
   const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
-  const isAiPolicyAssistantEnabled = useFeatureFlagEnabled('is-ai-policy-assistant-enabled');
+  const diffViewerRef = useRef<HTMLDivElement>(null);
+
+  const isAiPolicyAssistantEnabled = true;
+  const scrollToDiffViewer = useCallback(() => {
+    diffViewerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const {
     messages,
     status,
     sendMessage: baseSendMessage,
-  } = useChat({
+  } = useChat<PolicyChatUIMessage>({
     transport: new DefaultChatTransport({
       api: `/api/policies/${policyId}/chat`,
     }),
@@ -127,6 +134,20 @@ export function PolicyContentManager({
     latestProposal && latestProposal.key !== dismissedProposalKey ? latestProposal : null;
 
   const proposedPolicyMarkdown = activeProposal?.content ?? null;
+
+  const hasPendingProposal = useMemo(
+    () =>
+      messages.some(
+        (m) =>
+          m.role === 'assistant' &&
+          m.parts?.some(
+            (part) =>
+              part.type === 'tool-proposePolicy' &&
+              (part.state === 'input-streaming' || part.state === 'input-available'),
+          ),
+      ),
+    [messages],
+  );
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
     onError: () => toast.error('Failed to switch view.'),
@@ -226,6 +247,8 @@ export function PolicyContentManager({
                   errorMessage={chatErrorMessage}
                   sendMessage={sendMessage}
                   close={() => setShowAiAssistant(false)}
+                  onScrollToDiff={scrollToDiffViewer}
+                  hasActiveProposal={!!activeProposal && !hasPendingProposal}
                 />
               </div>
             )}
@@ -233,8 +256,8 @@ export function PolicyContentManager({
         </CardContent>
       </Card>
 
-      {proposedPolicyMarkdown && diffPatch && activeProposal && (
-        <div className="space-y-2">
+      {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
+        <div ref={diffViewerRef} className="space-y-2">
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
@@ -261,7 +284,7 @@ export function PolicyContentManager({
 }
 
 function createGitPatch(fileName: string, oldStr: string, newStr: string): string {
-  const patch = structuredPatch(fileName, fileName, oldStr, newStr);
+  const patch = structuredPatch(fileName, fileName, oldStr, newStr, '', '', { context: 1 });
   const lines: string[] = [
     `diff --git a/${fileName} b/${fileName}`,
     `--- a/${fileName}`,

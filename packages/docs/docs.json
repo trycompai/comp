@@ -17,6 +17,7 @@
             "group": "Get Started",
             "pages": [
               "introduction",
+              "ai-policy-editor",
               "automated-evidence",
               "device-agent",
               "security-questionnaire",
