@@ -69,17 +69,8 @@ export const monitoringAlertingCheck: IntegrationCheck = {
       ctx.log(`Found ${actionGroupCount} action groups`);
 
       if (actionGroupCount === 0) {
-        ctx.fail({
-          title: 'No Action Groups Configured',
-          resourceType: 'monitoring',
-          resourceId: subscriptionId,
-          severity: 'high',
-          description:
-            'No Azure Monitor action groups are configured. Alerts will not trigger notifications.',
-          remediation:
-            'Create at least one action group with email or webhook receivers in Azure Monitor',
-          evidence: { actionGroupCount: 0 },
-        });
+        // Just log - no action groups isn't necessarily a security finding
+        ctx.log('No action groups configured in this subscription');
       } else {
         // Check which action groups have receivers
         for (const ag of actionGroups) {
@@ -93,35 +84,11 @@ export const monitoringAlertingCheck: IntegrationCheck = {
         }
 
         if (actionGroupsWithReceivers === 0) {
-          ctx.fail({
-            title: 'Action Groups Have No Receivers',
-            resourceType: 'monitoring',
-            resourceId: subscriptionId,
-            severity: 'medium',
-            description: 'Action groups exist but none have email or webhook receivers configured.',
-            remediation: 'Add email or webhook receivers to at least one action group',
-            evidence: {
-              totalActionGroups: actionGroupCount,
-              actionGroupsWithReceivers: 0,
-            },
-          });
+          ctx.log('Action groups exist but none have receivers configured');
         } else {
-          ctx.pass({
-            title: 'Action Groups Configured',
-            resourceType: 'monitoring',
-            resourceId: subscriptionId,
-            description: `${actionGroupsWithReceivers} action groups have notification receivers configured`,
-            evidence: {
-              totalActionGroups: actionGroupCount,
-              actionGroupsWithReceivers,
-              groups: actionGroups.map((ag) => ({
-                name: ag.name,
-                enabled: ag.properties.enabled,
-                emailReceivers: ag.properties.emailReceivers?.length || 0,
-                webhookReceivers: ag.properties.webhookReceivers?.length || 0,
-              })),
-            },
-          });
+          ctx.log(
+            `${actionGroupsWithReceivers} action groups have notification receivers configured`,
+          );
         }
       }
     } catch (error) {
@@ -165,60 +132,15 @@ export const monitoringAlertingCheck: IntegrationCheck = {
       }
 
       if (alertRules.length === 0) {
-        ctx.fail({
-          title: 'No Alert Rules Configured',
-          resourceType: 'monitoring',
-          resourceId: subscriptionId,
-          severity: 'high',
-          description: 'No Azure Monitor metric alert rules are configured in this subscription.',
-          remediation: 'Create alert rules for critical metrics like CPU, memory, and error rates',
-          evidence: { alertRuleCount: 0 },
-        });
+        ctx.log('No alert rules configured in this subscription');
       } else if (enabledAlertCount === 0) {
-        ctx.fail({
-          title: 'All Alert Rules Disabled',
-          resourceType: 'monitoring',
-          resourceId: subscriptionId,
-          severity: 'high',
-          description: `Found ${alertRules.length} alert rules but all are disabled.`,
-          remediation: 'Enable at least one alert rule to ensure monitoring is active',
-          evidence: {
-            totalRules: alertRules.length,
-            enabledRules: 0,
-            disabledRules: disabledAlertCount,
-          },
-        });
+        ctx.log(`Found ${alertRules.length} alert rules but all are disabled`);
       } else if (alertsWithActions === 0) {
-        ctx.pass({
-          title: 'Alert Rules Missing Action Groups',
-          resourceType: 'monitoring',
-          resourceId: subscriptionId,
-          description: `${enabledAlertCount} enabled alert rules, but none have action groups attached. Alerts will not trigger notifications.`,
-          evidence: {
-            totalRules: alertRules.length,
-            enabledRules: enabledAlertCount,
-            alertsWithActions: 0,
-          },
-        });
+        ctx.log(`${enabledAlertCount} enabled alert rules, but none have action groups attached`);
       } else {
-        ctx.pass({
-          title: 'Alert Rules Configured',
-          resourceType: 'monitoring',
-          resourceId: subscriptionId,
-          description: `${enabledAlertCount} enabled alert rules, ${alertsWithActions} with action groups`,
-          evidence: {
-            totalRules: alertRules.length,
-            enabledRules: enabledAlertCount,
-            disabledRules: disabledAlertCount,
-            alertsWithActions,
-            rules: alertRules.slice(0, 10).map((r) => ({
-              name: r.name,
-              enabled: r.properties.enabled,
-              severity: r.properties.severity,
-              hasActions: (r.properties.actions?.actionGroups?.length || 0) > 0,
-            })),
-          },
-        });
+        ctx.log(
+          `${enabledAlertCount} enabled alert rules, ${alertsWithActions} with action groups`,
+        );
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

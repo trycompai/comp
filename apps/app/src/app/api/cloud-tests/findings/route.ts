@@ -59,12 +59,13 @@ export async function GET() {
     const latestRunIds = latestRuns.map((r) => r.id);
     const checkRunMap = Object.fromEntries(latestRuns.map((cr) => [cr.id, cr]));
 
-    // Fetch results only from the latest runs (both passed and failed)
+    // Fetch only failed results from the latest runs (findings only, no passing results)
     const newResults =
       latestRunIds.length > 0
         ? await db.integrationCheckResult.findMany({
             where: {
               checkRunId: { in: latestRunIds },
+              passed: false,
             },
             select: {
               id: true,
@@ -74,7 +75,6 @@ export async function GET() {
               severity: true,
               collectedAt: true,
               checkRunId: true,
-              passed: true,
             },
             orderBy: {
               collectedAt: 'desc',
@@ -89,8 +89,8 @@ export async function GET() {
         title: result.title,
         description: result.description,
         remediation: result.remediation,
-        status: result.passed ? 'passed' : 'failed',
-        severity: result.passed ? 'info' : result.severity,
+        status: 'failed',
+        severity: result.severity,
         completedAt: result.collectedAt,
         integration: {
           integrationId: checkRun

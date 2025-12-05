@@ -95,13 +95,7 @@ export const securityFindingsCheck: IntegrationCheck = {
       }
 
       if (activeAlerts.length === 0) {
-        ctx.pass({
-          title: 'No active security alerts',
-          resourceType: 'security-alerts',
-          resourceId: subscriptionId,
-          description: 'Microsoft Defender for Cloud has no active security alerts',
-          evidence: { totalAlerts: alerts.length, activeAlerts: 0 },
-        });
+        ctx.log('No active security alerts found');
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -164,13 +158,7 @@ export const securityFindingsCheck: IntegrationCheck = {
       healthyCount = healthy.length;
 
       if (unhealthy.length === 0) {
-        ctx.pass({
-          title: 'All security assessments passing',
-          resourceType: 'security-assessments',
-          resourceId: subscriptionId,
-          description: 'All Microsoft Defender for Cloud assessments are healthy',
-          evidence: { healthyCount: healthy.length },
-        });
+        ctx.log('All security assessments are healthy');
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
