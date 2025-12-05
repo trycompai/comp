@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "author": "",
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.53",
     "@ai-sdk/groq": "^2.0.32",
     "@ai-sdk/openai": "^2.0.65",
     "@aws-sdk/client-s3": "^3.859.0",
