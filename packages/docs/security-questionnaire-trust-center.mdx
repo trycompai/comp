@@ -136,9 +136,10 @@ curl -X POST \
 #### Using JavaScript/TypeScript (Fetch API)
 
 ```javascript
+const format = 'xlsx'; // or 'pdf' or 'csv'
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
-formData.append('format', 'xlsx');
+formData.append('format', format);
 
 const response = await fetch(
   `https://api.trycomp.ai/v1/questionnaire/parse/upload/token?token=${trustAccessToken}`,
