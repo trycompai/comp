@@ -56,6 +56,7 @@ App (`apps/app`):
 - **DUB_API_KEY**, **DUB_REFER_URL**: Dub.co link shortener/referral features.
 - **FIRECRAWL_API_KEY**: Optional LLM/crawling providers for research features.
 - **SLACK_SALES_WEBHOOK**: Slack webhook for sales/lead notifications.
+- **HUBSPOT_API_KEY**: HubSpot API key for fetching sales metrics (demos, pipeline, ARR, email stats).
 - **GA4_API_SECRET**, **GA4_MEASUREMENT_ID**: Google Analytics 4 server/client tracking.
 - **NEXT_PUBLIC_API_URL**: Override client API base URL (defaults to same origin).
 
@@ -179,6 +180,7 @@ NEXT_PUBLIC_BETTER_AUTH_URL_PORTAL=http://localhost:3002
 # DUB_REFER_URL=
 # FIRECRAWL_API_KEY=
 # SLACK_SALES_WEBHOOK=
+# HUBSPOT_API_KEY=
 # GA4_API_SECRET=
 # GA4_MEASUREMENT_ID=
 # NEXT_PUBLIC_API_URL=
