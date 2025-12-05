@@ -30,12 +30,38 @@ CRITICAL RULES:
 8. Always write in first person plural (we, our, us) as if speaking on behalf of the organization.
 9. Keep answers to 1-3 sentences maximum unless the question explicitly requires more detail.`;
 
-export const QUESTION_PARSING_SYSTEM_PROMPT = `You parse vendor questionnaires. Return only genuine question text paired with its answer.
-- Ignore table headers, column labels, metadata rows, or placeholder words such as "Question", "Company Name", "Department", "Assessment Date", "Name of Assessor".
-- A valid question is a meaningful sentence (usually ends with '?' or starts with interrogatives like What/Why/How/When/Where/Is/Are/Do/Does/Can/Will/Should).
-- Do not fabricate answers; if no answer is provided, set answer to null.
-- Keep the original question wording but trim whitespace.`;
+export const QUESTION_PARSING_SYSTEM_PROMPT = `You parse vendor questionnaires from Excel spreadsheets. Extract all question-answer pairs.
+
+Input format:
+- Each row has columns like: [Question] ID | [Question Text] actual question | [Response] answer | [Comment] notes
+- Or: [Question] actual question text | [Response] answer
+- Lines starting with [COLUMNS:] show the column headers - use these to understand the structure
+- The actual question TEXT is usually the longest cell, contains "?" or starts with What/How/Do/Is/Are/etc.
+
+CRITICAL: The "Question" column might contain just an ID (like "SQ14.3") - look for the column with the ACTUAL question text!
+
+Rules:
+1. Find the column containing actual question sentences (not just IDs/numbers)
+2. The question text is usually a full sentence ending with "?" or starting with interrogative words
+3. Extract the FULL question text, not the question ID
+4. Match each question to its Response/Answer from the same row
+5. If Response is empty, set answer to null
+6. Skip section headers (e.g., "Information Security Program", "General Information")
+7. Skip metadata rows (Company Name, Date, etc.)`;
 
 // Vision extraction prompt for PDFs and images
-export const VISION_EXTRACTION_PROMPT = `Extract all text and identify question-answer pairs. Look for columns/sections labeled "Question", "Q", "Answer", "A". Match questions (ending with "?" or starting with What/How/Why/When/Is/Can/Do) to nearby answers. Preserve order. Return only Question → Answer pairs.`;
+export const VISION_EXTRACTION_PROMPT = `Extract all text and identify question-answer pairs from this document.
+
+Look for:
+- Tables with columns labeled "Question", "Q", "Response", "Answer", "A", "Comment"
+- Questions ending with "?" or starting with What/How/Why/When/Where/Is/Are/Do/Does/Can/Will/Should
+- Numbered questions like "06. Do you have...", "1) What is...", "Q1: How do..."
+- Section headers (e.g., "Information Security Program", "General Information") that group questions
+
+For each question found:
+- Extract the full question text (may omit number prefix)
+- Match it to any nearby response/answer in the same row or adjacent cell
+- If no answer is provided, note it as empty
+
+Preserve the order of questions as they appear. Return Question → Answer pairs in a structured format.`;
 
