@@ -13,6 +13,7 @@ import { getManifest, type CheckVariable } from '@comp/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
+import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 
 interface SaveVariablesDto {
   variables: Record<string, string | number | boolean | string[]>;
@@ -43,6 +44,7 @@ export class VariablesController {
     private readonly connectionRepository: ConnectionRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly credentialVaultService: CredentialVaultService,
+    private readonly autoCheckRunnerService: AutoCheckRunnerService,
   ) {}
 
   /**
@@ -71,19 +73,19 @@ export class VariablesController {
       }
     }
 
-    const variables: VariableDefinition[] = Array.from(variableMap.values()).map(
-      (v) => ({
-        id: v.id,
-        label: v.label,
-        type: v.type,
-        required: v.required || false,
-        default: v.default,
-        helpText: v.helpText,
-        placeholder: v.placeholder,
-        options: v.options,
-        hasDynamicOptions: !!v.fetchOptions,
-      }),
-    );
+    const variables: VariableDefinition[] = Array.from(
+      variableMap.values(),
+    ).map((v) => ({
+      id: v.id,
+      label: v.label,
+      type: v.type,
+      required: v.required || false,
+      default: v.default,
+      helpText: v.helpText,
+      placeholder: v.placeholder,
+      options: v.options,
+      hasDynamicOptions: !!v.fetchOptions,
+    }));
 
     return { variables };
   }
@@ -98,7 +100,9 @@ export class VariablesController {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
     }
 
-    const provider = await this.providerRepository.findById(connection.providerId);
+    const provider = await this.providerRepository.findById(
+      connection.providerId,
+    );
     if (!provider) {
       throw new HttpException('Provider not found', HttpStatus.NOT_FOUND);
     }
@@ -122,7 +126,8 @@ export class VariablesController {
     }
 
     // Get current values from connection
-    const currentValues = (connection.variables as Record<string, unknown>) || {};
+    const currentValues =
+      (connection.variables as Record<string, unknown>) || {};
 
     const variables = Array.from(variableMap.values()).map((v) => ({
       id: v.id,
@@ -164,7 +169,9 @@ export class VariablesController {
       );
     }
 
-    const provider = await this.providerRepository.findById(connection.providerId);
+    const provider = await this.providerRepository.findById(
+      connection.providerId,
+    );
     if (!provider) {
       throw new HttpException('Provider not found', HttpStatus.NOT_FOUND);
     }
@@ -221,7 +228,9 @@ export class VariablesController {
 
       fetch: async <T = unknown>(path: string): Promise<T> => {
         const url = new URL(path, baseUrl);
-        const response = await fetch(url.toString(), { headers: buildHeaders() });
+        const response = await fetch(url.toString(), {
+          headers: buildHeaders(),
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       },
@@ -236,7 +245,9 @@ export class VariablesController {
           url.searchParams.set('page', String(page));
           url.searchParams.set('per_page', String(perPage));
 
-          const response = await fetch(url.toString(), { headers: buildHeaders() });
+          const response = await fetch(url.toString(), {
+            headers: buildHeaders(),
+          });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const items: T[] = await response.json();
@@ -269,7 +280,9 @@ export class VariablesController {
         };
 
         if (result.errors?.length) {
-          throw new Error(`GraphQL: ${result.errors.map((e) => e.message).join(', ')}`);
+          throw new Error(
+            `GraphQL: ${result.errors.map((e) => e.message).join(', ')}`,
+          );
         }
         if (!result.data) throw new Error('GraphQL response missing data');
 
@@ -304,7 +317,8 @@ export class VariablesController {
     }
 
     // Merge with existing variables
-    const existingVariables = (connection.variables as Record<string, unknown>) || {};
+    const existingVariables =
+      (connection.variables as Record<string, unknown>) || {};
     const newVariables = {
       ...existingVariables,
       ...body.variables,
@@ -316,7 +330,22 @@ export class VariablesController {
 
     this.logger.log(`Saved variables for connection ${connectionId}`);
 
+    // Auto-run checks if possible (fire and forget)
+    this.autoCheckRunnerService
+      .tryAutoRunChecks(connectionId)
+      .then((didRun) => {
+        if (didRun) {
+          this.logger.log(
+            `Auto-ran checks for connection ${connectionId} after variables saved`,
+          );
+        }
+      })
+      .catch((err) => {
+        this.logger.warn(
+          `Failed to auto-run checks after saving variables: ${err.message}`,
+        );
+      });
+
     return { success: true, variables: newVariables };
   }
 }
-

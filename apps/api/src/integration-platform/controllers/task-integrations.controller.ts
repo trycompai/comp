@@ -291,7 +291,7 @@ export class TaskIntegrationsController {
     // Build token refresh callback for OAuth integrations that support it
     let onTokenRefresh: (() => Promise<string | null>) | undefined;
     if (manifest.auth.type === 'oauth2') {
-      const oauthConfig = manifest.auth.config as OAuthConfig;
+      const oauthConfig = manifest.auth.config;
 
       // Only set up refresh callback if provider supports refresh tokens
       const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
@@ -333,7 +333,7 @@ export class TaskIntegrationsController {
       const result = await runAllChecks({
         manifest,
         accessToken: credentials.access_token ?? undefined,
-        credentials: credentials as Record<string, string>,
+        credentials: credentials,
         variables,
         connectionId,
         organizationId,

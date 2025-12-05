@@ -181,7 +181,7 @@ export class ChecksController {
       const result = await runAllChecks({
         manifest,
         accessToken: credentials.access_token ?? undefined,
-        credentials: credentials as Record<string, string>,
+        credentials: credentials,
         variables,
         connectionId,
         organizationId: connection.organizationId,

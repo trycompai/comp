@@ -1,12 +1,16 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { extractContentFromFile } from '@/vector-store/jobs/helpers/extract-content-from-file';
+import { extractContentFromFile } from '@/trigger/vector-store/helpers/extract-content-from-file';
 import { vectorIndex } from '../core/client';
 import { batchUpsertEmbeddings } from '../core/upsert-embedding';
 import { chunkText } from '../utils/chunk-text';
 import { logger } from '../../logger';
 import type { ExistingEmbedding } from '../core/find-existing-embeddings';
 
-export type SourceType = 'policy' | 'context' | 'manual_answer' | 'knowledge_base_document';
+export type SourceType =
+  | 'policy'
+  | 'context'
+  | 'manual_answer'
+  | 'knowledge_base_document';
 
 export interface SyncStats {
   created: number;
@@ -88,7 +92,8 @@ export async function extractContentFromS3Document(
   const buffer = Buffer.concat(chunks);
   const base64Data = buffer.toString('base64');
 
-  const detectedFileType = response.ContentType || fileType || 'application/octet-stream';
+  const detectedFileType =
+    response.ContentType || fileType || 'application/octet-stream';
   return extractContentFromFile(base64Data, detectedFileType);
 }
 
@@ -180,4 +185,3 @@ export function initSyncStats(total: number): SyncStats {
     total,
   };
 }
-

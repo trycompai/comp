@@ -203,7 +203,7 @@ export class CredentialVaultService {
 
     for (const [key, value] of Object.entries(encryptedPayload)) {
       if (this.isEncryptedData(value)) {
-        decrypted[key] = await this.decrypt(value as EncryptedData);
+        decrypted[key] = await this.decrypt(value);
       } else if (typeof value === 'string') {
         decrypted[key] = value;
       }

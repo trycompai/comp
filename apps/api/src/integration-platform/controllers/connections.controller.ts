@@ -14,12 +14,15 @@ import {
 import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
+import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import {
   getManifest,
   getAllManifests,
   getActiveManifests,
+  TASK_TEMPLATE_INFO,
   type OAuthConfig,
+  type TaskTemplateId,
 } from '@comp/integration-platform';
 
 interface CreateConnectionDto {
@@ -40,6 +43,7 @@ export class ConnectionsController {
     private readonly connectionService: ConnectionService,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
+    private readonly autoCheckRunnerService: AutoCheckRunnerService,
     private readonly providerRepository: ProviderRepository,
   ) {}
 
@@ -82,6 +86,19 @@ export class ConnectionsController {
           ? (platformCredentialsMap.get(m.id) ?? false)
           : undefined;
 
+      // Get mapped tasks from checks
+      const mappedTasks: Array<{ id: string; name: string }> = [];
+      const seenTaskIds = new Set<string>();
+      for (const check of m.checks || []) {
+        if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
+          seenTaskIds.add(check.taskMapping);
+          const taskInfo = TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
+          if (taskInfo) {
+            mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
+          }
+        }
+      }
+
       return {
         id: m.id,
         name: m.name,
@@ -95,6 +112,7 @@ export class ConnectionsController {
         credentialFields,
         setupInstructions,
         oauthConfigured,
+        mappedTasks,
       };
     });
   }
@@ -124,6 +142,19 @@ export class ConnectionsController {
         ? manifest.auth.config.setupInstructions
         : undefined;
 
+    // Get mapped tasks from checks
+    const mappedTasks: Array<{ id: string; name: string }> = [];
+    const seenTaskIds = new Set<string>();
+    for (const check of manifest.checks || []) {
+      if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
+        seenTaskIds.add(check.taskMapping);
+        const taskInfo = TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
+        if (taskInfo) {
+          mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
+        }
+      }
+    }
+
     return {
       id: manifest.id,
       name: manifest.name,
@@ -136,6 +167,7 @@ export class ConnectionsController {
       docsUrl: manifest.docsUrl,
       credentialFields,
       setupInstructions,
+      mappedTasks,
     };
   }
 
@@ -272,6 +304,22 @@ export class ConnectionsController {
     this.logger.log(
       `Created connection for ${providerSlug}, org: ${organizationId}`,
     );
+
+    // Auto-run checks if possible (fire and forget)
+    this.autoCheckRunnerService
+      .tryAutoRunChecks(connection.id)
+      .then((didRun) => {
+        if (didRun) {
+          this.logger.log(
+            `Auto-ran checks for ${providerSlug} after connection created`,
+          );
+        }
+      })
+      .catch((err) => {
+        this.logger.warn(
+          `Failed to auto-run checks after connection: ${err.message}`,
+        );
+      });
 
     return {
       id: connection.id,
@@ -423,7 +471,7 @@ export class ConnectionsController {
 
     // Check if token needs refresh (for OAuth integrations that support it)
     if (manifest.auth.type === 'oauth2') {
-      const oauthConfig = manifest.auth.config as OAuthConfig;
+      const oauthConfig = manifest.auth.config;
 
       // Skip refresh for providers that don't support refresh tokens (e.g., GitHub)
       const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
@@ -573,6 +621,22 @@ export class ConnectionsController {
     }
 
     this.logger.log(`Updated credentials for connection ${id}`);
+
+    // Auto-run checks if possible (fire and forget)
+    this.autoCheckRunnerService
+      .tryAutoRunChecks(id)
+      .then((didRun) => {
+        if (didRun) {
+          this.logger.log(
+            `Auto-ran checks for connection ${id} after credential update`,
+          );
+        }
+      })
+      .catch((err) => {
+        this.logger.warn(
+          `Failed to auto-run checks after credential update: ${err.message}`,
+        );
+      });
 
     return { success: true };
   }

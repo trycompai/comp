@@ -1,10 +1,19 @@
-import { findSimilarContent, findSimilarContentBatch } from '@/vector-store/lib';
+import {
+  findSimilarContent,
+  findSimilarContentBatch,
+} from '@/vector-store/lib';
 import type { SimilarContentResult } from '@/vector-store/lib';
 import { openai } from '@ai-sdk/openai';
 import { logger } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
-import { deduplicateSources, type Source } from '@/questionnaire/utils/deduplicate-sources';
-import { ANSWER_MODEL, ANSWER_SYSTEM_PROMPT } from '@/questionnaire/utils/constants';
+import {
+  deduplicateSources,
+  type Source,
+} from '@/questionnaire/utils/deduplicate-sources';
+import {
+  ANSWER_MODEL,
+  ANSWER_SYSTEM_PROMPT,
+} from '@/questionnaire/utils/constants';
 
 export interface AnswerWithSources {
   answer: string | null;
@@ -18,11 +27,13 @@ export interface AnswerWithSources {
 /**
  * Extracts source information from similar content results and deduplicates them
  */
-function extractAndDeduplicateSources(similarContent: SimilarContentResult[]): Source[] {
+function extractAndDeduplicateSources(
+  similarContent: SimilarContentResult[],
+): Source[] {
   const sourcesBeforeDedup = similarContent.map((result) => {
-    const r = result as SimilarContentResult;
+    const r = result;
     let sourceName: string | undefined;
-    
+
     if (r.policyName) {
       sourceName = `Policy: ${r.policyName}`;
     } else if (r.contextQuestion) {
@@ -50,11 +61,13 @@ function extractAndDeduplicateSources(similarContent: SimilarContentResult[]): S
 /**
  * Builds context string from similar content for LLM prompt
  */
-function buildContextFromContent(similarContent: SimilarContentResult[]): string {
+function buildContextFromContent(
+  similarContent: SimilarContentResult[],
+): string {
   const contextParts = similarContent.map((result, index) => {
-    const r = result as SimilarContentResult;
+    const r = result;
     let sourceInfo = '';
-    
+
     if (r.policyName) {
       sourceInfo = `Source: Policy "${r.policyName}"`;
     } else if (r.contextQuestion) {
@@ -216,7 +229,10 @@ export async function generateAnswerWithRAGBatch(
 
     // Step 1: Find similar content for ALL questions at once (batch embeddings)
     const searchStartTime = Date.now();
-    const allSimilarContent = await findSimilarContentBatch(questions, organizationId);
+    const allSimilarContent = await findSimilarContentBatch(
+      questions,
+      organizationId,
+    );
     const searchTime = Date.now() - searchStartTime;
 
     logger.info('Batch search completed', {

@@ -1,3 +1,4 @@
+import { getManifest, runAllChecks } from '@comp/integration-platform';
 import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
 
@@ -16,7 +17,14 @@ export const runTaskIntegrationChecks = task({
     organizationId: string;
     checkIds: string[];
   }) => {
-    const { taskId, taskTitle, connectionId, providerSlug, organizationId, checkIds } = payload;
+    const {
+      taskId,
+      taskTitle,
+      connectionId,
+      providerSlug,
+      organizationId,
+      checkIds,
+    } = payload;
 
     logger.info(`Running integration checks for task "${taskTitle}"`, {
       taskId,
@@ -25,8 +33,6 @@ export const runTaskIntegrationChecks = task({
       checkCount: checkIds.length,
     });
 
-    // Get manifest
-    const { getManifest, runAllChecks } = await import('@comp/integration-platform');
     const manifest = getManifest(providerSlug);
 
     if (!manifest) {
@@ -45,8 +51,7 @@ export const runTaskIntegrationChecks = task({
     }
 
     // Ensure we have valid credentials (refresh OAuth tokens if needed)
-    // Call the API to handle token refresh since it has access to OAuth client credentials
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
     let credentials: Record<string, string>;
 
     try {
@@ -74,7 +79,8 @@ export const runTaskIntegrationChecks = task({
             where: { id: connectionId },
             data: {
               status: 'error',
-              errorMessage: 'OAuth token expired. Please reconnect the integration.',
+              errorMessage:
+                'OAuth token expired. Please reconnect the integration.',
             },
           });
         }
@@ -97,18 +103,33 @@ export const runTaskIntegrationChecks = task({
 
     // Validate credentials based on auth type
     if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
-      logger.error(`No OAuth access token found for connection: ${connectionId}`);
-      return { success: false, error: 'No OAuth access token found. Please reconnect.' };
+      logger.error(
+        `No OAuth access token found for connection: ${connectionId}`,
+      );
+      return {
+        success: false,
+        error: 'No OAuth access token found. Please reconnect.',
+      };
     }
 
-    if (manifest.auth.type === 'custom' && Object.keys(credentials).length === 0) {
-      logger.error(`No credentials found for custom integration: ${connectionId}`);
-      return { success: false, error: 'No credentials found for custom integration' };
+    if (
+      manifest.auth.type === 'custom' &&
+      Object.keys(credentials).length === 0
+    ) {
+      logger.error(
+        `No credentials found for custom integration: ${connectionId}`,
+      );
+      return {
+        success: false,
+        error: 'No credentials found for custom integration',
+      };
     }
 
     const variables =
-      (connection.variables as Record<string, string | number | boolean | string[] | undefined>) ||
-      {};
+      (connection.variables as Record<
+        string,
+        string | number | boolean | string[] | undefined
+      >) || {};
 
     // Track overall results across all checks for this task
     let totalFindings = 0;
@@ -146,13 +167,15 @@ export const runTaskIntegrationChecks = task({
             taskId,
             checkId: checkResult.checkId,
             checkName: checkResult.checkName,
-            status: checkResult.status === 'error' ? 'failed' : checkResult.status,
+            status:
+              checkResult.status === 'error' ? 'failed' : checkResult.status,
             startedAt: new Date(),
             completedAt: new Date(),
             durationMs: checkResult.durationMs,
             totalChecked:
               checkResult.result.summary?.totalChecked ||
-              checkResult.result.passingResults.length + checkResult.result.findings.length,
+              checkResult.result.passingResults.length +
+                checkResult.result.findings.length,
             passedCount: checkResult.result.passingResults.length,
             failedCount: checkResult.result.findings.length,
             errorMessage: checkResult.error,
@@ -169,7 +192,9 @@ export const runTaskIntegrationChecks = task({
             resourceId: r.resourceId,
             title: r.title,
             description: r.description,
-            evidence: r.evidence ? JSON.parse(JSON.stringify(r.evidence)) : undefined,
+            evidence: r.evidence
+              ? JSON.parse(JSON.stringify(r.evidence))
+              : undefined,
           })),
           ...checkResult.result.findings.map((f) => ({
             checkRunId: checkRun.id,
@@ -180,7 +205,9 @@ export const runTaskIntegrationChecks = task({
             description: f.description,
             severity: f.severity,
             remediation: f.remediation,
-            evidence: f.evidence ? JSON.parse(JSON.stringify(f.evidence)) : undefined,
+            evidence: f.evidence
+              ? JSON.parse(JSON.stringify(f.evidence))
+              : undefined,
           })),
         ];
 
@@ -208,7 +235,9 @@ export const runTaskIntegrationChecks = task({
           where: { id: taskId },
           data: { status: 'failed' },
         });
-        logger.info(`Task ${taskId} marked as failed due to ${totalFindings} findings`);
+        logger.info(
+          `Task ${taskId} marked as failed due to ${totalFindings} findings`,
+        );
       } else if (totalPassing > 0) {
         // Only update to done if not already done
         const currentTask = await db.task.findUnique({
@@ -252,7 +281,8 @@ export const runTaskIntegrationChecks = task({
         checksRun: checkIds.length,
         totalPassing,
         totalFindings,
-        taskStatus: totalFindings > 0 ? 'failed' : totalPassing > 0 ? 'done' : null,
+        taskStatus:
+          totalFindings > 0 ? 'failed' : totalPassing > 0 ? 'done' : null,
       };
     } catch (error) {
       logger.error(`Failed to run checks for task ${taskId}`, {

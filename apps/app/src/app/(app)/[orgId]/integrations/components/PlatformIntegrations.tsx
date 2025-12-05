@@ -395,6 +395,29 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                         {provider.description}
                       </CardDescription>
 
+                      {/* Mapped tasks */}
+                      {provider.mappedTasks && provider.mappedTasks.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {provider.mappedTasks.slice(0, 3).map((task) => (
+                            <Badge
+                              key={task.id}
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0.5 font-normal"
+                            >
+                              {task.name}
+                            </Badge>
+                          ))}
+                          {provider.mappedTasks.length > 3 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0.5 font-normal"
+                            >
+                              +{provider.mappedTasks.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
                       {isConnected ? null : hasError ? (
                         <div className="space-y-2 pt-2 border-t border-border/50">
                           <p className="text-xs text-destructive line-clamp-1">

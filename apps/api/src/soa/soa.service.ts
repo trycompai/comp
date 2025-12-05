@@ -145,27 +145,27 @@ export class SOAService {
     if (!configuration) return;
 
     const questions = configuration.questions as unknown as SOAQuestion[];
-      const updatedQuestions = questions.map((q) => {
+    const updatedQuestions = questions.map((q) => {
       if (q.id === questionId) {
-          return {
-            ...q,
-            columnMapping: {
-              ...q.columnMapping,
-              isApplicable:
+        return {
+          ...q,
+          columnMapping: {
+            ...q.columnMapping,
+            isApplicable:
               isApplicable !== undefined
                 ? isApplicable
-                  : q.columnMapping.isApplicable,
-              justification:
+                : q.columnMapping.isApplicable,
+            justification:
               justification !== undefined
                 ? justification
-                  : q.columnMapping.justification,
-            },
-          };
-        }
-        return q;
-      });
+                : q.columnMapping.justification,
+          },
+        };
+      }
+      return q;
+    });
 
-      await db.sOAFrameworkConfiguration.update({
+    await db.sOAFrameworkConfiguration.update({
       where: { id: configurationId },
       data: { questions: JSON.parse(JSON.stringify(updatedQuestions)) },
     });
@@ -483,7 +483,11 @@ export class SOAService {
     totalQuestions: number,
     answeredCount: number,
   ): Promise<void> {
-    return updateDocumentAfterAutoFill(documentId, totalQuestions, answeredCount);
+    return updateDocumentAfterAutoFill(
+      documentId,
+      totalQuestions,
+      answeredCount,
+    );
   }
 
   // Private helper methods

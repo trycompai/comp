@@ -126,7 +126,13 @@ export class AdminIntegrationsController {
     @Body() body: SavePlatformCredentialDto,
     // TODO: Get userId from auth context
   ) {
-    const { providerSlug, clientId, clientSecret, customScopes, customSettings } = body;
+    const {
+      providerSlug,
+      clientId,
+      clientSecret,
+      customScopes,
+      customSettings,
+    } = body;
 
     // Validate provider exists
     const manifest = getManifest(providerSlug);

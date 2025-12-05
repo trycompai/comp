@@ -104,7 +104,7 @@ export class SyncController {
 
     // Try to refresh the token if it might be expired (Google tokens expire after 1 hour)
     if (manifest.auth.type === 'oauth2' && credentials.refresh_token) {
-      const oauthConfig = manifest.auth.config as OAuthConfig;
+      const oauthConfig = manifest.auth.config;
       try {
         // Get OAuth credentials (client ID/secret) for the refresh
         const oauthCredentials =
@@ -467,9 +467,7 @@ export class SyncController {
     // Try to refresh the token if it might be expired
     const manifest = getManifest('rippling');
     const oauthConfig =
-      manifest?.auth.type === 'oauth2'
-        ? (manifest.auth.config as OAuthConfig)
-        : null;
+      manifest?.auth.type === 'oauth2' ? manifest.auth.config : null;
 
     if (oauthConfig?.supportsRefreshToken && credentials.refresh_token) {
       try {

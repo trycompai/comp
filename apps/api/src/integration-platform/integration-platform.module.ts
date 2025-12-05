@@ -11,6 +11,7 @@ import { SyncController } from './controllers/sync.controller';
 import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
 import { OAuthCredentialsService } from './services/oauth-credentials.service';
+import { AutoCheckRunnerService } from './services/auto-check-runner.service';
 import { ProviderRepository } from './repositories/provider.repository';
 import { ConnectionRepository } from './repositories/connection.repository';
 import { CredentialRepository } from './repositories/credential.repository';
@@ -36,6 +37,7 @@ import { CheckRunRepository } from './repositories/check-run.repository';
     CredentialVaultService,
     ConnectionService,
     OAuthCredentialsService,
+    AutoCheckRunnerService,
     // Repositories
     ProviderRepository,
     ConnectionRepository,
@@ -45,6 +47,11 @@ import { CheckRunRepository } from './repositories/check-run.repository';
     PlatformCredentialRepository,
     CheckRunRepository,
   ],
-  exports: [CredentialVaultService, ConnectionService, OAuthCredentialsService],
+  exports: [
+    CredentialVaultService,
+    ConnectionService,
+    OAuthCredentialsService,
+    AutoCheckRunnerService,
+  ],
 })
 export class IntegrationPlatformModule {}

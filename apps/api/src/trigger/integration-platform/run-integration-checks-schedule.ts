@@ -1,3 +1,4 @@
+import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
@@ -45,8 +46,6 @@ export const integrationChecksSchedule = schedules.task({
     }> = [];
 
     for (const connection of activeConnections) {
-      // Import manifest to get check mappings
-      const { getManifest } = await import('@comp/integration-platform');
       const manifest = getManifest(connection.provider.slug);
 
       if (!manifest?.checks || manifest.checks.length === 0) {
@@ -99,7 +98,9 @@ export const integrationChecksSchedule = schedules.task({
       return { success: true, tasksTriggered: 0 };
     }
 
-    logger.info(`Found ${tasksToRun.length} tasks with integration checks to run`);
+    logger.info(
+      `Found ${tasksToRun.length} tasks with integration checks to run`,
+    );
 
     // Trigger in batches of 500
     const BATCH_SIZE = 500;
@@ -112,7 +113,9 @@ export const integrationChecksSchedule = schedules.task({
         await runTaskIntegrationChecks.batchTrigger(batch);
         totalTriggered += batch.length;
 
-        logger.info(`Triggered batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} tasks`);
+        logger.info(
+          `Triggered batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} tasks`,
+        );
       }
 
       logger.info(`Triggered ${totalTriggered} task integration check runs`);

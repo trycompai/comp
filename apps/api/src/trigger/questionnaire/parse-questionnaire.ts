@@ -4,8 +4,14 @@ import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
 
 // Import shared utilities
-import { extractContentFromFile, type ContentExtractionLogger } from '@/questionnaire/utils/content-extractor';
-import { parseQuestionsAndAnswers, type QuestionAnswer } from '@/questionnaire/utils/question-parser';
+import {
+  extractContentFromFile,
+  type ContentExtractionLogger,
+} from '@/questionnaire/utils/content-extractor';
+import {
+  parseQuestionsAndAnswers,
+  type QuestionAnswer,
+} from '@/questionnaire/utils/question-parser';
 
 // Adapter to convert Trigger.dev logger to ContentExtractionLogger interface
 const triggerLogger: ContentExtractionLogger = {
@@ -172,7 +178,11 @@ async function extractContentFromAttachment(
     response.ContentType ||
     (attachment.type === 'image' ? 'image/png' : 'application/pdf');
 
-  const content = await extractContentFromFile(base64Data, fileType, triggerLogger);
+  const content = await extractContentFromFile(
+    base64Data,
+    fileType,
+    triggerLogger,
+  );
 
   return { content, fileType };
 }
@@ -215,7 +225,11 @@ async function extractContentFromS3Key(
   const detectedFileType =
     response.ContentType || fileType || 'application/octet-stream';
 
-  const content = await extractContentFromFile(base64Data, detectedFileType, triggerLogger);
+  const content = await extractContentFromFile(
+    base64Data,
+    detectedFileType,
+    triggerLogger,
+  );
 
   return { content, fileType: detectedFileType };
 }
@@ -249,7 +263,9 @@ export const parseQuestionnaireTask = task({
       switch (payload.inputType) {
         case 'file': {
           if (!payload.fileData || !payload.fileType) {
-            throw new Error('File data and file type are required for file input');
+            throw new Error(
+              'File data and file type are required for file input',
+            );
           }
           extractedContent = await extractContentFromFile(
             payload.fileData,
@@ -342,12 +358,14 @@ export const parseQuestionnaireTask = task({
             totalQuestions: questionsAndAnswers.length,
             answeredQuestions: 0,
             questions: {
-              create: questionsAndAnswers.map((qa: QuestionAnswer, index: number) => ({
-                question: qa.question,
-                answer: qa.answer || null,
-                questionIndex: index,
-                status: qa.answer ? 'generated' : 'untouched',
-              })),
+              create: questionsAndAnswers.map(
+                (qa: QuestionAnswer, index: number) => ({
+                  question: qa.question,
+                  answer: qa.answer || null,
+                  questionIndex: index,
+                  status: qa.answer ? 'generated' : 'untouched',
+                }),
+              ),
             },
           },
         });

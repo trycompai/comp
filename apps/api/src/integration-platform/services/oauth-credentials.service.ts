@@ -140,7 +140,7 @@ export class OAuthCredentialsService {
       encryptedClientId,
       encryptedClientSecret,
       customScopes,
-      customSettings: customSettings as Prisma.InputJsonValue | undefined,
+      customSettings: customSettings,
     });
 
     this.logger.log(

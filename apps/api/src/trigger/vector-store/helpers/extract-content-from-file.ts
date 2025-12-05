@@ -1,4 +1,4 @@
-import { logger } from '../../logger';
+import { logger } from '@/vector-store/logger';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import * as XLSX from 'xlsx';

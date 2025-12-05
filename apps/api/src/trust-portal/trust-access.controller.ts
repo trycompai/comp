@@ -380,7 +380,8 @@ export class TrustAccessController {
   @ApiQuery({
     name: 'query',
     required: false,
-    description: 'Query parameter to append to the access link (e.g., security-questionnaire)',
+    description:
+      'Query parameter to append to the access link (e.g., security-questionnaire)',
     example: 'security-questionnaire',
   })
   @ApiResponse({
@@ -443,7 +444,8 @@ export class TrustAccessController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'List compliance resources by access token',
-    description: 'Get list of uploaded compliance certificates for the organization',
+    description:
+      'Get list of uploaded compliance certificates for the organization',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -457,7 +459,8 @@ export class TrustAccessController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Download compliance resource by access token',
-    description: 'Get signed URL to download a specific compliance certificate file',
+    description:
+      'Get signed URL to download a specific compliance certificate file',
   })
   @ApiParam({
     name: 'framework',

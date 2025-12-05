@@ -16,6 +16,7 @@ RUN curl -fsSL https://bun.sh/install | bash \
   && bun install --production --ignore-scripts
 
 COPY node_modules/@trycompai ./node_modules/@trycompai
+COPY node_modules/@comp ./node_modules/@comp
 COPY node_modules/@prisma ./node_modules/@prisma
 COPY node_modules/.prisma ./node_modules/.prisma
 

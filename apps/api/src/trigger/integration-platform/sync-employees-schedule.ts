@@ -2,7 +2,7 @@ import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+const API_BASE_URL = process.env.BASE_URL || 'http://localhost:3333';
 
 /**
  * Scheduled task that syncs employees from connected integrations.
@@ -77,7 +77,9 @@ export const syncEmployeesSchedule = schedules.task({
       return { success: true, syncsTriggered: 0, results: [] };
     }
 
-    logger.info(`Found ${syncConnections.length} organizations with valid sync connections`);
+    logger.info(
+      `Found ${syncConnections.length} organizations with valid sync connections`,
+    );
 
     const results: Array<{
       connectionId: string;
@@ -128,7 +130,8 @@ export const syncEmployeesSchedule = schedules.task({
           deactivated: syncResult.deactivated,
         });
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
 
         results.push({
           connectionId: conn.id,
@@ -203,7 +206,9 @@ async function syncGoogleWorkspace({
   connectionId: string;
   organizationId: string;
 }): Promise<SyncResult> {
-  const url = new URL(`${API_BASE_URL}/v1/integrations/sync/google-workspace/employees`);
+  const url = new URL(
+    `${API_BASE_URL}/v1/integrations/sync/google-workspace/employees`,
+  );
   url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 
@@ -216,7 +221,9 @@ async function syncGoogleWorkspace({
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`Google Workspace sync failed: ${response.status} - ${errorBody}`);
+    throw new Error(
+      `Google Workspace sync failed: ${response.status} - ${errorBody}`,
+    );
   }
 
   const data = await response.json();
@@ -237,7 +244,9 @@ async function syncRippling({
   connectionId: string;
   organizationId: string;
 }): Promise<SyncResult> {
-  const url = new URL(`${API_BASE_URL}/v1/integrations/sync/rippling/employees`);
+  const url = new URL(
+    `${API_BASE_URL}/v1/integrations/sync/rippling/employees`,
+  );
   url.searchParams.set('organizationId', organizationId);
   url.searchParams.set('connectionId', connectionId);
 

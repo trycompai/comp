@@ -17,6 +17,7 @@ import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { ConnectionService } from '../services/connection.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
+import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 import { getManifest, type OAuthConfig } from '@comp/integration-platform';
 
 interface StartOAuthDto {
@@ -44,6 +45,7 @@ export class OAuthController {
     private readonly credentialVaultService: CredentialVaultService,
     private readonly connectionService: ConnectionService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
+    private readonly autoCheckRunnerService: AutoCheckRunnerService,
   ) {}
 
   /**
@@ -313,6 +315,22 @@ export class OAuthController {
       this.logger.log(
         `OAuth completed for ${oauthState.providerSlug}, org: ${oauthState.organizationId}`,
       );
+
+      // Auto-run checks if possible (fire and forget - don't block the redirect)
+      this.autoCheckRunnerService
+        .tryAutoRunChecks(connection.id)
+        .then((didRun) => {
+          if (didRun) {
+            this.logger.log(
+              `Auto-ran checks for ${oauthState.providerSlug} after OAuth`,
+            );
+          }
+        })
+        .catch((err) => {
+          this.logger.warn(
+            `Failed to auto-run checks after OAuth: ${err.message}`,
+          );
+        });
 
       // Redirect to success URL
       const successUrl = this.buildRedirectUrl(

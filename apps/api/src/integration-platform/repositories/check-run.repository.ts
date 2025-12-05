@@ -204,4 +204,3 @@ export class CheckRunRepository {
     });
   }
 }
-

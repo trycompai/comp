@@ -28,6 +28,8 @@ export interface IntegrationProviderResponse {
   setupInstructions?: string;
   /** For OAuth providers: whether platform admin has configured credentials */
   oauthConfigured?: boolean;
+  /** Tasks that will be auto-satisfied when this integration is connected */
+  mappedTasks?: Array<{ id: string; name: string }>;
 }
 
 /**

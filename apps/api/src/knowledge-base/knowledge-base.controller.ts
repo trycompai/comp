@@ -173,7 +173,9 @@ export class KnowledgeBaseController {
   }
 
   @Post('runs/:runId/token')
-  @ApiOperation({ summary: 'Create a public access token for a Trigger.dev run' })
+  @ApiOperation({
+    summary: 'Create a public access token for a Trigger.dev run',
+  })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Public access token created',
