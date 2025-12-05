@@ -21,6 +21,7 @@
               "automated-evidence",
               "device-agent",
               "security-questionnaire",
+              "security-questionnaire-trust-center",
               "trust-access"
             ]
           }

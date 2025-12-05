@@ -130,10 +130,14 @@ If the 7-day signing window expires, administrators see `NDA Link Expired` statu
 
 After successfully signing the NDA, users receive an email notification: _"Access Granted"_. This email contains their first **Access Link** (valid for 24 hours).
 
-Once authenticated via the access link, users can:
+Once authenticated via the access link, users are presented with a tabbed interface providing access to different features:
 
-- Browse and read all published, non-archived compliance policies
-- Generate a single PDF bundle containing all accessible policies
+#### Documents Tab (Default)
+
+The **Documents** tab is selected by default and provides access to compliance documentation:
+
+- **Compliance Resources Section:** Browse and read all published, non-archived compliance policies organized by category
+- **PDF Bundle Generation:** Generate a single PDF bundle containing all accessible policies
   - The downloaded PDF bundle is watermarked with the user's full name, email address, and a unique document identifier
 
 <img
@@ -142,7 +146,34 @@ Once authenticated via the access link, users can:
   style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
 />
 
-Access grant status shows as `Active` in the dashboard, the grant expiration date is visible, and download activity is logged when users generate PDF bundles.
+#### Security Questionnaire Tab
+
+The **Security Questionnaire** tab enables external users to automatically parse and answer security questionnaires using the organization's compliance documentation.
+
+**Questionnaire Upload Interface:**
+
+1. **File Upload Field:** Upload your security questionnaire file
+   - Supported formats: PDF, CSV, Excel (.xlsx, .xls)
+   - File must be readable and not corrupted
+   - Maximum file size: 10MB
+
+2. **Output Format Selection:** Choose the format for the processed questionnaire
+   - **Excel (.xlsx)** - Default format, editable in Excel
+   - **PDF** - Final submission format
+   - **CSV** - Simple data exchange format
+
+3. **Upload & Process Button:** Submit the questionnaire for processing
+   - The system automatically extracts questions from your file
+   - Answers are generated based on the organization's published policies
+   - Processing typically takes 5-30 seconds depending on file type and size
+
+After processing, the completed questionnaire is automatically downloaded with all questions answered based on the organization's compliance documentation. Users can review and edit answers before final submission.
+
+<Note>
+  For detailed API documentation and integration examples, see the [Security Questionnaire Trust Center documentation](./security-questionnaire-trust-center).
+</Note>
+
+Access grant status shows as `Active` in the dashboard, the grant expiration date is visible, and all activity (document downloads and questionnaire submissions) is logged for audit purposes.
 
 ---
 
