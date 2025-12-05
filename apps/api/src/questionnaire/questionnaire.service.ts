@@ -16,7 +16,7 @@ import { db, Prisma } from '@db';
 import { syncManualAnswerToVector, syncOrganizationEmbeddings } from '@/vector-store/lib';
 
 // Import shared utilities
-import { extractContentFromFile, type ContentExtractionLogger } from './utils/content-extractor';
+import { extractContentFromFile, extractQuestionsWithAI, type ContentExtractionLogger } from './utils/content-extractor';
 import { parseQuestionsAndAnswers, type QuestionAnswer as ParsedQA } from './utils/question-parser';
 import { generateExportFile, type ExportFormat } from './utils/export-generator';
 import {
@@ -149,12 +149,12 @@ export class QuestionnaireService {
       source: dto.source || 'internal',
     });
 
-    const content = await extractContentFromFile(
+    // Use AI-powered extraction (faster, handles all file formats)
+    const questionsAndAnswers = await extractQuestionsWithAI(
       dto.fileData,
       dto.fileType,
       this.contentLogger,
     );
-    const questionsAndAnswers = await parseQuestionsAndAnswers(content, this.contentLogger);
 
     const questionnaireId = await persistQuestionnaireResult(
       {

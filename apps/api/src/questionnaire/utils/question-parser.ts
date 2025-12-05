@@ -114,41 +114,56 @@ export async function parseChunkQuestionsAndAnswers(
   chunkIndex: number,
   totalChunks: number,
 ): Promise<QuestionAnswer[]> {
-  const { object } = await generateObject({
-    model: openai(PARSING_MODEL),
-    mode: 'json',
-    schema: jsonSchema({
-      type: 'object',
-      properties: {
-        questionsAndAnswers: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              question: { type: 'string', description: 'The question text' },
-              answer: {
-                anyOf: [{ type: 'string' }, { type: 'null' }],
-                description: 'The answer to the question. Use null if no answer is provided.',
+  try {
+    const { object } = await generateObject({
+      model: openai(PARSING_MODEL),
+      mode: 'json',
+      schema: jsonSchema({
+        type: 'object',
+        properties: {
+          questionsAndAnswers: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                question: { type: 'string', description: 'The question text' },
+                answer: {
+                  anyOf: [{ type: 'string' }, { type: 'null' }],
+                  description: 'The answer to the question. Use null if no answer is provided.',
+                },
               },
+              required: ['question'],
             },
-            required: ['question'],
           },
         },
-      },
-      required: ['questionsAndAnswers'],
-    }),
-    system: QUESTION_PARSING_SYSTEM_PROMPT,
-    prompt: buildParsingPrompt(chunk, chunkIndex, totalChunks),
-  });
+        required: ['questionsAndAnswers'],
+      }),
+      system: QUESTION_PARSING_SYSTEM_PROMPT,
+      prompt: buildParsingPrompt(chunk, chunkIndex, totalChunks),
+    });
 
-  const parsed = (object as { questionsAndAnswers: QuestionAnswer[] })
-    .questionsAndAnswers;
+    const parsed = (object as { questionsAndAnswers?: QuestionAnswer[] })
+      ?.questionsAndAnswers;
 
-  // Post-process to ensure empty strings are converted to null
-  return parsed.map((qa) => ({
-    question: qa.question,
-    answer: qa.answer && qa.answer.trim() !== '' ? qa.answer : null,
-  }));
+    // Handle case where LLM returns unexpected response
+    if (!parsed || !Array.isArray(parsed)) {
+      return [];
+    }
+
+    // Post-process to ensure empty strings are converted to null
+    return parsed
+      .filter((qa) => qa && typeof qa.question === 'string' && qa.question.trim())
+      .map((qa) => ({
+        question: qa.question.trim(),
+        answer: qa.answer && typeof qa.answer === 'string' && qa.answer.trim() !== '' 
+          ? qa.answer.trim() 
+          : null,
+      }));
+  } catch (error) {
+    // Log error but don't fail the entire parsing
+    console.error(`Error parsing chunk ${chunkIndex + 1}/${totalChunks}:`, error);
+    return [];
+  }
 }
 
 function buildParsingPrompt(
@@ -156,22 +171,22 @@ function buildParsingPrompt(
   chunkIndex: number,
   totalChunks: number,
 ): string {
-  if (totalChunks > 1) {
-    return `Chunk ${chunkIndex + 1} of ${totalChunks}.
-Instructions:
-- Extract only question → answer pairs that represent real questions.
-- Ignore rows or cells that contain only headers/labels (e.g. "Company Name", "Department", "Assessment Date", "Question", "Answer") or other metadata.
-- If an answer is blank, set it to null.
+  const instructions = `Instructions:
+- Extract all question → answer pairs from this questionnaire data
+- IMPORTANT: Look for the actual question TEXT (full sentences), NOT just question IDs like "SQ14.3"
+- The question text is the cell containing a full sentence (often ending with "?" or starting with What/How/Do/Is/Are/Does/Can/Will/Should)
+- Match each question to its corresponding Response/Answer value from the same row
+- If the Response/Answer is empty, set answer to null
+- Skip section headers and metadata rows`;
 
-Chunk content:
+  if (totalChunks > 1) {
+    return `${instructions}
+
+Chunk ${chunkIndex + 1} of ${totalChunks}:
 ${chunk}`;
   }
 
-  return `Instructions:
-- Extract all meaningful question → answer pairs from the following content.
-- Ignore rows or cells that contain only headers/labels (e.g. "Company Name", "Department", "Assessment Date", "Question", "Answer", "Name of Assessor").
-- Keep only entries that are actual questions (end with '?' or start with interrogative words).
-- If an answer is blank, set it to null.
+  return `${instructions}
 
 Content:
 ${chunk}`;
@@ -250,18 +265,45 @@ export function buildQuestionAwareChunks(
 }
 
 /**
- * Checks if a line looks like a question
+ * Checks if a line looks like a question or form field
  */
 export function looksLikeQuestionLine(line: string): boolean {
-  const questionSuffix = /[?？]\s*$/;
+  // Line contains question mark anywhere (for "Question: xxx?" format)
+  const hasQuestionMark = /[?？]/.test(line);
+
+  // Line starts with or contains "Question:" label (from our formatted Excel output)
+  const questionLabel = /question\s*:/i;
+
+  // Line starts with optional number prefix, then explicit question/q label
   const explicitQuestionPrefix = /^(?:\d+\s*[\).\]]\s*)?(?:question|q)\b/i;
+
+  // Interrogative words at the START of line
   const interrogativePrefix =
     /^(?:what|why|how|when|where|is|are|does|do|can|will|should|list|describe|explain)\b/i;
 
+  // Numbered questions: "06. Do you have...", "1) What is...", "Q1: How do..."
+  // This handles questions where a number/prefix comes before the interrogative
+  const numberedQuestionWithInterrogative =
+    /^(?:\d+\s*[\).\]:]\s*|[qQ]\d*\s*[\).\]:]\s*)(?:what|why|how|when|where|is|are|does|do|can|will|should|have|list|describe|explain|if)\b/i;
+
+  // Form-style numbered fields: "1.1 Vendor Name", "2.3 Contact Email", "1.4 Company Address"
+  // Pattern: number.number followed by a word (the field label)
+  const formStyleNumberedField = /^\d+\.\d+\s+\w+/;
+
+  // Items with required marker or selection notes
+  const hasRequiredMarker = /\*\s*$/.test(line);
+  const hasSelectionNote =
+    /\((?:single|multiple)\s+selection|allows?\s+other|required\)/i.test(line);
+
   return (
-    questionSuffix.test(line) ||
+    hasQuestionMark ||
+    questionLabel.test(line) ||
     explicitQuestionPrefix.test(line) ||
-    interrogativePrefix.test(line)
+    interrogativePrefix.test(line) ||
+    numberedQuestionWithInterrogative.test(line) ||
+    formStyleNumberedField.test(line) ||
+    hasRequiredMarker ||
+    hasSelectionNote
   );
 }
 
