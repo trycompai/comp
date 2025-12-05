@@ -1,133 +1,186 @@
 ---
-description: Any time we are going to write react components and / or layouts
-alwaysApply: false
+description: Design system guidelines for B2B UI with TailwindCSS and shadcn/ui
+globs: **/*.tsx
+alwaysApply: true
 ---
 
-Rule Name: design-system
-Description:
-Design System & Component Guidelines
+# Design System
 
-## Design Philosophy
+## Core Principles
 
-- **B2B, Modern, Flat, Minimal, Elegant**: All UI should follow a clean, professional aesthetic suitable for business applications
-- **Sleek & Minimal**: Avoid visual clutter, use whitespace effectively, keep interfaces clean
-- **Dark Mode First**: Always ensure components work seamlessly in both light and dark modes
+- **B2B, Modern, Flat, Minimal**: Clean professional aesthetic, no visual clutter
+- **Dark Mode First**: All components must work in both light and dark modes
+- **shadcn/ui Base**: Use shadcn components with variants, not className overrides
 
 ## Component Usage
 
-- **Adhere to Base Components**: Minimize custom overrides and stick to shadcn/ui base components whenever possible
-- **Semantic Color Classes**: Use semantic classes like `text-muted-foreground`, `bg-muted/50` instead of hardcoded colors
-- **Dark Mode Support**: Always use dark mode variants like `bg-green-50 dark:bg-green-950/20`, `text-green-600 dark:text-green-400`
+### ✅ Always Do This
 
-## Typography & Sizing
+```tsx
+// Use shadcn component variants
+<Button variant="destructive" size="sm">Delete</Button>
+<Badge variant="outline">Status</Badge>
+<Card>Content</Card>
 
-- **Moderate Text Sizes**: Avoid overly large text - prefer `text-base`, `text-sm`, `text-xs` over `text-xl+`
-- **Consistent Hierarchy**: Use `font-medium`, `font-semibold` sparingly, prefer `font-normal` with size differentiation
-- **Tabular Numbers**: Use `tabular-nums` class for numeric data to ensure proper alignment
+// Use semantic color tokens
+<div className="bg-background text-foreground">
+<div className="bg-muted text-muted-foreground">
+<div className="border-border">
 
-## Layout & Spacing
+// Dark mode with explicit variants
+<div className="bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400">
+```
 
-- **Flexbox-First**: ALWAYS prefer flexbox with `gap` over hardcoded margins (`mt-`, `mb-`, `ml-`, `mr-`)
-- **Use Gaps, Not Margins**: Use `gap-2`, `gap-4`, `space-y-4` for spacing between elements
-- **Consistent Spacing**: Use standard Tailwind spacing scale (`space-y-4`, `gap-6`, etc.)
-- **Card-Based Layouts**: Prefer Card components for content organization
-- **Minimal Padding**: Use conservative padding - `p-3`, `p-4` rather than larger values
-- **Clean Separators**: Use subtle borders (`border-t`, `border-muted`) instead of heavy dividers
-- **NEVER Hardcode Margins**: Avoid `mt-4`, `mb-2`, `ml-3` unless absolutely necessary for exceptions
+### ❌ Never Do This
 
-## Color & Visual Elements
+```tsx
+// Overriding shadcn components with className
+<Button className="bg-red-500 px-8 rounded-full">Click</Button>
+<Card className="shadow-xl border-2">Content</Card>
 
-- **Status Colors**:
-  - Green for completed/success states
-  - Blue for in-progress/info states
-  - Yellow for warnings
-  - Red for errors/destructive actions
-- **Subtle Indicators**: Use small colored dots (`w-2 h-2 rounded-full`) instead of large icons for status
-- **Minimal Shadows**: Prefer `hover:shadow-sm` over heavy shadow effects
-- **Progress Bars**: Keep thin (`h-1`, `h-2`) for minimal visual weight
-
-## Interactive Elements
-
-- **Subtle Hover States**: Use gentle transitions (`transition-shadow`, `hover:shadow-sm`)
-- **Consistent Button Sizing**: Prefer `size="sm"` for most buttons, `size="icon"` for icon-only
-- **Badge Usage**: Keep badges minimal with essential info only (percentages, short status)
-
-## Data Display
-
-- **Shared Design Language**: Ensure related components (cards, overviews, details) use consistent patterns
-- **Minimal Stats**: Present data cleanly without excessive decoration
-- **Contextual Icons**: Use small, relevant icons (`h-3 w-3`, `h-4 w-4`) sparingly for context
-
-## Anti-Patterns to Avoid
-
-- Large text sizes (`text-2xl+` except for main headings)
-- Heavy shadows or borders
-- Excessive use of colored backgrounds
-- Redundant badges or status indicators
-- Complex custom styling overrides
-- Non-semantic color usage (hardcoded hex values)
-- Cluttered layouts with too many visual elements
-  Rule Name: design-system
-  Description:
-  Design System & Component Guidelines
-
-## Design Philosophy
-
-- **B2B, Modern, Flat, Minimal, Elegant**: All UI should follow a clean, professional aesthetic suitable for business applications
-- **Sleek & Minimal**: Avoid visual clutter, use whitespace effectively, keep interfaces clean
-- **Dark Mode First**: Always ensure components work seamlessly in both light and dark modes
-
-## Component Usage
-
-- **Adhere to Base Components**: Minimize custom overrides and stick to shadcn/ui base components whenever possible
-- **Semantic Color Classes**: Use semantic classes like `text-muted-foreground`, `bg-muted/50` instead of hardcoded colors
-- **Dark Mode Support**: Always use dark mode variants like `bg-green-50 dark:bg-green-950/20`, `text-green-600 dark:text-green-400`
-
-## Typography & Sizing
-
-- **Moderate Text Sizes**: Avoid overly large text - prefer `text-base`, `text-sm`, `text-xs` over `text-xl+`
-- **Consistent Hierarchy**: Use `font-medium`, `font-semibold` sparingly, prefer `font-normal` with size differentiation
-- **Tabular Numbers**: Use `tabular-nums` class for numeric data to ensure proper alignment
+// Hardcoded colors
+<div className="bg-white text-black">
+<div className="bg-[#059669]">
+<div style={{ color: '#333' }}>
+```
 
 ## Layout & Spacing
 
-- **Flexbox-First**: ALWAYS prefer flexbox with `gap` over hardcoded margins (`mt-`, `mb-`, `ml-`, `mr-`)
-- **Use Gaps, Not Margins**: Use `gap-2`, `gap-4`, `space-y-4` for spacing between elements
-- **Consistent Spacing**: Use standard Tailwind spacing scale (`space-y-4`, `gap-6`, etc.)
-- **Card-Based Layouts**: Prefer Card components for content organization
-- **Minimal Padding**: Use conservative padding - `p-3`, `p-4` rather than larger values
-- **Clean Separators**: Use subtle borders (`border-t`, `border-muted`) instead of heavy dividers
-- **NEVER Hardcode Margins**: Avoid `mt-4`, `mb-2`, `ml-3` unless absolutely necessary for exceptions
+### ✅ Always Do This
 
-## Color & Visual Elements
+```tsx
+// Flexbox with gap
+<div className="flex items-center gap-4">
+<div className="flex flex-col gap-2">
+<div className="grid grid-cols-2 gap-4">
 
-- **Status Colors**:
-  - Green for completed/success states
-  - Blue for in-progress/info states
-  - Yellow for warnings
-  - Red for errors/destructive actions
-- **Subtle Indicators**: Use small colored dots (`w-2 h-2 rounded-full`) instead of large icons for status
-- **Minimal Shadows**: Prefer `hover:shadow-sm` over heavy shadow effects
-- **Progress Bars**: Keep thin (`h-1`, `h-2`) for minimal visual weight
+// Responsive prefixes
+<div className="hidden md:flex">
+<div className="p-4 md:p-6">
+```
+
+### ❌ Never Do This
+
+```tsx
+// Hardcoded margins
+<div className="mt-4 mb-2 ml-3">
+<Button className="mr-2">
+
+// Inline styles
+<div style={{ display: 'flex', marginTop: '16px' }}>
+
+// Arbitrary pixel values
+<div className="w-[847px] h-[123px]">
+```
+
+## Typography
+
+### ✅ Always Do This
+
+```tsx
+// Moderate sizes
+<span className="text-sm text-muted-foreground">Label</span>
+<p className="text-base">Body text</p>
+
+// Tabular numbers for data
+<span className="tabular-nums font-mono">1,234.56</span>
+
+// Semantic hierarchy
+<h1 className="text-lg font-semibold">Page Title</h1>
+<p className="text-sm text-muted-foreground">Description</p>
+```
+
+### ❌ Never Do This
+
+```tsx
+// Oversized text
+<h1 className="text-4xl font-black">HUGE TITLE</h1>
+
+// Too many font weights
+<span className="font-bold text-xl">
+```
+
+## Colors & Status
+
+### Status Color Patterns
+
+```tsx
+// Success - Green
+<div className="bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400">
+<Badge variant="outline" className="border-green-500 text-green-600">Complete</Badge>
+
+// Error - Red
+<div className="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400">
+<Badge variant="destructive">Failed</Badge>
+
+// Warning - Yellow
+<div className="bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-400">
+
+// Info - Blue
+<div className="bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400">
+```
+
+### Status Indicators
+
+```tsx
+// ✅ Small dots for status
+<div className="w-2 h-2 rounded-full bg-green-500" />
+<div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+
+// ❌ Large icons for simple status
+<CheckCircle className="h-8 w-8 text-green-500" />
+```
 
 ## Interactive Elements
 
-- **Subtle Hover States**: Use gentle transitions (`transition-shadow`, `hover:shadow-sm`)
-- **Consistent Button Sizing**: Prefer `size="sm"` for most buttons, `size="icon"` for icon-only
-- **Badge Usage**: Keep badges minimal with essential info only (percentages, short status)
+```tsx
+// ✅ Subtle hover states
+<div className="transition-shadow hover:shadow-sm">
+<Card className="hover:border-primary/50 transition-colors">
 
-## Data Display
+// ✅ Consistent button sizing
+<Button size="sm">Action</Button>
+<Button size="icon"><Icon className="h-4 w-4" /></Button>
 
-- **Shared Design Language**: Ensure related components (cards, overviews, details) use consistent patterns
-- **Minimal Stats**: Present data cleanly without excessive decoration
-- **Contextual Icons**: Use small, relevant icons (`h-3 w-3`, `h-4 w-4`) sparingly for context
+// ❌ Heavy shadows and borders
+<Card className="shadow-2xl border-4">
+```
 
-## Anti-Patterns to Avoid
+## Icons
 
-- Large text sizes (`text-2xl+` except for main headings)
-- Heavy shadows or borders
-- Excessive use of colored backgrounds
-- Redundant badges or status indicators
-- Complex custom styling overrides
-- Non-semantic color usage (hardcoded hex values)
-- Cluttered layouts with too many visual elements
+```tsx
+// ✅ Small, contextual icons
+<Icon className="h-4 w-4 text-muted-foreground" />
+<Icon className="h-3 w-3" />
+
+// ❌ Oversized icons
+<Icon className="h-12 w-12" />
+```
+
+## Exceptions
+
+The ONLY time you can pass className to a shadcn component:
+
+1. **Width utilities**: `w-full`, `max-w-md`, `flex-1`
+2. **Responsive display**: `hidden`, `md:block`, `lg:flex`
+3. **Grid/flex positioning**: `col-span-2`, `justify-self-end`
+
+```tsx
+// ✅ Acceptable className usage
+<Button className="w-full">Full Width</Button>
+<Card className="col-span-2">Spanning Card</Card>
+<Badge className="hidden md:inline-flex">Desktop Only</Badge>
+```
+
+## Checklist
+
+Before committing UI code:
+
+- [ ] Uses shadcn component variants (not className overrides)
+- [ ] Uses semantic color tokens (`bg-background`, `text-foreground`)
+- [ ] Works in both light and dark mode
+- [ ] Uses `gap` instead of margins for spacing
+- [ ] Text sizes are moderate (`text-sm`, `text-base`)
+- [ ] Icons are small (`h-4 w-4` or smaller)
+- [ ] No hardcoded colors or arbitrary values
+- [ ] Responsive with Tailwind prefixes (`md:`, `lg:`)

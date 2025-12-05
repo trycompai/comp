@@ -139,4 +139,3 @@ export function generatePDF(
 
   return Buffer.from(doc.output('arraybuffer'));
 }
-

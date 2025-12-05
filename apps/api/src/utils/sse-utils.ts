@@ -58,4 +58,3 @@ export function setupSSEHeaders(res: Response): void {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   (res as Response & { flushHeaders?: () => void }).flushHeaders?.();
 }
-

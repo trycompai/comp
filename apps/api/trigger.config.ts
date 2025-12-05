@@ -27,7 +27,5 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ['./src/vector-store/jobs', './src/questionnaire/vendors'],
+  dirs: ['./src/trigger'],
 });
-
-

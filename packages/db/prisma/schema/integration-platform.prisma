@@ -1,0 +1,415 @@
+// ===== Integration Platform =====
+// New integration platform models for scalable, config-driven integrations
+
+/// Stores metadata about available integration providers (synced from code manifests)
+model IntegrationProvider {
+    id           String  @id @default(dbgenerated("generate_prefixed_cuid('prv'::text)"))
+    /// Unique slug matching manifest ID (e.g., "github", "slack")
+    slug         String  @unique
+    /// Display name
+    name         String
+    /// Category for grouping
+    category     String
+    /// Hash of manifest for detecting changes
+    manifestHash String?
+    /// Capabilities JSON array
+    capabilities Json    @default("[]")
+    /// Whether provider is active
+    isActive     Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    connections IntegrationConnection[]
+
+    @@index([slug])
+    @@index([category])
+}
+
+/// Represents an organization's connection to an integration provider
+model IntegrationConnection {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icn'::text)"))
+
+    /// Reference to the provider
+    providerId String
+    provider   IntegrationProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+    /// Organization that owns this connection
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    /// Connection status
+    status IntegrationConnectionStatus @default(pending)
+
+    /// Auth strategy used (oauth2, api_key, basic, jwt, custom)
+    authStrategy String
+
+    /// Reference to active credential version
+    activeCredentialVersionId String?
+
+    /// Last successful sync timestamp
+    lastSyncAt DateTime?
+
+    /// Next scheduled sync timestamp
+    nextSyncAt DateTime?
+
+    /// Custom sync cadence (cron expression), null = use default
+    syncCadence String?
+
+    /// Additional metadata (e.g., connected account info)
+    metadata Json?
+
+    /// User-configured variables for checks (collected after OAuth)
+    variables Json?
+
+    /// Error message if status is error
+    errorMessage String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    credentialVersions IntegrationCredentialVersion[]
+    runs               IntegrationRun[]
+    findings           IntegrationPlatformFinding[]
+    checkRuns          IntegrationCheckRun[]
+
+    @@unique([providerId, organizationId])
+    @@index([organizationId])
+    @@index([providerId])
+    @@index([status])
+}
+
+enum IntegrationConnectionStatus {
+    pending // Awaiting credential setup
+    active // Connected and operational
+    error // Connection has errors
+    paused // Manually paused by user
+    disconnected // User disconnected
+}
+
+/// Stores encrypted credentials with versioning for audit trail
+model IntegrationCredentialVersion {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icv'::text)"))
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Encrypted credential payload (JSON with encrypted fields)
+    encryptedPayload Json
+
+    /// Version number (auto-increment per connection)
+    version Int
+
+    /// Token expiration (for OAuth tokens)
+    expiresAt DateTime?
+
+    /// When this version was rotated/replaced
+    rotatedAt DateTime?
+
+    createdAt DateTime @default(now())
+
+    @@unique([connectionId, version])
+    @@index([connectionId])
+}
+
+/// Records each sync/job execution for audit and debugging
+model IntegrationRun {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('irn'::text)"))
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Type of job
+    jobType IntegrationRunJobType
+
+    /// Execution status
+    status IntegrationRunStatus @default(pending)
+
+    /// Timestamps
+    startedAt   DateTime?
+    completedAt DateTime?
+
+    /// Duration in milliseconds
+    durationMs Int?
+
+    /// Number of findings from this run
+    findingsCount Int @default(0)
+
+    /// Error details if failed
+    error Json?
+
+    /// Additional metadata (trigger source, cursor, etc.)
+    metadata Json?
+
+    createdAt DateTime @default(now())
+
+    findings IntegrationPlatformFinding[]
+
+    @@index([connectionId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+enum IntegrationRunJobType {
+    full_sync
+    delta_sync
+    webhook
+    manual
+    test_connection
+}
+
+enum IntegrationRunStatus {
+    pending
+    running
+    success
+    failed
+    cancelled
+}
+
+/// Stores findings/results from integration syncs
+model IntegrationPlatformFinding {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ipf'::text)"))
+
+    /// Parent run (optional - webhooks may not have runs)
+    runId String?
+    run   IntegrationRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Resource classification
+    resourceType String
+    resourceId   String
+
+    /// Finding details
+    title       String
+    description String?
+
+    /// Severity level
+    severity IntegrationFindingSeverity @default(info)
+
+    /// Finding status
+    status IntegrationFindingStatus @default(open)
+
+    /// Remediation guidance
+    remediation String?
+
+    /// Raw payload from provider
+    rawPayload Json?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([connectionId])
+    @@index([runId])
+    @@index([resourceType, resourceId])
+    @@index([severity])
+    @@index([status])
+}
+
+enum IntegrationFindingSeverity {
+    info
+    low
+    medium
+    high
+    critical
+}
+
+enum IntegrationFindingStatus {
+    open
+    resolved
+    ignored
+}
+
+/// Stores OAuth state for CSRF protection during OAuth flow
+model IntegrationOAuthState {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ios'::text)"))
+
+    /// Random state parameter
+    state String @unique
+
+    /// Provider slug
+    providerSlug String
+
+    /// Organization initiating the OAuth
+    organizationId String
+
+    /// User initiating the OAuth
+    userId String
+
+    /// PKCE code verifier (if using PKCE)
+    codeVerifier String?
+
+    /// Redirect URL after OAuth completes
+    redirectUrl String?
+
+    /// Expiration timestamp
+    expiresAt DateTime
+
+    createdAt DateTime @default(now())
+
+    @@index([state])
+    @@index([expiresAt])
+}
+
+/// Stores organization-level OAuth app credentials
+/// Allows orgs (especially self-hosters) to use their own OAuth apps
+model IntegrationOAuthApp {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ioa'::text)"))
+
+    /// Provider slug (e.g., "github", "slack")
+    providerSlug String
+
+    /// Organization that owns this OAuth app config
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    /// Encrypted client ID
+    encryptedClientId Json
+
+    /// Encrypted client secret
+    encryptedClientSecret Json
+
+    /// Optional: custom scopes (overrides manifest defaults)
+    customScopes String[]
+
+    /// Provider-specific settings (e.g., Rippling app name for authorize URL)
+    /// Stored as JSON: { "appName": "compai533c" }
+    customSettings Json?
+
+    /// Whether this config is active
+    isActive Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([providerSlug, organizationId])
+    @@index([organizationId])
+    @@index([providerSlug])
+}
+
+/// Records check runs linked to tasks for compliance verification
+model IntegrationCheckRun {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icr'::text)"))
+
+    /// Parent connection
+    connectionId String
+    connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+    /// Task being verified (optional - checks can run without a task)
+    taskId String?
+    task   Task?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+    /// Check ID from the manifest
+    checkId String
+
+    /// Check name (denormalized for display)
+    checkName String
+
+    /// Execution status
+    status IntegrationRunStatus @default(pending)
+
+    /// Timestamps
+    startedAt   DateTime?
+    completedAt DateTime?
+
+    /// Duration in milliseconds
+    durationMs Int?
+
+    /// Summary counts
+    totalChecked Int @default(0)
+    passedCount  Int @default(0)
+    failedCount  Int @default(0)
+
+    /// Error message if failed
+    errorMessage String?
+
+    /// Full execution logs (JSON array)
+    logs Json?
+
+    createdAt DateTime @default(now())
+
+    /// Results from this check run
+    results IntegrationCheckResult[]
+
+    @@index([connectionId])
+    @@index([taskId])
+    @@index([checkId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+/// Stores individual results (pass/fail) from check runs
+model IntegrationCheckResult {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('icx'::text)"))
+
+    /// Parent check run
+    checkRunId String
+    checkRun   IntegrationCheckRun @relation(fields: [checkRunId], references: [id], onDelete: Cascade)
+
+    /// Whether this result is a pass or fail
+    passed Boolean
+
+    /// Resource classification
+    resourceType String
+    resourceId   String
+
+    /// Result details
+    title       String
+    description String?
+
+    /// Severity (for failures)
+    severity IntegrationFindingSeverity?
+
+    /// Remediation guidance (for failures)
+    remediation String?
+
+    /// Evidence/proof (JSON - API response data)
+    evidence Json?
+
+    /// When this evidence was collected
+    collectedAt DateTime @default(now())
+
+    @@index([checkRunId])
+    @@index([passed])
+    @@index([resourceType, resourceId])
+}
+
+/// Stores platform-wide OAuth app credentials
+/// Used by platform operators to provide default OAuth apps for all users
+model IntegrationPlatformCredential {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('ipc'::text)"))
+
+    /// Provider slug (e.g., "github", "slack") - unique per platform
+    providerSlug String @unique
+
+    /// Encrypted client ID
+    encryptedClientId Json
+
+    /// Encrypted client secret
+    encryptedClientSecret Json
+
+    /// Optional: custom scopes (overrides manifest defaults)
+    customScopes String[]
+
+    /// Provider-specific settings (e.g., Rippling app name for authorize URL)
+    /// Stored as JSON: { "appName": "compai533c" }
+    customSettings Json?
+
+    /// Whether this credential is active
+    isActive Boolean @default(true)
+
+    /// Who created this credential
+    createdById String?
+
+    /// Who last updated this credential
+    updatedById String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([providerSlug])
+}

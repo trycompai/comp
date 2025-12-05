@@ -71,7 +71,7 @@ export function filterAndMapResults(
     ) {
       filtered.push({
         id: String(result.id),
-        sourceId: (metadata?.sourceId as string) || '',
+        sourceId: metadata?.sourceId || '',
         sourceType: metadata?.sourceType as SourceType,
         updatedAt: metadata?.updatedAt as string | undefined,
       });
@@ -149,4 +149,3 @@ export const GENERIC_DOCUMENT_QUERIES = [
   'knowledge base document',
   'file content text',
 ];
-

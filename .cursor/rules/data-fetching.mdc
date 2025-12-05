@@ -1,0 +1,255 @@
+---
+description: Data fetching architecture - server-first with SWR hydration
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Data Fetching Architecture
+
+## Core Principles
+
+1. **Server-first**: Fetch initial data in Next.js server components/pages
+2. **OrgId from params**: Get `organizationId` from URL path params (`params.orgId`), NOT from session
+3. **Pass to client**: Hand initial data + organizationId to client components as props
+4. **SWR hydration**: Client components use SWR hooks with `fallbackData` for instant display
+5. **API client singleton**: Use `apiClient` from `@/lib/api-client` for all backend calls
+
+## Pattern: Server → Client → SWR
+
+### Step 1: Server Page Fetches Initial Data
+
+```tsx
+// app/(app)/[orgId]/tasks/page.tsx
+import { notFound } from 'next/navigation';
+import { getTasks } from './data/queries';
+import { TaskListClient } from './components/TaskListClient';
+
+export default async function TasksPage({ params }: { params: Promise<{ orgId: string }> }) {
+  // Get organizationId from URL path params - NOT from session
+  const { orgId } = await params;
+
+  if (!orgId) {
+    return notFound();
+  }
+
+  // Fetch initial data server-side using orgId from params
+  const tasks = await getTasks(orgId);
+
+  return <TaskListClient organizationId={orgId} initialTasks={tasks} />;
+}
+```
+
+### Step 2: Client Component Receives Initial Data
+
+```tsx
+// app/(app)/[orgId]/tasks/components/TaskListClient.tsx
+'use client';
+
+import { useTasks } from '../hooks/useTasks';
+
+interface TaskListClientProps {
+  organizationId: string;
+  initialTasks: Task[];
+}
+
+export function TaskListClient({ organizationId, initialTasks }: TaskListClientProps) {
+  const { tasks, isLoading, createTask, updateTask, deleteTask, mutate } = useTasks({
+    organizationId,
+    initialData: initialTasks,
+  });
+
+  // Initial render is instant - no loading state
+  // SWR revalidates in background for fresh data
+
+  return (
+    <div>
+      {tasks.map((task) => (
+        <TaskCard key={task.id} task={task} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Step 3: SWR Hook with Initial Data Support
+
+```tsx
+// app/(app)/[orgId]/tasks/hooks/useTasks.ts
+'use client';
+
+import { apiClient } from '@/lib/api-client';
+import useSWR from 'swr';
+
+interface UseTasksOptions {
+  organizationId: string;
+  initialData?: Task[];
+}
+
+export function useTasks({ organizationId, initialData }: UseTasksOptions) {
+  const { data, error, isLoading, mutate } = useSWR(
+    // SWR key - includes orgId for cache isolation
+    ['/v1/tasks', organizationId],
+    // Fetcher using apiClient singleton
+    async ([endpoint, orgId]) => {
+      const response = await apiClient.get<{ tasks: Task[] }>(endpoint, orgId);
+      if (response.error) throw new Error(response.error);
+      return response.data?.tasks ?? [];
+    },
+    {
+      // Pass server-fetched data as initial value
+      fallbackData: initialData,
+      // Don't show loading on initial render (we have fallbackData)
+      revalidateOnMount: true,
+      revalidateOnFocus: false,
+    },
+  );
+
+  // Mutations - call API, then revalidate cache
+  const createTask = async (input: CreateTaskInput) => {
+    const response = await apiClient.post<{ task: Task }>('/v1/tasks', input, organizationId);
+    if (response.error) throw new Error(response.error);
+    mutate(); // Revalidate cache
+    return response.data?.task;
+  };
+
+  const updateTask = async (id: string, input: UpdateTaskInput) => {
+    const response = await apiClient.put<{ task: Task }>(`/v1/tasks/${id}`, input, organizationId);
+    if (response.error) throw new Error(response.error);
+    mutate();
+    return response.data?.task;
+  };
+
+  const deleteTask = async (id: string) => {
+    await apiClient.delete(`/v1/tasks/${id}`, organizationId);
+    mutate();
+  };
+
+  return {
+    tasks: data ?? [],
+    isLoading: !data && !error,
+    error,
+    createTask,
+    updateTask,
+    deleteTask,
+    mutate,
+  };
+}
+```
+
+## The API Client Singleton
+
+Located at `apps/app/src/lib/api-client.ts`:
+
+```tsx
+import { apiClient } from '@/lib/api-client';
+
+// GET request
+const response = await apiClient.get<ResponseType>('/v1/endpoint', organizationId);
+
+// POST request
+const response = await apiClient.post<ResponseType>('/v1/endpoint', body, organizationId);
+
+// PUT request
+const response = await apiClient.put<ResponseType>('/v1/endpoint', body, organizationId);
+
+// DELETE request
+await apiClient.delete('/v1/endpoint', organizationId);
+```
+
+The `apiClient`:
+
+- Automatically adds Bearer token authentication
+- Adds `X-Organization-Id` header for org context
+- Handles token refresh on 401 errors
+- Returns typed `ApiResponse<T>` with `data`, `error`, and `status`
+
+## Existing SWR Utility Hook
+
+Use `useApiSWR` from `@/hooks/use-api-swr` for simpler cases:
+
+```tsx
+import { useApiSWR } from '@/hooks/use-api-swr';
+
+function MyComponent() {
+  const { data, error, isLoading, mutate } = useApiSWR<Task[]>('/v1/tasks');
+
+  // Automatically handles organization context from active org
+}
+```
+
+## Rules
+
+### ✅ Always Do This
+
+```tsx
+// 1. Get organizationId from URL path params
+export default async function Page({ params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params; // ✅ From URL, not session
+  const data = await fetchData(orgId);
+  return <ClientComponent organizationId={orgId} initialData={data} />;
+}
+
+// 2. Pass initialData to SWR hook
+const { data } = useSWR(key, fetcher, { fallbackData: initialData });
+
+// 3. Use apiClient for all API calls
+const response = await apiClient.get('/v1/endpoint', organizationId);
+
+// 4. Include organizationId in SWR key for cache isolation
+useSWR(['/v1/tasks', organizationId], fetcher);
+
+// 5. Return mutations from hooks
+return { data, createItem, updateItem, deleteItem, mutate };
+
+// 6. Use mutate() after mutations to revalidate
+await apiClient.post('/v1/items', body, orgId);
+mutate(); // Refresh the cache
+```
+
+### ❌ Never Do This
+
+```tsx
+// 1. Get orgId from session instead of URL params
+const session = await auth.api.getSession({ headers: await headers() });
+const orgId = session?.session?.activeOrganizationId; // ❌ Wrong!
+// ✅ Use: const { orgId } = await params;
+
+// 2. Client-only data fetching without server pre-fetch
+function ClientOnlyPage() {
+  const { data, isLoading } = useSWR('/api/data'); // No initial data!
+  if (isLoading) return <Spinner />; // Unnecessary loading state
+}
+
+// 3. Direct fetch() calls instead of apiClient
+const res = await fetch('/api/endpoint'); // Missing auth headers!
+
+// 4. Server actions for data mutations
+('use server');
+export async function createTask() {} // Use API routes instead
+
+// 5. Separate mutation hooks
+export function useCreateTask() {} // Keep mutations in main hook
+export function useUpdateTask() {} // Don't split them out
+```
+
+## File Structure
+
+```
+app/(app)/[orgId]/tasks/
+├── page.tsx                    # Server component - fetches initial data
+├── components/
+│   └── TaskListClient.tsx      # Client component - receives initialData
+├── hooks/
+│   └── useTasks.ts             # SWR hook with mutations
+└── data/
+    └── queries.ts              # Server-side query functions
+```
+
+## Benefits
+
+1. **Instant initial render** - No loading spinner, data is pre-fetched
+2. **Fresh data** - SWR revalidates in background after mount
+3. **Optimistic updates** - Use `mutate()` with optimistic data
+4. **Cache deduplication** - Same endpoint shares cache across components
+5. **Type safety** - `apiClient` returns typed `ApiResponse<T>`
+6. **Auth handled** - JWT tokens managed automatically

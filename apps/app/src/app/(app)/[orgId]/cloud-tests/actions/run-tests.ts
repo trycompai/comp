@@ -1,6 +1,6 @@
 'use server';
 
-import { runIntegrationTests } from '@/jobs/tasks/integration/run-integration-tests';
+import { runIntegrationTests } from '@/trigger/tasks/integration/run-integration-tests';
 import { auth } from '@/utils/auth';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';

@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { IntegrationsGrid } from './components/IntegrationsGrid';
+import { PlatformIntegrations } from './components/PlatformIntegrations';
 
 export default async function IntegrationsPage() {
   // Fetch task templates server-side
@@ -15,7 +15,7 @@ export default async function IntegrationsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10 py-8">
+    <div className="mx-auto max-w-7xl space-y-8 py-8">
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-baseline gap-3">
@@ -23,13 +23,12 @@ export default async function IntegrationsPage() {
           <span className="text-2xl text-muted-foreground/40 font-light">∞</span>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
-          Connect to any system through the AI agent. This directory shows common patterns—the
-          agent can integrate with anything that has an API or web interface.
+          Connect your tools to automate compliance checks and evidence collection.
         </p>
       </div>
 
-      {/* Integrations Grid */}
-      <IntegrationsGrid taskTemplates={taskTemplates} />
+      {/* Unified Integrations List */}
+      <PlatformIntegrations taskTemplates={taskTemplates} />
     </div>
   );
 }

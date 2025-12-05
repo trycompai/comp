@@ -42,9 +42,7 @@ export async function saveAnswersToDatabase(
         },
       });
 
-      const nextVersion = existingAnswer
-        ? existingAnswer.answerVersion + 1
-        : 1;
+      const nextVersion = existingAnswer ? existingAnswer.answerVersion + 1 : 1;
 
       // Mark existing answer as not latest if it exists
       if (existingAnswer) {
@@ -219,4 +217,3 @@ export async function checkIfFullyRemote(
     return false;
   }
 }
-

@@ -53,7 +53,12 @@ export function useQuestionnaireParse({
   }, [autoAnswerToken, setAutoAnswerToken]);
 
   const executeUploadAndParse = useCallback(
-    async (input: { fileName: string; fileType: string; fileData: string; organizationId: string }) => {
+    async (input: {
+      fileName: string;
+      fileType: string;
+      fileData: string;
+      organizationId: string;
+    }) => {
       // Cancel any previous request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -74,13 +79,13 @@ export function useQuestionnaireParse({
             source: 'internal',
           },
           input.organizationId,
-  );
+        );
 
         if (response.error || !response.data) {
-      setIsParseProcessStarted(false);
+          setIsParseProcessStarted(false);
           toast.error(response.error || 'Failed to parse questionnaire');
-        return;
-      }
+          return;
+        }
 
         const { questionnaireId, totalQuestions } = response.data;
         setQuestionnaireId(questionnaireId);
@@ -113,7 +118,12 @@ export function useQuestionnaireParse({
   // Simulated action objects to maintain compatibility with existing code
   const uploadFileAction = {
     status: uploadStatus,
-    execute: (input: { fileName: string; fileType: string; fileData: string; organizationId: string }) => {
+    execute: (input: {
+      fileName: string;
+      fileType: string;
+      fileData: string;
+      organizationId: string;
+    }) => {
       executeUploadAndParse(input);
     },
   };

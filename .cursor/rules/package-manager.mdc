@@ -1,10 +1,64 @@
 ---
-description: 
-globs: 
+description: Use bun as the package manager for all operations
+globs: **/*.{ts,tsx,json}
 alwaysApply: true
 ---
-Always use bun as our package manager, example:
-bun install axios
-bun remove
+
+# Package Manager
+
+## Core Rule
+
+**Always use `bun` as the package manager.** Never use npm, yarn, or pnpm.
+
+## Commands
+
+### ✅ Always Use Bun
+
+```bash
+# Install dependencies
+bun install
+bun add axios
+bun add -D typescript
+
+# Remove packages
+bun remove axios
+
+# Run scripts
 bun run dev
+bun run build
+bun run typecheck
+bun run lint
+
+# Execute binaries
 bunx prisma migrate dev
+bunx prisma generate
+bunx eslint .
+```
+
+### ❌ Never Use These
+
+```bash
+# npm
+npm install
+npm run dev
+npx prisma migrate
+
+# yarn
+yarn add axios
+yarn dev
+
+# pnpm
+pnpm install
+pnpm run dev
+```
+
+## Quick Reference
+
+| Action             | Command                |
+| ------------------ | ---------------------- |
+| Install all deps   | `bun install`          |
+| Add package        | `bun add <package>`    |
+| Add dev dependency | `bun add -D <package>` |
+| Remove package     | `bun remove <package>` |
+| Run script         | `bun run <script>`     |
+| Execute binary     | `bunx <command>`       |

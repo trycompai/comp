@@ -1,6 +1,9 @@
 // Core functionality
 export { vectorIndex } from './core/client';
-export { generateEmbedding, batchGenerateEmbeddings } from './core/generate-embedding';
+export {
+  generateEmbedding,
+  batchGenerateEmbeddings,
+} from './core/generate-embedding';
 export {
   findSimilarContent,
   findSimilarContentBatch,

@@ -16,8 +16,8 @@
  * - Running on-demand backfills for specific organizations
  */
 
-import { backfillTrainingVideosForAllOrgs } from '@/jobs/tasks/onboarding/backfill-training-videos-for-all-orgs';
-import { backfillTrainingVideosForOrg } from '@/jobs/tasks/onboarding/backfill-training-videos-for-org';
+import { backfillTrainingVideosForAllOrgs } from '@/trigger/tasks/onboarding/backfill-training-videos-for-all-orgs';
+import { backfillTrainingVideosForOrg } from '@/trigger/tasks/onboarding/backfill-training-videos-for-org';
 
 async function main() {
   const args = process.argv.slice(2);

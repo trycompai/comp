@@ -1,8 +1,14 @@
-import { findSimilarContent, findSimilarContentBatch } from '@/vector-store/lib';
+import {
+  findSimilarContent,
+  findSimilarContentBatch,
+} from '@/vector-store/lib';
 import type { SimilarContentResult } from '@/vector-store/lib';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { deduplicateSources, type Source } from '@/questionnaire/utils/deduplicate-sources';
+import {
+  deduplicateSources,
+  type Source,
+} from '@/questionnaire/utils/deduplicate-sources';
 import {
   SOA_RAG_MODEL,
   SOA_BATCH_MODEL,
@@ -32,9 +38,11 @@ const defaultLogger: SOAAnswerLogger = {
 /**
  * Extracts source information from similar content results and deduplicates them
  */
-function extractAndDeduplicateSources(similarContent: SimilarContentResult[]): Source[] {
+function extractAndDeduplicateSources(
+  similarContent: SimilarContentResult[],
+): Source[] {
   const sourcesBeforeDedup = similarContent.map((result) => {
-    const r = result as SimilarContentResult;
+    const r = result;
     let sourceName: string | undefined;
 
     if (r.policyName) {
@@ -62,9 +70,11 @@ function extractAndDeduplicateSources(similarContent: SimilarContentResult[]): S
 /**
  * Builds context string from similar content for LLM prompt
  */
-function buildContextFromContent(similarContent: SimilarContentResult[]): string {
+function buildContextFromContent(
+  similarContent: SimilarContentResult[],
+): string {
   const contextParts = similarContent.map((result, index) => {
-    const r = result as SimilarContentResult;
+    const r = result;
     let sourceInfo = '';
 
     if (r.policyName) {
@@ -266,4 +276,3 @@ export async function batchSearchSOAQuestions(
 
   return contentMap;
 }
-

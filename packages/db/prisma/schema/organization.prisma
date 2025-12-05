@@ -15,6 +15,10 @@ model Organization {
   fleetDmLabelId        Int?
   isFleetSetupCompleted Boolean @default(false)
 
+  // Employee sync provider (e.g., 'google-workspace', 'rippling')
+  // When set, the scheduled sync will only use this provider
+  employeeSyncProvider  String?
+
   apiKeys                            ApiKey[]
   auditLog                           AuditLog[]
   controls                           Control[]
@@ -39,6 +43,10 @@ model Organization {
   questionnaires                     Questionnaire[]
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
   soaDocuments                       SOADocument[]
+
+  // Integration Platform
+  integrationConnections IntegrationConnection[]
+  integrationOAuthApps   IntegrationOAuthApp[]
 
   @@index([slug])
 }

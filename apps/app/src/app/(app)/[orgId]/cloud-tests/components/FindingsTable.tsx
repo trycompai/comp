@@ -33,6 +33,9 @@ const statusVariant = {
   passed: 'default',
   new: 'warning',
   active: 'warning',
+  open: 'destructive',
+  success: 'default',
+  resolved: 'default',
 } as const;
 
 export function FindingsTable({ findings }: FindingsTableProps) {
@@ -102,7 +105,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[statusKey] || 'secondary'}>
-                      {finding.status || 'Unknown'}
+                      {finding.status === 'success' ? 'Passed' : finding.status || 'Unknown'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">

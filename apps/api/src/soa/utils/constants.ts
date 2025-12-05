@@ -69,10 +69,7 @@ CRITICAL RULES - YOU MUST FOLLOW THESE STRICTLY:
 /**
  * Builds the SOA question prompt for a given control
  */
-export function buildSOAQuestionPrompt(
-  title: string,
-  text: string,
-): string {
+export function buildSOAQuestionPrompt(title: string, text: string): string {
   return `Analyze the control "${title}" (${text}) for our organization.
 
 Based EXCLUSIVELY on our organization's policies, documentation, business context, and operations, determine:
@@ -124,4 +121,3 @@ export function isInsufficientDataAnswer(answer: string): boolean {
     upperAnswer.includes(indicator),
   );
 }
-

@@ -7,11 +7,11 @@ import { GetDocumentUrlDto } from './dto/get-document-url.dto';
 import { ProcessDocumentsDto } from './dto/process-documents.dto';
 import { DeleteManualAnswerDto } from './dto/delete-manual-answer.dto';
 import { DeleteAllManualAnswersDto } from './dto/delete-all-manual-answers.dto';
-import { processKnowledgeBaseDocumentTask } from '@/vector-store/jobs/process-knowledge-base-document';
-import { processKnowledgeBaseDocumentsOrchestratorTask } from '@/vector-store/jobs/process-knowledge-base-documents-orchestrator';
-import { deleteKnowledgeBaseDocumentTask } from '@/vector-store/jobs/delete-knowledge-base-document';
-import { deleteManualAnswerTask } from '@/vector-store/jobs/delete-manual-answer';
-import { deleteAllManualAnswersOrchestratorTask } from '@/vector-store/jobs/delete-all-manual-answers-orchestrator';
+import { processKnowledgeBaseDocumentTask } from '@/trigger/vector-store/process-knowledge-base-document';
+import { processKnowledgeBaseDocumentsOrchestratorTask } from '@/trigger/vector-store/process-knowledge-base-documents-orchestrator';
+import { deleteKnowledgeBaseDocumentTask } from '@/trigger/vector-store/delete-knowledge-base-document';
+import { deleteManualAnswerTask } from '@/trigger/vector-store/delete-manual-answer';
+import { deleteAllManualAnswersOrchestratorTask } from '@/trigger/vector-store/delete-all-manual-answers-orchestrator';
 import { isViewableInBrowser } from './utils/constants';
 import {
   uploadToS3,
@@ -72,9 +72,15 @@ export class KnowledgeBaseService {
   }
 
   async getDownloadUrl(dto: GetDocumentUrlDto) {
-    const document = await this.findDocument(dto.documentId, dto.organizationId);
+    const document = await this.findDocument(
+      dto.documentId,
+      dto.organizationId,
+    );
 
-    const { signedUrl } = await generateDownloadUrl(document.s3Key, document.name);
+    const { signedUrl } = await generateDownloadUrl(
+      document.s3Key,
+      document.name,
+    );
 
     return {
       signedUrl,
@@ -83,7 +89,10 @@ export class KnowledgeBaseService {
   }
 
   async getViewUrl(dto: GetDocumentUrlDto) {
-    const document = await this.findDocument(dto.documentId, dto.organizationId);
+    const document = await this.findDocument(
+      dto.documentId,
+      dto.organizationId,
+    );
 
     const { signedUrl } = await generateViewUrl(
       document.s3Key,
@@ -125,7 +134,9 @@ export class KnowledgeBaseService {
     // Delete from S3 (non-blocking)
     const s3Deleted = await deleteFromS3(document.s3Key);
     if (!s3Deleted) {
-      this.logger.warn('Error deleting file from S3', { documentId: document.id });
+      this.logger.warn('Error deleting file from S3', {
+        documentId: document.id,
+      });
     }
 
     // Delete from database
@@ -246,7 +257,7 @@ export class KnowledgeBaseService {
       await this.triggerBatchManualAnswerDeletion(
         dto.organizationId,
         manualAnswers.map((ma) => ma.id),
-        );
+      );
     } else {
       this.logger.log('No manual answers to delete', {
         organizationId: dto.organizationId,

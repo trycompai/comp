@@ -15,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -29,11 +29,11 @@
       "@db": [
         "./prisma"
       ],
-      "@/jobs": [
-        "./src/jobs"
+      "@/trigger": [
+        "./src/trigger"
       ],
-      "@/jobs/*": [
-        "./src/jobs/*"
+      "@/trigger/*": [
+        "./src/trigger/*"
       ],
       "@comp/email": [
         "../../packages/email/index.ts"
@@ -52,6 +52,12 @@
       ],
       "@comp/integrations/*": [
         "../../packages/integrations/src/*"
+      ],
+      "@comp/integration-platform": [
+        "../../packages/integration-platform/src/index.ts"
+      ],
+      "@comp/integration-platform/*": [
+        "../../packages/integration-platform/src/*"
       ],
       "@comp/analytics": [
         "../../packages/analytics/src/index.ts"

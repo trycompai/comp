@@ -1,0 +1,186 @@
+---
+description: General code quality standards and file size limits
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Code Standards
+
+## File Size Limits
+
+**Files must not exceed 300 lines.** When a file approaches this limit, split it.
+
+### ✅ How to Split Large Files
+
+```
+# Before: One 400-line file
+components/TaskList.tsx (400 lines)
+
+# After: Multiple focused files
+components/
+├── TaskList.tsx          # Main component (~100 lines)
+├── TaskListItem.tsx      # Individual item (~80 lines)
+├── TaskListFilters.tsx   # Filter controls (~60 lines)
+└── TaskListEmpty.tsx     # Empty state (~40 lines)
+```
+
+### Splitting Strategies
+
+| File Type | Split By                                     |
+| --------- | -------------------------------------------- |
+| Component | Extract sub-components, hooks, utils         |
+| Hook      | Extract helper functions, split by concern   |
+| Utils     | Group by domain (dates, strings, validation) |
+| Types     | Split by entity (Task, User, Organization)   |
+
+### ❌ Warning Signs
+
+```tsx
+// ❌ File is too long
+// TaskList.tsx - 450 lines with inline helpers, multiple components
+
+// ❌ Multiple components in one file
+export function TaskList() { ... }
+export function TaskCard() { ... }  // Should be separate file
+export function TaskBadge() { ... } // Should be separate file
+```
+
+## Code Quality
+
+### ✅ Always Do This
+
+```tsx
+// Early returns for readability
+function processTask(task: Task | null) {
+  if (!task) return null;
+  if (task.deleted) return null;
+
+  return <TaskCard task={task} />;
+}
+
+// Descriptive names
+const handleTaskComplete = (taskId: string) => { ... };
+const isTaskOverdue = (task: Task) => task.dueDate < new Date();
+
+// Const arrow functions with types
+const formatDate = (date: Date): string => {
+  return date.toLocaleDateString();
+};
+```
+
+### ❌ Never Do This
+
+```tsx
+// No early returns - deeply nested
+function processTask(task) {
+  if (task) {
+    if (!task.deleted) {
+      return <TaskCard task={task} />;
+    }
+  }
+  return null;
+}
+
+// Vague names
+const handleClick = () => { ... }; // Click on what?
+const data = fetchStuff(); // What data?
+
+// Function keyword when const works
+function formatDate(date) { ... }
+```
+
+## Function Parameters
+
+**Use named parameters (object destructuring) for functions with 2+ parameters.**
+
+### ✅ Always Do This
+
+```tsx
+// Named parameters - clear at call site
+const createTask = ({ title, assigneeId, dueDate }: CreateTaskParams) => { ... };
+createTask({ title: 'Review PR', assigneeId: user.id, dueDate: tomorrow });
+
+// Hook with options object
+const useTasks = ({ organizationId, initialData }: UseTasksOptions) => { ... };
+const { tasks } = useTasks({ organizationId: orgId, initialData: serverTasks });
+
+// Component props (always named)
+function TaskCard({ task, onComplete, showDetails }: TaskCardProps) { ... }
+<TaskCard task={task} onComplete={handleComplete} showDetails={true} />
+```
+
+### ❌ Never Do This
+
+```tsx
+// Positional parameters - unclear at call site
+const createTask = (title: string, assigneeId: string, dueDate: Date) => { ... };
+createTask('Review PR', user.id, tomorrow); // What's the 2nd param?
+
+// Multiple positional args are confusing
+const formatRange = (start: Date, end: Date, format: string, timezone: string) => { ... };
+formatRange(startDate, endDate, 'MM/dd', 'UTC'); // Hard to read
+
+// Boolean positional params are the worst
+fetchTasks(orgId, true, false, true); // What do these booleans mean?
+```
+
+### Exception: Single Parameter
+
+```tsx
+// Single param is fine as positional
+const getTask = (taskId: string) => { ... };
+const formatDate = (date: Date) => { ... };
+const isOverdue = (task: Task) => { ... };
+```
+
+## Accessibility
+
+### ✅ Always Include
+
+```tsx
+// Interactive elements need keyboard support
+<div
+  role="button"
+  tabIndex={0}
+  onClick={handleClick}
+  onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+  aria-label="Delete task"
+>
+  <TrashIcon />
+</div>
+
+// Form inputs need labels
+<label htmlFor="task-name">Task Name</label>
+<input id="task-name" type="text" />
+
+// Images need alt text
+<img src={avatar} alt={`${user.name}'s avatar`} />
+```
+
+## DRY Principle
+
+### ✅ Extract Repeated Logic
+
+```tsx
+// Before: Duplicated validation
+if (email && email.includes('@') && email.length > 5) { ... }
+if (email && email.includes('@') && email.length > 5) { ... }
+
+// After: Extracted helper
+const isValidEmail = (email: string) =>
+  email?.includes('@') && email.length > 5;
+
+if (isValidEmail(email)) { ... }
+```
+
+## Checklist
+
+Before committing:
+
+- [ ] No file exceeds 300 lines
+- [ ] Uses early returns for conditionals
+- [ ] Variable/function names are descriptive
+- [ ] Functions with 2+ params use named parameters
+- [ ] Interactive elements have keyboard support
+- [ ] No duplicated logic (DRY)
+- [ ] Const arrow functions with types

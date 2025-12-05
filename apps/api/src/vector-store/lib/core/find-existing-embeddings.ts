@@ -38,7 +38,11 @@ export async function findEmbeddingsForSource(
 
     // Strategy 4: Query with documentName (for knowledge_base_document only)
     if (sourceType === 'knowledge_base_document' && documentName) {
-      const results = await executeVectorQuery(documentName, filter, 'documentName');
+      const results = await executeVectorQuery(
+        documentName,
+        filter,
+        'documentName',
+      );
       addToResultsMap(allResults, results);
     }
 
@@ -83,7 +87,10 @@ async function runBasicQueryStrategies(
   const queries = [
     { text: filter.organizationId, strategyName: 'organizationId' },
     { text: filter.sourceId, strategyName: 'sourceId' },
-    { text: `${filter.organizationId} ${filter.sourceId}`, strategyName: 'combined' },
+    {
+      text: `${filter.organizationId} ${filter.sourceId}`,
+      strategyName: 'combined',
+    },
   ];
 
   for (const { text, strategyName } of queries) {
@@ -108,13 +115,21 @@ async function runChunkContentQueryStrategy(
     // Query with chunk content
     if (chunkData.content && chunkData.content.length > 50) {
       const contentQuery = chunkData.content.substring(0, 200);
-      const results = await executeVectorQuery(contentQuery, filter, 'chunkContent');
+      const results = await executeVectorQuery(
+        contentQuery,
+        filter,
+        'chunkContent',
+      );
       addToResultsMap(resultsMap, results);
     }
 
     // Query with filename from chunk metadata
     if (chunkData.documentName && chunkData.documentName.length > 0) {
-      const results = await executeVectorQuery(chunkData.documentName, filter, 'chunkFilename');
+      const results = await executeVectorQuery(
+        chunkData.documentName,
+        filter,
+        'chunkFilename',
+      );
       addToResultsMap(resultsMap, results);
     }
   }
@@ -158,7 +173,12 @@ export async function findAllOrganizationEmbeddings(
     });
 
     // Filter by organizationId and valid source types
-    const validSourceTypes = ['policy', 'context', 'manual_answer', 'knowledge_base_document'];
+    const validSourceTypes = [
+      'policy',
+      'context',
+      'manual_answer',
+      'knowledge_base_document',
+    ];
     const orgResults = results
       .filter((result) => {
         const metadata = result.metadata as Record<string, unknown> | undefined;

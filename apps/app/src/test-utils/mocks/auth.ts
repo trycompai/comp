@@ -58,6 +58,7 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
   updatedAt: new Date(),
   emailNotificationsUnsubscribed: false,
   emailPreferences: DEFAULT_EMAIL_PREFERENCES,
+  isPlatformAdmin: false,
   ...overrides,
 });
 

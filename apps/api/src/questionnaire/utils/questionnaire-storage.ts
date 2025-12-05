@@ -27,7 +27,9 @@ const defaultLogger: StorageLogger = {
 /**
  * Updates the answered questions count for a questionnaire
  */
-export async function updateAnsweredCount(questionnaireId: string): Promise<void> {
+export async function updateAnsweredCount(
+  questionnaireId: string,
+): Promise<void> {
   const answeredCount = await db.questionnaireQuestionAnswer.count({
     where: {
       questionnaireId,
@@ -119,7 +121,7 @@ export async function uploadQuestionnaireFile(params: {
   if (!s3Client) {
     throw new Error('S3 client not configured for questionnaire uploads');
   }
-  
+
   const bucket = APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET || BUCKET_NAME;
   if (!bucket) {
     throw new Error(
@@ -206,4 +208,3 @@ export async function saveGeneratedAnswer(params: {
 
   await updateAnsweredCount(params.questionnaireId);
 }
-

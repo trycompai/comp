@@ -1,4 +1,7 @@
-import { isInsufficientDataAnswer, FULLY_REMOTE_JUSTIFICATION } from './constants';
+import {
+  isInsufficientDataAnswer,
+  FULLY_REMOTE_JUSTIFICATION,
+} from './constants';
 
 export interface SOAQuestionResult {
   questionId: string;
@@ -148,8 +151,7 @@ export function parseAndProcessSOAAnswer(
   // Parse isApplicable
   const isApplicableText = parsedAnswer.isApplicable.toUpperCase();
   const isApplicable =
-    isApplicableText.includes('YES') ||
-    isApplicableText.includes('APPLICABLE');
+    isApplicableText.includes('YES') || isApplicableText.includes('APPLICABLE');
   const isNotApplicable =
     isApplicableText.includes('NO') ||
     isApplicableText.includes('NOT APPLICABLE');
@@ -186,4 +188,3 @@ export function parseAndProcessSOAAnswer(
     insufficientData: false,
   };
 }
-

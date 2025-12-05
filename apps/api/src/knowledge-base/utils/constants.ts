@@ -60,4 +60,3 @@ export function generateS3Key(
   const timestamp = Date.now();
   return `${organizationId}/knowledge-base-documents/${timestamp}-${fileId}-${sanitizedFileName}`;
 }
-

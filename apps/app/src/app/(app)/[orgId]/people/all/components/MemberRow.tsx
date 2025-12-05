@@ -132,18 +132,27 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
     setIsRemoveAlertOpen(false);
   };
 
+  const isDeactivated = member.deactivated;
+
   return (
     <>
-      <div className="hover:bg-muted/50 flex items-center justify-between p-4">
+      <div className={`hover:bg-muted/50 flex items-center justify-between p-4 ${isDeactivated ? 'opacity-60' : ''}`}>
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Avatar className="flex-shrink-0">
+          <Avatar className={`flex-shrink-0 ${isDeactivated ? 'grayscale' : ''}`}>
             <AvatarImage src={memberAvatar || undefined} />
             <AvatarFallback>{getInitials(member.user.name, member.user.email)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1 gap-2">
             <div className="flex items-center flex-wrap gap-1.5">
-              <span className="truncate text-sm font-medium">{memberName}</span>
-              {(isEmployee || isContractor) && (
+              <span className={`truncate text-sm font-medium ${isDeactivated ? 'line-through text-muted-foreground' : ''}`}>
+                {memberName}
+              </span>
+              {isDeactivated && (
+                <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 bg-orange-50">
+                  Deactivated
+                </Badge>
+              )}
+              {!isDeactivated && (isEmployee || isContractor) && (
                 <Link
                   href={`/${orgId}/people/${memberId}`}
                   className="text-xs text-blue-600 hover:underline flex-shrink-0"
@@ -158,7 +167,7 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex flex-wrap gap-1 max-w-[120px] sm:max-w-none">
             {currentRoles.map((role) => (
-              <Badge key={role} variant="secondary" className="text-xs whitespace-nowrap">
+              <Badge key={role} variant="secondary" className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}>
                 {(() => {
                   switch (role) {
                     case 'owner':
@@ -179,6 +188,7 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
             ))}
           </div>
 
+          {!isDeactivated && (
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
@@ -266,6 +276,7 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </div>
 

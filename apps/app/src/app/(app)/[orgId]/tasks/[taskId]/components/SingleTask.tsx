@@ -38,6 +38,7 @@ import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
+import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
@@ -185,15 +186,16 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
             </div>
           </div>
 
-          {/* Automations Section - Front & Center */}
-          <div>
-            <TaskAutomations automations={automations || []} />
-          </div>
-
-          {/* Attachments - De-emphasized */}
+          {/* Attachments */}
           <div className="space-y-3">
             <TaskMainContent task={task} showComments={false} />
           </div>
+
+          {/* Integration Checks Section */}
+          <TaskIntegrationChecks taskId={task.id} onTaskUpdated={() => mutateTask()} />
+
+          {/* Custom Automations Section - always show so users can create custom automations */}
+          <TaskAutomations automations={automations || []} />
 
           {/* Comments Section */}
           <div>

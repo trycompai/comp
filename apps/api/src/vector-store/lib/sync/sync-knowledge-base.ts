@@ -1,6 +1,9 @@
 import { db } from '@db';
 import { vectorIndex } from '../core/client';
-import { findEmbeddingsForSource, type ExistingEmbedding } from '../core/find-existing-embeddings';
+import {
+  findEmbeddingsForSource,
+  type ExistingEmbedding,
+} from '../core/find-existing-embeddings';
 import { logger } from '../../logger';
 import {
   extractContentFromS3Document,
@@ -53,7 +56,9 @@ async function updateDocumentStatus(
       where: { id: documentId },
       data: {
         processingStatus: status,
-        ...(status === 'completed' || status === 'failed' ? { processedAt: new Date() } : {}),
+        ...(status === 'completed' || status === 'failed'
+          ? { processedAt: new Date() }
+          : {}),
       },
     });
   } catch (error) {
@@ -113,10 +118,15 @@ async function processSingleDocument(
   await updateDocumentStatus(document.id, 'processing');
 
   // Extract content from S3
-  const content = await extractContentFromS3Document(document.s3Key, document.fileType);
+  const content = await extractContentFromS3Document(
+    document.s3Key,
+    document.fileType,
+  );
 
   if (!content || content.trim().length === 0) {
-    logger.warn('No content extracted from document', { documentId: document.id });
+    logger.warn('No content extracted from document', {
+      documentId: document.id,
+    });
     await updateDocumentStatus(document.id, 'failed');
     return 'failed';
   }
@@ -184,7 +194,10 @@ export async function syncKnowledgeBaseDocuments(
     count: allDocuments.length,
   });
 
-  const documentsToProcess = filterDocumentsToProcess(allDocuments, existingEmbeddingsMap);
+  const documentsToProcess = filterDocumentsToProcess(
+    allDocuments,
+    existingEmbeddingsMap,
+  );
 
   const stats = initSyncStats(allDocuments.length);
   stats.skipped = allDocuments.length - documentsToProcess.length;
@@ -223,4 +236,3 @@ export async function syncKnowledgeBaseDocuments(
 
   return stats;
 }
-

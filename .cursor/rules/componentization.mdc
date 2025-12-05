@@ -1,0 +1,439 @@
+---
+description: Componentization philosophy - reuse over repetition with TailwindCSS and shadcn/ui
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Componentization Philosophy
+
+## Core Principles
+
+### 1. Componentize Everything
+
+**Reuse over repetition.**
+
+- If a pattern appears 2+ times, it MUST be a component
+- No copy-paste UI patterns
+- Every visual element should trace back to a reusable component
+- Manual implementations are technical debt
+
+### 2. Hard Component Enforcement
+
+**Components are immutable contracts.**
+
+```tsx
+// ❌ NEVER - Arbitrary className overrides on design system components
+<Button className="bg-red-500 px-8 rounded-full">Click</Button>
+<Card className="shadow-xl border-2">Content</Card>
+<Badge className="uppercase text-xs tracking-wider">Status</Badge>
+
+// ✅ ALWAYS - Use component variants and props
+<Button variant="destructive" size="lg">Click</Button>
+<Card>Content</Card>
+<Badge variant="outline">Status</Badge>
+```
+
+**Rules:**
+
+- Use Tailwind utility classes in custom components, NOT on design system components
+- Use shadcn/ui variant props (`variant`, `size`) - never override with className
+- Compose from primitives (flex containers, semantic HTML)
+- Use `cn()` utility for conditional class merging
+
+### 3. Extension Strategy
+
+**When you need different styling, extend the component properly.**
+
+#### Option A: Add a Variant (using shadcn patterns)
+
+```tsx
+// In components/ui/badge.tsx - extend variants
+import { cva, type VariantProps } from "class-variance-authority";
+
+const badgeVariants = cva(
+  "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary/10 text-primary",
+        secondary: "bg-secondary text-secondary-foreground",
+        destructive: "bg-destructive/10 text-destructive",
+        outline: "border border-input bg-transparent",
+        // ADD NEW VARIANTS HERE
+        counter: "bg-muted text-muted-foreground tabular-nums font-mono",
+        technical: "bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
+
+// Usage
+<Badge variant="counter">03</Badge>
+<Badge variant="technical">SYS.ID</Badge>
+```
+
+#### Option B: Add Props for Flexibility
+
+```tsx
+// In components/ui/text.tsx - semantic text component
+import { cn } from "@/lib/utils";
+
+interface TextProps extends React.HTMLAttributes<HTMLParagraphElement> {
+  size?: "xs" | "sm" | "base" | "lg";
+  variant?: "default" | "muted" | "primary" | "destructive";
+  mono?: boolean;
+}
+
+const sizeClasses = {
+  xs: "text-xs",
+  sm: "text-sm",
+  base: "text-base",
+  lg: "text-lg",
+};
+
+const variantClasses = {
+  default: "text-foreground",
+  muted: "text-muted-foreground",
+  primary: "text-primary",
+  destructive: "text-destructive",
+};
+
+export const Text = ({ 
+  size = "base", 
+  variant = "default", 
+  mono,
+  className,
+  ...props 
+}: TextProps) => (
+  <p
+    className={cn(
+      sizeClasses[size],
+      variantClasses[variant],
+      mono && "font-mono tabular-nums",
+      className
+    )}
+    {...props}
+  />
+);
+
+// Usage
+<Text size="xs" variant="muted" mono>Technical Label</Text>
+```
+
+#### Option C: Create a New Component
+
+```tsx
+// components/ui/metric-number.tsx
+import { cn } from "@/lib/utils";
+
+interface MetricNumberProps {
+  value: number;
+  size?: "2xl" | "3xl" | "4xl";
+  variant?: "default" | "destructive" | "success";
+}
+
+const sizeClasses = {
+  "2xl": "text-2xl",
+  "3xl": "text-3xl",
+  "4xl": "text-4xl",
+};
+
+const variantClasses = {
+  default: "text-foreground",
+  destructive: "text-red-600 dark:text-red-400",
+  success: "text-green-600 dark:text-green-400",
+};
+
+export const MetricNumber = ({ 
+  value, 
+  size = "4xl", 
+  variant = "default" 
+}: MetricNumberProps) => (
+  <span
+    className={cn(
+      sizeClasses[size],
+      variantClasses[variant],
+      "font-mono font-bold tabular-nums"
+    )}
+  >
+    {String(value).padStart(2, "0")}
+  </span>
+);
+
+// Usage
+<MetricNumber value={42} size="4xl" variant="destructive" />
+```
+
+### 4. Reusability Through Composition
+
+**Build complex UIs from simple, focused components.**
+
+```tsx
+// ❌ BAD: Monolithic custom implementation with raw divs and classes
+<div className="relative group">
+  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent" />
+  <div className="border border-border rounded-sm p-4">
+    <div className="flex justify-between items-center">
+      <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+        TITLE
+      </span>
+      <span className="text-xs text-muted-foreground">META</span>
+    </div>
+    <div className="mt-4">
+      <span className="text-4xl font-mono font-bold tabular-nums">42</span>
+    </div>
+    <div className="mt-4 pt-4 border-t">
+      <span className="text-xs font-mono text-muted-foreground">SYS.ID</span>
+    </div>
+  </div>
+</div>
+
+// ✅ GOOD: Composed from reusable components
+<MetricCard
+  title="TITLE"
+  metaLabel="META"
+  footerLabel="SYS.ID"
+>
+  <MetricNumber value={42} size="4xl" />
+</MetricCard>
+```
+
+## Component Development Workflow
+
+### When You Need Custom Styling
+
+1. **Check existing variants**
+   - Review shadcn component variants (`variant`, `size`)
+   - Check if existing props achieve what you need
+
+2. **If existing variants aren't enough, extend the component**
+
+   ```tsx
+   // Add new variant to the cva definition
+   const buttonVariants = cva("...", {
+     variants: {
+       variant: {
+         // existing...
+         newVariant: "bg-teal-500 text-white hover:bg-teal-600", // ADD HERE
+       },
+     },
+   });
+   ```
+
+3. **If it's a new pattern, CREATE A COMPONENT**
+
+   ```tsx
+   // components/ui/your-new-component.tsx
+   import { cn } from "@/lib/utils";
+   
+   interface YourNewComponentProps {
+     children: React.ReactNode;
+     variant?: "default" | "muted";
+   }
+   
+   export const YourNewComponent = ({ 
+     children, 
+     variant = "default" 
+   }: YourNewComponentProps) => (
+     <div className={cn(
+       "flex items-center gap-2 p-4 rounded-md",
+       variant === "default" && "bg-background",
+       variant === "muted" && "bg-muted"
+     )}>
+       {children}
+     </div>
+   );
+   ```
+
+4. **NEVER bypass the design system**
+   - Don't add random className overrides
+   - It breaks consistency
+   - It creates technical debt
+
+## Pattern Recognition
+
+### If You See This Pattern 2+ Times → Componentize
+
+```tsx
+// Repeated list item layout
+<div className="flex items-center justify-between p-4 border-b">
+  <div className="flex flex-col gap-1">
+    <span>{title}</span>
+    <Badge>{status}</Badge>
+  </div>
+  <Button size="sm">View</Button>
+</div>
+→ Create ListItem component
+
+// Repeated counter pattern
+<div className="flex items-center gap-2">
+  <span className="text-xs font-mono text-muted-foreground/60">LABEL</span>
+  <Badge variant="outline" className="tabular-nums">{count}</Badge>
+</div>
+→ Create CounterBadge component
+
+// Repeated status dot
+<div className={cn(
+  "w-2 h-2 rounded-full",
+  active ? "bg-red-500 animate-pulse" : "bg-green-500/50"
+)} />
+→ Create StatusDot component
+
+// Repeated large numbers
+<span className="text-4xl font-mono font-bold tabular-nums">
+  {String(value).padStart(2, "0")}
+</span>
+→ Create MetricNumber component
+```
+
+## Testing Component Compliance
+
+### Before Committing, Check:
+
+- [ ] Uses shadcn/ui base components without className overrides
+- [ ] Semantic props exposed (`variant`, `size`)
+- [ ] No arbitrary style overrides on design system components
+- [ ] Repeated patterns extracted to components
+- [ ] Works in light and dark mode (uses semantic tokens)
+- [ ] Uses Tailwind responsive prefixes (`sm:`, `md:`, `lg:`)
+- [ ] Proper TypeScript types with inference where possible
+
+## Anti-Patterns to Avoid
+
+### ❌ Never Do This
+
+```tsx
+// 1. Raw inline styles
+<div style={{ display: 'flex' }}>Content</div>
+
+// 2. Overriding design system components with className
+<Button className="bg-red-500 hover:bg-red-600">Click</Button>
+
+// 3. Hardcoded colors instead of semantic tokens
+<div className="bg-[#059669]">
+
+// 4. Mixing approaches
+<Card className="shadow-xl p-8 border-2">
+
+// 5. Copy-paste UI patterns
+// If you copy UI code, STOP and componentize it first
+
+// 6. Non-responsive hardcoded values
+<div className="w-[847px]">
+```
+
+### ✅ Always Do This
+
+```tsx
+// 1. Use component variants
+<Button variant="destructive">
+
+// 2. Use exposed props
+<Badge variant="outline" size="sm">
+
+// 3. Compose components
+<Card>
+  <CardHeader>
+    <MetricNumber value={42} />
+  </CardHeader>
+</Card>
+
+// 4. Use semantic color tokens
+<div className="bg-background text-foreground border-border">
+
+// 5. Use responsive prefixes
+<div className="hidden md:block">
+
+// 6. Extract patterns immediately
+// See pattern twice? Make it a component.
+```
+
+## Tailwind + shadcn/ui Reference
+
+### Layout Patterns
+
+```tsx
+// Flex layouts - use gap, not margins
+<div className="flex items-center gap-4">
+<div className="flex flex-col gap-2">
+
+// Grid layouts
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+// Responsive visibility
+<div className="hidden md:flex">
+<div className="md:hidden">
+```
+
+### Semantic Colors (CSS Variables)
+
+```tsx
+// Backgrounds
+<div className="bg-background">     // main background
+<div className="bg-muted">          // subtle background
+<div className="bg-card">           // card background
+<div className="bg-primary">        // primary action
+
+// Text
+<span className="text-foreground">       // primary text
+<span className="text-muted-foreground"> // secondary text
+<span className="text-primary">          // accent text
+
+// Borders
+<div className="border-border">     // standard border
+<div className="border-input">      // input border
+
+// With opacity
+<div className="bg-muted/50">
+<span className="text-muted-foreground/60">
+```
+
+### Dark Mode Patterns
+
+```tsx
+// Status colors with dark mode variants
+<div className="bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400">
+<div className="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400">
+
+// Prefer semantic tokens when possible
+<div className="bg-destructive/10 text-destructive">
+```
+
+### The `cn()` Utility
+
+```tsx
+import { cn } from "@/lib/utils";
+
+// Conditional classes
+<div className={cn(
+  "flex items-center gap-2",
+  isActive && "bg-primary/10",
+  isDisabled && "opacity-50 pointer-events-none"
+)}>
+
+// Merging with component props
+<Button className={cn("w-full", className)}>
+```
+
+## Benefits of This Approach
+
+1. **Consistency** - All instances use the same Tailwind patterns
+2. **Maintainability** - CSS variable changes propagate automatically
+3. **Velocity** - shadcn variants are fast to compose
+4. **Quality** - Built-in accessibility from shadcn/ui
+5. **Scalability** - Semantic tokens work across light/dark modes
+6. **Type Safety** - Full TypeScript support with variant inference
+
+## Summary
+
+**Golden Rule:** If you're about to add className to a design system component, STOP and:
+
+1. Check if a variant/prop exists on the component
+2. Add a variant to the cva definition if needed
+3. Create a new component if it's a unique pattern
+4. NEVER override the component's styling directly
+
+This keeps our design system tight, consistent, and maintainable.

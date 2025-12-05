@@ -64,4 +64,3 @@ For each question found:
 - If no answer is provided, note it as empty
 
 Preserve the order of questions as they appear. Return Question → Answer pairs in a structured format.`;
-

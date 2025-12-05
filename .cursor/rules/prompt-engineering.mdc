@@ -1,0 +1,184 @@
+---
+description: Prompt engineering best practices - invoke with @prompt-engineering
+globs: .cursor/rules/*.mdc
+alwaysApply: false
+---
+
+# Prompt Engineering Best Practices
+
+Based on [Claude's Prompt Engineering Documentation](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview)
+
+## Core Principles
+
+### 1. Define Success Criteria First
+
+Before writing prompts:
+
+- **Establish clear objectives**: What constitutes a successful response?
+- **Create evaluation metrics**: How will you measure prompt effectiveness?
+- **Draft and iterate**: Start with a first draft and refine based on results
+
+### 2. When to Use Prompt Engineering vs Fine-tuning
+
+Prompt engineering is preferred because:
+
+- **Resource efficient**: Only requires text input, no GPUs
+- **Cost effective**: Uses base model pricing
+- **Maintains updates**: Works across model versions
+- **Time saving**: Instant results vs hours/days for fine-tuning
+- **Minimal data needs**: Works with zero-shot or few-shot
+- **Flexible iteration**: Quick experimentation cycle
+- **Preserves knowledge**: No catastrophic forgetting
+- **Transparent**: Human-readable, easy to debug
+
+---
+
+## The 8 Core Techniques
+
+### 1. Be Clear and Direct
+
+**Principle**: Provide explicit, unambiguous instructions.
+
+```
+❌ Bad: "Tell me about it"
+✅ Good: "Summarize the following article in three bullet points, focusing on key findings"
+
+❌ Bad: "Help with code"
+✅ Good: "Debug this Python function that should return the sum of even numbers in a list"
+```
+
+**Tips**:
+
+- State the task explicitly at the start
+- Specify the desired output format (bullet points, JSON, paragraphs)
+- Include constraints (word count, tone, audience)
+- Mention what to include AND what to exclude
+
+### 2. Use Examples (Multishot Prompting)
+
+**Principle**: Show the model what you want through examples.
+
+```xml
+<examples>
+  <example>
+    <input>The movie was absolutely terrible, waste of time</input>
+    <output>{"sentiment": "negative", "confidence": 0.95}</output>
+  </example>
+  <example>
+    <input>Decent film, not great but watchable</input>
+    <output>{"sentiment": "neutral", "confidence": 0.7}</output>
+  </example>
+  <example>
+    <input>Best movie I've seen this year!</input>
+    <output>{"sentiment": "positive", "confidence": 0.9}</output>
+  </example>
+</examples>
+
+Now analyze: "The special effects were amazing but the plot was confusing"
+```
+
+**Tips**:
+
+- Include 3-5 diverse examples covering edge cases
+- Show examples of BOTH good and bad outputs
+- Match example complexity to your actual use case
+- Order examples from simple to complex
+
+### 3. Let Claude Think (Chain of Thought)
+
+**Principle**: Encourage step-by-step reasoning for complex tasks.
+
+```xml
+<instruction>
+Solve this problem step by step. Show your reasoning before giving the final answer.
+</instruction>
+
+<problem>
+A train leaves Station A at 9:00 AM traveling at 60 mph. Another train leaves
+Station B at 10:00 AM traveling at 80 mph toward Station A. The stations are
+280 miles apart. When will the trains meet?
+</problem>
+
+<thinking>
+[Let Claude work through the problem here]
+</thinking>
+
+<answer>
+[Final answer after reasoning]
+</answer>
+```
+
+**Tips**:
+
+- Use phrases like "Think step by step" or "Explain your reasoning"
+- For complex tasks, explicitly request a thinking section
+- Chain of thought improves accuracy on math, logic, and multi-step problems
+- Can use `<thinking>` tags to separate reasoning from output
+
+### 4. Use XML Tags
+
+**Principle**: Structure prompts with clear delimiters for better parsing.
+
+```xml
+<context>
+You are helping debug a penetration testing tool that automates security scans.
+</context>
+
+<task>
+Analyze the following error log and identify the root cause.
+</task>
+
+<error_log>
+[2024-01-15 10:23:45] ERROR: Connection timeout after 30s
+[2024-01-15 10:23:45] DEBUG: Target: 192.168.1.1:443
+[2024-01-15 10:23:45] DEBUG: Retry attempt 3 of 3
+</error_log>
+
+<output_format>
+Provide your analysis in this format:
+- Root cause: [one sentence]
+- Evidence: [relevant log lines]
+- Recommended fix: [actionable steps]
+</output_format>
+```
+
+**Common XML Tags**:
+
+- `<context>` - Background information
+- `<task>` or `<instruction>` - What to do
+- `<examples>` - Sample inputs/outputs
+- `<constraints>` - Limitations or rules
+- `<output_format>` - Expected response structure
+- `<thinking>` - Reasoning section
+- `<answer>` - Final response
+
+### 5. Give Claude a Role (System Prompts)
+
+**Principle**: Assign a persona to influence response style and expertise.
+
+```xml
+<role>
+You are a senior security researcher with 15 years of experience in penetration
+testing. You specialize in web application security and have discovered multiple
+CVEs. You communicate findings clearly and prioritize actionable recommendations.
+</role>
+
+<task>
+Review this HTTP response and identify potential security vulnerabilities.
+</task>
+```
+
+**Effective Role Elements**:
+
+- Expertise level (senior, expert, specialist)
+- Domain knowledge (security, finance, medicine)
+- Communication style (technical, friendly, formal)
+- Priorities (accuracy, brevity, thoroughness)
+
+### 6. Prefill Claude's Response
+
+**Principle**: Start the response to guide format and direction.
+
+```
+Human: List the top 3 security vulnerabilities in this code.
+```

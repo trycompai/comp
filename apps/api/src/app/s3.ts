@@ -103,7 +103,8 @@ export function extractS3KeyFromUrl(url: string): string {
 
   // Check for domain-like patterns (e.g., "example.com", "sub.example.com")
   // S3 keys should not contain domain patterns
-  const domainPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}(\/|$)/i;
+  const domainPattern =
+    /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}(\/|$)/i;
   if (domainPattern.test(url)) {
     throw new Error('Invalid input: Domain-like pattern detected in S3 key');
   }
