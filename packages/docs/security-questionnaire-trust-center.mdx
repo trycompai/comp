@@ -1,0 +1,511 @@
+---
+title: 'Security Questionnaire'
+description: 'A comprehensive guide to using the Security Questionnaire API for external users via Trust Access tokens.'
+---
+
+<Note>
+  For internal organization users with full editing capabilities, see the main [Security Questionnaire](./security-questionnaire) documentation.
+</Note>
+
+## Overview
+
+The Security Questionnaire Trust Center enables external users with active Trust Access grants to automatically parse and answer security questionnaires using your organization's compliance documentation. This API endpoint provides a seamless, automated solution for completing vendor security questionnaires without requiring direct access to your internal systems.
+
+## 1. Key Concepts
+
+The Security Questionnaire Trust Center API consists of three core components:
+
+- **Trust Access Token:** A secure token obtained from an active Trust Access grant that authenticates external users
+- **Questionnaire Parsing:** AI-powered extraction of questions from uploaded questionnaire files (PDF, Excel, CSV)
+- **Automated Answer Generation:** Intelligent answer generation based on your organization's published policies and compliance documentation
+
+### Supported File Formats
+
+The API supports multiple questionnaire file formats:
+
+| Format      | Extensions                    | Notes                                    |
+| :---------- | :---------------------------- | :--------------------------------------- |
+| **PDF**     | `.pdf`                        | Scanned documents and digital PDFs       |
+| **Excel**   | `.xlsx`, `.xls`               | Spreadsheet-based questionnaires         |
+| **CSV**     | `.csv`                        | Comma-separated value files              |
+
+### Output Formats
+
+Completed questionnaires can be exported in three formats:
+
+| Format | MIME Type                                                    | Use Case                          |
+| :----- | :----------------------------------------------------------- | :-------------------------------- |
+| **XLSX** | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | Default format, editable in Excel |
+| **PDF**  | `application/pdf`                                            | Final submission format           |
+| **CSV**  | `text/csv`                                                   | Simple data exchange              |
+
+---
+
+## 2. Prerequisites
+
+Before using the Security Questionnaire Trust Center API, ensure the following:
+
+1. **Active Trust Access Grant:** You must have an active Trust Access grant with a valid access token
+   - Access grants are obtained through the Trust Access workflow (see [Trust Access documentation](./trust-access))
+   - The grant must be in `Active` status
+   - Access tokens are provided via email when access is granted
+
+2. **Questionnaire File:** Prepare your security questionnaire file in a supported format
+   - Ensure the file is readable and not corrupted
+   - For best results, use structured formats (Excel, CSV) when possible
+   - PDF files should have extractable text (not just scanned images)
+
+---
+
+## 3. API Endpoint
+
+### Endpoint Details
+
+**URL:** `/v1/questionnaire/parse/upload/token`
+
+**Method:** `POST`
+
+**Authentication:** Query parameter `token` (Trust Access token)
+
+**Content-Type:** `multipart/form-data`
+
+### Request Parameters
+
+#### Query Parameters
+
+| Parameter | Type     | Required | Description                                    |
+| :-------- | :------- | :------- | :--------------------------------------------- |
+| `token`   | `string` | Yes      | Trust Access token from your active grant      |
+
+#### Form Data
+
+| Parameter | Type                      | Required | Description                                    |
+| :-------- | :------------------------ | :------- | :--------------------------------------------- |
+| `file`    | `File`                    | Yes      | Questionnaire file (PDF, Excel, CSV)           |
+| `format`  | `'pdf' \| 'csv' \| 'xlsx'` | No       | Output format (defaults to `xlsx`)            |
+
+### Response
+
+**Content-Type:** Varies based on requested format:
+- `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (XLSX)
+- `application/pdf` (PDF)
+- `text/csv` (CSV)
+
+**Headers:**
+- `Content-Type`: MIME type of the returned file
+- `Content-Disposition`: `attachment; filename="questionnaire.{format}"`
+- `X-Question-Count`: Number of questions extracted and answered
+
+**Body:** Binary file content (the completed questionnaire)
+
+---
+
+## 4. Workflow: Step-by-Step
+
+### Step 1: Obtain Trust Access Token
+
+1. Complete the Trust Access workflow to receive an active access grant
+2. Check your email for the "Access Granted" notification
+3. The access link email contains your Trust Access token
+4. Extract the token from the access link URL (the `token` query parameter)
+
+<Note>
+  Trust Access tokens are valid for the duration of your access grant (default 30 days, configurable 7-365 days). If your token expires, you'll need to request new access through the Trust Access workflow.
+</Note>
+
+### Step 2: Prepare Your Questionnaire File
+
+1. Ensure your questionnaire file is in a supported format
+2. Verify the file is readable and not corrupted
+3. For best results:
+   - Use structured formats (Excel, CSV) when available
+   - Ensure PDF files have extractable text
+
+### Step 3: Submit Questionnaire via API
+
+#### Using cURL
+
+```bash
+curl -X POST \
+  "https://api.trycomp.ai/v1/questionnaire/parse/upload/token?token=YOUR_TRUST_ACCESS_TOKEN" \
+  -F "file=@/path/to/questionnaire.pdf" \
+  -F "format=xlsx" \
+  --output completed-questionnaire.xlsx
+```
+
+#### Using JavaScript/TypeScript (Fetch API)
+
+```javascript
+const format = 'xlsx'; // or 'pdf' or 'csv'
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('format', format);
+
+const response = await fetch(
+  `https://api.trycomp.ai/v1/questionnaire/parse/upload/token?token=${trustAccessToken}`,
+  {
+    method: 'POST',
+    body: formData,
+  }
+);
+
+const blob = await response.blob();
+const questionCount = response.headers.get('X-Question-Count');
+
+// Download the file
+const url = window.URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `completed-questionnaire.${format}`;
+a.click();
+```
+
+#### Using Python (Requests)
+
+```python
+import requests
+
+url = "https://api.trycomp.ai/v1/questionnaire/parse/upload/token"
+params = {"token": "YOUR_TRUST_ACCESS_TOKEN"}
+files = {"file": open("questionnaire.pdf", "rb")}
+data = {"format": "xlsx"}
+
+response = requests.post(url, params=params, files=files, data=data)
+
+# Save the completed questionnaire
+with open("completed-questionnaire.xlsx", "wb") as f:
+    f.write(response.content)
+
+# Get question count
+question_count = response.headers.get("X-Question-Count")
+print(f"Processed {question_count} questions")
+```
+
+### Step 4: Process Response
+
+1. **Check Response Status:** Ensure the request returns `200 OK`
+2. **Download File:** Save the response body as a file with the appropriate extension
+3. **Review Question Count:** Check the `X-Question-Count` header to verify all questions were processed
+4. **Review Answers:** Open the downloaded file and review the generated answers
+
+### Step 5: Review and Submit
+
+1. **Review Generated Answers:** Open the completed questionnaire file
+2. **Verify Accuracy:** Check that answers align with your requirements
+3. **Edit if Needed:** Make any necessary manual edits to answers
+4. **Submit:** Use the completed questionnaire for your security assessment submission
+
+---
+
+## 5. How It Works
+
+### Question Extraction
+
+The API uses AI-powered parsing to extract questions from your uploaded file:
+
+- **Excel/CSV Files:** Uses advanced parsing algorithms optimized for structured data
+- **PDF Files:** Employs vision AI to extract text and identify question-answer pairs
+
+### Answer Generation
+
+Answers are automatically generated using:
+
+- **Published Policies:** Your organization's published compliance policies serve as the primary source
+- **Knowledge Base:** Additional documentation and context from the organization's knowledge base
+- **AI Analysis:** Advanced language models analyze questions and match them to relevant policy content
+
+### Processing Time
+
+Typical processing times vary by file type and size:
+
+| File Type | Average Processing Time | Notes                    |
+| :-------- | :---------------------- | :----------------------- |
+| **Excel** | 5-15 seconds            | Fast parsing with Groq   |
+| **CSV**   | 5-10 seconds            | Fast parsing with Groq   |
+| **PDF**   | 15-30 seconds           | Vision AI processing     |
+
+---
+
+## 6. Error Handling
+
+### Common Error Responses
+
+#### Invalid Token (401 Unauthorized)
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid or expired access token",
+  "error": "Unauthorized"
+}
+```
+
+**Solution:** Verify your Trust Access token is valid and your access grant is still active.
+
+#### Missing File (400 Bad Request)
+
+```json
+{
+  "statusCode": 400,
+  "message": "file is required",
+  "error": "Bad Request"
+}
+```
+
+**Solution:** Ensure the `file` parameter is included in your form data.
+
+#### Unsupported File Format (400 Bad Request)
+
+```json
+{
+  "statusCode": 400,
+  "message": "Unsupported file type: application/octet-stream",
+  "error": "Bad Request"
+}
+```
+
+**Solution:** Use a supported file format (PDF, Excel, or CSV).
+
+#### File Too Large (413 Payload Too Large)
+
+```json
+{
+  "statusCode": 413,
+  "message": "File size exceeds maximum limit",
+  "error": "Payload Too Large"
+}
+```
+
+**Solution:** Reduce file size or split into multiple submissions.
+
+---
+
+## 7. Best Practices
+
+### For External Users
+
+1. **Use Structured Formats:** Prefer Excel or CSV formats when available for faster processing
+2. **Verify Token Validity:** Check that your Trust Access grant is still active before submitting
+3. **Review Generated Answers:** Always review AI-generated answers before final submission
+4. **Handle Errors Gracefully:** Implement proper error handling in your integration
+5. **Respect Rate Limits:** Avoid submitting multiple requests simultaneously
+
+### For Organizations
+
+1. **Keep Policies Updated:** Ensure published policies are current and comprehensive
+2. **Maintain Knowledge Base:** Keep additional documentation up to date
+3. **Monitor Usage:** Track API usage through Trust Access audit logs
+4. **Set Appropriate Grant Durations:** Configure access grant durations based on your needs
+
+---
+
+## 8. Integration Examples
+
+### Web Application Integration
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Security Questionnaire Submission</title>
+</head>
+<body>
+  <form id="questionnaireForm">
+    <input type="file" id="questionnaireFile" accept=".pdf,.xlsx,.csv" required>
+    <select id="outputFormat">
+      <option value="xlsx">Excel (XLSX)</option>
+      <option value="pdf">PDF</option>
+      <option value="csv">CSV</option>
+    </select>
+    <button type="submit">Submit Questionnaire</button>
+  </form>
+
+  <script>
+    document.getElementById('questionnaireForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData();
+      formData.append('file', document.getElementById('questionnaireFile').files[0]);
+      formData.append('format', document.getElementById('outputFormat').value);
+      
+      const token = new URLSearchParams(window.location.search).get('token');
+      
+      try {
+        const response = await fetch(
+          `https://api.trycomp.ai/v1/questionnaire/parse/upload/token?token=${token}`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `completed-questionnaire.${document.getElementById('outputFormat').value}`;
+        a.click();
+        
+        alert(`Questionnaire processed! ${response.headers.get('X-Question-Count')} questions answered.`);
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    });
+  </script>
+</body>
+</html>
+```
+
+### API Client Library (TypeScript)
+
+```typescript
+interface QuestionnaireSubmissionOptions {
+  token: string;
+  file: File | Blob;
+  format?: 'pdf' | 'csv' | 'xlsx';
+}
+
+interface QuestionnaireResponse {
+  file: Blob;
+  questionCount: number;
+  mimeType: string;
+  filename: string;
+}
+
+class SecurityQuestionnaireClient {
+  private baseUrl = 'https://api.trycomp.ai/v1';
+
+  async submitQuestionnaire(
+    options: QuestionnaireSubmissionOptions
+  ): Promise<QuestionnaireResponse> {
+    const formData = new FormData();
+    formData.append('file', options.file);
+    if (options.format) {
+      formData.append('format', options.format);
+    }
+
+    const response = await fetch(
+      `${this.baseUrl}/questionnaire/parse/upload/token?token=${options.token}`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to process questionnaire');
+    }
+
+    const blob = await response.blob();
+    const questionCount = parseInt(
+      response.headers.get('X-Question-Count') || '0',
+      10
+    );
+
+    return {
+      file: blob,
+      questionCount,
+      mimeType: response.headers.get('Content-Type') || '',
+      filename: this.extractFilename(response.headers.get('Content-Disposition') || ''),
+    };
+  }
+
+  private extractFilename(contentDisposition: string): string {
+    const match = contentDisposition.match(/filename="(.+)"/);
+    return match ? match[1] : 'questionnaire.xlsx';
+  }
+}
+
+// Usage
+const client = new SecurityQuestionnaireClient();
+const result = await client.submitQuestionnaire({
+  token: 'your-trust-access-token',
+  file: fileInput.files[0],
+  format: 'xlsx',
+});
+
+// Download the file
+const url = URL.createObjectURL(result.file);
+const a = document.createElement('a');
+a.href = url;
+a.download = result.filename;
+a.click();
+```
+
+---
+
+## 9. Troubleshooting
+
+<Accordion title="Common Issues" description="Solutions to common problems" icon="warning">
+  ### Invalid Token Error
+
+  **Problem:** Receiving "Invalid or expired access token" error.
+
+  **Solutions:**
+  - Verify your Trust Access grant is still active
+  - Check that you're using the correct token from your access link
+  - Request new access if your grant has expired
+
+  ### Questions Not Extracted
+
+  **Problem:** Few or no questions extracted from the questionnaire.
+
+  **Solutions:**
+  - Ensure the file format is supported
+  - Verify the file is readable and not corrupted
+  - Try converting to a structured format (Excel/CSV) if possible
+  - Check that the file contains actual questionnaire content
+
+  ### Answers Not Accurate
+
+  **Problem:** Generated answers don't match expectations.
+
+  **Solutions:**
+  - This is expected - answers are based on the organization's published policies
+  - Review and edit answers manually before submission
+  - Contact the organization if you need clarification on specific answers
+
+  ### File Upload Fails
+
+  **Problem:** File upload returns an error.
+
+  **Solutions:**
+  - Check file size (must be under 10MB)
+  - Verify file format is supported
+  - Ensure proper Content-Type headers are set
+  - Try a different file format if issues persist
+</Accordion>
+
+---
+
+## 10. Security Considerations
+
+### Token Security
+
+- **Never Share Tokens:** Keep your Trust Access token confidential
+- **Use HTTPS:** Always use HTTPS when making API requests
+- **Token Expiration:** Tokens expire with your access grant - request new access when needed
+- **Revocation:** Organizations can revoke access at any time, invalidating tokens
+
+### Data Privacy
+
+- **File Content:** Questionnaire files are processed securely and stored temporarily
+- **Answer Generation:** Answers are generated based on published policies only
+- **Audit Trail:** All API usage is logged for security and compliance purposes
+
+---
+
+## 11. Support
+
+For additional assistance with the Security Questionnaire Trust Center API:
+
+1. **Documentation:** Review the [Trust Access documentation](./trust-access) for token management
+2. **API Reference:** Check the [API documentation](/api) for detailed endpoint specifications
+3. **Support:** Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
+4. **Community:** Join our [Discord community](https://discord.gg/compai) for peer support
+
