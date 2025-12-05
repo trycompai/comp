@@ -1,71 +1,75 @@
+import PageCore from '@/components/pages/PageCore.tsx';
+import type { Metadata } from 'next';
 import { auth } from '@/utils/auth';
 import { env } from '@/env.mjs';
 import { db } from '@db';
-import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { cache } from 'react';
-import { TrustPortalDomain } from './components/TrustPortalDomain';
 import { TrustPortalSwitch } from './components/TrustPortalSwitch';
+import { TrustPortalDomain } from './components/TrustPortalDomain';
 
-export default async function TrustPortalSettings({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function PortalSettingsPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4">
-      <TrustPortalSwitch
-        enabled={trustPortal?.enabled ?? false}
-        slug={trustPortal?.friendlyUrl ?? orgId}
-        domain={trustPortal?.domain ?? ''}
-        domainVerified={trustPortal?.domainVerified ?? false}
-        contactEmail={trustPortal?.contactEmail ?? null}
-        orgId={orgId}
-        soc2type1={trustPortal?.soc2type1 ?? false}
-        soc2type2={trustPortal?.soc2type2 ?? false}
-        iso27001={trustPortal?.iso27001 ?? false}
-        iso42001={trustPortal?.iso42001 ?? false}
-        gdpr={trustPortal?.gdpr ?? false}
-        hipaa={trustPortal?.hipaa ?? false}
-        pcidss={trustPortal?.pcidss ?? false}
-        nen7510={trustPortal?.nen7510 ?? false}
-        iso9001={trustPortal?.iso9001 ?? false}
-        soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
-        soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
-        iso27001Status={trustPortal?.iso27001Status ?? 'started'}
-        iso42001Status={trustPortal?.iso42001Status ?? 'started'}
-        gdprStatus={trustPortal?.gdprStatus ?? 'started'}
-        hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
-        pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
-        nen7510Status={trustPortal?.nen7510Status ?? 'started'}
-        iso9001Status={trustPortal?.iso9001Status ?? 'started'}
-        friendlyUrl={trustPortal?.friendlyUrl ?? null}
-        iso27001FileName={certificateFiles.iso27001FileName}
-        iso42001FileName={certificateFiles.iso42001FileName}
-        gdprFileName={certificateFiles.gdprFileName}
-        hipaaFileName={certificateFiles.hipaaFileName}
-        soc2type1FileName={certificateFiles.soc2type1FileName}
-        soc2type2FileName={certificateFiles.soc2type2FileName}
-        pcidssFileName={certificateFiles.pcidssFileName}
-        nen7510FileName={certificateFiles.nen7510FileName}
-        iso9001FileName={certificateFiles.iso9001FileName}
-      />
-      <TrustPortalDomain
-        domain={trustPortal?.domain ?? ''}
-        domainVerified={trustPortal?.domainVerified ?? false}
-        orgId={orgId}
-        isVercelDomain={trustPortal?.isVercelDomain ?? false}
-        vercelVerification={trustPortal?.vercelVerification ?? null}
-      />
-    </div>
+    <PageCore>
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Portal Settings</h1>
+          <p className="text-muted-foreground">Configure your trust portal</p>
+        </div>
+        <div className="space-y-4">
+          <TrustPortalSwitch
+            enabled={trustPortal?.enabled ?? false}
+            slug={trustPortal?.friendlyUrl ?? orgId}
+            domain={trustPortal?.domain ?? ''}
+            domainVerified={trustPortal?.domainVerified ?? false}
+            contactEmail={trustPortal?.contactEmail ?? null}
+            orgId={orgId}
+            soc2type1={trustPortal?.soc2type1 ?? false}
+            soc2type2={trustPortal?.soc2type2 ?? false}
+            iso27001={trustPortal?.iso27001 ?? false}
+            iso42001={trustPortal?.iso42001 ?? false}
+            gdpr={trustPortal?.gdpr ?? false}
+            hipaa={trustPortal?.hipaa ?? false}
+            pcidss={trustPortal?.pcidss ?? false}
+            nen7510={trustPortal?.nen7510 ?? false}
+            iso9001={trustPortal?.iso9001 ?? false}
+            soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
+            soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
+            iso27001Status={trustPortal?.iso27001Status ?? 'started'}
+            iso42001Status={trustPortal?.iso42001Status ?? 'started'}
+            gdprStatus={trustPortal?.gdprStatus ?? 'started'}
+            hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
+            pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
+            nen7510Status={trustPortal?.nen7510Status ?? 'started'}
+            iso9001Status={trustPortal?.iso9001Status ?? 'started'}
+            friendlyUrl={trustPortal?.friendlyUrl ?? null}
+            iso27001FileName={certificateFiles.iso27001FileName}
+            iso42001FileName={certificateFiles.iso42001FileName}
+            gdprFileName={certificateFiles.gdprFileName}
+            hipaaFileName={certificateFiles.hipaaFileName}
+            soc2type1FileName={certificateFiles.soc2type1FileName}
+            soc2type2FileName={certificateFiles.soc2type2FileName}
+            pcidssFileName={certificateFiles.pcidssFileName}
+            nen7510FileName={certificateFiles.nen7510FileName}
+            iso9001FileName={certificateFiles.iso9001FileName}
+          />
+          <TrustPortalDomain
+            domain={trustPortal?.domain ?? ''}
+            domainVerified={trustPortal?.domainVerified ?? false}
+            orgId={orgId}
+            isVercelDomain={trustPortal?.isVercelDomain ?? false}
+            vercelVerification={trustPortal?.vercelVerification ?? null}
+          />
+        </div>
+      </div>
+    </PageCore>
   );
 }
 
-const getTrustPortal = cache(async (orgId: string) => {
+const getTrustPortal = async (orgId: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -110,7 +114,7 @@ const getTrustPortal = cache(async (orgId: string) => {
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,
   };
-});
+};
 
 type CertificateFiles = {
   iso27001FileName: string | null;
@@ -165,7 +169,6 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
         ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
       },
       body: JSON.stringify({ organizationId: orgId }),
-      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -219,12 +222,9 @@ async function getJwtToken(cookieHeader: string): Promise<string | null> {
   }
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Trust Portal',
+    title: 'Portal Settings',
   };
 }
+

@@ -32,6 +32,7 @@ import {
   SOC2Type2,
 } from './logos';
 
+// Client-side form schema (includes all fields for form state)
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
   contactEmail: z.string().email().or(z.literal('')).optional(),
@@ -55,6 +56,13 @@ const trustPortalSwitchSchema = z.object({
   nen7510Status: z.enum(['started', 'in_progress', 'compliant']),
   iso9001Status: z.enum(['started', 'in_progress', 'compliant']),
 });
+
+// Server action input schema (only fields that the server accepts)
+type TrustPortalSwitchActionInput = {
+  enabled: boolean;
+  contactEmail?: string | '';
+  friendlyUrl?: string;
+};
 
 const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
   iso27001: 'iso_27001',
@@ -272,6 +280,10 @@ export function TrustPortalSwitch({
     },
   });
 
+  // Use ref to store latest trustPortalSwitch to avoid stale closures
+  const trustPortalSwitchRef = useRef(trustPortalSwitch);
+  trustPortalSwitchRef.current = trustPortalSwitch;
+
   const checkFriendlyUrl = useAction(isFriendlyAvailable);
 
   const form = useForm<z.infer<typeof trustPortalSwitchSchema>>({
@@ -302,10 +314,10 @@ export function TrustPortalSwitch({
   });
 
   const onSubmit = useCallback(
-    async (data: z.infer<typeof trustPortalSwitchSchema>) => {
-      await trustPortalSwitch.execute(data);
+    async (data: TrustPortalSwitchActionInput) => {
+      await trustPortalSwitchRef.current.execute(data);
     },
-    [], // Remove trustPortalSwitch from dependencies to prevent infinite loop
+    [], // Safe to use empty array because we use ref
   );
 
   const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
@@ -316,28 +328,51 @@ export function TrustPortalSwitch({
     enabled: enabled,
   });
 
+  const savingRef = useRef<{ [key: string]: boolean }>({
+    contactEmail: false,
+    friendlyUrl: false,
+    enabled: false,
+  });
+
   const autoSave = useCallback(
     async (field: string, value: any) => {
+      // Prevent concurrent saves for the same field
+      if (savingRef.current[field]) {
+        return;
+      }
+
       const current = form.getValues();
       if (lastSaved.current[field] !== value) {
-        const data = { ...current, [field]: value };
-        await onSubmit(data);
-        lastSaved.current[field] = value;
+        savingRef.current[field] = true;
+        try {
+          // Only send fields that trustPortalSwitchAction accepts
+          // Server schema only accepts: enabled, contactEmail, friendlyUrl
+          const data: TrustPortalSwitchActionInput = {
+            enabled: field === 'enabled' ? value : current.enabled,
+            contactEmail: field === 'contactEmail' ? value : current.contactEmail ?? '',
+            friendlyUrl: field === 'friendlyUrl' ? value : current.friendlyUrl ?? undefined,
+          };
+          await onSubmit(data);
+          lastSaved.current[field] = value;
+        } finally {
+          savingRef.current[field] = false;
+        }
       }
     },
     [form, onSubmit],
   );
 
   const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');
-  const debouncedContactEmail = useDebounce(contactEmailValue, 500);
+  const debouncedContactEmail = useDebounce(contactEmailValue, 800);
 
   useEffect(() => {
     if (
       debouncedContactEmail !== undefined &&
-      debouncedContactEmail !== lastSaved.current.contactEmail
+      debouncedContactEmail !== lastSaved.current.contactEmail &&
+      !savingRef.current.contactEmail
     ) {
       form.setValue('contactEmail', debouncedContactEmail);
-      autoSave('contactEmail', debouncedContactEmail);
+      void autoSave('contactEmail', debouncedContactEmail);
     }
   }, [debouncedContactEmail, autoSave, form]);
 
@@ -351,30 +386,62 @@ export function TrustPortalSwitch({
   );
 
   const [friendlyUrlValue, setFriendlyUrlValue] = useState(form.getValues('friendlyUrl') || '');
-  const debouncedFriendlyUrl = useDebounce(friendlyUrlValue, 500);
+  const debouncedFriendlyUrl = useDebounce(friendlyUrlValue, 700);
   const [friendlyUrlStatus, setFriendlyUrlStatus] = useState<
     'idle' | 'checking' | 'available' | 'unavailable'
   >('idle');
+  const lastCheckedUrlRef = useRef<string>('');
+  const processingResultRef = useRef<string>('');
 
   useEffect(() => {
     if (!debouncedFriendlyUrl || debouncedFriendlyUrl === (friendlyUrl ?? '')) {
       setFriendlyUrlStatus('idle');
+      lastCheckedUrlRef.current = '';
+      processingResultRef.current = '';
       return;
     }
+    
+    // Only check if we haven't already checked this exact value
+    if (lastCheckedUrlRef.current === debouncedFriendlyUrl) {
+      return;
+    }
+    
+    lastCheckedUrlRef.current = debouncedFriendlyUrl;
+    processingResultRef.current = '';
     setFriendlyUrlStatus('checking');
     checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId });
   }, [debouncedFriendlyUrl, orgId, friendlyUrl]);
+  
   useEffect(() => {
     if (checkFriendlyUrl.status === 'executing') return;
-    if (checkFriendlyUrl.result?.data?.isAvailable === true) {
+    
+    const result = checkFriendlyUrl.result?.data;
+    const checkedUrl = lastCheckedUrlRef.current;
+    
+    // Only process if this result matches the currently checked URL
+    if (checkedUrl !== debouncedFriendlyUrl || !checkedUrl) {
+      return;
+    }
+    
+    // Prevent processing the same result multiple times
+    if (processingResultRef.current === checkedUrl) {
+      return;
+    }
+    
+    if (result?.isAvailable === true) {
       setFriendlyUrlStatus('available');
+      processingResultRef.current = checkedUrl;
 
-      if (debouncedFriendlyUrl !== lastSaved.current.friendlyUrl) {
+      if (
+        debouncedFriendlyUrl !== lastSaved.current.friendlyUrl &&
+        !savingRef.current.friendlyUrl
+      ) {
         form.setValue('friendlyUrl', debouncedFriendlyUrl);
-        autoSave('friendlyUrl', debouncedFriendlyUrl);
+        void autoSave('friendlyUrl', debouncedFriendlyUrl);
       }
-    } else if (checkFriendlyUrl.result?.data?.isAvailable === false) {
+    } else if (result?.isAvailable === false) {
       setFriendlyUrlStatus('unavailable');
+      processingResultRef.current = checkedUrl;
     }
   }, [checkFriendlyUrl.status, checkFriendlyUrl.result, debouncedFriendlyUrl, form, autoSave]);
 
@@ -400,42 +467,40 @@ export function TrustPortalSwitch({
   return (
     <Form {...form}>
       <form className="space-y-4">
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-medium flex items-center gap-2">
+                <Link
+                  href={portalUrl}
+                  target="_blank"
+                  className="text-primary hover:underline flex items-center gap-2"
+                >
                   Trust Portal
-                  <Link
-                    href={portalUrl}
-                    target="_blank"
-                    className="text-muted-foreground hover:text-foreground text-sm"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Link>
-                </CardTitle>
-                <p className="text-muted-foreground text-sm">
-                  Create a public trust portal for your organization.
-                </p>
-              </div>
-              <FormField
-                control={form.control}
-                name="enabled"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-y-0 space-x-2">
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={handleEnabledChange}
-                        disabled={trustPortalSwitch.status === 'executing'}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Create a public trust portal for your organization.
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-0">
+            <FormField
+              control={form.control}
+              name="enabled"
+              render={({ field }) => (
+                <FormItem className="flex items-center space-y-0 space-x-2">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={handleEnabledChange}
+                      disabled={trustPortalSwitch.status === 'executing'}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="space-y-6">
             {form.watch('enabled') && (
               <div className="pt-2">
                 <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
@@ -831,8 +896,8 @@ export function TrustPortalSwitch({
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </form>
     </Form>
   );
