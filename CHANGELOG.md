@@ -1,3 +1,10 @@
+## [1.67.1](https://github.com/trycompai/comp/compare/v1.67.0...v1.67.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* **db:** add createdAt column to invitation model ([#1866](https://github.com/trycompai/comp/issues/1866)) ([44a18a2](https://github.com/trycompai/comp/commit/44a18a25facb8a07cd81da2d1f7023f9b7a419cf))
+
 # [1.67.0](https://github.com/trycompai/comp/compare/v1.66.0...v1.67.0) (2025-12-05)
 
 
