@@ -8,6 +8,7 @@
         "@types/cheerio": "^1.0.0",
         "@types/react-syntax-highlighter": "^15.5.13",
         "@upstash/vector": "^1.2.2",
+        "better-auth": "1.4.5",
         "cheerio": "^1.1.2",
         "react-syntax-highlighter": "^15.6.6",
         "unpdf": "^1.4.0",
