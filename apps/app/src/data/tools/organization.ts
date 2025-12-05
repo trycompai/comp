@@ -10,7 +10,7 @@ export function getOrganizationTools() {
 }
 
 export const findOrganization = {
-  description: "Find the users organization and it's details",
+  description: "Find the user's organization and its details",
   inputSchema: z.object({}),
   execute: async () => {
     const session = await auth.api.getSession({
