@@ -10,63 +10,57 @@ import { OrganizationDashboard } from './components/OrganizationDashboard';
 import type { FleetPolicy, Host } from './types';
 
 export default async function OrganizationPage({ params }: { params: Promise<{ orgId: string }> }) {
-  try {
-    const { orgId } = await params;
+  const { orgId } = await params;
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+  // Auth check with error handling
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  }).catch((error) => {
+    console.error('Error getting session:', error);
+    redirect('/');
+  });
 
-    if (!session?.user) {
-      return redirect('/auth');
-    }
-
-    let member = null;
-
-    try {
-      member = await db.member.findFirst({
-        where: {
-          userId: session.user.id,
-          organizationId: orgId,
-          deactivated: false,
-        },
-        include: {
-          user: true,
-          organization: true, // Include organization details
-        },
-      });
-    } catch (error) {
-      console.error('Error fetching member:', error);
-      // Return a fallback UI or redirect to error page
-      return redirect('/');
-    }
-
-    if (!member) {
-      return redirect('/'); // Or appropriate login/auth route
-    }
-
-    // Only fetch fleet policies if fleet is enabled
-    let fleetPolicies: FleetPolicy[] = [];
-    let device: Host | null = null;
-
-    const fleetData = await getFleetPolicies(member);
-    fleetPolicies = fleetData.fleetPolicies;
-    device = fleetData.device;
-
-    return (
-      <OrganizationDashboard
-        key={orgId} // Use organizationId as key
-        organizationId={orgId}
-        member={member}
-        fleetPolicies={fleetPolicies}
-        host={device}
-      />
-    );
-  } catch (error) {
-    console.error('Error in OrganizationPage:', { error });
-    // Redirect to a safe page if there's an unexpected error
-    return redirect('/');
+  if (!session?.user) {
+    redirect('/auth');
   }
+
+  // Fetch member with error handling
+  let member;
+
+  try {
+    member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: orgId,
+        deactivated: false,
+      },
+      include: {
+        user: true,
+        organization: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching member:', error);
+    redirect('/');
+  }
+
+  // Member check - redirect happens outside try-catch
+  if (!member) {
+    redirect('/');
+  }
+
+  // Fleet policies - already has graceful error handling in getFleetPolicies
+  const fleetData = await getFleetPolicies(member);
+
+  return (
+    <OrganizationDashboard
+      key={orgId}
+      organizationId={orgId}
+      member={member}
+      fleetPolicies={fleetData.fleetPolicies}
+      host={fleetData.device}
+    />
+  );
 }
 
 const getFleetPolicies = async (
