@@ -1,6 +1,6 @@
 /**
  * Shared Variables for Your Integration
- * 
+ *
  * Define variables that can be reused across multiple checks.
  * Variables allow users to configure how checks run.
  */
@@ -21,7 +21,7 @@ export const targetResourcesVariable: CheckVariable = {
   fetchOptions: async (ctx) => {
     // Fetch resources from the API
     const resources = await ctx.fetch<ExampleResource[]>('/resources');
-    
+
     return resources.map((r) => ({
       value: r.id,
       label: `${r.name} (${r.status})`,
@@ -41,4 +41,3 @@ export const thresholdVariable: CheckVariable = {
   placeholder: '10',
   helpText: 'Minimum number before alerting',
 };
-

@@ -14,6 +14,8 @@ export interface CheckContextOptions {
   variables?: CheckVariableValues;
   connectionId: string;
   organizationId: string;
+  /** Connection metadata (e.g., OAuth team/user info from token response) */
+  metadata?: Record<string, unknown>;
   logger?: {
     info: (message: string, data?: Record<string, unknown>) => void;
     warn: (message: string, data?: Record<string, unknown>) => void;
@@ -83,6 +85,7 @@ export function createCheckContext(options: CheckContextOptions): {
     variables = {},
     connectionId,
     organizationId,
+    metadata,
     logger,
     stateStorage,
     onTokenRefresh,
@@ -393,6 +396,7 @@ export function createCheckContext(options: CheckContextOptions): {
     variables,
     connectionId,
     organizationId,
+    metadata,
     log: log.info,
     warn: log.warn,
     error: log.error,

@@ -28,4 +28,3 @@ export const targetTeamsVariable: CheckVariable = {
     }));
   },
 };
-

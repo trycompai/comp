@@ -29,4 +29,3 @@ export interface RipplingEmployeesResponse {
     cursor?: string;
   };
 }
-

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Param,
   Body,
@@ -50,6 +51,20 @@ export class ConnectionsController {
     const manifests =
       activeOnly === 'true' ? getActiveManifests() : getAllManifests();
 
+    // Check platform credentials for OAuth providers
+    const oauthProviderSlugs = manifests
+      .filter((m) => m.auth.type === 'oauth2')
+      .map((m) => m.id);
+
+    const platformCredentialsMap = new Map<string, boolean>();
+    for (const slug of oauthProviderSlugs) {
+      const availability = await this.oauthCredentialsService.checkAvailability(
+        slug,
+        '', // Empty org ID to just check platform credentials
+      );
+      platformCredentialsMap.set(slug, availability.hasPlatformCredentials);
+    }
+
     return manifests.map((m) => {
       // Get credential fields - from custom auth config or from manifest
       const credentialFields =
@@ -60,6 +75,12 @@ export class ConnectionsController {
       // Get setup instructions for custom auth
       const setupInstructions =
         m.auth.type === 'custom' ? m.auth.config.setupInstructions : undefined;
+
+      // For OAuth providers, check if platform credentials are configured
+      const oauthConfigured =
+        m.auth.type === 'oauth2'
+          ? (platformCredentialsMap.get(m.id) ?? false)
+          : undefined;
 
       return {
         id: m.id,
@@ -73,6 +94,7 @@ export class ConnectionsController {
         docsUrl: m.docsUrl,
         credentialFields,
         setupInstructions,
+        oauthConfigured,
       };
     });
   }
@@ -155,12 +177,36 @@ export class ConnectionsController {
   @Get(':id')
   async getConnection(@Param('id') id: string) {
     const connection = await this.connectionService.getConnection(id);
+    const providerSlug = (connection as { provider?: { slug: string } })
+      .provider?.slug;
+
+    // Get credential fields for custom auth integrations
+    let credentialFields: Array<{
+      id: string;
+      label: string;
+      type: string;
+      required: boolean;
+      placeholder?: string;
+      helpText?: string;
+      options?: Array<{ value: string; label: string }>;
+    }> = [];
+
+    if (providerSlug) {
+      const manifest = getManifest(providerSlug);
+      if (
+        manifest?.auth.type === 'custom' &&
+        manifest.auth.config.credentialFields
+      ) {
+        credentialFields = manifest.auth.config.credentialFields;
+      }
+    }
 
     return {
       id: connection.id,
       providerId: connection.providerId,
-      providerSlug: (connection as any).provider?.slug,
-      providerName: (connection as any).provider?.name,
+      providerSlug,
+      providerName: (connection as { provider?: { name: string } }).provider
+        ?.name,
       status: connection.status,
       authStrategy: connection.authStrategy,
       lastSyncAt: connection.lastSyncAt,
@@ -171,6 +217,7 @@ export class ConnectionsController {
       errorMessage: connection.errorMessage,
       createdAt: connection.createdAt,
       updatedAt: connection.updatedAt,
+      credentialFields,
     };
   }
 
@@ -450,7 +497,10 @@ export class ConnectionsController {
     }
 
     // For custom auth (like AWS), validate credentials exist
-    if (manifest.auth.type === 'custom' && Object.keys(credentials).length === 0) {
+    if (
+      manifest.auth.type === 'custom' &&
+      Object.keys(credentials).length === 0
+    ) {
       throw new HttpException(
         'No valid credentials found for custom integration',
         HttpStatus.BAD_REQUEST,
@@ -462,5 +512,68 @@ export class ConnectionsController {
       accessToken: credentials.access_token ?? undefined,
       credentials,
     };
+  }
+
+  /**
+   * Update credentials for a custom auth connection
+   */
+  @Put(':id/credentials')
+  async updateCredentials(
+    @Param('id') id: string,
+    @Query('organizationId') organizationId: string,
+    @Body() body: { credentials: Record<string, string> },
+  ) {
+    if (!organizationId) {
+      throw new HttpException(
+        'organizationId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const connection = await this.connectionService.getConnection(id);
+
+    if (connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    const providerSlug = (connection as { provider?: { slug: string } })
+      .provider?.slug;
+    if (!providerSlug) {
+      throw new HttpException(
+        'Provider not found for connection',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const manifest = getManifest(providerSlug);
+    if (!manifest) {
+      throw new HttpException(
+        `Manifest not found for ${providerSlug}`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // Only allow updating credentials for custom auth integrations
+    if (manifest.auth.type !== 'custom') {
+      throw new HttpException(
+        'Credential updates are only supported for custom auth integrations. For OAuth integrations, please disconnect and reconnect.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Store the new credentials
+    await this.credentialVaultService.storeApiKeyCredentials(
+      id,
+      body.credentials,
+    );
+
+    // Reactivate the connection if it was in error state
+    if (connection.status === 'error') {
+      await this.connectionService.activateConnection(id);
+    }
+
+    this.logger.log(`Updated credentials for connection ${id}`);
+
+    return { success: true };
   }
 }

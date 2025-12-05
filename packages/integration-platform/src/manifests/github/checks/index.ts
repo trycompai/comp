@@ -6,4 +6,3 @@
 export { branchProtectionCheck } from './branch-protection';
 export { dependabotCheck } from './dependabot';
 export { secretScanningCheck } from './secret-scanning';
-

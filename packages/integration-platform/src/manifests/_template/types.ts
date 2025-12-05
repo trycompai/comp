@@ -1,6 +1,6 @@
 /**
  * API Types for Your Integration
- * 
+ *
  * Define types that match the external API responses.
  * These provide type safety when making API calls in checks.
  */
@@ -18,4 +18,3 @@ export interface ExampleUser {
   email: string;
   role: string;
 }
-

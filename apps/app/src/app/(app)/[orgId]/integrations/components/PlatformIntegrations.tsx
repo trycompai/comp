@@ -286,6 +286,10 @@ export function PlatformIntegrations({ className }: PlatformIntegrationsProps) {
                           )}
                         </Button>
                       </div>
+                    ) : provider.authType === 'oauth2' && provider.oauthConfigured === false ? (
+                      <Button size="sm" variant="outline" className="w-full" disabled>
+                        Coming Soon
+                      </Button>
                     ) : (
                       <Button
                         size="sm"

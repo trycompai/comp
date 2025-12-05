@@ -5,7 +5,13 @@
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
-import type { GitHubBranchProtection, GitHubBranchRule, GitHubOrg, GitHubRepo, GitHubRuleset } from '../types';
+import type {
+  GitHubBranchProtection,
+  GitHubBranchRule,
+  GitHubOrg,
+  GitHubRepo,
+  GitHubRuleset,
+} from '../types';
 import { protectedBranchVariable, targetReposVariable } from '../variables';
 
 export const branchProtectionCheck: IntegrationCheck = {
@@ -88,7 +94,9 @@ export const branchProtectionCheck: IntegrationCheck = {
           `/repos/${repo.full_name}/rules/branches/${branchToCheck}`,
         );
 
-        ctx.log(`[Strategy 1] Got ${rules.length} rules: ${JSON.stringify(rules.map((r) => r.type))}`);
+        ctx.log(
+          `[Strategy 1] Got ${rules.length} rules: ${JSON.stringify(rules.map((r) => r.type))}`,
+        );
 
         const hasPullRequestRule = rules.some((r) => r.type === 'pull_request');
         const hasNonFastForward = rules.some((r) => r.type === 'non_fast_forward');
@@ -135,10 +143,14 @@ export const branchProtectionCheck: IntegrationCheck = {
               branchMatchesRuleset(rs, branchToCheck),
           );
 
-          ctx.log(`[Strategy 2] ${applicableRulesets.length} active rulesets apply to "${branchToCheck}"`);
+          ctx.log(
+            `[Strategy 2] ${applicableRulesets.length} active rulesets apply to "${branchToCheck}"`,
+          );
 
           for (const rs of applicableRulesets) {
-            ctx.log(`[Strategy 2] Ruleset "${rs.name}": rules=${JSON.stringify(rs.rules?.map((r) => r.type))}`);
+            ctx.log(
+              `[Strategy 2] Ruleset "${rs.name}": rules=${JSON.stringify(rs.rules?.map((r) => r.type))}`,
+            );
           }
 
           for (const ruleset of applicableRulesets) {
@@ -167,7 +179,9 @@ export const branchProtectionCheck: IntegrationCheck = {
 
       // Strategy 3: Try legacy branch protection endpoint
       if (!isProtected) {
-        ctx.log(`[Strategy 3] Trying /repos/${repo.full_name}/branches/${branchToCheck}/protection`);
+        ctx.log(
+          `[Strategy 3] Trying /repos/${repo.full_name}/branches/${branchToCheck}/protection`,
+        );
         try {
           const protection = await ctx.fetch<GitHubBranchProtection>(
             `/repos/${repo.full_name}/branches/${branchToCheck}/protection`,
@@ -212,4 +226,3 @@ export const branchProtectionCheck: IntegrationCheck = {
     }
   },
 };
-

@@ -8,7 +8,7 @@ import type { TaskTemplateId } from './task-mappings';
 export type AuthStrategyType = 'oauth2' | 'api_key' | 'basic' | 'jwt' | 'custom';
 
 export const OAuthConfigSchema = z.object({
-  authorizeUrl: z.string().url(),
+  authorizeUrl: z.string(),
   tokenUrl: z.string().url(),
   scopes: z.array(z.string()),
   pkce: z.boolean().default(false),
@@ -36,6 +36,26 @@ export const OAuthConfigSchema = z.object({
    * Most providers use the same tokenUrl for both.
    */
   refreshUrl: z.string().url().optional(),
+  /**
+   * Custom settings that admins need to configure alongside client ID/secret.
+   * These are used for provider-specific settings like Vercel's integration slug
+   * or Rippling's app name. The `token` field replaces placeholders in authorizeUrl.
+   */
+  customSettings: z
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        type: z.enum(['text', 'password', 'textarea', 'select']),
+        placeholder: z.string().optional(),
+        helpText: z.string().optional(),
+        required: z.boolean().default(false),
+        options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
+        /** Token to replace in authorizeUrl (e.g., '{APP_SLUG}') */
+        token: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export type OAuthConfig = z.infer<typeof OAuthConfigSchema>;
@@ -208,6 +228,9 @@ export interface CheckContext {
 
   /** Organization ID */
   organizationId: string;
+
+  /** Connection metadata (e.g., OAuth team/user info from token response) */
+  metadata?: Record<string, unknown>;
 
   // ==================== Logging ====================
 

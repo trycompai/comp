@@ -1,7 +1,7 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { targetOrgUnitsVariable, includeSuspendedVariable } from '../variables';
 import type { GoogleWorkspaceUser, GoogleWorkspaceUsersResponse } from '../types';
+import { includeSuspendedVariable, targetOrgUnitsVariable } from '../variables';
 
 /**
  * Check that all users have 2-Step Verification enabled
@@ -35,10 +35,9 @@ export const twoFactorAuthCheck: IntegrationCheck = {
         params.pageToken = pageToken;
       }
 
-      const response = await ctx.fetch<GoogleWorkspaceUsersResponse>(
-        '/admin/directory/v1/users',
-        { params },
-      );
+      const response = await ctx.fetch<GoogleWorkspaceUsersResponse>('/admin/directory/v1/users', {
+        params,
+      });
 
       if (response.users) {
         allUsers.push(...response.users);
@@ -117,4 +116,3 @@ export const twoFactorAuthCheck: IntegrationCheck = {
     ctx.log('Google Workspace 2FA check complete');
   },
 };
-

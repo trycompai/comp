@@ -8,10 +8,13 @@ import type {
 
 // Import all manifests (each in its own folder)
 import { awsManifest } from '../manifests/aws';
+import { azureManifest } from '../manifests/azure';
+import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { manifest as linearManifest } from '../manifests/linear';
 import { ripplingManifest } from '../manifests/rippling';
+import { vercelManifest } from '../manifests/vercel';
 
 // ============================================================================
 // Registry Implementation
@@ -95,10 +98,13 @@ class IntegrationRegistryImpl implements IntegrationRegistry {
 // All registered manifests
 const allManifests: IntegrationManifest[] = [
   awsManifest,
+  azureManifest,
+  gcpManifest,
   githubManifest,
   googleWorkspaceManifest,
   linearManifest,
   ripplingManifest,
+  vercelManifest,
 ];
 
 // Create and export the registry singleton

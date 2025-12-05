@@ -54,4 +54,3 @@ export const exampleCheck: IntegrationCheck = {
     }
   },
 };
-

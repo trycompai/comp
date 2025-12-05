@@ -7,8 +7,8 @@
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
+import type { GitHubCodeScanningDefaultSetup, GitHubRepo } from '../types';
 import { targetReposVariable } from '../variables';
-import type { GitHubRepo, GitHubCodeScanningDefaultSetup } from '../types';
 
 const JS_VALIDATION_PACKAGES = ['zod'];
 const PY_VALIDATION_PACKAGES = ['pydantic'];
@@ -191,5 +191,3 @@ export const sanitizedInputsCheck: IntegrationCheck = {
     }
   },
 };
-
-

@@ -64,3 +64,14 @@ export interface GitHubRuleset {
     parameters?: Record<string, unknown>;
   }>;
 }
+
+/**
+ * Code scanning default setup response
+ * Returned by /repos/{owner}/{repo}/code-scanning/default-setup
+ */
+export interface GitHubCodeScanningDefaultSetup {
+  state: 'configured' | 'not-configured';
+  languages?: string[];
+  query_suite?: 'default' | 'extended';
+  updated_at?: string;
+}

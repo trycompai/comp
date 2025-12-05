@@ -49,7 +49,8 @@ export const securityFindingsCheck: IntegrationCheck = {
         resourceType: 'configuration',
         resourceId: 'gcp-config',
         severity: 'critical',
-        description: 'GCP Organization ID is required. Go to Manage → Configure the Organization ID variable.',
+        description:
+          'GCP Organization ID is required. Go to Manage → Configure the Organization ID variable.',
         remediation: 'Configure the Organization ID variable in the integration settings',
         evidence: {},
       });
@@ -206,4 +207,3 @@ export const securityFindingsCheck: IntegrationCheck = {
     ctx.log('GCP Security Command Centre check complete');
   },
 };
-

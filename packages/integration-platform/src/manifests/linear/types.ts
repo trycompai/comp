@@ -61,4 +61,3 @@ export interface LinearTeamsResponse {
 export interface LinearOrganizationResponse {
   organization: LinearOrganization;
 }
-

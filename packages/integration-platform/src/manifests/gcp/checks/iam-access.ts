@@ -150,4 +150,3 @@ export const iamAccessCheck: IntegrationCheck = {
     ctx.log('GCP IAM Access Review check complete');
   },
 };
-

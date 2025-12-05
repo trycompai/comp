@@ -1,5 +1,5 @@
 import type { IntegrationManifest } from '../../types';
-import { twoFactorAuthCheck, employeeAccessCheck } from './checks';
+import { employeeAccessCheck, twoFactorAuthCheck } from './checks';
 
 export const googleWorkspaceManifest: IntegrationManifest = {
   id: 'google-workspace',

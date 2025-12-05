@@ -26,6 +26,8 @@ export interface IntegrationProviderResponse {
   docsUrl?: string;
   credentialFields?: CredentialField[];
   setupInstructions?: string;
+  /** For OAuth providers: whether platform admin has configured credentials */
+  oauthConfigured?: boolean;
 }
 
 /**

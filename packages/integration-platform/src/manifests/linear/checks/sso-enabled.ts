@@ -57,4 +57,3 @@ Note: SAML SSO requires a Linear Business or Enterprise plan.`,
     }
   },
 };
-

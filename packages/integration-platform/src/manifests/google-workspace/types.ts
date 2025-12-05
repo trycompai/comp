@@ -79,4 +79,3 @@ export interface GoogleWorkspaceRoleAssignmentsResponse {
   items: GoogleWorkspaceRoleAssignment[];
   nextPageToken?: string;
 }
-

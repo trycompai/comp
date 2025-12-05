@@ -46,4 +46,3 @@ export const includeSuspendedVariable: CheckVariable = {
     { value: 'true', label: 'Yes - Include suspended users' },
   ],
 };
-

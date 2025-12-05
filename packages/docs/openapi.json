@@ -9786,6 +9786,37 @@
         ]
       }
     },
+    "/v1/integrations/connections/{id}/credentials": {
+      "put": {
+        "operationId": "ConnectionsController_updateCredentials_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
     "/v1/admin/integrations": {
       "get": {
         "operationId": "AdminIntegrationsController_listIntegrations_v1",
