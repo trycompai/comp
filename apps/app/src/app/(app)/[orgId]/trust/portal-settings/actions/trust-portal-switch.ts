@@ -48,7 +48,8 @@ export const trustPortalSwitchAction = authActionClient
         },
       });
 
-      revalidatePath(`/${activeOrganizationId}/settings/trust-portal`);
+      revalidatePath(`/${activeOrganizationId}/trust`);
+      revalidatePath(`/${activeOrganizationId}/trust/portal-settings`);
       revalidateTag(`organization_${activeOrganizationId}`);
 
       return {
