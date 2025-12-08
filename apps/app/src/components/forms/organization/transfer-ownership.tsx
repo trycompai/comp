@@ -77,7 +77,9 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
       });
 
       if (response.error || !response.data?.success) {
-        toast.error(response.error || 'Failed to transfer ownership');
+        // Check for error in response.error (non-200 responses) or response.data.message (200 with success: false)
+        const errorMessage = response.error || response.data?.message || 'Failed to transfer ownership';
+        toast.error(errorMessage);
         return;
       }
 

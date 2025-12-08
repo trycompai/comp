@@ -100,26 +100,7 @@ async function getOwnershipData(orgId: string) {
   }> = [];
 
   if (isOwner) {
-    // First, let's check ALL members (including deactivated) for debugging
-    const allMembers = await db.member.findMany({
-      where: {
-        organizationId: orgId,
-      },
-      select: {
-        id: true,
-        userId: true,
-        deactivated: true,
-        role: true,
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    // Now get only eligible members (active, not current user)
+    // Get only eligible members (active, not current user)
     const members = await db.member.findMany({
       where: {
         organizationId: orgId,

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -116,10 +117,9 @@ export class OrganizationController {
     @Body() transferData: TransferOwnershipDto,
   ) {
     if (!authContext.userId) {
-      return {
-        success: false,
-        message: 'User ID is required for this operation',
-      };
+      throw new BadRequestException(
+        'User ID is required for this operation. This endpoint requires session authentication.',
+      );
     }
 
     const result = await this.organizationService.transferOwnership(
