@@ -1,3 +1,10 @@
+# [1.69.0](https://github.com/trycompai/comp/compare/v1.68.1...v1.69.0) (2025-12-08)
+
+
+### Features
+
+* **trust:** auto-enable frameworks in trust record for backward compatibility for old organizations ([#1873](https://github.com/trycompai/comp/issues/1873)) ([a289b57](https://github.com/trycompai/comp/commit/a289b573624adf4328dc54044899521b02628251))
+
 ## [1.68.1](https://github.com/trycompai/comp/compare/v1.68.0...v1.68.1) (2025-12-08)
 
 
