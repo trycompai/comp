@@ -54,3 +54,19 @@ export const UPDATE_ORGANIZATION_BODY: ApiBodyOptions = {
     additionalProperties: false,
   },
 };
+
+export const TRANSFER_OWNERSHIP_BODY: ApiBodyOptions = {
+  description: 'Transfer organization ownership to another member',
+  schema: {
+    type: 'object',
+    required: ['newOwnerId'],
+    properties: {
+      newOwnerId: {
+        type: 'string',
+        description: 'Member ID of the new owner',
+        example: 'mem_xyz789',
+      },
+    },
+    additionalProperties: false,
+  },
+};

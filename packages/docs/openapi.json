@@ -434,6 +434,133 @@
         ]
       }
     },
+    "/v1/organization/transfer-ownership": {
+      "post": {
+        "description": "Transfers organization ownership to another member. The current owner will become an admin and keep all other roles. The new owner will receive the owner role while keeping their existing roles. Only the current organization owner can perform this action. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "operationId": "OrganizationController_transferOwnership_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Transfer organization ownership to another member",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "newOwnerId"
+                ],
+                "properties": {
+                  "newOwnerId": {
+                    "type": "string",
+                    "description": "Member ID of the new owner",
+                    "example": "mem_xyz789"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "Ownership transferred successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Ownership transferred successfully"
+                    },
+                    "currentOwner": {
+                      "type": "object",
+                      "properties": {
+                        "memberId": {
+                          "type": "string",
+                          "example": "mem_abc123"
+                        },
+                        "previousRoles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "owner",
+                            "employee"
+                          ]
+                        },
+                        "newRoles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "admin",
+                            "employee"
+                          ]
+                        }
+                      }
+                    },
+                    "newOwner": {
+                      "type": "object",
+                      "properties": {
+                        "memberId": {
+                          "type": "string",
+                          "example": "mem_xyz789"
+                        },
+                        "previousRoles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "admin"
+                          ]
+                        },
+                        "newRoles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "admin",
+                            "owner"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Transfer organization ownership",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
     "/v1/people": {
       "get": {
         "description": "Returns all members for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",

@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -22,11 +24,16 @@ import {
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
+import type { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { OrganizationService } from './organization.service';
 import { GET_ORGANIZATION_RESPONSES } from './schemas/get-organization.responses';
 import { UPDATE_ORGANIZATION_RESPONSES } from './schemas/update-organization.responses';
 import { DELETE_ORGANIZATION_RESPONSES } from './schemas/delete-organization.responses';
-import { UPDATE_ORGANIZATION_BODY } from './schemas/organization-api-bodies';
+import { TRANSFER_OWNERSHIP_RESPONSES } from './schemas/transfer-ownership.responses';
+import {
+  UPDATE_ORGANIZATION_BODY,
+  TRANSFER_OWNERSHIP_BODY,
+} from './schemas/organization-api-bodies';
 import { ORGANIZATION_OPERATIONS } from './schemas/organization-operations';
 
 @ApiTags('Organization')
@@ -93,6 +100,42 @@ export class OrganizationController {
           email: authContext.userEmail,
         },
       }),
+    };
+  }
+
+  @Post('transfer-ownership')
+  @ApiOperation(ORGANIZATION_OPERATIONS.transferOwnership)
+  @ApiBody(TRANSFER_OWNERSHIP_BODY)
+  @ApiResponse(TRANSFER_OWNERSHIP_RESPONSES[200])
+  @ApiResponse(TRANSFER_OWNERSHIP_RESPONSES[400])
+  @ApiResponse(TRANSFER_OWNERSHIP_RESPONSES[401])
+  @ApiResponse(TRANSFER_OWNERSHIP_RESPONSES[403])
+  @ApiResponse(TRANSFER_OWNERSHIP_RESPONSES[404])
+  async transferOwnership(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() transferData: TransferOwnershipDto,
+  ) {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required for this operation. This endpoint requires session authentication.',
+      );
+    }
+
+    const result = await this.organizationService.transferOwnership(
+      organizationId,
+      authContext.userId,
+      transferData.newOwnerId,
+    );
+
+    return {
+      ...result,
+      authType: authContext.authType,
+      // Include user context for session auth (helpful for debugging)
+      authenticatedUser: {
+        id: authContext.userId,
+        email: authContext.userEmail,
+      },
     };
   }
 

@@ -16,4 +16,9 @@ export const ORGANIZATION_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Permanently deletes the authenticated organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
   },
+  transferOwnership: {
+    summary: 'Transfer organization ownership',
+    description:
+      'Transfers organization ownership to another member. The current owner will become an admin and keep all other roles. The new owner will receive the owner role while keeping their existing roles. Only the current organization owner can perform this action. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  },
 };
