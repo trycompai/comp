@@ -1,5 +1,5 @@
 import { getOrganizationContext } from '@/jobs/tasks/onboarding/onboard-organization-helpers';
-import { openai } from '@ai-sdk/openai';
+import { groq } from '@ai-sdk/groq';
 import { db } from '@db';
 import { logger, metadata, schemaTask } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
@@ -134,7 +134,8 @@ async function scrapeWebsite(website: string): Promise<string> {
     throw new Error('Firecrawl API key is not configured');
   }
 
-  const initialResponse = await fetch('https://api.firecrawl.dev/v1/extract', {
+  // Start extraction job using v2 API
+  const initialResponse = await fetch('https://api.firecrawl.dev/v2/extract', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -143,27 +144,31 @@ async function scrapeWebsite(website: string): Promise<string> {
     body: JSON.stringify({
       urls: [website],
       prompt:
-        'Extract all text content from this website, including company information, services, mission, vision, and any other relevant business information.',
-      scrapeOptions: {
-        onlyMainContent: true,
-        removeBase64Images: true,
-      },
+        'Extract all text content from this website, including company information, services, mission, vision, and any other relevant business information. Return the content as plain text or markdown.',
     }),
   });
 
   const initialData = await initialResponse.json();
 
-  if (!initialData.success || !initialData.id) {
+  if (!initialData.success) {
+    logger.error('Failed to start Firecrawl extraction', { initialData });
     throw new Error('Failed to start Firecrawl extraction');
+  }
+
+  if (!initialData.id) {
+    logger.error('Firecrawl did not return job ID', { initialData });
+    throw new Error('Firecrawl did not return job ID');
   }
 
   const jobId = initialData.id;
   const startTime = Date.now();
+  logger.info('Firecrawl extraction started, polling for completion', { jobId });
 
+  // Poll for completion
   while (Date.now() - startTime < MAX_POLL_DURATION_MS) {
     await sleep(POLL_INTERVAL_MS);
 
-    const statusResponse = await fetch(`https://api.firecrawl.dev/v1/extract/${jobId}`, {
+    const statusResponse = await fetch(`https://api.firecrawl.dev/v2/extract/${jobId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -173,26 +178,38 @@ async function scrapeWebsite(website: string): Promise<string> {
 
     const statusData = await statusResponse.json();
 
-    if (statusData.status === 'completed' && statusData.data) {
+    logger.info('Firecrawl status check', {
+      status: statusData.status,
+      jobId,
+      hasData: !!statusData.data,
+    });
+
+    if (statusData.status === 'completed') {
+      if (!statusData.data) {
+        logger.error('Firecrawl completed but no data returned', { statusData, jobId });
+        throw new Error('Firecrawl extraction completed but returned no data');
+      }
+
+      // v2 API returns data as an object, convert to string for processing
       const extractedData = statusData.data;
       if (typeof extractedData === 'string') {
         return extractedData;
       }
-      if (typeof extractedData === 'object' && extractedData.content) {
-        return typeof extractedData.content === 'string'
-          ? extractedData.content
-          : JSON.stringify(extractedData.content);
-      }
-      return JSON.stringify(extractedData);
+      // Convert structured data to readable text format
+      return JSON.stringify(extractedData, null, 2);
     }
 
     if (statusData.status === 'failed') {
+      logger.error('Firecrawl extraction failed', { statusData, jobId });
       throw new Error('Firecrawl extraction failed');
     }
 
     if (statusData.status === 'cancelled') {
+      logger.error('Firecrawl extraction was cancelled', { statusData, jobId });
       throw new Error('Firecrawl extraction was cancelled');
     }
+
+    // Status is still 'processing', continue polling
   }
 
   throw new Error('Firecrawl extraction timed out');
@@ -205,7 +222,7 @@ async function generateSectionContent(
   contextHubText: string,
 ): Promise<string> {
   const { text } = await generateText({
-    model: openai('gpt-4.1'),
+    model: groq('openai/gpt-oss-120b'),
     system: `You are an expert at extracting and organizing company information for audit purposes.
 
 CRITICAL RULES:
