@@ -25,8 +25,9 @@ async function bootstrap(): Promise<void> {
   );
 
   // Configure body parser limits for file uploads (base64 encoded files)
-  app.use(express.json({ limit: '15mb' }));
-  app.use(express.urlencoded({ limit: '15mb', extended: true }));
+  // 70mb allows for ~50mb actual file size after base64 encoding overhead (~33%)
+  app.use(express.json({ limit: '70mb' }));
+  app.use(express.urlencoded({ limit: '70mb', extended: true }));
 
   // Enable CORS for cross-origin requests
   app.enableCors({
