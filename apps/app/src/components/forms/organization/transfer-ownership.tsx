@@ -1,6 +1,6 @@
 'use client';
 
-import { transferOwnership } from '@/actions/organization/transfer-ownership';
+import { useApi } from '@/hooks/use-api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,6 @@ import {
   SelectValue,
 } from '@comp/ui/select';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -52,22 +51,9 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
   const router = useRouter();
-
-  const transferOwnershipAction = useAction(transferOwnership, {
-    onSuccess: () => {
-      toast.success('Ownership transferred successfully. You are now an admin.');
-      setSelectedMemberId('');
-      setShowConfirmDialog(false);
-      setConfirmationText('');
-      router.refresh();
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError ?? 'Failed to transfer ownership');
-      setShowConfirmDialog(false);
-      setConfirmationText('');
-    },
-  });
+  const api = useApi();
 
   const handleTransfer = () => {
     if (!selectedMemberId) {
@@ -77,9 +63,34 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
     setShowConfirmDialog(true);
   };
 
-  const confirmTransfer = () => {
-    if (selectedMemberId) {
-      transferOwnershipAction.execute({ newOwnerId: selectedMemberId });
+  const confirmTransfer = async () => {
+    if (!selectedMemberId) return;
+
+    setIsTransferring(true);
+
+    try {
+      const response = await api.post<{
+        success: boolean;
+        message: string;
+      }>('/v1/organization/transfer-ownership', {
+        newOwnerId: selectedMemberId,
+      });
+
+      if (response.error || !response.data?.success) {
+        toast.error(response.error || 'Failed to transfer ownership');
+        return;
+      }
+
+      toast.success('Ownership transferred successfully. You are now an admin.');
+      setSelectedMemberId('');
+      setShowConfirmDialog(false);
+      setConfirmationText('');
+      router.refresh();
+    } catch (error) {
+      console.error('Error transferring ownership:', error);
+      toast.error('Failed to transfer ownership');
+    } finally {
+      setIsTransferring(false);
     }
   };
 
@@ -145,14 +156,10 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
             variant="destructive"
             size="sm"
             onClick={handleTransfer}
-            disabled={
-              !selectedMemberId || transferOwnershipAction.status === 'executing'
-            }
+            disabled={!selectedMemberId || isTransferring}
             className="hover:bg-destructive/90"
           >
-            {transferOwnershipAction.status === 'executing' ? (
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-            ) : null}
+            {isTransferring ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
             Transfer ownership
           </Button>
         </CardFooter>
@@ -183,12 +190,10 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
             <AlertDialogCancel onClick={() => setConfirmationText('')}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmTransfer}
-              disabled={confirmationText !== 'transfer' || transferOwnershipAction.status === 'executing'}
+              disabled={confirmationText !== 'transfer' || isTransferring}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {transferOwnershipAction.status === 'executing' ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              ) : null}
+              {isTransferring ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
               Transfer ownership
             </AlertDialogAction>
           </AlertDialogFooter>

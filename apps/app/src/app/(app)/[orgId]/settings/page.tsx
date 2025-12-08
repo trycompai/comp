@@ -11,12 +11,18 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db, Role } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { cache } from 'react';
 
-export default async function OrganizationSettings() {
-  const organization = await organizationDetails();
+export default async function OrganizationSettings({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+  console.log('[OrganizationSettings Debug] orgId:', orgId);
+
+  const organization = await organizationDetails(orgId);
   const logoUrl = await getLogoUrl(organization?.logo);
-  const { isOwner, eligibleMembers } = await getOwnershipData();
+  const { isOwner, eligibleMembers } = await getOwnershipData(orgId);
 
   return (
     <div className="space-y-4">
@@ -52,17 +58,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const organizationDetails = cache(async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session.activeOrganizationId) {
-    return null;
-  }
-
+async function organizationDetails(orgId: string) {
   const organization = await db.organization.findUnique({
-    where: { id: session?.session.activeOrganizationId },
+    where: { id: orgId },
     select: {
       name: true,
       id: true,
@@ -73,20 +71,20 @@ const organizationDetails = cache(async () => {
   });
 
   return organization;
-});
+}
 
-const getOwnershipData = cache(async () => {
+async function getOwnershipData(orgId: string) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session?.session.activeOrganizationId || !session.user.id) {
+  if (!session?.user.id) {
     return { isOwner: false, eligibleMembers: [] };
   }
 
   const currentUserMember = await db.member.findFirst({
     where: {
-      organizationId: session.session.activeOrganizationId,
+      organizationId: orgId,
       userId: session.user.id,
       deactivated: false,
     },
@@ -94,14 +92,6 @@ const getOwnershipData = cache(async () => {
 
   const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
   const isOwner = currentUserRoles.includes(Role.owner);
-
-  console.log('[TransferOwnership Debug]', {
-    userId: session.user.id,
-    orgId: session.session.activeOrganizationId,
-    rawRole: currentUserMember?.role,
-    parsedRoles: currentUserRoles,
-    isOwner,
-  });
 
   // Only fetch eligible members if current user is owner
   let eligibleMembers: Array<{
@@ -113,7 +103,7 @@ const getOwnershipData = cache(async () => {
     // First, let's check ALL members (including deactivated) for debugging
     const allMembers = await db.member.findMany({
       where: {
-        organizationId: session.session.activeOrganizationId,
+        organizationId: orgId,
       },
       select: {
         id: true,
@@ -129,21 +119,10 @@ const getOwnershipData = cache(async () => {
       },
     });
 
-    console.log('[TransferOwnership Debug] ALL members in org:', {
-      total: allMembers.length,
-      members: allMembers.map((m) => ({
-        id: m.id,
-        email: m.user.email,
-        role: m.role,
-        deactivated: m.deactivated,
-        isCurrentUser: m.userId === session.user.id,
-      })),
-    });
-
     // Now get only eligible members (active, not current user)
     const members = await db.member.findMany({
       where: {
-        organizationId: session.session.activeOrganizationId,
+        organizationId: orgId,
         userId: { not: session.user.id }, // Exclude current user
         deactivated: false,
       },
@@ -164,12 +143,7 @@ const getOwnershipData = cache(async () => {
     });
 
     eligibleMembers = members;
-    
-    console.log('[TransferOwnership Debug] Eligible members (active, not current user):', {
-      count: members.length,
-      members: members.map((m) => ({ id: m.id, email: m.user.email })),
-    });
   }
 
   return { isOwner, eligibleMembers };
-});
+}
