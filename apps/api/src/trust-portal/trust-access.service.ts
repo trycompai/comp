@@ -1101,6 +1101,7 @@ export class TrustAccessService {
       },
     });
 
+    // Return all resources - the download endpoint will auto-enable frameworks as needed
     return complianceResources.map((resource) => ({
       framework: resource.framework,
       fileName: resource.fileName,
@@ -1139,6 +1140,45 @@ export class TrustAccessService {
       throw new NotFoundException(
         `No certificate uploaded for framework ${framework}`,
       );
+    }
+
+    // Check if framework is enabled in Trust record and auto-enable if not (for backward compatibility)
+    const trustRecord = await db.trust.findUnique({
+      where: { organizationId: grant.accessRequest.organizationId },
+    });
+
+    const frameworkFieldMap: Record<
+      TrustFramework,
+      | 'iso27001'
+      | 'iso42001'
+      | 'gdpr'
+      | 'hipaa'
+      | 'soc2type1'
+      | 'soc2type2'
+      | 'pci_dss'
+      | 'nen7510'
+      | 'iso9001'
+    > = {
+      [TrustFramework.iso_27001]: 'iso27001',
+      [TrustFramework.iso_42001]: 'iso42001',
+      [TrustFramework.gdpr]: 'gdpr',
+      [TrustFramework.hipaa]: 'hipaa',
+      [TrustFramework.soc2_type1]: 'soc2type1',
+      [TrustFramework.soc2_type2]: 'soc2type2',
+      [TrustFramework.pci_dss]: 'pci_dss',
+      [TrustFramework.nen_7510]: 'nen7510',
+      [TrustFramework.iso_9001]: 'iso9001',
+    };
+
+    const enabledField = frameworkFieldMap[framework];
+    if (trustRecord && !trustRecord[enabledField]) {
+      // Auto-enable the framework for backward compatibility with old organizations
+      await db.trust.update({
+        where: { organizationId: grant.accessRequest.organizationId },
+        data: {
+          [enabledField]: true,
+        },
+      });
     }
 
     // Download the original PDF from S3

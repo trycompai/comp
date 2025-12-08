@@ -29,7 +29,13 @@ import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export function DeleteOrganization({ organizationId }: { organizationId: string }) {
+export function DeleteOrganization({
+  organizationId,
+  isOwner,
+}: {
+  organizationId: string;
+  isOwner: boolean;
+}) {
   const [value, setValue] = useState('');
   const deleteOrganization = useAction(deleteOrganizationAction, {
     onSuccess: () => {
@@ -40,6 +46,11 @@ export function DeleteOrganization({ organizationId }: { organizationId: string 
       toast.error('Error deleting organization');
     },
   });
+
+  // Only show delete organization section to the owner
+  if (!isOwner) {
+    return null;
+  }
 
   return (
     <Card className="border-destructive border border-2">

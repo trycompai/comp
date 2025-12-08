@@ -21,7 +21,13 @@
               "automated-evidence",
               "device-agent",
               "security-questionnaire",
-              "trust-access"
+              {
+                "group": "Trust",
+                "pages": [
+                  "trust-access",
+                  "security-questionnaire-trust-center"
+                ]
+              }
             ]
           }
         ]

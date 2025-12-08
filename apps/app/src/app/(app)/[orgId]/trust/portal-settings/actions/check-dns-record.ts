@@ -162,7 +162,8 @@ export const checkDnsRecordAction = authActionClient
       },
     });
 
-    revalidatePath(`/${activeOrgId}/settings/trust-portal`);
+    revalidatePath(`/${activeOrgId}/trust`);
+    revalidatePath(`/${activeOrgId}/trust/portal-settings`);
     revalidateTag(`organization_${activeOrgId}`);
 
     return {

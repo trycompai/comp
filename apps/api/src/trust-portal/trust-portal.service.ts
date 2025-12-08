@@ -44,7 +44,7 @@ interface VercelDomainResponse {
 export class TrustPortalService {
   private readonly logger = new Logger(TrustPortalService.name);
   private readonly vercelApi: AxiosInstance;
-  private readonly MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+  private readonly MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
   private readonly SIGNED_URL_EXPIRY_SECONDS = 900;
 
   constructor() {
@@ -345,15 +345,22 @@ export class TrustPortalService {
       );
     }
 
-    if (!trustRecord[config.enabledField]) {
-      throw new BadRequestException(
-        `Framework ${framework} is not enabled for this organization`,
-      );
-    }
-
     if (trustRecord[config.statusField] !== 'compliant') {
       throw new BadRequestException(
         `Framework ${framework} must be marked as compliant before uploading a certificate`,
+      );
+    }
+
+    // Auto-enable the framework if it's not already enabled (for backward compatibility with old organizations)
+    if (!trustRecord[config.enabledField]) {
+      await db.trust.update({
+        where: { organizationId },
+        data: {
+          [config.enabledField]: true,
+        },
+      });
+      this.logger.log(
+        `Auto-enabled framework ${framework} for organization ${organizationId} during certificate upload`,
       );
     }
   }
