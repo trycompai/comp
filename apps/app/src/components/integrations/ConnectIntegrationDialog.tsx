@@ -6,6 +6,7 @@ import {
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
 import { Button } from '@comp/ui/button';
+import { ComboboxDropdown } from '@comp/ui/combobox-dropdown';
 import {
   Dialog,
   DialogContent,
@@ -85,6 +86,33 @@ function CredentialInput({
           ))}
         </SelectContent>
       </Select>
+    );
+  }
+
+  if (field.type === 'combobox') {
+    const items =
+      field.options?.map((opt) => ({
+        id: opt.value,
+        label: opt.label,
+      })) || [];
+
+    const selectedItem = items.find((item) => item.id === value);
+
+    return (
+      <ComboboxDropdown
+        items={items}
+        selectedItem={selectedItem}
+        onSelect={(item) => onChange(item.id)}
+        onCreate={(customValue) => onChange(customValue)}
+        placeholder={field.placeholder || 'Select or type...'}
+        searchPlaceholder="Search or type custom value..."
+        renderOnCreate={(customValue) => (
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Use custom value:</span>
+            <span className="font-medium">{customValue}</span>
+          </div>
+        )}
+      />
     );
   }
 

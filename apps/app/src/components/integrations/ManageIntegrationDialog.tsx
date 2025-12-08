@@ -6,6 +6,7 @@ import {
 } from '@/hooks/use-integration-platform';
 import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
+import { ComboboxDropdown } from '@comp/ui/combobox-dropdown';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Loader2, Settings, Key, Trash2, Unplug } from 'lucide-react';
+import { Key, Loader2, Settings, Trash2, Unplug } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -49,7 +50,7 @@ interface VariablesResponse {
 interface CredentialField {
   id: string;
   label: string;
-  type: 'text' | 'password' | 'textarea' | 'select';
+  type: 'text' | 'password' | 'textarea' | 'select' | 'combobox' | 'number' | 'url';
   required: boolean;
   placeholder?: string;
   helpText?: string;
@@ -612,12 +613,32 @@ function ConfigurationContent({
               }
               className="bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             />
+          ) : field.type === 'combobox' && field.options ? (
+            <ComboboxDropdown
+              items={field.options.map((opt) => ({
+                id: opt.value,
+                label: opt.label,
+              }))}
+              selectedItem={field.options
+                .map((opt) => ({ id: opt.value, label: opt.label }))
+                .find((item) => item.id === credentialValues[field.id])}
+              onSelect={(item) => setCredentialValues((prev) => ({ ...prev, [field.id]: item.id }))}
+              onCreate={(customValue) =>
+                setCredentialValues((prev) => ({ ...prev, [field.id]: customValue }))
+              }
+              placeholder={field.placeholder || `Select ${field.label.toLowerCase()}...`}
+              searchPlaceholder="Search or type custom value..."
+              renderOnCreate={(customValue) => (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Use custom value:</span>
+                  <span className="font-medium">{customValue}</span>
+                </div>
+              )}
+            />
           ) : field.type === 'select' && field.options ? (
             <Select
               value={credentialValues[field.id] || ''}
-              onValueChange={(val) =>
-                setCredentialValues((prev) => ({ ...prev, [field.id]: val }))
-              }
+              onValueChange={(val) => setCredentialValues((prev) => ({ ...prev, [field.id]: val }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />

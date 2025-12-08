@@ -24,8 +24,10 @@ export const awsCredentialFields = [
   {
     id: 'region',
     label: 'Primary AWS Region',
-    type: 'select' as const,
+    type: 'combobox' as const,
     required: true,
+    placeholder: 'Select or type a region...',
+    helpText: 'Select a common region or type your own (e.g., us-east-1, eu-west-1)',
     options: [
       { value: 'us-east-1', label: 'US East (N. Virginia)' },
       { value: 'us-east-2', label: 'US East (Ohio)' },
@@ -56,7 +58,23 @@ export const awsCredentialSchema = z.object({
 });
 
 /**
- * Recommended IAM policy for compliance checks
+ * Minimal IAM policy - only what's needed for Security Hub checks
+ */
+export const awsMinimalPolicy = {
+  Version: '2012-10-17',
+  Statement: [
+    {
+      Sid: 'SecurityHubReadOnly',
+      Effect: 'Allow',
+      Action: ['securityhub:GetFindings', 'securityhub:DescribeHub'],
+      Resource: '*',
+    },
+  ],
+};
+
+/**
+ * Comprehensive IAM policy for additional future compliance checks
+ * (Not required if you only want Security Hub findings)
  */
 export const awsRecommendedPolicy = {
   Version: '2012-10-17',
@@ -169,26 +187,28 @@ export const awsSetupInstructions = `## Quick Setup
 ### 1. Create IAM Role
 IAM Console → Roles → Create role → Custom trust policy
 
-**Trust Policy** (replace YOUR_EXTERNAL_ID):
+**Trust Policy** (replace YOUR_EXTERNAL_ID with your organization ID):
+\`\`\`json
 {
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": { "AWS": "TRUSTED_ACCOUNT_ARN" },
+    "Principal": { "AWS": "*" },
     "Action": "sts:AssumeRole",
     "Condition": {
       "StringEquals": { "sts:ExternalId": "YOUR_EXTERNAL_ID" }
     }
   }]
 }
+\`\`\`
 
-### 2. Attach Permission
-Select **SecurityAudit** managed policy
+### 2. Attach Permissions
+Select **SecurityAudit** managed policy.
 
 ### 3. Name the Role
 • **Name**: CompSecurityAudit
 • **Description**: Read-only access for Comp AI compliance monitoring
 
 ### 4. Copy ARN
-After creating, copy the Role ARN (looks like arn:aws:iam::123456789012:role/CompSecurityAudit)
+After creating, copy the Role ARN (looks like \`arn:aws:iam::123456789012:role/CompSecurityAudit\`)
 `;

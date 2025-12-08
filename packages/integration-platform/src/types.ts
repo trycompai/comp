@@ -46,7 +46,7 @@ export const OAuthConfigSchema = z.object({
       z.object({
         id: z.string(),
         label: z.string(),
-        type: z.enum(['text', 'password', 'textarea', 'select']),
+        type: z.enum(['text', 'password', 'textarea', 'select', 'combobox']),
         placeholder: z.string().optional(),
         helpText: z.string().optional(),
         required: z.boolean().default(false),
@@ -102,7 +102,7 @@ export const CustomAuthConfigSchema = z.object({
       z.object({
         id: z.string(),
         label: z.string(),
-        type: z.enum(['text', 'password', 'textarea', 'select', 'number', 'url']),
+        type: z.enum(['text', 'password', 'textarea', 'select', 'combobox', 'number', 'url']),
         required: z.boolean().default(true),
         placeholder: z.string().optional(),
         helpText: z.string().optional(),
@@ -132,7 +132,7 @@ export type AuthStrategy =
 export const CredentialFieldSchema = z.object({
   id: z.string(),
   label: z.string(),
-  type: z.enum(['text', 'password', 'textarea', 'select', 'number', 'url']),
+  type: z.enum(['text', 'password', 'textarea', 'select', 'combobox', 'number', 'url']),
   required: z.boolean().default(true),
   placeholder: z.string().optional(),
   helpText: z.string().optional(),

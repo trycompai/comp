@@ -89,6 +89,13 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   // Get the current active provider (use activeTab state or default to first provider)
   const currentProviderId = activeTab || connectedProviders[0]?.integrationId;
 
+  // Map provider IDs to their security findings check IDs
+  const securityCheckIdMap: Record<string, string> = {
+    aws: 'security-hub-findings',
+    gcp: 'security-findings',
+    azure: 'security-findings',
+  };
+
   const handleRunScan = async (providerId?: string): Promise<string | null> => {
     if (!orgId) {
       toast.error('No active organization');
@@ -116,9 +123,12 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           console.error('Legacy scan error:', result.errors);
         }
       } else {
+        // Get the correct check ID for this provider
+        const checkId = securityCheckIdMap[targetProvider.integrationId] || 'security-findings';
+
         // Run security findings check for NEW platform provider
         const response = await api.post(
-          `/v1/integrations/checks/connections/${targetProvider.id}/run/security-findings`,
+          `/v1/integrations/checks/connections/${targetProvider.id}/run/${checkId}`,
           {},
           orgId,
         );
