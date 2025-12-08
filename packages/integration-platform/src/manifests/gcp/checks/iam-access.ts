@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { createGCPClients, getProjectIAMPolicy, listServiceAccounts } from '../helpers';
+import { createGCPClient, getProjectIAMPolicy, listServiceAccounts } from '../helpers';
 import type { GCPCredentials } from '../types';
 
 /**
@@ -14,16 +14,41 @@ export const iamAccessCheck: IntegrationCheck = {
   name: 'IAM Access Review',
   description: 'Fetch IAM policies and service accounts from GCP for access review',
   taskMapping: TASK_TEMPLATES.accessReviewLog,
-  variables: [],
+  variables: [
+    {
+      id: 'project_id',
+      label: 'GCP Project ID',
+      helpText:
+        'Your Google Cloud Project ID (e.g., my-project-123). Find it in GCP Console → Dashboard.',
+      type: 'text',
+      required: true,
+      placeholder: 'my-project-123',
+    },
+  ],
 
   run: async (ctx: CheckContext) => {
     ctx.log('Starting GCP IAM Access Review check');
 
     const credentials = ctx.credentials as unknown as GCPCredentials;
+    const projectId = ctx.variables.project_id as string;
+
+    if (!projectId) {
+      ctx.fail({
+        title: 'Missing Project ID',
+        resourceType: 'configuration',
+        resourceId: 'gcp-config',
+        severity: 'critical',
+        description:
+          'GCP Project ID is required. Go to Manage → Configure the Project ID variable.',
+        remediation: 'Configure the Project ID variable in the integration settings',
+        evidence: {},
+      });
+      return;
+    }
 
     let gcp;
     try {
-      gcp = await createGCPClients(credentials, ctx.log);
+      gcp = createGCPClient(credentials, projectId, ctx.log);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       ctx.fail({
@@ -32,19 +57,19 @@ export const iamAccessCheck: IntegrationCheck = {
         resourceId: 'gcp-auth',
         severity: 'critical',
         description: `Could not authenticate with GCP: ${errorMessage}`,
-        remediation: 'Verify the service account key is valid and has the required permissions',
+        remediation:
+          'Verify your OAuth connection is valid. You may need to reconnect the integration.',
         evidence: { error: String(error) },
       });
       return;
     }
 
-    const projectId = gcp.projectId;
     ctx.log(`Fetching IAM policy for project: ${projectId}`);
 
     // Fetch IAM policy
     let iamPolicy;
     try {
-      iamPolicy = await getProjectIAMPolicy(gcp.client, projectId);
+      iamPolicy = await getProjectIAMPolicy(gcp, projectId);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       ctx.fail({
@@ -53,7 +78,8 @@ export const iamAccessCheck: IntegrationCheck = {
         resourceId: projectId,
         severity: 'high',
         description: `Could not fetch IAM policy: ${errorMessage}`,
-        remediation: 'Ensure the service account has the "Security Reviewer" role',
+        remediation:
+          'Ensure your account has the "Security Reviewer" or "Viewer" role on the project',
         evidence: { error: errorMessage, projectId },
       });
       return;
@@ -73,7 +99,7 @@ export const iamAccessCheck: IntegrationCheck = {
     try {
       let pageToken: string | undefined;
       do {
-        const response = await listServiceAccounts(gcp.client, projectId, pageToken);
+        const response = await listServiceAccounts(gcp, projectId, pageToken);
         if (response.accounts) {
           serviceAccounts.push(...response.accounts);
         }

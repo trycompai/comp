@@ -1,5 +1,5 @@
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { createGCPClients, getSecurityFindings } from '../helpers';
+import { createGCPClient, getSecurityFindings } from '../helpers';
 import type { GCPCredentials } from '../types';
 
 /**
@@ -17,7 +17,7 @@ export const securityFindingsCheck: IntegrationCheck = {
       id: 'organization_id',
       label: 'GCP Organization ID',
       helpText:
-        'Your Google Cloud Organization ID (numeric, e.g., 123456789012). This is NOT your project number. Find it in GCP Console → IAM & Admin → Settings, or run: gcloud organizations list',
+        'Your Google Cloud Organization ID (numeric, e.g., 123456789012). Find it in GCP Console → IAM & Admin → Settings, or run: gcloud organizations list',
       type: 'text',
       required: true,
       placeholder: '123456789012',
@@ -57,9 +57,12 @@ export const securityFindingsCheck: IntegrationCheck = {
       return;
     }
 
+    // For OAuth, we don't need a project ID for Security Command Center
+    // but we need to create a client with the access token
     let gcp;
     try {
-      gcp = await createGCPClients(credentials, ctx.log);
+      // Use a placeholder project ID since SCC is org-level
+      gcp = createGCPClient(credentials, 'scc-check', ctx.log);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       ctx.fail({
@@ -68,7 +71,8 @@ export const securityFindingsCheck: IntegrationCheck = {
         resourceId: 'gcp-auth',
         severity: 'critical',
         description: `Could not authenticate with GCP: ${errorMessage}`,
-        remediation: 'Verify the service account key is valid and has the required permissions',
+        remediation:
+          'Verify your OAuth connection is valid. You may need to reconnect the integration.',
         evidence: { error: String(error) },
       });
       return;
@@ -96,7 +100,7 @@ export const securityFindingsCheck: IntegrationCheck = {
     try {
       let pageToken: string | undefined;
       do {
-        const response = await getSecurityFindings(gcp.client, organizationId, {
+        const response = await getSecurityFindings(gcp, organizationId, {
           filter: filters.length > 0 ? filters.join(' AND ') : undefined,
           pageToken,
         });
@@ -109,18 +113,38 @@ export const securityFindingsCheck: IntegrationCheck = {
       } while (pageToken);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      ctx.log(`GCP API Error: ${errorMessage}`);
 
-      // Check for common error cases
-      if (errorMessage.includes('PERMISSION_DENIED')) {
+      // Check for scope insufficient error - user needs to reconnect
+      if (
+        errorMessage.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT') ||
+        errorMessage.includes('insufficient authentication scopes')
+      ) {
+        ctx.fail({
+          title: 'Authentication Scopes Insufficient',
+          resourceType: 'security-command-center',
+          resourceId: `org-${organizationId}`,
+          severity: 'high',
+          description:
+            'The OAuth connection does not have the required permissions to access Security Command Center.',
+          remediation:
+            'Please disconnect and reconnect the GCP integration. When reconnecting, make sure to approve all requested permissions in the Google consent screen.',
+          evidence: { error: errorMessage },
+        });
+        return;
+      }
+
+      // Check for permission denied - user needs IAM role
+      if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('403')) {
         ctx.fail({
           title: 'Permission Denied',
           resourceType: 'security-command-center',
           resourceId: `org-${organizationId}`,
           severity: 'high',
           description:
-            'The service account does not have permission to access Security Command Centre',
+            'Your Google account does not have permission to access Security Command Center.',
           remediation:
-            'Grant the "Security Center Findings Viewer" role to the service account at the organization level',
+            'Grant the "Security Center Findings Viewer" role to your Google account at the ORGANIZATION level (not project level). Go to IAM & Admin > IAM in GCP Console, switch to organization scope using the dropdown, then click Grant Access and add the role.',
           evidence: { error: errorMessage },
         });
         return;
@@ -147,9 +171,9 @@ export const securityFindingsCheck: IntegrationCheck = {
         resourceType: 'security-command-center',
         resourceId: `org-${organizationId}`,
         severity: 'high',
-        description: `Error fetching Security Command Centre findings: ${errorMessage}`,
+        description: 'An error occurred while fetching security findings from GCP.',
         remediation:
-          'Verify the organization ID is correct and the service account has the required permissions (Security Center Findings Viewer role at organization level)',
+          'Verify the organization ID is correct and your account has the Security Center Findings Viewer role at the organization level. If the problem persists, try disconnecting and reconnecting the integration.',
         evidence: {
           organizationId,
           error: errorMessage,

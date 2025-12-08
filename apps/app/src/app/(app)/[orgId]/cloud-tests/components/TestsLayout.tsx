@@ -54,6 +54,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const { disconnectConnection } = useIntegrationMutations();
 
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
@@ -85,37 +86,46 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
 
   const connectedProviders = providers.filter((p) => isSupportedProviderId(p.integrationId));
 
-  const handleRunScan = async (): Promise<string | null> => {
+  // Get the current active provider (use activeTab state or default to first provider)
+  const currentProviderId = activeTab || connectedProviders[0]?.integrationId;
+
+  const handleRunScan = async (providerId?: string): Promise<string | null> => {
     if (!orgId) {
       toast.error('No active organization');
       return null;
     }
 
+    // Use the passed providerId, or fall back to the current active tab
+    const targetProviderId = providerId || currentProviderId;
+    const targetProvider = connectedProviders.find((p) => p.integrationId === targetProviderId);
+
+    if (!targetProvider) {
+      toast.error('No provider selected');
+      return null;
+    }
+
     setIsScanning(true);
-    toast.message('Starting cloud security scan...');
+    toast.message(`Starting ${targetProvider.name} security scan...`);
 
     try {
-      const newProviders = connectedProviders.filter((p) => !p.isLegacy);
-      const legacyProviders = connectedProviders.filter((p) => p.isLegacy);
-
-      // Run checks for NEW platform providers
-      for (const provider of newProviders) {
-        const response = await api.post(
-          `/v1/integrations/checks/connections/${provider.id}/run`,
-          {},
-          orgId,
-        );
-        if (response.error) {
-          console.error(`Error running checks for ${provider.name}:`, response.error);
-        }
-      }
-
-      // Run checks for LEGACY providers using the old trigger task
-      if (legacyProviders.length > 0) {
+      if (targetProvider.isLegacy) {
+        // Run legacy check for this specific provider
         const { runTests } = await import('../actions/run-tests');
         const result = await runTests();
         if (!result.success) {
           console.error('Legacy scan error:', result.errors);
+        }
+      } else {
+        // Run security findings check for NEW platform provider
+        const response = await api.post(
+          `/v1/integrations/checks/connections/${targetProvider.id}/run/security-findings`,
+          {},
+          orgId,
+        );
+        if (response.error) {
+          console.error(`Error running checks for ${targetProvider.name}:`, response.error);
+          toast.error(`Failed to scan ${targetProvider.name}`);
+          return null;
         }
       }
 
@@ -194,7 +204,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
 
         <ResultsView
           findings={providerFindings}
-          onRunScan={handleRunScan}
+          onRunScan={() => handleRunScan(provider.integrationId)}
           isScanning={isScanning}
         />
 
@@ -241,7 +251,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         </div>
       </div>
 
-      <Tabs defaultValue={defaultTab}>
+      <Tabs defaultValue={defaultTab} onValueChange={setActiveTab}>
         <TabsList>
           {connectedProviders.map((provider) => (
             <TabsTrigger key={provider.integrationId} value={provider.integrationId}>
@@ -261,7 +271,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
             >
               <ResultsView
                 findings={providerFindings}
-                onRunScan={handleRunScan}
+                onRunScan={() => handleRunScan(provider.integrationId)}
                 isScanning={isScanning}
               />
             </TabsContent>

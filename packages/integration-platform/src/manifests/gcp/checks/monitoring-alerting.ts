@@ -1,7 +1,7 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
-  createGCPClients,
+  createGCPClient,
   listAlertingPolicies,
   listLogSinks,
   listNotificationChannels,
@@ -24,16 +24,41 @@ export const monitoringAlertingCheck: IntegrationCheck = {
   description:
     'Verify logging is enabled and alerting policies are configured for deployments and failures',
   taskMapping: TASK_TEMPLATES.monitoringAlerting,
-  variables: [],
+  variables: [
+    {
+      id: 'project_id',
+      label: 'GCP Project ID',
+      helpText:
+        'Your Google Cloud Project ID (e.g., my-project-123). Find it in GCP Console → Dashboard.',
+      type: 'text',
+      required: true,
+      placeholder: 'my-project-123',
+    },
+  ],
 
   run: async (ctx: CheckContext) => {
     ctx.log('Starting GCP Monitoring & Alerting check');
 
     const credentials = ctx.credentials as unknown as GCPCredentials;
+    const projectId = ctx.variables.project_id as string;
+
+    if (!projectId) {
+      ctx.fail({
+        title: 'Missing Project ID',
+        resourceType: 'configuration',
+        resourceId: 'gcp-config',
+        severity: 'critical',
+        description:
+          'GCP Project ID is required. Go to Manage → Configure the Project ID variable.',
+        remediation: 'Configure the Project ID variable in the integration settings',
+        evidence: {},
+      });
+      return;
+    }
 
     let gcp;
     try {
-      gcp = await createGCPClients(credentials, ctx.log);
+      gcp = createGCPClient(credentials, projectId, ctx.log);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       ctx.fail({
@@ -42,13 +67,13 @@ export const monitoringAlertingCheck: IntegrationCheck = {
         resourceId: 'gcp-auth',
         severity: 'critical',
         description: `Could not authenticate with GCP: ${errorMessage}`,
-        remediation: 'Verify the service account key is valid and has the required permissions',
+        remediation:
+          'Verify your OAuth connection is valid. You may need to reconnect the integration.',
         evidence: { error: String(error) },
       });
       return;
     }
 
-    const projectId = gcp.projectId;
     ctx.log(`Checking monitoring & alerting configuration for project: ${projectId}`);
 
     // Collect all data
@@ -62,7 +87,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
     try {
       let pageToken: string | undefined;
       do {
-        const response = await listAlertingPolicies(gcp.client, projectId, pageToken);
+        const response = await listAlertingPolicies(gcp, projectId, pageToken);
         if (response.alertPolicies) {
           allAlertingPolicies.push(...response.alertPolicies);
         }
@@ -80,7 +105,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
     try {
       let pageToken: string | undefined;
       do {
-        const response = await listLogSinks(gcp.client, projectId, pageToken);
+        const response = await listLogSinks(gcp, projectId, pageToken);
         if (response.sinks) {
           allLogSinks.push(...response.sinks);
         }
@@ -98,7 +123,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
     try {
       let pageToken: string | undefined;
       do {
-        const response = await listNotificationChannels(gcp.client, projectId, pageToken);
+        const response = await listNotificationChannels(gcp, projectId, pageToken);
         if (response.notificationChannels) {
           allNotificationChannels.push(...response.notificationChannels);
         }

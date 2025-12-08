@@ -1,5 +1,5 @@
 export {
-  createGCPClients,
+  createGCPClient,
   gcpRequest,
   getProjectIAMPolicy,
   getSecurityFindings,
@@ -7,10 +7,8 @@ export {
   listLogSinks,
   listNotificationChannels,
   listServiceAccounts,
-  parseServiceAccountKey,
   type AlertingPolicy,
-  type GCPClients,
-  type GCPServiceAccountKey,
+  type GCPClient,
   type LogSink,
   type NotificationChannel,
 } from './gcp-client';

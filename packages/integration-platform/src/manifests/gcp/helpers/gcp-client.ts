@@ -1,87 +1,28 @@
-import { GoogleAuth, type JWT } from 'google-auth-library';
 import type { GCPCredentials } from '../types';
 
-export interface GCPServiceAccountKey {
-  type: string;
-  project_id: string;
-  private_key_id: string;
-  private_key: string;
-  client_email: string;
-  client_id: string;
-  auth_uri: string;
-  token_uri: string;
-  auth_provider_x509_cert_url: string;
-  client_x509_cert_url: string;
-}
-
-export interface GCPClients {
-  auth: GoogleAuth;
-  client: JWT;
+export interface GCPClient {
+  accessToken: string;
   projectId: string;
   organizationId?: string;
 }
 
 /**
- * Parse and validate GCP service account credentials
+ * Create a GCP client from OAuth credentials
  */
-export function parseServiceAccountKey(credentials: GCPCredentials): GCPServiceAccountKey {
-  if (!credentials.serviceAccountKey) {
-    throw new Error('Service account key is required');
-  }
-
-  try {
-    const key = JSON.parse(credentials.serviceAccountKey) as GCPServiceAccountKey;
-
-    if (key.type !== 'service_account') {
-      throw new Error('Invalid key type. Expected "service_account"');
-    }
-
-    if (!key.project_id || !key.private_key || !key.client_email) {
-      throw new Error('Invalid service account key: missing required fields');
-    }
-
-    return key;
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw new Error('Invalid JSON format in service account key');
-    }
-    throw error;
-  }
-}
-
-/**
- * Create authenticated GCP clients from credentials
- */
-export async function createGCPClients(
+export function createGCPClient(
   credentials: GCPCredentials,
+  projectId: string,
   log: (msg: string) => void,
-): Promise<GCPClients> {
-  log('Parsing service account credentials...');
-  const serviceAccountKey = parseServiceAccountKey(credentials);
+): GCPClient {
+  if (!credentials.access_token) {
+    throw new Error('Access token is required');
+  }
 
-  log(`Authenticating as ${serviceAccountKey.client_email}...`);
-
-  // Create auth client with required scopes
-  const auth = new GoogleAuth({
-    credentials: {
-      client_email: serviceAccountKey.client_email,
-      private_key: serviceAccountKey.private_key,
-    },
-    projectId: serviceAccountKey.project_id,
-    scopes: [
-      'https://www.googleapis.com/auth/cloud-platform',
-      'https://www.googleapis.com/auth/cloud-platform.read-only',
-    ],
-  });
-
-  const client = (await auth.getClient()) as JWT;
-
-  log(`Authenticated successfully for project: ${serviceAccountKey.project_id}`);
+  log(`Authenticating with OAuth token for project: ${projectId}`);
 
   return {
-    auth,
-    client,
-    projectId: serviceAccountKey.project_id,
+    accessToken: credentials.access_token,
+    projectId,
   };
 }
 
@@ -89,7 +30,7 @@ export async function createGCPClients(
  * Make an authenticated request to a GCP API
  */
 export async function gcpRequest<T>(
-  client: JWT,
+  client: GCPClient,
   url: string,
   options: {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -107,20 +48,28 @@ export async function gcpRequest<T>(
     }
   }
 
-  const response = await client.request<T>({
-    url: urlObj.toString(),
+  const response = await fetch(urlObj.toString(), {
     method,
-    data: body,
+    headers: {
+      Authorization: `Bearer ${client.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
 
-  return response.data;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`GCP API error (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
 }
 
 /**
  * Fetch Security Command Centre findings
  */
 export async function getSecurityFindings(
-  client: JWT,
+  client: GCPClient,
   organizationId: string,
   options: {
     filter?: string;
@@ -187,7 +136,7 @@ export async function getSecurityFindings(
  * Get IAM policy for a project
  */
 export async function getProjectIAMPolicy(
-  client: JWT,
+  client: GCPClient,
   projectId: string,
 ): Promise<{
   version: number;
@@ -212,7 +161,7 @@ export async function getProjectIAMPolicy(
  * List service accounts in a project
  */
 export async function listServiceAccounts(
-  client: JWT,
+  client: GCPClient,
   projectId: string,
   pageToken?: string,
 ): Promise<{
@@ -273,7 +222,7 @@ export interface AlertingPolicy {
  * List alerting policies in a project
  */
 export async function listAlertingPolicies(
-  client: JWT,
+  client: GCPClient,
   projectId: string,
   pageToken?: string,
 ): Promise<{
@@ -309,7 +258,7 @@ export interface LogSink {
  * List log sinks in a project
  */
 export async function listLogSinks(
-  client: JWT,
+  client: GCPClient,
   projectId: string,
   pageToken?: string,
 ): Promise<{
@@ -344,7 +293,7 @@ export interface NotificationChannel {
  * List notification channels in a project
  */
 export async function listNotificationChannels(
-  client: JWT,
+  client: GCPClient,
   projectId: string,
   pageToken?: string,
 ): Promise<{

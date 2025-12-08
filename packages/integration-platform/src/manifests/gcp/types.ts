@@ -1,12 +1,14 @@
 // Google Cloud Platform types
 
+/**
+ * GCP OAuth credentials
+ * With OAuth, we get an access token from Google
+ */
 export interface GCPCredentials {
-  // Service Account JSON key (stringified)
-  serviceAccountKey?: string;
-  // Or individual fields from the JSON
-  projectId?: string;
-  clientEmail?: string;
-  privateKey?: string;
+  access_token: string;
+  refresh_token?: string;
+  token_type?: string;
+  expires_in?: number;
 }
 
 // Security Command Centre types
