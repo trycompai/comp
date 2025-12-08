@@ -44,7 +44,7 @@ interface VercelDomainResponse {
 export class TrustPortalService {
   private readonly logger = new Logger(TrustPortalService.name);
   private readonly vercelApi: AxiosInstance;
-  private readonly MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+  private readonly MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
   private readonly SIGNED_URL_EXPIRY_SECONDS = 900;
 
   constructor() {
