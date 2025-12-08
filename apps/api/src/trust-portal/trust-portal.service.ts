@@ -345,15 +345,22 @@ export class TrustPortalService {
       );
     }
 
-    if (!trustRecord[config.enabledField]) {
-      throw new BadRequestException(
-        `Framework ${framework} is not enabled for this organization`,
-      );
-    }
-
     if (trustRecord[config.statusField] !== 'compliant') {
       throw new BadRequestException(
         `Framework ${framework} must be marked as compliant before uploading a certificate`,
+      );
+    }
+
+    // Auto-enable the framework if it's not already enabled (for backward compatibility with old organizations)
+    if (!trustRecord[config.enabledField]) {
+      await db.trust.update({
+        where: { organizationId },
+        data: {
+          [config.enabledField]: true,
+        },
+      });
+      this.logger.log(
+        `Auto-enabled framework ${framework} for organization ${organizationId} during certificate upload`,
       );
     }
   }
