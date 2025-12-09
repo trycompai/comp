@@ -193,7 +193,9 @@ IAM Console → Roles → Create role → Custom trust policy
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": { "AWS": "*" },
+    "Principal": { 
+      "AWS": "arn:aws:iam::684120556289:role/roleAssumer"
+    },
     "Action": "sts:AssumeRole",
     "Condition": {
       "StringEquals": { "sts:ExternalId": "YOUR_EXTERNAL_ID" }
