@@ -1,0 +1,641 @@
+---
+title: 'Authentication Reference'
+description: 'Complete guide to all authentication types supported by the integration platform'
+---
+
+## Overview
+
+The integration platform supports **4 authentication strategies**. Choose based on what the third-party service offers.
+
+## Quick Comparison
+
+| Type           | When to Use                    | User Setup                  | Platform Setup             | Token Refresh           |
+| -------------- | ------------------------------ | --------------------------- | -------------------------- | ----------------------- |
+| **OAuth 2.0**  | Service has OAuth              | 1-click connect             | Admin configures OAuth app | Auto                 |
+| **API Key**    | Service uses API keys          | User enters key             | None                       | N/A (keys don't expire) |
+| **Basic Auth** | Service uses username/password | User enters creds           | None                       | N/A                     |
+| **Custom**     | Complex multi-field auth       | User enters multiple fields | None                       | N/A                     |
+
+---
+
+## OAuth 2.0
+
+**Best for:** GitHub, Google, Linear, Vercel, most modern SaaS
+
+### Configuration
+
+```typescript
+auth: {
+  type: 'oauth2',
+  config: {
+    // Required
+    authorizeUrl: 'https://provider.com/oauth/authorize',
+    tokenUrl: 'https://provider.com/oauth/token',
+    scopes: ['read:user', 'read:org'],
+
+    // Optional
+    pkce: false,                    // Use PKCE flow? (default: false)
+    clientAuthMethod: 'body',       // 'body' or 'header' (default: 'body')
+    supportsRefreshToken: true,     // Can tokens be refreshed? (default: true)
+
+    // Additional params sent during authorization
+    authorizationParams: {
+      access_type: 'offline',      // Request refresh token
+      prompt: 'consent',           // Force consent screen
+    },
+
+    // Additional params sent during token exchange
+    tokenParams: {
+      grant_type: 'authorization_code',
+    },
+
+    // Admin setup instructions (Markdown)
+    setupInstructions: `...`,
+
+    // URL to create OAuth app
+    createAppUrl: 'https://provider.com/apps/new',
+
+    // Custom settings (advanced)
+    customSettings: [
+      {
+        id: 'app_name',
+        label: 'App Name',
+        type: 'text',
+        required: true,
+        token: '{APP_NAME}', // Replaces in authorizeUrl
+      },
+    ],
+  },
+},
+```
+
+### Key Options Explained
+
+#### `pkce` (Proof Key for Code Exchange)
+
+**When to use:** Some providers require it (GitHub does NOT, Auth0 does)
+
+```typescript
+pkce: true; // Generates code_verifier and code_challenge
+```
+
+#### `clientAuthMethod`
+
+**How to send client credentials during token exchange:**
+
+- `'body'` (default): Send as form fields
+
+  ```
+  POST /token
+  client_id=...&client_secret=...
+  ```
+
+- `'header'`: Send as Basic Auth header
+  ```
+  POST /token
+  Authorization: Basic base64(client_id:client_secret)
+  ```
+
+**Use `header` for:** OAuth providers that require Basic Auth (some enterprise providers)
+
+#### `supportsRefreshToken`
+
+**Controls token refresh behavior:**
+
+- `true` (default): Platform auto-refreshes tokens before expiry
+- `false`: Tokens are long-lived (e.g., GitHub Personal Access Tokens)
+
+**Set to `false` if:** Provider doesn't support refresh tokens or tokens never expire
+
+#### `customSettings`
+
+**For providers with non-standard OAuth requirements:**
+
+**Example:** Rippling needs app name in authorize URL:
+
+```typescript
+authorizeUrl: 'https://api.rippling.com/connect/authorize/{APP_NAME}',
+customSettings: [
+  {
+    id: 'app_name',
+    label: 'Rippling App Name',
+    type: 'text',
+    required: true,
+    token: '{APP_NAME}',
+  },
+],
+```
+
+Platform admin enters `app_name` → Platform replaces `{APP_NAME}` in URL.
+
+### Access Token in Checks
+
+```typescript
+run: async (ctx: CheckContext) => {
+  // Access token is automatically available
+  const token = ctx.accessToken;
+
+  // ctx.fetch() automatically adds Bearer token
+  const data = await ctx.fetch('/api/endpoint');
+
+  // For custom headers
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${ctx.accessToken}`,
+    },
+  });
+};
+```
+
+---
+
+## API Key
+
+**Best for:** Simple REST APIs with static API keys (e.g., Stripe, SendGrid)
+
+### Configuration
+
+```typescript
+auth: {
+  type: 'api_key',
+  config: {
+    in: 'header',           // or 'query'
+    name: 'X-API-Key',      // Header name or query param name
+    prefix: 'Bearer ',      // Optional prefix (e.g., "Bearer ", "Token ")
+  },
+},
+```
+
+### Key Options
+
+#### `in` - Where to send the API key
+
+**Header (recommended):**
+
+```typescript
+in: 'header',
+name: 'X-API-Key',
+
+// Results in:
+// X-API-Key: your-api-key-value
+```
+
+**Query parameter:**
+
+```typescript
+in: 'query',
+name: 'api_key',
+
+// Results in:
+// GET /endpoint?api_key=your-api-key-value
+```
+
+**Use query for:** APIs that don't accept custom headers (rare)
+
+#### `prefix` - Add a prefix to the key
+
+```typescript
+prefix: 'Bearer ',   // Common for tokens
+prefix: 'Token ',    // Some APIs use this
+prefix: '',          // No prefix (default)
+
+// Example with Bearer:
+// Authorization: Bearer sk_live_abc123...
+```
+
+### Credential Field
+
+User will see a form field to enter the API key:
+
+```typescript
+// Automatically generated credential field
+{
+  id: 'api_key',
+  label: 'API Key',
+  type: 'password',
+  required: true,
+  placeholder: 'sk_live_...',
+  helpText: 'Found in Settings → API Keys',
+}
+```
+
+### Access in Checks
+
+```typescript
+run: async (ctx: CheckContext) => {
+  // API key is automatically added to requests
+  const data = await ctx.fetch('/endpoint');
+
+  // Or access it directly
+  const apiKey = ctx.credentials.api_key;
+};
+```
+
+---
+
+## Basic Auth
+
+**Best for:** APIs using username/password authentication (e.g., some internal tools)
+
+### Configuration
+
+```typescript
+auth: {
+  type: 'basic',
+  config: {
+    usernameField: 'username',  // Default, can customize
+    passwordField: 'password',  // Default, can customize
+  },
+},
+```
+
+### Credential Fields
+
+Users will see two fields:
+
+```typescript
+// Automatically generated
+[
+  {
+    id: 'username',
+    label: 'Username',
+    type: 'text',
+    required: true,
+  },
+  {
+    id: 'password',
+    label: 'Password',
+    type: 'password',
+    required: true,
+  },
+];
+```
+
+### Custom Field Names
+
+```typescript
+auth: {
+  type: 'basic',
+  config: {
+    usernameField: 'email',      // Use 'email' instead of 'username'
+    passwordField: 'api_token',  // Use 'api_token' instead of 'password'
+  },
+},
+```
+
+### Access in Checks
+
+```typescript
+run: async (ctx: CheckContext) => {
+  // Basic Auth header is automatically added
+  // Authorization: Basic base64(username:password)
+  const data = await ctx.fetch('/endpoint');
+
+  // Or access credentials directly
+  const username = ctx.credentials.username;
+  const password = ctx.credentials.password;
+};
+```
+
+---
+
+## Custom Auth
+
+**Best for:** Complex authentication requiring multiple fields (AWS IAM Role, Azure Service Principal, GCP Service Account)
+
+### Configuration
+
+```typescript
+auth: {
+  type: 'custom',
+  config: {
+    description: 'AWS IAM Role for cross-account access',
+
+    credentialFields: [
+      {
+        id: 'roleArn',
+        label: 'IAM Role ARN',
+        type: 'text',
+        required: true,
+        placeholder: 'arn:aws:iam::123456789012:role/MyRole',
+        helpText: 'The ARN of the IAM role to assume',
+      },
+      {
+        id: 'externalId',
+        label: 'External ID',
+        type: 'password',
+        required: true,
+        helpText: 'Unique identifier for security',
+      },
+      {
+        id: 'region',
+        label: 'AWS Region',
+        type: 'combobox',
+        required: true,
+        placeholder: 'Select or type...',
+        helpText: 'Primary region for API calls',
+        options: [
+          { value: 'us-east-1', label: 'US East (N. Virginia)' },
+          { value: 'eu-west-1', label: 'Europe (Ireland)' },
+        ],
+      },
+    ],
+
+    setupInstructions: `## Setup Guide
+
+1. Create IAM role in AWS
+2. Copy the Role ARN
+3. Generate External ID
+4. Enter credentials below`,
+  },
+},
+```
+
+### Field Types
+
+| Type       | UI Component                | When to Use      | Example                   |
+| ---------- | --------------------------- | ---------------- | ------------------------- |
+| `text`     | Text input                  | Single-line text | Project ID, Account ID    |
+| `password` | Password input (hidden)     | Secrets, tokens  | API keys, passwords       |
+| `textarea` | Multi-line textarea         | Long text, JSON  | Service account JSON key  |
+| `select`   | Dropdown (fixed options)    | Choose from list | Environment (prod/dev)    |
+| `combobox` | Dropdown + custom input     | Choose or type   | AWS region, timezone      |
+| `number`   | Number input                | Numeric values   | Port, timeout             |
+| `url`      | URL input (with validation) | Web addresses    | Webhook URL, API endpoint |
+
+### Field Options
+
+```typescript
+{
+  id: 'field_name',           // Unique identifier (snake_case)
+  label: 'Field Label',       // Shown to user
+  type: 'text',              // See table above
+  required: true,            // Is this field mandatory?
+  placeholder: 'example...',  // Placeholder text
+  helpText: 'Explain where to find this', // Help text below field
+
+  // For select/combobox only:
+  options: [
+    { value: 'val1', label: 'Option 1' },
+    { value: 'val2', label: 'Option 2' },
+  ],
+}
+```
+
+### Access in Checks
+
+```typescript
+run: async (ctx: CheckContext) => {
+  // All fields available as key-value pairs
+  const roleArn = ctx.credentials.roleArn;
+  const externalId = ctx.credentials.externalId;
+  const region = ctx.credentials.region;
+
+  // Custom authentication logic
+  const client = await createCustomClient({
+    roleArn,
+    externalId,
+    region,
+  });
+};
+```
+
+---
+
+## Choosing an Auth Type
+
+### Decision Tree
+
+```
+Does the service have OAuth?
+├─ YES → Use OAuth 2.0
+│   └─ Best UX, auto token refresh, secure
+│
+└─ NO
+    │
+    Does it use a single API key?
+    ├─ YES → Use API Key
+    │   └─ Simple, user just pastes key
+    │
+    └─ NO
+        │
+        Does it use username + password?
+        ├─ YES → Use Basic Auth
+        │   └─ Two fields, encoded automatically
+        │
+        └─ NO → Use Custom Auth
+            └─ Multiple fields, full control
+```
+
+### Comparison: OAuth vs API Key
+
+| Aspect              | OAuth 2.0                       | API Key                      |
+| ------------------- | ------------------------------- | ---------------------------- |
+| **User Experience** | Best (1-click)               | OK (find & paste key)     |
+| **Security**        | Tokens expire & refresh      | Long-lived secrets        |
+| **Platform Setup**  | Admin must configure         | None needed               |
+| **Revocation**      | User revokes in provider     | User must regenerate key  |
+| **Scope Control**   | Request specific permissions | Key has fixed permissions |
+
+**Recommendation:** Use OAuth if the service supports it.
+
+### Comparison: Basic Auth vs Custom
+
+| Aspect       | Basic Auth            | Custom Auth               |
+| ------------ | --------------------- | ------------------------- |
+| **Fields**   | 2 (username/password) | Any number                |
+| **Encoding** | Auto (Base64)      | Manual in check code      |
+| **Use Case** | Simple APIs           | Complex auth (AWS, Azure) |
+| **Setup**    | Minimal config        | Define all fields         |
+
+**Use Basic Auth for:** Simple username/password APIs  
+**Use Custom Auth for:** Multi-field credentials, service accounts, IAM roles
+
+---
+
+## Examples by Service Type
+
+### Cloud Providers (AWS, Azure, GCP)
+
+**Use:** Custom Auth (service accounts, IAM roles)
+
+**Why:** These services use multi-field credentials that need custom authentication logic. OAuth is possible but service accounts are the recommended approach for programmatic access.
+
+### SaaS Tools (GitHub, Linear, Notion)
+
+**Use:** OAuth 2.0
+
+**Why:** Best user experience, tokens auto-refresh, users can revoke access easily.
+
+### Internal Tools / Legacy APIs
+
+**Use:** Basic Auth or API Key
+
+**Why:** Simpler services often use these methods. Choose based on what the API supports.
+
+---
+
+## Advanced OAuth Options
+
+### PKCE (Proof Key for Code Exchange)
+
+**What it is:** Extra security for OAuth (prevents authorization code interception)
+
+**When to enable:**
+
+```typescript
+pkce: true; // Enable for: Auth0, Okta, some enterprise providers
+pkce: false; // Default for: GitHub, Google, Linear
+```
+
+**How it works:** Platform generates a random `code_verifier`, hashes it to create `code_challenge`, sends challenge during authorization, sends verifier during token exchange.
+
+### Client Authentication Method
+
+**How platform authenticates itself to the provider:**
+
+**Body (default):**
+
+```http
+POST /token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=...&client_id=...&client_secret=...
+```
+
+**Header (Basic Auth):**
+
+```http
+POST /token
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=...
+```
+
+**Use `header` when:** Provider documentation explicitly requires Basic Auth for client authentication.
+
+### Custom Authorization Parameters
+
+**Add extra params to the authorization URL:**
+
+```typescript
+authorizationParams: {
+  access_type: 'offline',    // Google: Request refresh token
+  prompt: 'consent',         // Force consent screen (always request scopes)
+  response_mode: 'query',    // How to return auth code
+}
+```
+
+**Common use cases:**
+
+- `access_type: 'offline'` - Google APIs (get refresh token)
+- `prompt: 'consent'` - Always show consent screen (good for testing)
+- Custom provider-specific params
+
+---
+
+## Security Best Practices
+
+### API Keys
+
+- Use `type: 'password'` for sensitive fields (hidden input)
+- Store in credential vault (auto-encrypted)
+- Never log API keys
+- Add help text explaining where to find/generate the key
+
+### OAuth
+
+- Request minimum scopes needed
+- Use `access_type: 'offline'` for refresh tokens
+- Set `supportsRefreshToken: true` to auto-refresh
+- Explain scope requirements in setup instructions
+
+### Basic Auth
+
+- Both username and password are required
+- Password field is auto-hidden
+- Credentials are auto-encoded to Base64
+- Never log passwords
+
+### Custom Auth
+
+- Mark sensitive fields as `type: 'password'`
+- Validate all required fields in checks
+- Handle missing fields gracefully
+- Don't expose credential values in logs/errors
+
+---
+
+## Complete OAuth Example
+
+```typescript
+auth: {
+  type: 'oauth2',
+  config: {
+    authorizeUrl: 'https://github.com/login/oauth/authorize',
+    tokenUrl: 'https://github.com/login/oauth/access_token',
+    scopes: ['repo', 'read:org', 'read:user'],
+    pkce: false,
+    clientAuthMethod: 'body',
+    supportsRefreshToken: false, // GitHub tokens don't expire
+    authorizationParams: {
+      allow_signup: 'false', // Don't show sign-up on consent
+    },
+    setupInstructions: `## Create GitHub OAuth App
+
+1. Go to https://github.com/settings/developers
+2. Click "New OAuth App"
+3. Enter:
+   - Application name: Your app name
+   - Homepage URL: https://yourapp.com
+   - Callback URL: [shown below]
+4. Click "Register application"
+5. Copy Client ID and generate Client Secret
+6. Paste both below`,
+    createAppUrl: 'https://github.com/settings/apps/new',
+  },
+},
+```
+
+---
+
+## Testing Your Auth
+
+### OAuth
+
+1. Configure platform credentials in `/admin/integrations`
+2. Go to `/integrations` and click Connect
+3. Should redirect to provider OAuth screen
+4. Authorize → Should redirect back successfully
+5. Check connection is active
+
+### API Key / Basic / Custom
+
+1. Go to `/integrations` and click Connect
+2. Form should show your credential fields
+3. Enter test credentials
+4. Connection should be created successfully
+5. Run a check to verify credentials work
+
+### Debug OAuth Issues
+
+Check API logs for:
+
+- `OAuth completed for [provider]` - Success
+- `OAuth callback error` - Authorization failed
+- `Token exchange failed` - Bad client credentials
+- `Invalid state` - State mismatch (check callback URL)
+
+---
+
+## Summary
+
+**Choose your auth type:**
+
+- **Service has OAuth?** → Use OAuth 2.0
+- **Single API key?** → Use API Key
+- **Username/password?** → Use Basic Auth
+- **Multiple fields or complex?** → Use Custom Auth
+
+**OAuth is best when available** - better UX, security, and user control.

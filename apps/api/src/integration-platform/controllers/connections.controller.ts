@@ -92,7 +92,8 @@ export class ConnectionsController {
       for (const check of m.checks || []) {
         if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
           seenTaskIds.add(check.taskMapping);
-          const taskInfo = TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
+          const taskInfo =
+            TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
           if (taskInfo) {
             mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
           }
@@ -148,7 +149,8 @@ export class ConnectionsController {
     for (const check of manifest.checks || []) {
       if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
         seenTaskIds.add(check.taskMapping);
-        const taskInfo = TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
+        const taskInfo =
+          TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
         if (taskInfo) {
           mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
         }
@@ -544,6 +546,26 @@ export class ConnectionsController {
       );
     }
 
+    // For API key auth, validate key exists
+    if (manifest.auth.type === 'api_key') {
+      const apiKeyField = manifest.auth.config.name;
+      if (!credentials[apiKeyField] && !credentials.api_key) {
+        throw new HttpException('API key not found', HttpStatus.BAD_REQUEST);
+      }
+    }
+
+    // For basic auth, validate username and password exist
+    if (manifest.auth.type === 'basic') {
+      const usernameField = manifest.auth.config.usernameField || 'username';
+      const passwordField = manifest.auth.config.passwordField || 'password';
+      if (!credentials[usernameField] || !credentials[passwordField]) {
+        throw new HttpException(
+          'Username and password required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
     // For custom auth (like AWS), validate credentials exist
     if (
       manifest.auth.type === 'custom' &&
@@ -601,10 +623,10 @@ export class ConnectionsController {
       );
     }
 
-    // Only allow updating credentials for custom auth integrations
-    if (manifest.auth.type !== 'custom') {
+    // Only allow updating credentials for non-OAuth integrations
+    if (manifest.auth.type === 'oauth2') {
       throw new HttpException(
-        'Credential updates are only supported for custom auth integrations. For OAuth integrations, please disconnect and reconnect.',
+        'Credential updates are not supported for OAuth integrations. Please disconnect and reconnect to refresh the OAuth token.',
         HttpStatus.BAD_REQUEST,
       );
     }

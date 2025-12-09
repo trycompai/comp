@@ -148,6 +148,27 @@ export class ChecksController {
       );
     }
 
+    if (manifest.auth.type === 'api_key') {
+      const apiKeyField = manifest.auth.config.name;
+      if (!credentials[apiKeyField] && !credentials.api_key) {
+        throw new HttpException(
+          'API key not found. Please reconnect the integration.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    if (manifest.auth.type === 'basic') {
+      const usernameField = manifest.auth.config.usernameField || 'username';
+      const passwordField = manifest.auth.config.passwordField || 'password';
+      if (!credentials[usernameField] || !credentials[passwordField]) {
+        throw new HttpException(
+          'Username and password required. Please reconnect the integration.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
     if (
       manifest.auth.type === 'custom' &&
       Object.keys(credentials).length === 0

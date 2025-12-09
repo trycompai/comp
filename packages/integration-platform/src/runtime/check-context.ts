@@ -122,12 +122,36 @@ export function createCheckContext(options: CheckContextOptions): {
     },
   };
 
-  const buildHeaders = (extra?: Record<string, string>): Record<string, string> => ({
-    ...defaultHeaders,
-    // Only add Authorization header if we have an access token (OAuth integrations)
-    ...(currentAccessToken ? { Authorization: `Bearer ${currentAccessToken}` } : {}),
-    ...extra,
-  });
+  const buildHeaders = (extra?: Record<string, string>): Record<string, string> => {
+    const headers: Record<string, string> = {
+      ...defaultHeaders,
+      ...extra,
+    };
+
+    // OAuth: Add Bearer token
+    if (manifest.auth.type === 'oauth2' && currentAccessToken) {
+      headers['Authorization'] = `Bearer ${currentAccessToken}`;
+    }
+
+    // API Key: Add to header if configured
+    if (manifest.auth.type === 'api_key' && manifest.auth.config.in === 'header') {
+      const apiKey = credentials[manifest.auth.config.name] || credentials.api_key || '';
+      const value = manifest.auth.config.prefix
+        ? `${manifest.auth.config.prefix}${apiKey}`
+        : apiKey;
+      headers[manifest.auth.config.name] = value;
+    }
+
+    // Basic Auth: Encode username:password
+    if (manifest.auth.type === 'basic') {
+      const username = credentials[manifest.auth.config.usernameField || 'username'] || '';
+      const password = credentials[manifest.auth.config.passwordField || 'password'] || '';
+      const encoded = Buffer.from(`${username}:${password}`).toString('base64');
+      headers['Authorization'] = `Basic ${encoded}`;
+    }
+
+    return headers;
+  };
 
   async function withRetry(requestFn: () => Promise<Response>, attempt = 0): Promise<Response> {
     const response = await requestFn();
@@ -183,11 +207,23 @@ export function createCheckContext(options: CheckContextOptions): {
 
   function buildUrl(path: string, base?: string, params?: Record<string, string>): URL {
     const url = new URL(path, base || baseUrl);
+
+    // Add any provided query params
     if (params) {
       for (const [k, v] of Object.entries(params)) {
         url.searchParams.set(k, v);
       }
     }
+
+    // API Key in query param
+    if (manifest.auth.type === 'api_key' && manifest.auth.config.in === 'query') {
+      const apiKey = credentials[manifest.auth.config.name] || credentials.api_key || '';
+      const value = manifest.auth.config.prefix
+        ? `${manifest.auth.config.prefix}${apiKey}`
+        : apiKey;
+      url.searchParams.set(manifest.auth.config.name, value);
+    }
+
     return url;
   }
 
