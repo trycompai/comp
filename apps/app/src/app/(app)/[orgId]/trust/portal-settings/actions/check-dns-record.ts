@@ -164,7 +164,7 @@ export const checkDnsRecordAction = authActionClient
 
     revalidatePath(`/${activeOrgId}/trust`);
     revalidatePath(`/${activeOrgId}/trust/portal-settings`);
-    revalidateTag(`organization_${activeOrgId}`);
+    revalidateTag(`organization_${activeOrgId}`, 'max');
 
     return {
       success: true,

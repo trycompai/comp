@@ -23,7 +23,9 @@ interface ContextData {
 /**
  * Fetch all context entries for an organization
  */
-export async function fetchContextEntries(organizationId: string): Promise<ContextData[]> {
+export async function fetchContextEntries(
+  organizationId: string,
+): Promise<ContextData[]> {
   return db.context.findMany({
     where: { organizationId },
     select: {
@@ -107,7 +109,11 @@ export async function syncContextEntries(
       batch.map(async (context) => {
         try {
           const contextEmbeddings = existingEmbeddingsMap.get(context.id) || [];
-          const result = await syncSingleContext(context, contextEmbeddings, organizationId);
+          const result = await syncSingleContext(
+            context,
+            contextEmbeddings,
+            organizationId,
+          );
 
           if (result === 'created') stats.created++;
           else if (result === 'updated') stats.updated++;
@@ -130,4 +136,3 @@ export async function syncContextEntries(
 
   return stats;
 }
-

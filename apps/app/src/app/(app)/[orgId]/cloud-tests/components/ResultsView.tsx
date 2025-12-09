@@ -2,8 +2,7 @@
 
 import { Button } from '@comp/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import type { AnyRealtimeRun } from '@trigger.dev/sdk';
-import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Settings } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FindingsTable } from './FindingsTable';
 
@@ -21,36 +20,22 @@ interface ResultsViewProps {
   findings: Finding[];
   onRunScan: () => Promise<string | null>;
   isScanning: boolean;
-  run: AnyRealtimeRun | undefined;
+  needsConfiguration?: boolean;
+  onConfigure?: () => void;
 }
 
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 
-export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsViewProps) {
+export function ResultsView({
+  findings,
+  onRunScan,
+  isScanning,
+  needsConfiguration,
+  onConfigure,
+}: ResultsViewProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
-
-  const isCompleted = run?.status === 'COMPLETED';
-  const isFailed =
-    run?.status === 'FAILED' ||
-    run?.status === 'CRASHED' ||
-    run?.status === 'SYSTEM_FAILURE' ||
-    run?.status === 'TIMED_OUT' ||
-    run?.status === 'CANCELED';
-
-  const runOutput =
-    run?.output && typeof run.output === 'object' && 'success' in run.output
-      ? (run.output as {
-          success: boolean;
-          errors?: string[];
-          failedIntegrations?: Array<{ name: string; error: string }>;
-        })
-      : null;
-
-  const hasOutputErrors = runOutput && !runOutput.success;
-  const outputErrorMessages = hasOutputErrors
-    ? (runOutput.errors ?? runOutput.failedIntegrations?.map((i) => `${i.name}: ${i.error}`) ?? [])
-    : [];
+  const [scanCompleted, setScanCompleted] = useState(false);
 
   const uniqueStatuses = Array.from(
     new Set(findings.map((f) => f.status).filter(Boolean) as string[]),
@@ -79,8 +64,39 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
     [filteredFindings],
   );
 
+  const handleRunScan = async () => {
+    setScanCompleted(false);
+    const result = await onRunScan();
+    if (result) {
+      setScanCompleted(true);
+      // Hide the success message after 5 seconds
+      setTimeout(() => setScanCompleted(false), 5000);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
+      {needsConfiguration && onConfigure && (
+        <div className="bg-warning/10 rounded-lg border border-warning/30 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-warning-foreground">Configuration Required</p>
+              <p className="text-sm text-warning-foreground/80 mt-1">
+                Please configure the required variables (like region or organization ID) to enable
+                security scans.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 ml-8">
+            <Button size="sm" variant="outline" onClick={onConfigure}>
+              <Settings className="h-4 w-4 mr-2" />
+              Configure
+            </Button>
+          </div>
+        </div>
+      )}
+
       {isScanning && (
         <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
           <Loader2 className="text-primary h-5 w-5 animate-spin flex-shrink-0" />
@@ -93,58 +109,12 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
         </div>
       )}
 
-      {isCompleted && !isScanning && !hasOutputErrors && (
+      {scanCompleted && !isScanning && (
         <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
           <CheckCircle2 className="text-primary h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-primary text-sm font-medium">Scan completed</p>
             <p className="text-muted-foreground text-xs">Results updated successfully</p>
-          </div>
-        </div>
-      )}
-
-      {hasOutputErrors && !isScanning && (
-        <div className="bg-destructive/10 flex items-start gap-3 rounded-lg border border-destructive/20 p-4">
-          <AlertTriangle className="text-destructive h-5 w-5 flex-shrink-0" />
-          <div className="flex-1 space-y-1">
-            <p className="text-destructive text-sm font-medium">Scan completed with errors</p>
-            <ul className="text-muted-foreground text-xs leading-relaxed">
-              {outputErrorMessages.slice(0, 5).map((message, index) => (
-                <li key={index}>• {message}</li>
-              ))}
-              {outputErrorMessages.length === 0 && (
-                <li>Encountered an unknown error while processing integration results.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {isFailed && !isScanning && (
-        <div className="bg-destructive/10 flex items-center gap-3 rounded-lg border border-destructive/20 p-4">
-          <X className="text-destructive h-5 w-5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-destructive text-sm font-medium">Scan failed</p>
-            <p className="text-muted-foreground text-xs">
-              {typeof run?.error === 'object' && run.error && 'message' in run.error
-                ? String(run.error.message)
-                : 'An error occurred during the scan. Please try again.'}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {isCompleted && findings.length === 0 && !isScanning && !hasOutputErrors && (
-        <div className="bg-blue-50 dark:bg-blue-950/20 flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-900 p-4">
-          <Info className="text-blue-600 dark:text-blue-400 h-5 w-5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">
-              Initial scan complete
-            </p>
-            <p className="text-muted-foreground text-xs">
-              Security findings may take 24-48 hours to appear after enabling cloud security
-              services. Check back later.
-            </p>
           </div>
         </div>
       )}
@@ -190,9 +160,9 @@ export function ResultsView({ findings, onRunScan, isScanning, run }: ResultsVie
           <div />
         )}
 
-        <Button onClick={onRunScan} disabled={isScanning} className="gap-2 rounded-lg">
-          <RefreshCw className="h-4 w-4" />
-          Run Scan
+        <Button onClick={handleRunScan} disabled={isScanning} className="gap-2 rounded-lg">
+          <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
+          {isScanning ? 'Scanning...' : 'Run Scan'}
         </Button>
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import type { onboardOrganization } from '@/jobs/tasks/onboarding/onboard-organization';
+import type { onboardOrganization } from '@/trigger/tasks/onboarding/onboard-organization';
 import { useRun } from '@trigger.dev/react-hooks';
 import { CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';

@@ -37,7 +37,7 @@ export const updateOrganizationWebsiteAction = authActionClient
       });
 
       revalidatePath('/settings');
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, 'max');
 
       return {
         success: true,

@@ -50,7 +50,7 @@ export const trustPortalSwitchAction = authActionClient
 
       revalidatePath(`/${activeOrganizationId}/trust`);
       revalidatePath(`/${activeOrganizationId}/trust/portal-settings`);
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, 'max');
 
       return {
         success: true,

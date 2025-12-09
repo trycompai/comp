@@ -1,5 +1,8 @@
 import { vectorIndex } from './client';
-import { generateEmbedding, batchGenerateEmbeddings } from './generate-embedding';
+import {
+  generateEmbedding,
+  batchGenerateEmbeddings,
+} from './generate-embedding';
 import { logger } from '../../logger';
 
 export interface SimilarContentResult {
@@ -90,9 +93,13 @@ export async function findSimilarContent(
       topK: MAX_TOP_K,
       totalResults: results.length,
       filteredResults: filteredResults.length,
-      scoreRange: filteredResults.length > 0
-        ? { min: filteredResults[filteredResults.length - 1]?.score, max: filteredResults[0]?.score }
-        : null,
+      scoreRange:
+        filteredResults.length > 0
+          ? {
+              min: filteredResults[filteredResults.length - 1]?.score,
+              max: filteredResults[0]?.score,
+            }
+          : null,
     });
 
     return filteredResults;
@@ -179,7 +186,9 @@ export async function findSimilarContentBatch(
     const queryTime = Date.now() - queryStartTime;
 
     // Step 3: Filter and map results for each question
-    const allFilteredResults: SimilarContentResult[][] = questions.map(() => []);
+    const allFilteredResults: SimilarContentResult[][] = questions.map(
+      () => [],
+    );
 
     for (const { index, results } of queryResults) {
       const filtered = results

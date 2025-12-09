@@ -1,7 +1,7 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { updatePolicy } from '@/jobs/tasks/onboarding/update-policy';
+import { updatePolicy } from '@/trigger/tasks/onboarding/update-policy';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';

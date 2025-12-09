@@ -9517,6 +9517,1016 @@
           "SOA"
         ]
       }
+    },
+    "/v1/integrations/oauth/availability": {
+      "get": {
+        "operationId": "OAuthController_checkAvailability_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "OAuth"
+        ]
+      }
+    },
+    "/v1/integrations/oauth/start": {
+      "post": {
+        "operationId": "OAuthController_startOAuth_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "OAuth"
+        ]
+      }
+    },
+    "/v1/integrations/oauth/callback": {
+      "get": {
+        "operationId": "OAuthController_oauthCallback_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "OAuth"
+        ]
+      }
+    },
+    "/v1/integrations/oauth-apps": {
+      "get": {
+        "operationId": "OAuthAppsController_listOAuthApps_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "OAuthApps"
+        ]
+      },
+      "post": {
+        "operationId": "OAuthAppsController_saveOAuthApp_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "OAuthApps"
+        ]
+      }
+    },
+    "/v1/integrations/oauth-apps/setup/{providerSlug}": {
+      "get": {
+        "operationId": "OAuthAppsController_getSetupInfo_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "OAuthApps"
+        ]
+      }
+    },
+    "/v1/integrations/oauth-apps/{providerSlug}": {
+      "delete": {
+        "operationId": "OAuthAppsController_deleteOAuthApp_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "OAuthApps"
+        ]
+      }
+    },
+    "/v1/integrations/connections/providers": {
+      "get": {
+        "operationId": "ConnectionsController_listProviders_v1",
+        "parameters": [
+          {
+            "name": "activeOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/providers/{slug}": {
+      "get": {
+        "operationId": "ConnectionsController_getProvider_v1",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections": {
+      "get": {
+        "operationId": "ConnectionsController_listConnections_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      },
+      "post": {
+        "operationId": "ConnectionsController_createConnection_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}": {
+      "get": {
+        "operationId": "ConnectionsController_getConnection_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      },
+      "delete": {
+        "operationId": "ConnectionsController_deleteConnection_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}/test": {
+      "post": {
+        "operationId": "ConnectionsController_testConnection_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}/pause": {
+      "post": {
+        "operationId": "ConnectionsController_pauseConnection_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}/resume": {
+      "post": {
+        "operationId": "ConnectionsController_resumeConnection_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}/disconnect": {
+      "post": {
+        "operationId": "ConnectionsController_disconnectConnection_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}/ensure-valid-credentials": {
+      "post": {
+        "operationId": "ConnectionsController_ensureValidCredentials_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}/credentials": {
+      "put": {
+        "operationId": "ConnectionsController_updateCredentials_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/v1/admin/integrations": {
+      "get": {
+        "operationId": "AdminIntegrationsController_listIntegrations_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AdminIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/integrations/{providerSlug}": {
+      "get": {
+        "operationId": "AdminIntegrationsController_getIntegration_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AdminIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/integrations/credentials": {
+      "post": {
+        "operationId": "AdminIntegrationsController_savePlatformCredentials_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AdminIntegrations"
+        ]
+      }
+    },
+    "/v1/admin/integrations/credentials/{providerSlug}": {
+      "delete": {
+        "operationId": "AdminIntegrationsController_deletePlatformCredentials_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "AdminIntegrations"
+        ]
+      }
+    },
+    "/v1/integrations/checks/providers/{providerSlug}": {
+      "get": {
+        "operationId": "ChecksController_listProviderChecks_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Checks"
+        ]
+      }
+    },
+    "/v1/integrations/checks/connections/{connectionId}": {
+      "get": {
+        "operationId": "ChecksController_listConnectionChecks_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Checks"
+        ]
+      }
+    },
+    "/v1/integrations/checks/connections/{connectionId}/run": {
+      "post": {
+        "operationId": "ChecksController_runConnectionChecks_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Checks"
+        ]
+      }
+    },
+    "/v1/integrations/checks/connections/{connectionId}/run/{checkId}": {
+      "post": {
+        "operationId": "ChecksController_runSingleCheck_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Checks"
+        ]
+      }
+    },
+    "/v1/integrations/variables/providers/{providerSlug}": {
+      "get": {
+        "operationId": "VariablesController_getProviderVariables_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Variables"
+        ]
+      }
+    },
+    "/v1/integrations/variables/connections/{connectionId}": {
+      "get": {
+        "operationId": "VariablesController_getConnectionVariables_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Variables"
+        ]
+      },
+      "post": {
+        "operationId": "VariablesController_saveConnectionVariables_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Variables"
+        ]
+      }
+    },
+    "/v1/integrations/variables/connections/{connectionId}/options/{variableId}": {
+      "get": {
+        "operationId": "VariablesController_fetchVariableOptions_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "variableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Variables"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/template/{templateId}/checks": {
+      "get": {
+        "operationId": "TaskIntegrationsController_getChecksForTaskTemplate_v1",
+        "parameters": [
+          {
+            "name": "templateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "TaskIntegrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks": {
+      "get": {
+        "operationId": "TaskIntegrationsController_getChecksForTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "TaskIntegrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/run-check": {
+      "post": {
+        "operationId": "TaskIntegrationsController_runCheckForTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "TaskIntegrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/runs": {
+      "get": {
+        "operationId": "TaskIntegrationsController_getTaskCheckRuns_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "TaskIntegrations"
+        ]
+      }
+    },
+    "/v1/integrations/webhooks/{providerSlug}/{connectionId}": {
+      "post": {
+        "operationId": "WebhookController_handleWebhook_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Webhook"
+        ]
+      }
+    },
+    "/v1/integrations/sync/google-workspace/employees": {
+      "post": {
+        "operationId": "SyncController_syncGoogleWorkspaceEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/google-workspace/status": {
+      "post": {
+        "operationId": "SyncController_getGoogleWorkspaceStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/rippling/employees": {
+      "post": {
+        "operationId": "SyncController_syncRipplingEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/rippling/status": {
+      "post": {
+        "operationId": "SyncController_getRipplingStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/employee-sync-provider": {
+      "get": {
+        "operationId": "SyncController_getEmployeeSyncProvider_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      },
+      "post": {
+        "operationId": "SyncController_setEmployeeSyncProvider_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/cloud-security/scan/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_scan_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-organization-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
     }
   },
   "info": {

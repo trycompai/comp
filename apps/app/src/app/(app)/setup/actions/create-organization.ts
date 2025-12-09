@@ -2,9 +2,9 @@
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
-import { createFleetLabelForOrg } from '@/jobs/tasks/device/create-fleet-label-for-org';
-import { onboardOrganization as onboardOrganizationTask } from '@/jobs/tasks/onboarding/onboard-organization';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
+import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
+import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
