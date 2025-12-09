@@ -35,11 +35,9 @@ phases:
       - echo "Installing API dependencies only..."
       - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --ignore-scripts || bun install --ignore-scripts
 
-      # Build workspace packages first
+      # Build integration-platform package
       - echo "Building integration-platform package..."
-      - cd packages/integration-platform
-      - bun run build
-      - cd ../..
+      - cd packages/integration-platform && bun run build && cd ../..
 
       - echo "Building NestJS application..."
       - echo "APP_NAME is set to $APP_NAME"
@@ -63,32 +61,25 @@ phases:
       - ls -la ../docker-build/src/
       - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
 
-      # Copy ALL node_modules from root (already installed with production deps)
-      - echo "Copying node_modules from root..."
-      - cp -r ../../node_modules ../docker-build/
-
-      # Remove workspace package symlinks, then copy built versions
-      - echo "Replacing workspace packages with built versions..."
-      - rm -rf ../docker-build/node_modules/@trycompai/utils
-      - rm -rf ../docker-build/node_modules/@trycompai/db
-      - rm -rf ../docker-build/node_modules/@comp/integration-platform
-
+      - mkdir -p ../docker-build/node_modules/@trycompai
       - mkdir -p ../docker-build/node_modules/@trycompai/utils
       - mkdir -p ../docker-build/node_modules/@trycompai/db
-      - mkdir -p ../docker-build/node_modules/@comp/integration-platform
-
       - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
       - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
+
       - cp -r ../../packages/db/dist ../docker-build/node_modules/@trycompai/db/
       - cp ../../packages/db/package.json ../docker-build/node_modules/@trycompai/db/
+
+      - cp -r ../../node_modules/@prisma ../docker-build/node_modules/@prisma
+      - cp -r ../../node_modules/.prisma ../docker-build/node_modules/.prisma
+
+      # Integration platform (workspace package)
+      - mkdir -p ../docker-build/node_modules/@comp/integration-platform
       - cp -r ../../packages/integration-platform/dist ../docker-build/node_modules/@comp/integration-platform/
       - cp ../../packages/integration-platform/package.json ../docker-build/node_modules/@comp/integration-platform/
 
       - cp Dockerfile ../docker-build/
-
-      # Modify package.json to remove workspace dependencies (they're copied manually)
-      - cat package.json | jq 'del(.dependencies["@comp/integration-platform"])' > ../docker-build/package.json
-
+      - cp package.json ../docker-build/
       - cp ../../bun.lock ../docker-build/ || true
 
       - echo "Building Docker image..."

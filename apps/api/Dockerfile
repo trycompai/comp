@@ -6,11 +6,20 @@ RUN apk add --no-cache wget curl bash libc6-compat openssl
 
 WORKDIR /app
 
-# Copy package.json and pre-installed node_modules from buildspec
+# Copy manifests first and install production deps inside the image (avoid broken bun symlinks)
 COPY package.json ./
-COPY node_modules ./node_modules
 
-# Copy built application and prisma files
+# Install bun and deps
+# Note: workspace:* dependencies will be skipped and copied manually below
+RUN curl -fsSL https://bun.sh/install | bash \
+  && export PATH="/root/.bun/bin:$PATH" \
+  && bun install --production --ignore-scripts
+
+COPY node_modules/@trycompai ./node_modules/@trycompai
+COPY node_modules/@comp ./node_modules/@comp
+COPY node_modules/@prisma ./node_modules/@prisma
+COPY node_modules/.prisma ./node_modules/.prisma
+
 COPY . .
 
 # Set environment variables
