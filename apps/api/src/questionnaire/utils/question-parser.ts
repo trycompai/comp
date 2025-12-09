@@ -120,7 +120,6 @@ export async function parseChunkQuestionsAndAnswers(
   try {
     const { object } = await generateObject({
       model: openai(PARSING_MODEL),
-      mode: 'json',
       schema: jsonSchema({
         type: 'object',
         properties: {
