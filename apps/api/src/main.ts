@@ -62,7 +62,15 @@ async function bootstrap(): Promise<void> {
   // STEP 2: Security headers
   app.use(
     helmet({
-      contentSecurityPolicy: false, // Disable CSP (conflicts with Swagger)
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline styles
+          scriptSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline scripts
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+        },
+      },
       crossOriginEmbedderPolicy: false, // Allow embedding
     }),
   );
