@@ -96,5 +96,5 @@ export async function updateTrustPortalFrameworks({
 
   revalidatePath(`/${orgId}/trust`);
   revalidatePath(`/${orgId}/trust/portal-settings`);
-  revalidateTag(`organization_${orgId}`);
+  revalidateTag(`organization_${orgId}`, 'max');
 }

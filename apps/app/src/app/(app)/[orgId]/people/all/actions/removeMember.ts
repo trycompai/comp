@@ -278,7 +278,7 @@ export const removeMember = authActionClient
       }
 
       revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`);
+      revalidateTag(`user_${ctx.user.id}`, 'max');
 
       return {
         success: true,
