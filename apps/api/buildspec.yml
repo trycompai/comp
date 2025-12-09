@@ -79,7 +79,8 @@ phases:
       - cp ../../packages/integration-platform/package.json ../docker-build/node_modules/@comp/integration-platform/
 
       - cp Dockerfile ../docker-build/
-      - cp package.json ../docker-build/
+      # Remove workspace dependency from package.json (it's copied manually above)
+      - cat package.json | jq 'del(.dependencies["@comp/integration-platform"])' > ../docker-build/package.json
       - cp ../../bun.lock ../docker-build/ || true
 
       - echo "Building Docker image..."
