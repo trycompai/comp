@@ -288,7 +288,6 @@ async function parseChunkWithGroq(
   const { object } = await generateObject({
     model: groq('openai/gpt-oss-120b'),
     schema: questionExtractionSchema,
-    mode: 'json',
     prompt: QUESTION_PROMPT + content,
   });
 
@@ -378,7 +377,6 @@ async function parseQuestionsWithClaude(
     const { object } = await generateObject({
       model: anthropic('claude-3-5-sonnet-latest'),
       schema: questionExtractionSchema,
-      mode: 'json',
       prompt: QUESTION_PROMPT + content.substring(0, 80000),
     });
 
