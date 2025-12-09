@@ -82,7 +82,10 @@ phases:
       - cp -r ../../node_modules/.prisma ../docker-build/node_modules/.prisma
 
       - cp Dockerfile ../docker-build/
-      - cp package.json ../docker-build/
+
+      # Modify package.json to remove workspace dependencies (they're copied manually)
+      - cat package.json | jq 'del(.dependencies["@comp/integration-platform"])' > ../docker-build/package.json
+
       - cp ../../bun.lock ../docker-build/ || true
 
       - echo "Building Docker image..."
