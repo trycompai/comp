@@ -67,7 +67,16 @@ phases:
       - echo "Copying node_modules from root..."
       - cp -r ../../node_modules ../docker-build/
 
-      # Override workspace packages with built versions
+      # Remove workspace package symlinks, then copy built versions
+      - echo "Replacing workspace packages with built versions..."
+      - rm -rf ../docker-build/node_modules/@trycompai/utils
+      - rm -rf ../docker-build/node_modules/@trycompai/db
+      - rm -rf ../docker-build/node_modules/@comp/integration-platform
+
+      - mkdir -p ../docker-build/node_modules/@trycompai/utils
+      - mkdir -p ../docker-build/node_modules/@trycompai/db
+      - mkdir -p ../docker-build/node_modules/@comp/integration-platform
+
       - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
       - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
       - cp -r ../../packages/db/dist ../docker-build/node_modules/@trycompai/db/
