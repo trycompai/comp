@@ -184,7 +184,6 @@ export async function extractVendorsFromContext(
 ): Promise<VendorData[]> {
   const { object } = await generateObject({
     model: openai('gpt-4.1-mini'),
-    mode: 'json',
     schema: jsonSchema({
       type: 'object',
       properties: {
@@ -447,7 +446,6 @@ export async function extractRisksFromContext(
 ): Promise<RiskData[]> {
   const { object } = await generateObject({
     model: openai('gpt-4.1-mini'),
-    mode: 'json',
     schema: jsonSchema({
       type: 'object',
       properties: {
