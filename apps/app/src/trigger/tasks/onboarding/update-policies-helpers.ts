@@ -195,7 +195,6 @@ export async function reconcileFormatWithTemplate(
   try {
     const { object } = await generateObject({
       model: openai('gpt-5-mini'),
-      mode: 'json',
       system: `You are an expert policy editor.
 Given an ORIGINAL policy TipTap JSON and a DRAFT TipTap JSON, produce a FINAL TipTap JSON that:
 - Preserves the ORIGINAL top-level section structure (order and presence of titles) and visual presentation of titles.
@@ -233,7 +232,6 @@ export async function aiCheckFormatWithTemplate(
   try {
     const { object } = await generateObject({
       model: openai('gpt-5-mini'),
-      mode: 'json',
       system: `You are validating policy layout.
 Compare ORIGINAL vs DRAFT (TipTap JSON). Determine if DRAFT conforms to ORIGINAL format:
 - Same top-level section titles present and in the same order
@@ -458,7 +456,6 @@ export async function generatePolicyContent(prompt: string): Promise<{
   try {
     const { object } = await generateObject({
       model: openai('gpt-5-mini'),
-      mode: 'json',
       system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
 
 TipTap JSON structure:
