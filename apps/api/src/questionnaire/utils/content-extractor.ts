@@ -419,7 +419,6 @@ async function parseQuestionsWithOpenAI(
   const { object } = await generateObject({
     model: openai('gpt-4o-mini'),
     schema: questionExtractionSchema,
-    mode: 'json',
     prompt: `Extract all questions/fields and their answers from this questionnaire or form.
 
 Include:
@@ -463,7 +462,6 @@ async function parseQuestionsWithVision(
   const { object } = await generateObject({
     model: openai('gpt-4o'),
     schema: questionExtractionSchema,
-    mode: 'json',
     messages: [
       {
         role: 'user',
