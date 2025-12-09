@@ -1,12 +1,10 @@
 import type { IntegrationManifest } from '../../types';
-import { iamAccessCheck, securityFindingsCheck } from './checks';
-import { monitoringAlertingCheck } from './checks/monitoring-alerting';
 
 export const gcpManifest: IntegrationManifest = {
   id: 'gcp',
   name: 'Google Cloud Platform',
   description:
-    'Read-only monitoring of security findings, IAM access, and alerting in Google Cloud Platform',
+    'Read-only monitoring of IAM access, alerting and cloud tests in Google Cloud Platform',
   category: 'Cloud',
   logoUrl:
     'https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true',
@@ -63,5 +61,5 @@ This is industry standard - all GCP security monitoring tools use the same scope
 
   capabilities: ['checks'],
 
-  checks: [securityFindingsCheck, iamAccessCheck, monitoringAlertingCheck],
+  checks: [],
 };

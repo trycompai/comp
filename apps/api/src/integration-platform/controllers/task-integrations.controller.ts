@@ -39,6 +39,9 @@ interface TaskIntegrationCheck {
   lastRunStatus?: 'success' | 'failed' | 'error';
   lastRunFindings?: number;
   lastRunPassing?: number;
+  /** For OAuth providers: whether platform/org admin has configured credentials */
+  authType: 'oauth2' | 'custom' | 'api_key' | 'basic' | 'jwt';
+  oauthConfigured?: boolean;
 }
 
 interface RunCheckForTaskDto {
@@ -117,6 +120,17 @@ export class TaskIntegrationsController {
             }
           }
 
+          // Check if OAuth is configured for OAuth providers
+          let oauthConfigured: boolean | undefined;
+          if (manifest.auth.type === 'oauth2') {
+            const availability =
+              await this.oauthCredentialsService.checkAvailability(
+                manifest.id,
+                organizationId,
+              );
+            oauthConfigured = availability.available;
+          }
+
           checks.push({
             integrationId: manifest.id,
             integrationName: manifest.name,
@@ -128,6 +142,8 @@ export class TaskIntegrationsController {
             needsConfiguration,
             connectionId: connection?.id,
             connectionStatus: connection?.status,
+            authType: manifest.auth.type,
+            oauthConfigured,
           });
         }
       }

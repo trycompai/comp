@@ -86,9 +86,11 @@ export class ConnectionsController {
           ? (platformCredentialsMap.get(m.id) ?? false)
           : undefined;
 
-      // Get mapped tasks from checks
+      // Get mapped tasks from checks and collect required variables
       const mappedTasks: Array<{ id: string; name: string }> = [];
       const seenTaskIds = new Set<string>();
+      const requiredVariables = new Set<string>();
+
       for (const check of m.checks || []) {
         if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
           seenTaskIds.add(check.taskMapping);
@@ -96,6 +98,14 @@ export class ConnectionsController {
             TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
           if (taskInfo) {
             mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
+          }
+        }
+        // Collect required variables
+        if (check.variables) {
+          for (const variable of check.variables) {
+            if (variable.required) {
+              requiredVariables.add(variable.id);
+            }
           }
         }
       }
@@ -114,6 +124,7 @@ export class ConnectionsController {
         setupInstructions,
         oauthConfigured,
         mappedTasks,
+        requiredVariables: Array.from(requiredVariables),
       };
     });
   }
@@ -146,6 +157,9 @@ export class ConnectionsController {
     // Get mapped tasks from checks
     const mappedTasks: Array<{ id: string; name: string }> = [];
     const seenTaskIds = new Set<string>();
+
+    // Collect required variables from all checks
+    const requiredVariables = new Set<string>();
     for (const check of manifest.checks || []) {
       if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
         seenTaskIds.add(check.taskMapping);
@@ -153,6 +167,14 @@ export class ConnectionsController {
           TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
         if (taskInfo) {
           mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
+        }
+      }
+      // Collect required variables
+      if (check.variables) {
+        for (const variable of check.variables) {
+          if (variable.required) {
+            requiredVariables.add(variable.id);
+          }
         }
       }
     }
@@ -170,6 +192,7 @@ export class ConnectionsController {
       credentialFields,
       setupInstructions,
       mappedTasks,
+      requiredVariables: Array.from(requiredVariables),
     };
   }
 

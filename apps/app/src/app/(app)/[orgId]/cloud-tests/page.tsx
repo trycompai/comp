@@ -1,4 +1,5 @@
 import { auth as betterAuth } from '@/utils/auth';
+import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -6,18 +7,40 @@ import { TestsLayout } from './components/TestsLayout';
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
 
+// Get required variables from manifest
+const getRequiredVariables = (providerSlug: string): string[] => {
+  const manifest = getManifest(providerSlug);
+  if (!manifest?.checks) return [];
+
+  const requiredVars = new Set<string>();
+  for (const check of manifest.checks) {
+    if (check.variables) {
+      for (const variable of check.variables) {
+        if (variable.required) {
+          requiredVars.add(variable.id);
+        }
+      }
+    }
+  }
+  return Array.from(requiredVars);
+};
+
 export default async function CloudTestsPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const session = await betterAuth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session?.session.activeOrganizationId) {
-    redirect('/');
-  }
+  // Check person belongs to organization
+  const member = await db.member.findFirst({
+    where: {
+      userId: session?.user.id,
+      organizationId: orgId,
+    },
+  });
 
-  if (session.session.activeOrganizationId !== orgId) {
-    redirect(`/${session.session.activeOrganizationId}/cloud-tests`);
+  if (!member) {
+    redirect('/');
   }
 
   // ====================================================================
@@ -59,7 +82,21 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
   // ====================================================================
   // Merge providers from both sources
   // ====================================================================
-  const newProviders = newConnections.map((conn) => ({
+  type Provider = {
+    id: string;
+    integrationId: string;
+    name: string;
+    organizationId: string;
+    lastRunAt: Date | null;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+    isLegacy: boolean;
+    variables: Record<string, unknown> | null;
+    requiredVariables: string[];
+  };
+
+  const newProviders: Provider[] = newConnections.map((conn) => ({
     id: conn.id,
     integrationId: conn.provider.slug,
     name: conn.provider.name,
@@ -69,9 +106,11 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     createdAt: conn.createdAt,
     updatedAt: conn.updatedAt,
     isLegacy: false,
+    variables: (conn.variables as Record<string, unknown>) ?? null,
+    requiredVariables: getRequiredVariables(conn.provider.slug),
   }));
 
-  const legacyProviders = activeLegacyIntegrations.map((integration) => ({
+  const legacyProviders: Provider[] = activeLegacyIntegrations.map((integration) => ({
     id: integration.id,
     integrationId: integration.integrationId,
     name: integration.name,
@@ -81,9 +120,11 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     createdAt: new Date(),
     updatedAt: new Date(),
     isLegacy: true,
+    variables: null,
+    requiredVariables: getRequiredVariables(integration.integrationId),
   }));
 
-  const providers = [...newProviders, ...legacyProviders];
+  const providers: Provider[] = [...newProviders, ...legacyProviders];
 
   // ====================================================================
   // Fetch findings from NEW platform (IntegrationCheckResult)
@@ -108,13 +149,12 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
   const latestRunIds = latestRuns.map((r) => r.id);
   const checkRunMap = Object.fromEntries(latestRuns.map((cr) => [cr.id, cr]));
 
-  // Fetch results only from the latest runs
+  // Fetch results only from the latest runs (both passed and failed)
   const newResults =
     latestRunIds.length > 0
       ? await db.integrationCheckResult.findMany({
           where: {
             checkRunId: { in: latestRunIds },
-            passed: false,
           },
           select: {
             id: true,
@@ -124,6 +164,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
             severity: true,
             collectedAt: true,
             checkRunId: true,
+            passed: true,
           },
           orderBy: {
             collectedAt: 'desc',
@@ -138,7 +179,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       title: result.title,
       description: result.description,
       remediation: result.remediation,
-      status: checkRun?.status === 'success' ? 'resolved' : 'open',
+      status: result.passed ? 'passed' : 'failed',
       severity: result.severity,
       completedAt: result.collectedAt,
       integration: {

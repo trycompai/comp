@@ -12,7 +12,6 @@ import { azureManifest } from '../manifests/azure';
 import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
-import { manifest as linearManifest } from '../manifests/linear';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
 
@@ -102,7 +101,6 @@ const allManifests: IntegrationManifest[] = [
   gcpManifest,
   githubManifest,
   googleWorkspaceManifest,
-  linearManifest,
   ripplingManifest,
   vercelManifest,
 ];

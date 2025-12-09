@@ -15,7 +15,8 @@ export const targetReposVariable: CheckVariable = {
   label: 'Repositories to monitor',
   type: 'multi-select',
   required: true,
-  helpText: 'Select which repositories to check',
+  placeholder: 'trycompai/comp',
+  helpText: 'Format: {org}/{repo} - e.g., trycompai/comp, microsoft/vscode',
   fetchOptions: async (ctx) => {
     const orgs = await ctx.fetch<GitHubOrg[]>('/user/orgs');
     const allRepos: Array<{ value: string; label: string }> = [];
@@ -44,5 +45,5 @@ export const protectedBranchVariable: CheckVariable = {
   required: true,
   default: 'main',
   placeholder: 'main',
-  helpText: 'Select the branch to check for protection',
+  helpText: 'Branch name to check for protection - e.g., main, master, develop',
 };

@@ -30,6 +30,8 @@ interface CheckVariable {
   id: string;
   label: string;
   description?: string;
+  helpText?: string;
+  placeholder?: string;
   type: 'string' | 'number' | 'boolean' | 'select' | 'multi-select';
   required: boolean;
   default?: string | number | boolean | string[];
@@ -75,6 +77,11 @@ interface ManageIntegrationDialogProps {
   integrationLogoUrl: string;
   /** If true, shows only configuration without disconnect/delete options */
   configureOnly?: boolean;
+  /** Context about the specific check being configured */
+  checkContext?: {
+    checkName: string;
+    checkDescription?: string;
+  };
   onDisconnected?: () => void;
   onDeleted?: () => void;
   onSaved?: () => void;
@@ -88,6 +95,7 @@ export function ManageIntegrationDialog({
   integrationName,
   integrationLogoUrl,
   configureOnly = false,
+  checkContext,
   onDisconnected,
   onDeleted,
   onSaved,
@@ -328,12 +336,17 @@ export function ManageIntegrationDialog({
                 className="object-contain"
               />
             </div>
-            {configureOnly ? `Configure ${integrationName}` : `Manage ${integrationName}`}
+            {checkContext
+              ? `Configure ${checkContext.checkName}`
+              : configureOnly
+                ? `Configure ${integrationName}`
+                : `Manage ${integrationName}`}
           </DialogTitle>
           <DialogDescription>
-            {configureOnly
-              ? 'Set up your integration to start automated checks.'
-              : 'Configure your integration settings or disconnect.'}
+            {checkContext?.checkDescription ||
+              (configureOnly
+                ? 'Set up your integration to start automated checks.'
+                : 'Configure your integration settings or disconnect.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -474,6 +487,12 @@ function ConfigurationContent({
             {variable.description && (
               <p className="text-xs text-muted-foreground">{variable.description}</p>
             )}
+            {variable.helpText && (
+              <p className="text-xs text-muted-foreground">{variable.helpText}</p>
+            )}
+            {variable.placeholder && !variable.description && !variable.helpText && (
+              <p className="text-xs text-muted-foreground">Example: {variable.placeholder}</p>
+            )}
 
             {variable.type === 'multi-select' ? (
               <MultiSelectVariable
@@ -508,7 +527,7 @@ function ConfigurationContent({
                   {isLoadingOptions ? (
                     <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading...
+                      Loading options...
                     </div>
                   ) : options.length === 0 ? (
                     <div className="py-2 px-3 text-sm text-muted-foreground">

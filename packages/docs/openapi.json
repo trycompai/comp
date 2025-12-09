@@ -10496,6 +10496,37 @@
           "Sync"
         ]
       }
+    },
+    "/v1/cloud-security/scan/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_scan_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-organization-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
     }
   },
   "info": {

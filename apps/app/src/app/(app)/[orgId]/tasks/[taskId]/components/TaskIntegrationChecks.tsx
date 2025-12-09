@@ -39,6 +39,8 @@ interface TaskIntegrationCheck {
   needsConfiguration: boolean;
   connectionId?: string;
   connectionStatus?: string;
+  authType?: 'oauth2' | 'custom' | 'api_key' | 'basic' | 'jwt';
+  oauthConfigured?: boolean;
 }
 
 interface StoredCheckRun {
@@ -102,6 +104,8 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
     integrationId: string;
     integrationName: string;
     integrationLogoUrl: string;
+    checkName?: string;
+    checkDescription?: string;
   } | null>(null);
   const hasHandledOAuthRef = useRef(false);
 
@@ -426,7 +430,7 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                   : false;
 
                 const dotColor = needsConfig
-                  ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]'
+                  ? 'bg-warning shadow-[0_0_8px_hsl(var(--warning)/0.4)]'
                   : hasFailed
                     ? 'bg-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]'
                     : hasSucceeded
@@ -445,7 +449,7 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                     className={cn(
                       'rounded-lg border transition-all duration-300',
                       needsConfig
-                        ? 'border-yellow-500/30 bg-yellow-500/5'
+                        ? 'border-warning/30 bg-warning/5'
                         : isExpanded
                           ? 'border-primary/30 shadow-sm bg-primary/[0.02]'
                           : 'border-border/50 hover:border-border',
@@ -463,13 +467,13 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                           });
                           setConfigureDialogOpen(true);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/20 text-left hover:bg-yellow-500/15 transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-2 bg-warning/10 border-b border-warning/20 text-left hover:bg-warning/15 transition-colors"
                       >
-                        <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 shrink-0" />
-                        <span className="text-xs text-yellow-700 dark:text-yellow-500 font-medium">
+                        <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
+                        <span className="text-xs text-warning-foreground font-medium">
                           Configuration required
                         </span>
-                        <Settings2 className="h-3 w-3 text-yellow-600 ml-auto shrink-0" />
+                        <Settings2 className="h-3 w-3 text-warning ml-auto shrink-0" />
                       </button>
                     )}
 
@@ -526,13 +530,15 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 px-3 border-yellow-500/30 text-yellow-700 dark:text-yellow-500 hover:bg-yellow-500/10"
+                            className="h-8 px-3 border-warning/30 text-warning hover:bg-warning/10"
                             onClick={() => {
                               setConfigureConnection({
                                 connectionId: check.connectionId!,
                                 integrationId: check.integrationId,
                                 integrationName: check.integrationName,
                                 integrationLogoUrl: check.integrationLogoUrl,
+                                checkName: check.checkName,
+                                checkDescription: check.checkDescription,
                               });
                               setConfigureDialogOpen(true);
                             }}
@@ -541,23 +547,43 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                             <span className="ml-1.5 text-xs">Configure</span>
                           </Button>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-3"
-                            disabled={isRunning}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRunCheck(check.connectionId!, check.checkId);
-                            }}
-                          >
-                            {isRunning ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Play className="h-3.5 w-3.5" />
-                            )}
-                            <span className="ml-1.5 text-xs">Run</span>
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-3"
+                              disabled={isRunning}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRunCheck(check.connectionId!, check.checkId);
+                              }}
+                            >
+                              {isRunning ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Play className="h-3.5 w-3.5" />
+                              )}
+                              <span className="ml-1.5 text-xs">Run</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={() => {
+                                setConfigureConnection({
+                                  connectionId: check.connectionId!,
+                                  integrationId: check.integrationId,
+                                  integrationName: check.integrationName,
+                                  integrationLogoUrl: check.integrationLogoUrl,
+                                  checkName: check.checkName,
+                                  checkDescription: check.checkDescription,
+                                });
+                                setConfigureDialogOpen(true);
+                              }}
+                            >
+                              <Settings2 className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
 
                         {checkRuns.length > 0 && (
@@ -647,6 +673,14 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
           integrationName={configureConnection.integrationName}
           integrationLogoUrl={configureConnection.integrationLogoUrl}
           configureOnly={true}
+          checkContext={
+            configureConnection.checkName
+              ? {
+                  checkName: configureConnection.checkName,
+                  checkDescription: configureConnection.checkDescription,
+                }
+              : undefined
+          }
           onSaved={() => {
             // Refresh the checks data after saving to update needsConfiguration status
             refreshChecks();
@@ -751,11 +785,7 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
   const findings = run.results.filter((r) => !r.passed);
   const passing = run.results.filter((r) => r.passed);
 
-  const statusColor = hasError
-    ? 'text-destructive'
-    : hasFailed
-      ? 'text-yellow-600'
-      : 'text-primary';
+  const statusColor = hasError ? 'text-destructive' : hasFailed ? 'text-warning' : 'text-primary';
 
   const statusText = hasError ? 'Error' : hasFailed ? 'Issues Found' : 'Passed';
 
@@ -773,7 +803,7 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
         <div
           className={cn(
             'h-1.5 w-1.5 rounded-full flex-shrink-0',
-            hasError ? 'bg-destructive' : hasFailed ? 'bg-yellow-500' : 'bg-primary',
+            hasError ? 'bg-destructive' : hasFailed ? 'bg-warning' : 'bg-primary',
           )}
         />
 
@@ -781,22 +811,11 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
           <div className="flex items-center gap-2 text-xs">
             <span className={cn('font-medium', statusColor)}>{statusText}</span>
             <span className="text-muted-foreground">•</span>
-            <span className="text-muted-foreground flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              {run.passedCount}
-            </span>
-            {run.failedCount > 0 && (
-              <span className="text-muted-foreground flex items-center gap-1">
-                <XCircle className="h-3 w-3 text-destructive" />
-                {run.failedCount}
-              </span>
-            )}
-            <span className="text-muted-foreground">•</span>
             <span className="text-muted-foreground">{timeAgo}</span>
-            {run.durationMs && (
+            {run.failedCount > 0 && (
               <>
                 <span className="text-muted-foreground">•</span>
-                <span className="text-muted-foreground font-mono">{run.durationMs}ms</span>
+                <span className="text-destructive">{run.failedCount} failed</span>
               </>
             )}
           </div>
@@ -827,68 +846,58 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
 
             {/* Findings */}
             {findings.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-medium text-destructive uppercase tracking-wide flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  Issues ({findings.length})
-                </p>
+              <div className="space-y-2">
                 {findings.slice(0, 3).map((finding) => (
-                  <div
-                    key={finding.id}
-                    className="p-2 rounded-md bg-destructive/5 border border-destructive/10"
-                  >
-                    <p className="text-xs font-medium text-foreground">{finding.title}</p>
-                    {finding.description && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {finding.description}
-                      </p>
-                    )}
-                    {finding.remediation && (
-                      <p className="text-[11px] text-primary mt-1">💡 {finding.remediation}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                      <span className="font-mono">{finding.resourceId}</span>
-                      {finding.severity && (
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase">
-                          {finding.severity}
-                        </Badge>
+                  <div key={finding.id} className="space-y-2">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{finding.title}</p>
+                      {finding.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{finding.description}</p>
                       )}
+                      {finding.remediation && (
+                        <p className="text-sm text-primary mt-2">{finding.remediation}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {finding.resourceId}
+                        </Badge>
+                        {finding.severity && (
+                          <Badge variant="outline" className="text-xs">
+                            {finding.severity}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
                 {findings.length > 3 && (
-                  <p className="text-[10px] text-muted-foreground">+{findings.length - 3} more</p>
+                  <p className="text-sm text-muted-foreground">
+                    +{findings.length - 3} more issues
+                  </p>
                 )}
               </div>
             )}
 
             {/* Passing Results */}
             {passing.length > 0 && findings.length === 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-medium text-primary uppercase tracking-wide flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Evidence ({passing.length})
-                </p>
+              <div className="space-y-2">
                 {passing.slice(0, 2).map((result) => (
-                  <div
-                    key={result.id}
-                    className="p-2 rounded-md bg-primary/5 border border-primary/10"
-                  >
-                    <p className="text-xs font-medium text-foreground">{result.title}</p>
-                    {result.description && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {result.description}
-                      </p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground mt-1 font-mono">
-                      {result.resourceId}
-                    </p>
+                  <div key={result.id} className="space-y-2">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{result.title}</p>
+                      {result.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
+                      )}
+                      <Badge variant="secondary" className="mt-2 font-mono text-xs">
+                        {result.resourceId}
+                      </Badge>
+                    </div>
                     {result.evidence && Object.keys(result.evidence).length > 0 && (
-                      <details className="mt-1.5">
-                        <summary className="text-[10px] cursor-pointer text-primary font-medium">
-                          View evidence
+                      <details className="text-xs">
+                        <summary className="text-muted-foreground cursor-pointer">
+                          View Evidence
                         </summary>
-                        <pre className="mt-1 p-1.5 bg-muted/50 rounded text-[9px] overflow-x-auto max-h-24 overflow-y-auto font-mono">
+                        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
                           {JSON.stringify(result.evidence, null, 2)}
                         </pre>
                       </details>
@@ -896,7 +905,7 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
                   </div>
                 ))}
                 {passing.length > 2 && (
-                  <p className="text-[10px] text-muted-foreground">+{passing.length - 2} more</p>
+                  <p className="text-sm text-muted-foreground">+{passing.length - 2} more passed</p>
                 )}
               </div>
             )}
@@ -904,16 +913,14 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
             {/* Logs */}
             {run.logs && run.logs.length > 0 && (
               <details className="text-xs">
-                <summary className="cursor-pointer text-muted-foreground font-medium text-[10px]">
-                  Logs ({run.logs.length})
-                </summary>
-                <pre className="mt-1 p-2 bg-muted/50 rounded text-[9px] overflow-x-auto max-h-32 overflow-y-auto font-mono">
+                <summary className="text-muted-foreground cursor-pointer">Logs</summary>
+                <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
                   {run.logs.map((log, i) => (
                     <div
                       key={i}
                       className={cn(
                         log.level === 'error' && 'text-destructive',
-                        log.level === 'warn' && 'text-yellow-600',
+                        log.level === 'warn' && 'text-warning',
                       )}
                     >
                       <span className="opacity-50">
@@ -1111,6 +1118,41 @@ function IntegrationEmptyState({
               const checksForIntegration = disconnectedChecks.filter(
                 (c) => c.integrationId === integration.integrationId,
               );
+              // Check if OAuth integration is not yet configured by platform admin
+              const isComingSoon =
+                integration.authType === 'oauth2' && integration.oauthConfigured === false;
+
+              if (isComingSoon) {
+                return (
+                  <div
+                    key={integration.integrationId}
+                    className="w-full flex items-center gap-4 px-6 py-3 opacity-60 cursor-not-allowed"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-background border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                      <Image
+                        src={integration.integrationLogoUrl}
+                        alt={integration.integrationName}
+                        width={20}
+                        height={20}
+                        className="object-contain grayscale"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {integration.integrationName}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {checksForIntegration.length} automated check
+                        {checksForIntegration.length > 1 ? 's' : ''} available
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] shrink-0">
+                      Coming Soon
+                    </Badge>
+                  </div>
+                );
+              }
+
               return (
                 <button
                   key={integration.integrationId}

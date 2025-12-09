@@ -1,9 +1,28 @@
 import { auth } from '@/utils/auth';
+import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
+
+// Get required variables from manifest
+const getRequiredVariables = (providerSlug: string): string[] => {
+  const manifest = getManifest(providerSlug);
+  if (!manifest?.checks) return [];
+
+  const requiredVars = new Set<string>();
+  for (const check of manifest.checks) {
+    if (check.variables) {
+      for (const variable of check.variables) {
+        if (variable.required) {
+          requiredVars.add(variable.id);
+        }
+      }
+    }
+  }
+  return Array.from(requiredVars);
+};
 
 export async function GET() {
   try {
@@ -60,6 +79,8 @@ export async function GET() {
       createdAt: conn.createdAt,
       updatedAt: conn.updatedAt,
       isLegacy: false,
+      variables: conn.variables,
+      requiredVariables: getRequiredVariables(conn.provider.slug),
     }));
 
     // Map legacy integrations
@@ -73,6 +94,8 @@ export async function GET() {
       createdAt: new Date(),
       updatedAt: new Date(),
       isLegacy: true,
+      variables: null,
+      requiredVariables: getRequiredVariables(integration.integrationId),
     }));
 
     return NextResponse.json([...newProviders, ...legacyProviders]);

@@ -22,6 +22,7 @@ import {
 import { Skeleton } from '@comp/ui/skeleton';
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   CheckCircle2,
   Loader2,
@@ -46,6 +47,17 @@ import { SearchInput } from './SearchInput';
 import { TaskCard, TaskCardSkeleton } from './TaskCard';
 
 const LOGO_TOKEN = 'pk_AZatYxV5QDSfWpRDaBxzRQ';
+
+// Check if a provider needs variable configuration based on manifest's required variables
+const providerNeedsConfiguration = (
+  requiredVariables: string[] | undefined,
+  variables: Record<string, unknown> | null | undefined,
+): boolean => {
+  if (!requiredVariables || requiredVariables.length === 0) return false;
+
+  const currentVars = variables || {};
+  return requiredVariables.some((varId) => !currentVars[varId]);
+};
 
 interface RelevantTask {
   taskTemplateId: string;
@@ -149,15 +161,31 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     [connections],
   );
 
-  // Merge and sort: platform first, then custom
+  // Merge and sort: platform first (warnings, then connected, then disconnected), then custom
   const unifiedIntegrations = useMemo<UnifiedIntegration[]>(() => {
-    const platformIntegrations: UnifiedIntegration[] = (
-      providers?.filter((p) => p.isActive) || []
-    ).map((provider) => ({
-      type: 'platform' as const,
-      provider,
-      connection: connectionsByProvider.get(provider.id),
-    }));
+    const platformIntegrations: UnifiedIntegration[] = (providers?.filter((p) => p.isActive) || [])
+      .map((provider) => ({
+        type: 'platform' as const,
+        provider,
+        connection: connectionsByProvider.get(provider.id),
+      }))
+      .sort((a, b) => {
+        const aConnected = a.connection?.status === 'active';
+        const bConnected = b.connection?.status === 'active';
+        const aNeedsConfig = aConnected && a.connection?.variables === null;
+        const bNeedsConfig = bConnected && b.connection?.variables === null;
+
+        // Warnings first
+        if (aNeedsConfig && !bNeedsConfig) return -1;
+        if (!aNeedsConfig && bNeedsConfig) return 1;
+
+        // Then connected
+        if (aConnected && !bConnected) return -1;
+        if (!aConnected && bConnected) return 1;
+
+        // Then alphabetical
+        return a.provider.name.localeCompare(b.provider.name);
+      });
 
     const customIntegrations: UnifiedIntegration[] = INTEGRATIONS.map((integration) => ({
       type: 'custom' as const,
@@ -210,30 +238,56 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
   // Handle OAuth callback - auto-open config dialog for newly connected provider
   useEffect(() => {
+    // Only handle once
     if (hasHandledOAuthRef.current) return;
 
     const success = searchParams.get('success');
     const providerSlug = searchParams.get('provider');
 
-    if (success === 'true' && providerSlug && connections && providers) {
-      hasHandledOAuthRef.current = true;
+    // Check if this is an OAuth callback
+    if (success !== 'true' || !providerSlug) return;
 
-      const connection = connections.find((c) => c.providerSlug === providerSlug);
-      const provider = providers.find((p) => p.id === providerSlug);
-
-      if (connection && provider) {
-        toast.success(`${provider.name} connected successfully!`);
-        setSelectedConnection(connection);
-        setSelectedProvider(provider);
-        setManageDialogOpen(true);
-      }
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete('success');
-      url.searchParams.delete('provider');
-      window.history.replaceState({}, '', url.toString());
+    // Wait for data to load
+    if (!connections || !providers || loadingConnections || loadingProviders) {
+      console.log('[OAuth] Waiting for data to load...');
+      return;
     }
-  }, [searchParams, connections, providers]);
+
+    // Mark as handled
+    hasHandledOAuthRef.current = true;
+    console.log('[OAuth] Handling callback for', providerSlug);
+
+    const connection = connections.find((c) => c.providerSlug === providerSlug);
+    const provider = providers.find((p) => p.id === providerSlug);
+
+    if (connection && provider) {
+      console.log('[OAuth] Found connection and provider, opening dialog');
+      toast.success(`${provider.name} connected successfully!`);
+
+      // Set state first
+      setSelectedConnection(connection);
+      setSelectedProvider(provider);
+
+      // Open dialog after a tick to ensure state is updated
+      setTimeout(() => {
+        console.log('[OAuth] Opening manage dialog');
+        setManageDialogOpen(true);
+      }, 150);
+    } else {
+      console.warn('[OAuth] Connection or provider not found:', {
+        hasConnection: !!connection,
+        hasProvider: !!provider,
+        connectionsCount: connections.length,
+        providersCount: providers.length,
+      });
+    }
+
+    // Clean up URL parameters
+    const url = new URL(window.location.href);
+    url.searchParams.delete('success');
+    url.searchParams.delete('provider');
+    window.history.replaceState({}, '', url.toString());
+  }, [searchParams, connections, providers, loadingConnections, loadingProviders]);
 
   // Custom integration task loading
   useEffect(() => {
@@ -343,13 +397,23 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                 const isConnecting = connectingProvider === provider.id;
                 const hasError = connection?.status === 'error';
 
+                // Check if connected but missing required configuration
+                const needsConfiguration =
+                  isConnected &&
+                  providerNeedsConfiguration(
+                    provider.requiredVariables,
+                    connection?.variables as Record<string, unknown> | null,
+                  );
+
                 return (
                   <Card
                     key={`platform-${provider.id}`}
-                    className={`relative overflow-hidden transition-all ${
-                      isConnected
-                        ? 'border-primary/30 bg-primary/5'
-                        : 'hover:border-primary/20 hover:shadow-sm'
+                    className={`relative overflow-hidden transition-all flex flex-col ${
+                      needsConfiguration
+                        ? 'border-warning/30 bg-warning/5'
+                        : isConnected
+                          ? 'border-primary/30 bg-primary/5'
+                          : 'hover:border-primary/20 hover:shadow-sm'
                     }`}
                   >
                     <CardHeader className="pb-3">
@@ -367,7 +431,12 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                           <div>
                             <CardTitle className="text-base font-semibold flex items-center gap-2">
                               {provider.name}
-                              {isConnected && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                              {isConnected && !needsConfiguration && (
+                                <CheckCircle2 className="h-4 w-4 text-primary" />
+                              )}
+                              {needsConfiguration && (
+                                <AlertTriangle className="h-4 w-4 text-warning" />
+                              )}
                               {hasError && <AlertCircle className="h-4 w-4 text-destructive" />}
                             </CardTitle>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -390,42 +459,75 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                         )}
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <CardDescription className="text-sm leading-relaxed line-clamp-2">
-                        {provider.description}
-                      </CardDescription>
+                    <CardContent className="flex flex-col h-full">
+                      <div className="flex-1 space-y-4">
+                        <CardDescription className="text-sm leading-relaxed line-clamp-2">
+                          {provider.description}
+                        </CardDescription>
 
-                      {/* Mapped tasks */}
-                      {provider.mappedTasks && provider.mappedTasks.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {provider.mappedTasks.slice(0, 3).map((task) => (
-                            <Badge
-                              key={task.id}
-                              variant="secondary"
-                              className="text-[10px] px-1.5 py-0.5 font-normal"
-                            >
-                              {task.name}
-                            </Badge>
-                          ))}
-                          {provider.mappedTasks.length > 3 && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0.5 font-normal"
-                            >
-                              +{provider.mappedTasks.length - 3} more
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+                        {/* Mapped tasks */}
+                        {provider.mappedTasks && provider.mappedTasks.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {provider.mappedTasks.slice(0, 3).map((task) => (
+                              <Badge
+                                key={task.id}
+                                variant="secondary"
+                                className="text-[10px] px-1.5 py-0.5 font-normal"
+                              >
+                                {task.name}
+                              </Badge>
+                            ))}
+                            {provider.mappedTasks.length > 3 && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1.5 py-0.5 font-normal"
+                              >
+                                +{provider.mappedTasks.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-                      {isConnected ? null : hasError ? (
-                        <div className="space-y-2 pt-2 border-t border-border/50">
-                          <p className="text-xs text-destructive line-clamp-1">
-                            {connection?.errorMessage || 'Connection error'}
-                          </p>
+                      <div className="mt-auto pt-4">
+                        {needsConfiguration ? (
                           <Button
                             size="sm"
                             variant="outline"
+                            className="w-full"
+                            onClick={() => handleOpenManageDialog(connection, provider)}
+                          >
+                            Configure Variables
+                          </Button>
+                        ) : isConnected ? null : hasError ? (
+                          <div className="space-y-2 pt-2 border-t border-border/50">
+                            <p className="text-xs text-destructive line-clamp-1">
+                              {connection?.errorMessage || 'Connection error'}
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => handleConnect(provider)}
+                              disabled={isConnecting}
+                            >
+                              {isConnecting ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                  Reconnecting...
+                                </>
+                              ) : (
+                                'Reconnect'
+                              )}
+                            </Button>
+                          </div>
+                        ) : provider.authType === 'oauth2' && provider.oauthConfigured === false ? (
+                          <Button size="sm" variant="outline" className="w-full" disabled>
+                            Coming Soon
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
                             className="w-full"
                             onClick={() => handleConnect(provider)}
                             disabled={isConnecting}
@@ -433,34 +535,14 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                             {isConnecting ? (
                               <>
                                 <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                                Reconnecting...
+                                Connecting...
                               </>
                             ) : (
-                              'Reconnect'
+                              'Connect'
                             )}
                           </Button>
-                        </div>
-                      ) : provider.authType === 'oauth2' && provider.oauthConfigured === false ? (
-                        <Button size="sm" variant="outline" className="w-full" disabled>
-                          Coming Soon
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          onClick={() => handleConnect(provider)}
-                          disabled={isConnecting}
-                        >
-                          {isConnecting ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                              Connecting...
-                            </>
-                          ) : (
-                            'Connect'
-                          )}
-                        </Button>
-                      )}
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 );

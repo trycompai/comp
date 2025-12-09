@@ -2,7 +2,6 @@ export {
   createGCPClient,
   gcpRequest,
   getProjectIAMPolicy,
-  getSecurityFindings,
   listAlertingPolicies,
   listLogSinks,
   listNotificationChannels,

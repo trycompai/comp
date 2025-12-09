@@ -1,5 +1,6 @@
 'use client';
 
+import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
@@ -35,6 +36,8 @@ interface Provider {
   createdAt: Date;
   updatedAt: Date;
   isLegacy?: boolean;
+  variables?: Record<string, unknown> | null;
+  requiredVariables?: string[];
 }
 
 interface TestsLayoutProps {
@@ -47,6 +50,18 @@ type SupportedProviderId = 'aws' | 'gcp' | 'azure';
 
 const SUPPORTED_PROVIDER_IDS: readonly SupportedProviderId[] = ['aws', 'gcp', 'azure'];
 
+// Check if a provider needs configuration (has required variables that aren't set)
+const needsVariableConfiguration = (provider: Provider): boolean => {
+  // Legacy providers use old system - no variable config needed here
+  if (provider.isLegacy) return false;
+
+  const requiredVars = provider.requiredVariables || [];
+  if (requiredVars.length === 0) return false;
+
+  const currentVars = provider.variables || {};
+  return requiredVars.some((varId) => !currentVars[varId]);
+};
+
 const isSupportedProviderId = (id: string): id is SupportedProviderId =>
   SUPPORTED_PROVIDER_IDS.includes(id as SupportedProviderId);
 
@@ -55,6 +70,8 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const [viewingResults, setViewingResults] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
+  const [configureProvider, setConfigureProvider] = useState<Provider | null>(null);
   const { disconnectConnection } = useIntegrationMutations();
 
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
@@ -89,13 +106,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   // Get the current active provider (use activeTab state or default to first provider)
   const currentProviderId = activeTab || connectedProviders[0]?.integrationId;
 
-  // Map provider IDs to their security findings check IDs
-  const securityCheckIdMap: Record<string, string> = {
-    aws: 'security-hub-findings',
-    gcp: 'security-findings',
-    azure: 'security-findings',
-  };
-
   const handleRunScan = async (providerId?: string): Promise<string | null> => {
     if (!orgId) {
       toast.error('No active organization');
@@ -123,23 +133,17 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           console.error('Legacy scan error:', result.errors);
         }
       } else {
-        // Get the correct check ID for this provider
-        const checkId = securityCheckIdMap[targetProvider.integrationId] || 'security-findings';
-
-        // Run security findings check for NEW platform provider
-        const response = await api.post(
-          `/v1/integrations/checks/connections/${targetProvider.id}/run/${checkId}`,
-          {},
-          orgId,
-        );
+        // Use dedicated cloud security endpoint
+        const response = await api.post(`/v1/cloud-security/scan/${targetProvider.id}`, {}, orgId);
         if (response.error) {
-          console.error(`Error running checks for ${targetProvider.name}:`, response.error);
+          console.error(`Error scanning ${targetProvider.name}:`, response.error);
           toast.error(`Failed to scan ${targetProvider.name}`);
           return null;
         }
       }
 
       toast.success('Scan completed! Results updated.');
+      await mutateProviders(); // Refresh to get updated lastRunAt
       await mutateFindings();
       return 'completed';
     } catch (error) {
@@ -216,6 +220,11 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           findings={providerFindings}
           onRunScan={() => handleRunScan(provider.integrationId)}
           isScanning={isScanning}
+          needsConfiguration={needsVariableConfiguration(provider)}
+          onConfigure={() => {
+            setConfigureProvider(provider);
+            setConfigureDialogOpen(true);
+          }}
         />
 
         <CloudSettingsModal
@@ -228,6 +237,36 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           }))}
           onUpdate={handleProvidersUpdate}
         />
+
+        {/* Configure dialog for setting variables */}
+        {configureProvider && (
+          <ManageIntegrationDialog
+            open={configureDialogOpen}
+            onOpenChange={setConfigureDialogOpen}
+            connectionId={configureProvider.id}
+            integrationId={configureProvider.integrationId}
+            integrationName={configureProvider.name}
+            integrationLogoUrl={`https://img.logo.dev/${
+              configureProvider.integrationId === 'aws'
+                ? 'aws.amazon.com'
+                : configureProvider.integrationId === 'gcp'
+                  ? 'cloud.google.com'
+                  : 'azure.com'
+            }?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
+            configureOnly={true}
+            onSaved={async () => {
+              const savedProvider = configureProvider;
+              setConfigureDialogOpen(false);
+              setConfigureProvider(null);
+              await mutateProviders();
+              // Run scan after saving variables
+              if (savedProvider) {
+                toast.message('Configuration saved! Running security scan...');
+                await handleRunScan(savedProvider.integrationId);
+              }
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -283,6 +322,11 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
                 findings={providerFindings}
                 onRunScan={() => handleRunScan(provider.integrationId)}
                 isScanning={isScanning}
+                needsConfiguration={needsVariableConfiguration(provider)}
+                onConfigure={() => {
+                  setConfigureProvider(provider);
+                  setConfigureDialogOpen(true);
+                }}
               />
             </TabsContent>
           );
@@ -299,6 +343,36 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         }))}
         onUpdate={handleProvidersUpdate}
       />
+
+      {/* Configure dialog for setting variables */}
+      {configureProvider && (
+        <ManageIntegrationDialog
+          open={configureDialogOpen}
+          onOpenChange={setConfigureDialogOpen}
+          connectionId={configureProvider.id}
+          integrationId={configureProvider.integrationId}
+          integrationName={configureProvider.name}
+          integrationLogoUrl={`https://img.logo.dev/${
+            configureProvider.integrationId === 'aws'
+              ? 'aws.amazon.com'
+              : configureProvider.integrationId === 'gcp'
+                ? 'cloud.google.com'
+                : 'azure.com'
+          }?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
+          configureOnly={true}
+          onSaved={async () => {
+            const savedProvider = configureProvider;
+            setConfigureDialogOpen(false);
+            setConfigureProvider(null);
+            await mutateProviders();
+            // Run scan after saving variables
+            if (savedProvider) {
+              toast.message('Configuration saved! Running security scan...');
+              await handleRunScan(savedProvider.integrationId);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

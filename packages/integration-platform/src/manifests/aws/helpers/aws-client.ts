@@ -30,11 +30,7 @@ import {
   type ListMFADevicesCommandOutput,
   type ListUsersCommandOutput,
 } from '@aws-sdk/client-iam';
-import {
-  GetFindingsCommand,
-  SecurityHubClient,
-  type GetFindingsCommandInput,
-} from '@aws-sdk/client-securityhub';
+import { SecurityHubClient } from '@aws-sdk/client-securityhub';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 
 /**
@@ -276,88 +272,4 @@ export interface SecurityHubFinding {
   generatorId: string;
   createdAt: string;
   updatedAt: string;
-}
-
-/**
- * Fetch all Security Hub findings with pagination
- */
-export async function getSecurityHubFindings(
-  securityHub: SecurityHubClient,
-  options: {
-    maxResults?: number;
-    onlyFailed?: boolean;
-  } = {},
-): Promise<SecurityHubFinding[]> {
-  const { maxResults = 100, onlyFailed = true } = options;
-  const allFindings: SecurityHubFinding[] = [];
-
-  const params: GetFindingsCommandInput = {
-    Filters: {
-      WorkflowStatus: [{ Value: 'NEW', Comparison: 'EQUALS' }],
-      ...(onlyFailed && {
-        ComplianceStatus: [{ Value: 'FAILED', Comparison: 'EQUALS' }],
-      }),
-    },
-    MaxResults: Math.min(maxResults, 100),
-  };
-
-  let response = await securityHub.send(new GetFindingsCommand(params));
-
-  if (response.Findings) {
-    for (const finding of response.Findings) {
-      allFindings.push({
-        id: finding.Id || '',
-        title: finding.Title || 'Untitled Finding',
-        description: finding.Description || 'No description available',
-        remediation: finding.Remediation?.Recommendation?.Text || 'No remediation available',
-        status: finding.Workflow?.Status || 'unknown',
-        severity: finding.Severity?.Label || 'INFO',
-        resourceType: finding.Resources?.[0]?.Type || 'unknown',
-        resourceId: finding.Resources?.[0]?.Id || 'unknown',
-        awsAccountId: finding.AwsAccountId || '',
-        region: finding.Region || '',
-        complianceStatus: finding.Compliance?.Status || 'unknown',
-        generatorId: finding.GeneratorId || '',
-        createdAt: finding.CreatedAt || '',
-        updatedAt: finding.UpdatedAt || '',
-      });
-    }
-  }
-
-  // Paginate if needed
-  let nextToken = response.NextToken;
-  while (nextToken && allFindings.length < maxResults) {
-    response = await securityHub.send(
-      new GetFindingsCommand({
-        ...params,
-        NextToken: nextToken,
-      }),
-    );
-
-    if (response.Findings) {
-      for (const finding of response.Findings) {
-        if (allFindings.length >= maxResults) break;
-        allFindings.push({
-          id: finding.Id || '',
-          title: finding.Title || 'Untitled Finding',
-          description: finding.Description || 'No description available',
-          remediation: finding.Remediation?.Recommendation?.Text || 'No remediation available',
-          status: finding.Workflow?.Status || 'unknown',
-          severity: finding.Severity?.Label || 'INFO',
-          resourceType: finding.Resources?.[0]?.Type || 'unknown',
-          resourceId: finding.Resources?.[0]?.Id || 'unknown',
-          awsAccountId: finding.AwsAccountId || '',
-          region: finding.Region || '',
-          complianceStatus: finding.Compliance?.Status || 'unknown',
-          generatorId: finding.GeneratorId || '',
-          createdAt: finding.CreatedAt || '',
-          updatedAt: finding.UpdatedAt || '',
-        });
-      }
-    }
-
-    nextToken = response.NextToken;
-  }
-
-  return allFindings;
 }

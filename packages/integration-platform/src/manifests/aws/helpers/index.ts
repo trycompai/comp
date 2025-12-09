@@ -11,7 +11,6 @@
 export {
   createAWSClients,
   getAccessKeyLastUsed,
-  getSecurityHubFindings,
   getUserAccessKeys,
   getUserMFADevices,
   isAccessKeyCredentials,

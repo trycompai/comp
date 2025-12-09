@@ -30,17 +30,13 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({
     origin: (origin, callback) => {
-      console.log('[CORS] Origin:', origin);
-
       // Same-origin (no origin header)
       if (!origin) {
-        console.log('[CORS] No origin, allowing');
         return callback(null, false); // false for same-origin
       }
 
       // Check whitelist
       if (allowedOrigins.includes(origin)) {
-        console.log('[CORS] Whitelisted, reflecting origin:', origin);
         return callback(null, origin); // Return the origin string
       }
 
@@ -51,13 +47,11 @@ async function bootstrap(): Promise<void> {
           origin.includes('127.0.0.1') ||
           origin.includes('ngrok')
         ) {
-          console.log('[CORS] Dev mode, reflecting origin:', origin);
           return callback(null, origin); // Return the origin string
         }
       }
 
       // Reject
-      console.warn('[CORS] Rejecting origin:', origin);
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,

@@ -2,7 +2,7 @@
 
 import { Button } from '@comp/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Settings } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FindingsTable } from './FindingsTable';
 
@@ -20,11 +20,19 @@ interface ResultsViewProps {
   findings: Finding[];
   onRunScan: () => Promise<string | null>;
   isScanning: boolean;
+  needsConfiguration?: boolean;
+  onConfigure?: () => void;
 }
 
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 
-export function ResultsView({ findings, onRunScan, isScanning }: ResultsViewProps) {
+export function ResultsView({
+  findings,
+  onRunScan,
+  isScanning,
+  needsConfiguration,
+  onConfigure,
+}: ResultsViewProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [scanCompleted, setScanCompleted] = useState(false);
@@ -68,6 +76,27 @@ export function ResultsView({ findings, onRunScan, isScanning }: ResultsViewProp
 
   return (
     <div className="flex flex-col gap-6">
+      {needsConfiguration && onConfigure && (
+        <div className="bg-warning/10 rounded-lg border border-warning/30 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-warning-foreground">Configuration Required</p>
+              <p className="text-sm text-warning-foreground/80 mt-1">
+                Please configure the required variables (like region or organization ID) to enable
+                security scans.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 ml-8">
+            <Button size="sm" variant="outline" onClick={onConfigure}>
+              <Settings className="h-4 w-4 mr-2" />
+              Configure
+            </Button>
+          </div>
+        </div>
+      )}
+
       {isScanning && (
         <div className="bg-primary/10 flex items-center gap-3 rounded-lg border border-primary/20 p-4">
           <Loader2 className="text-primary h-5 w-5 animate-spin flex-shrink-0" />

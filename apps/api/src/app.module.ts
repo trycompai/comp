@@ -26,6 +26,7 @@ import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { SOAModule } from './soa/soa.module';
 import { IntegrationPlatformModule } from './integration-platform/integration-platform.module';
+import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { IntegrationPlatformModule } from './integration-platform/integration-pl
     KnowledgeBaseModule,
     SOAModule,
     IntegrationPlatformModule,
+    CloudSecurityModule,
   ],
   controllers: [AppController],
   providers: [

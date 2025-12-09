@@ -6,7 +6,7 @@
  */
 
 import type { IntegrationManifest } from '../../types';
-import { branchProtectionCheck, dependabotCheck, secretScanningCheck } from './checks';
+import { branchProtectionCheck, dependabotCheck, sanitizedInputsCheck } from './checks';
 
 export const manifest: IntegrationManifest = {
   id: 'github',
@@ -53,7 +53,7 @@ export const manifest: IntegrationManifest = {
   capabilities: ['checks'],
 
   // Compliance checks that run daily and can auto-complete tasks
-  checks: [branchProtectionCheck, dependabotCheck, secretScanningCheck],
+  checks: [branchProtectionCheck, dependabotCheck, sanitizedInputsCheck],
 
   isActive: true,
 };

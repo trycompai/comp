@@ -30,11 +30,11 @@ const severityVariant = {
 
 const statusVariant = {
   failed: 'destructive',
-  passed: 'default',
+  passed: 'success',
   new: 'warning',
   active: 'warning',
   open: 'destructive',
-  success: 'default',
+  success: 'success',
   resolved: 'default',
 } as const;
 
@@ -70,7 +70,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
             <TableHead className="w-[120px]">Severity</TableHead>
             <TableHead>Title</TableHead>
             <TableHead className="w-[150px]">Status</TableHead>
-            <TableHead className="w-[180px]">Last Checked</TableHead>
+            <TableHead className="w-[180px]">Detected At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

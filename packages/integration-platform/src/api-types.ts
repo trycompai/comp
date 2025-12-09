@@ -30,6 +30,8 @@ export interface IntegrationProviderResponse {
   oauthConfigured?: boolean;
   /** Tasks that will be auto-satisfied when this integration is connected */
   mappedTasks?: Array<{ id: string; name: string }>;
+  /** Required variables that must be configured after connection */
+  requiredVariables?: string[];
 }
 
 /**
