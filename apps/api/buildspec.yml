@@ -63,23 +63,17 @@ phases:
       - ls -la ../docker-build/src/
       - '[ -f "../docker-build/src/main.js" ] || { echo "❌ main.js not found in docker-build/src"; exit 1; }'
 
-      - mkdir -p ../docker-build/node_modules/@trycompai
-      - mkdir -p ../docker-build/node_modules/@trycompai/utils
-      - mkdir -p ../docker-build/node_modules/@trycompai/db
-      - mkdir -p ../docker-build/node_modules/@comp
-      - mkdir -p ../docker-build/node_modules/@comp/integration-platform
+      # Copy ALL node_modules from root (already installed with production deps)
+      - echo "Copying node_modules from root..."
+      - cp -r ../../node_modules ../docker-build/
 
+      # Override workspace packages with built versions
       - cp -r ../../packages/utils/src ../docker-build/node_modules/@trycompai/utils/
       - cp ../../packages/utils/package.json ../docker-build/node_modules/@trycompai/utils/
-
       - cp -r ../../packages/db/dist ../docker-build/node_modules/@trycompai/db/
       - cp ../../packages/db/package.json ../docker-build/node_modules/@trycompai/db/
-
       - cp -r ../../packages/integration-platform/dist ../docker-build/node_modules/@comp/integration-platform/
       - cp ../../packages/integration-platform/package.json ../docker-build/node_modules/@comp/integration-platform/
-
-      - cp -r ../../node_modules/@prisma ../docker-build/node_modules/@prisma
-      - cp -r ../../node_modules/.prisma ../docker-build/node_modules/.prisma
 
       - cp Dockerfile ../docker-build/
 
