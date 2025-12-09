@@ -3,7 +3,7 @@ import { serverApi } from '@/lib/server-api-client';
 export interface EmployeeSyncConnectionsData {
   googleWorkspaceConnectionId: string | null;
   ripplingConnectionId: string | null;
-  selectedProvider: 'google-workspace' | 'rippling' | null;
+  selectedProvider: 'google-workspace' | 'rippling' | null | undefined;
   lastSyncAt: Date | null;
   nextSyncAt: Date | null;
 }
@@ -49,11 +49,7 @@ export async function getEmployeeSyncConnections(
         ? ripplingResponse.data.connectionId
         : null,
     selectedProvider: selectedProviderSlug,
-    lastSyncAt: selectedConnection?.lastSyncAt
-      ? new Date(selectedConnection.lastSyncAt)
-      : null,
-    nextSyncAt: selectedConnection?.nextSyncAt
-      ? new Date(selectedConnection.nextSyncAt)
-      : null,
+    lastSyncAt: selectedConnection?.lastSyncAt ? new Date(selectedConnection.lastSyncAt) : null,
+    nextSyncAt: selectedConnection?.nextSyncAt ? new Date(selectedConnection.nextSyncAt) : null,
   };
 }
