@@ -35,8 +35,9 @@ phases:
       - echo "Installing API dependencies only..."
       - bun install --filter=@comp/api --frozen-lockfile || bun install --filter=@comp/api --ignore-scripts || bun install --ignore-scripts
 
-      # Build integration-platform package
-      - echo "Building integration-platform package..."
+      # Build workspace packages
+      - echo "Building workspace packages..."
+      - cd packages/db && bun run build && cd ../..
       - cd packages/integration-platform && bun run build && cd ../..
 
       - echo "Building NestJS application..."
