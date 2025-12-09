@@ -2,9 +2,11 @@ import './config/load-env';
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { CorsExceptionFilter } from './common/filters/cors-exception.filter';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
+import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
@@ -14,7 +16,68 @@ let app: INestApplication | null = null;
 async function bootstrap(): Promise<void> {
   app = await NestFactory.create(AppModule);
 
-  // Enable global validation pipe
+  // STEP 1: Enable CORS FIRST - critical for preflight requests
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'https://app.trycomp.ai',
+    'https://trycomp.ai',
+    process.env.APP_URL,
+  ].filter(Boolean) as string[];
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      console.log('[CORS] Origin:', origin);
+
+      // Same-origin (no origin header)
+      if (!origin) {
+        console.log('[CORS] No origin, allowing');
+        return callback(null, false); // false for same-origin
+      }
+
+      // Check whitelist
+      if (allowedOrigins.includes(origin)) {
+        console.log('[CORS] Whitelisted, reflecting origin:', origin);
+        return callback(null, origin); // Return the origin string
+      }
+
+      // Dev mode: localhost and ngrok
+      if (isDevelopment) {
+        if (
+          origin.includes('localhost') ||
+          origin.includes('127.0.0.1') ||
+          origin.includes('ngrok')
+        ) {
+          console.log('[CORS] Dev mode, reflecting origin:', origin);
+          return callback(null, origin); // Return the origin string
+        }
+      }
+
+      // Reject
+      console.warn('[CORS] Rejecting origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
+  // STEP 2: Security headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Disable CSP (conflicts with Swagger)
+      crossOriginEmbedderPolicy: false, // Allow embedding
+    }),
+  );
+
+  // STEP 3: Configure body parser
+  app.use(express.json({ limit: '70mb' }));
+  app.use(express.urlencoded({ limit: '70mb', extended: true }));
+
+  // STEP 4: Enable global pipes and filters
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,23 +89,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Configure body parser limits for file uploads (base64 encoded files)
-  // 70mb allows for ~50mb actual file size after base64 encoding overhead (~33%)
-  app.use(express.json({ limit: '70mb' }));
-  app.use(express.urlencoded({ limit: '70mb', extended: true }));
-
-  // Enable CORS for cross-origin requests
-  app.enableCors({
-    origin: true, // Allow requests from any origin
-    credentials: true, // Allow cookies to be sent cross-origin (for auth)
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-API-Key',
-      'X-Organization-Id',
-    ],
-  });
+  app.useGlobalFilters(new CorsExceptionFilter());
 
   // Enable API versioning
   app.enableVersioning({

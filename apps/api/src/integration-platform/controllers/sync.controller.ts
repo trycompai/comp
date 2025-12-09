@@ -408,12 +408,16 @@ export class SyncController {
       return {
         connected: false,
         connectionId: null,
+        lastSyncAt: null,
+        nextSyncAt: null,
       };
     }
 
     return {
       connected: true,
       connectionId: connection.id,
+      lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
+      nextSyncAt: connection.nextSyncAt?.toISOString() ?? null,
     };
   }
 
@@ -804,12 +808,16 @@ export class SyncController {
       return {
         connected: false,
         connectionId: null,
+        lastSyncAt: null,
+        nextSyncAt: null,
       };
     }
 
     return {
       connected: true,
       connectionId: connection.id,
+      lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
+      nextSyncAt: connection.nextSyncAt?.toISOString() ?? null,
     };
   }
 

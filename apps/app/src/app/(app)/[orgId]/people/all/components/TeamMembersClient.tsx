@@ -77,6 +77,9 @@ export function TeamMembersClient({
     getProviderLogo,
   } = useEmployeeSync({ organizationId, initialData: employeeSyncData });
 
+  const lastSyncAt = employeeSyncData.lastSyncAt;
+  const nextSyncAt = employeeSyncData.nextSyncAt;
+
   const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling') => {
     const result = await syncEmployees(provider);
     if (result?.success) {
@@ -313,10 +316,24 @@ export function TeamMembersClient({
                 )}
               </SelectTrigger>
               <SelectContent>
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  {selectedProvider
-                    ? 'Auto-syncs daily at 7 AM UTC'
-                    : 'Select a provider to enable auto-sync'}
+                <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
+                  {selectedProvider ? (
+                    <>
+                      <div>Auto-syncs daily at 7 AM UTC</div>
+                      {lastSyncAt && (
+                        <div className="text-xs text-muted-foreground/80">
+                          Last sync: {new Date(lastSyncAt).toLocaleString()}
+                        </div>
+                      )}
+                      {nextSyncAt && (
+                        <div className="text-xs text-muted-foreground/80">
+                          Next sync: {new Date(nextSyncAt).toLocaleString()}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    'Select a provider to enable auto-sync'
+                  )}
                 </div>
                 <Separator className="my-1" />
                 {googleWorkspaceConnectionId && (
