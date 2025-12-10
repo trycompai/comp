@@ -5,8 +5,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -92,13 +90,28 @@ export class CommentsController {
     @AuthContext() authContext: AuthContextType,
     @Body() createCommentDto: CreateCommentDto,
   ): Promise<CommentResponseDto> {
-    if (!authContext.userId) {
-      throw new BadRequestException('User ID is required');
+    // For API key auth, userId must be provided in the request body
+    // For JWT auth, userId comes from the authenticated session
+    let userId: string;
+    if (authContext.isApiKey) {
+      // For API key auth, userId must be provided in the DTO
+      if (!createCommentDto.userId) {
+        throw new BadRequestException(
+          'User ID is required when using API key authentication. Provide userId in the request body.',
+        );
+      }
+      userId = createCommentDto.userId;
+    } else {
+      // For JWT auth, use the authenticated user's ID
+      if (!authContext.userId) {
+        throw new BadRequestException('User ID is required');
+      }
+      userId = authContext.userId;
     }
 
     return await this.commentsService.createComment(
       organizationId,
-      authContext.userId,
+      userId,
       createCommentDto,
     );
   }
@@ -124,14 +137,29 @@ export class CommentsController {
     @Param('commentId') commentId: string,
     @Body() updateCommentDto: UpdateCommentDto,
   ): Promise<CommentResponseDto> {
-    if (!authContext.userId) {
-      throw new BadRequestException('User ID is required');
+    // For API key auth, userId must be provided in the request body
+    // For JWT auth, userId comes from the authenticated session
+    let userId: string;
+    if (authContext.isApiKey) {
+      // For API key auth, userId must be provided in the DTO
+      if (!updateCommentDto.userId) {
+        throw new BadRequestException(
+          'User ID is required when using API key authentication. Provide userId in the request body.',
+        );
+      }
+      userId = updateCommentDto.userId;
+    } else {
+      // For JWT auth, use the authenticated user's ID
+      if (!authContext.userId) {
+        throw new BadRequestException('User ID is required');
+      }
+      userId = authContext.userId;
     }
 
     return await this.commentsService.updateComment(
       organizationId,
       commentId,
-      authContext.userId,
+      userId,
       updateCommentDto.content,
     );
   }
@@ -145,6 +173,13 @@ export class CommentsController {
     name: 'commentId',
     description: 'Unique comment identifier',
     example: 'cmt_abc123def456',
+  })
+  @ApiQuery({
+    name: 'userId',
+    description:
+      'User ID of the comment author (required for API key auth, ignored for JWT auth)',
+    example: 'usr_abc123def456',
+    required: false,
   })
   @ApiResponse({
     status: 200,
@@ -198,15 +233,31 @@ export class CommentsController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @Param('commentId') commentId: string,
+    @Query('userId') userIdFromQuery?: string,
   ): Promise<{ success: boolean; deletedCommentId: string; message: string }> {
-    if (!authContext.userId) {
-      throw new BadRequestException('User ID is required');
+    // For API key auth, userId must be provided as a query parameter
+    // For JWT auth, userId comes from the authenticated session
+    let userId: string;
+    if (authContext.isApiKey) {
+      // For API key auth, userId must be provided as a query parameter
+      if (!userIdFromQuery) {
+        throw new BadRequestException(
+          'User ID is required when using API key authentication. Provide userId as a query parameter.',
+        );
+      }
+      userId = userIdFromQuery;
+    } else {
+      // For JWT auth, use the authenticated user's ID
+      if (!authContext.userId) {
+        throw new BadRequestException('User ID is required');
+      }
+      userId = authContext.userId;
     }
 
     await this.commentsService.deleteComment(
       organizationId,
       commentId,
-      authContext.userId,
+      userId,
     );
 
     return {
