@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBody,
   ApiHeader,
   ApiOperation,
   ApiParam,
@@ -26,6 +27,7 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { CommentsService } from './comments.service';
 import { CommentResponseDto } from './dto/comment-responses.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { DeleteCommentDto } from './dto/delete-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @ApiTags('Comments')
@@ -174,12 +176,19 @@ export class CommentsController {
     description: 'Unique comment identifier',
     example: 'cmt_abc123def456',
   })
-  @ApiQuery({
-    name: 'userId',
-    description:
-      'User ID of the comment author (required for API key auth, ignored for JWT auth)',
-    example: 'usr_abc123def456',
-    required: false,
+  @ApiBody({
+    description: 'Delete comment request body',
+    schema: {
+      type: 'object',
+      properties: {
+        userId: {
+          type: 'string',
+          description:
+            'User ID of the comment author (required for API key auth, ignored for JWT auth)',
+          example: 'usr_abc123def456',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -233,19 +242,19 @@ export class CommentsController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @Param('commentId') commentId: string,
-    @Query('userId') userIdFromQuery?: string,
+    @Body() deleteDto: DeleteCommentDto,
   ): Promise<{ success: boolean; deletedCommentId: string; message: string }> {
-    // For API key auth, userId must be provided as a query parameter
+    // For API key auth, userId must be provided in the request body
     // For JWT auth, userId comes from the authenticated session
     let userId: string;
     if (authContext.isApiKey) {
-      // For API key auth, userId must be provided as a query parameter
-      if (!userIdFromQuery) {
+      // For API key auth, userId must be provided in the request body
+      if (!deleteDto.userId) {
         throw new BadRequestException(
-          'User ID is required when using API key authentication. Provide userId as a query parameter.',
+          'User ID is required when using API key authentication. Provide userId in the request body.',
         );
       }
-      userId = userIdFromQuery;
+      userId = deleteDto.userId;
     } else {
       // For JWT auth, use the authenticated user's ID
       if (!authContext.userId) {

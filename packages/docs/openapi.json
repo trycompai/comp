@@ -6984,18 +6984,26 @@
               "example": "cmt_abc123def456",
               "type": "string"
             }
-          },
-          {
-            "name": "userId",
-            "required": false,
-            "in": "query",
-            "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
-            "schema": {
-              "example": "usr_abc123def456",
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "description": "Delete comment request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
+                    "example": "usr_abc123def456"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Comment deleted successfully",
