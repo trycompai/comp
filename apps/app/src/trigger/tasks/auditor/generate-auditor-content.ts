@@ -124,7 +124,7 @@ ${TONE_RULES}`,
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-const MAX_POLL_DURATION_MS = 1000 * 60 * 5; // 5 minutes
+const MAX_POLL_DURATION_MS = 1000 * 60 * 30; // 30 minutes
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 
 async function scrapeWebsite(website: string): Promise<string> {
@@ -145,6 +145,7 @@ async function scrapeWebsite(website: string): Promise<string> {
       urls: [website],
       prompt:
         'Extract all text content from this website, including company information, services, mission, vision, and any other relevant business information. Return the content as plain text or markdown.',
+      limit: 10
     }),
   });
 
