@@ -464,6 +464,11 @@
                     "type": "string",
                     "description": "Member ID of the new owner",
                     "example": "mem_xyz789"
+                  },
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID of the current owner initiating the transfer (required for API key auth, ignored for JWT auth)",
+                    "example": "usr_abc123def456"
                   }
                 },
                 "additionalProperties": false
@@ -12628,6 +12633,11 @@
             "description": "Description of the attachment",
             "example": "Meeting notes from Q4 planning session",
             "maxLength": 500
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [

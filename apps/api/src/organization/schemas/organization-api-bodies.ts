@@ -66,6 +66,12 @@ export const TRANSFER_OWNERSHIP_BODY: ApiBodyOptions = {
         description: 'Member ID of the new owner',
         example: 'mem_xyz789',
       },
+      userId: {
+        type: 'string',
+        description:
+          'User ID of the current owner initiating the transfer (required for API key auth, ignored for JWT auth)',
+        example: 'usr_abc123def456',
+      },
     },
     additionalProperties: false,
   },
