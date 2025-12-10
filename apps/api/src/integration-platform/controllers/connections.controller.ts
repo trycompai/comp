@@ -91,6 +91,14 @@ export class ConnectionsController {
       const seenTaskIds = new Set<string>();
       const requiredVariables = new Set<string>();
 
+      // Collect manifest-level required variables
+      for (const variable of m.variables || []) {
+        if (variable.required) {
+          requiredVariables.add(variable.id);
+        }
+      }
+
+      // Collect check-level required variables
       for (const check of m.checks || []) {
         if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
           seenTaskIds.add(check.taskMapping);
@@ -100,7 +108,6 @@ export class ConnectionsController {
             mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
           }
         }
-        // Collect required variables
         if (check.variables) {
           for (const variable of check.variables) {
             if (variable.required) {
@@ -158,8 +165,17 @@ export class ConnectionsController {
     const mappedTasks: Array<{ id: string; name: string }> = [];
     const seenTaskIds = new Set<string>();
 
-    // Collect required variables from all checks
+    // Collect required variables (manifest-level and check-level)
     const requiredVariables = new Set<string>();
+
+    // Manifest-level variables
+    for (const variable of manifest.variables || []) {
+      if (variable.required) {
+        requiredVariables.add(variable.id);
+      }
+    }
+
+    // Check-level variables
     for (const check of manifest.checks || []) {
       if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
         seenTaskIds.add(check.taskMapping);
@@ -169,7 +185,6 @@ export class ConnectionsController {
           mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
         }
       }
-      // Collect required variables
       if (check.variables) {
         for (const variable of check.variables) {
           if (variable.required) {
