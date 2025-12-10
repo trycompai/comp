@@ -7,7 +7,6 @@ import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import {
-  AlertCircle,
   CheckCircle2,
   ExternalLink,
   Key,
@@ -20,6 +19,17 @@ import {
 import Image from 'next/image';
 import { useState } from 'react';
 import useSWR from 'swr';
+
+interface AdditionalOAuthSetting {
+  id: string;
+  label: string;
+  type: 'text' | 'password' | 'textarea' | 'select' | 'combobox';
+  placeholder?: string;
+  helpText?: string;
+  required: boolean;
+  options?: { value: string; label: string }[];
+  token?: string;
+}
 
 interface Integration {
   id: string;
@@ -38,6 +48,7 @@ interface Integration {
   createAppUrl?: string;
   requiredScopes?: string[];
   authorizeUrl?: string;
+  additionalOAuthSettings?: AdditionalOAuthSetting[];
 }
 
 function IntegrationCard({
@@ -50,17 +61,21 @@ function IntegrationCard({
   const [showConfig, setShowConfig] = useState(false);
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
-  const [appName, setAppName] = useState('');
+  const [customSettingsValues, setCustomSettingsValues] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if this integration needs an app name (has {APP_NAME} placeholder in authorize URL)
-  const needsAppName = integration.authorizeUrl?.includes('{APP_NAME}');
+  const additionalSettings = integration.additionalOAuthSettings || [];
 
   const handleSave = async () => {
     if (!clientId || !clientSecret) return;
-    if (needsAppName && !appName) return;
+
+    // Validate required additional settings
+    const hasAllRequiredSettings = additionalSettings.every(
+      (setting) => !setting.required || customSettingsValues[setting.id],
+    );
+    if (!hasAllRequiredSettings) return;
 
     setIsSaving(true);
     setError(null);
@@ -69,7 +84,8 @@ function IntegrationCard({
       providerSlug: integration.id,
       clientId,
       clientSecret,
-      customSettings: needsAppName ? { appName } : undefined,
+      customSettings:
+        Object.keys(customSettingsValues).length > 0 ? customSettingsValues : undefined,
     });
 
     if (response.error) {
@@ -77,6 +93,7 @@ function IntegrationCard({
     } else {
       setClientId('');
       setClientSecret('');
+      setCustomSettingsValues({});
       setShowConfig(false);
       onRefresh();
     }
@@ -227,26 +244,51 @@ function IntegrationCard({
                         onChange={(e) => setClientSecret(e.target.value)}
                       />
                     </div>
-                    {needsAppName && (
-                      <div>
-                        <Label className="text-sm">App Name</Label>
-                        <Input
-                          className="font-mono text-sm"
-                          placeholder="e.g., compai533c"
-                          value={appName}
-                          onChange={(e) => setAppName(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          The app name from your Rippling developer portal (used in the authorize
-                          URL)
-                        </p>
-                      </div>
+
+                    {/* Additional OAuth Settings - provider-specific OAuth configuration */}
+                    {additionalSettings.length > 0 && (
+                      <>
+                        <div className="border-t pt-3 mt-1">
+                          <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+                            Additional OAuth Settings
+                          </h4>
+                        </div>
+                        {additionalSettings.map((setting) => (
+                          <div key={setting.id}>
+                            <Label className="text-sm">
+                              {setting.label}
+                              {setting.required && <span className="text-destructive ml-1">*</span>}
+                            </Label>
+                            <Input
+                              className="font-mono text-sm"
+                              placeholder={setting.placeholder}
+                              value={customSettingsValues[setting.id] || ''}
+                              onChange={(e) =>
+                                setCustomSettingsValues({
+                                  ...customSettingsValues,
+                                  [setting.id]: e.target.value,
+                                })
+                              }
+                            />
+                            {setting.helpText && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {setting.helpText}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </>
                     )}
                   </div>
 
                   <Button
                     onClick={handleSave}
-                    disabled={!clientId || !clientSecret || (needsAppName && !appName) || isSaving}
+                    disabled={
+                      !clientId ||
+                      !clientSecret ||
+                      additionalSettings.some((s) => s.required && !customSettingsValues[s.id]) ||
+                      isSaving
+                    }
                   >
                     {isSaving ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />

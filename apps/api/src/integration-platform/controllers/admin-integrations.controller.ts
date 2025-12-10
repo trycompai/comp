@@ -72,6 +72,8 @@ export class AdminIntegrationsController {
           createAppUrl: manifest.auth.config.createAppUrl,
           requiredScopes: manifest.auth.config.scopes,
           authorizeUrl: manifest.auth.config.authorizeUrl,
+          additionalOAuthSettings:
+            manifest.auth.config.additionalOAuthSettings || [],
         }),
       };
     });
@@ -114,6 +116,8 @@ export class AdminIntegrationsController {
         createAppUrl: manifest.auth.config.createAppUrl,
         requiredScopes: manifest.auth.config.scopes,
         callbackUrl: `${process.env.BASE_URL || 'http://localhost:3333'}/v1/integrations/oauth/callback`,
+        additionalOAuthSettings:
+          manifest.auth.config.additionalOAuthSettings || [],
       }),
     };
   }
