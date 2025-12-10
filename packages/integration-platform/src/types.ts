@@ -736,6 +736,13 @@ export interface IntegrationManifest {
   capabilities: IntegrationCapability[];
 
   /**
+   * Integration-level variables that are collected after authentication.
+   * These can be used by checks OR by standalone features (like cloud security scanning).
+   * Variables defined here are merged with check-specific variables.
+   */
+  variables?: CheckVariable[];
+
+  /**
    * Compliance checks this integration can run.
    * Each check can auto-complete linked tasks when passing.
    * Checks run daily via a scheduled Trigger.dev task.
