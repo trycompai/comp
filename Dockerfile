@@ -12,6 +12,7 @@ COPY package.json bun.lock ./
 COPY packages/kv/package.json ./packages/kv/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/email/package.json ./packages/email/
+COPY packages/integration-platform/package.json ./packages/integration-platform/
 COPY packages/integrations/package.json ./packages/integrations/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
@@ -21,8 +22,9 @@ COPY packages/analytics/package.json ./packages/analytics/
 COPY apps/app/package.json ./apps/app/
 COPY apps/portal/package.json ./apps/portal/
 
-# Install all dependencies
-RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install
+
+# Install all dependencies (ignore scripts for Docker)
+RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
 
 # =============================================================================
 # STAGE 2: Ultra-Minimal Migrator - Only Prisma
@@ -91,7 +93,7 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_OUTPUT_STANDALONE=true \
     NODE_OPTIONS=--max_old_space_size=6144
 
-# Build the app (schema already combined above)
+# Build the app
 RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build:docker
 
 # =============================================================================
@@ -135,7 +137,7 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_OUTPUT_STANDALONE=true \
     NODE_OPTIONS=--max_old_space_size=6144
 
-# Build the portal (schema already combined above)
+# Build the portal
 RUN cd apps/portal && SKIP_ENV_VALIDATION=true bun run build:docker
 
 # =============================================================================
