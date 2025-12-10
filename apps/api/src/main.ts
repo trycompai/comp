@@ -2,7 +2,6 @@ import './config/load-env';
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { CorsExceptionFilter } from './common/filters/cors-exception.filter';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
@@ -16,47 +15,10 @@ let app: INestApplication | null = null;
 async function bootstrap(): Promise<void> {
   app = await NestFactory.create(AppModule);
 
-  // STEP 1: Enable CORS FIRST - critical for preflight requests
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'https://app.trycomp.ai',
-    'https://trycomp.ai',
-    process.env.APP_URL,
-  ].filter(Boolean) as string[];
-
+  // Enable CORS for all origins - security is handled by authentication
   app.enableCors({
-    origin: (origin, callback) => {
-      // Same-origin (no origin header)
-      if (!origin) {
-        return callback(null, false); // false for same-origin
-      }
-
-      // Check whitelist
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, origin); // Return the origin string
-      }
-
-      // Dev mode: localhost and ngrok
-      if (isDevelopment) {
-        if (
-          origin.includes('localhost') ||
-          origin.includes('127.0.0.1') ||
-          origin.includes('ngrok')
-        ) {
-          return callback(null, origin); // Return the origin string
-        }
-      }
-
-      // Reject
-      callback(new Error('Not allowed by CORS'));
-    },
+    origin: true,
     credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
   });
 
   // STEP 2: Security headers
@@ -90,8 +52,6 @@ async function bootstrap(): Promise<void> {
       },
     }),
   );
-
-  app.useGlobalFilters(new CorsExceptionFilter());
 
   // Enable API versioning
   app.enableVersioning({
