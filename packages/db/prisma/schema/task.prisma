@@ -26,7 +26,8 @@ model Task {
   risks               Risk[]
   evidenceAutomations EvidenceAutomation[]
 
-  EvidenceAutomationRun EvidenceAutomationRun[]
+  EvidenceAutomationRun   EvidenceAutomationRun[]
+  integrationCheckRuns    IntegrationCheckRun[]
 }
 
 enum TaskStatus {

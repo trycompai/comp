@@ -6,22 +6,20 @@ export default async function TrustAccessPage({ params }: { params: Promise<{ or
   const { orgId } = await params;
 
   return (
-    <div className="mx-auto max-w-[1200px] py-8">
-      <PageCore>
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-semibold">Trust Access Management</h1>
-            <p className="text-muted-foreground">Manage data access requests and grants</p>
-          </div>
-          <TrustAccessRequestsClient orgId={orgId} />
+    <PageCore>
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Access & Grants</h1>
+          <p className="text-muted-foreground">Manage data access requests and grants</p>
         </div>
-      </PageCore>
-    </div>
+        <TrustAccessRequestsClient orgId={orgId} />
+      </div>
+    </PageCore>
   );
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Trust Access Management',
+    title: 'Access & Grants',
   };
 }

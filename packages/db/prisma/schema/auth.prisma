@@ -9,6 +9,7 @@ model User {
   lastLogin                      DateTime?
   emailNotificationsUnsubscribed Boolean   @default(false)
   emailPreferences               Json?     @default("{\"policyNotifications\":true,\"taskReminders\":true,\"weeklyTaskDigest\":true,\"unassignedItemsNotifications\":true}")
+  isPlatformAdmin                Boolean   @default(false)
 
   accounts           Account[]
   auditLog           AuditLog[]
@@ -122,6 +123,7 @@ model Invitation {
   expiresAt      DateTime
   inviterId      String
   user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
 }
 
 // This is only for the app to consume, shouldn't be enforced by DB

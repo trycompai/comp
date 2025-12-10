@@ -1,11 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
-import { updateQuestionnaireAnswer } from '../../actions/update-questionnaire-answer';
-import { deleteQuestionnaireAnswer } from '../../actions/delete-questionnaire-answer';
-import { createTriggerToken } from '../../actions/create-trigger-token';
 import type { QuestionnaireResult, QuestionnaireQuestionAnswer } from './types';
 
 interface UseQuestionnaireDetailStateProps {
@@ -57,52 +53,7 @@ export function useQuestionnaireDetailState({
   const [answerQueue, setAnswerQueue] = useState<number[]>([]);
   const answerQueueRef = useRef<number[]>([]);
 
-  // Refs to capture values for save callback
-  const saveIndexRef = useRef<number | null>(null);
-  const saveAnswerRef = useRef<string>('');
-
-  // Actions
-  const updateAnswerAction = useAction(updateQuestionnaireAnswer, {
-    onSuccess: () => {
-      if (saveIndexRef.current !== null) {
-        const index = saveIndexRef.current;
-        const answer = saveAnswerRef.current;
-
-        setResults((prev) =>
-          prev.map((r, i) => {
-            if (i === index) {
-              const trimmedAnswer = answer.trim();
-              return {
-                ...r,
-                answer: trimmedAnswer || null,
-                status: trimmedAnswer ? ('manual' as const) : ('untouched' as const),
-                failedToGenerate: false,
-                // Preserve sources when manually editing answer
-                sources: r.sources || [],
-              };
-            }
-            return r;
-          })
-        );
-
-        setEditingIndex(null);
-        setEditingAnswer('');
-        router.refresh();
-
-        saveIndexRef.current = null;
-        saveAnswerRef.current = '';
-      }
-    },
-    onError: ({ error }) => {
-      console.error('Failed to update answer:', error);
-      if (saveIndexRef.current !== null) {
-        saveIndexRef.current = null;
-        saveAnswerRef.current = '';
-      }
-    },
-  });
-
-  const deleteAnswerAction = useAction(deleteQuestionnaireAnswer);
+  const [savingIndex, setSavingIndex] = useState<number | null>(null);
 
   // No longer need trigger tokens - using server actions instead of Trigger.dev
 
@@ -137,10 +88,8 @@ export function useQuestionnaireDetailState({
     searchQuery,
     setSearchQuery,
     isAutoAnswerProcessStartedRef,
-    saveIndexRef,
-    saveAnswerRef,
-    updateAnswerAction,
-    deleteAnswerAction,
+    savingIndex,
+    setSavingIndex,
     router,
     answerQueue,
     setAnswerQueue,

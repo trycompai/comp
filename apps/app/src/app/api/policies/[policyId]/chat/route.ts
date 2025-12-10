@@ -1,10 +1,10 @@
 import { auth } from '@/utils/auth';
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
-import { convertToModelMessages, streamText, tool, type UIMessage } from 'ai';
+import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import { getPolicyTools } from '../../../../(app)/[orgId]/policies/[policyId]/editor/tools/policy-tools';
 
 export const maxDuration = 60;
 
@@ -87,36 +87,39 @@ Your role:
 2. Ensure policies remain compliant with relevant frameworks
 3. Maintain professional, clear language appropriate for official documentation
 
-TOOL USAGE (MANDATORY):
-- If the user asks you to make changes, edits, or improvements: use the proposePolicy tool
-- If the user asks a question or anything that is NOT an edit request: use the returnQuestion tool
+WHEN TO USE THE proposePolicy TOOL:
+- When the user explicitly asks you to make changes, edits, or improvements
+- When you have a clear understanding of what changes to make
+- Always provide the COMPLETE policy content, not just changes
+
+WHEN TO RESPOND WITHOUT THE TOOL:
+- When you need to ask clarifying questions about what the user wants
+- When the request is ambiguous and you need more information
+- When acknowledging the user or providing brief explanations
 
 COMMUNICATION STYLE:
-- Be concise and direct. No lengthy explanations or preamble.
-- Do not use bullet points in responses unless asked.
-- One sentence to explain, then act.
-
-WHEN MAKING POLICY CHANGES:
-Use the proposePolicy tool immediately. State what you'll change in ONE sentence, then call the tool.
-
-WHEN USER ASKS A QUESTION:
-Use the returnQuestion tool immediately. Do not answer the question directly.
+- Be concise and direct
+- Ask clarifying questions when the user's intent is unclear
+- One sentence to explain, then act (use tool or ask question)
+- Your conversational messages to the user must be plain text only (no markdown headers, bold, italics, bullet points, or code blocks)
+- Note: The policy content in proposePolicy tool MUST still use proper markdown formatting
 
 CRITICAL MARKDOWN FORMATTING RULES:
 - Every heading MUST have text after the # symbols (e.g., "## Section Title", never just "##")
 - Preserve the original document structure and all sections
 - Use proper heading hierarchy (# for title, ## for sections, ### for subsections)
-- Ensure all lists are properly formatted with consistent indentation
 - Do not leave any empty headings, paragraphs, or incomplete syntax
 - Do not truncate or abbreviate any section - include full content
-- If you're unsure about a section, keep the original text
 
-QUALITY CHECKLIST before submitting:
-- All headings have proper titles after # symbols
-- Document starts with a clear title (# Policy Title)
-- All original sections are preserved unless explicitly asked to remove
-- No markdown syntax errors (unclosed brackets, incomplete lists)
-- Professional tone maintained throughout
+BANNER METADATA (for the proposePolicy tool arguments):
+- title: A short, sentence-case heading (~4–10 words) that clearly states the main change. Example: "Data retention protocols integrated".
+- detail: One or two sentences (plain text, no bullet points) briefly explaining what you changed and why, in a calm and professional tone.
+- reviewHint: A very short imperative phrase that tells the user to review the updated policy in the editor below (for example, "Review the updated Data retention section below.").
+
+When using the proposePolicy tool:
+- Always provide the COMPLETE updated policy content in the content field.
+- Always fill in title, detail, and reviewHint so the UI can show a small banner indicating that changes are ready to review.
+- Keep title, detail, and reviewHint focused, specific, and free of markdown formatting.
 
 Keep responses helpful and focused on the policy editing task.`;
 
@@ -125,37 +128,8 @@ Keep responses helpful and focused on the policy editing task.`;
       model: openai('gpt-5.1'),
       system: systemPrompt,
       messages: convertToModelMessages(messages),
-      toolChoice: 'required',
-      tools: {
-        proposePolicy: tool({
-          description:
-            'Propose an updated version of the policy. Use this tool whenever the user asks you to make changes, edits, or improvements to the policy. You must provide the COMPLETE policy content, not just the changes.',
-          inputSchema: z.object({
-            content: z
-              .string()
-              .describe(
-                'The complete updated policy content in markdown format. Must include the entire policy, not just the changed sections.',
-              ),
-            summary: z
-              .string()
-              .describe('One to two sentences summarizing the changes. No bullet points.'),
-          }),
-          execute: async ({ summary }) => ({ success: true, summary }),
-        }),
-        returnQuestion: tool({
-          description:
-            'Use this tool when the user asks a question instead of requesting an edit. This assistant is only for editing policies, not answering questions.',
-          inputSchema: z.object({
-            question: z.string().describe('The question the user asked.'),
-            message: z
-              .string()
-              .describe(
-                'A brief message explaining that this assistant is only for editing policies and suggesting they rephrase as an edit request.',
-              ),
-          }),
-          execute: async ({ question, message }) => ({ success: true, question, message }),
-        }),
-      },
+      toolChoice: 'auto',
+      tools: getPolicyTools(),
     });
 
     return result.toUIMessageStreamResponse();

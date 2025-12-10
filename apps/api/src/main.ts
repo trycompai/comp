@@ -1,32 +1,47 @@
+import './config/load-env';
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
-import { config } from 'dotenv';
+import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
-// Load .env file from apps/api directory before anything else
-// This ensures .env values override any shell environment variables
-// __dirname in compiled code is dist/src, so go up two levels to apps/api
-const envPath = path.join(__dirname, '..', '..', '.env');
-if (existsSync(envPath)) {
-  config({ path: envPath, override: true });
-} else {
-  // Fallback: try current working directory (when run from apps/api)
-  const cwdEnvPath = path.join(process.cwd(), '.env');
-  if (existsSync(cwdEnvPath)) {
-    config({ path: cwdEnvPath, override: true });
-  }
-}
+let app: INestApplication | null = null;
 
 async function bootstrap(): Promise<void> {
-  const app: INestApplication = await NestFactory.create(AppModule);
+  app = await NestFactory.create(AppModule);
 
-  // Enable global validation pipe
+  // Enable CORS for all origins - security is handled by authentication
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
+  // STEP 2: Security headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline styles
+          scriptSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline scripts
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow embedding
+    }),
+  );
+
+  // STEP 3: Configure body parser
+  app.use(express.json({ limit: '70mb' }));
+  app.use(express.urlencoded({ limit: '70mb', extended: true }));
+
+  // STEP 4: Enable global pipes and filters
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -37,23 +52,6 @@ async function bootstrap(): Promise<void> {
       },
     }),
   );
-
-  // Configure body parser limits for file uploads (base64 encoded files)
-  app.use(express.json({ limit: '15mb' }));
-  app.use(express.urlencoded({ limit: '15mb', extended: true }));
-
-  // Enable CORS for cross-origin requests
-  app.enableCors({
-    origin: true, // Allow requests from any origin
-    credentials: true, // Allow cookies to be sent cross-origin (for auth)
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-API-Key',
-      'X-Organization-Id',
-    ],
-  });
 
   // Enable API versioning
   app.enableVersioning({
@@ -69,6 +67,7 @@ async function bootstrap(): Promise<void> {
     .setTitle('API Documentation')
     .setDescription('The API documentation for this application')
     .setVersion('1.0')
+    .addServer('http://localhost:3333', 'Local API Server')
     .addApiKey(
       {
         type: 'apiKey',
@@ -114,6 +113,20 @@ async function bootstrap(): Promise<void> {
     console.log('OpenAPI documentation written to packages/docs/openapi.json');
   }
 }
+
+// Graceful shutdown handler
+async function shutdown(signal: string): Promise<void> {
+  console.log(`\n${signal} received, shutting down gracefully...`);
+  if (app) {
+    await app.close();
+    console.log('Application closed');
+  }
+  process.exit(0);
+}
+
+// Handle shutdown signals (important for hot reload)
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));
 
 // Handle bootstrap errors properly
 void bootstrap().catch((error: unknown) => {

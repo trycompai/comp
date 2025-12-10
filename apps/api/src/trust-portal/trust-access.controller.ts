@@ -15,6 +15,7 @@ import {
   ApiHeader,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags,
@@ -30,6 +31,7 @@ import {
   ReclaimAccessDto,
   RevokeGrantDto,
 } from './dto/trust-access.dto';
+import { TrustFramework } from '@prisma/client';
 import { SignNdaDto } from './dto/nda.dto';
 import { TrustAccessService } from './trust-access.service';
 
@@ -375,6 +377,13 @@ export class TrustAccessController {
     name: 'friendlyUrl',
     description: 'Trust Portal friendly URL or Organization ID',
   })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    description:
+      'Query parameter to append to the access link (e.g., security-questionnaire)',
+    example: 'security-questionnaire',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Access link sent to email',
@@ -383,8 +392,9 @@ export class TrustAccessController {
     // Note: friendlyUrl can be either the custom friendly URL or the organization ID
     @Param('friendlyUrl') friendlyUrl: string,
     @Body() dto: ReclaimAccessDto,
+    @Query('query') query?: string,
   ) {
-    return this.trustAccessService.reclaimAccess(friendlyUrl, dto.email);
+    return this.trustAccessService.reclaimAccess(friendlyUrl, dto.email, query);
   }
 
   @Get('access/:token')
@@ -428,5 +438,54 @@ export class TrustAccessController {
   })
   async downloadAllPolicies(@Param('token') token: string) {
     return this.trustAccessService.downloadAllPoliciesByAccessToken(token);
+  }
+
+  @Get('access/:token/compliance-resources')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List compliance resources by access token',
+    description:
+      'Get list of uploaded compliance certificates for the organization',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Compliance resources list returned',
+  })
+  async getComplianceResourcesByAccessToken(@Param('token') token: string) {
+    return this.trustAccessService.getComplianceResourcesByAccessToken(token);
+  }
+
+  @Get('access/:token/compliance-resources/:framework')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download compliance resource by access token',
+    description:
+      'Get signed URL to download a specific compliance certificate file',
+  })
+  @ApiParam({
+    name: 'framework',
+    enum: Object.values(TrustFramework),
+    description: 'Compliance framework identifier',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL for compliance resource returned',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Compliance resource not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid framework or access token',
+  })
+  async getComplianceResourceUrlByAccessToken(
+    @Param('token') token: string,
+    @Param('framework') framework: string,
+  ) {
+    return this.trustAccessService.getComplianceResourceUrlByAccessToken(
+      token,
+      framework as any,
+    );
   }
 }

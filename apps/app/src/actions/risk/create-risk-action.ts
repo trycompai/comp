@@ -40,7 +40,7 @@ export const createRiskAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/risk`);
       revalidatePath(`/${session.activeOrganizationId}/risk/register`);
-      revalidateTag(`risk_${session.activeOrganizationId}`);
+      revalidateTag(`risk_${session.activeOrganizationId}`, 'max');
 
       return {
         success: true,

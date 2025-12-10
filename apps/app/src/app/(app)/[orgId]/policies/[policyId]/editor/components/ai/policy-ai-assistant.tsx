@@ -12,18 +12,29 @@ import {
   PromptInputTextarea,
 } from '@comp/ui/ai-elements/prompt-input';
 import { Tool, ToolHeader } from '@comp/ui/ai-elements/tool';
+import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import { getToolName, isToolUIPart, type ChatStatus, type ToolUIPart, type UIMessage } from 'ai';
-import { X } from 'lucide-react';
+import type { ChatStatus } from 'ai';
+import {
+  ArrowDownIcon,
+  CheckCircleIcon,
+  CircleIcon,
+  ClockIcon,
+  X,
+  XCircleIcon,
+} from 'lucide-react';
 import { useState } from 'react';
+import type { PolicyChatUIMessage } from '../../types';
 
 interface PolicyAiAssistantProps {
-  messages: UIMessage[];
+  messages: PolicyChatUIMessage[];
   status: ChatStatus;
   errorMessage?: string | null;
   sendMessage: (payload: { text: string }) => void;
   close?: () => void;
+  onScrollToDiff?: () => void;
+  hasActiveProposal?: boolean;
 }
 
 export function PolicyAiAssistant({
@@ -32,6 +43,8 @@ export function PolicyAiAssistant({
   errorMessage,
   sendMessage,
   close,
+  onScrollToDiff,
+  hasActiveProposal,
 }: PolicyAiAssistantProps) {
   const [input, setInput] = useState('');
 
@@ -41,7 +54,11 @@ export function PolicyAiAssistant({
     (m) =>
       m.role === 'assistant' &&
       m.parts.some(
-        (p) => isToolUIPart(p) && (p.state === 'input-streaming' || p.state === 'input-available'),
+        (p) =>
+          p.type === 'tool-proposePolicy' &&
+          (p.state === 'input-streaming' ||
+            p.state === 'output-available' ||
+            p.state === 'output-error'),
       ),
   );
 
@@ -52,7 +69,7 @@ export function PolicyAiAssistant({
   };
 
   return (
-    <div className="flex h-full flex-col border-l bg-background">
+    <div className="flex h-full min-h-0 flex-col border-l bg-background">
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-sm font-medium">AI Assistant</span>
         {close && (
@@ -62,7 +79,7 @@ export function PolicyAiAssistant({
         )}
       </div>
 
-      <Conversation>
+      <Conversation className="min-h-0" aria-label="Policy AI assistant conversation">
         <ConversationContent className="gap-3 p-3">
           {messages.length === 0 ? (
             <div className="text-sm text-muted-foreground py-4">
@@ -93,18 +110,92 @@ export function PolicyAiAssistant({
                     );
                   }
 
-                  if (isToolUIPart(part) && getToolName(part) === 'proposePolicy') {
-                    const toolPart = part as ToolUIPart;
-                    const toolInput = toolPart.input as { content?: string; summary?: string };
+                  if (part.type === 'tool-proposePolicy') {
+                    const toolInput = part.input;
+
+                    const isInProgress =
+                      part.state === 'input-streaming' || part.state === 'input-available';
+                    const isCompleted = part.state === 'output-available';
+
+                    const title =
+                      (isCompleted
+                        ? toolInput?.title || toolInput?.summary
+                        : toolInput?.title || 'Configuring policy updates') ||
+                      'Policy updates ready for your review';
+
+                    const bodyText = (() => {
+                      if (isInProgress) {
+                        return (
+                          toolInput?.detail ||
+                          'I am preparing an updated version of this policy. Please wait a moment before accepting any changes.'
+                        );
+                      }
+                      if (isCompleted) {
+                        return (
+                          toolInput?.detail ||
+                          'The updated policy is ready. Review the diff in the editor before applying changes.'
+                        );
+                      }
+                      return (
+                        toolInput?.detail ||
+                        'Review the proposed changes in the editor preview below before applying them.'
+                      );
+                    })();
+
+                    const truncatedBodyText =
+                      bodyText.length > 180 ? `${bodyText.slice(0, 177)}…` : bodyText;
+
+                    type ToolState = typeof part.state;
+                    const statusPill = (() => {
+                      const labels: Record<ToolState, string> = {
+                        'input-streaming': 'Drafting',
+                        'input-available': 'Running',
+                        'output-available': 'Completed',
+                        'output-error': 'Error',
+                      };
+
+                      const icons: Record<ToolState, React.ReactNode> = {
+                        'input-streaming': <CircleIcon className="size-3" />,
+                        'input-available': <ClockIcon className="size-3 animate-pulse" />,
+                        'output-available': <CheckCircleIcon className="size-3 text-emerald-600" />,
+                        'output-error': <XCircleIcon className="size-3 text-red-600" />,
+                      };
+
+                      return (
+                        <Badge
+                          className="gap-1.5 rounded-full border border-border/60 bg-background/80 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em]"
+                          variant="secondary"
+                        >
+                          {icons[part.state]}
+                          {labels[part.state]}
+                        </Badge>
+                      );
+                    })();
+
                     return (
                       <Tool key={`${message.id}-${index}`} className="mt-2">
                         <ToolHeader
-                          title={toolInput?.summary || 'Proposing policy changes'}
-                          type={toolPart.type}
-                          state={toolPart.state}
+                          title={title}
+                          meta={statusPill}
+                          onClick={isCompleted && onScrollToDiff ? onScrollToDiff : undefined}
+                          className={
+                            isCompleted && onScrollToDiff
+                              ? 'cursor-pointer hover:bg-muted/50'
+                              : undefined
+                          }
                         />
-                        <p className="px-3 pb-2 text-xs text-muted-foreground">
-                          View the proposed changes in the editor preview
+                        <p className="px-3 py-2 text-[10px] text-muted-foreground">
+                          {truncatedBodyText}
+                          {hasActiveProposal && onScrollToDiff && (
+                            <button
+                              type="button"
+                              onClick={onScrollToDiff}
+                              className="flex items-center gap-1.5 text-[11px] text-primary hover:underline"
+                            >
+                              <ArrowDownIcon className="size-3" />
+                              View proposed changes
+                            </button>
+                          )}
                         </p>
                       </Tool>
                     );

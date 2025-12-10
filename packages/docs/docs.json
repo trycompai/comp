@@ -17,10 +17,17 @@
             "group": "Get Started",
             "pages": [
               "introduction",
+              "ai-policy-editor",
               "automated-evidence",
               "device-agent",
               "security-questionnaire",
-              "trust-access"
+              {
+                "group": "Trust",
+                "pages": [
+                  "trust-access",
+                  "security-questionnaire-trust-center"
+                ]
+              }
             ]
           }
         ]
@@ -35,6 +42,33 @@
               "cloud-tests/aws",
               "cloud-tests/azure",
               "cloud-tests/gcp"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "Platform Overview",
+            "pages": [
+              "integrations/index"
+            ]
+          },
+          {
+            "group": "Developer Guides",
+            "pages": [
+              "integrations/writing-integrations",
+              "integrations/authentication",
+              "integrations/variables",
+              "integrations/checks",
+              "integrations/contributing"
+            ]
+          },
+          {
+            "group": "Self-Hosting",
+            "pages": [
+              "integrations/oauth-setup"
             ]
           }
         ]

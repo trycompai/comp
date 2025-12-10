@@ -2,7 +2,7 @@
 
 import { LinkIcon, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { getKnowledgeBaseDocumentViewUrlAction } from '../knowledge-base/additional-documents/actions/get-document-view-url';
+import { api } from '@/lib/api-client';
 
 interface KnowledgeBaseDocumentLinkProps {
   documentId: string;
@@ -25,12 +25,28 @@ export function KnowledgeBaseDocumentLink({
 
     setIsLoading(true);
     try {
-      const result = await getKnowledgeBaseDocumentViewUrlAction({
-        documentId,
-      });
+      const response = await api.post<{
+        signedUrl: string;
+        fileName: string;
+        fileType: string;
+        viewableInBrowser: boolean;
+      }>(
+        `/v1/knowledge-base/documents/${documentId}/view`,
+        {
+          organizationId: orgId,
+        },
+        orgId,
+      );
 
-      if (result?.data?.success && result.data.data) {
-        const { signedUrl, viewableInBrowser } = result.data.data;
+      if (response.error) {
+        // Fallback: navigate to knowledge base page
+        const knowledgeBaseUrl = `/${orgId}/questionnaire/knowledge-base`;
+        window.open(knowledgeBaseUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      if (response.data) {
+        const { signedUrl, viewableInBrowser } = response.data;
 
         if (viewableInBrowser && signedUrl) {
           // File can be viewed in browser - open it directly

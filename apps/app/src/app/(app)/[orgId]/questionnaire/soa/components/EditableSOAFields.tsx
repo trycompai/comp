@@ -19,9 +19,9 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { X, Loader2, Edit2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { saveSOAAnswer } from '../actions/save-soa-answer';
 import { toast } from 'sonner';
+import { api } from '@/lib/api-client';
+import { useRouter } from 'next/navigation';
 
 interface EditableSOAFieldsProps {
   documentId: string;
@@ -31,7 +31,8 @@ interface EditableSOAFieldsProps {
   isPendingApproval: boolean;
   isControl7?: boolean;
   isFullyRemote?: boolean;
-  onUpdate?: () => void;
+  organizationId: string;
+  onUpdate?: (savedAnswer: string | null) => void;
 }
 
 export function EditableSOAFields({
@@ -42,12 +43,15 @@ export function EditableSOAFields({
   isPendingApproval,
   isControl7 = false,
   isFullyRemote = false,
+  organizationId,
   onUpdate,
 }: EditableSOAFieldsProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isApplicable, setIsApplicable] = useState<boolean | null>(initialIsApplicable);
   const [justification, setJustification] = useState<string | null>(initialJustification);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const justificationTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [isJustificationDialogOpen, setJustificationDialogOpen] = useState(false);
   const dialogSavedRef = useRef(false);
@@ -59,29 +63,6 @@ export function EditableSOAFields({
       : isApplicable === false
         ? `${badgeBaseClasses} bg-destructive text-destructive-foreground border-destructive/70 shadow-sm shadow-destructive/40`
         : `${badgeBaseClasses} bg-muted text-muted-foreground border-transparent`;
-
-  const saveAction = useAction(saveSOAAnswer, {
-    onSuccess: () => {
-      setIsEditing(false);
-      setError(null);
-      toast.success('Answer saved successfully');
-      // Refresh page to update configuration
-      if (typeof window !== 'undefined') {
-        window.location.reload();
-      }
-      onUpdate?.();
-    },
-    onError: () => {
-      const message = 'Failed to save answer';
-      if (!isJustificationDialogOpen) {
-        setIsApplicable(initialIsApplicable);
-        setJustification(initialJustification);
-        setJustificationDialogOpen(false);
-      }
-      setError(message);
-      toast.error(message);
-    },
-  });
 
   useEffect(() => {
     setIsApplicable(initialIsApplicable);
@@ -100,18 +81,56 @@ export function EditableSOAFields({
     }
   }, [isJustificationDialogOpen]);
 
-  const executeSave = (
+  const executeSave = async (
     nextIsApplicable: boolean | null,
     nextJustification: string | null,
   ) => {
-    const answerValue = nextIsApplicable === false ? nextJustification : null;
-    return saveAction.execute({
-      documentId,
-      questionId,
-      answer: answerValue,
-      isApplicable: nextIsApplicable,
-      justification: nextIsApplicable === false ? nextJustification : null,
-    });
+    setIsSaving(true);
+    try {
+      const answerValue = nextIsApplicable === false ? nextJustification : null;
+      const response = await api.post<{ success: boolean }>(
+        '/v1/soa/save-answer',
+        {
+          organizationId,
+          documentId,
+          questionId,
+          answer: answerValue,
+          isApplicable: nextIsApplicable,
+          justification: nextIsApplicable === false ? nextJustification : null,
+        },
+        organizationId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (response.data?.success) {
+        // Update local state optimistically
+        setIsApplicable(nextIsApplicable);
+        setJustification(nextJustification);
+        setIsEditing(false);
+        setError(null);
+        toast.success('Answer saved successfully');
+        // Call onUpdate with the saved answer value to update parent state optimistically
+        const savedAnswer = nextIsApplicable === false ? nextJustification : null;
+        onUpdate?.(savedAnswer);
+        router.refresh();
+      } else {
+        throw new Error('Failed to save answer');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save answer';
+      if (!isJustificationDialogOpen) {
+        setIsApplicable(initialIsApplicable);
+        setJustification(initialJustification);
+        setJustificationDialogOpen(false);
+      }
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const closeEditing = () => {
@@ -216,7 +235,7 @@ export function EditableSOAFields({
           value={isApplicable === null ? 'null' : isApplicable ? 'yes' : 'no'}
           onValueChange={handleSelectChange}
         >
-          <SelectTrigger className="w-32" disabled={saveAction.status === 'executing'}>
+          <SelectTrigger className="w-32" disabled={isSaving}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -231,7 +250,7 @@ export function EditableSOAFields({
           variant="ghost"
           size="icon"
           onClick={closeEditing}
-          disabled={saveAction.status === 'executing'}
+          disabled={isSaving}
           aria-label="Close editing"
         >
           <X className="h-3 w-3" />
@@ -265,15 +284,15 @@ export function EditableSOAFields({
             <Button
               variant="ghost"
               onClick={() => handleDialogOpenChange(false)}
-              disabled={saveAction.status === 'executing'}
+              disabled={isSaving}
             >
               Cancel
             </Button>
             <Button
               onClick={handleJustificationSave}
-              disabled={saveAction.status === 'executing'}
+              disabled={isSaving}
             >
-              {saveAction.status === 'executing' ? (
+              {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...

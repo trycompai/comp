@@ -36,6 +36,8 @@ interface SOATableRowProps {
   isFullyRemote: boolean;
   documentId: string;
   isPendingApproval: boolean;
+  organizationId: string;
+  onUpdate?: (savedAnswer: string | null) => void;
 }
 
 export function SOATableRow({
@@ -47,6 +49,8 @@ export function SOATableRow({
   isFullyRemote,
   documentId,
   isPendingApproval,
+  organizationId,
+  onUpdate,
 }: SOATableRowProps) {
   const isProcessing = questionStatus === 'processing';
   const isInsufficientData = questionStatus === 'insufficient_data' as any;
@@ -130,6 +134,8 @@ export function SOATableRow({
                   isPendingApproval={isPendingApproval}
                   isControl7={isControl7}
                   isFullyRemote={isFullyRemote}
+                  organizationId={organizationId}
+                  onUpdate={onUpdate}
                 />
               )
             ) : column.name === 'justification' ? (

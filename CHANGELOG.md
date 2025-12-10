@@ -1,3 +1,43 @@
+# [1.69.0](https://github.com/trycompai/comp/compare/v1.68.1...v1.69.0) (2025-12-08)
+
+
+### Features
+
+* **trust:** auto-enable frameworks in trust record for backward compatibility for old organizations ([#1873](https://github.com/trycompai/comp/issues/1873)) ([a289b57](https://github.com/trycompai/comp/commit/a289b573624adf4328dc54044899521b02628251))
+
+## [1.68.1](https://github.com/trycompai/comp/compare/v1.68.0...v1.68.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* **trust:** old org upload certificate problems ([#1871](https://github.com/trycompai/comp/issues/1871)) ([c92a416](https://github.com/trycompai/comp/commit/c92a416161cdd2fe66a885f60a0de96f6a57c132))
+
+# [1.68.0](https://github.com/trycompai/comp/compare/v1.67.1...v1.68.0) (2025-12-05)
+
+
+### Bug Fixes
+
+* **home:** improve error handling in organization page ([#1869](https://github.com/trycompai/comp/issues/1869)) ([e86a2c2](https://github.com/trycompai/comp/commit/e86a2c2bff3f43d6fa52ad3a2d7519d7ce9f3290))
+
+
+### Features
+
+* **auth:** update better-auth to version 1.4.5 and improve login handling ([#1870](https://github.com/trycompai/comp/issues/1870)) ([64c12a7](https://github.com/trycompai/comp/commit/64c12a703386f620b3a509691fafa7383da75388))
+
+## [1.67.1](https://github.com/trycompai/comp/compare/v1.67.0...v1.67.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* **db:** add createdAt column to invitation model ([#1866](https://github.com/trycompai/comp/issues/1866)) ([44a18a2](https://github.com/trycompai/comp/commit/44a18a25facb8a07cd81da2d1f7023f9b7a419cf))
+
+# [1.67.0](https://github.com/trycompai/comp/compare/v1.66.0...v1.67.0) (2025-12-05)
+
+
+### Features
+
+* **api:** add AI-powered question extraction and update dependencies ([#1858](https://github.com/trycompai/comp/issues/1858)) ([33600d0](https://github.com/trycompai/comp/commit/33600d08a7d1229efce5c9b468aa0661ab4d60eb))
+
 # [1.66.0](https://github.com/trycompai/comp/compare/v1.65.0...v1.66.0) (2025-11-26)
 
 

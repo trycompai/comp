@@ -86,7 +86,7 @@ export const updatePolicyFormAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies');
+      revalidateTag('policies', 'max');
 
       return {
         success: true,
