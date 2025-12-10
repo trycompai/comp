@@ -22,8 +22,7 @@ COPY packages/analytics/package.json ./packages/analytics/
 COPY apps/app/package.json ./apps/app/
 COPY apps/portal/package.json ./apps/portal/
 
-
-# Install all dependencies (ignore scripts for Docker)
+# Install all dependencies
 RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
 
 # =============================================================================
