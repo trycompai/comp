@@ -44,8 +44,17 @@ export class AutoCheckRunnerService {
       return { canRun: false, reason: 'No checks defined for this provider' };
     }
 
-    // Collect all required variables from all checks
+    // Collect all required variables (manifest-level and check-level)
     const requiredVariables = new Set<string>();
+
+    // Manifest-level variables
+    for (const variable of manifest.variables || []) {
+      if (variable.required) {
+        requiredVariables.add(variable.id);
+      }
+    }
+
+    // Check-level variables
     for (const check of manifest.checks) {
       if (check.variables) {
         for (const variable of check.variables) {
