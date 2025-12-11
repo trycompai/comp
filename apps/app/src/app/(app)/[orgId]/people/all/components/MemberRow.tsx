@@ -1,20 +1,10 @@
 'use client';
 
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit, Laptop, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
@@ -37,6 +27,8 @@ import { Label } from '@comp/ui/label';
 import type { Role } from '@db';
 
 import { MultiRoleCombobox } from './MultiRoleCombobox';
+import { RemoveDeviceAlert } from './RemoveDeviceAlert';
+import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { MemberWithUser } from './TeamMembers';
 
 interface MemberRowProps {
@@ -66,6 +58,7 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
   const { orgId } = params;
 
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = useState(false);
+  const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isUpdateRolesOpen, setIsUpdateRolesOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<Role[]>(
@@ -73,6 +66,7 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
   );
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [isRemovingDevice, setIsRemovingDevice] = useState(false);
   const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
   const focusRef = useRef<HTMLButtonElement | null>(null);
   const currentUserIsOwner = member.role.includes('owner');
@@ -132,6 +126,15 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
     setIsRemoveAlertOpen(false);
   };
 
+  const handleRemoveDeviceClick = async () => {
+    // TODO: Implement device removal logic
+    setIsRemovingDevice(true);
+    console.log('Remove device for member:', memberId);
+    // Example: Call API to remove device
+    setIsRemovingDevice(false);
+    setIsRemoveDeviceAlertOpen(false);
+  };
+
   const isDeactivated = member.deactivated;
 
   return (
@@ -189,114 +192,115 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
           </div>
 
           {!isDeactivated && (
-          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                ref={dropdownTriggerRef}
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                disabled={!canEdit}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              hidden={isUpdateRolesOpen}
-              onCloseAutoFocus={(event) => {
-                if (focusRef.current) {
-                  focusRef.current.focus();
-                  focusRef.current = null;
-                  event.preventDefault();
-                }
-              }}
-            >
-              {canEdit && (
-                <Dialog open={isUpdateRolesOpen} onOpenChange={handleDialogOpenChange}>
-                  <DialogTrigger asChild>
-                    <DropdownMenuItem
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        handleDialogItemSelect();
-                      }}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      <span>{'Edit Roles'}</span>
-                    </DropdownMenuItem>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{'Edit Member Roles'}</DialogTitle>
-                      <DialogDescription>
-                        {'Change roles for'} {memberName}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`role-${memberId}`}>{'Roles'}</Label>
-                        <MultiRoleCombobox
-                          selectedRoles={selectedRoles}
-                          onSelectedRolesChange={setSelectedRoles}
-                          placeholder={'Select a role'}
-                          lockedRoles={isOwner ? ['owner'] : []}
-                        />
-                        {isOwner && (
-                          <p className="text-muted-foreground mt-1 text-xs">
-                            {'The owner role cannot be removed.'}
-                          </p>
-                        )}
-                        <p className="text-muted-foreground mt-1 text-xs">
-                          {'Members must have at least one role.'}
-                        </p>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsUpdateRolesOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleUpdateRolesClick}
-                        disabled={isUpdating || selectedRoles.length === 0}
-                      >
-                        {'Update'}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              )}
-              {canRemove && (
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                  onSelect={() => setIsRemoveAlertOpen(true)}
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  ref={dropdownTriggerRef}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  disabled={!canEdit}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  <span>{'Remove Member'}</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                hidden={isUpdateRolesOpen}
+                onCloseAutoFocus={(event) => {
+                  if (focusRef.current) {
+                    focusRef.current.focus();
+                    focusRef.current = null;
+                    event.preventDefault();
+                  }
+                }}
+              >
+                {canEdit && (
+                  <Dialog open={isUpdateRolesOpen} onOpenChange={handleDialogOpenChange}>
+                    <DialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          handleDialogItemSelect();
+                        }}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>{'Edit Roles'}</span>
+                      </DropdownMenuItem>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{'Edit Member Roles'}</DialogTitle>
+                        <DialogDescription>
+                          {'Change roles for'} {memberName}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`role-${memberId}`}>{'Roles'}</Label>
+                          <MultiRoleCombobox
+                            selectedRoles={selectedRoles}
+                            onSelectedRolesChange={setSelectedRoles}
+                            placeholder={'Select a role'}
+                            lockedRoles={isOwner ? ['owner'] : []}
+                          />
+                          {isOwner && (
+                            <p className="text-muted-foreground mt-1 text-xs">
+                              {'The owner role cannot be removed.'}
+                            </p>
+                          )}
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            {'Members must have at least one role.'}
+                          </p>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsUpdateRolesOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleUpdateRolesClick}
+                          disabled={isUpdating || selectedRoles.length === 0}
+                        >
+                          {'Update'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                <DropdownMenuItem onSelect={() => setIsRemoveDeviceAlertOpen(true)}>
+                  <Laptop className="mr-2 h-4 w-4" />
+                  <span>{'Remove Device'}</span>
                 </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {canRemove && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                    onSelect={() => setIsRemoveAlertOpen(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>{'Remove Member'}</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
 
-      <AlertDialog open={isRemoveAlertOpen} onOpenChange={setIsRemoveAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{'Remove Team Member'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {'Are you sure you want to remove'} {memberName}?{' '}
-              {'They will no longer have access to this organization.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRemoveClick} disabled={isRemoving}>
-              {'Remove'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RemoveMemberAlert
+        open={isRemoveAlertOpen}
+        onOpenChange={setIsRemoveAlertOpen}
+        memberName={memberName}
+        onRemove={handleRemoveClick}
+        isRemoving={isRemoving}
+      />
+      <RemoveDeviceAlert
+        open={isRemoveDeviceAlertOpen}
+        onOpenChange={setIsRemoveDeviceAlertOpen}
+        memberName={memberName}
+        onRemove={handleRemoveDeviceClick}
+        isRemoving={isRemovingDevice}
+      />
     </>
   );
 }
