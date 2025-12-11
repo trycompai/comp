@@ -4,6 +4,7 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
+import { FleetService } from '../lib/fleet.service';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
 import type { UpdatePeopleDto } from './dto/update-people.dto';
@@ -14,6 +15,8 @@ import { MemberQueries } from './utils/member-queries';
 @Injectable()
 export class PeopleService {
   private readonly logger = new Logger(PeopleService.name);
+
+  constructor(private readonly fleetService: FleetService) {}
 
   async findAllByOrganization(
     organizationId: string,
@@ -280,10 +283,40 @@ export class PeopleService {
   ): Promise<PeopleResponseDto> {
     try {
       await MemberValidator.validateOrganization(organizationId);
-      await MemberValidator.validateMemberExists(
+      const existingMember = await MemberQueries.findByIdInOrganization(
         memberId,
         organizationId,
       );
+
+      if (!existingMember) {
+        throw new NotFoundException(
+          `Member with ID ${memberId} not found in organization ${organizationId}`,
+        );
+      }
+
+      // Remove hosts from FleetDM before unlinking the device
+      if (existingMember.fleetDmLabelId) {
+        try {
+          const removalResult = await this.fleetService.removeHostsByLabel(
+            existingMember.fleetDmLabelId,
+          );
+          this.logger.log(
+            `Removed ${removalResult.deletedCount} host(s) from FleetDM for label ${existingMember.fleetDmLabelId}`,
+          );
+          if (removalResult.failedCount > 0) {
+            this.logger.warn(
+              `Failed to remove ${removalResult.failedCount} host(s) from FleetDM`,
+            );
+          }
+        } catch (fleetError) {
+          // Log FleetDM error but don't fail the entire operation
+          this.logger.error(
+            `Failed to remove hosts from FleetDM for label ${existingMember.fleetDmLabelId}:`,
+            fleetError,
+          );
+          // Continue with unlinking the device even if FleetDM removal fails
+        }
+      }
 
       const updatedMember = await MemberQueries.unlinkDevice(memberId);
 
