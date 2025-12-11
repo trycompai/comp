@@ -281,7 +281,7 @@ function QuestionnaireHistoryItem({
                         </span>
                       </div>
                       {totalQuestions > 0 && (
-                        <div className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5">
+                        <div className="min-w-32 inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5">
                           <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                             Answered
                           </span>
