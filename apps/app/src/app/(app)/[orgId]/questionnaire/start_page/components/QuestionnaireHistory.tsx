@@ -274,7 +274,7 @@ function QuestionnaireHistoryItem({
                         <>
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <CheckCircle2 className="h-3 w-3" />
-                        <span className="w-30">
+                        <span className="min-w-30">
                             {formatDistanceToNow(new Date(questionnaire.createdAt), {
                               addSuffix: true,
                             })}
