@@ -68,6 +68,8 @@
           {
             "group": "Self-Hosting",
             "pages": [
+              "self-hosting/docker",
+              "self-hosting/env-reference",
               "integrations/oauth-setup"
             ]
           }

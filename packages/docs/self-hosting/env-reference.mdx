@@ -1,0 +1,166 @@
+---
+title: "Environment Reference"
+description: "Complete environment variable reference for Docker self-hosting"
+---
+
+## Legend
+
+| Column | Description |
+|--------|-------------|
+| **Service** | Which service(s) use this variable: `migrator`, `seeder`, `app`, `portal` |
+| **Phase** | `build` = Docker build arg, `runtime` = loaded from env file at startup |
+| **Required** | `required-minimal` = needed for basic deployment, `conditional` = needed for specific features, `optional` = safe to omit |
+
+## Minimal Required Variables
+
+These variables are required for a functional Docker deployment:
+
+| Name | Service(s) | Phase | Notes |
+|------|-----------|-------|-------|
+| `DATABASE_URL` | migrator, seeder, app, portal | runtime | PostgreSQL connection string with `?sslmode=require` |
+| `AUTH_SECRET` | app | runtime | 32-byte base64 secret for auth. Generate: `openssl rand -base64 32` |
+| `SECRET_KEY` | app | runtime | Encryption key for sensitive data. Generate: `openssl rand -base64 32` |
+| `BETTER_AUTH_URL` | app, portal | runtime | Base URL for Better Auth (app or portal's public URL) |
+| `NEXT_PUBLIC_BETTER_AUTH_URL` | app, portal | build | Public auth URL (same as `BETTER_AUTH_URL`) |
+| `BETTER_AUTH_SECRET` | portal | runtime | Portal-specific auth secret. Generate: `openssl rand -base64 32` |
+| `RESEND_API_KEY` | app, portal | runtime | [Resend](https://resend.com) API key for email |
+| `TRIGGER_SECRET_KEY` | app | runtime | [Trigger.dev](https://cloud.trigger.dev) project secret key |
+| `REVALIDATION_SECRET` | app | runtime | Random string for revalidation. Generate: `openssl rand -base64 16` |
+| `NEXT_PUBLIC_PORTAL_URL` | app | build | Public URL of the portal (e.g., `https://portal.yourdomain.com`) |
+
+## All Variables by Category
+
+### Database
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `DATABASE_URL` | migrator, seeder, app, portal | runtime | required-minimal | Format: `postgresql://user:pass@host:5432/db?sslmode=require` |
+
+### Authentication
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `AUTH_SECRET` | app | runtime | required-minimal | Main app auth secret |
+| `SECRET_KEY` | app | runtime | required-minimal | Encryption key for sensitive data |
+| `BETTER_AUTH_URL` | app, portal | runtime | required-minimal | Base URL for auth |
+| `BETTER_AUTH_SECRET` | portal | runtime | required-minimal | Portal auth secret |
+| `NEXT_PUBLIC_BETTER_AUTH_URL` | app, portal | build | required-minimal | Public auth URL for client code |
+| `AUTH_GOOGLE_ID` | app | runtime | conditional | Google OAuth client ID |
+| `AUTH_GOOGLE_SECRET` | app | runtime | conditional | Google OAuth client secret |
+| `AUTH_GITHUB_ID` | app | runtime | optional | GitHub OAuth client ID |
+| `AUTH_GITHUB_SECRET` | app | runtime | optional | GitHub OAuth client secret |
+
+### Email
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `RESEND_API_KEY` | app, portal | runtime | required-minimal | Resend API key for transactional email |
+| `RESEND_DOMAIN` | portal | runtime | optional | Custom domain for sending emails |
+
+### Workflows (Trigger.dev)
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `TRIGGER_SECRET_KEY` | app | runtime | required-minimal | Trigger.dev project secret |
+| `REVALIDATION_SECRET` | app | runtime | required-minimal | Server-side revalidation secret |
+
+### AWS S3 Storage
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `APP_AWS_ACCESS_KEY_ID` | app, portal | runtime | conditional | AWS access key |
+| `APP_AWS_SECRET_ACCESS_KEY` | app, portal | runtime | conditional | AWS secret key |
+| `APP_AWS_REGION` | app, portal | runtime | conditional | AWS region (e.g., `us-east-1`) |
+| `APP_AWS_BUCKET_NAME` | app, portal | runtime | conditional | General file storage bucket |
+| `APP_AWS_ORG_ASSETS_BUCKET` | app | runtime | conditional | Organization logos, compliance certs |
+| `APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET` | app | runtime | conditional | Security questionnaire uploads |
+| `APP_AWS_KNOWLEDGE_BASE_BUCKET` | app | runtime | conditional | Knowledge base documents |
+
+<Note>
+AWS S3 variables are required for file upload features (attachments, logos, questionnaires). Without them, these features will fail.
+</Note>
+
+### AI Providers
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `OPENAI_API_KEY` | app | runtime | conditional | OpenAI API key for AI features |
+| `ANTHROPIC_API_KEY` | app | runtime | optional | Anthropic API key (alternative models) |
+| `GROQ_API_KEY` | app | runtime | optional | Groq API key for dashboard chat |
+| `FIRECRAWL_API_KEY` | app | runtime | conditional | Firecrawl for vendor research |
+
+### Rate Limiting & Caching (Upstash)
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `UPSTASH_REDIS_REST_URL` | app | runtime | optional | Upstash Redis URL for rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | app | runtime | optional | Upstash Redis token |
+| `UPSTASH_VECTOR_REST_URL` | app | runtime | optional | Upstash Vector for embeddings |
+| `UPSTASH_VECTOR_REST_TOKEN` | app | runtime | optional | Upstash Vector token |
+
+### Analytics & Tracking
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `NEXT_PUBLIC_POSTHOG_KEY` | app, portal | build | optional | PostHog project key |
+| `NEXT_PUBLIC_POSTHOG_HOST` | app, portal | build | optional | PostHog host (e.g., `/ingest`) |
+| `NEXT_PUBLIC_GTM_ID` | app | build | optional | Google Tag Manager container ID |
+| `NEXT_PUBLIC_LINKEDIN_PARTNER_ID` | app | build | optional | LinkedIn Insight Tag partner ID |
+| `NEXT_PUBLIC_LINKEDIN_CONVERSION_ID` | app | build | optional | LinkedIn conversion ID |
+| `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL` | app | build | optional | Google Ads conversion label |
+| `GA4_API_SECRET` | app | runtime | optional | GA4 Measurement Protocol secret |
+| `GA4_MEASUREMENT_ID` | app | runtime | optional | GA4 Measurement ID |
+
+### Vercel (Trust Portal Domains)
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `VERCEL_ACCESS_TOKEN` | app | runtime | conditional | Vercel API token for portal domains |
+| `VERCEL_TEAM_ID` | app | runtime | conditional | Vercel team ID |
+| `VERCEL_PROJECT_ID` | app | runtime | conditional | Vercel project ID |
+| `NEXT_PUBLIC_VERCEL_URL` | app | build | optional | Vercel deployment URL |
+
+### MDM (Fleet)
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `FLEET_URL` | app | runtime | conditional | Fleet MDM server URL |
+| `FLEET_TOKEN` | app | runtime | conditional | Fleet API token |
+
+### Miscellaneous
+
+| Name | Service(s) | Phase | Required | Notes |
+|------|-----------|-------|----------|-------|
+| `NEXT_PUBLIC_API_URL` | app | build | optional | Override API base URL |
+| `NEXT_OUTPUT_STANDALONE` | app | runtime | optional | Set `true` for AWS/Docker deployments |
+| `SLACK_SALES_WEBHOOK` | app | runtime | optional | Slack webhook for sales notifications |
+| `DUB_API_KEY` | app | runtime | optional | Dub.co link shortener API key |
+| `DUB_REFER_URL` | app | runtime | optional | Dub.co referral URL |
+
+## Example Minimal Configuration
+
+<CodeGroup>
+```bash packages/db/.env
+DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
+```
+
+```bash apps/app/.env
+DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
+AUTH_SECRET="your-32-byte-secret-here"
+SECRET_KEY="your-32-byte-encryption-key"
+BETTER_AUTH_URL="https://app.yourdomain.com"
+NEXT_PUBLIC_BETTER_AUTH_URL="https://app.yourdomain.com"
+NEXT_PUBLIC_PORTAL_URL="https://portal.yourdomain.com"
+RESEND_API_KEY="re_your_api_key"
+TRIGGER_SECRET_KEY="tr_your_secret_key"
+REVALIDATION_SECRET="random-revalidation-string"
+```
+
+```bash apps/portal/.env
+DATABASE_URL="postgresql://user:pass@host:5432/comp?sslmode=require"
+BETTER_AUTH_SECRET="your-32-byte-portal-secret"
+BETTER_AUTH_URL="https://portal.yourdomain.com"
+NEXT_PUBLIC_BETTER_AUTH_URL="https://portal.yourdomain.com"
+RESEND_API_KEY="re_your_api_key"
+```
+</CodeGroup>
