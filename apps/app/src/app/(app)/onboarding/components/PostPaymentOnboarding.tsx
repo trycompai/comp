@@ -45,16 +45,11 @@ export function PostPaymentOnboarding({
     userEmail,
   });
 
-  const isLocal = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    const host = window.location.host || '';
-    return (
-      process.env.NODE_ENV !== 'production' ||
-      host.includes('localhost') ||
-      host.startsWith('127.0.0.1') ||
-      host.startsWith('::1')
-    );
-  }, []);
+  // Only show skip button for internal team members
+  const canSkipOnboarding = useMemo(() => {
+    if (!userEmail) return false;
+    return userEmail.endsWith('@trycomp.ai');
+  }, [userEmail]);
 
   // Check if current step has valid input
   const currentStepValue = form.watch(step?.key);
@@ -193,7 +188,7 @@ export function PostPaymentOnboarding({
               </motion.div>
             )}
           </AnimatePresence>
-          {isLocal && (
+          {canSkipOnboarding && (
             <motion.div
               key="complete-now"
               initial={{ opacity: 0, x: 20 }}
