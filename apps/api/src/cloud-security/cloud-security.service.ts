@@ -98,6 +98,13 @@ export class CloudSecurityService {
           };
         }
 
+        // Check if token needs refresh
+        const needsRefresh =
+          await this.credentialVaultService.needsRefresh(connectionId);
+        this.logger.log(
+          `Token refresh check for ${providerSlug}: needsRefresh=${needsRefresh}`,
+        );
+
         // Get valid access token (with refresh if needed)
         const accessToken =
           await this.credentialVaultService.getValidAccessToken(connectionId, {
@@ -108,6 +115,9 @@ export class CloudSecurityService {
           });
 
         if (!accessToken) {
+          this.logger.error(
+            `Failed to get valid access token for ${providerSlug} connection ${connectionId}`,
+          );
           return {
             success: false,
             provider: providerSlug,
@@ -116,6 +126,10 @@ export class CloudSecurityService {
             error: 'OAuth token expired. Please reconnect the integration.',
           };
         }
+
+        this.logger.log(
+          `Using ${needsRefresh ? 'refreshed' : 'existing'} access token for ${providerSlug}`,
+        );
 
         // Get full credentials and update with fresh access token
         const decrypted =
