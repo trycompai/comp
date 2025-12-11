@@ -67,6 +67,12 @@ model BrowserAutomationRun {
     /// Screenshot URL in S3 (if successful)
     screenshotUrl String?
 
+    /// Evaluation result - whether the automation fulfilled the task requirements
+    evaluationStatus BrowserAutomationEvaluationStatus?
+
+    /// AI explanation of why it passed or failed
+    evaluationReason String?
+
     /// Error message (if failed)
     error String?
 
@@ -75,6 +81,11 @@ model BrowserAutomationRun {
     @@index([automationId])
     @@index([status])
     @@index([createdAt])
+}
+
+enum BrowserAutomationEvaluationStatus {
+    pass
+    fail
 }
 
 enum BrowserAutomationRunStatus {

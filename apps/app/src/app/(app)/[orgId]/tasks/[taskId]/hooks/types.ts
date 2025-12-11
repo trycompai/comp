@@ -4,6 +4,8 @@ export interface BrowserAutomationRun {
   createdAt: string;
   completedAt?: string;
   screenshotUrl?: string;
+  evaluationStatus?: 'pass' | 'fail' | null;
+  evaluationReason?: string | null;
   error?: string;
 }
 

@@ -283,13 +283,25 @@ function RunItem({ run, isLatest }: { run: BrowserAutomationRun; isLatest: boole
   const hasFailed = run.status === 'failed';
   const isCompleted = run.status === 'completed';
   const hasScreenshot = !!run.screenshotUrl;
+  const evaluationPassed = run.evaluationStatus === 'pass';
+  const evaluationFailed = run.evaluationStatus === 'fail';
 
-  const statusColor = hasFailed
+  // Determine overall status: failed run, or completed but evaluation failed
+  const hasIssue = hasFailed || evaluationFailed;
+  const statusColor = hasIssue
     ? 'text-destructive'
     : isCompleted
       ? 'text-primary'
       : 'text-muted-foreground';
-  const statusText = hasFailed ? 'Failed' : isCompleted ? 'Completed' : run.status;
+  const statusText = hasFailed
+    ? 'Failed'
+    : evaluationFailed
+      ? 'Issues Found'
+      : evaluationPassed
+        ? 'Passed'
+        : isCompleted
+          ? 'Completed'
+          : run.status;
 
   return (
     <div
@@ -305,13 +317,24 @@ function RunItem({ run, isLatest }: { run: BrowserAutomationRun; isLatest: boole
         <div
           className={cn(
             'h-1.5 w-1.5 rounded-full flex-shrink-0',
-            hasFailed ? 'bg-destructive' : isCompleted ? 'bg-primary' : 'bg-muted-foreground',
+            hasIssue ? 'bg-destructive' : isCompleted ? 'bg-primary' : 'bg-muted-foreground',
           )}
         />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-xs">
             <span className={cn('font-medium', statusColor)}>{statusText}</span>
+            {run.evaluationStatus && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <Badge
+                  variant={evaluationPassed ? 'default' : 'destructive'}
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  {evaluationPassed ? '✓ Pass' : '✗ Fail'}
+                </Badge>
+              </>
+            )}
             <span className="text-muted-foreground">•</span>
             <span className="text-muted-foreground">{timeAgo}</span>
             {hasScreenshot && (
@@ -342,6 +365,30 @@ function RunItem({ run, isLatest }: { run: BrowserAutomationRun; isLatest: boole
       >
         <div className="overflow-hidden">
           <div className="px-3 pb-3 pt-1 space-y-3 border-t border-border/30">
+            {/* Evaluation Result */}
+            {run.evaluationReason && (
+              <div
+                className={cn(
+                  'p-2 rounded-md border',
+                  run.evaluationStatus === 'pass'
+                    ? 'bg-primary/5 border-primary/20'
+                    : 'bg-destructive/5 border-destructive/20',
+                )}
+              >
+                <p className="text-xs font-medium mb-1">
+                  {run.evaluationStatus === 'pass' ? 'Evaluation Passed' : 'Evaluation Failed'}
+                </p>
+                <p
+                  className={cn(
+                    'text-xs',
+                    run.evaluationStatus === 'pass' ? 'text-foreground' : 'text-destructive',
+                  )}
+                >
+                  {run.evaluationReason}
+                </p>
+              </div>
+            )}
+
             {/* Error */}
             {run.error && (
               <div className="p-2 rounded-md bg-destructive/10 border border-destructive/20">

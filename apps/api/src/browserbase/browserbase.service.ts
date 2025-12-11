@@ -362,11 +362,18 @@ export class BrowserbaseService {
   ): Promise<{
     success: boolean;
     screenshotUrl?: string;
+    evaluationStatus?: 'pass' | 'fail';
+    evaluationReason?: string;
     error?: string;
     needsReauth?: boolean;
   }> {
     const automation = await db.browserAutomation.findUnique({
       where: { id: automationId },
+      include: {
+        task: {
+          select: { title: true, description: true },
+        },
+      },
     });
 
     if (!automation) {
@@ -386,9 +393,14 @@ export class BrowserbaseService {
         sessionId,
         automation.targetUrl,
         automation.instruction,
+        {
+          title: automation.task.title,
+          description: automation.task.description,
+        },
       );
 
       if (!result.success) {
+        // Store evaluation data even on failure (requirement not met)
         await db.browserAutomationRun.update({
           where: { id: runId },
           data: {
@@ -398,17 +410,21 @@ export class BrowserbaseService {
               ? Date.now() - run.startedAt.getTime()
               : 0,
             error: result.error,
+            evaluationStatus: result.evaluationStatus,
+            evaluationReason: result.evaluationReason,
           },
         });
 
         return {
           success: false,
           error: result.error,
+          evaluationStatus: result.evaluationStatus,
+          evaluationReason: result.evaluationReason,
           needsReauth: result.needsReauth,
         };
       }
 
-      // Upload screenshot to S3
+      // Upload screenshot to S3 (only taken if evaluation passed)
       let screenshotKey: string | undefined;
       let presignedUrl: string | undefined;
       if (result.screenshot) {
@@ -421,7 +437,7 @@ export class BrowserbaseService {
         presignedUrl = await this.getPresignedUrl(screenshotKey);
       }
 
-      // Update run as completed (store the S3 key)
+      // Update run as completed
       await db.browserAutomationRun.update({
         where: { id: runId },
         data: {
@@ -429,12 +445,16 @@ export class BrowserbaseService {
           completedAt: new Date(),
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
           screenshotUrl: screenshotKey,
+          evaluationStatus: 'pass',
+          evaluationReason: result.evaluationReason ?? 'Requirement verified',
         },
       });
 
       return {
         success: true,
         screenshotUrl: presignedUrl,
+        evaluationStatus: 'pass',
+        evaluationReason: result.evaluationReason,
       };
     } catch (err) {
       this.logger.error('Failed to execute automation on session', err);
@@ -463,12 +483,19 @@ export class BrowserbaseService {
     runId: string;
     success: boolean;
     screenshotUrl?: string;
+    evaluationStatus?: 'pass' | 'fail';
+    evaluationReason?: string;
     error?: string;
     needsReauth?: boolean;
   }> {
-    // Get the automation
+    // Get the automation with task context
     const automation = await db.browserAutomation.findUnique({
       where: { id: automationId },
+      include: {
+        task: {
+          select: { title: true, description: true },
+        },
+      },
     });
 
     if (!automation) {
@@ -506,10 +533,14 @@ export class BrowserbaseService {
           sessionId,
           automation.targetUrl,
           automation.instruction,
+          {
+            title: automation.task.title,
+            description: automation.task.description,
+          },
         );
 
         if (!result.success) {
-          // Update run as failed
+          // Update run as failed - include evaluation data if requirement not met
           await db.browserAutomationRun.update({
             where: { id: run.id },
             data: {
@@ -517,6 +548,8 @@ export class BrowserbaseService {
               completedAt: new Date(),
               durationMs: Date.now() - run.startedAt!.getTime(),
               error: result.error,
+              evaluationStatus: result.evaluationStatus,
+              evaluationReason: result.evaluationReason,
             },
           });
 
@@ -524,11 +557,13 @@ export class BrowserbaseService {
             runId: run.id,
             success: false,
             error: result.error,
+            evaluationStatus: result.evaluationStatus,
+            evaluationReason: result.evaluationReason,
             needsReauth: result.needsReauth,
           };
         }
 
-        // Upload screenshot to S3
+        // Upload screenshot to S3 (only taken if evaluation passed)
         let screenshotKey: string | undefined;
         let presignedUrl: string | undefined;
         if (result.screenshot) {
@@ -541,7 +576,7 @@ export class BrowserbaseService {
           presignedUrl = await this.getPresignedUrl(screenshotKey);
         }
 
-        // Update run as completed (store the S3 key)
+        // Update run as completed
         await db.browserAutomationRun.update({
           where: { id: run.id },
           data: {
@@ -549,6 +584,8 @@ export class BrowserbaseService {
             completedAt: new Date(),
             durationMs: Date.now() - run.startedAt!.getTime(),
             screenshotUrl: screenshotKey,
+            evaluationStatus: 'pass',
+            evaluationReason: result.evaluationReason ?? 'Requirement verified',
           },
         });
 
@@ -556,6 +593,8 @@ export class BrowserbaseService {
           runId: run.id,
           success: true,
           screenshotUrl: presignedUrl,
+          evaluationStatus: 'pass',
+          evaluationReason: result.evaluationReason,
         };
       } finally {
         // Always close the session
@@ -587,9 +626,12 @@ export class BrowserbaseService {
     sessionId: string,
     targetUrl: string,
     instruction: string,
+    taskContext?: { title: string; description?: string | null },
   ): Promise<{
     success: boolean;
     screenshot?: string;
+    evaluationStatus?: 'pass' | 'fail';
+    evaluationReason?: string;
     error?: string;
     needsReauth?: boolean;
   }> {
@@ -644,7 +686,70 @@ export class BrowserbaseService {
       // Wait for final page to settle
       await delay(2000);
 
-      // Take screenshot
+      // Evaluate if the automation fulfills the task requirements BEFORE taking screenshot
+      if (taskContext) {
+        const evaluationSchema = z.object({
+          passes: z
+            .boolean()
+            .describe(
+              'Whether the current page state shows that the requirement is fulfilled',
+            ),
+          reason: z
+            .string()
+            .describe(
+              'A brief explanation of why it passes or fails the requirement',
+            ),
+        });
+
+        const evaluationPrompt = `You are evaluating whether a compliance requirement is being met.
+
+Task/Requirement: "${taskContext.title}"
+${taskContext.description ? `Description: "${taskContext.description}"` : ''}
+
+Navigation completed: "${instruction}"
+
+Look at the current page and determine if the visible configuration, settings, or state demonstrates that this requirement is fulfilled. 
+
+For example:
+- If the task is about "branch protection", check if branch protection rules are visible and enabled
+- If the task is about "MFA/2FA", check if multi-factor authentication is shown as enabled
+- If the task is about "access controls", check if appropriate access restrictions are configured
+
+Be strict: if the setting is disabled, not configured, or shows a warning/error state, it should FAIL.
+Only pass if there is clear evidence the requirement is properly configured and active.`;
+
+        try {
+          const evaluation = (await stagehand.extract(
+            evaluationPrompt,
+            evaluationSchema as any,
+          )) as { passes: boolean; reason: string };
+
+          this.logger.log(
+            `Automation evaluation: ${evaluation.passes ? 'PASS' : 'FAIL'} - ${evaluation.reason}`,
+          );
+
+          // If evaluation fails, abort without taking screenshot
+          if (!evaluation.passes) {
+            return {
+              success: false,
+              evaluationStatus: 'fail',
+              evaluationReason: evaluation.reason,
+              error: `Requirement not met: ${evaluation.reason}`,
+            };
+          }
+        } catch (evalErr) {
+          this.logger.warn(
+            `Failed to evaluate automation: ${evalErr instanceof Error ? evalErr.message : String(evalErr)}`,
+          );
+          // If evaluation itself errors, fail the automation
+          return {
+            success: false,
+            error: `Evaluation error: ${evalErr instanceof Error ? evalErr.message : 'Unknown error'}`,
+          };
+        }
+      }
+
+      // Only take screenshot if evaluation passed (or no task context)
       const screenshot = await page.screenshot({
         type: 'jpeg',
         quality: 80,
@@ -654,6 +759,8 @@ export class BrowserbaseService {
       return {
         success: true,
         screenshot: screenshot.toString('base64'),
+        evaluationStatus: 'pass',
+        evaluationReason: 'Requirement verified successfully',
       };
     } catch (err) {
       this.logger.error('Failed to execute automation', err);

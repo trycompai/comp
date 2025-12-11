@@ -11,6 +11,9 @@ const browserbaseService = new BrowserbaseService();
 export const runBrowserAutomation = task({
   id: 'run-browser-automation',
   maxDuration: 1000 * 60 * 10, // 10 minutes per automation
+  queue: {
+    concurrencyLimit: 80,
+  },
   retry: {
     maxAttempts: 2,
     factor: 2,
