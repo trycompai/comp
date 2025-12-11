@@ -26,6 +26,8 @@ import {
 import { Label } from '@comp/ui/label';
 import type { Role } from '@db';
 
+import { usePeopleActions } from '@/hooks/use-people-api';
+import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
@@ -56,6 +58,7 @@ function getInitials(name?: string | null, email?: string | null): string {
 export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRowProps) {
   const params = useParams<{ orgId: string }>();
   const { orgId } = params;
+  const { unlinkDevice } = usePeopleActions();
 
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = useState(false);
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
@@ -127,12 +130,16 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
   };
 
   const handleRemoveDeviceClick = async () => {
-    // TODO: Implement device removal logic
-    setIsRemovingDevice(true);
-    console.log('Remove device for member:', memberId);
-    // Example: Call API to remove device
-    setIsRemovingDevice(false);
-    setIsRemoveDeviceAlertOpen(false);
+    try {
+      setIsRemovingDevice(true);
+      await unlinkDevice(memberId);
+      toast.success('Device unlinked successfully');
+      setIsRemoveDeviceAlertOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to unlink device');
+    } finally {
+      setIsRemovingDevice(false);
+    }
   };
 
   const isDeactivated = member.deactivated;
