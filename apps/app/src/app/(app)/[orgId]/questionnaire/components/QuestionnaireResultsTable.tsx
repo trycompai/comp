@@ -89,7 +89,14 @@ export function QuestionnaireResultsTable({
             const uniqueSources = qa.sources ? deduplicateSources(qa.sources) : [];
 
             return (
-              <TableRow key={`row-${safeIndex}-${qa.question.substring(0, 20)}`} className="group">
+              <TableRow 
+                key={`row-${safeIndex}-${qa.question.substring(0, 20)}`} 
+                className="group animate-in fade-in duration-500 ease-out"
+                style={{ 
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'backwards'
+                }}
+              >
                 <TableCell className="align-top py-6 font-medium pl-6">
                   <span className="tabular-nums text-muted-foreground">{safeIndex + 1}</span>
                 </TableCell>
