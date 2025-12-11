@@ -1,0 +1,794 @@
+---
+title: 'Writing Checks Reference'
+description: 'Complete guide to writing compliance checks'
+---
+
+## Overview
+
+Checks are the core of integrations - they validate compliance against external services and report findings.
+
+**A check:**
+- Fetches data from the service API
+- Analyzes it for compliance issues
+- Reports findings (failures) or passing results (successes)
+- Can map to compliance tasks for auto-completion
+
+---
+
+## Check Structure
+
+```typescript
+export const yourCheck: IntegrationCheck = {
+  // Metadata
+  id: 'unique-check-id',
+  name: 'Human-Readable Check Name',
+  description: 'What this check validates',
+  
+  // Optional: Map to a task template
+  taskMapping: TASK_TEMPLATES.twoFactorAuth,
+  
+  // Default severity for findings (can override per finding)
+  defaultSeverity: 'medium',
+  
+  // User-configurable variables
+  variables: [],
+  
+  // The check logic
+  run: async (ctx: CheckContext) => {
+    // Your code here
+  },
+};
+```
+
+---
+
+## CheckContext API Reference
+
+### HTTP Methods
+
+```typescript
+// GET request
+const data = await ctx.fetch<ResponseType>('/endpoint');
+
+// POST request
+const result = await ctx.post<ResponseType>('/endpoint', { body: 'data' });
+
+// PUT request
+const updated = await ctx.put<ResponseType>('/endpoint/:id', { updates });
+
+// PATCH request
+const patched = await ctx.patch<ResponseType>('/endpoint/:id', { partial });
+
+// DELETE request
+await ctx.delete('/endpoint/:id');
+```
+
+### Pagination
+
+**Auto-pagination** (for standardized APIs):
+```typescript
+// Fetches all pages automatically
+const allItems = await ctx.fetchAllPages<Item>('/items');
+```
+
+**Page number pagination:**
+```typescript
+const allItems = await ctx.fetchWithPageNumbers<Item>({
+  path: '/items',
+  maxPages: 100,
+  pageParam: 'page',
+  perPageParam: 'per_page',
+  perPage: 100,
+});
+```
+
+**Cursor pagination:**
+```typescript
+const allItems = await ctx.fetchWithCursor<Item>({
+  path: '/items',
+  maxPages: 100,
+  cursorParam: 'cursor',
+  dataPath: 'data.items',
+  cursorPath: 'data.nextCursor',
+});
+```
+
+**Link header pagination:**
+```typescript
+const allItems = await ctx.fetchWithLinkHeader<Item>('/items', {
+  maxPages: 100,
+});
+```
+
+### GraphQL
+
+```typescript
+const data = await ctx.graphql<QueryResult>(
+  `query {
+    users {
+      id
+      email
+      twoFactorEnabled
+    }
+  }`,
+  { limit: 100 } // Optional variables
+);
+```
+
+### Logging
+
+```typescript
+ctx.log('Info message', { optional: 'metadata' });
+ctx.warn('Warning message', { data });
+```
+
+**Logs appear in:**
+- API console during development
+- Trigger.dev dashboard for background jobs
+- Check run logs in database
+
+### State Storage
+
+**For checks that need to remember data between runs:**
+
+```typescript
+// Save state
+await ctx.state.set('last_check_time', new Date().toISOString());
+
+// Retrieve state
+const lastCheck = await ctx.state.get<string>('last_check_time');
+```
+
+**Use for:** Incremental checks, rate limit tracking, caching
+
+### Available Data
+
+```typescript
+ctx.accessToken;      // OAuth access token (if OAuth)
+ctx.credentials;      // All credentials as object
+ctx.variables;        // User-configured variables
+ctx.connectionId;     // Current connection ID
+ctx.organizationId;   // Current organization ID
+ctx.metadata;         // Connection metadata (e.g., OAuth team info)
+```
+
+---
+
+## Reporting Findings
+
+### ctx.fail() - Report an Issue
+
+```typescript
+ctx.fail({
+  title: 'Issue Title (shown in UI)',
+  resourceType: 'repository',        // Type of resource
+  resourceId: 'org/repo-name',      // Unique resource ID
+  severity: 'high',                 // critical | high | medium | low | info
+  description: 'What is wrong',
+  remediation: 'How to fix it',
+  evidence: {                       // Supporting data
+    currentValue: false,
+    expectedValue: true,
+    checkedAt: new Date(),
+  },
+});
+```
+
+**Required fields:**
+- `title` - Short summary
+- `resourceType` - Category of resource
+- `resourceId` - Unique identifier
+- `severity` - How serious is this?
+- `description` - What's wrong
+- `remediation` - How to fix
+
+**Optional fields:**
+- `evidence` - Any relevant data (stored as JSON)
+
+### ctx.pass() - Report Success
+
+```typescript
+ctx.pass({
+  title: 'Check Passed',
+  resourceType: 'repository',
+  resourceId: 'org/repo-name',
+  description: 'What was validated successfully',
+  evidence: {
+    checkedItems: 10,
+    allPassed: true,
+  },
+});
+```
+
+**When to use:**
+- Check completed successfully
+- Informational results (not just absence of findings)
+- Evidence for auditors
+
+**When NOT to use:**
+- Just because no issues found (that's implied if no `fail()` calls)
+- For intermediate steps (use `ctx.log()` instead)
+
+---
+
+## Severity Levels
+
+| Level | When to Use | Example |
+|-------|-------------|---------|
+| `critical` | Immediate security risk, compliance violation | No encryption, public S3 buckets |
+| `high` | Serious issue, needs urgent fix | 2FA disabled, admin without MFA |
+| `medium` | Important but not urgent | Outdated dependencies, missing alerts |
+| `low` | Minor issue, best practice | Naming conventions, documentation |
+| `info` | Informational, no action needed | Configuration review, statistics |
+
+**Default severity** can be overridden per finding:
+
+```typescript
+export const check: IntegrationCheck = {
+  defaultSeverity: 'medium',  // Default for this check
+  
+  run: async (ctx) => {
+    ctx.fail({
+      severity: 'critical',  // Override for this specific finding
+      // ...
+    });
+  },
+};
+```
+
+---
+
+## Task Mapping
+
+**Auto-complete compliance tasks when checks pass:**
+
+```typescript
+import { TASK_TEMPLATES } from '../../../task-mappings';
+
+export const twoFactorCheck: IntegrationCheck = {
+  id: 'two-factor-auth',
+  taskMapping: TASK_TEMPLATES['2fa'],  // Maps to "2FA" task
+  
+  run: async (ctx) => {
+    // Check 2FA status
+    const allUsersHave2FA = checkTwoFactor();
+    
+    if (allUsersHave2FA) {
+      // When this passes, the "2FA" task is auto-marked as done
+      ctx.pass({
+        title: 'All Users Have 2FA',
+        // ...
+      });
+    }
+  },
+};
+```
+
+**Available task templates:** See `packages/integration-platform/src/task-mappings.ts` for the full list.
+
+**Benefits:**
+- Automatic task completion
+- Reduces manual work
+- Keeps tasks in sync with real state
+
+**When to use:** When the check directly validates what a task requires.
+
+---
+
+## Error Handling
+
+### User-Friendly Errors
+
+**Bad:**
+```typescript
+catch (error) {
+  ctx.fail({
+    title: 'Error',
+    description: error.message,  // Raw API error
+    remediation: 'Fix it',       // Vague
+  });
+}
+```
+
+**Good:**
+```typescript
+catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  ctx.log(`API Error: ${errorMessage}`);  // Log full error
+  
+  if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED')) {
+    ctx.fail({
+      title: 'Permission Denied',
+      description: 'Your account lacks necessary permissions',
+      remediation: 'Grant the "Security Viewer" role in provider settings → IAM → Add Role',
+      evidence: { error: errorMessage },  // Raw error in evidence (not description)
+    });
+    return;
+  }
+  
+  // Generic fallback
+  ctx.fail({
+    title: 'Failed to Fetch Data',
+    description: 'An error occurred while checking your account',
+    remediation: 'Verify your connection is active and try reconnecting',
+    evidence: { error: errorMessage },
+  });
+}
+```
+
+### Common Error Patterns
+
+**Permission denied:**
+```typescript
+if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED')) {
+  ctx.fail({
+    title: 'Permission Denied',
+    description: 'Your account does not have access to this resource',
+    remediation: 'Grant [specific role] in provider settings',
+    severity: 'high',
+  });
+  return;
+}
+```
+
+**Resource not found:**
+```typescript
+if (errorMessage.includes('404') || errorMessage.includes('NOT_FOUND')) {
+  ctx.log(`Resource not found: ${resourceId}`);
+  // Don't fail - just skip it
+  return;
+}
+```
+
+**Rate limited:**
+```typescript
+if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+  ctx.fail({
+    title: 'Rate Limited',
+    description: 'API rate limit exceeded',
+    remediation: 'Wait a few minutes and try again',
+    severity: 'low',
+  });
+  return;
+}
+```
+
+**Service not enabled:**
+```typescript
+if (errorMessage.includes('not enabled') || errorMessage.includes('not subscribed')) {
+  ctx.pass({  // Use pass() for informational, not fail()
+    title: 'Service Not Enabled',
+    description: 'Security Hub is not enabled in your account',
+    evidence: { note: 'Enable Security Hub to get findings' },
+  });
+  return;
+}
+```
+
+---
+
+## Performance Tips
+
+### Batch API Calls
+
+**Bad:**
+```typescript
+for (const repo of repos) {
+  const details = await ctx.fetch(`/repos/${repo}`);  // N API calls
+}
+```
+
+**Good:**
+```typescript
+// Fetch all at once if API supports it
+const details = await ctx.post('/repos/batch', { repos: repos.map(r => r.id) });
+
+// Or use Promise.all (but be careful with rate limits)
+const details = await Promise.all(
+  repos.slice(0, 10).map(r => ctx.fetch(`/repos/${r}`))
+);
+```
+
+### Cache Results
+
+```typescript
+run: async (ctx) => {
+  // Check if we fetched recently
+  const lastFetch = await ctx.state.get<string>('last_users_fetch');
+  const cacheValid = lastFetch && 
+    Date.now() - new Date(lastFetch).getTime() < 3600000; // 1 hour
+  
+  let users;
+  if (cacheValid) {
+    users = await ctx.state.get<User[]>('cached_users');
+  } else {
+    users = await ctx.fetch<User[]>('/users');
+    await ctx.state.set('cached_users', users);
+    await ctx.state.set('last_users_fetch', new Date().toISOString());
+  }
+  
+  // Use cached users
+}
+```
+
+---
+
+## Testing Checks
+
+### Manual Testing
+
+1. Connect the integration with real credentials
+2. Run the check from Cloud Tests or a task
+3. Verify:
+   - No errors in API logs
+   - Findings appear correctly
+   - Remediation steps are clear
+   - Evidence contains useful data
+
+### Error Case Testing
+
+Test that your check handles:
+- Missing permissions (403 errors)
+- Invalid credentials (401 errors)
+- Resource not found (404 errors)
+- Rate limiting (429 errors)
+- Empty datasets (no resources to check)
+- Malformed responses
+
+### Edge Cases
+
+- User has no resources (empty org)
+- All resources are compliant (no findings)
+- Variables not configured (required variables missing)
+- Dynamic options return empty list
+
+---
+
+## Examples
+
+### Simple Check (No External Data)
+
+```typescript
+export const configCheck: IntegrationCheck = {
+  id: 'config-check',
+  name: 'Configuration Review',
+  defaultSeverity: 'low',
+  variables: [],
+  
+  run: async (ctx) => {
+    ctx.pass({
+      title: 'Configuration Reviewed',
+      resourceType: 'integration',
+      resourceId: ctx.connectionId,
+      description: 'Integration configuration has been reviewed',
+      evidence: { reviewedAt: new Date() },
+    });
+  },
+};
+```
+
+### Data Fetching Check
+
+```typescript
+export const securityCheck: IntegrationCheck = {
+  id: 'security-check',
+  name: 'Security Settings',
+  defaultSeverity: 'high',
+  variables: [],
+  
+  run: async (ctx) => {
+    const settings = await ctx.fetch<SecuritySettings>('/security');
+    
+    if (!settings.twoFactorRequired) {
+      ctx.fail({
+        title: '2FA Not Required',
+        resourceType: 'security-setting',
+        resourceId: 'two-factor',
+        severity: 'high',
+        description: '2FA is not enforced for all users',
+        remediation: 'Enable 2FA requirement in Settings → Security → Require 2FA',
+        evidence: { currentSetting: settings.twoFactorRequired },
+      });
+    } else {
+      ctx.pass({
+        title: '2FA Required',
+        resourceType: 'security-setting',
+        resourceId: 'two-factor',
+        description: '2FA is enforced for all users',
+        evidence: { setting: settings.twoFactorRequired },
+      });
+    }
+  },
+};
+```
+
+### Iterating Over Resources
+
+```typescript
+export const repoCheck: IntegrationCheck = {
+  id: 'repo-security',
+  name: 'Repository Security',
+  variables: [targetReposVariable],
+  
+  run: async (ctx) => {
+    const targetRepos = ctx.variables.target_repos as string[];
+    
+    if (!targetRepos?.length) {
+      ctx.fail({
+        title: 'No Repositories Selected',
+        description: 'Select repositories to monitor in integration settings',
+        resourceType: 'configuration',
+        resourceId: 'target_repos',
+        severity: 'medium',
+        remediation: 'Go to Manage → Settings → Select Repositories',
+        evidence: {},
+      });
+      return;
+    }
+    
+    ctx.log(`Checking ${targetRepos.length} repositories`);
+    
+    for (const repoName of targetRepos) {
+      try {
+        const repo = await ctx.fetch<Repo>(`/repos/${repoName}`);
+        
+        if (!repo.branchProtectionEnabled) {
+          ctx.fail({
+            title: `No Branch Protection on ${repoName}`,
+            resourceType: 'repository',
+            resourceId: repoName,
+            severity: 'high',
+            description: 'Main branch has no protection rules',
+            remediation: `Go to ${repoName} → Settings → Branches → Add Protection`,
+            evidence: { repo: repoName, protected: false },
+          });
+        } else {
+          ctx.pass({
+            title: `Branch Protection on ${repoName}`,
+            resourceType: 'repository',
+            resourceId: repoName,
+            description: 'Main branch is protected',
+            evidence: { repo: repoName, rules: repo.protectionRules },
+          });
+        }
+      } catch (error) {
+        ctx.log(`Skipping ${repoName}: ${error}`);
+        // Don't fail the whole check if one repo is inaccessible
+      }
+    }
+  },
+};
+```
+
+---
+
+## Best Practices
+
+### Findings vs Passing Results
+
+**Only create findings for actual issues:**
+
+```typescript
+// Good
+if (hasIssue) {
+  ctx.fail({ ... });
+}
+// No else - absence of findings implies success
+
+// Bad
+if (hasIssue) {
+  ctx.fail({ ... });
+} else {
+  ctx.pass({ ... });  // Don't create passing results for every check
+}
+```
+
+**When to use `ctx.pass()`:**
+- Summary results (e.g., "100 users checked, all have 2FA")
+- Evidence for auditors (e.g., "Access review completed on 2024-12-08")
+- Don't use for absence of findings
+
+**For cloud tests:** Only `fail()` results are shown. Passing results are filtered out.
+
+### Resource Types
+
+Use consistent resource types:
+
+| Type | Examples |
+|------|----------|
+| `repository` | GitHub/GitLab repos |
+| `user` | Users, accounts, members |
+| `team` | Teams, groups, org units |
+| `project` | Projects, workspaces |
+| `deployment` | Deployments, releases |
+| `security-setting` | Security configs |
+| `iam-policy` | Access policies |
+| `alert` | Monitoring alerts |
+| `configuration` | Integration settings |
+
+### Evidence
+
+**Include useful data for auditors:**
+
+```typescript
+evidence: {
+  // Good
+  userId: user.id,
+  userEmail: user.email,
+  twoFactorEnabled: user.twoFactorEnabled,
+  lastLogin: user.lastLoginAt,
+  checkedAt: new Date().toISOString(),
+  
+  // Avoid
+  rawResponse: entireApiResponse,  // Too much data
+  password: user.password,         // Never include secrets
+}
+```
+
+### Remediation Steps
+
+**Be specific and actionable:**
+
+```typescript
+// Vague
+remediation: 'Fix the security settings'
+
+// Specific
+remediation: 'Go to Settings → Security → Enable 2FA → Click "Require for all users"'
+
+// With link
+remediation: 'Enable branch protection: https://github.com/org/repo/settings/branch_protection_rules/new'
+```
+
+---
+
+## Performance Considerations
+
+### Don't Over-Fetch
+
+```typescript
+// Bad - Fetch all repos even if user only selected a few
+const allRepos = await ctx.fetchAllPages('/repos');
+const selectedRepos = allRepos.filter(r => targetRepos.includes(r.name));
+
+// Good - Only fetch what's needed
+const selectedRepos = await Promise.all(
+  targetRepos.map(name => ctx.fetch(`/repos/${name}`))
+);
+```
+
+### Rate Limits
+
+The platform handles retries automatically, but you can help:
+
+```typescript
+// Batch requests when possible
+const results = await ctx.post('/batch', { ids: [1, 2, 3, 4, 5] });
+
+// Sequential requests are slower but safer
+for (const id of ids) {
+  const result = await ctx.fetch(`/item/${id}`);
+  // Process one at a time
+}
+```
+
+### Timeouts
+
+Checks have a **15-minute timeout** (Trigger.dev default). For long-running checks:
+
+```typescript
+// Process in batches
+const BATCH_SIZE = 50;
+for (let i = 0; i < items.length; i += BATCH_SIZE) {
+  const batch = items.slice(i, i + BATCH_SIZE);
+  await processBatch(batch);
+  ctx.log(`Processed batch ${i / BATCH_SIZE + 1}`);
+}
+```
+
+---
+
+## Examples from Built-in Integrations
+
+### GitHub: Secret Scanning
+
+```typescript
+export const secretScanningCheck: IntegrationCheck = {
+  id: 'secret-scanning',
+  name: 'Secret Scanning Alerts',
+  taskMapping: TASK_TEMPLATES.secureSecrets,
+  variables: [targetReposVariable],
+  
+  run: async (ctx) => {
+    const targetRepos = ctx.variables.target_repos as string[];
+    
+    for (const repoName of targetRepos) {
+      const alerts = await ctx.fetch<Alert[]>(
+        `/repos/${repoName}/secret-scanning/alerts`,
+      );
+      
+      for (const alert of alerts) {
+        if (alert.state === 'open') {
+          ctx.fail({
+            title: `Secret Exposed in ${repoName}`,
+            resourceType: 'secret-alert',
+            resourceId: alert.number.toString(),
+            severity: 'critical',
+            description: `${alert.secret_type} secret detected in repository`,
+            remediation: 'Rotate the exposed secret and remove it from git history',
+            evidence: {
+              secretType: alert.secret_type,
+              createdAt: alert.created_at,
+              url: alert.html_url,
+            },
+          });
+        }
+      }
+    }
+  },
+};
+```
+
+### AWS: Security Hub Findings
+
+```typescript
+export const securityHubCheck: IntegrationCheck = {
+  id: 'security-hub-findings',
+  name: 'Security Hub Findings',
+  variables: [],
+  
+  run: async (ctx) => {
+    // Custom AWS auth - create client manually
+    const aws = await createAWSClient(ctx.credentials);
+    
+    const findings = await getSecurityHubFindings(aws.securityHub);
+    
+    for (const finding of findings) {
+      ctx.fail({
+        title: finding.Title,
+        resourceType: finding.ResourceType,
+        resourceId: finding.ResourceId,
+        severity: mapSeverity(finding.Severity),
+        description: finding.Description,
+        remediation: finding.Remediation?.Recommendation?.Text || 'See AWS Console',
+        evidence: {
+          awsAccountId: finding.AwsAccountId,
+          region: finding.Region,
+          findingId: finding.Id,
+        },
+      });
+    }
+  },
+};
+```
+
+---
+
+## Checklist for a Good Check
+
+- [ ] Clear, descriptive ID (kebab-case)
+- [ ] User-friendly name
+- [ ] Helpful description
+- [ ] Proper error handling for common cases
+- [ ] Meaningful resource types and IDs
+- [ ] Specific remediation steps
+- [ ] Useful evidence (not too much, not too little)
+- [ ] Appropriate severity levels
+- [ ] Task mapping (if applicable)
+- [ ] Variables for user configuration (if needed)
+- [ ] Tested with real API credentials
+- [ ] Handles edge cases (empty data, missing resources)
+
+---
+
+## Summary
+
+**Checks are the heart of integrations.** Write them to be:
+- **Focused**: One check = one compliance validation
+- 🧑‍💻 **User-friendly**: Clear errors, actionable remediation
+- 🔒 **Secure**: Handle credentials properly, never log secrets
+- ⚡ **Efficient**: Batch requests, handle pagination
+- 🧪 **Tested**: Verify with real credentials and edge cases
+
+Great checks = happy users = successful integration!
+

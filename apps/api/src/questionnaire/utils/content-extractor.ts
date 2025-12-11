@@ -99,34 +99,34 @@ export async function extractQuestionsWithAI(
   logger: ContentExtractionLogger = defaultLogger,
 ): Promise<{ question: string; answer: string | null }[]> {
   const startTime = Date.now();
-  
+
   try {
     // For Excel files - use simple library extraction then AI parsing
     if (isExcelFile(fileType)) {
       const fileBuffer = Buffer.from(fileData, 'base64');
       const rawContent = extractExcelRawContent(fileBuffer, logger);
-      
-      logger.info('Extracted raw Excel content', { 
+
+      logger.info('Extracted raw Excel content', {
         contentLength: rawContent.length,
         extractionMs: Date.now() - startTime,
       });
-      
+
       // Use Groq for ultra-fast AI parsing (~5-10 seconds)
       return await parseQuestionsWithGroq(rawContent, logger);
     }
-    
+
     // For CSV - simple text parsing
     if (isCsvFile(fileType)) {
       const fileBuffer = Buffer.from(fileData, 'base64');
       const content = fileBuffer.toString('utf-8');
       return await parseQuestionsWithGroq(content, logger);
     }
-    
+
     // For PDF/images - use vision
     if (isImageOrPdf(fileType)) {
       return await parseQuestionsWithVision(fileData, fileType, logger);
     }
-    
+
     throw new Error(`Unsupported file type for AI extraction: ${fileType}`);
   } catch (error) {
     logger.error('AI extraction failed', {
@@ -155,13 +155,13 @@ function extractExcelRawContent(
     for (let sheetIdx = 0; sheetIdx < workbook.SheetNames.length; sheetIdx++) {
       const sheetName = workbook.SheetNames[sheetIdx];
       const rows = extractSheetData(zip, sheetIdx, sharedStrings);
-      
+
       if (rows.length === 0) continue;
 
       allContent.push(`\n--- ${sheetName} ---`);
-      
+
       for (const row of rows) {
-        const nonEmpty = row.filter(cell => cell.trim());
+        const nonEmpty = row.filter((cell) => cell.trim());
         if (nonEmpty.length > 0) {
           allContent.push(nonEmpty.join(' | '));
         }
@@ -169,14 +169,14 @@ function extractExcelRawContent(
     }
 
     const result = allContent.join('\n');
-    
+
     // If custom parser got content, use it
     if (result.length > 100) {
       return result;
     }
   } catch (error) {
-    logger.warn('Custom XML parser failed', { 
-      error: error instanceof Error ? error.message : 'Unknown' 
+    logger.warn('Custom XML parser failed', {
+      error: error instanceof Error ? error.message : 'Unknown',
     });
   }
 
@@ -186,12 +186,16 @@ function extractExcelRawContent(
 
   for (const sheetName of workbook.SheetNames) {
     const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as string[][];
-    
+    const data = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: '',
+    });
+
     allContent.push(`\n--- ${sheetName} ---`);
-    
+
     for (const row of data) {
-      const nonEmpty = row.map(c => String(c).trim()).filter(c => c);
+      const cells = row as unknown[];
+      const nonEmpty = cells.map((c) => String(c).trim()).filter((c) => c);
       if (nonEmpty.length > 0) {
         allContent.push(nonEmpty.join(' | '));
       }
@@ -227,46 +231,48 @@ async function parseQuestionsWithGroq(
 ): Promise<{ question: string; answer: string | null }[]> {
   const startTime = Date.now();
   const CHUNK_SIZE = 25000; // Leave room for prompt in 32k context
-  
+
   try {
     // If content fits in one chunk, process directly
     if (content.length <= CHUNK_SIZE) {
-      logger.info('Starting Groq parsing (single chunk)...', { contentLength: content.length });
+      logger.info('Starting Groq parsing (single chunk)...', {
+        contentLength: content.length,
+      });
       return await parseChunkWithGroq(content, logger);
     }
-    
+
     // Split content into chunks for parallel processing
     const chunks = splitIntoChunks(content, CHUNK_SIZE);
-    logger.info('Starting Groq parsing (chunked)...', { 
+    logger.info('Starting Groq parsing (chunked)...', {
       contentLength: content.length,
       chunkCount: chunks.length,
     });
-    
+
     // Process all chunks in parallel
     const chunkResults = await Promise.all(
       chunks.map((chunk, idx) => {
         logger.info(`Processing chunk ${idx + 1}/${chunks.length}...`);
         return parseChunkWithGroq(chunk, logger);
-      })
+      }),
     );
-    
+
     // Merge and deduplicate results
     const allQuestions = chunkResults.flat();
     const uniqueQuestions = deduplicateQuestions(allQuestions);
-    
+
     logger.info('Groq chunked parsing complete', {
       totalQuestions: uniqueQuestions.length,
       chunksProcessed: chunks.length,
       durationMs: Date.now() - startTime,
     });
-    
+
     return uniqueQuestions;
   } catch (error) {
     logger.error('Groq parsing failed, trying Claude', {
       error: error instanceof Error ? error.message : 'Unknown',
       durationMs: Date.now() - startTime,
     });
-    
+
     // Fallback to Claude (has 200k context, no chunking needed)
     return parseQuestionsWithClaude(content, logger);
   }
@@ -282,16 +288,19 @@ async function parseChunkWithGroq(
   const { object } = await generateObject({
     model: groq('openai/gpt-oss-120b'),
     schema: questionExtractionSchema,
-    mode: 'json',
     prompt: QUESTION_PROMPT + content,
   });
 
-  const result = object as { questions: { question: string; answer: string | null }[] };
-  
-  return (result.questions || []).map(q => ({
-    question: q.question?.trim() || '',
-    answer: q.answer?.trim() || null,
-  })).filter(q => q.question);
+  const result = object as {
+    questions: { question: string; answer: string | null }[];
+  };
+
+  return (result.questions || [])
+    .map((q) => ({
+      question: q.question?.trim() || '',
+      answer: q.answer?.trim() || null,
+    }))
+    .filter((q) => q.question);
 }
 
 /**
@@ -302,26 +311,26 @@ function splitIntoChunks(content: string, maxChunkSize: number): string[] {
   const lines = content.split('\n');
   let currentChunk: string[] = [];
   let currentSize = 0;
-  
+
   for (const line of lines) {
     const lineSize = line.length + 1; // +1 for newline
-    
+
     // If adding this line would exceed limit, start new chunk
     if (currentSize + lineSize > maxChunkSize && currentChunk.length > 0) {
       chunks.push(currentChunk.join('\n'));
       currentChunk = [];
       currentSize = 0;
     }
-    
+
     currentChunk.push(line);
     currentSize += lineSize;
   }
-  
+
   // Don't forget the last chunk
   if (currentChunk.length > 0) {
     chunks.push(currentChunk.join('\n'));
   }
-  
+
   return chunks;
 }
 
@@ -329,11 +338,11 @@ function splitIntoChunks(content: string, maxChunkSize: number): string[] {
  * Deduplicate questions by comparing normalized text
  */
 function deduplicateQuestions(
-  questions: { question: string; answer: string | null }[]
+  questions: { question: string; answer: string | null }[],
 ): { question: string; answer: string | null }[] {
   const seen = new Set<string>();
   const unique: { question: string; answer: string | null }[] = [];
-  
+
   for (const q of questions) {
     // Normalize: lowercase, remove extra spaces, remove numbering prefix
     const normalized = q.question
@@ -341,13 +350,13 @@ function deduplicateQuestions(
       .replace(/^\d+\.\d+\s*/, '') // Remove "1.1 " prefix
       .replace(/\s+/g, ' ')
       .trim();
-    
+
     if (!seen.has(normalized)) {
       seen.add(normalized);
       unique.push(q);
     }
   }
-  
+
   return unique;
 }
 
@@ -359,35 +368,40 @@ async function parseQuestionsWithClaude(
   logger: ContentExtractionLogger,
 ): Promise<{ question: string; answer: string | null }[]> {
   const startTime = Date.now();
-  
+
   try {
-    logger.info('Starting Claude parsing...', { contentLength: content.length });
-    
+    logger.info('Starting Claude parsing...', {
+      contentLength: content.length,
+    });
+
     const { object } = await generateObject({
       model: anthropic('claude-3-5-sonnet-latest'),
       schema: questionExtractionSchema,
-      mode: 'json',
       prompt: QUESTION_PROMPT + content.substring(0, 80000),
     });
 
-    const result = object as { questions: { question: string; answer: string | null }[] };
-    
+    const result = object as {
+      questions: { question: string; answer: string | null }[];
+    };
+
     logger.info('Claude parsing complete', {
       questionCount: result.questions?.length || 0,
       durationMs: Date.now() - startTime,
       model: 'claude-3-5-sonnet',
     });
 
-    return (result.questions || []).map(q => ({
-      question: q.question?.trim() || '',
-      answer: q.answer?.trim() || null,
-    })).filter(q => q.question);
+    return (result.questions || [])
+      .map((q) => ({
+        question: q.question?.trim() || '',
+        answer: q.answer?.trim() || null,
+      }))
+      .filter((q) => q.question);
   } catch (error) {
     logger.error('Claude parsing failed, trying OpenAI', {
       error: error instanceof Error ? error.message : 'Unknown',
       durationMs: Date.now() - startTime,
     });
-    
+
     // Fallback to OpenAI
     return parseQuestionsWithOpenAI(content, logger);
   }
@@ -401,11 +415,10 @@ async function parseQuestionsWithOpenAI(
   logger: ContentExtractionLogger,
 ): Promise<{ question: string; answer: string | null }[]> {
   const startTime = Date.now();
-  
+
   const { object } = await generateObject({
     model: openai('gpt-4o-mini'),
     schema: questionExtractionSchema,
-    mode: 'json',
     prompt: `Extract all questions/fields and their answers from this questionnaire or form.
 
 Include:
@@ -419,17 +432,21 @@ Match each to its response if provided. Set answer to null if empty.
 ${content.substring(0, 80000)}`,
   });
 
-  const result = object as { questions: { question: string; answer: string | null }[] };
+  const result = object as {
+    questions: { question: string; answer: string | null }[];
+  };
 
   logger.info('OpenAI parsing complete', {
     questionCount: result.questions?.length || 0,
     durationMs: Date.now() - startTime,
   });
 
-  return (result.questions || []).map(q => ({
-    question: q.question?.trim() || '',
-    answer: q.answer?.trim() || null,
-  })).filter(q => q.question);
+  return (result.questions || [])
+    .map((q) => ({
+      question: q.question?.trim() || '',
+      answer: q.answer?.trim() || null,
+    }))
+    .filter((q) => q.question);
 }
 
 /**
@@ -441,11 +458,10 @@ async function parseQuestionsWithVision(
   logger: ContentExtractionLogger,
 ): Promise<{ question: string; answer: string | null }[]> {
   const startTime = Date.now();
-  
+
   const { object } = await generateObject({
     model: openai('gpt-4o'),
     schema: questionExtractionSchema,
-    mode: 'json',
     messages: [
       {
         role: 'user',
@@ -471,17 +487,21 @@ Match each to its response if provided. Set answer to null if empty.`,
     ],
   });
 
-  const result = object as { questions: { question: string; answer: string | null }[] };
+  const result = object as {
+    questions: { question: string; answer: string | null }[];
+  };
 
   logger.info('Vision parsing complete', {
     questionCount: result.questions?.length || 0,
     durationMs: Date.now() - startTime,
   });
 
-  return (result.questions || []).map(q => ({
-    question: q.question?.trim() || '',
-    answer: q.answer?.trim() || null,
-  })).filter(q => q.question);
+  return (result.questions || [])
+    .map((q) => ({
+      question: q.question?.trim() || '',
+      answer: q.answer?.trim() || null,
+    }))
+    .filter((q) => q.question);
 }
 
 // File type detection helpers
@@ -522,31 +542,31 @@ function extractSharedStrings(fileBuffer: Buffer): string[] {
   try {
     const zip = new AdmZip(fileBuffer);
     const sharedStringsEntry = zip.getEntry('xl/sharedStrings.xml');
-    
+
     if (!sharedStringsEntry) {
       return [];
     }
-    
+
     const content = sharedStringsEntry.getData().toString('utf8');
     const strings: string[] = [];
-    
+
     // Match all <si>...</si> (string item) elements
     const siMatches = content.match(/<si>[\s\S]*?<\/si>/g) || [];
-    
+
     for (const si of siMatches) {
       // Extract text from both <t>...</t> and <d:t>...</d:t> (or any namespace:t)
       const textMatches = si.match(/<[^>]*:?t[^>]*>([^<]*)<\/[^>]*:?t>/g) || [];
-      
+
       let fullText = '';
       for (const match of textMatches) {
         // Extract just the text content between tags
         const textContent = match.replace(/<[^>]*>/g, '');
         fullText += textContent;
       }
-      
+
       strings.push(fullText.trim());
     }
-    
+
     return strings;
   } catch {
     return [];
@@ -589,11 +609,11 @@ function extractSheetData(
 
     // Check if this is a shared string cell (t="s")
     const isSharedString = /t="s"/.test(cellXml);
-    
+
     // Extract value
     let value = '';
     const vMatch = cellXml.match(/<v>([^<]*)<\/v>/);
-    
+
     if (vMatch) {
       if (isSharedString) {
         // Shared string reference - look up in our extracted strings
@@ -613,7 +633,7 @@ function extractSheetData(
   // Convert to 2D array
   const maxRow = Math.max(...Array.from(rows.keys()), 0);
   const result: string[][] = [];
-  
+
   for (let r = 0; r <= maxRow; r++) {
     const row: string[] = [];
     const rowData = rows.get(r);
@@ -641,7 +661,7 @@ function extractFromExcelStandard(
     const jsonData = XLSX.utils.sheet_to_json(worksheet, {
       header: 1,
       defval: '',
-    }) as unknown[][];
+    });
 
     if (jsonData.length === 0) continue;
 
@@ -654,9 +674,15 @@ function extractFromExcelStandard(
       const row = jsonData[i];
       if (!Array.isArray(row)) continue;
       const rowLower = row.map((cell) => String(cell).toLowerCase().trim());
-      const headerKeywords = ['question', 'response', 'answer', 'comment', 'attachment'];
+      const headerKeywords = [
+        'question',
+        'response',
+        'answer',
+        'comment',
+        'attachment',
+      ];
       const matchCount = headerKeywords.filter((kw) =>
-        rowLower.some((cell) => cell.includes(kw))
+        rowLower.some((cell) => cell.includes(kw)),
       ).length;
 
       if (matchCount >= 2) {
@@ -672,7 +698,7 @@ function extractFromExcelStandard(
       if (!Array.isArray(row)) continue;
 
       const cells = row.map((cell) =>
-        cell !== null && cell !== undefined ? String(cell).trim() : ''
+        cell !== null && cell !== undefined ? String(cell).trim() : '',
       );
       const hasContent = cells.some((cell) => cell !== '');
       if (!hasContent) continue;
@@ -722,13 +748,13 @@ function extractFromExcel(
   logger.info('Processing Excel file', { fileType, fileSizeMB });
 
   let result = '';
-  
+
   try {
     // First try: Custom XML parser (handles rich text with namespace prefixes)
     const zip = new AdmZip(fileBuffer);
     const sharedStrings = extractSharedStrings(fileBuffer);
-    
-    logger.info('Extracted shared strings', { 
+
+    logger.info('Extracted shared strings', {
       count: sharedStrings.length,
     });
 
@@ -738,7 +764,7 @@ function extractFromExcel(
     for (let sheetIdx = 0; sheetIdx < workbook.SheetNames.length; sheetIdx++) {
       const sheetName = workbook.SheetNames[sheetIdx];
       const rows = extractSheetData(zip, sheetIdx, sharedStrings);
-      
+
       if (rows.length === 0) continue;
 
       const formattedRows: string[] = [];
@@ -748,9 +774,15 @@ function extractFromExcel(
       // Find header row
       for (let i = 0; i < Math.min(10, rows.length); i++) {
         const rowLower = rows[i].map((cell) => cell.toLowerCase());
-        const headerKeywords = ['question', 'response', 'answer', 'comment', 'attachment'];
+        const headerKeywords = [
+          'question',
+          'response',
+          'answer',
+          'comment',
+          'attachment',
+        ];
         const matchCount = headerKeywords.filter((kw) =>
-          rowLower.some((cell) => cell.includes(kw))
+          rowLower.some((cell) => cell.includes(kw)),
         ).length;
 
         if (matchCount >= 2) {
@@ -800,7 +832,9 @@ function extractFromExcel(
 
     // If custom parser returned empty/minimal content, try standard library
     if (result.length < 100) {
-      logger.info('Custom parser returned minimal content, trying standard library');
+      logger.info(
+        'Custom parser returned minimal content, trying standard library',
+      );
       result = extractFromExcelStandard(fileBuffer, logger);
     }
   } catch (error) {
@@ -881,4 +915,3 @@ async function extractFromVision(
     );
   }
 }
-

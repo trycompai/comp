@@ -36,7 +36,7 @@ export const updateOrganizationAdvancedModeAction = authActionClient
       path = path.replace(/\/[a-z]{2}\//, '/');
 
       revalidatePath(path);
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, 'max');
 
       return {
         success: true,

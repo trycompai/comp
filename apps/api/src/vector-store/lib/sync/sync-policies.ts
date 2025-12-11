@@ -25,7 +25,9 @@ interface PolicyData {
 /**
  * Fetch all published policies for an organization
  */
-export async function fetchPolicies(organizationId: string): Promise<PolicyData[]> {
+export async function fetchPolicies(
+  organizationId: string,
+): Promise<PolicyData[]> {
   return db.policy.findMany({
     where: {
       organizationId,
@@ -61,7 +63,9 @@ async function syncSinglePolicy(
   await deleteOldEmbeddings(existingEmbeddings, { policyId: policy.id });
 
   // Create new embeddings
-  const policyText = extractTextFromPolicy(policy as Parameters<typeof extractTextFromPolicy>[0]);
+  const policyText = extractTextFromPolicy(
+    policy as Parameters<typeof extractTextFromPolicy>[0],
+  );
 
   if (!policyText || policyText.trim().length === 0) {
     return 'skipped';
@@ -110,7 +114,11 @@ export async function syncPolicies(
       batch.map(async (policy) => {
         try {
           const policyEmbeddings = existingEmbeddingsMap.get(policy.id) || [];
-          const result = await syncSinglePolicy(policy, policyEmbeddings, organizationId);
+          const result = await syncSinglePolicy(
+            policy,
+            policyEmbeddings,
+            organizationId,
+          );
 
           if (result === 'created') stats.created++;
           else if (result === 'updated') stats.updated++;
@@ -133,4 +141,3 @@ export async function syncPolicies(
 
   return stats;
 }
-

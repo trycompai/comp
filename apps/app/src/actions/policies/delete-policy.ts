@@ -53,7 +53,7 @@ export const deletePolicyAction = authActionClient
 
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/policies/all`);
-      revalidateTag('policies');
+      revalidateTag('policies', 'max');
     } catch (error) {
       console.error(error);
       return {

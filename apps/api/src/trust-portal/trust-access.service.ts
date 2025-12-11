@@ -964,7 +964,9 @@ export class TrustAccessService {
     };
   }
 
-  async validateAccessTokenAndGetOrganizationId(token: string): Promise<string> {
+  async validateAccessTokenAndGetOrganizationId(
+    token: string,
+  ): Promise<string> {
     const grant = await this.validateAccessToken(token);
     return grant.accessRequest.organizationId;
   }

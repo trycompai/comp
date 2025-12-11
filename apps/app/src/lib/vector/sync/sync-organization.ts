@@ -1,13 +1,15 @@
 import 'server-only';
 
+import { logger } from '@/utils/logger';
 import { db } from '@db';
+import { vectorIndex } from '../core/client';
+import {
+  findAllOrganizationEmbeddings,
+  type ExistingEmbedding,
+} from '../core/find-existing-embeddings';
 import { batchUpsertEmbeddings } from '../core/upsert-embedding';
 import { chunkText } from '../utils/chunk-text';
 import { extractTextFromPolicy } from '../utils/extract-policy-text';
-import { deleteOrganizationEmbeddings } from '../core/delete-embeddings';
-import { findAllOrganizationEmbeddings, type ExistingEmbedding } from '../core/find-existing-embeddings';
-import { vectorIndex } from '../core/client';
-import { logger } from '@/utils/logger';
 
 /**
  * Lock map to prevent concurrent syncs for the same organization
@@ -19,7 +21,7 @@ const syncLocks = new Map<string, Promise<void>>();
  * Full resync of organization embeddings: deletes all old embeddings and creates new ones
  * Simple approach that guarantees data freshness
  * Optimized for small to medium volumes (100-200 policies)
- * 
+ *
  * Uses a lock mechanism to prevent concurrent syncs for the same organization.
  * If a sync is already in progress, subsequent calls will wait for it to complete.
  */
@@ -100,10 +102,10 @@ async function performSync(organizationId: string): Promise<void> {
 
     // Process policies in parallel batches for better performance
     const POLICY_BATCH_SIZE = 100; // Process 100 policies in parallel (increased from 10 for better performance)
-    
+
     for (let i = 0; i < policies.length; i += POLICY_BATCH_SIZE) {
       const batch = policies.slice(i, i + POLICY_BATCH_SIZE);
-      
+
       // Process batch in parallel
       await Promise.all(
         batch.map(async (policy) => {
@@ -111,10 +113,13 @@ async function performSync(organizationId: string): Promise<void> {
             // Get embeddings from our pre-fetched map (fast - no API call)
             const policyEmbeddings = existingEmbeddings.get(policy.id) || [];
             const policyUpdatedAt = policy.updatedAt.toISOString();
-            
+
             // Check if policy needs update
-            const needsUpdate = policyEmbeddings.length === 0 || 
-              policyEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < policyUpdatedAt);
+            const needsUpdate =
+              policyEmbeddings.length === 0 ||
+              policyEmbeddings.some(
+                (e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < policyUpdatedAt,
+              );
 
             if (!needsUpdate) {
               policiesSkipped++;
@@ -136,13 +141,13 @@ async function performSync(organizationId: string): Promise<void> {
 
             // Create new embeddings
             const policyText = extractTextFromPolicy(policy as any);
-            
+
             if (!policyText || policyText.trim().length === 0) {
               return; // Skip empty policy
             }
 
             const chunks = chunkText(policyText, 500, 50);
-            
+
             if (chunks.length === 0) {
               return; // Skip if no chunks
             }
@@ -179,7 +184,7 @@ async function performSync(organizationId: string): Promise<void> {
             });
             // Continue with other policies
           }
-        })
+        }),
       );
     }
 
@@ -216,10 +221,10 @@ async function performSync(organizationId: string): Promise<void> {
 
     // Process context entries in parallel batches for better performance
     const CONTEXT_BATCH_SIZE = 100; // Process 100 context entries in parallel (increased from 10 for better performance)
-    
+
     for (let i = 0; i < contextEntries.length; i += CONTEXT_BATCH_SIZE) {
       const batch = contextEntries.slice(i, i + CONTEXT_BATCH_SIZE);
-      
+
       // Process batch in parallel
       await Promise.all(
         batch.map(async (context) => {
@@ -227,10 +232,13 @@ async function performSync(organizationId: string): Promise<void> {
             // Get embeddings from our pre-fetched map (fast - no API call)
             const contextEmbeddings = existingEmbeddings.get(context.id) || [];
             const contextUpdatedAt = context.updatedAt.toISOString();
-            
+
             // Check if context needs update
-            const needsUpdate = contextEmbeddings.length === 0 || 
-              contextEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < contextUpdatedAt);
+            const needsUpdate =
+              contextEmbeddings.length === 0 ||
+              contextEmbeddings.some(
+                (e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < contextUpdatedAt,
+              );
 
             if (!needsUpdate) {
               contextSkipped++;
@@ -252,13 +260,13 @@ async function performSync(organizationId: string): Promise<void> {
 
             // Create new embeddings
             const contextText = `Question: ${context.question}\n\nAnswer: ${context.answer}`;
-            
+
             if (!contextText || contextText.trim().length === 0) {
               return; // Skip empty context
             }
 
             const chunks = chunkText(contextText, 8000, 50);
-            
+
             if (chunks.length === 0) {
               return; // Skip if no chunks
             }
@@ -295,7 +303,7 @@ async function performSync(organizationId: string): Promise<void> {
             });
             // Continue with other context entries
           }
-        })
+        }),
       );
     }
 
@@ -332,10 +340,11 @@ async function performSync(organizationId: string): Promise<void> {
         const embeddingId = `manual_answer_${ma.id}`;
         const text = `${ma.question}\n\n${ma.answer}`;
         const updatedAt = ma.updatedAt.toISOString();
-        
+
         // Check if embedding exists and needs update
         const existingManualAnswerEmbeddings = existingEmbeddings.get(ma.id) || [];
-        const needsUpdate = existingManualAnswerEmbeddings.length === 0 || 
+        const needsUpdate =
+          existingManualAnswerEmbeddings.length === 0 ||
           existingManualAnswerEmbeddings[0]?.updatedAt !== updatedAt;
 
         if (needsUpdate) {
@@ -423,8 +432,8 @@ async function performSync(organizationId: string): Promise<void> {
     //     // Check if embeddings exist and are up-to-date
     //     const documentEmbeddings = existingEmbeddings.get(document.id) || [];
     //     const documentUpdatedAt = document.updatedAt.toISOString();
-        
-    //     const needsUpdate = documentEmbeddings.length === 0 || 
+
+    //     const needsUpdate = documentEmbeddings.length === 0 ||
     //       documentEmbeddings.some((e: ExistingEmbedding) => !e.updatedAt || e.updatedAt < documentUpdatedAt);
 
     //     if (needsUpdate) {
@@ -463,10 +472,10 @@ async function performSync(organizationId: string): Promise<void> {
 
     // Step 8: Delete orphaned embeddings (policies/context/manual_answers/knowledge_base_documents that no longer exist in DB)
     // Use the embeddings we already fetched (no additional API call needed)
-    const dbPolicyIds = new Set(policies.map(p => p.id));
-    const dbContextIds = new Set(contextEntries.map(c => c.id));
-    const dbManualAnswerIds = new Set(manualAnswers.map(ma => ma.id));
-    const dbKnowledgeBaseDocumentIds = new Set(knowledgeBaseDocuments.map(d => d.id));
+    const dbPolicyIds = new Set(policies.map((p) => p.id));
+    const dbContextIds = new Set(contextEntries.map((c) => c.id));
+    const dbManualAnswerIds = new Set(manualAnswers.map((ma) => ma.id));
+    const dbKnowledgeBaseDocumentIds = new Set(knowledgeBaseDocuments.map((d) => d.id));
     let orphanedDeleted = 0;
 
     // Check for orphaned embeddings using the pre-fetched map
@@ -476,11 +485,12 @@ async function performSync(organizationId: string): Promise<void> {
         const isContext = embeddings[0]?.sourceType === 'context';
         const isManualAnswer = embeddings[0]?.sourceType === 'manual_answer';
         const isKnowledgeBaseDocument = embeddings[0]?.sourceType === 'knowledge_base_document';
-        
-        const shouldExist = (isPolicy && dbPolicyIds.has(sourceId)) || 
-                            (isContext && dbContextIds.has(sourceId)) ||
-                            (isManualAnswer && dbManualAnswerIds.has(sourceId)) ||
-                            (isKnowledgeBaseDocument && dbKnowledgeBaseDocumentIds.has(sourceId));
+
+        const shouldExist =
+          (isPolicy && dbPolicyIds.has(sourceId)) ||
+          (isContext && dbContextIds.has(sourceId)) ||
+          (isManualAnswer && dbManualAnswerIds.has(sourceId)) ||
+          (isKnowledgeBaseDocument && dbKnowledgeBaseDocumentIds.has(sourceId));
 
         if (!shouldExist && vectorIndex) {
           // Delete orphaned embeddings
@@ -490,7 +500,13 @@ async function performSync(organizationId: string): Promise<void> {
             orphanedDeleted += idsToDelete.length;
             logger.info('Deleted orphaned embeddings', {
               sourceId,
-              sourceType: isPolicy ? 'policy' : isContext ? 'context' : isManualAnswer ? 'manual_answer' : 'knowledge_base_document',
+              sourceType: isPolicy
+                ? 'policy'
+                : isContext
+                  ? 'context'
+                  : isManualAnswer
+                    ? 'manual_answer'
+                    : 'knowledge_base_document',
               deletedCount: idsToDelete.length,
             });
           } catch (error) {
@@ -546,4 +562,3 @@ async function performSync(organizationId: string): Promise<void> {
     throw error;
   }
 }
-
