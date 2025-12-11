@@ -202,9 +202,7 @@ export class OrganizationService {
 
       // Prepare updated roles for new owner:
       // Add 'owner', keep all existing roles
-      const updatedNewOwnerRoles = [
-        ...new Set([...newOwnerRoles, Role.owner]),
-      ]; // Use Set to avoid duplicates
+      const updatedNewOwnerRoles = [...new Set([...newOwnerRoles, Role.owner])]; // Use Set to avoid duplicates
 
       this.logger.log('[Transfer Ownership] Role updates:', {
         organizationId,

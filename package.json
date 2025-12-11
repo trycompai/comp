@@ -95,6 +95,6 @@
     "react-syntax-highlighter": "^15.6.6",
     "unpdf": "^1.4.0",
     "xlsx": "^0.18.5",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   }
 }

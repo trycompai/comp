@@ -13,9 +13,9 @@ export const OAuthConfigSchema = z.object({
   scopes: z.array(z.string()),
   pkce: z.boolean().default(false),
   /** Additional parameters to send during authorization */
-  authorizationParams: z.record(z.string()).optional(),
+  authorizationParams: z.record(z.string(), z.string()).optional(),
   /** Additional parameters to send during token exchange */
-  tokenParams: z.record(z.string()).optional(),
+  tokenParams: z.record(z.string(), z.string()).optional(),
   /** How to send client credentials: 'body' or 'header' (Basic auth) */
   clientAuthMethod: z.enum(['body', 'header']).default('body'),
   /**
