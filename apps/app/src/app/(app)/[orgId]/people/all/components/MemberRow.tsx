@@ -38,6 +38,7 @@ interface MemberRowProps {
   onRemove: (memberId: string) => void;
   onUpdateRole: (memberId: string, roles: Role[]) => void;
   canEdit: boolean;
+  isCurrentUserOwner: boolean;
 }
 
 // Helper to get initials
@@ -55,7 +56,7 @@ function getInitials(name?: string | null, email?: string | null): string {
   return '??';
 }
 
-export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRowProps) {
+export function MemberRow({ member, onRemove, onUpdateRole, canEdit, isCurrentUserOwner }: MemberRowProps) {
   const params = useParams<{ orgId: string }>();
   const { orgId } = params;
   const { unlinkDevice } = usePeopleActions();
@@ -275,10 +276,12 @@ export function MemberRow({ member, onRemove, onUpdateRole, canEdit }: MemberRow
                     </DialogContent>
                   </Dialog>
                 )}
-                <DropdownMenuItem onSelect={() => setIsRemoveDeviceAlertOpen(true)}>
-                  <Laptop className="mr-2 h-4 w-4" />
-                  <span>{'Remove Device'}</span>
-                </DropdownMenuItem>
+                {member.fleetDmLabelId && isCurrentUserOwner && (
+                  <DropdownMenuItem onSelect={() => setIsRemoveDeviceAlertOpen(true)}>
+                    <Laptop className="mr-2 h-4 w-4" />
+                    <span>{'Remove Device'}</span>
+                  </DropdownMenuItem>
+                )}
                 {canRemove && (
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"

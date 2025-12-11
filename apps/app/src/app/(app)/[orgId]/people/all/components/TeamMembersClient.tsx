@@ -34,6 +34,7 @@ interface TeamMembersClientProps {
   removeMemberAction: typeof removeMember;
   revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
+  isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
 }
 
@@ -55,6 +56,7 @@ export function TeamMembersClient({
   removeMemberAction,
   revokeInvitationAction,
   canManageMembers,
+  isCurrentUserOwner,
   employeeSyncData,
 }: TeamMembersClientProps) {
   const router = useRouter();
@@ -391,6 +393,7 @@ export function TeamMembersClient({
                 onRemove={handleRemoveMember}
                 onUpdateRole={handleUpdateRole}
                 canEdit={canManageMembers}
+                isCurrentUserOwner={isCurrentUserOwner}
               />
             ))}
           </div>
