@@ -78,6 +78,12 @@
                       "description": "Whether FleetDM setup is completed",
                       "example": false
                     },
+                    "primaryColor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Organization primary color in hex format",
+                      "example": "#3B82F6"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -189,6 +195,11 @@
                     "type": "boolean",
                     "description": "Whether FleetDM setup is completed",
                     "example": false
+                  },
+                  "primaryColor": {
+                    "type": "string",
+                    "description": "Organization primary color in hex format",
+                    "example": "#3B82F6"
                   }
                 },
                 "additionalProperties": false
@@ -257,6 +268,12 @@
                       "type": "boolean",
                       "description": "Whether FleetDM setup is completed",
                       "example": false
+                    },
+                    "primaryColor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Organization primary color in hex format",
+                      "example": "#3B82F6"
                     },
                     "createdAt": {
                       "type": "string",
@@ -556,6 +573,101 @@
           }
         ],
         "summary": "Transfer organization ownership",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/organization/primary-color": {
+      "get": {
+        "description": "Returns the primary color of the organization. Supports three access methods: 1) API key authentication (X-API-Key header), 2) Session authentication (cookies + X-Organization-Id header), or 3) Public access using an access token query parameter (?token=tok_xxx). When using an access token, no authentication is required.",
+        "operationId": "OrganizationController_getPrimaryColor_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": false,
+            "in": "query",
+            "description": "Access token for public access (alternative to authentication). When provided, authentication is not required.",
+            "schema": {
+              "example": "tok_abc123def456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization primary color retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "primaryColor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The primary color in hex format (e.g., #FF5733)",
+                      "example": "#3B82F6"
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session"
+                      ],
+                      "description": "How the request was authenticated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication or insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid or expired API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Organization with ID org_abc123def456 not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get organization primary color",
         "tags": [
           "Organization"
         ]
@@ -8687,7 +8799,7 @@
                       "xlsx"
                     ],
                     "default": "xlsx",
-                    "description": "Output format (defaults to XLSX)"
+                    "description": "Output format (ignored - always exports all formats as ZIP)"
                   }
                 },
                 "required": [

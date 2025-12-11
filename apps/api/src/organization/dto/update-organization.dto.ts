@@ -8,4 +8,5 @@ export interface UpdateOrganizationDto {
   hasAccess?: boolean;
   fleetDmLabelId?: number;
   isFleetSetupCompleted?: boolean;
+  primaryColor?: string;
 }

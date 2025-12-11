@@ -39,6 +39,6 @@ model Organization {
   questionnaires                     Questionnaire[]
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
   soaDocuments                       SOADocument[]
-
+  primaryColor                       String?
   @@index([slug])
 }

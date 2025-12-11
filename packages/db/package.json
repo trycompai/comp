@@ -1,7 +1,7 @@
 {
   "name": "@trycompai/db",
   "description": "Database package with Prisma client and schema for Comp AI",
-  "version": "1.3.18",
+  "version": "1.3.19-canary.3",
   "dependencies": {
     "@prisma/client": "^6.13.0",
     "dotenv": "^16.4.5",
@@ -38,6 +38,7 @@
     "check-types": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:reset": "prisma migrate reset",
     "db:push": "prisma db push",
     "db:seed": "bun prisma/seed/seed.ts",
     "db:studio": "prisma studio",

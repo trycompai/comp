@@ -10,12 +10,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
+import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { formatDistanceToNow } from 'date-fns';
-import { CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Loader2, Trash2, X } from 'lucide-react';
+import { Building2, CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Globe2, Loader2, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -46,6 +47,8 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
   const {
     searchQuery,
     setSearchQuery,
+    sourceFilter,
+    setSourceFilter,
     currentPage,
     itemsPerPage,
     totalPages,
@@ -75,24 +78,39 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search Input and Items Per Page */}
+      {/* Search Input, Source Filter, and Items Per Page */}
       <div className="flex items-center justify-between gap-4">
-        <div className="relative w-[280px]">
-          <Input
-            placeholder="Search by filename..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              type="button"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="relative w-[280px]">
+            <Input
+              placeholder="Search by filename..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                type="button"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Select
+            value={sourceFilter}
+            onValueChange={(value) => setSourceFilter(value as 'all' | 'internal' | 'external')}
+          >
+            <SelectTrigger className="h-9 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="internal">Dashboard Only</SelectItem>
+              <SelectItem value="external">Trust Center Only</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Items per page:</span>
@@ -256,7 +274,7 @@ function QuestionnaireHistoryItem({
                         <>
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <CheckCircle2 className="h-3 w-3" />
-                        <span>
+                        <span className="w-30">
                             {formatDistanceToNow(new Date(questionnaire.createdAt), {
                               addSuffix: true,
                             })}
@@ -271,6 +289,21 @@ function QuestionnaireHistoryItem({
                             {answeredCount}/{totalQuestions}
                           </span>
                         </div>
+                      )}
+                      {questionnaire.source === 'external' ? (
+                        <Badge 
+                          className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-blue-400/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20"
+                        >
+                          <Globe2 className="h-2.5 w-2.5" />
+                          Trust Center
+                        </Badge>
+                      ) : (
+                        <Badge 
+                          className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary hover:bg-primary/20"
+                        >
+                          <Building2 className="h-2.5 w-2.5" />
+                          Dashboard
+                        </Badge>
                       )}
                     </>
                   )}

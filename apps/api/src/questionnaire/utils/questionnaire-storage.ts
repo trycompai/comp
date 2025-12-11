@@ -67,7 +67,7 @@ export async function persistQuestionnaireResult(
     const questionnaire = await db.questionnaire.create({
       data: {
         filename: params.fileName,
-        s3Key: params.s3Key ?? `api-upload-${params.source}`,
+        s3Key: params.s3Key ?? '',
         fileType: params.fileType,
         fileSize: params.fileSize,
         organizationId: params.organizationId,
@@ -75,6 +75,7 @@ export async function persistQuestionnaireResult(
         parsedAt: new Date(),
         totalQuestions: params.questionsAndAnswers.length,
         answeredQuestions: answeredCount,
+        source: params.source,
         questions: {
           create: params.questionsAndAnswers.map((qa, index) => ({
             question: qa.question,
