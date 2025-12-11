@@ -1460,6 +1460,138 @@
         ]
       }
     },
+    "/v1/people/{id}/unlink-device": {
+      "patch": {
+        "description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "operationId": "PeopleController_unlinkDevice_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeopleResponseDto"
+                },
+                "example": {
+                  "id": "mem_abc123def456",
+                  "organizationId": "org_abc123def456",
+                  "userId": "usr_abc123def456",
+                  "role": "member",
+                  "createdAt": "2024-01-01T00:00:00Z",
+                  "department": "it",
+                  "isActive": true,
+                  "fleetDmLabelId": 123,
+                  "user": {
+                    "id": "usr_abc123def456",
+                    "name": "John Doe",
+                    "email": "john.doe@company.com",
+                    "emailVerified": true,
+                    "image": "https://example.com/avatar.jpg",
+                    "createdAt": "2024-01-01T00:00:00Z",
+                    "updatedAt": "2024-01-15T00:00:00Z",
+                    "lastLogin": "2024-01-15T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid update data or user conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "User user@example.com is already a member of this organization"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication or insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization, member, or user not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Member with ID mem_abc123def456 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Unlink device from member",
+        "tags": [
+          "People"
+        ]
+      }
+    },
     "/v1/risks": {
       "get": {
         "description": "Returns all risks for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",

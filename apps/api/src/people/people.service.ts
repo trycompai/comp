@@ -273,4 +273,36 @@ export class PeopleService {
       throw new Error(`Failed to delete member: ${error.message}`);
     }
   }
+
+  async unlinkDevice(
+    memberId: string,
+    organizationId: string,
+  ): Promise<PeopleResponseDto> {
+    try {
+      await MemberValidator.validateOrganization(organizationId);
+      await MemberValidator.validateMemberExists(
+        memberId,
+        organizationId,
+      );
+
+      const updatedMember = await MemberQueries.unlinkDevice(memberId);
+
+      this.logger.log(
+        `Unlinked device for member: ${updatedMember.user.name} (${memberId})`,
+      );
+      return updatedMember;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to unlink device for member ${memberId} in organization ${organizationId}:`,
+        error,
+      );
+      throw new Error(`Failed to unlink device: ${error.message}`);
+    }
+  }
 }
