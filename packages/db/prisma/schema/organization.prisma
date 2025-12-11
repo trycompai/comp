@@ -43,6 +43,7 @@ model Organization {
   questionnaires                     Questionnaire[]
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
   soaDocuments                       SOADocument[]
+  primaryColor                       String?
 
   // Integration Platform
   integrationConnections IntegrationConnection[]
