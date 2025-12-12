@@ -63,6 +63,12 @@ export const GET_ORGANIZATION_RESPONSES: Record<string, ApiResponseOptions> = {
               description: 'Whether FleetDM setup is completed',
               example: false,
             },
+            primaryColor: {
+              type: 'string',
+              nullable: true,
+              description: 'Organization primary color in hex format',
+              example: '#3B82F6',
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',

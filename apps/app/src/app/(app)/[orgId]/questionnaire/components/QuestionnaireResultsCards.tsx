@@ -81,7 +81,11 @@ export function QuestionnaireResultsCards({
         return (
           <div
             key={`card-${safeIndex}-${qa.question.substring(0, 20)}`}
-            className="flex flex-col gap-3 p-4 rounded-xs bg-muted/20 border border-border/30"
+            className="flex flex-col gap-3 p-4 rounded-xs bg-muted/20 border border-border/30 animate-in fade-in duration-500 ease-out"
+            style={{ 
+              animationDelay: `${index * 50}ms`,
+              animationFillMode: 'backwards'
+            }}
           >
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium text-muted-foreground tabular-nums">
