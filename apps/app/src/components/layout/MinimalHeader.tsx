@@ -7,6 +7,7 @@ import type { User } from 'better-auth';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { OnboardingUserMenu } from './OnboardingUserMenu';
 
 interface MinimalHeaderProps {
   user: User;
@@ -35,10 +36,13 @@ export function MinimalHeader({
   const hasExistingOrgs = organizations.length > 0;
 
   return (
-    <header className="sticky top-0 z-10 bg-background flex items-center h-[90px] w-full px-4  md:px-18">
+    <header className="sticky top-0 z-10 bg-background flex items-center justify-between h-[90px] w-full px-4 md:px-18">
       <Link href="/" className="flex items-center">
         <Logo />
       </Link>
+      {(variant === 'onboarding' || variant === 'setup') && (
+        <OnboardingUserMenu user={user} />
+      )}
     </header>
   );
 }

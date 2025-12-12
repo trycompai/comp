@@ -51,6 +51,7 @@ export default async function OnboardingRouteLayout({
             user={session.user}
             organizations={[]}
             currentOrganization={organization}
+            variant="onboarding"
           />
           {children}
         </div>

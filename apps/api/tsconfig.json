@@ -12,8 +12,8 @@
     "allowSyntheticDefaultImports": true,
     "target": "esnext",
     "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
+    "outDir": "dist",
+    "baseUrl": ".",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -23,13 +23,7 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma/index"],
-      "@comp/integration-platform": [
-        "../../packages/integration-platform/src/index.ts"
-      ],
-      "@comp/integration-platform/*": [
-        "../../packages/integration-platform/src/*"
-      ]
+      "@db": ["./prisma/index"]
     },
     "jsx": "react-jsx"
   }
