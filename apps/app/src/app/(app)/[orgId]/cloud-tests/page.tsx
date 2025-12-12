@@ -7,21 +7,35 @@ import { TestsLayout } from './components/TestsLayout';
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
 
-// Get required variables from manifest
+// Get required variables from manifest (both manifest-level and check-level)
 const getRequiredVariables = (providerSlug: string): string[] => {
   const manifest = getManifest(providerSlug);
-  if (!manifest?.checks) return [];
+  if (!manifest) return [];
 
   const requiredVars = new Set<string>();
-  for (const check of manifest.checks) {
-    if (check.variables) {
-      for (const variable of check.variables) {
-        if (variable.required) {
-          requiredVars.add(variable.id);
+
+  // Check manifest-level variables
+  if (manifest.variables) {
+    for (const variable of manifest.variables) {
+      if (variable.required) {
+        requiredVars.add(variable.id);
+      }
+    }
+  }
+
+  // Check check-level variables
+  if (manifest.checks) {
+    for (const check of manifest.checks) {
+      if (check.variables) {
+        for (const variable of check.variables) {
+          if (variable.required) {
+            requiredVars.add(variable.id);
+          }
         }
       }
     }
   }
+
   return Array.from(requiredVars);
 };
 

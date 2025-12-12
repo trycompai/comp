@@ -37,11 +37,12 @@ export const OAuthConfigSchema = z.object({
    */
   refreshUrl: z.string().url().optional(),
   /**
-   * Custom settings that admins need to configure alongside client ID/secret.
-   * These are used for provider-specific settings like Vercel's integration slug
-   * or Rippling's app name. The `token` field replaces placeholders in authorizeUrl.
+   * Additional OAuth settings that admins configure alongside client ID/secret.
+   * These are provider-specific settings like Vercel's integration slug or Rippling's app name.
+   * The `token` field allows replacing placeholders in authorizeUrl with these values.
+   * Example: Vercel uses {APP_SLUG} in the authorize URL which gets replaced with the configured slug.
    */
-  customSettings: z
+  additionalOAuthSettings: z
     .array(
       z.object({
         id: z.string(),
@@ -734,6 +735,13 @@ export interface IntegrationManifest {
 
   /** Capabilities this integration supports */
   capabilities: IntegrationCapability[];
+
+  /**
+   * Integration-level variables that are collected after authentication.
+   * These can be used by checks OR by standalone features (like cloud security scanning).
+   * Variables defined here are merged with check-specific variables.
+   */
+  variables?: CheckVariable[];
 
   /**
    * Compliance checks this integration can run.

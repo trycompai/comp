@@ -62,9 +62,15 @@ export class VariablesController {
       );
     }
 
-    // Collect all unique variables from all checks
+    // Collect all unique variables from manifest-level and checks
     const variableMap = new Map<string, CheckVariable>();
 
+    // First, add manifest-level variables
+    for (const variable of manifest.variables || []) {
+      variableMap.set(variable.id, variable);
+    }
+
+    // Then, add check-specific variables (won't override manifest-level)
     for (const check of manifest.checks || []) {
       for (const variable of check.variables || []) {
         if (!variableMap.has(variable.id)) {
@@ -115,8 +121,15 @@ export class VariablesController {
       );
     }
 
-    // Collect all unique variables
+    // Collect all unique variables from manifest-level and checks
     const variableMap = new Map<string, CheckVariable>();
+
+    // First, add manifest-level variables
+    for (const variable of manifest.variables || []) {
+      variableMap.set(variable.id, variable);
+    }
+
+    // Then, add check-specific variables
     for (const check of manifest.checks || []) {
       for (const variable of check.variables || []) {
         if (!variableMap.has(variable.id)) {
@@ -184,11 +197,18 @@ export class VariablesController {
       );
     }
 
-    // Find the variable definition
+    // Find the variable definition (check manifest-level first, then checks)
     let variable: CheckVariable | undefined;
-    for (const check of manifest.checks || []) {
-      variable = check.variables?.find((v) => v.id === variableId);
-      if (variable) break;
+
+    // Check manifest-level variables
+    variable = manifest.variables?.find((v) => v.id === variableId);
+
+    // If not found, check in check-specific variables
+    if (!variable) {
+      for (const check of manifest.checks || []) {
+        variable = check.variables?.find((v) => v.id === variableId);
+        if (variable) break;
+      }
     }
 
     if (!variable) {

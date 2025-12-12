@@ -61,5 +61,18 @@ This is industry standard - all GCP security monitoring tools use the same scope
 
   capabilities: ['checks'],
 
+  // Integration-level variables (used by cloud security scanning)
+  variables: [
+    {
+      id: 'organization_id',
+      label: 'GCP Organization ID',
+      type: 'text',
+      required: true,
+      helpText:
+        'Your GCP Organization ID (numeric). Find it at: console.cloud.google.com/iam-admin/settings',
+      placeholder: '123456789012',
+    },
+  ],
+
   checks: [],
 };
