@@ -8,6 +8,7 @@ model Questionnaire {
   parsedAt          DateTime? // When parsing completed
   totalQuestions    Int                 @default(0) // Total number of questions parsed
   answeredQuestions Int                 @default(0) // Number of questions with answers
+  source            String              @default("internal") // Source of the questionnaire: 'internal' (from app) or 'external' (from trust portal)
 
   // Dates
   createdAt DateTime @default(now())
@@ -22,6 +23,7 @@ model Questionnaire {
   @@index([organizationId])
   @@index([organizationId, createdAt])
   @@index([status])
+  @@index([source])
 }
 
 model QuestionnaireQuestionAnswer {

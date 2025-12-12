@@ -11,6 +11,7 @@ const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
   contactEmail: z.string().email().optional().or(z.literal('')),
   friendlyUrl: z.string().optional(),
+  primaryColor: z.string().optional(),
 });
 
 export const trustPortalSwitchAction = authActionClient
@@ -23,7 +24,7 @@ export const trustPortalSwitchAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { enabled, contactEmail, friendlyUrl } = parsedInput;
+    const { enabled, contactEmail, friendlyUrl, primaryColor } = parsedInput;
     const { activeOrganizationId } = ctx.session;
 
     if (!activeOrganizationId) {
@@ -31,6 +32,7 @@ export const trustPortalSwitchAction = authActionClient
     }
 
     try {
+      // Update Trust table
       await db.trust.upsert({
         where: {
           organizationId: activeOrganizationId,
@@ -48,15 +50,27 @@ export const trustPortalSwitchAction = authActionClient
         },
       });
 
+      // Update Organization table with primaryColor if provided
+      if (primaryColor !== undefined) {
+        await db.organization.update({
+          where: {
+            id: activeOrganizationId,
+          },
+          data: {
+            primaryColor: primaryColor === '' ? null : primaryColor,
+          },
+        });
+      }
+
       revalidatePath(`/${activeOrganizationId}/trust`);
       revalidatePath(`/${activeOrganizationId}/trust/portal-settings`);
-      revalidateTag(`organization_${activeOrganizationId}`);
+      revalidateTag(`organization_${activeOrganizationId}`, 'max');
 
       return {
         success: true,
       };
     } catch (error) {
       console.error(error);
-      throw new Error('Failed to update organization name');
+      throw new Error('Failed to update trust portal settings');
     }
   });

@@ -31,8 +31,11 @@ import {
   QuestionnaireService,
   type ParsedQuestionnaireResult,
 } from './questionnaire.service';
-import { syncOrganizationEmbeddings, findSimilarContentBatch } from '@/vector-store/lib';
-import { generateAnswerFromContent } from './vendors/answer-question-helpers';
+import {
+  syncOrganizationEmbeddings,
+  findSimilarContentBatch,
+} from '@/vector-store/lib';
+import { generateAnswerFromContent } from '@/trigger/questionnaire/answer-question-helpers';
 import { TrustAccessService } from '../trust-portal/trust-access.service';
 import {
   createSafeSSESender,
@@ -338,17 +341,13 @@ export class QuestionnaireController {
           type: 'string',
           enum: ['pdf', 'csv', 'xlsx'],
           default: 'xlsx',
-          description: 'Output format (defaults to XLSX)',
+          description: 'Output format (ignored - always exports all formats as ZIP)',
         },
       },
       required: ['file'],
     },
   })
-  @ApiProduces(
-    'application/pdf',
-    'text/csv',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  )
+  @ApiProduces('application/zip')
   async parseQuestionnaireUploadByToken(
     @UploadedFile() file: Express.Multer.File,
     @Query('token') token: string,
@@ -379,8 +378,9 @@ export class QuestionnaireController {
       vendorName: undefined,
       format: body.format || 'xlsx',
       source: 'external', // Always external for token-based access
+      exportInAllExtensions: true, // Export in all formats (PDF, CSV, XLSX) as ZIP
     };
-
+    
     const result = await this.questionnaireService.autoAnswerAndExport(dto);
 
     res.setHeader('Content-Type', result.mimeType);
@@ -548,7 +548,7 @@ export class QuestionnaireController {
 
       this.logger.log(
         `Batch search completed in ${searchTime}ms for ${questionsToAnswer.length} questions`,
-        );
+      );
 
       send({
         type: 'progress',
@@ -582,13 +582,13 @@ export class QuestionnaireController {
               try {
                 await this.questionnaireService.saveGeneratedAnswerPublic({
                   questionnaireId: dto.questionnaireId,
-                questionIndex: qa.index,
+                  questionIndex: qa.index,
                   answer: result.answer,
                   sources: result.sources,
                 });
               } catch (saveError) {
                 this.logger.warn('Failed to save answer to database', {
-                questionnaireId: dto.questionnaireId,
+                  questionnaireId: dto.questionnaireId,
                   questionIndex: qa.index,
                   error:
                     saveError instanceof Error

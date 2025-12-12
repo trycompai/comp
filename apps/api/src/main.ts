@@ -5,14 +5,43 @@ import { NestFactory } from '@nestjs/core';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
+import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
-async function bootstrap(): Promise<void> {
-  const app: INestApplication = await NestFactory.create(AppModule);
+let app: INestApplication | null = null;
 
-  // Enable global validation pipe
+async function bootstrap(): Promise<void> {
+  app = await NestFactory.create(AppModule);
+
+  // Enable CORS for all origins - security is handled by authentication
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
+  // STEP 2: Security headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline styles
+          scriptSrc: ["'self'", "'unsafe-inline'"], // Swagger needs inline scripts
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow embedding
+    }),
+  );
+
+  // STEP 3: Configure body parser
+  app.use(express.json({ limit: '70mb' }));
+  app.use(express.urlencoded({ limit: '70mb', extended: true }));
+
+  // STEP 4: Enable global pipes and filters
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -23,24 +52,6 @@ async function bootstrap(): Promise<void> {
       },
     }),
   );
-
-  // Configure body parser limits for file uploads (base64 encoded files)
-  // 70mb allows for ~50mb actual file size after base64 encoding overhead (~33%)
-  app.use(express.json({ limit: '70mb' }));
-  app.use(express.urlencoded({ limit: '70mb', extended: true }));
-
-  // Enable CORS for cross-origin requests
-  app.enableCors({
-    origin: true, // Allow requests from any origin
-    credentials: true, // Allow cookies to be sent cross-origin (for auth)
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-API-Key',
-      'X-Organization-Id',
-    ],
-  });
 
   // Enable API versioning
   app.enableVersioning({
@@ -102,6 +113,20 @@ async function bootstrap(): Promise<void> {
     console.log('OpenAPI documentation written to packages/docs/openapi.json');
   }
 }
+
+// Graceful shutdown handler
+async function shutdown(signal: string): Promise<void> {
+  console.log(`\n${signal} received, shutting down gracefully...`);
+  if (app) {
+    await app.close();
+    console.log('Application closed');
+  }
+  process.exit(0);
+}
+
+// Handle shutdown signals (important for hot reload)
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));
 
 // Handle bootstrap errors properly
 void bootstrap().catch((error: unknown) => {

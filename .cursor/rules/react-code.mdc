@@ -1,13 +1,193 @@
 ---
-description: 
-globs: *.tsx
-alwaysApply: false
+description: React component standards and best practices
+globs: **/*.tsx
+alwaysApply: true
 ---
-When writing React code follow these standards:
 
-- Always export a named component
-- Always name components in PascalCase i.e (MyComponent)
-- Always name files that export components in PascalCase
-- Always round corners to rounded-xs
-- Always try to keep components small and modular
-- Always use sonner instead of toast.
+# React Code Standards
+
+## Component Structure
+
+### ✅ Always Do This
+
+```tsx
+// Named export with PascalCase
+export function TaskCard({ task }: TaskCardProps) {
+  return (
+    <Card>
+      <CardHeader>{task.title}</CardHeader>
+    </Card>
+  );
+}
+
+// File name matches component: TaskCard.tsx
+```
+
+### ❌ Never Do This
+
+```tsx
+// Default export
+export default function taskCard() { ... }
+
+// Lowercase file name: taskCard.tsx
+// Anonymous export: export default () => { ... }
+```
+
+## State Management
+
+### ✅ Prefer Derived State
+
+```tsx
+// Derive values from existing state
+function TaskList({ tasks }: { tasks: Task[] }) {
+  const completedCount = tasks.filter((t) => t.completed).length;
+  const pendingTasks = tasks.filter((t) => !t.completed);
+
+  return <div>{completedCount} completed</div>;
+}
+```
+
+### ❌ Avoid Unnecessary useEffect
+
+```tsx
+// ❌ BAD: Syncing derived state
+function TaskList({ tasks }) {
+  const [completedCount, setCompletedCount] = useState(0);
+
+  useEffect(() => {
+    setCompletedCount(tasks.filter((t) => t.completed).length);
+  }, [tasks]);
+}
+
+// ❌ BAD: Fetching in useEffect (use SWR instead)
+useEffect(() => {
+  fetch('/api/tasks').then((res) => setTasks(res.data));
+}, []);
+
+// ❌ BAD: Transforming props
+useEffect(() => {
+  setFilteredItems(items.filter((i) => i.active));
+}, [items]);
+```
+
+### ✅ When useEffect IS Appropriate
+
+```tsx
+// Subscribing to external systems
+useEffect(() => {
+  const subscription = eventSource.subscribe(handler);
+  return () => subscription.unsubscribe();
+}, []);
+
+// DOM measurements after render
+useEffect(() => {
+  const rect = ref.current?.getBoundingClientRect();
+  setHeight(rect?.height);
+}, []);
+
+// Third-party library integration
+useEffect(() => {
+  const chart = new Chart(canvasRef.current, config);
+  return () => chart.destroy();
+}, []);
+```
+
+## Notifications
+
+### ✅ Use Sonner
+
+```tsx
+import { toast } from 'sonner';
+
+// Success
+toast.success('Task created successfully');
+
+// Error
+toast.error('Failed to save changes');
+
+// With description
+toast.success('Task created', {
+  description: 'You can view it in your dashboard',
+});
+
+// Promise toast
+toast.promise(saveTask(), {
+  loading: 'Saving...',
+  success: 'Saved!',
+  error: 'Failed to save',
+});
+```
+
+### ❌ Never Use
+
+```tsx
+// Don't use alert
+alert('Task created');
+
+// Don't use other toast libraries
+import { useToast } from '@chakra-ui/react';
+import { toast } from 'react-toastify';
+```
+
+## Component Size
+
+### ✅ Keep Components Small
+
+```tsx
+// Split into focused components
+function TaskPage() {
+  return (
+    <div>
+      <TaskHeader />
+      <TaskFilters />
+      <TaskList />
+      <TaskPagination />
+    </div>
+  );
+}
+
+// Each component handles one thing
+function TaskFilters() {
+  // Only filter logic
+}
+
+function TaskList() {
+  // Only list rendering
+}
+```
+
+### ❌ Avoid Monolithic Components
+
+```tsx
+// ❌ Too much in one component
+function TaskPage() {
+  // 200+ lines of mixed concerns
+  // Filters, list, pagination, modals all in one
+}
+```
+
+## Event Handlers
+
+### ✅ Naming Convention
+
+```tsx
+// Prefix with "handle"
+const handleClick = () => { ... };
+const handleSubmit = (e: FormEvent) => { ... };
+const handleKeyDown = (e: KeyboardEvent) => { ... };
+const handleTaskCreate = (task: Task) => { ... };
+
+<Button onClick={handleClick}>
+<form onSubmit={handleSubmit}>
+```
+
+## Checklist
+
+Before committing React code:
+
+- [ ] Named exports only (no `export default`)
+- [ ] PascalCase component names and file names
+- [ ] No unnecessary `useEffect` for derived state
+- [ ] Uses `sonner` for toasts
+- [ ] Components are small and focused
+- [ ] Event handlers prefixed with `handle`

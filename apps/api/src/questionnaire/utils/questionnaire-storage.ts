@@ -27,7 +27,9 @@ const defaultLogger: StorageLogger = {
 /**
  * Updates the answered questions count for a questionnaire
  */
-export async function updateAnsweredCount(questionnaireId: string): Promise<void> {
+export async function updateAnsweredCount(
+  questionnaireId: string,
+): Promise<void> {
   const answeredCount = await db.questionnaireQuestionAnswer.count({
     where: {
       questionnaireId,
@@ -67,7 +69,7 @@ export async function persistQuestionnaireResult(
     const questionnaire = await db.questionnaire.create({
       data: {
         filename: params.fileName,
-        s3Key: params.s3Key ?? `api-upload-${params.source}`,
+        s3Key: params.s3Key ?? '',
         fileType: params.fileType,
         fileSize: params.fileSize,
         organizationId: params.organizationId,
@@ -75,6 +77,7 @@ export async function persistQuestionnaireResult(
         parsedAt: new Date(),
         totalQuestions: params.questionsAndAnswers.length,
         answeredQuestions: answeredCount,
+        source: params.source,
         questions: {
           create: params.questionsAndAnswers.map((qa, index) => ({
             question: qa.question,
@@ -119,7 +122,7 @@ export async function uploadQuestionnaireFile(params: {
   if (!s3Client) {
     throw new Error('S3 client not configured for questionnaire uploads');
   }
-  
+
   const bucket = APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET || BUCKET_NAME;
   if (!bucket) {
     throw new Error(
@@ -206,4 +209,3 @@ export async function saveGeneratedAnswer(params: {
 
   await updateAnsweredCount(params.questionnaireId);
 }
-

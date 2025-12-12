@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { AnswerQuestionResult } from './vendors/answer-question';
-import { answerQuestion } from './vendors/answer-question';
-import { generateAnswerWithRAGBatch } from './vendors/answer-question-helpers';
+import type { AnswerQuestionResult } from '@/trigger/questionnaire/answer-question';
+import { answerQuestion } from '@/trigger/questionnaire/answer-question';
+import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-question-helpers';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import {
   ExportQuestionnaireDto,
@@ -13,12 +13,26 @@ import { DeleteAnswerDto } from './dto/delete-answer.dto';
 import { UploadAndParseDto } from './dto/upload-and-parse.dto';
 import { ExportByIdDto } from './dto/export-by-id.dto';
 import { db, Prisma } from '@db';
-import { syncManualAnswerToVector, syncOrganizationEmbeddings } from '@/vector-store/lib';
+import {
+  syncManualAnswerToVector,
+  syncOrganizationEmbeddings,
+} from '@/vector-store/lib';
+import AdmZip from 'adm-zip';
 
 // Import shared utilities
-import { extractContentFromFile, extractQuestionsWithAI, type ContentExtractionLogger } from './utils/content-extractor';
-import { parseQuestionsAndAnswers, type QuestionAnswer as ParsedQA } from './utils/question-parser';
-import { generateExportFile, type ExportFormat } from './utils/export-generator';
+import {
+  extractContentFromFile,
+  extractQuestionsWithAI,
+  type ContentExtractionLogger,
+} from './utils/content-extractor';
+import {
+  parseQuestionsAndAnswers,
+  type QuestionAnswer as ParsedQA,
+} from './utils/question-parser';
+import {
+  generateExportFile,
+  type ExportFormat,
+} from './utils/export-generator';
 import {
   updateAnsweredCount,
   persistQuestionnaireResult,
@@ -69,18 +83,21 @@ export class QuestionnaireService {
   async parseQuestionnaire(
     dto: ParseQuestionnaireDto,
   ): Promise<ParsedQuestionnaireResult> {
-    const content = await extractContentFromFile(
+    // Use faster AI-powered extraction (combines extraction + parsing in one step)
+    const questionsAndAnswers = await extractQuestionsWithAI(
       dto.fileData,
       dto.fileType,
       this.contentLogger,
     );
-    const questionsAndAnswers = await parseQuestionsAndAnswers(content, this.contentLogger);
 
     return {
       vendorName: dto.vendorName,
       fileName: dto.fileName,
       totalQuestions: questionsAndAnswers.length,
-      questionsAndAnswers: this.convertParsedToQuestionnaireAnswers(questionsAndAnswers),
+      questionsAndAnswers: questionsAndAnswers.map((qa) => ({
+        question: qa.question,
+        answer: qa.answer,
+      })),
     };
   }
 
@@ -103,14 +120,69 @@ export class QuestionnaireService {
       );
     }
 
-    const parsed = await this.parseQuestionnaire(dto);
+    console.log(Date.now(), 'Parsing questionnaire');
+    // Use faster AI-powered extraction (combines extraction + parsing in one step)
+    const questionsAndAnswers = await extractQuestionsWithAI(
+      dto.fileData,
+      dto.fileType,
+      this.contentLogger,
+    );
+    console.log(Date.now(), 'Parsed questionnaire');
+
+    console.log(Date.now(), 'Generating answers for questions');
     const answered = await this.generateAnswersForQuestions(
-      parsed.questionsAndAnswers,
+      questionsAndAnswers.map((qa) => ({
+        question: qa.question,
+        answer: qa.answer,
+      })),
       dto.organizationId,
     );
-
+    console.log(Date.now(), 'Generated answers for questions');
+    
     const vendorName =
-      dto.vendorName || dto.fileName || parsed.vendorName || 'questionnaire';
+      dto.vendorName || dto.fileName || 'questionnaire';
+    
+    // Check if we need to export in all formats
+    if (dto.exportInAllExtensions) {
+      // Generate all three formats
+      const formats: ExportFormat[] = ['pdf', 'csv', 'xlsx'];
+      const zip = new AdmZip();
+      
+      for (const format of formats) {
+        const exportFile = generateExportFile(
+          answered.map((a) => ({ question: a.question, answer: a.answer })),
+          format,
+          vendorName,
+        );
+        zip.addFile(exportFile.filename, exportFile.fileBuffer);
+      }
+      
+      const zipBuffer = zip.toBuffer();
+      
+      await persistQuestionnaireResult(
+        {
+        organizationId: dto.organizationId,
+        fileName: dto.fileName || vendorName,
+        fileType: dto.fileType,
+        fileSize:
+          uploadInfo?.fileSize ??
+          (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
+        s3Key: uploadInfo?.s3Key ?? null,
+        questionsAndAnswers: answered,
+        source: dto.source || 'internal',
+        },
+        this.storageLogger,
+      );
+      
+      return {
+        fileBuffer: zipBuffer,
+        mimeType: 'application/zip',
+        filename: `${vendorName.replace(/\.[^/.]+$/, '')}-all-formats.zip`,
+        questionsAndAnswers: answered,
+      };
+    }
+    
+    // Single format export (default behavior)
     const exportFile = generateExportFile(
       answered.map((a) => ({ question: a.question, answer: a.answer })),
       dto.format as ExportFormat,
@@ -119,15 +191,15 @@ export class QuestionnaireService {
 
     await persistQuestionnaireResult(
       {
-      organizationId: dto.organizationId,
-      fileName: dto.fileName || vendorName,
-      fileType: dto.fileType,
-      fileSize:
-        uploadInfo?.fileSize ??
-        (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
-      s3Key: uploadInfo?.s3Key ?? null,
-      questionsAndAnswers: answered,
-      source: dto.source || 'internal',
+        organizationId: dto.organizationId,
+        fileName: dto.fileName || vendorName,
+        fileType: dto.fileType,
+        fileSize:
+          uploadInfo?.fileSize ??
+          (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
+        s3Key: uploadInfo?.s3Key ?? null,
+        questionsAndAnswers: answered,
+        source: dto.source || 'internal',
       },
       this.storageLogger,
     );
@@ -158,17 +230,18 @@ export class QuestionnaireService {
 
     const questionnaireId = await persistQuestionnaireResult(
       {
-      organizationId: dto.organizationId,
-      fileName: dto.fileName,
-      fileType: dto.fileType,
-        fileSize: uploadInfo?.fileSize ?? Buffer.from(dto.fileData, 'base64').length,
-      s3Key: uploadInfo?.s3Key ?? null,
-      questionsAndAnswers: questionsAndAnswers.map((qa) => ({
-        question: qa.question,
+        organizationId: dto.organizationId,
+        fileName: dto.fileName,
+        fileType: dto.fileType,
+        fileSize:
+          uploadInfo?.fileSize ?? Buffer.from(dto.fileData, 'base64').length,
+        s3Key: uploadInfo?.s3Key ?? null,
+        questionsAndAnswers: questionsAndAnswers.map((qa) => ({
+          question: qa.question,
           answer: null,
-        sources: undefined,
-      })),
-      source: dto.source || 'internal',
+          sources: undefined,
+        })),
+        source: dto.source || 'internal',
       },
       this.storageLogger,
     );
@@ -351,9 +424,9 @@ export class QuestionnaireService {
     }
 
     const questionsAndAnswers = questionnaire.questions.map((q) => ({
-        question: q.question,
-        answer: q.answer,
-      }));
+      question: q.question,
+      answer: q.answer,
+    }));
 
     this.logger.log('Exporting questionnaire', {
       questionnaireId: dto.questionnaireId,
@@ -424,15 +497,6 @@ export class QuestionnaireService {
 
   // Private helper methods
 
-  private convertParsedToQuestionnaireAnswers(
-    parsed: ParsedQA[],
-  ): QuestionnaireAnswer[] {
-    return parsed.map((qa) => ({
-      question: qa.question,
-      answer: qa.answer,
-    }));
-  }
-
   private async generateAnswersForQuestions(
     questionsAndAnswers: QuestionnaireAnswer[],
     organizationId: string,
@@ -448,7 +512,7 @@ export class QuestionnaireService {
     this.logger.log(
       `Generating answers for ${questionsNeedingAnswers.length} of ${questionsAndAnswers.length} questions`,
     );
-    
+
     // Sync organization embeddings before generating answers
     try {
       await syncOrganizationEmbeddings(organizationId);
@@ -458,22 +522,22 @@ export class QuestionnaireService {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
-    
+
     // Use batch processing for efficiency
     const startTime = Date.now();
     const questionsToAnswer = questionsNeedingAnswers.map((qa) => qa.question);
-    
+
     const batchResults = await generateAnswerWithRAGBatch(
       questionsToAnswer,
-              organizationId,
+      organizationId,
     );
 
     // Map batch results
     const results: AnswerQuestionResult[] = questionsNeedingAnswers.map(
       ({ question, index }, i) => ({
         success: batchResults[i]?.answer !== null,
-            questionIndex: index,
-            question,
+        questionIndex: index,
+        question,
         answer: batchResults[i]?.answer ?? null,
         sources: batchResults[i]?.sources ?? [],
       }),
@@ -481,7 +545,7 @@ export class QuestionnaireService {
 
     const answeredCount = results.filter((r) => r.answer !== null).length;
     const totalTime = Date.now() - startTime;
-    
+
     this.logger.log(
       `Batch answer generation completed: ${answeredCount}/${questionsNeedingAnswers.length} answered in ${totalTime}ms`,
     );

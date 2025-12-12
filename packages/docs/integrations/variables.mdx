@@ -1,0 +1,531 @@
+---
+title: 'Variables Reference'
+description: 'Complete guide to user-configurable variables in checks'
+---
+
+## Overview
+
+Variables let users configure check behavior without changing code. For example:
+
+- Which repositories to monitor
+- Which teams to check
+- Severity thresholds
+- Include/exclude flags
+
+## Variable Types
+
+| Type           | UI Component          | Best For          | Example                       |
+| -------------- | --------------------- | ----------------- | ----------------------------- |
+| `text`         | Text input            | Free-form text    | Organization ID, project name |
+| `number`       | Number input          | Numeric values    | Threshold, limit, count       |
+| `boolean`      | Yes/No dropdown       | Toggle flags      | Include inactive, strict mode |
+| `select`       | Single dropdown       | Choose one option | Environment, priority         |
+| `multi-select` | Multi-select dropdown | Choose multiple   | Repositories, teams, users    |
+
+---
+
+## Text Variables
+
+**For:** Free-form text input (IDs, names, etc.)
+
+```typescript
+{
+  id: 'organization_id',
+  label: 'Organization ID',
+  type: 'text',
+  required: true,
+  placeholder: '123456789012',
+  helpText: 'Your org ID from Settings → Organization',
+  default: '', // Optional default value
+}
+```
+
+**Access in check:**
+
+```typescript
+const orgId = ctx.variables.organization_id as string;
+```
+
+---
+
+## Number Variables
+
+**For:** Numeric values (thresholds, limits, counts)
+
+```typescript
+{
+  id: 'max_days',
+  label: 'Maximum Days',
+  type: 'number',
+  required: false,
+  default: 90,
+  placeholder: '90',
+  helpText: 'Maximum age in days before flagging',
+}
+```
+
+**Access in check:**
+
+```typescript
+const maxDays = ctx.variables.max_days as number;
+// or with default
+const maxDays = (ctx.variables.max_days as number) || 90;
+```
+
+---
+
+## Boolean Variables
+
+**For:** Yes/No flags, enable/disable options
+
+```typescript
+{
+  id: 'include_inactive',
+  label: 'Include Inactive Resources',
+  type: 'boolean',
+  required: false,
+  default: false,
+  helpText: 'Also check resources that are disabled',
+}
+```
+
+**Renders as:** Dropdown with "Yes" / "No" options
+
+**Access in check:**
+
+```typescript
+const includeInactive = ctx.variables.include_inactive === true;
+// or as string from select
+const includeInactive = ctx.variables.include_inactive === 'true';
+```
+
+---
+
+## Select Variables
+
+**For:** Choose one option from a predefined list
+
+### Static Options
+
+```typescript
+{
+  id: 'environment',
+  label: 'Environment',
+  type: 'select',
+  required: true,
+  default: 'production',
+  options: [
+    { value: 'production', label: 'Production' },
+    { value: 'staging', label: 'Staging' },
+    { value: 'development', label: 'Development' },
+  ],
+  helpText: 'Which environment to check',
+}
+```
+
+### Dynamic Options (Fetched from API)
+
+```typescript
+{
+  id: 'project_id',
+  label: 'Project',
+  type: 'select',
+  required: true,
+  helpText: 'Select the project to monitor',
+
+  fetchOptions: async (ctx) => {
+    // Fetch projects from API
+    const projects = await ctx.fetch<Project[]>('/projects');
+
+    return projects.map((p) => ({
+      value: p.id,
+      label: p.name,
+    }));
+  },
+}
+```
+
+**When dynamic options are used:**
+
+1. User connects integration
+2. Platform fetches options using the connection's credentials
+3. User sees dropdown populated with real data from their account
+
+**Access in check:**
+
+```typescript
+const selectedEnv = ctx.variables.environment as string;
+```
+
+---
+
+## Multi-Select Variables
+
+**For:** Choose multiple items from a list (most common for selecting resources)
+
+### Static Options
+
+```typescript
+{
+  id: 'alert_types',
+  label: 'Alert Types to Monitor',
+  type: 'multi-select',
+  required: true,
+  default: ['critical', 'high'],
+  options: [
+    { value: 'critical', label: 'Critical' },
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' },
+  ],
+}
+```
+
+### Dynamic Options (Most Common)
+
+**Example:** Select which GitHub repositories to monitor
+
+```typescript
+{
+  id: 'target_repos',
+  label: 'Repositories to Monitor',
+  type: 'multi-select',
+  required: true,
+  helpText: 'Select repositories to check for compliance',
+
+  fetchOptions: async (ctx) => {
+    // Fetch all accessible repos
+    const repos = await ctx.fetchAllPages<Repo>('/user/repos');
+
+    return repos.map((r) => ({
+      value: r.full_name,  // org/repo-name
+      label: `${r.full_name}${r.private ? ' (private)' : ''}`,
+    }));
+  },
+}
+```
+
+**Renders as:** Multi-select dropdown with search
+
+**Access in check:**
+
+```typescript
+const targetRepos = ctx.variables.target_repos as string[];
+
+if (!targetRepos || targetRepos.length === 0) {
+  ctx.fail({
+    title: 'No Repositories Selected',
+    description: 'Select at least one repository in integration settings',
+    // ...
+  });
+  return;
+}
+
+// Only check selected repos
+for (const repoName of targetRepos) {
+  const repo = await ctx.fetch<Repo>(`/repos/${repoName}`);
+  // Check the repo
+}
+```
+
+---
+
+## Default Values
+
+```typescript
+{
+  id: 'max_results',
+  type: 'number',
+  default: 100,  // Used if user doesn't configure
+}
+
+// In check
+const maxResults = (ctx.variables.max_results as number) || 100;
+```
+
+**Use defaults for:**
+
+- Optional settings with sensible defaults
+- Advanced options most users don't change
+- Don't use for required fields
+
+---
+
+## Required vs Optional Variables
+
+### Required Variables
+
+```typescript
+{
+  id: 'organization_id',
+  required: true,  // User MUST provide this
+}
+```
+
+**Behavior:**
+
+- User can't save without filling this
+- Checks won't auto-run until provided
+- Validation error shown if empty
+
+**Use for:** Essential configuration (IDs, critical settings)
+
+### Optional Variables
+
+```typescript
+{
+  id: 'include_archived',
+  required: false,  // User can leave empty
+  default: false,
+}
+```
+
+**Behavior:**
+
+- User can skip this
+- Checks use default value if not set
+- Checks auto-run even if not configured
+
+**Use for:** Advanced settings, filters, optional features
+
+---
+
+## Variable Fetching Context
+
+When using `fetchOptions`, you get a limited context:
+
+```typescript
+fetchOptions: async (ctx) => {
+  // Available:
+  ctx.accessToken; // OAuth token
+  ctx.fetch<T>(); // HTTP GET with auth
+  ctx.fetchAllPages<T>(); // Paginated GET
+  ctx.graphql<T>(); // GraphQL query
+
+  // Not available:
+  ctx.log(); // No logging during option fetch
+  ctx.fail(); // Can't create findings
+  ctx.variables; // No other variables (circular dependency)
+};
+```
+
+**Keep it simple:**
+
+- Fetch a list of resources
+- Map to `{ value, label }` format
+- Don't fetch large datasets (use pagination)
+- Don't perform complex logic
+
+---
+
+## Validation
+
+### In the Manifest
+
+```typescript
+{
+  id: 'api_url',
+  type: 'url',  // Auto-validates URL format
+  required: true,
+}
+```
+
+**Built-in validation:**
+
+- `required: true` - Can't be empty
+- `type: 'url'` - Must be valid URL
+- `type: 'number'` - Must be numeric
+
+### In the Check
+
+```typescript
+run: async (ctx) => {
+  const orgId = ctx.variables.organization_id as string;
+
+  if (!orgId || orgId.trim() === '') {
+    ctx.fail({
+      title: 'Organization ID Required',
+      description: 'Configure the Organization ID in integration settings',
+      resourceType: 'configuration',
+      resourceId: 'organization_id',
+      severity: 'critical',
+      remediation: 'Go to Manage → Settings → Enter Organization ID',
+      evidence: {},
+    });
+    return;
+  }
+
+  // Continue with check
+};
+```
+
+---
+
+## Reusable Variables
+
+**Define once, use in multiple checks:**
+
+```typescript
+// variables.ts
+export const targetReposVariable: CheckVariable = {
+  id: 'target_repos',
+  label: 'Repositories to Monitor',
+  type: 'multi-select',
+  required: true,
+  fetchOptions: async (ctx) => {
+    // Fetch logic
+  },
+};
+
+export const protectedBranchVariable: CheckVariable = {
+  id: 'protected_branch',
+  label: 'Branch to Check',
+  type: 'text',
+  required: true,
+  default: 'main',
+};
+```
+
+```typescript
+// checks/check-1.ts
+import { targetReposVariable } from '../variables';
+
+export const check1: IntegrationCheck = {
+  variables: [targetReposVariable],
+  // ...
+};
+
+// checks/check-2.ts
+export const check2: IntegrationCheck = {
+  variables: [targetReposVariable, protectedBranchVariable],
+  // ...
+};
+```
+
+**Benefits:**
+
+- Consistent variable definitions
+- Centralized option fetching
+- Easier maintenance
+
+---
+
+## Auto-Run Behavior
+
+**Checks auto-run after connection when:**
+
+- All required variables are configured
+- Connection is active
+- Integration has checks defined
+
+**Checks DON'T auto-run when:**
+
+- Required variables are missing → User must configure them
+- All variables are optional → Still auto-runs (uses defaults)
+
+**After saving variables:**
+
+- Platform checks if all required variables are now set
+- If yes → Auto-triggers check run via Trigger.dev
+- If no → Waits for remaining variables
+
+---
+
+## Best Practices
+
+### Do's
+
+- **Clear labels**: "Organization ID" not "Org ID" not "id"
+- **Helpful help text**: Explain where to find the value
+- **Good placeholders**: Show format/example
+- **Sensible defaults**: For optional settings
+- **Required only when truly needed**: Don't over-require
+
+### Don'ts
+
+- **Don't use vague labels**: "Setting 1"
+- **Don't skip help text**: Users need guidance
+- **Don't make everything required**: Only essentials
+- **Don't fetch huge option lists**: Paginate or filter
+- **Don't use technical jargon**: User-friendly language
+
+---
+
+## Examples from Built-in Integrations
+
+### GitHub: Target Repositories
+
+```typescript
+{
+  id: 'target_repos',
+  label: 'Repositories to Monitor',
+  type: 'multi-select',
+  required: true,
+  fetchOptions: async (ctx) => {
+    const orgs = await ctx.fetch<Org[]>('/user/orgs');
+    const allRepos = [];
+    for (const org of orgs) {
+      const repos = await ctx.fetchAllPages<Repo>(`/orgs/${org.login}/repos`);
+      allRepos.push(...repos.map(r => ({
+        value: r.full_name,
+        label: `${r.full_name}${r.private ? ' (private)' : ''}`,
+      })));
+    }
+    return allRepos;
+  },
+}
+```
+
+### GCP: Organization ID
+
+```typescript
+{
+  id: 'organization_id',
+  label: 'GCP Organization ID',
+  type: 'text',
+  required: true,
+  placeholder: '123456789012',
+  helpText: 'Numeric org ID from GCP Console → IAM & Admin → Settings',
+}
+```
+
+### Linear: Target Teams
+
+```typescript
+{
+  id: 'target_teams',
+  label: 'Teams to Monitor',
+  type: 'multi-select',
+  required: false, // Check all teams if not specified
+  fetchOptions: async (ctx) => {
+    const teams = await ctx.graphql<{ teams: { nodes: Team[] } }>(`
+      query {
+        teams {
+          nodes {
+            id
+            name
+            private
+          }
+        }
+      }
+    `);
+    return teams.teams.nodes.map(t => ({
+      value: t.id,
+      label: `${t.name}${t.private ? ' (private)' : ''}`,
+    }));
+  },
+}
+```
+
+---
+
+## Summary
+
+Variables make integrations flexible and user-friendly. Use them to:
+
+- Let users scope checks to specific resources
+- Configure thresholds and limits
+- Enable/disable features
+- Provide organization-specific context
+
+**Keep it simple** - only add variables when truly needed for configuration.

@@ -9,6 +9,7 @@ model User {
   lastLogin                      DateTime?
   emailNotificationsUnsubscribed Boolean   @default(false)
   emailPreferences               Json?     @default("{\"policyNotifications\":true,\"taskReminders\":true,\"weeklyTaskDigest\":true,\"unassignedItemsNotifications\":true}")
+  isPlatformAdmin                Boolean   @default(false)
 
   accounts           Account[]
   auditLog           AuditLog[]

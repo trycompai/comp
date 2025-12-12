@@ -3,6 +3,7 @@ import { sendEmail } from '../email/resend';
 import { AccessGrantedEmail } from '../email/templates/access-granted';
 import { AccessReclaimEmail } from '../email/templates/access-reclaim';
 import { NdaSigningEmail } from '../email/templates/nda-signing';
+import { AccessRequestNotificationEmail } from '../email/templates/access-request-notification';
 
 @Injectable()
 export class TrustEmailService {
@@ -76,5 +77,49 @@ export class TrustEmailService {
     });
 
     this.logger.log(`Access reclaim email sent to ${toEmail} (ID: ${id})`);
+  }
+
+  async sendAccessRequestNotification(params: {
+    toEmail: string;
+    organizationName: string;
+    requesterName: string;
+    requesterEmail: string;
+    requesterCompany?: string | null;
+    requesterJobTitle?: string | null;
+    purpose?: string | null;
+    requestedDurationDays?: number | null;
+    reviewUrl: string;
+  }): Promise<void> {
+    const {
+      toEmail,
+      organizationName,
+      requesterName,
+      requesterEmail,
+      requesterCompany,
+      requesterJobTitle,
+      purpose,
+      requestedDurationDays,
+      reviewUrl,
+    } = params;
+
+    const { id } = await sendEmail({
+      to: toEmail,
+      subject: `New Trust Portal Access Request - ${organizationName}`,
+      react: AccessRequestNotificationEmail({
+        organizationName,
+        requesterName,
+        requesterEmail,
+        requesterCompany,
+        requesterJobTitle,
+        purpose,
+        requestedDurationDays,
+        reviewUrl,
+      }),
+      system: true,
+    });
+
+    this.logger.log(
+      `Access request notification sent to ${toEmail} for requester ${requesterEmail} (ID: ${id})`,
+    );
   }
 }

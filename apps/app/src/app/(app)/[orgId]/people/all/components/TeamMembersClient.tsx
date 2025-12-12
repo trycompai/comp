@@ -1,6 +1,7 @@
 'use client';
 
-import { Mail, Search, UserPlus, X } from 'lucide-react';
+import { Loader2, Mail, Search, UserPlus, X } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useState } from 'react';
@@ -22,6 +23,8 @@ import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 import type { removeMember } from '../actions/removeMember';
 import type { revokeInvitation } from '../actions/revokeInvitation';
 
+import type { EmployeeSyncConnectionsData } from '../data/queries';
+import { useEmployeeSync } from '../hooks/useEmployeeSync';
 import { InviteMembersModal } from './InviteMembersModal';
 
 // Define prop types using typeof for the actions still used
@@ -31,6 +34,7 @@ interface TeamMembersClientProps {
   removeMemberAction: typeof removeMember;
   revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
+  employeeSyncData: EmployeeSyncConnectionsData;
 }
 
 // Define a simplified type for merged list items
@@ -39,9 +43,10 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
   displayName: string;
   displayEmail: string;
   displayRole: string | string[]; // Simplified role display, could be comma-separated
-  displayStatus: 'active' | 'pending';
+  displayStatus: 'active' | 'pending' | 'deactivated';
   displayId: string; // Use member.id or invitation.id
   processedRoles: Role[];
+  isDeactivated?: boolean;
 }
 
 export function TeamMembersClient({
@@ -50,13 +55,37 @@ export function TeamMembersClient({
   removeMemberAction,
   revokeInvitationAction,
   canManageMembers,
+  employeeSyncData,
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
+  const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
 
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+
+  // Employee sync hook with server-fetched initial data
+  const {
+    googleWorkspaceConnectionId,
+    ripplingConnectionId,
+    selectedProvider,
+    isSyncing,
+    syncEmployees,
+    hasAnyConnection,
+    getProviderName,
+    getProviderLogo,
+  } = useEmployeeSync({ organizationId, initialData: employeeSyncData });
+
+  const lastSyncAt = employeeSyncData.lastSyncAt;
+  const nextSyncAt = employeeSyncData.nextSyncAt;
+
+  const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling') => {
+    const result = await syncEmployees(provider);
+    if (result?.success) {
+      router.refresh();
+    }
+  };
 
   // Combine and type members and invitations for filtering/display
   const allItems: DisplayItem[] = [
@@ -75,10 +104,11 @@ export function TeamMembersClient({
         displayName: member.user.name || member.user.email || '',
         displayEmail: member.user.email || '',
         displayRole: member.role, // Keep original for filtering
-        displayStatus: 'active' as const,
+        displayStatus: member.deactivated ? ('deactivated' as const) : ('active' as const),
         displayId: member.id,
         // Add processed roles for rendering
         processedRoles: roles,
+        isDeactivated: member.deactivated,
       };
     }),
     ...data.pendingInvitations.map((invitation) => {
@@ -109,12 +139,18 @@ export function TeamMembersClient({
       item.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.displayEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesRole =
-      roleFilter === 'all' ||
-      (item.type === 'member' && item.role === roleFilter) ||
-      (item.type === 'invitation' && item.role === roleFilter);
+    // Check if the role filter matches any of the member's roles
+    const matchesRole = roleFilter === 'all' || item.processedRoles.includes(roleFilter as Role);
 
-    return matchesSearch && matchesRole;
+    // Status filter: 'active' shows non-deactivated members + pending invitations
+    // 'deactivated' shows only deactivated members
+    // 'all' shows everything
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && item.displayStatus !== 'deactivated') ||
+      (statusFilter === 'deactivated' && item.displayStatus === 'deactivated');
+
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   const activeMembers = filteredItems.filter((item) => item.type === 'member');
@@ -158,7 +194,7 @@ export function TeamMembersClient({
     const member = data.members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
-    const memberRoles = member?.role?.split(',').map(r => r.trim()) ?? [];
+    const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
       // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');
@@ -219,6 +255,20 @@ export function TeamMembersClient({
             </Button>
           )}
         </div>
+        {/* Status Filter Select */}
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}
+        >
+          <SelectTrigger className="hidden w-[140px] sm:flex">
+            <SelectValue placeholder={'All People'} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{'All People'}</SelectItem>
+            <SelectItem value="active">{'Active'}</SelectItem>
+            <SelectItem value="deactivated">{'Deactivated'}</SelectItem>
+          </SelectContent>
+        </Select>
         {/* Role Filter Select: Hidden on mobile, block on sm+ */}
         <Select
           value={roleFilter}
@@ -235,6 +285,97 @@ export function TeamMembersClient({
             <SelectItem value="employee">{'Employee'}</SelectItem>
           </SelectContent>
         </Select>
+        {hasAnyConnection && (
+          <div className="flex items-center gap-2">
+            <Select
+              onValueChange={(value) =>
+                handleEmployeeSync(value as 'google-workspace' | 'rippling')
+              }
+              disabled={isSyncing || !canManageMembers}
+            >
+              <SelectTrigger className="w-[200px]">
+                {isSyncing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Syncing...
+                  </>
+                ) : selectedProvider ? (
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src={getProviderLogo(selectedProvider)}
+                      alt={getProviderName(selectedProvider)}
+                      width={16}
+                      height={16}
+                      className="rounded-sm"
+                      unoptimized
+                    />
+                    <span className="truncate">{getProviderName(selectedProvider)}</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="Select sync source" />
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
+                  {selectedProvider ? (
+                    <>
+                      <div>Auto-syncs daily at 7 AM UTC</div>
+                      {lastSyncAt && (
+                        <div className="text-xs text-muted-foreground/80">
+                          Last sync: {new Date(lastSyncAt).toLocaleString()}
+                        </div>
+                      )}
+                      {nextSyncAt && (
+                        <div className="text-xs text-muted-foreground/80">
+                          Next sync: {new Date(nextSyncAt).toLocaleString()}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    'Select a provider to enable auto-sync'
+                  )}
+                </div>
+                <Separator className="my-1" />
+                {googleWorkspaceConnectionId && (
+                  <SelectItem value="google-workspace">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={getProviderLogo('google-workspace')}
+                        alt="Google"
+                        width={16}
+                        height={16}
+                        className="rounded-sm"
+                        unoptimized
+                      />
+                      Google Workspace
+                      {selectedProvider === 'google-workspace' && (
+                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                )}
+                {ripplingConnectionId && (
+                  <SelectItem value="rippling">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={getProviderLogo('rippling')}
+                        alt="Rippling"
+                        width={16}
+                        height={16}
+                        className="rounded-sm"
+                        unoptimized
+                      />
+                      Rippling
+                      {selectedProvider === 'rippling' && (
+                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <Button onClick={() => setIsInviteModalOpen(true)} disabled={!canManageMembers}>
           <UserPlus className="h-4 w-4" />
           {'Add User'}

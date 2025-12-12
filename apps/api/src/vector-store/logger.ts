@@ -1,9 +1,9 @@
 /**
  * Universal logger that works in both NestJS and Trigger.dev runtime environments
- * 
+ *
  * In Trigger.dev tasks, we use console.log with structured output
  * In NestJS services, we use the NestJS Logger
- * 
+ *
  * This allows shared lib files to be imported by both Trigger.dev tasks and NestJS services
  */
 
@@ -61,16 +61,16 @@ const createLogger = () => {
     const baseLogger = new Logger('VectorStore');
 
     return {
-  info: (message: string, payload?: LogPayload): void => {
-    baseLogger.log(formatMessage(message, payload));
-  },
-  warn: (message: string, payload?: LogPayload): void => {
-    baseLogger.warn(formatMessage(message, payload));
-  },
-  error: (message: string, payload?: LogPayload): void => {
-    baseLogger.error(formatMessage(message, payload));
-  },
-};
+      info: (message: string, payload?: LogPayload): void => {
+        baseLogger.log(formatMessage(message, payload));
+      },
+      warn: (message: string, payload?: LogPayload): void => {
+        baseLogger.warn(formatMessage(message, payload));
+      },
+      error: (message: string, payload?: LogPayload): void => {
+        baseLogger.error(formatMessage(message, payload));
+      },
+    };
   } catch {
     // Fallback to console if NestJS is not available
     return {

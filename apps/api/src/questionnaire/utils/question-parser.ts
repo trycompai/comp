@@ -58,11 +58,14 @@ export async function parseQuestionsAndAnswers(
     return parseChunkQuestionsAndAnswers(chunkInfos[0].content, 0, 1);
   }
 
-  logger.info('Chunking content by individual questions for parallel processing', {
-    contentLength: content.length,
-    totalChunks: chunkInfos.length,
-    questionsPerChunk: 1,
-  });
+  logger.info(
+    'Chunking content by individual questions for parallel processing',
+    {
+      contentLength: content.length,
+      totalChunks: chunkInfos.length,
+      questionsPerChunk: 1,
+    },
+  );
 
   // Process all chunks in parallel for maximum speed
   const parseStartTime = Date.now();
@@ -117,7 +120,6 @@ export async function parseChunkQuestionsAndAnswers(
   try {
     const { object } = await generateObject({
       model: openai(PARSING_MODEL),
-      mode: 'json',
       schema: jsonSchema({
         type: 'object',
         properties: {
@@ -129,7 +131,8 @@ export async function parseChunkQuestionsAndAnswers(
                 question: { type: 'string', description: 'The question text' },
                 answer: {
                   anyOf: [{ type: 'string' }, { type: 'null' }],
-                  description: 'The answer to the question. Use null if no answer is provided.',
+                  description:
+                    'The answer to the question. Use null if no answer is provided.',
                 },
               },
               required: ['question'],
@@ -152,16 +155,22 @@ export async function parseChunkQuestionsAndAnswers(
 
     // Post-process to ensure empty strings are converted to null
     return parsed
-      .filter((qa) => qa && typeof qa.question === 'string' && qa.question.trim())
+      .filter(
+        (qa) => qa && typeof qa.question === 'string' && qa.question.trim(),
+      )
       .map((qa) => ({
         question: qa.question.trim(),
-        answer: qa.answer && typeof qa.answer === 'string' && qa.answer.trim() !== '' 
-          ? qa.answer.trim() 
-          : null,
+        answer:
+          qa.answer && typeof qa.answer === 'string' && qa.answer.trim() !== ''
+            ? qa.answer.trim()
+            : null,
       }));
   } catch (error) {
     // Log error but don't fail the entire parsing
-    console.error(`Error parsing chunk ${chunkIndex + 1}/${totalChunks}:`, error);
+    console.error(
+      `Error parsing chunk ${chunkIndex + 1}/${totalChunks}:`,
+      error,
+    );
     return [];
   }
 }
@@ -324,4 +333,3 @@ export function estimateQuestionCount(text: string): number {
   // Fallback heuristic: assume roughly one question per 1200 chars
   return Math.max(1, Math.floor(text.length / 1200));
 }
-

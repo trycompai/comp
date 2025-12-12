@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttachmentsModule } from './attachments/attachments.module';
@@ -23,6 +25,8 @@ import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { SOAModule } from './soa/soa.module';
+import { IntegrationPlatformModule } from './integration-platform/integration-platform.module';
+import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 
 @Module({
   imports: [
@@ -35,6 +39,12 @@ import { SOAModule } from './soa/soa.module';
         abortEarly: true,
       },
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 seconds
+        limit: 100, // 100 requests per minute per IP
+      },
+    ]),
     AuthModule,
     OrganizationModule,
     PeopleModule,
@@ -54,8 +64,16 @@ import { SOAModule } from './soa/soa.module';
     VectorStoreModule,
     KnowledgeBaseModule,
     SOAModule,
+    IntegrationPlatformModule,
+    CloudSecurityModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

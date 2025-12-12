@@ -47,6 +47,33 @@
         ]
       },
       {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "Platform Overview",
+            "pages": [
+              "integrations/index"
+            ]
+          },
+          {
+            "group": "Developer Guides",
+            "pages": [
+              "integrations/writing-integrations",
+              "integrations/authentication",
+              "integrations/variables",
+              "integrations/checks",
+              "integrations/contributing"
+            ]
+          },
+          {
+            "group": "Self-Hosting",
+            "pages": [
+              "integrations/oauth-setup"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "API",
         "openapi": { "source": "./openapi.json" }
       }

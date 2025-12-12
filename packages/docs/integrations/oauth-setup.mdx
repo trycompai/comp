@@ -1,0 +1,351 @@
+---
+title: 'OAuth Configuration for Self-Hosters'
+description: 'Platform admin guide to enabling OAuth integrations'
+---
+
+<Warning>
+This guide is for **platform administrators** self-hosting the application. If you're a regular user trying to connect an integration, this doesn't apply to you - just click "Connect" and follow the prompts.
+</Warning>
+
+## Overview
+
+OAuth integrations require **platform-level credentials** that you (the admin) configure once in your deployment. After that, all users can connect their accounts with a single click.
+
+**Without OAuth configured:** Integration shows "Coming Soon" (disabled)  
+**With OAuth configured:** Users click "Connect" → OAuth flow → Done!
+
+## Quick Start
+
+For each OAuth integration you want to enable:
+
+1. Create OAuth app with the provider
+2. Copy Client ID and Client Secret
+3. Go to `/admin/integrations` in your deployment
+4. Find the integration → Click "Configure"
+5. Paste credentials → Save
+
+That's it! Users can now connect.
+
+---
+
+## Provider Setup Guides
+
+### GitHub
+
+<Steps>
+  <Step title="Create OAuth App">
+    1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+    2. Click **New OAuth App**
+    3. Fill in:
+       - **Application name**: Your app name (e.g., "Comp AI at Acme Corp")
+       - **Homepage URL**: `https://yourapp.com`
+       - **Authorization callback URL**: `https://yourapp.com/v1/integrations/oauth/callback`
+    4. Click **Register application**
+    5. Copy the **Client ID**
+    6. Click **Generate a new client secret** → Copy it
+  </Step>
+  
+  <Step title="Add to Platform">
+    1. Go to `/admin/integrations` in your deployment
+    2. Find **GitHub** in the list
+    3. Click **Configure OAuth**
+    4. Paste **Client ID** and **Client Secret**
+    5. Click **Save**
+  </Step>
+  
+  <Step title="Test">
+    1. Go to `/integrations`
+    2. Find GitHub
+    3. Click **Connect** (should no longer say "Coming Soon")
+    4. Authorize with your GitHub account
+    5. Connection successful!
+  </Step>
+</Steps>
+
+**Important:** The callback URL must exactly match what you enter in your deployment.
+
+---
+
+### Google (Workspace & Cloud Platform)
+
+<Tip>
+Google Workspace and Google Cloud Platform can **share the same OAuth app**. Create it once, use it for both!
+</Tip>
+
+<Steps>
+  <Step title="Create Google Cloud Project">
+    1. Go to [Google Cloud Console](https://console.cloud.google.com)
+    2. Create a new project (or select existing)
+    3. Name it something like "Comp AI OAuth"
+  </Step>
+  
+  <Step title="Configure OAuth Consent Screen">
+    1. Go to **APIs & Services** → **OAuth consent screen**
+    2. Select **Internal** (if using Google Workspace) or **External**
+    3. Fill in:
+       - **App name**: Your app name
+       - **User support email**: Your email
+       - **Developer contact**: Your email
+    4. Don't add scopes manually - we request them dynamically
+    5. Save and continue
+  </Step>
+  
+  <Step title="Create OAuth Credentials">
+    1. Go to **APIs & Services** → **Credentials**
+    2. Click **Create Credentials** → **OAuth client ID**
+    3. Select **Web application**
+    4. Name: "Comp AI Web"
+    5. **Authorized redirect URIs**: `https://yourapp.com/v1/integrations/oauth/callback`
+    6. Click **Create**
+    7. Copy **Client ID** and **Client Secret**
+  </Step>
+  
+  <Step title="Enable Required APIs">
+    In the same GCP project, enable these APIs:
+    - **Admin SDK API** (for Google Workspace)
+    - **Cloud Resource Manager API** (for GCP)
+    - **Security Command Center API** (for GCP)
+    
+    Go to **APIs & Services** → **Library** and search for each.
+  </Step>
+  
+  <Step title="Add to Platform (Google Workspace)">
+    1. Go to `/admin/integrations`
+    2. Find **Google Workspace**
+    3. Click **Configure OAuth**
+    4. Paste Client ID and Client Secret
+    5. Save
+  </Step>
+  
+  <Step title="Add to Platform (GCP) - Optional">
+    1. In the same admin page
+    2. Find **Google Cloud Platform**
+    3. Click **Configure OAuth**
+    4. Paste the **same** Client ID and Client Secret
+    5. Save
+  </Step>
+</Steps>
+
+**User Requirements:**
+- **Google Workspace**: User must be a Workspace admin
+- **GCP**: User must have Viewer + Security Center Findings Viewer roles at org level
+
+---
+
+### Linear
+
+<Steps>
+  <Step title="Create OAuth App">
+    1. Go to [Linear API Settings](https://linear.app/settings/api)
+    2. Click **Create new OAuth application**
+    3. Fill in:
+       - **Name**: Your app name
+       - **Callback URLs**: `https://yourapp.com/v1/integrations/oauth/callback`
+    4. Click **Create**
+    5. Copy **Client ID** and **Client Secret**
+  </Step>
+  
+  <Step title="Add to Platform">
+    1. Go to `/admin/integrations`
+    2. Find **Linear** → **Configure OAuth**
+    3. Paste credentials → Save
+  </Step>
+</Steps>
+
+---
+
+### Vercel
+
+<Steps>
+  <Step title="Create Integration">
+    1. Go to [Vercel Integrations Console](https://vercel.com/dashboard/integrations/console)
+    2. Click **Create Integration**
+    3. Fill in:
+       - **Name**: Your app name
+       - **Redirect URL**: `https://yourapp.com/v1/integrations/oauth/callback`
+    4. Create → Copy **Client ID**, **Client Secret**, and **Integration Slug**
+  </Step>
+  
+  <Step title="Add to Platform">
+    1. Go to `/admin/integrations`
+    2. Find **Vercel** → **Configure OAuth**
+    3. Paste Client ID and Client Secret
+    4. In **Custom Settings**, add the **Integration Slug**
+    5. Save
+  </Step>
+</Steps>
+
+**Note:** Vercel requires an integration slug as a custom setting.
+
+---
+
+### Rippling
+
+<Warning>
+Rippling requires marketplace approval and takes 1-2 weeks.
+</Warning>
+
+<Steps>
+  <Step title="Request Marketplace App">
+    1. Contact Rippling support or your account manager
+    2. Request a marketplace integration
+    3. Provide:
+       - App name
+       - Callback URL: `https://yourapp.com/v1/integrations/oauth/callback`
+       - App description
+    4. Wait for approval (1-2 weeks)
+  </Step>
+  
+  <Step title="Receive Credentials">
+    Rippling will provide:
+    - Client ID
+    - Client Secret
+    - App Name (your marketplace app identifier)
+  </Step>
+  
+  <Step title="Add to Platform">
+    1. Go to `/admin/integrations`
+    2. Find **Rippling** → **Configure OAuth**
+    3. Paste Client ID and Client Secret
+    4. In **Custom Settings**, add the **App Name** provided by Rippling
+    5. Save
+  </Step>
+</Steps>
+
+---
+
+## Non-OAuth Integrations
+
+These integrations don't require platform-level OAuth setup:
+
+### AWS, Azure, GCP (Service Accounts)
+
+**No platform configuration needed!**
+
+Users provide their own:
+- **AWS**: IAM Role ARN, External ID
+- **Azure**: Service Principal credentials
+- **GCP**: OAuth (but users connect with their own Google account)
+
+---
+
+## Troubleshooting
+
+### Integration Shows "Coming Soon"
+
+**Cause:** OAuth credentials not configured  
+**Fix:** Go to `/admin/integrations` → Configure Client ID/Secret
+
+### OAuth Callback Error
+
+**Cause:** Callback URL mismatch  
+**Fix:** Ensure the URL in the OAuth app exactly matches your deployment:
+- OAuth app: `https://yourapp.com/v1/integrations/oauth/callback`
+- Your deployment URL: `https://yourapp.com`
+
+They must match!
+
+### "Invalid Client" Error
+
+**Cause:** Wrong Client ID or Secret  
+**Fix:** Double-check you copied both correctly, no extra spaces
+
+### Users Can't Authorize (Google)
+
+**Cause:** APIs not enabled in your GCP project  
+**Fix:** Enable Admin SDK API (Workspace) or Cloud APIs (GCP)
+
+### "Access Denied" After Connecting
+
+**Cause:** User lacks required permissions in their account  
+**Fix:** User needs to grant IAM roles in the provider (check integration docs for required roles)
+
+---
+
+## Security Notes
+
+### Where Credentials are Stored
+
+OAuth Client IDs and Secrets are stored in the **database**, encrypted at rest using AES-256-GCM.
+
+**Not in environment variables** - This allows:
+- Multiple deployments with different credentials
+- Easy credential rotation via UI
+- Secure encryption
+- Multi-tenancy support
+
+### Callback URL Security
+
+Always use **HTTPS** in production:
+- `https://yourapp.com/v1/integrations/oauth/callback`
+- `http://yourapp.com/...` (insecure, OAuth will reject)
+
+For local development:
+- `http://localhost:3000/v1/integrations/oauth/callback`
+- `http://127.0.0.1:3000/v1/integrations/oauth/callback`
+
+### OAuth Scopes
+
+We request the **minimum scopes** needed for each integration:
+- GitHub: `repo`, `read:org`, `read:user`
+- Google Workspace: `admin.directory.user.readonly`, etc.
+- GCP: `cloud-platform` (required for Security Command Center - no read-only alternative available)
+
+### User Data
+
+We **never** store user passwords. OAuth flow:
+1. User authorizes → Provider gives us an access token
+2. We store the token (encrypted)
+3. We use token to call APIs
+4. User can revoke access anytime in the provider's settings
+
+---
+
+## Production Considerations
+
+### Google OAuth Verification
+
+If using Google integrations (Workspace, GCP) in production with external users, you'll need to submit your app for **Google's verification process**.
+
+**Required for:**
+- External user consent screen
+- Requesting sensitive scopes (like `cloud-platform`)
+
+**Process:**
+1. Complete OAuth consent screen configuration
+2. Submit for verification at https://support.google.com/code/contact/oauth_app_verification
+3. Provide privacy policy, terms of service
+4. May take 2-6 weeks
+
+**For internal use:** No verification needed if using "Internal" consent screen.
+
+### Rate Limiting
+
+OAuth providers have rate limits. The integration platform handles this by:
+- Caching API responses where appropriate
+- Running checks via background jobs (Trigger.dev)
+- Implementing exponential backoff on retries
+
+### Token Refresh
+
+OAuth tokens expire. The platform automatically:
+- Stores refresh tokens (when provider supports it)
+- Refreshes access tokens before they expire
+- Re-prompts user to reconnect if refresh fails
+
+No manual intervention needed!
+
+---
+
+## Summary
+
+**Time investment:** ~30 minutes to configure all OAuth providers
+
+**Benefit:** Users connect with 1 click instead of hunting for API keys
+
+**Maintenance:** Minimal - credentials rotate via UI, no code deployments needed
+
+**Security:** All credentials encrypted at rest, HTTPS required for callbacks
+
+Configure once, benefit forever!
+
