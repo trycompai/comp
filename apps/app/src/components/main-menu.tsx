@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@comp/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@comp/ui/tooltip';
 import {
   ClipboardCheck,
   FileTextIcon,
@@ -274,7 +274,6 @@ export function MainMenu({
     </SidebarGroup>
   );
 }
-
 function Item({
   organizationId,
   item,
@@ -291,24 +290,19 @@ function Item({
   if (linkDisabled) {
     return (
       <SidebarMenuItem ref={itemRef}>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <SidebarMenuButton
-                disabled
-                size="default"
-                className={cn(
-                  'cursor-not-allowed',
-                  isCollapsed ? 'justify-center' : 'justify-start',
-                )}
-              >
-                <Icon size={16} className="shrink-0" />
-                {!isCollapsed && <span className="ml-2 truncate">Coming Soon</span>}
-              </SidebarMenuButton>
-            </TooltipTrigger>
-            {isCollapsed && <TooltipContent side="right">Coming Soon</TooltipContent>}
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarMenuButton
+              disabled
+              size="default"
+              className={cn('cursor-not-allowed', isCollapsed ? 'justify-center' : 'justify-start')}
+            >
+              <Icon size={16} className="shrink-0" />
+              {!isCollapsed && <span className="ml-2 truncate">Coming Soon</span>}
+            </SidebarMenuButton>
+          </TooltipTrigger>
+          {isCollapsed && <TooltipContent side="right">Coming Soon</TooltipContent>}
+        </Tooltip>
       </SidebarMenuItem>
     );
   }
@@ -326,37 +320,35 @@ function Item({
 
   return (
     <SidebarMenuItem ref={itemRef}>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive}
-              size="default"
-              className={cn(isCollapsed ? 'justify-center' : 'justify-start')}
-            >
-              <Link href={itemPath} onClick={onItemClick}>
-                <Icon size={16} className="shrink-0" />
-                {!isCollapsed && (
-                  <>
-                    <span className="ml-2 flex-1 truncate text-left">{item.name}</span>
-                    {item.badge && (
-                      <Badge variant={item.badge.variant} className="ml-auto text-xs">
-                        {item.badge.text}
-                      </Badge>
-                    )}
-                  </>
-                )}
-              </Link>
-            </SidebarMenuButton>
-          </TooltipTrigger>
-          {isCollapsed && (
-            <TooltipContent side="right" sideOffset={8}>
-              {tooltipContent}
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <SidebarMenuButton
+            asChild
+            isActive={isActive}
+            size="default"
+            className={cn(isCollapsed ? 'justify-center' : 'justify-start')}
+          >
+            <Link href={itemPath} onClick={onItemClick}>
+              <Icon size={16} className="shrink-0" />
+              {!isCollapsed && (
+                <>
+                  <span className="ml-2 flex-1 truncate text-left">{item.name}</span>
+                  {item.badge && (
+                    <Badge variant={item.badge.variant} className="ml-auto text-xs">
+                      {item.badge.text}
+                    </Badge>
+                  )}
+                </>
+              )}
+            </Link>
+          </SidebarMenuButton>
+        </TooltipTrigger>
+        {isCollapsed && (
+          <TooltipContent side="right" sideOffset={8}>
+            {tooltipContent}
+          </TooltipContent>
+        )}
+      </Tooltip>
     </SidebarMenuItem>
   );
 }
