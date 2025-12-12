@@ -8,20 +8,31 @@ interface UseQuestionnaireHistoryProps {
 
 export function useQuestionnaireHistory({ questionnaires }: UseQuestionnaireHistoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'internal' | 'external'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  // Filter questionnaires by filename
+  // Filter questionnaires by filename and source
   const filteredQuestionnaires = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return questionnaires;
+    let filtered = questionnaires;
+
+    // Filter by source
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter((questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number]) =>
+        questionnaire.source === sourceFilter,
+      );
     }
 
-    const query = searchQuery.toLowerCase();
-    return questionnaires.filter((questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number]) =>
-      questionnaire.filename.toLowerCase().includes(query),
-    );
-  }, [questionnaires, searchQuery]);
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number]) =>
+        questionnaire.filename.toLowerCase().includes(query),
+      );
+    }
+
+    return filtered;
+  }, [questionnaires, searchQuery, sourceFilter]);
 
   // Calculate pagination
   const totalPages = Math.max(1, Math.ceil(filteredQuestionnaires.length / itemsPerPage));
@@ -32,6 +43,11 @@ export function useQuestionnaireHistory({ questionnaires }: UseQuestionnaireHist
   // Reset to page 1 when search changes or items per page changes
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handleSourceFilterChange = (value: 'all' | 'internal' | 'external') => {
+    setSourceFilter(value);
     setCurrentPage(1);
   };
 
@@ -47,6 +63,8 @@ export function useQuestionnaireHistory({ questionnaires }: UseQuestionnaireHist
   return {
     searchQuery,
     setSearchQuery: handleSearchChange,
+    sourceFilter,
+    setSourceFilter: handleSourceFilterChange,
     currentPage,
     itemsPerPage,
     totalPages,

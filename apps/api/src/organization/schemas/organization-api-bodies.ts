@@ -50,6 +50,11 @@ export const UPDATE_ORGANIZATION_BODY: ApiBodyOptions = {
         description: 'Whether FleetDM setup is completed',
         example: false,
       },
+      primaryColor: {
+        type: 'string',
+        description: 'Organization primary color in hex format',
+        example: '#3B82F6',
+      },
     },
     additionalProperties: false,
   },
