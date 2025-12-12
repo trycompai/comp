@@ -14,6 +14,7 @@ import {
 } from '@comp/ui/command';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { useSidebar } from '@comp/ui/sidebar';
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -25,7 +26,6 @@ import { useEffect, useState } from 'react';
 interface OrganizationSwitcherProps {
   organizations: Organization[];
   organization: Organization | null;
-  isCollapsed?: boolean;
   logoUrls?: Record<string, string>;
 }
 
@@ -101,9 +101,10 @@ function OrganizationAvatar({
 export function OrganizationSwitcher({
   organizations,
   organization,
-  isCollapsed = false,
   logoUrls = {},
 }: OrganizationSwitcherProps) {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);
@@ -192,8 +193,7 @@ export function OrganizationSwitcher({
             variant="ghost"
             size={isCollapsed ? 'icon' : 'default'}
             className={cn(
-              'w-full',
-              isCollapsed ? 'justify-center' : 'h-10 justify-start p-1 pr-2',
+              isCollapsed ? 'h-10 w-10 justify-center p-0' : 'h-10 w-full justify-start p-1 pr-2',
               status === 'executing' && 'cursor-not-allowed opacity-50',
             )}
             disabled={status === 'executing'}
@@ -201,6 +201,7 @@ export function OrganizationSwitcher({
             <OrganizationAvatar
               name={currentOrganization?.name}
               logoUrl={currentOrganization?.id ? logoUrls[currentOrganization.id] : undefined}
+              className="shrink-0"
             />
             {!isCollapsed && (
               <>
