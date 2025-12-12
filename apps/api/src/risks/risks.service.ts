@@ -15,7 +15,14 @@ export class RisksService {
         include: {
           assignee: {
             include: {
-              user: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
             },
           },
         },
