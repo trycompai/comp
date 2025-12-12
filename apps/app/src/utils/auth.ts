@@ -39,6 +39,18 @@ if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
   };
 }
 
+if (env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET) {
+  socialProviders = {
+    ...socialProviders,
+    microsoft: {
+      clientId: env.AUTH_MICROSOFT_CLIENT_ID,
+      clientSecret: env.AUTH_MICROSOFT_CLIENT_SECRET,
+      tenantId: 'common', // Allows any Microsoft account
+      prompt: 'select_account', // Forces account selection
+    },
+  };
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
@@ -204,6 +216,10 @@ export const auth = betterAuth({
   },
   account: {
     modelName: 'Account',
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ['google', 'github', 'microsoft'],
+    },
   },
   verification: {
     modelName: 'Verification',

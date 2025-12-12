@@ -77,6 +77,16 @@ export const auth = betterAuth({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
     },
+    ...(process.env.AUTH_MICROSOFT_CLIENT_ID && process.env.AUTH_MICROSOFT_CLIENT_SECRET
+      ? {
+          microsoft: {
+            clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
+            clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
+            tenantId: 'common',
+            prompt: 'select_account',
+          },
+        }
+      : {}),
   },
   user: {
     modelName: 'User',
@@ -95,6 +105,10 @@ export const auth = betterAuth({
   },
   account: {
     modelName: 'Account',
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ['google', 'microsoft'],
+    },
   },
   verification: {
     modelName: 'Verification',
