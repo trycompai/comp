@@ -33,7 +33,7 @@ type MenuItem = {
   path: string;
   name: string;
   disabled: boolean;
-  icon: React.FC<{ size?: number }>;
+  icon: React.FC<{ size?: number; className?: string }>;
   protected: boolean;
   badge?: {
     text: string;
@@ -306,9 +306,7 @@ function Item({
                 {!isCollapsed && <span className="ml-2 truncate">Coming Soon</span>}
               </SidebarMenuButton>
             </TooltipTrigger>
-            {isCollapsed && (
-              <TooltipContent side="right">Coming Soon</TooltipContent>
-            )}
+            {isCollapsed && <TooltipContent side="right">Coming Soon</TooltipContent>}
           </Tooltip>
         </TooltipProvider>
       </SidebarMenuItem>
