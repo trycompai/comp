@@ -37,6 +37,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
               label: 'Secrets',
             },
             {
+              path: `/${orgId}/settings/browser-connection`,
+              label: 'Browser',
+            },
+            {
               path: `/${orgId}/settings/user`,
               label: 'User Settings',
             },

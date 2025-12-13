@@ -16,4 +16,3 @@ export interface TransferOwnershipResponseDto {
     newRoles: string[];
   };
 }
-
