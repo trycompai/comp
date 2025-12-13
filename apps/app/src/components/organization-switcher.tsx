@@ -13,10 +13,12 @@ import {
   CommandSeparator,
 } from '@comp/ui/command';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@comp/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@comp/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { useSidebar } from '@comp/ui/sidebar';
 import type { Organization } from '@db';
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useAction, type HookActionStatus } from 'next-safe-action/hooks';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
@@ -25,7 +27,6 @@ import { useEffect, useState } from 'react';
 interface OrganizationSwitcherProps {
   organizations: Organization[];
   organization: Organization | null;
-  isCollapsed?: boolean;
   logoUrls?: Record<string, string>;
 }
 
@@ -63,7 +64,6 @@ function OrganizationAvatar({
 }: OrganizationAvatarProps) {
   const sizeClass = size === 'sm' ? 'h-6 w-6' : 'h-8 w-8';
 
-  // If logo URL exists, show the image
   if (logoUrl) {
     return (
       <div className={cn('relative overflow-hidden rounded-sm border', sizeClass, className)}>
@@ -72,7 +72,6 @@ function OrganizationAvatar({
     );
   }
 
-  // Fallback to initials
   const initials = name?.slice(0, 2).toUpperCase() || '';
 
   let colorIndex = 0;
@@ -98,14 +97,108 @@ function OrganizationAvatar({
   );
 }
 
+function OrganizationSwitcherContent({
+  sortedOrganizations,
+  currentOrganization,
+  logoUrls,
+  sortOrder,
+  setSortOrder,
+  status,
+  pendingOrgId,
+  handleOrgChange,
+  handleOpenChange,
+  router,
+  getDisplayName,
+}: {
+  sortedOrganizations: Organization[];
+  currentOrganization: Organization | null;
+  logoUrls: Record<string, string>;
+  sortOrder: string;
+  setSortOrder: (value: string) => void;
+  status: HookActionStatus;
+  pendingOrgId: string | null;
+  handleOrgChange: (org: Organization) => void;
+  handleOpenChange: (open: boolean) => void;
+  router: ReturnType<typeof useRouter>;
+  getDisplayName: (org: Organization) => string;
+}) {
+  return (
+    <Command>
+      <div className="flex items-center border-b px-3">
+        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+        <CommandInput
+          placeholder="Search organization..."
+          className="placeholder:text-muted-foreground flex h-11 w-full rounded-md border-0 bg-transparent py-3 text-sm outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+        />
+      </div>
+      <div className="p-2">
+        <Select value={sortOrder} onValueChange={setSortOrder}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Sort by..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="alphabetical">Alphabetical</SelectItem>
+            <SelectItem value="recent">Recently Created</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <CommandList>
+        <CommandEmpty>No results found</CommandEmpty>
+        <CommandGroup className="max-h-[300px] overflow-y-auto">
+          {sortedOrganizations.map((org) => (
+            <CommandItem
+              key={org.id}
+              value={`${org.id} ${org.name || ''}`}
+              onSelect={() => {
+                if (org.id !== currentOrganization?.id) {
+                  handleOrgChange(org);
+                } else {
+                  handleOpenChange(false);
+                }
+              }}
+              disabled={status === 'executing'}
+              className="flex items-center gap-2"
+            >
+              {status === 'executing' && pendingOrgId === org.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : currentOrganization?.id === org.id ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <div className="h-4 w-4" />
+              )}
+              <OrganizationAvatar name={org.name} logoUrl={logoUrls[org.id]} size="sm" />
+              <span className="truncate">{getDisplayName(org)}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
+        <CommandGroup>
+          <CommandItem
+            onSelect={() => {
+              router.push('/setup?intent=create-additional');
+              handleOpenChange(false);
+            }}
+            disabled={status === 'executing'}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Organization
+          </CommandItem>
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  );
+}
+
 export function OrganizationSwitcher({
   organizations,
   organization,
-  isCollapsed = false,
   logoUrls = {},
 }: OrganizationSwitcherProps) {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
   const router = useRouter();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState('alphabetical');
 
@@ -144,7 +237,8 @@ export function OrganizationSwitcher({
       if (orgId) {
         router.push(`/${orgId}/`);
       }
-      setIsDialogOpen(false);
+      setIsOpen(false);
+      setShowOrganizationSwitcher(null);
       setPendingOrgId(null);
     },
     onExecute: (args) => {
@@ -180,105 +274,68 @@ export function OrganizationSwitcher({
   };
 
   const handleOpenChange = (open: boolean) => {
-    setShowOrganizationSwitcher(open);
-    setIsDialogOpen(open);
+    setShowOrganizationSwitcher(open ? true : null);
+    setIsOpen(open);
   };
 
-  return (
-    <div className="w-full">
-      <Dialog open={showOrganizationSwitcher ?? isDialogOpen} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? 'icon' : 'default'}
-            className={cn(
-              'w-full',
-              isCollapsed ? 'justify-center' : 'h-10 justify-start p-1 pr-2',
-              status === 'executing' && 'cursor-not-allowed opacity-50',
-            )}
-            disabled={status === 'executing'}
-          >
-            <OrganizationAvatar
-              name={currentOrganization?.name}
-              logoUrl={currentOrganization?.id ? logoUrls[currentOrganization.id] : undefined}
-            />
-            {!isCollapsed && (
-              <>
-                <span className="ml-2 flex-1 truncate text-left">{currentOrganization?.name}</span>
-                <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-              </>
-            )}
-          </Button>
-        </DialogTrigger>
+  const isOpenState = showOrganizationSwitcher ?? isOpen;
+
+  const triggerButton = (
+    <Button
+      variant="ghost"
+      size={isCollapsed ? 'icon' : 'default'}
+      className={cn(
+        isCollapsed ? 'size-10 p-0' : 'h-10 w-full justify-start p-1 pr-2',
+        status === 'executing' && 'cursor-not-allowed opacity-50',
+      )}
+      disabled={status === 'executing'}
+    >
+      <OrganizationAvatar
+        name={currentOrganization?.name}
+        logoUrl={currentOrganization?.id ? logoUrls[currentOrganization.id] : undefined}
+        className="shrink-0"
+      />
+      {!isCollapsed && (
+        <>
+          <span className="ml-2 flex-1 truncate text-left">{currentOrganization?.name}</span>
+          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+        </>
+      )}
+    </Button>
+  );
+
+  const contentProps = {
+    sortedOrganizations,
+    currentOrganization,
+    logoUrls,
+    sortOrder,
+    setSortOrder,
+    status,
+    pendingOrgId,
+    handleOrgChange,
+    handleOpenChange,
+    router,
+    getDisplayName,
+  };
+
+  if (isCollapsed) {
+    return (
+      <Dialog open={isOpenState} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>{triggerButton}</DialogTrigger>
         <DialogContent className="p-0 sm:max-w-[400px]">
           <DialogTitle className="sr-only">Select Organization</DialogTitle>
-          <Command>
-            <div className="flex items-center border-b px-3">
-              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <CommandInput
-                placeholder="Search organization..."
-                className="placeholder:text-muted-foreground flex h-11 w-full rounded-md border-0 bg-transparent py-3 text-sm outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div className="p-2">
-              <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="alphabetical">Alphabetical</SelectItem>
-                  <SelectItem value="recent">Recently Created</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <CommandList>
-              <CommandEmpty>No results found</CommandEmpty>
-              <CommandGroup className="max-h-[300px] overflow-y-auto">
-                {sortedOrganizations.map((org) => (
-                  <CommandItem
-                    key={org.id}
-                    // Search by id and name
-                    value={`${org.id} ${org.name || ''}`}
-                    onSelect={() => {
-                      if (org.id !== currentOrganization?.id) {
-                        handleOrgChange(org);
-                      } else {
-                        handleOpenChange(false);
-                      }
-                    }}
-                    disabled={status === 'executing'}
-                    className="flex items-center gap-2"
-                  >
-                    {status === 'executing' && pendingOrgId === org.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : currentOrganization?.id === org.id ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <div className="h-4 w-4" />
-                    )}
-                    <OrganizationAvatar name={org.name} logoUrl={logoUrls[org.id]} size="sm" />
-                    <span className="truncate">{getDisplayName(org)}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandSeparator />
-              <CommandGroup>
-                <CommandItem
-                  onSelect={() => {
-                    router.push('/setup?intent=create-additional');
-                    setIsDialogOpen(false);
-                  }}
-                  disabled={status === 'executing'}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create Organization
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
+          <OrganizationSwitcherContent {...contentProps} />
         </DialogContent>
       </Dialog>
-    </div>
+    );
+  }
+
+  return (
+    <DropdownMenu open={isOpenState} onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-[300px] p-0">
+        <OrganizationSwitcherContent {...contentProps} />
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
