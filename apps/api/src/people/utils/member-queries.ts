@@ -145,6 +145,19 @@ export class MemberQueries {
   }
 
   /**
+   * Unlink device by resetting fleetDmLabelId to null
+   */
+  static async unlinkDevice(
+    memberId: string,
+  ): Promise<PeopleResponseDto> {
+    return db.member.update({
+      where: { id: memberId },
+      data: { fleetDmLabelId: null },
+      select: this.MEMBER_SELECT,
+    });
+  }
+
+  /**
    * Bulk create members for an organization
    */
   static async bulkCreateMembers(

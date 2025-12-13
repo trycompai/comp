@@ -14,7 +14,7 @@ export function useApi() {
 
   const apiCall = useCallback(
     <T = unknown>(
-      method: 'get' | 'post' | 'put' | 'delete',
+      method: 'get' | 'post' | 'put' | 'patch' | 'delete',
       endpoint: string,
       bodyOrOrgId?: unknown,
       explicitOrgId?: string,
@@ -30,7 +30,7 @@ export function useApi() {
           explicitOrgId ||
           orgIdFromParams;
       } else {
-        // For POST/PUT: second param is body, third is organizationId
+        // For POST/PUT/PATCH: second param is body, third is organizationId
         body = bodyOrOrgId;
         organizationId = explicitOrgId || orgIdFromParams;
       }
@@ -47,6 +47,8 @@ export function useApi() {
           return api.post<T>(endpoint, body, organizationId);
         case 'put':
           return api.put<T>(endpoint, body, organizationId);
+        case 'patch':
+          return api.patch<T>(endpoint, body, organizationId);
         case 'delete':
           return api.delete<T>(endpoint, organizationId);
         default:
@@ -76,6 +78,12 @@ export function useApi() {
     put: useCallback(
       <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
         apiCall<T>('put', endpoint, body, organizationId),
+      [apiCall],
+    ),
+
+    patch: useCallback(
+      <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+        apiCall<T>('patch', endpoint, body, organizationId),
       [apiCall],
     ),
 

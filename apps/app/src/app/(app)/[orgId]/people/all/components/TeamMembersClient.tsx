@@ -26,6 +26,7 @@ import type { revokeInvitation } from '../actions/revokeInvitation';
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 import { InviteMembersModal } from './InviteMembersModal';
+import { usePeopleActions } from '@/hooks/use-people-api';
 
 // Define prop types using typeof for the actions still used
 interface TeamMembersClientProps {
@@ -34,6 +35,7 @@ interface TeamMembersClientProps {
   removeMemberAction: typeof removeMember;
   revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
+  isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
 }
 
@@ -55,12 +57,15 @@ export function TeamMembersClient({
   removeMemberAction,
   revokeInvitationAction,
   canManageMembers,
+  isCurrentUserOwner,
   employeeSyncData,
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
   const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
+
+  const { unlinkDevice } = usePeopleActions();
 
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -186,6 +191,12 @@ export function TeamMembersClient({
       console.error('Remove Member Error:', errorMessage);
       toast.error(errorMessage);
     }
+  };
+
+  const handleRemoveDevice = async (memberId: string) => {
+    await unlinkDevice(memberId);
+    toast.success('Device unlinked successfully');
+    router.refresh(); // Revalidate data to update UI
   };
 
   // Update handleUpdateRole to use authClient and add toasts
@@ -389,8 +400,10 @@ export function TeamMembersClient({
                 key={member.displayId}
                 member={member as MemberWithUser}
                 onRemove={handleRemoveMember}
+                onRemoveDevice={handleRemoveDevice}
                 onUpdateRole={handleUpdateRole}
                 canEdit={canManageMembers}
+                isCurrentUserOwner={isCurrentUserOwner}
               />
             ))}
           </div>
