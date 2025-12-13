@@ -12,6 +12,20 @@ export class RisksService {
       const risks = await db.risk.findMany({
         where: { organizationId },
         orderBy: { createdAt: 'desc' },
+        include: {
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       this.logger.log(
@@ -33,6 +47,13 @@ export class RisksService {
         where: {
           id,
           organizationId,
+        },
+        include: {
+          assignee: {
+            include: {
+              user: true,
+            },
+          },
         },
       });
 

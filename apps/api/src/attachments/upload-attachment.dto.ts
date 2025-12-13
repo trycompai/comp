@@ -69,4 +69,15 @@ export class UploadAttachmentDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiProperty({
+    description:
+      'User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)',
+    example: 'usr_abc123def456',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  userId?: string;
 }

@@ -308,9 +308,23 @@ export class TasksController {
       taskId,
     );
 
-    // Ensure userId is present for attachment upload
-    if (!authContext.userId) {
-      throw new BadRequestException('User ID is required for file upload');
+    // For API key auth, userId must be provided in the request body
+    // For JWT auth, userId comes from the authenticated session
+    let userId: string;
+    if (authContext.isApiKey) {
+      // For API key auth, userId must be provided in the DTO
+      if (!uploadDto.userId) {
+        throw new BadRequestException(
+          'User ID is required when using API key authentication. Provide userId in the request body.',
+        );
+      }
+      userId = uploadDto.userId;
+    } else {
+      // For JWT auth, use the authenticated user's ID
+      if (!authContext.userId) {
+        throw new BadRequestException('User ID is required');
+      }
+      userId = authContext.userId;
     }
 
     return await this.attachmentsService.uploadAttachment(
@@ -318,7 +332,7 @@ export class TasksController {
       taskId,
       AttachmentEntityType.task,
       uploadDto,
-      authContext.userId,
+      userId,
     );
   }
 
