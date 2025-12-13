@@ -1,3 +1,4 @@
+import { extractDomain, isDomainActiveStripeCustomer } from '@/lib/stripe';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -39,7 +40,31 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect('/');
   }
 
-  const hasAccess = member.organization.hasAccess;
+  let hasAccess = member.organization.hasAccess;
+
+  // Auto-approve based on user's email domain
+  if (!hasAccess) {
+    const userEmail = authSession.user.email;
+    const emailDomain = extractDomain(userEmail ?? '');
+
+    if (emailDomain) {
+      // Auto-approve for trycomp.ai emails (internal team)
+      const isTrycompEmail = emailDomain === 'trycomp.ai';
+
+      // Check Stripe for other domains
+      const isStripeCustomer = isTrycompEmail
+        ? false
+        : await isDomainActiveStripeCustomer(emailDomain);
+
+      if (isTrycompEmail || isStripeCustomer) {
+        await db.organization.update({
+          where: { id: orgId },
+          data: { hasAccess: true },
+        });
+        hasAccess = true;
+      }
+    }
+  }
 
   // If user has access to org but hasn't completed onboarding, redirect to onboarding
   if (hasAccess && !member.organization.onboardingCompleted) {
