@@ -148,9 +148,10 @@ export class BrowserbaseService {
     sessionId: string,
     url: string,
   ): Promise<{ success: boolean; error?: string }> {
-    const stagehand = await this.createStagehand(sessionId);
+    let stagehand: Stagehand | null = null;
 
     try {
+      stagehand = await this.createStagehand(sessionId);
       const page = stagehand.context.pages()[0];
       if (!page) {
         throw new Error('No page found in browser session');
@@ -177,6 +178,18 @@ export class BrowserbaseService {
       return { success: true };
     } catch (err) {
       this.logger.error('Failed to navigate to URL', err);
+      if (stagehand) {
+        try {
+          await stagehand.close();
+        } catch (closeErr) {
+          this.logger.warn('Failed to close stagehand after navigation error', {
+            closeErr:
+              closeErr instanceof Error
+                ? closeErr.message
+                : 'Unknown close error',
+          });
+        }
+      }
       return {
         success: false,
         error: err instanceof Error ? err.message : 'Unknown error',
