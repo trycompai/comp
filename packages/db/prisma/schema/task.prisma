@@ -25,9 +25,10 @@ model Task {
   vendors             Vendor[]
   risks               Risk[]
   evidenceAutomations EvidenceAutomation[]
+  browserAutomations  BrowserAutomation[]
 
-  EvidenceAutomationRun   EvidenceAutomationRun[]
-  integrationCheckRuns    IntegrationCheckRun[]
+  EvidenceAutomationRun EvidenceAutomationRun[]
+  integrationCheckRuns  IntegrationCheckRun[]
 }
 
 enum TaskStatus {
