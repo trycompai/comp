@@ -124,7 +124,7 @@ export function QuestionnaireResultsHeader({
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <div className="relative max-w-md">
+          <div className="relative max-w-md animate-in fade-in duration-500 ease-out">
             <Input
               placeholder="Search questions..."
               value={searchQuery}

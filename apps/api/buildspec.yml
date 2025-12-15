@@ -50,13 +50,20 @@ phases:
 
       - echo "Checking build output..."
       - ls -la dist/
-      - ls -la dist/src/
-      - '[ -f "dist/src/main.js" ] || { echo "❌ main.js not found in dist/src"; exit 1; }'
+      - ls -la dist/apps/api/src/ || ls -la dist/src/
+      - '[ -f "dist/apps/api/src/main.js" ] || [ -f "dist/src/main.js" ] || { echo "❌ main.js not found"; exit 1; }'
 
       - mkdir -p ../docker-build
-      - cp -r dist/* ../docker-build/
+      # Handle both output structures (dist/apps/api/src or dist/src)
+      - |
+        if [ -d "dist/apps/api/src" ]; then
+          echo "Using composite output structure..."
+          cp -r dist/apps/api/* ../docker-build/
+        else
+          echo "Using standard output structure..."
+          cp -r dist/* ../docker-build/
+        fi
       - cp -r prisma ../docker-build/
-
       - echo "Verifying copied files..."
       - ls -la ../docker-build/
       - ls -la ../docker-build/src/
