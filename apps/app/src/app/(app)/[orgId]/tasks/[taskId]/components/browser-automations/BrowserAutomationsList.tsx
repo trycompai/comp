@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
-import { addDays, formatDistanceToNow, isBefore, setHours, setMinutes } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import {
   CheckCircle2,
   ChevronDown,
@@ -27,17 +27,21 @@ interface BrowserAutomationsListProps {
   onCreateClick: () => void;
 }
 
-// Calculate next scheduled run (daily at 5 AM UTC)
+// Calculate next scheduled run (daily at 5:00 AM UTC)
 const getNextScheduledRun = () => {
   const now = new Date();
-  let nextRun = setMinutes(setHours(new Date(), 5), 0); // 5:00 AM UTC today
 
-  // If we're past 5 AM UTC today, schedule for tomorrow
-  if (isBefore(nextRun, now)) {
-    nextRun = addDays(nextRun, 1);
+  // Create a Date representing 5:00 AM UTC today (not local time).
+  const nextRunUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 5, 0, 0, 0),
+  );
+
+  // If we're past 5:00 AM UTC today, schedule for tomorrow at 5:00 AM UTC.
+  if (nextRunUtc.getTime() <= now.getTime()) {
+    return new Date(nextRunUtc.getTime() + 24 * 60 * 60 * 1000);
   }
 
-  return nextRun;
+  return nextRunUtc;
 };
 
 export function BrowserAutomationsList({
@@ -145,7 +149,7 @@ function AutomationItem({
       className={cn(
         'rounded-lg border transition-all duration-300',
         isExpanded
-          ? 'border-primary/30 shadow-sm bg-primary/[0.02]'
+          ? 'border-primary/30 shadow-sm bg-primary/2'
           : 'border-border/50 hover:border-border hover:shadow-sm',
       )}
     >
@@ -307,7 +311,7 @@ function RunItem({ run, isLatest }: { run: BrowserAutomationRun; isLatest: boole
     <div
       className={cn(
         'rounded-md border transition-all',
-        isLatest ? 'border-primary/20 bg-primary/[0.02]' : 'border-border/30 bg-muted/20',
+        isLatest ? 'border-primary/20 bg-primary/2' : 'border-border/30 bg-muted/20',
       )}
     >
       <button
@@ -316,7 +320,7 @@ function RunItem({ run, isLatest }: { run: BrowserAutomationRun; isLatest: boole
       >
         <div
           className={cn(
-            'h-1.5 w-1.5 rounded-full flex-shrink-0',
+            'h-1.5 w-1.5 rounded-full shrink-0',
             hasIssue ? 'bg-destructive' : isCompleted ? 'bg-primary' : 'bg-muted-foreground',
           )}
         />
