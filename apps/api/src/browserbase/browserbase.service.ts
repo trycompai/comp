@@ -47,6 +47,31 @@ export class BrowserbaseService {
     return process.env.BROWSERBASE_PROJECT_ID || '';
   }
 
+  /**
+   * Stagehand sometimes has no active page (or the page gets closed mid-run),
+   * which causes errors like: "No Page found for awaitActivePage: no page available".
+   * Ensure there's at least one non-closed page available, and create one if needed.
+   */
+  private async ensureActivePage(stagehand: Stagehand) {
+    const MAX_WAIT_MS = 5000;
+    const POLL_MS = 250;
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < MAX_WAIT_MS) {
+      // Stagehand's Page type doesn't always expose Playwright's `isClosed()` in typings.
+      // We still want to filter out closed pages at runtime when possible.
+      const pages = stagehand.context.pages().filter((p) => {
+        const maybeIsClosed = (p as { isClosed?: () => boolean }).isClosed;
+        return typeof maybeIsClosed === 'function' ? !maybeIsClosed() : true;
+      });
+      if (pages[0]) return pages[0];
+      await delay(POLL_MS);
+    }
+
+    // Last resort: create a page (may still fail if the CDP session already died)
+    return await stagehand.context.newPage();
+  }
+
   // ===== Organization Context Management =====
 
   async getOrCreateOrgContext(
@@ -250,10 +275,7 @@ export class BrowserbaseService {
     const stagehand = await this.createStagehand(sessionId);
 
     try {
-      const page = stagehand.context.pages()[0];
-      if (!page) {
-        throw new Error('No page found in browser session');
-      }
+      const page = await this.ensureActivePage(stagehand);
 
       await page.goto(url, {
         waitUntil: 'domcontentloaded',
@@ -278,6 +300,18 @@ export class BrowserbaseService {
         isLoggedIn: result.isLoggedIn,
         username: result.username,
       };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const isNoPage =
+        message.includes('awaitActivePage') ||
+        message.includes('no page available') ||
+        message.includes('No page found');
+      if (isNoPage) {
+        throw new Error(
+          'Browser session ended before we could verify login status. Please retry.',
+        );
+      }
+      throw err;
     } finally {
       await stagehand.close();
     }
@@ -696,10 +730,7 @@ export class BrowserbaseService {
     const stagehand = await this.createStagehand(sessionId);
 
     try {
-      const page = stagehand.context.pages()[0];
-      if (!page) {
-        throw new Error('No page found in browser session');
-      }
+      let page = await this.ensureActivePage(stagehand);
 
       // Navigate to target URL
       await page.goto(targetUrl, {
@@ -746,6 +777,9 @@ export class BrowserbaseService {
 
       // Evaluate if the automation fulfills the task requirements BEFORE taking screenshot
       if (taskContext) {
+        // Re-acquire page in case the agent closed/replaced it during execution
+        page = await this.ensureActivePage(stagehand);
+
         const evaluationSchema = z.object({
           passes: z
             .boolean()
@@ -808,6 +842,7 @@ Only pass if there is clear evidence the requirement is properly configured and 
       }
 
       // Only take screenshot if evaluation passed (or no task context)
+      page = await this.ensureActivePage(stagehand);
       const screenshot = await page.screenshot({
         type: 'jpeg',
         quality: 80,
@@ -822,10 +857,17 @@ Only pass if there is clear evidence the requirement is properly configured and 
       };
     } catch (err) {
       this.logger.error('Failed to execute automation', err);
+      const message = err instanceof Error ? err.message : String(err);
+      const isNoPage =
+        message.includes('awaitActivePage') ||
+        message.includes('no page available') ||
+        message.includes('No page found');
       return {
         success: false,
-        error:
-          err instanceof Error ? err.message : 'Failed to execute automation',
+        needsReauth: isNoPage ? true : undefined,
+        error: isNoPage
+          ? 'Browser session ended before we could capture evidence. Please retry.'
+          : message,
       };
     } finally {
       await stagehand.close();
