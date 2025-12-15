@@ -18,7 +18,7 @@ import {
 } from 'nuqs';
 import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
-import * as z from 'zod';
+import * as z from 'zod/v3';
 import { getRisksAction } from './actions/get-risks-action';
 import { RiskOnboardingProvider } from './components/risk-onboarding-context';
 import { RisksLoadingAnimation } from './components/risks-loading-animation';

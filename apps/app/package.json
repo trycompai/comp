@@ -16,6 +16,7 @@
     "@aws-sdk/s3-request-presigner": "^3.859.0",
     "@azure/core-rest-pipeline": "^1.21.0",
     "@browserbasehq/sdk": "^2.5.0",
+    "@browserbasehq/stagehand": "^3.0.5",
     "@calcom/atoms": "^1.0.102-framer",
     "@calcom/embed-react": "^1.5.3",
     "@comp/integration-platform": "workspace:*",
@@ -116,7 +117,7 @@
     "xlsx": "^0.18.5",
     "xml2js": "^0.6.2",
     "zaraz-ts": "^1.2.0",
-    "zod": "^3.25.76",
+    "zod": "^4.0.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

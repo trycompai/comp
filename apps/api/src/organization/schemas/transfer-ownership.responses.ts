@@ -143,4 +143,3 @@ export const TRANSFER_OWNERSHIP_RESPONSES: Record<
     },
   },
 };
-

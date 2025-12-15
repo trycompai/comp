@@ -37,6 +37,7 @@ import { updateTask } from '../../actions/updateTask';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
+import { BrowserAutomations } from './BrowserAutomations';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
@@ -51,9 +52,14 @@ interface SingleTaskProps {
   initialTask: Task & { fileUrls?: string[]; controls?: Control[] };
   initialMembers?: (Member & { user: User })[];
   initialAutomations: AutomationWithRuns[];
+  isWebAutomationsEnabled: boolean;
 }
 
-export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
+export function SingleTask({
+  initialTask,
+  initialAutomations,
+  isWebAutomationsEnabled,
+}: SingleTaskProps) {
   const params = useParams();
   const orgId = params.orgId as string;
 
@@ -195,6 +201,9 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
 
           {/* Integration Checks Section */}
           <TaskIntegrationChecks taskId={task.id} onTaskUpdated={() => mutateTask()} />
+
+          {/* Browser Automations Section */}
+          {isWebAutomationsEnabled && <BrowserAutomations taskId={task.id} />}
 
           {/* Custom Automations Section - only show if no mapped integration checks available */}
           {!hasMappedChecks && <TaskAutomations automations={automations || []} />}
