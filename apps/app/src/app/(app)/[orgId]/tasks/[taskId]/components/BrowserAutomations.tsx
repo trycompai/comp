@@ -5,10 +5,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useBrowserAutomations } from '../hooks/useBrowserAutomations';
 import { useBrowserContext } from '../hooks/useBrowserContext';
 import { useBrowserExecution } from '../hooks/useBrowserExecution';
+import type { BrowserAutomation } from '../hooks/types';
 import {
   BrowserAutomationsList,
   BrowserLiveView,
-  CreateAutomationDialog,
+  BrowserAutomationConfigDialog,
   EmptyWithContextState,
   NoContextState,
 } from './browser-automations';
@@ -19,7 +20,11 @@ interface BrowserAutomationsProps {
 
 export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
   const { orgId } = useParams<{ orgId: string }>();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [dialogState, setDialogState] = useState<{
+    open: boolean;
+    mode: 'create' | 'edit';
+    automation?: BrowserAutomation;
+  }>({ open: false, mode: 'create' });
   const [authUrl, setAuthUrl] = useState('https://github.com');
 
   // Hooks
@@ -95,12 +100,17 @@ export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
   if (automations.automations.length === 0) {
     return (
       <>
-        <EmptyWithContextState onCreateClick={() => setIsCreateOpen(true)} />
-        <CreateAutomationDialog
-          isOpen={isCreateOpen}
-          onClose={() => setIsCreateOpen(false)}
-          isCreating={automations.isCreating}
+        <EmptyWithContextState
+          onCreateClick={() => setDialogState({ open: true, mode: 'create' })}
+        />
+        <BrowserAutomationConfigDialog
+          isOpen={dialogState.open}
+          mode={dialogState.mode}
+          initialValues={dialogState.automation}
+          isSaving={automations.isSaving}
+          onClose={() => setDialogState({ open: false, mode: 'create' })}
           onCreate={automations.createAutomation}
+          onUpdate={automations.updateAutomation}
         />
       </>
     );
@@ -114,13 +124,19 @@ export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
         hasContext={context.status === 'has-context'}
         runningAutomationId={execution.runningAutomationId}
         onRun={execution.runAutomation}
-        onCreateClick={() => setIsCreateOpen(true)}
+        onCreateClick={() => setDialogState({ open: true, mode: 'create' })}
+        onEditClick={(automation) =>
+          setDialogState({ open: true, mode: 'edit', automation })
+        }
       />
-      <CreateAutomationDialog
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        isCreating={automations.isCreating}
+      <BrowserAutomationConfigDialog
+        isOpen={dialogState.open}
+        mode={dialogState.mode}
+        initialValues={dialogState.automation}
+        isSaving={automations.isSaving}
+        onClose={() => setDialogState({ open: false, mode: 'create' })}
         onCreate={automations.createAutomation}
+        onUpdate={automations.updateAutomation}
       />
     </>
   );

@@ -52,9 +52,14 @@ interface SingleTaskProps {
   initialTask: Task & { fileUrls?: string[]; controls?: Control[] };
   initialMembers?: (Member & { user: User })[];
   initialAutomations: AutomationWithRuns[];
+  isWebAutomationsEnabled: boolean;
 }
 
-export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
+export function SingleTask({
+  initialTask,
+  initialAutomations,
+  isWebAutomationsEnabled,
+}: SingleTaskProps) {
   const params = useParams();
   const orgId = params.orgId as string;
 
@@ -198,7 +203,7 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
           <TaskIntegrationChecks taskId={task.id} onTaskUpdated={() => mutateTask()} />
 
           {/* Browser Automations Section */}
-          <BrowserAutomations taskId={task.id} />
+          {isWebAutomationsEnabled && <BrowserAutomations taskId={task.id} />}
 
           {/* Custom Automations Section - only show if no mapped integration checks available */}
           {!hasMappedChecks && <TaskAutomations automations={automations || []} />}
