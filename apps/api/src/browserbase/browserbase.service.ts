@@ -738,7 +738,7 @@ export class BrowserbaseService {
         })
         .execute({
           instruction: fullInstruction,
-          maxSteps: 10,
+          maxSteps: 20,
         });
 
       // Wait for final page to settle
