@@ -15,6 +15,15 @@ const BROWSER_HEIGHT = 900;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const PENDING_CONTEXT_ID = '__PENDING__';
+
+const isPrismaUniqueConstraintError = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) return false;
+  if (!('code' in error)) return false;
+  const code = (error as { code?: unknown }).code;
+  return code === 'P2002';
+};
+
 @Injectable()
 export class BrowserbaseService {
   private readonly logger = new Logger(BrowserbaseService.name);
@@ -43,30 +52,66 @@ export class BrowserbaseService {
   async getOrCreateOrgContext(
     organizationId: string,
   ): Promise<{ contextId: string; isNew: boolean }> {
-    // Check if org already has a context
+    // Fast path: already created
     const existing = await db.browserbaseContext.findUnique({
       where: { organizationId },
     });
 
-    if (existing) {
+    if (existing && existing.contextId !== PENDING_CONTEXT_ID) {
       return { contextId: existing.contextId, isNew: false };
     }
 
-    // Create a new Browserbase context
-    const bb = this.getBrowserbase();
-    const context = await bb.contexts.create({
-      projectId: this.getProjectId(),
-    });
+    try {
+      await db.browserbaseContext.create({
+        data: {
+          organizationId,
+          contextId: PENDING_CONTEXT_ID,
+        },
+      });
 
-    // Store it in the database
-    await db.browserbaseContext.create({
-      data: {
-        organizationId,
-        contextId: context.id,
-      },
-    });
+      const bb = this.getBrowserbase();
+      const context = await bb.contexts.create({
+        projectId: this.getProjectId(),
+      });
 
-    return { contextId: context.id, isNew: true };
+      await db.browserbaseContext.update({
+        where: { organizationId },
+        data: { contextId: context.id },
+      });
+
+      return { contextId: context.id, isNew: true };
+    } catch (error) {
+      if (!isPrismaUniqueConstraintError(error)) {
+        throw error;
+      }
+    }
+
+    const MAX_WAIT_MS = 10_000;
+    const POLL_MS = 200;
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < MAX_WAIT_MS) {
+      const current = await db.browserbaseContext.findUnique({
+        where: { organizationId },
+      });
+
+      if (current && current.contextId !== PENDING_CONTEXT_ID) {
+        return { contextId: current.contextId, isNew: false };
+      }
+
+      if (!current) {
+        return await this.getOrCreateOrgContext(organizationId);
+      }
+
+      await delay(POLL_MS);
+    }
+
+    this.logger.warn(
+      `Timed out waiting for Browserbase context creation for org ${organizationId}`,
+    );
+    throw new Error(
+      'Browser context initialization is taking too long. Please retry.',
+    );
   }
 
   async getOrgContext(
