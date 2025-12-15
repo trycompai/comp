@@ -25,6 +25,7 @@ export function useBrowserExecution({
   const runAutomation = useCallback(
     async (automationId: string) => {
       setRunningAutomationId(automationId);
+      let startedSessionId: string | null = null;
 
       try {
         // Step 1: Start automation with live view
@@ -36,7 +37,6 @@ export function useBrowserExecution({
 
         if (startRes.data?.needsReauth) {
           toast.error('Session expired. Please re-authenticate below.');
-          setRunningAutomationId(null);
           onNeedsReauth();
           return;
         }
@@ -45,9 +45,11 @@ export function useBrowserExecution({
           throw new Error(startRes.error || startRes.data?.error || 'Failed to start automation');
         }
 
+        startedSessionId = startRes.data.sessionId;
+
         // Show the live view
         setRunId(startRes.data.runId);
-        setSessionId(startRes.data.sessionId);
+        setSessionId(startedSessionId);
         setLiveViewUrl(startRes.data.liveViewUrl);
         setIsExecuting(true);
 
@@ -56,23 +58,10 @@ export function useBrowserExecution({
           `/v1/browserbase/automations/${automationId}/execute`,
           {
             runId: startRes.data.runId,
-            sessionId: startRes.data.sessionId,
+            sessionId: startedSessionId,
           },
           organizationId,
         );
-
-        // Close the session
-        await apiClient.post(
-          '/v1/browserbase/session/close',
-          { sessionId: startRes.data.sessionId },
-          organizationId,
-        );
-
-        // Clear execution state
-        setLiveViewUrl(null);
-        setSessionId(null);
-        setRunId(null);
-        setIsExecuting(false);
 
         if (execRes.data?.success) {
           toast.success('Automation completed successfully');
@@ -82,20 +71,29 @@ export function useBrowserExecution({
 
         onComplete();
       } catch (err) {
-        // Clean up on error
-        if (sessionId) {
-          await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
-        }
+        toast.error(err instanceof Error ? err.message : 'Failed to run automation');
+      } finally {
+        // Clear execution state immediately (UI), then best-effort close the session to avoid leaks
         setLiveViewUrl(null);
         setSessionId(null);
         setRunId(null);
         setIsExecuting(false);
-        toast.error(err instanceof Error ? err.message : 'Failed to run automation');
-      } finally {
         setRunningAutomationId(null);
+
+        if (startedSessionId) {
+          try {
+            await apiClient.post(
+              '/v1/browserbase/session/close',
+              { sessionId: startedSessionId },
+              organizationId,
+            );
+          } catch {
+            // Ignore cleanup errors (don't block UI / don't mask original error)
+          }
+        }
       }
     },
-    [organizationId, sessionId, onNeedsReauth, onComplete],
+    [organizationId, onNeedsReauth, onComplete],
   );
 
   const cancelExecution = useCallback(async () => {
