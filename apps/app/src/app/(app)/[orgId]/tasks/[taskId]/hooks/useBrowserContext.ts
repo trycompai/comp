@@ -43,6 +43,7 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
 
   const startAuth = useCallback(
     async (url: string) => {
+      let startedSessionId: string | null = null;
       try {
         setIsStartingAuth(true);
 
@@ -66,13 +67,14 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         if (sessionRes.error || !sessionRes.data) {
           throw new Error(sessionRes.error || 'Failed to create session');
         }
-        setSessionId(sessionRes.data.sessionId);
+        startedSessionId = sessionRes.data.sessionId;
+        setSessionId(startedSessionId);
         setLiveViewUrl(sessionRes.data.liveViewUrl);
 
         // Navigate to the URL
         await apiClient.post(
           '/v1/browserbase/navigate',
-          { sessionId: sessionRes.data.sessionId, url },
+          { sessionId: startedSessionId, url },
           organizationId,
         );
 
@@ -80,7 +82,23 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         setIsStartingAuth(false);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to start authentication');
+        setShowAuthFlow(false);
+        setLiveViewUrl(null);
+        setSessionId(null);
         setIsStartingAuth(false);
+
+        // If we created a session but navigation failed, close it to avoid orphaned sessions
+        if (startedSessionId) {
+          try {
+            await apiClient.post(
+              '/v1/browserbase/session/close',
+              { sessionId: startedSessionId },
+              organizationId,
+            );
+          } catch {
+            // Ignore cleanup errors (don't mask original error)
+          }
+        }
       }
     },
     [organizationId],

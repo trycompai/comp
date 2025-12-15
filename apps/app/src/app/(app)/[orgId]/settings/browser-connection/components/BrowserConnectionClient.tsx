@@ -61,6 +61,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
   }, [checkContextStatus]);
 
   const handleStartSession = async () => {
+    let startedSessionId: string | null = null;
     try {
       setError(null);
       setStatus('loading');
@@ -86,20 +87,36 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       if (sessionRes.error || !sessionRes.data) {
         throw new Error(sessionRes.error || 'Failed to create session');
       }
-      setSessionId(sessionRes.data.sessionId);
+      startedSessionId = sessionRes.data.sessionId;
+      setSessionId(startedSessionId);
       setLiveViewUrl(sessionRes.data.liveViewUrl);
 
       // Navigate to the URL
       await apiClient.post(
         '/v1/browserbase/navigate',
-        { sessionId: sessionRes.data.sessionId, url: urlToCheck },
+        { sessionId: startedSessionId, url: urlToCheck },
         organizationId,
       );
 
       setStatus('session-active');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start session');
+      setSessionId(null);
+      setLiveViewUrl(null);
       setStatus('idle');
+
+      // If we created a session but navigation failed, close it to avoid orphaned sessions
+      if (startedSessionId) {
+        try {
+          await apiClient.post(
+            '/v1/browserbase/session/close',
+            { sessionId: startedSessionId },
+            organizationId,
+          );
+        } catch {
+          // Ignore cleanup errors (don't mask original error)
+        }
+      }
     }
   };
 
