@@ -68,8 +68,6 @@ export function useBrowserExecution({
         } else {
           toast.error(execRes.data?.error || 'Automation failed');
         }
-
-        onComplete();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to run automation');
       } finally {
@@ -91,6 +89,10 @@ export function useBrowserExecution({
             // Ignore cleanup errors (don't block UI / don't mask original error)
           }
         }
+
+        // Always refresh after any run attempt (success/failure/exception) so the UI doesn't
+        // get stuck showing the old "running" run until a full page refresh.
+        onComplete();
       }
     },
     [organizationId, onNeedsReauth, onComplete],
