@@ -7,6 +7,12 @@ import {
 } from '@aws-sdk/client-securityhub';
 import type { SecurityFinding } from '../cloud-security.service';
 
+type AwsCredentials = {
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken?: string;
+};
+
 @Injectable()
 export class AWSSecurityService {
   private readonly logger = new Logger(AWSSecurityService.name);
@@ -15,10 +21,10 @@ export class AWSSecurityService {
     credentials: Record<string, unknown>,
     variables: Record<string, unknown>,
   ): Promise<SecurityFinding[]> {
-    // Determine auth method
-    const isRoleAuth = credentials.roleArn && credentials.externalId;
-    const isKeyAuth =
-      credentials.access_key_id && credentials.secret_access_key;
+    const isRoleAuth = Boolean(credentials.roleArn && credentials.externalId);
+    const isKeyAuth = Boolean(
+      credentials.access_key_id && credentials.secret_access_key,
+    );
 
     if (!isRoleAuth && !isKeyAuth) {
       throw new Error(
@@ -31,53 +37,84 @@ export class AWSSecurityService {
       (variables.region as string) ||
       'us-east-1';
 
-    let awsCredentials: {
-      accessKeyId: string;
-      secretAccessKey: string;
-      sessionToken?: string;
-    };
+    let awsCredentials: AwsCredentials;
 
     if (isRoleAuth) {
-      // IAM Role assumption
-      const roleArn = credentials.roleArn as string;
+      const customerRoleArn = credentials.roleArn as string;
       const externalId = credentials.externalId as string;
 
-      this.logger.log(`Assuming role ${roleArn} in region ${region}`);
+      const roleAssumerArn = process.env.SECURITY_HUB_ROLE_ASSUMER_ARN;
+      if (!roleAssumerArn) {
+        throw new Error(
+          'Missing SECURITY_HUB_ROLE_ASSUMER_ARN (our roleAssumer ARN).',
+        );
+      }
 
-      const sts = new STSClient({ region });
-      const assumeRoleResponse = await sts.send(
+      // Hop 1: task role -> roleAssumer
+      const baseSts = new STSClient({ region });
+      const roleAssumerResp = await baseSts.send(
         new AssumeRoleCommand({
-          RoleArn: roleArn,
+          RoleArn: roleAssumerArn,
+          RoleSessionName: 'CompRoleAssumer',
+          DurationSeconds: 3600,
+        }),
+      );
+
+      const roleAssumerCreds = roleAssumerResp.Credentials;
+      if (!roleAssumerCreds?.AccessKeyId || !roleAssumerCreds.SecretAccessKey) {
+        throw new Error(
+          'Failed to assume roleAssumer - no credentials returned',
+        );
+      }
+
+      const roleAssumerAwsCreds: AwsCredentials = {
+        accessKeyId: roleAssumerCreds.AccessKeyId,
+        secretAccessKey: roleAssumerCreds.SecretAccessKey,
+        sessionToken: roleAssumerCreds.SessionToken,
+      };
+
+      // Hop 2: roleAssumer -> customer role (ExternalId enforced by customer trust policy)
+      const roleAssumerSts = new STSClient({
+        region,
+        credentials: roleAssumerAwsCreds,
+      });
+
+      this.logger.log(
+        `Assuming customer role ${customerRoleArn} in region ${region}`,
+      );
+
+      const customerResp = await roleAssumerSts.send(
+        new AssumeRoleCommand({
+          RoleArn: customerRoleArn,
           ExternalId: externalId,
           RoleSessionName: 'CompSecurityAudit',
           DurationSeconds: 3600,
         }),
       );
 
-      if (!assumeRoleResponse.Credentials) {
-        throw new Error('Failed to assume role - no credentials returned');
+      const customerCreds = customerResp.Credentials;
+      if (!customerCreds?.AccessKeyId || !customerCreds.SecretAccessKey) {
+        throw new Error(
+          'Failed to assume customer role - no credentials returned',
+        );
       }
 
       awsCredentials = {
-        accessKeyId: assumeRoleResponse.Credentials.AccessKeyId!,
-        secretAccessKey: assumeRoleResponse.Credentials.SecretAccessKey!,
-        sessionToken: assumeRoleResponse.Credentials.SessionToken!,
+        accessKeyId: customerCreds.AccessKeyId,
+        secretAccessKey: customerCreds.SecretAccessKey,
+        sessionToken: customerCreds.SessionToken,
       };
     } else {
-      // Direct access keys
       awsCredentials = {
         accessKeyId: credentials.access_key_id as string,
         secretAccessKey: credentials.secret_access_key as string,
       };
     }
 
-    // Create Security Hub client
     const securityHub = new SecurityHubClient({
       region,
       credentials: awsCredentials,
     });
-
-    this.logger.log(`Scanning AWS Security Hub in region ${region}`);
 
     try {
       const findings = await this.fetchSecurityHubFindings(securityHub);
