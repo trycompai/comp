@@ -548,15 +548,15 @@ export class BrowserbaseService {
           completedAt: new Date(),
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
           screenshotUrl: screenshotKey,
-          evaluationStatus: 'pass',
-          evaluationReason: result.evaluationReason ?? 'Requirement verified',
+          evaluationStatus: result.evaluationStatus ?? null,
+          evaluationReason: result.evaluationReason ?? 'Screenshot captured',
         },
       });
 
       return {
         success: true,
         screenshotUrl: presignedUrl,
-        evaluationStatus: 'pass',
+        evaluationStatus: result.evaluationStatus,
         evaluationReason: result.evaluationReason,
       };
     } catch (err) {
@@ -687,8 +687,8 @@ export class BrowserbaseService {
             completedAt: new Date(),
             durationMs: Date.now() - run.startedAt!.getTime(),
             screenshotUrl: screenshotKey,
-            evaluationStatus: 'pass',
-            evaluationReason: result.evaluationReason ?? 'Requirement verified',
+            evaluationStatus: result.evaluationStatus ?? null,
+            evaluationReason: result.evaluationReason ?? 'Screenshot captured',
           },
         });
 
@@ -696,7 +696,7 @@ export class BrowserbaseService {
           runId: run.id,
           success: true,
           screenshotUrl: presignedUrl,
-          evaluationStatus: 'pass',
+          evaluationStatus: result.evaluationStatus,
           evaluationReason: result.evaluationReason,
         };
       } finally {
@@ -793,73 +793,7 @@ export class BrowserbaseService {
       // Wait for final page to settle
       await delay(2000);
 
-      // Evaluate if the automation fulfills the task requirements BEFORE taking screenshot
-      if (taskContext) {
-        // Re-acquire page in case the agent closed/replaced it during execution
-        page = await this.ensureActivePage(stagehand);
-
-        const evaluationSchema = z.object({
-          passes: z
-            .boolean()
-            .describe(
-              'Whether the current page state shows that the requirement is fulfilled',
-            ),
-          reason: z
-            .string()
-            .describe(
-              'A brief explanation of why it passes or fails the requirement',
-            ),
-        });
-
-        const evaluationPrompt = `You are evaluating whether a compliance requirement is being met.
-
-Task/Requirement: "${taskContext.title}"
-${taskContext.description ? `Description: "${taskContext.description}"` : ''}
-
-Navigation completed: "${instruction}"
-
-Look at the current page and determine if the visible configuration, settings, or state demonstrates that this requirement is fulfilled. 
-
-For example:
-- If the task is about "branch protection", check if branch protection rules are visible and enabled
-- If the task is about "MFA/2FA", check if multi-factor authentication is shown as enabled
-- If the task is about "access controls", check if appropriate access restrictions are configured
-
-Be strict: if the setting is disabled, not configured, or shows a warning/error state, it should FAIL.
-Only pass if there is clear evidence the requirement is properly configured and active.`;
-
-        try {
-          const evaluation = (await stagehand.extract(
-            evaluationPrompt,
-            evaluationSchema as any,
-          )) as { passes: boolean; reason: string };
-
-          this.logger.log(
-            `Automation evaluation: ${evaluation.passes ? 'PASS' : 'FAIL'} - ${evaluation.reason}`,
-          );
-
-          // If evaluation fails, abort without taking screenshot
-          if (!evaluation.passes) {
-            return {
-              success: false,
-              evaluationStatus: 'fail',
-              evaluationReason: evaluation.reason,
-              error: `Requirement not met: ${evaluation.reason}`,
-            };
-          }
-        } catch (evalErr) {
-          this.logger.warn(
-            `Failed to evaluate automation: ${evalErr instanceof Error ? evalErr.message : String(evalErr)}`,
-          );
-          // If evaluation itself errors, fail the automation
-          return {
-            success: false,
-            error: `Evaluation error: ${evalErr instanceof Error ? evalErr.message : 'Unknown error'}`,
-          };
-        }
-      }
-
-      // Only take screenshot if evaluation passed (or no task context)
+      // Always take a screenshot at the end (no pass/fail criteria gate)
       page = await this.ensureActivePage(stagehand);
       const screenshot = await page.screenshot({
         type: 'jpeg',
@@ -870,8 +804,9 @@ Only pass if there is clear evidence the requirement is properly configured and 
       return {
         success: true,
         screenshot: screenshot.toString('base64'),
-        evaluationStatus: 'pass',
-        evaluationReason: 'Requirement verified successfully',
+        evaluationReason: taskContext
+          ? `Navigation completed for "${taskContext.title}". Screenshot captured.`
+          : 'Navigation completed. Screenshot captured.',
       };
     } catch (err) {
       this.logger.error('Failed to execute automation', err);
