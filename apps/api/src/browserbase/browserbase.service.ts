@@ -212,6 +212,17 @@ export class BrowserbaseService {
     return stagehand;
   }
 
+  private async safeCloseStagehand(stagehand: Stagehand) {
+    try {
+      await stagehand.close();
+    } catch (err) {
+      // IMPORTANT: never let cleanup errors override a successful run
+      this.logger.warn('Failed to close stagehand (ignored)', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   // ===== Browser Actions =====
 
   async navigateToUrl(
@@ -313,7 +324,7 @@ export class BrowserbaseService {
       }
       throw err;
     } finally {
-      await stagehand.close();
+      await this.safeCloseStagehand(stagehand);
     }
   }
 
@@ -689,8 +700,15 @@ export class BrowserbaseService {
           evaluationReason: result.evaluationReason,
         };
       } finally {
-        // Always close the session
-        await this.closeSession(sessionId);
+        // Always attempt to close the session, but never let cleanup override success
+        try {
+          await this.closeSession(sessionId);
+        } catch (err) {
+          this.logger.warn('Failed to close Browserbase session (ignored)', {
+            sessionId,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
     } catch (err) {
       this.logger.error('Failed to run browser automation', err);
@@ -870,7 +888,7 @@ Only pass if there is clear evidence the requirement is properly configured and 
           : message,
       };
     } finally {
-      await stagehand.close();
+      await this.safeCloseStagehand(stagehand);
     }
   }
 
