@@ -1,3 +1,4 @@
+#  FOR TESTING LOCALY ONLY
 version: '3.8'
 
 services:
