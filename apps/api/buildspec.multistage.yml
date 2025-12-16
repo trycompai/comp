@@ -15,12 +15,7 @@ phases:
     commands:
       - echo "Building Docker image with multi-stage build..."
       - cd apps/api
-      - docker build \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --target production \
-          -f Dockerfile.multistage \
-          -t $ECR_REPOSITORY_URI:$IMAGE_TAG \
-          ../..
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 --target production -f Dockerfile.multistage -t $ECR_REPOSITORY_URI:$IMAGE_TAG ../..
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
 
   post_build:
