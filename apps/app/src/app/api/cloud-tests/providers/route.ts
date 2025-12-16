@@ -1,8 +1,6 @@
-import { auth } from '@/utils/auth';
 import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
 
@@ -24,16 +22,13 @@ const getRequiredVariables = (providerSlug: string): string[] => {
   return Array.from(requiredVars);
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const orgId = session?.session.activeOrganizationId;
+    const { searchParams } = new URL(request.url);
+    const orgId = searchParams.get('orgId');
 
     if (!orgId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
     }
 
     // Fetch from NEW integration platform (IntegrationConnection)

@@ -89,7 +89,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   );
 
   const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Provider[]>(
-    '/api/cloud-tests/providers',
+    `/api/cloud-tests/providers?orgId=${orgId}`,
     async (url) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
