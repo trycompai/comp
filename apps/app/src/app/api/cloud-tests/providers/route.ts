@@ -2,7 +2,7 @@ import { auth } from '@/utils/auth';
 import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
 
@@ -24,16 +24,34 @@ const getRequiredVariables = (providerSlug: string): string[] => {
   return Array.from(requiredVars);
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    const orgId = session?.session.activeOrganizationId;
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const orgId = searchParams.get('orgId');
 
     if (!orgId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
+
+    // Verify the user belongs to the requested organization
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: orgId,
+        deactivated: false,
+      },
+    });
+
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Fetch from NEW integration platform (IntegrationConnection)
