@@ -48,8 +48,8 @@ RUN cd packages/db && node scripts/combine-schemas.js && cd ../..
 RUN cp packages/db/dist/schema.prisma apps/api/prisma/schema.prisma
 RUN cd apps/api && bunx prisma generate
 
-# Build NestJS application
-RUN cd apps/api && bun run build
+# Build NestJS application (skip prebuild since we already generated Prisma)
+RUN cd apps/api && bunx nest build
 
 # =============================================================================
 # STAGE 3: Production Runtime
