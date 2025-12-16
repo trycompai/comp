@@ -1,10 +1,11 @@
-import { AppSidebar } from '@/components/app-sidebar';
+import { AnimatedLayout } from '@/components/animated-layout';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { Header } from '@/components/header';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
+import { Sidebar } from '@/components/sidebar';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
+import { SidebarProvider } from '@/context/sidebar-context';
 import { auth } from '@/utils/auth';
-import { SidebarInset, SidebarProvider } from '@comp/ui/sidebar';
 import { db, Role } from '@db';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
@@ -14,6 +15,7 @@ import { ConditionalOnboardingTracker } from './components/ConditionalOnboarding
 import { ConditionalPaddingWrapper } from './components/ConditionalPaddingWrapper';
 import { DynamicMinHeight } from './components/DynamicMinHeight';
 
+// Helper to safely parse comma-separated roles string
 function parseRolesString(rolesStr: string | null | undefined): Role[] {
   if (!rolesStr) return [];
   return rolesStr
@@ -36,9 +38,10 @@ export default async function Layout({
   const { orgId: requestedOrgId } = await params;
 
   const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get('sidebar_state')?.value !== 'false';
-  const publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
+  const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
+  let publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
+  // Check if user has access to this organization
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -48,11 +51,13 @@ export default async function Layout({
     return redirect('/auth');
   }
 
+  // First check if the organization exists and load access flags
   const organization = await db.organization.findUnique({
     where: { id: requestedOrgId },
   });
 
   if (!organization) {
+    // Organization doesn't exist
     return redirect('/auth/not-found');
   }
 
@@ -65,6 +70,7 @@ export default async function Layout({
   });
 
   if (!member) {
+    // User doesn't have access to this organization
     return redirect('/auth/unauthorized');
   }
 
@@ -76,10 +82,12 @@ export default async function Layout({
     return redirect('/no-access');
   }
 
+  // If this org is not accessible on current plan, redirect to upgrade
   if (!organization.hasAccess) {
     return redirect(`/upgrade/${organization.id}`);
   }
 
+  // If onboarding is required and user isn't already on onboarding, redirect
   if (!organization.onboardingCompleted) {
     return redirect(`/onboarding/${organization.id}`);
   }
@@ -95,9 +103,8 @@ export default async function Layout({
       triggerJobId={onboarding?.triggerJobId || undefined}
       initialToken={publicAccessToken || undefined}
     >
-      <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar organization={organization} />
-        <SidebarInset>
+      <SidebarProvider initialIsCollapsed={isCollapsed}>
+        <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
           {onboarding?.triggerJobId && <ConditionalOnboardingTracker onboarding={onboarding} />}
           <Header organizationId={organization.id} />
           <ConditionalPaddingWrapper>
@@ -107,7 +114,7 @@ export default async function Layout({
           <Suspense fallback={null}>
             <CheckoutCompleteDialog orgId={organization.id} />
           </Suspense>
-        </SidebarInset>
+        </AnimatedLayout>
         <HotKeys />
       </SidebarProvider>
     </TriggerTokenProvider>
