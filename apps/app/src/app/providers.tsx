@@ -4,7 +4,6 @@ import { JwtTokenManager } from '@/components/auth/jwt-token-manager';
 import { env } from '@/env.mjs';
 import { AnalyticsProvider } from '@comp/analytics';
 import { Toaster } from '@comp/ui/sooner';
-import { TooltipProvider } from '@comp/ui/tooltip';
 import { GoogleTagManager } from '@next/third-parties/google';
 import {
   defaultShouldDehydrateQuery,
@@ -87,11 +86,9 @@ export function Providers({ children, session }: ProviderProps) {
           userId={session?.user?.id ?? undefined}
           userEmail={session?.user?.email ?? undefined}
         >
-          <TooltipProvider delayDuration={0}>
-            <JwtTokenManager />
-            {children}
-            <Toaster richColors />
-          </TooltipProvider>
+          <JwtTokenManager />
+          {children}
+          <Toaster richColors />
         </AnalyticsProvider>
       </ThemeProvider>
     </QueryClientProvider>
