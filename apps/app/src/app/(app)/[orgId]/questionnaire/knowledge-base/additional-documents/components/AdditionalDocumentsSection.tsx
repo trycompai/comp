@@ -347,10 +347,18 @@ export function AdditionalDocumentsSection({
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-4">
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground">
-                  Upload documents or images to enhance your knowledge base. Supported formats: PDF, Word (.doc, .docx), Excel (.xlsx, .xls), CSV, text files (.txt, .md), and images (PNG, JPG, GIF, WebP, SVG). Click on a document to download it.
+              <div className="mb-6 space-y-2">
+                <p className="text-sm text-foreground/80 leading-relaxed">
+                  Upload documents or images to enhance your knowledge base.
                 </p>
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Supported Formats
+                  </p>
+                  <p className="text-xs text-muted-foreground/90 leading-relaxed">
+                    PDF, Word (.doc, .docx), Excel (.xlsx, .xls), CSV, text files (.txt, .md), and images (PNG, JPG, GIF, WebP, SVG)
+                  </p>
+                </div>
               </div>
 
               {/* Documents List */}

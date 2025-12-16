@@ -36,6 +36,7 @@ import {
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
   contactEmail: z.string().email().or(z.literal('')).optional(),
+  primaryColor: z.string().optional(),
   friendlyUrl: z.string().optional(),
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
@@ -61,6 +62,7 @@ const trustPortalSwitchSchema = z.object({
 type TrustPortalSwitchActionInput = {
   enabled: boolean;
   contactEmail?: string | '';
+  primaryColor?: string;
   friendlyUrl?: string;
 };
 
@@ -95,6 +97,7 @@ export function TrustPortalSwitch({
   domainVerified,
   domain,
   contactEmail,
+  primaryColor,
   orgId,
   soc2type1,
   soc2type2,
@@ -131,6 +134,7 @@ export function TrustPortalSwitch({
   domainVerified: boolean;
   domain: string;
   contactEmail: string | null;
+  primaryColor: string | null;
   orgId: string;
   soc2type1: boolean;
   soc2type2: boolean;
@@ -291,6 +295,7 @@ export function TrustPortalSwitch({
     defaultValues: {
       enabled: enabled,
       contactEmail: contactEmail ?? undefined,
+      primaryColor: primaryColor ?? undefined,
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
@@ -322,16 +327,18 @@ export function TrustPortalSwitch({
 
   const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
 
-  const lastSaved = useRef<{ [key: string]: string | boolean }>({
+  const lastSaved = useRef<{ [key: string]: string | boolean | null }>({
     contactEmail: contactEmail ?? '',
     friendlyUrl: friendlyUrl ?? '',
     enabled: enabled,
+    primaryColor: primaryColor ?? null,
   });
 
   const savingRef = useRef<{ [key: string]: boolean }>({
     contactEmail: false,
     friendlyUrl: false,
     enabled: false,
+    primaryColor: false,
   });
 
   const autoSave = useCallback(
@@ -346,11 +353,12 @@ export function TrustPortalSwitch({
         savingRef.current[field] = true;
         try {
           // Only send fields that trustPortalSwitchAction accepts
-          // Server schema only accepts: enabled, contactEmail, friendlyUrl
+          // Server schema accepts: enabled, contactEmail, friendlyUrl, primaryColor
           const data: TrustPortalSwitchActionInput = {
             enabled: field === 'enabled' ? value : current.enabled,
             contactEmail: field === 'contactEmail' ? value : current.contactEmail ?? '',
             friendlyUrl: field === 'friendlyUrl' ? value : current.friendlyUrl ?? undefined,
+            primaryColor: field === 'primaryColor' ? value : current.primaryColor ?? undefined,
           };
           await onSubmit(data);
           lastSaved.current[field] = value;
@@ -365,6 +373,9 @@ export function TrustPortalSwitch({
   const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');
   const debouncedContactEmail = useDebounce(contactEmailValue, 800);
 
+  const [primaryColorValue, setPrimaryColorValue] = useState(form.getValues('primaryColor') || '');
+  const debouncedPrimaryColor = useDebounce(primaryColorValue, 800);
+
   useEffect(() => {
     if (
       debouncedContactEmail !== undefined &&
@@ -376,11 +387,33 @@ export function TrustPortalSwitch({
     }
   }, [debouncedContactEmail, autoSave, form]);
 
+  useEffect(() => {
+    if (
+      debouncedPrimaryColor !== undefined &&
+      debouncedPrimaryColor !== lastSaved.current.primaryColor &&
+      !savingRef.current.primaryColor
+    ) {
+      form.setValue('primaryColor', debouncedPrimaryColor || undefined);
+      void autoSave('primaryColor', debouncedPrimaryColor || null);
+    }
+  }, [debouncedPrimaryColor, autoSave, form]);
+
   const handleContactEmailBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const value = e.target.value;
       form.setValue('contactEmail', value);
       autoSave('contactEmail', value);
+    },
+    [form, autoSave],
+  );
+
+  const handlePrimaryColorBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (value) {
+        form.setValue('primaryColor', value);
+      }
+      void autoSave('primaryColor', value || null);
     },
     [form, autoSave],
   );
@@ -574,6 +607,65 @@ export function TrustPortalSwitch({
                       </FormItem>
                     )}
                   />
+
+                    <FormField
+                      control={form.control}
+                      name="primaryColor"
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Brand Color</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <div className="flex items-center gap-2">
+                                {/* Color Swatch */}
+                                <div className="relative">
+                                  <input
+                                    {...field}
+                                    value={primaryColorValue ?? '#000000'}
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      setPrimaryColorValue(e.target.value);
+                                    }}
+                                    onBlur={handlePrimaryColorBlur}
+                                    type="color"
+                                    className="sr-only"
+                                    id="color-picker"
+                                  />
+                                  <label
+                                    htmlFor="color-picker"
+                                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
+                                    style={{ backgroundColor: primaryColorValue || '#000000' }}
+                                  >
+                                    <span className="sr-only">Pick a color</span>
+                                  </label>
+                                </div>
+                                {/* Hex Input */}
+                                <div className="flex-1">
+                                  <Input
+                                    value={primaryColorValue?.toUpperCase() || '#000000'}
+                                    onChange={(e) => {
+                                      let value = e.target.value;
+                                      if (!value.startsWith('#')) {
+                                        value = '#' + value;
+                                      }
+                                      field.onChange(value);
+                                      setPrimaryColorValue(value);
+                                    }}
+                                    onBlur={handlePrimaryColorBlur}
+                                    placeholder="#000000"
+                                    className="font-mono text-sm"
+                                    maxLength={7}
+                                  />
+                                </div>
+                              </div>
+                              <p className="mt-1.5 text-xs text-muted-foreground">
+                                Used for branding across your trust portal
+                              </p>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                 </div>
               </div>
             )}

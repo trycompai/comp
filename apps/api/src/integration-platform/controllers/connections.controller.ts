@@ -102,8 +102,7 @@ export class ConnectionsController {
       for (const check of m.checks || []) {
         if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
           seenTaskIds.add(check.taskMapping);
-          const taskInfo =
-            TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
+          const taskInfo = TASK_TEMPLATE_INFO[check.taskMapping];
           if (taskInfo) {
             mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
           }
@@ -179,8 +178,7 @@ export class ConnectionsController {
     for (const check of manifest.checks || []) {
       if (check.taskMapping && !seenTaskIds.has(check.taskMapping)) {
         seenTaskIds.add(check.taskMapping);
-        const taskInfo =
-          TASK_TEMPLATE_INFO[check.taskMapping as TaskTemplateId];
+        const taskInfo = TASK_TEMPLATE_INFO[check.taskMapping];
         if (taskInfo) {
           mappedTasks.push({ id: check.taskMapping, name: taskInfo.name });
         }
