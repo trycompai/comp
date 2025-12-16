@@ -31,4 +31,9 @@ export const PEOPLE_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Permanently removes a member from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
   },
+  unlinkDevice: {
+    summary: 'Unlink device from member',
+    description:
+      'Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  },
 };
