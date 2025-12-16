@@ -4,20 +4,15 @@ import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from '@comp/ui/sidebar';
+import { cn } from '@comp/ui/cn';
 import { db, type Organization, Role } from '@db';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';
 import { SidebarCollapseButton } from './sidebar-collapse-button';
 import { SidebarLogo } from './sidebar-logo';
 
+// Helper to safely parse comma-separated roles string
 function parseRolesString(rolesStr: string | null | undefined): Role[] {
   if (!rolesStr) return [];
   return rolesStr
@@ -26,9 +21,18 @@ function parseRolesString(rolesStr: string | null | undefined): Role[] {
     .filter((r) => r in Role) as Role[];
 }
 
-export async function AppSidebar({ organization }: { organization?: Organization | null }) {
+export async function Sidebar({
+  organization,
+  collapsed = false,
+}: {
+  organization: Organization | null;
+  collapsed?: boolean;
+}) {
+  const cookieStore = await cookies();
+  const isCollapsed = collapsed || cookieStore.get('sidebar-collapsed')?.value === 'true';
   const { organizations } = await getOrganizations();
 
+  // Generate logo URLs for all organizations
   const logoUrls: Record<string, string> = {};
   if (s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
     await Promise.all(
@@ -48,6 +52,7 @@ export async function AppSidebar({ organization }: { organization?: Organization
     );
   }
 
+  // Check feature flags for menu items
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -73,38 +78,41 @@ export async function AppSidebar({ organization }: { organization?: Organization
     if (member?.role) {
       const roles = parseRolesString(member.role);
       hasAuditorRole = roles.includes(Role.auditor);
+      // Only hide tabs if auditor is their ONLY role
+      // If they have multiple roles (e.g., "owner, auditor" or "admin, auditor"), show tabs
       isOnlyAuditor = hasAuditorRole && roles.length === 1;
     }
   }
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" side="left">
-      <SidebarHeader>
-        <SidebarLogo />
-        <div className="mt-2">
+    <div className="bg-card flex h-full flex-col gap-0 overflow-x-clip">
+      <div className="flex flex-col gap-2 p-4">
+        <div className={cn('flex items-center justify-start', isCollapsed && 'justify-center')}>
+          <SidebarLogo isCollapsed={isCollapsed} />
+        </div>
+        <div className="mt-2 flex flex-col gap-2">
           <OrganizationSwitcher
             organizations={organizations}
-            organization={organization ?? null}
+            organization={organization}
+            isCollapsed={isCollapsed}
             logoUrls={logoUrls}
           />
+          <MainMenu
+            organizationId={organization?.id ?? ''}
+            organization={organization}
+            isCollapsed={isCollapsed}
+            isQuestionnaireEnabled={isQuestionnaireEnabled}
+            isTrustNdaEnabled={isTrustNdaEnabled}
+            hasAuditorRole={hasAuditorRole}
+            isOnlyAuditor={isOnlyAuditor}
+          />
         </div>
-      </SidebarHeader>
+      </div>
+      <div className="flex-1" />
 
-      <SidebarContent className="px-2">
-        <MainMenu
-          organizationId={organization?.id ?? ''}
-          organization={organization ?? null}
-          isQuestionnaireEnabled={isQuestionnaireEnabled}
-          isTrustNdaEnabled={isTrustNdaEnabled}
-          hasAuditorRole={hasAuditorRole}
-          isOnlyAuditor={isOnlyAuditor}
-        />
-      </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarCollapseButton />
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
+      <div className="flex justify-center py-2">
+        <SidebarCollapseButton isCollapsed={isCollapsed} />
+      </div>
+    </div>
   );
 }
