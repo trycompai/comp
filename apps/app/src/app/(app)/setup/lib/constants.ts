@@ -26,7 +26,7 @@ export const companyDetailsSchema = z.object({
     jobTitle: z.string().min(1, 'Job title is required'),
     email: z.string().email('Please enter a valid email'),
   }),
-  software: z.string().min(1, 'Please select software you use'),
+  software: z.string().optional(),
   infrastructure: z.string().min(1, 'Please select your infrastructure'),
   dataTypes: z.string().min(1, 'Please select types of data you handle'),
   devices: z.string().min(1, 'Please select device types'),
@@ -111,6 +111,7 @@ export const steps: Step[] = [
     key: 'software',
     question: 'What software do you use?',
     placeholder: 'e.g., Rippling',
+    skippable: true,
     options: [
       'Rippling',
       'Gusto',

@@ -34,7 +34,9 @@ export function PostPaymentOnboarding({
     isLoading,
     onSubmit,
     handleBack,
+    handleSkip,
     isLastStep,
+    isSkippable,
     currentStepNumber,
     totalSteps,
     completeNow,
@@ -189,6 +191,28 @@ export function PostPaymentOnboarding({
                   disabled={isOnboarding || isLoading}
                 >
                   Previous
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {isSkippable && (
+              <motion.div
+                key="skip"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.25 }}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="flex items-center gap-2 text-muted-foreground"
+                  onClick={handleSkip}
+                  disabled={isOnboarding || isFinalizing || isLoading}
+                  data-testid="onboarding-skip-button"
+                >
+                  Skip for now
                 </Button>
               </motion.div>
             )}
