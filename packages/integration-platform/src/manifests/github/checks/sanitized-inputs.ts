@@ -3,20 +3,33 @@
  *
  * Ensures repositories use a modern validation/sanitization library
  * (Zod or Pydantic) and have automated static analysis (CodeQL) enabled.
+ * Supports monorepos by scanning all package.json/requirements.txt files.
  */
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
-import type { GitHubCodeScanningDefaultSetup, GitHubRepo } from '../types';
+import type {
+  GitHubCodeScanningDefaultSetup,
+  GitHubRepo,
+  GitHubTreeEntry,
+  GitHubTreeResponse,
+} from '../types';
 import { targetReposVariable } from '../variables';
 
 const JS_VALIDATION_PACKAGES = ['zod'];
 const PY_VALIDATION_PACKAGES = ['pydantic'];
 
+const TARGET_FILES = ['package.json', 'requirements.txt', 'pyproject.toml'];
+
 interface GitHubFileResponse {
   content: string;
   encoding: 'base64' | 'utf-8';
   path: string;
+}
+
+interface ValidationMatch {
+  library: string;
+  file: string;
 }
 
 const decodeFile = (file: GitHubFileResponse): string => {
@@ -27,11 +40,16 @@ const decodeFile = (file: GitHubFileResponse): string => {
   return file.content;
 };
 
+const getFileName = (path: string): string => {
+  const parts = path.split('/');
+  return parts[parts.length - 1] ?? path;
+};
+
 export const sanitizedInputsCheck: IntegrationCheck = {
   id: 'sanitized_inputs',
   name: 'Sanitized Inputs & Code Scanning',
   description:
-    'Verifies repositories use Zod/Pydantic for input validation and have GitHub CodeQL scanning enabled.',
+    'Verifies repositories use Zod/Pydantic for input validation and have GitHub CodeQL scanning enabled. Scans entire repository including monorepo subdirectories.',
   taskMapping: TASK_TEMPLATES.sanitizedInputs,
   defaultSeverity: 'medium',
   variables: [targetReposVariable],
@@ -61,6 +79,21 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       }
     };
 
+    const fetchRepoTree = async (repoName: string, branch: string): Promise<GitHubTreeEntry[]> => {
+      try {
+        const tree = await ctx.fetch<GitHubTreeResponse>(
+          `/repos/${repoName}/git/trees/${branch}?recursive=1`,
+        );
+        if (tree.truncated) {
+          ctx.warn(`Repository ${repoName} has too many files, tree was truncated`);
+        }
+        return tree.tree;
+      } catch (error) {
+        ctx.warn(`Failed to fetch tree for ${repoName}: ${String(error)}`);
+        return [];
+      }
+    };
+
     const fetchFile = async (repoName: string, path: string): Promise<string | null> => {
       try {
         const file = await ctx.fetch<GitHubFileResponse>(`/repos/${repoName}/contents/${path}`);
@@ -70,46 +103,61 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       }
     };
 
-    const hasValidationLibrary = async (repoName: string) => {
-      // Check package.json for JS libraries
-      const packageJsonRaw = await fetchFile(repoName, 'package.json');
-      if (packageJsonRaw) {
-        try {
-          const pkg = JSON.parse(packageJsonRaw);
-          const deps = {
-            ...(pkg.dependencies || {}),
-            ...(pkg.devDependencies || {}),
-          };
-          for (const candidate of JS_VALIDATION_PACKAGES) {
-            if (deps[candidate]) {
-              return { found: true, library: candidate, file: 'package.json' };
-            }
+    const checkPackageJson = (content: string, filePath: string): ValidationMatch | null => {
+      try {
+        const pkg = JSON.parse(content);
+        const deps = {
+          ...(pkg.dependencies || {}),
+          ...(pkg.devDependencies || {}),
+        };
+        for (const candidate of JS_VALIDATION_PACKAGES) {
+          if (deps[candidate]) {
+            return { library: candidate, file: filePath };
           }
-        } catch {
-          ctx.warn(`Unable to parse package.json for ${repoName}`);
+        }
+      } catch {
+        // Invalid JSON, skip
+      }
+      return null;
+    };
+
+    const checkPythonFile = (content: string, filePath: string): ValidationMatch | null => {
+      const lower = content.toLowerCase();
+      for (const candidate of PY_VALIDATION_PACKAGES) {
+        if (lower.includes(candidate)) {
+          return { library: candidate, file: filePath };
+        }
+      }
+      return null;
+    };
+
+    const findValidationLibraries = async (
+      repoName: string,
+      tree: GitHubTreeEntry[],
+    ): Promise<ValidationMatch[]> => {
+      const matches: ValidationMatch[] = [];
+
+      // Find all target files in the tree
+      const targetEntries = tree.filter(
+        (entry) => entry.type === 'blob' && TARGET_FILES.includes(getFileName(entry.path)),
+      );
+
+      for (const entry of targetEntries) {
+        const content = await fetchFile(repoName, entry.path);
+        if (!content) continue;
+
+        const fileName = getFileName(entry.path);
+
+        if (fileName === 'package.json') {
+          const match = checkPackageJson(content, entry.path);
+          if (match) matches.push(match);
+        } else if (fileName === 'requirements.txt' || fileName === 'pyproject.toml') {
+          const match = checkPythonFile(content, entry.path);
+          if (match) matches.push(match);
         }
       }
 
-      // Check requirements.txt or pyproject.toml for Python libraries
-      const requirementsRaw = await fetchFile(repoName, 'requirements.txt');
-      if (requirementsRaw) {
-        const lower = requirementsRaw.toLowerCase();
-        const candidate = PY_VALIDATION_PACKAGES.find((pkg) => lower.includes(pkg));
-        if (candidate) {
-          return { found: true, library: candidate, file: 'requirements.txt' };
-        }
-      }
-
-      const pyprojectRaw = await fetchFile(repoName, 'pyproject.toml');
-      if (pyprojectRaw) {
-        const lower = pyprojectRaw.toLowerCase();
-        const candidate = PY_VALIDATION_PACKAGES.find((pkg) => lower.includes(pkg));
-        if (candidate) {
-          return { found: true, library: candidate, file: 'pyproject.toml' };
-        }
-      }
-
-      return { found: false };
+      return matches;
     };
 
     const isCodeScanningEnabled = async (repoName: string) => {
@@ -130,27 +178,32 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       const repo = await fetchRepo(repoName);
       if (!repo) continue;
 
-      const validation = await hasValidationLibrary(repo.full_name);
+      // Fetch the full tree to find all package.json/requirements.txt files
+      const tree = await fetchRepoTree(repo.full_name, repo.default_branch);
+      const validationMatches = await findValidationLibraries(repo.full_name, tree);
       const codeScanning = await isCodeScanningEnabled(repo.full_name);
 
-      if (validation.found) {
+      if (validationMatches.length > 0) {
         ctx.pass({
           title: `Input validation enabled in ${repo.name}`,
-          description: `Detected ${validation.library} usage (${validation.file}).`,
+          description: `Found ${validationMatches.length} location(s) with validation libraries: ${validationMatches.map((m) => `${m.library} (${m.file})`).join(', ')}.`,
           resourceType: 'repository',
           resourceId: repo.full_name,
           evidence: {
             repository: repo.full_name,
-            library: validation.library,
-            file: validation.file,
+            matches: validationMatches,
             checkedAt: new Date().toISOString(),
           },
         });
       } else {
+        const checkedFiles = tree
+          .filter((e) => e.type === 'blob' && TARGET_FILES.includes(getFileName(e.path)))
+          .map((e) => e.path);
+
         ctx.fail({
           title: `No input validation library found in ${repo.name}`,
           description:
-            'Could not detect Zod or Pydantic. Implement input validation and sanitization using one of these libraries.',
+            'Could not detect Zod or Pydantic in any package.json, requirements.txt, or pyproject.toml. Implement input validation and sanitization using one of these libraries.',
           resourceType: 'repository',
           resourceId: repo.full_name,
           severity: 'medium',
@@ -158,7 +211,7 @@ export const sanitizedInputsCheck: IntegrationCheck = {
             'Add Zod (JavaScript/TypeScript) or Pydantic (Python) to enforce schema validation on inbound data.',
           evidence: {
             repository: repo.full_name,
-            checkedFiles: ['package.json', 'requirements.txt', 'pyproject.toml'],
+            checkedFiles: checkedFiles.length > 0 ? checkedFiles : ['No dependency files found'],
           },
         });
       }
