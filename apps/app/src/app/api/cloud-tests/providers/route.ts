@@ -1,5 +1,7 @@
+import { auth } from '@/utils/auth';
 import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
+import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
@@ -24,6 +26,16 @@ const getRequiredVariables = (providerSlug: string): string[] => {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    const organizationId = session?.session.activeOrganizationId;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('orgId');
 
