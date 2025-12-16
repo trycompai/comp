@@ -5,7 +5,7 @@ import * as React from 'react';
 import { cn } from '../utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center gap-2 text-sm rounded-sm font-medium transition-colors focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap focus-visible:ring-1 focus-visible:ring-ring',
+  'inline-flex items-center gap-2 justify-center text-sm rounded-sm font-medium transition-colors focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap focus-visible:ring-1 focus-visible:ring-ring',
   {
     variants: {
       variant: {
@@ -32,7 +32,8 @@ const buttonVariants = cva(
 );
 
 interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 
