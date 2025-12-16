@@ -23,7 +23,7 @@ export type CompanyDetails = {
   workLocation: string;
   infrastructure: string;
   dataTypes: string;
-  software: string;
+  software?: string;
   geo: string;
   shipping: {
     fullName: string;
@@ -45,4 +45,5 @@ export type Step = {
   placeholder: string;
   options?: string[];
   description?: string;
+  skippable?: boolean;
 };
