@@ -341,17 +341,13 @@ export class QuestionnaireController {
           type: 'string',
           enum: ['pdf', 'csv', 'xlsx'],
           default: 'xlsx',
-          description: 'Output format (defaults to XLSX)',
+          description: 'Output format (ignored - always exports all formats as ZIP)',
         },
       },
       required: ['file'],
     },
   })
-  @ApiProduces(
-    'application/pdf',
-    'text/csv',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  )
+  @ApiProduces('application/zip')
   async parseQuestionnaireUploadByToken(
     @UploadedFile() file: Express.Multer.File,
     @Query('token') token: string,
@@ -382,8 +378,9 @@ export class QuestionnaireController {
       vendorName: undefined,
       format: body.format || 'xlsx',
       source: 'external', // Always external for token-based access
+      exportInAllExtensions: true, // Export in all formats (PDF, CSV, XLSX) as ZIP
     };
-
+    
     const result = await this.questionnaireService.autoAnswerAndExport(dto);
 
     res.setHeader('Content-Type', result.mimeType);

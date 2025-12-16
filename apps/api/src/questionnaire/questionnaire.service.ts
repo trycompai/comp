@@ -17,6 +17,7 @@ import {
   syncManualAnswerToVector,
   syncOrganizationEmbeddings,
 } from '@/vector-store/lib';
+import AdmZip from 'adm-zip';
 
 // Import shared utilities
 import {
@@ -82,13 +83,10 @@ export class QuestionnaireService {
   async parseQuestionnaire(
     dto: ParseQuestionnaireDto,
   ): Promise<ParsedQuestionnaireResult> {
-    const content = await extractContentFromFile(
+    // Use faster AI-powered extraction (combines extraction + parsing in one step)
+    const questionsAndAnswers = await extractQuestionsWithAI(
       dto.fileData,
       dto.fileType,
-      this.contentLogger,
-    );
-    const questionsAndAnswers = await parseQuestionsAndAnswers(
-      content,
       this.contentLogger,
     );
 
@@ -96,8 +94,10 @@ export class QuestionnaireService {
       vendorName: dto.vendorName,
       fileName: dto.fileName,
       totalQuestions: questionsAndAnswers.length,
-      questionsAndAnswers:
-        this.convertParsedToQuestionnaireAnswers(questionsAndAnswers),
+      questionsAndAnswers: questionsAndAnswers.map((qa) => ({
+        question: qa.question,
+        answer: qa.answer,
+      })),
     };
   }
 
@@ -120,14 +120,69 @@ export class QuestionnaireService {
       );
     }
 
-    const parsed = await this.parseQuestionnaire(dto);
+    console.log(Date.now(), 'Parsing questionnaire');
+    // Use faster AI-powered extraction (combines extraction + parsing in one step)
+    const questionsAndAnswers = await extractQuestionsWithAI(
+      dto.fileData,
+      dto.fileType,
+      this.contentLogger,
+    );
+    console.log(Date.now(), 'Parsed questionnaire');
+
+    console.log(Date.now(), 'Generating answers for questions');
     const answered = await this.generateAnswersForQuestions(
-      parsed.questionsAndAnswers,
+      questionsAndAnswers.map((qa) => ({
+        question: qa.question,
+        answer: qa.answer,
+      })),
       dto.organizationId,
     );
-
+    console.log(Date.now(), 'Generated answers for questions');
+    
     const vendorName =
-      dto.vendorName || dto.fileName || parsed.vendorName || 'questionnaire';
+      dto.vendorName || dto.fileName || 'questionnaire';
+    
+    // Check if we need to export in all formats
+    if (dto.exportInAllExtensions) {
+      // Generate all three formats
+      const formats: ExportFormat[] = ['pdf', 'csv', 'xlsx'];
+      const zip = new AdmZip();
+      
+      for (const format of formats) {
+        const exportFile = generateExportFile(
+          answered.map((a) => ({ question: a.question, answer: a.answer })),
+          format,
+          vendorName,
+        );
+        zip.addFile(exportFile.filename, exportFile.fileBuffer);
+      }
+      
+      const zipBuffer = zip.toBuffer();
+      
+      await persistQuestionnaireResult(
+        {
+        organizationId: dto.organizationId,
+        fileName: dto.fileName || vendorName,
+        fileType: dto.fileType,
+        fileSize:
+          uploadInfo?.fileSize ??
+          (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
+        s3Key: uploadInfo?.s3Key ?? null,
+        questionsAndAnswers: answered,
+        source: dto.source || 'internal',
+        },
+        this.storageLogger,
+      );
+      
+      return {
+        fileBuffer: zipBuffer,
+        mimeType: 'application/zip',
+        filename: `${vendorName.replace(/\.[^/.]+$/, '')}-all-formats.zip`,
+        questionsAndAnswers: answered,
+      };
+    }
+    
+    // Single format export (default behavior)
     const exportFile = generateExportFile(
       answered.map((a) => ({ question: a.question, answer: a.answer })),
       dto.format as ExportFormat,
@@ -441,15 +496,6 @@ export class QuestionnaireService {
   }
 
   // Private helper methods
-
-  private convertParsedToQuestionnaireAnswers(
-    parsed: ParsedQA[],
-  ): QuestionnaireAnswer[] {
-    return parsed.map((qa) => ({
-      question: qa.question,
-      answer: qa.answer,
-    }));
-  }
 
   private async generateAnswersForQuestions(
     questionsAndAnswers: QuestionnaireAnswer[],

@@ -71,6 +71,7 @@
     "deps:update": "syncpack update",
     "deps:upgrade": "syncpack update && bun install",
     "dev": "turbo dev --parallel",
+    "db:generate": "turbo run db:generate --filter=@comp/app --filter=@comp/portal --filter=@comp/api",
     "docker:clean": "bun run -F @comp/db docker:clean",
     "docker:down": "bun run -F @comp/db docker:down",
     "docker:up": "bun run -F @comp/db docker:up",
@@ -95,6 +96,6 @@
     "react-syntax-highlighter": "^15.6.6",
     "unpdf": "^1.4.0",
     "xlsx": "^0.18.5",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   }
 }

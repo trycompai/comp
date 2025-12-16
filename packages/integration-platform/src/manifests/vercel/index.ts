@@ -36,12 +36,11 @@ Copy the **Client ID** and **Client Secret** (click Reveal)
 Enter the Client ID, Secret, and the integration slug (from \`vercel.com/integrations/{slug}\`) in the admin page.
 
 > **Team Support**: When connecting, you'll choose whether to install for your personal account or a team. If you select a team, all API calls will be scoped to that team.`,
-      customSettings: [
+      additionalOAuthSettings: [
         {
           id: 'appSlug',
           label: 'Vercel Integration Slug',
           type: 'text',
-          placeholder: 'comp-ai',
           helpText:
             'The slug from your Vercel integration URL (https://vercel.com/integrations/{slug}). Used to launch the correct install page.',
           required: true,

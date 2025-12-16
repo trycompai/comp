@@ -146,15 +146,17 @@ export class OAuthController {
       redirectUrl,
     });
 
-    // Build authorization URL, replacing any placeholders with custom settings
+    // Build authorization URL, replacing any placeholders with additional OAuth settings
     let authorizeUrl = oauthConfig.authorizeUrl;
-    if (credentials.customSettings) {
-      // Replace {APP_NAME} placeholder with custom setting (used by Rippling, etc.)
-      if (credentials.customSettings.appName) {
-        authorizeUrl = authorizeUrl.replace(
-          '{APP_NAME}',
-          String(credentials.customSettings.appName),
-        );
+    if (credentials.customSettings && oauthConfig.additionalOAuthSettings) {
+      // Dynamically replace tokens based on additionalOAuthSettings definition
+      for (const setting of oauthConfig.additionalOAuthSettings) {
+        if (setting.token && credentials.customSettings[setting.id]) {
+          authorizeUrl = authorizeUrl.replace(
+            setting.token,
+            String(credentials.customSettings[setting.id]),
+          );
+        }
       }
     }
     const authUrl = new URL(authorizeUrl);

@@ -21,7 +21,16 @@ export const getQuestionnaires = async (organizationId: string) => {
         in: ['completed', 'parsing'],
       },
     },
-    include: {
+    select: {
+      id: true,
+      filename: true,
+      fileType: true,
+      status: true,
+      totalQuestions: true,
+      answeredQuestions: true,
+      source: true,
+      createdAt: true,
+      updatedAt: true,
       questions: {
         orderBy: {
           questionIndex: 'asc',

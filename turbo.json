@@ -7,6 +7,10 @@
       "cache": false,
       "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
     },
+    "db:generate": {
+      "cache": false,
+      "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
+    },
     "build": {
       "dependsOn": ["^build", "prisma:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],

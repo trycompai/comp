@@ -37,6 +37,17 @@ export const ripplingManifest: IntegrationManifest = {
 4. Enable the required scopes under HR information: "Read access to Workers"
 5. Note your app name - it's used in the authorize URL`,
       createAppUrl: 'https://app.rippling.com/partner',
+      additionalOAuthSettings: [
+        {
+          id: 'appName',
+          label: 'Rippling App Name',
+          type: 'text',
+          helpText:
+            'Your app name from the Rippling developer portal. This appears in the authorize URL (app.rippling.com/apps/PLATFORM/{appName}/authorize).',
+          required: true,
+          token: '{APP_NAME}',
+        },
+      ],
     },
   },
 
