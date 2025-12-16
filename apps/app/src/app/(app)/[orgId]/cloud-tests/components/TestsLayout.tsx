@@ -75,7 +75,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const { disconnectConnection } = useIntegrationMutations();
 
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
-    '/api/cloud-tests/findings',
+    `/api/cloud-tests/findings?orgId=${orgId}`,
     async (url) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
