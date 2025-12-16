@@ -27,9 +27,16 @@ jobs:
       - name: Install Email package dependencies
         working-directory: ./packages/email
         run: bun install --frozen-lockfile --ignore-scripts
+      - name: Install Integration Platform package dependencies
+        working-directory: ./packages/integration-platform
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Build DB package
         working-directory: ./packages/db
+        run: bun run build
+
+      - name: Build Integration Platform package
+        working-directory: ./packages/integration-platform
         run: bun run build
 
       - name: Copy schema to app and generate client
