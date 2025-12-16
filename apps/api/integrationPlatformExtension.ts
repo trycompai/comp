@@ -3,15 +3,20 @@ import type {
   BuildExtension,
   BuildManifest,
 } from '@trigger.dev/build';
+import type { Plugin } from 'esbuild';
 import { existsSync } from 'node:fs';
 import { cp, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+
+const PACKAGE_NAME = '@comp/integration-platform';
 
 /**
  * Custom Trigger.dev build extension for @comp/integration-platform workspace package.
  *
  * Since @comp/integration-platform is a workspace package (not published to npm),
- * we need to manually copy its built dist files into the trigger.dev deployment.
+ * we need to:
+ * 1. Add an esbuild plugin to resolve the import path during build
+ * 2. Copy the built dist files into the trigger.dev deployment
  */
 export function integrationPlatformExtension(): IntegrationPlatformExtension {
   return new IntegrationPlatformExtension();
@@ -19,13 +24,53 @@ export function integrationPlatformExtension(): IntegrationPlatformExtension {
 
 class IntegrationPlatformExtension implements BuildExtension {
   public readonly name = 'IntegrationPlatformExtension';
+  private _packagePath: string | undefined;
 
-  externalsForTarget(target: string) {
-    if (target === 'dev') {
-      return [];
+  async onBuildStart(context: BuildContext) {
+    if (context.target === 'dev') {
+      return;
     }
-    // Mark as external so esbuild doesn't try to bundle it
-    return ['@comp/integration-platform'];
+
+    // Find the package path
+    this._packagePath = this.findPackageRoot(context.workingDir);
+
+    if (!this._packagePath) {
+      throw new Error(
+        [
+          `IntegrationPlatformExtension could not find ${PACKAGE_NAME}.`,
+          'Make sure the package is built (run `bun run build` in packages/integration-platform).',
+        ].join('\n'),
+      );
+    }
+
+    context.logger.debug(`Found integration-platform at ${this._packagePath}`);
+
+    // Register esbuild plugin to resolve the workspace package
+    const packagePath = this._packagePath;
+    const resolvePlugin: Plugin = {
+      name: 'resolve-integration-platform',
+      setup(build) {
+        // Resolve bare import
+        build.onResolve({ filter: /^@comp\/integration-platform$/ }, () => {
+          return {
+            path: resolve(packagePath, 'dist/index.js'),
+          };
+        });
+
+        // Resolve subpath imports like @comp/integration-platform/types
+        build.onResolve(
+          { filter: /^@comp\/integration-platform\// },
+          (args) => {
+            const subpath = args.path.replace(`${PACKAGE_NAME}/`, '');
+            return {
+              path: resolve(packagePath, 'dist', `${subpath}/index.js`),
+            };
+          },
+        );
+      },
+    };
+
+    context.registerPlugin(resolvePlugin);
   }
 
   async onBuildComplete(context: BuildContext, manifest: BuildManifest) {
@@ -33,26 +78,12 @@ class IntegrationPlatformExtension implements BuildExtension {
       return;
     }
 
-    // Find the integration-platform package dist
-    const packageDistPath = this.findPackageDist(context.workingDir);
-
-    if (!packageDistPath) {
-      throw new Error(
-        [
-          'IntegrationPlatformExtension could not find @comp/integration-platform dist.',
-          'Make sure the package is built (run `bun run build` in packages/integration-platform).',
-          'Searched in: ' +
-            resolve(
-              context.workingDir,
-              '../../packages/integration-platform/dist',
-            ),
-        ].join('\n'),
-      );
+    const packagePath = this._packagePath;
+    if (!packagePath) {
+      return;
     }
 
-    context.logger.debug(
-      `Found integration-platform dist at ${packageDistPath}`,
-    );
+    const packageDistPath = resolve(packagePath, 'dist');
 
     // Copy the entire dist to the build output
     const destPath = resolve(
@@ -67,7 +98,7 @@ class IntegrationPlatformExtension implements BuildExtension {
     await cp(packageDistPath, destDistPath, { recursive: true });
 
     // Copy package.json for proper module resolution
-    const packageJsonPath = resolve(dirname(packageDistPath), 'package.json');
+    const packageJsonPath = resolve(packagePath, 'package.json');
     if (existsSync(packageJsonPath)) {
       await cp(packageJsonPath, resolve(destPath, 'package.json'));
     }
@@ -77,15 +108,18 @@ class IntegrationPlatformExtension implements BuildExtension {
     );
   }
 
-  private findPackageDist(workingDir: string): string | undefined {
+  private findPackageRoot(workingDir: string): string | undefined {
     // Look for the package relative to the api app
     const candidates = [
-      resolve(workingDir, '../../packages/integration-platform/dist'),
-      resolve(workingDir, '../packages/integration-platform/dist'),
+      resolve(workingDir, '../../packages/integration-platform'),
+      resolve(workingDir, '../packages/integration-platform'),
     ];
 
     for (const candidate of candidates) {
-      if (existsSync(candidate)) {
+      if (
+        existsSync(candidate) &&
+        existsSync(resolve(candidate, 'dist/index.js'))
+      ) {
         return candidate;
       }
     }
