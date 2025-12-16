@@ -249,7 +249,32 @@ export function usePostPaymentOnboarding({
     }
   };
 
+  const handleSkip = () => {
+    // Track skip event
+    trackOnboardingEvent(`${step.key}_skipped`, stepIndex + 1, {
+      phase: 'post_payment',
+    });
+
+    // Clear form errors
+    form.clearErrors();
+
+    // Move to next step without saving current value
+    if (stepIndex < postPaymentSteps.length - 1) {
+      const newStepIndex = stepIndex + 1;
+      setStepIndex(newStepIndex);
+      setSavedStepIndex(newStepIndex);
+    } else {
+      // If this is the last step, complete onboarding without this field
+      const allAnswers: Partial<CompanyDetails> = {
+        ...savedAnswers,
+        organizationName,
+      };
+      handleCompleteOnboarding(allAnswers);
+    }
+  };
+
   const isLastStep = stepIndex === postPaymentSteps.length - 1;
+  const isSkippable = step?.skippable ?? false;
 
   return {
     stepIndex,
@@ -262,7 +287,9 @@ export function usePostPaymentOnboarding({
     isLoading,
     onSubmit,
     handleBack,
+    handleSkip,
     isLastStep,
+    isSkippable,
     currentStepNumber: stepIndex + 1, // Display as steps 1-9
     totalSteps: postPaymentSteps.length, // Total 9 steps for post-payment
     completeNow,
