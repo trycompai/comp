@@ -30,9 +30,7 @@ export async function GET(request: NextRequest) {
       headers: await headers(),
     });
 
-    const organizationId = session?.session.activeOrganizationId;
-
-    if (!organizationId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -41,6 +39,19 @@ export async function GET(request: NextRequest) {
 
     if (!orgId) {
       return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
+
+    // Verify the user belongs to the requested organization
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: orgId,
+        deactivated: false,
+      },
+    });
+
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Fetch from NEW integration platform (IntegrationConnection)
