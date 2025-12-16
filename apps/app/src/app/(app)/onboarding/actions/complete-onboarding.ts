@@ -29,7 +29,7 @@ const onboardingCompletionSchema = z.object({
   }),
   devices: z.string().min(1),
   authentication: z.string().min(1),
-  software: z.string().min(1),
+  software: z.string().optional(),
   workLocation: z.string().min(1),
   infrastructure: z.string().min(1),
   dataTypes: z.string().min(1),
@@ -81,7 +81,13 @@ export const completeOnboarding = authActionClient
       // Save the remaining steps to context
       const postPaymentSteps = steps.slice(3); // Steps 4-12
       const contextData = postPaymentSteps
-        .filter((step) => step.key in parsedInput)
+        .filter((step) => {
+          const value = parsedInput[step.key as keyof typeof parsedInput];
+          // Filter out steps that aren't in parsedInput or have empty values (skipped steps)
+          if (!(step.key in parsedInput)) return false;
+          if (value === undefined || value === null || value === '') return false;
+          return true;
+        })
         .map((step) => ({
           question: step.question,
           answer:
