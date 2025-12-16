@@ -69,7 +69,7 @@
     "gitdiff-parser": "^0.3.1",
     "input-otp": "1.4.2",
     "jsonfile": "^6.1.0",
-    "lucide-react": "^0.554.0",
+    "lucide-react": "^0.560.0",
     "motion": "^12.23.24",
     "nanoid": "^5.1.6",
     "react-day-picker": "8.10.1",
@@ -177,6 +177,10 @@
     "./skeleton": {
       "types": "./dist/components/skeleton.d.ts",
       "import": "./dist/components/skeleton.js"
+    },
+    "./sidebar": {
+      "types": "./dist/components/sidebar.d.ts",
+      "import": "./dist/components/sidebar.js"
     },
     "./sheet": {
       "types": "./dist/components/sheet.d.ts",
@@ -481,6 +485,10 @@
     "./use-resize-observer": {
       "types": "./dist/hooks/use-resize-observer.d.ts",
       "import": "./dist/hooks/use-resize-observer.js"
+    },
+    "./use-mobile": {
+      "types": "./dist/hooks/use-mobile.d.ts",
+      "import": "./dist/hooks/use-mobile.js"
     },
     "./use-media-query": {
       "types": "./dist/hooks/use-media-query.d.ts",
