@@ -72,7 +72,6 @@ export function MemberRow({ member, onRemove, onRemoveDevice, onUpdateRole, canE
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
   const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
   const focusRef = useRef<HTMLButtonElement | null>(null);
-  const currentUserIsOwner = member.role.includes('owner');
 
   const memberName = member.user.name || member.user.email || 'Member';
   const memberEmail = member.user.email || '';
