@@ -1,0 +1,104 @@
+# =============================================================================
+# STAGE 1: Dependencies - Install workspace dependencies
+# =============================================================================
+FROM oven/bun:1.2.8 AS deps
+
+WORKDIR /app
+
+# Copy root workspace config
+COPY package.json bun.lock ./
+
+# Copy all workspace package.json files
+COPY packages/db/package.json ./packages/db/
+COPY packages/utils/package.json ./packages/utils/
+COPY packages/integration-platform/package.json ./packages/integration-platform/
+COPY packages/tsconfig/package.json ./packages/tsconfig/
+
+# Copy API package.json
+COPY apps/api/package.json ./apps/api/
+
+# Install all dependencies (including workspace deps)
+RUN bun install
+
+# =============================================================================
+# STAGE 2: Builder - Build workspace packages and NestJS app
+# =============================================================================
+FROM deps AS builder
+
+WORKDIR /app
+
+# Copy workspace packages source
+COPY packages/db ./packages/db
+COPY packages/utils ./packages/utils
+COPY packages/integration-platform ./packages/integration-platform
+COPY packages/tsconfig ./packages/tsconfig
+
+# Copy API source
+COPY apps/api ./apps/api
+
+# Bring in node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Build workspace packages
+RUN cd packages/db && bun run build && cd ../..
+RUN cd packages/integration-platform && bun run build && cd ../..
+
+# Generate Prisma client for API (copy schema and generate)
+RUN cd packages/db && node scripts/combine-schemas.js && cd ../..
+RUN cp packages/db/dist/schema.prisma apps/api/prisma/schema.prisma
+RUN cd apps/api && bunx prisma generate
+
+# Build NestJS application (skip prebuild since we already generated Prisma)
+RUN cd apps/api && bunx nest build
+
+# =============================================================================
+# STAGE 3: Production Runtime
+# =============================================================================
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache wget libc6-compat openssl
+
+# Copy built NestJS app
+COPY --from=builder /app/apps/api/dist ./dist
+
+# Copy prisma files
+COPY --from=builder /app/apps/api/prisma ./prisma
+
+# Copy package.json (for any runtime needs)
+COPY --from=builder /app/apps/api/package.json ./package.json
+
+# Copy workspace packages that are referenced by node_modules symlinks
+COPY --from=builder /app/packages/db ./packages/db
+COPY --from=builder /app/packages/utils ./packages/utils
+COPY --from=builder /app/packages/integration-platform ./packages/integration-platform
+COPY --from=builder /app/packages/tsconfig ./packages/tsconfig
+
+# Copy production node_modules (includes symlinks to workspace packages above)
+COPY --from=builder /app/node_modules ./node_modules
+
+# Set production environment
+ENV NODE_ENV=production
+ENV PORT=3333
+
+# Install Prisma CLI and regenerate client in production stage
+RUN npm install -g prisma@6.13.0 && \
+    prisma generate --schema=./prisma/schema.prisma
+
+# Create non-root user
+RUN addgroup --system nestjs && adduser --system --ingroup nestjs nestjs \
+  && chown -R nestjs:nestjs /app
+
+USER nestjs
+
+EXPOSE 3333
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3333/v1/health || exit 1
+
+# Start the application
+CMD ["node", "dist/src/main.js"]
+
