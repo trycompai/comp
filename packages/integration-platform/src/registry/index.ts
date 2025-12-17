@@ -14,6 +14,7 @@ import { manifest as githubManifest } from '../manifests/github';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
+import { manifest as aikidoManifest } from '../manifests/aikido';
 
 // ============================================================================
 // Registry Implementation
@@ -103,6 +104,7 @@ const allManifests: IntegrationManifest[] = [
   googleWorkspaceManifest,
   ripplingManifest,
   vercelManifest,
+  aikidoManifest,
 ];
 
 // Create and export the registry singleton
