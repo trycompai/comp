@@ -90,7 +90,7 @@ export function PolicyContentManager({
   displayFormat = 'EDITOR',
   pdfUrl,
 }: PolicyContentManagerProps) {
-  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [showAiAssistant, setShowAiAssistant] = useState(true);
   const [editorKey, setEditorKey] = useState(0);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
     const formattedContent = Array.isArray(policyContent)
@@ -104,7 +104,6 @@ export function PolicyContentManager({
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
   const diffViewerRef = useRef<HTMLDivElement>(null);
 
-  const isAiPolicyAssistantEnabled = true;
   const scrollToDiffViewer = useCallback(() => {
     diffViewerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
@@ -189,7 +188,7 @@ export function PolicyContentManager({
       <Card>
         <CardContent className="p-4">
           <div className="flex gap-4 h-[60vh]">
-            <div className="flex-1 min-w-0 h-full overflow-y-auto">
+            <div className="flex-1 min-w-0 h-full overflow-hidden">
               <Tabs
                 defaultValue={displayFormat}
                 onValueChange={(format) =>
@@ -206,19 +205,17 @@ export function PolicyContentManager({
                       PDF View
                     </TabsTrigger>
                   </TabsList>
-                  {!isPendingApproval &&
-                    displayFormat === 'EDITOR' &&
-                    isAiPolicyAssistantEnabled && (
-                      <Button
-                        variant={showAiAssistant ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setShowAiAssistant((prev) => !prev)}
-                        className="gap-2"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        AI Assistant
-                      </Button>
-                    )}
+                  {!isPendingApproval && (
+                    <Button
+                      variant={showAiAssistant ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setShowAiAssistant((prev) => !prev)}
+                      className="gap-2"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      AI Assistant
+                    </Button>
+                  )}
                 </div>
                 <TabsContent value="EDITOR" className="mt-4">
                   <PolicyEditorWrapper
@@ -239,7 +236,7 @@ export function PolicyContentManager({
               </Tabs>
             </div>
 
-            {showAiAssistant && isAiPolicyAssistantEnabled && (
+            {showAiAssistant && (
               <div className="w-80 shrink-0 self-stretch flex flex-col overflow-hidden">
                 <PolicyAiAssistant
                   messages={messages}

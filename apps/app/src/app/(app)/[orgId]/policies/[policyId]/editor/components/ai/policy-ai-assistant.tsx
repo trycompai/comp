@@ -83,11 +83,16 @@ export function PolicyAiAssistant({
         <ConversationContent className="gap-3 p-3">
           {messages.length === 0 ? (
             <div className="text-sm text-muted-foreground py-4">
-              <p>Ask me to help edit this policy.</p>
+              <p>
+                I can help you edit, adapt, or check this policy for compliance. Try asking me
+                things like:
+              </p>
               <ul className="mt-2 space-y-1 text-xs">
-                <li>"Add a data retention section"</li>
-                <li>"Make this more SOC 2 compliant"</li>
-                <li>"Simplify the language"</li>
+                <li>"Adapt this for a fully remote, distributed team."</li>
+                <li>
+                  "Can I shorten the data retention timeframe and still meet SOC 2 standards?"
+                </li>
+                <li>"Modify the access control section to include contractors."</li>
               </ul>
             </div>
           ) : (
