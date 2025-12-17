@@ -1359,7 +1359,7 @@ export class SyncController {
 
     // Validate provider if set
     if (provider) {
-      const validProviders = ['google-workspace', 'jumpcloud'];
+      const validProviders = ['google-workspace', 'rippling', 'jumpcloud'];
       if (!validProviders.includes(provider)) {
         throw new HttpException(
           `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
