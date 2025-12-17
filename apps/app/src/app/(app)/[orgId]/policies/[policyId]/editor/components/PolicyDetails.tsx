@@ -189,7 +189,7 @@ export function PolicyContentManager({
       <Card>
         <CardContent className="p-4">
           <div className="flex gap-4 h-[60vh]">
-            <div className="flex-1 min-w-0 h-full overflow-y-auto">
+            <div className="flex-1 min-w-0 h-full overflow-hidden">
               <Tabs
                 defaultValue={displayFormat}
                 onValueChange={(format) =>
