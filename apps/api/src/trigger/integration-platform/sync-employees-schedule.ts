@@ -194,6 +194,9 @@ async function syncProvider(params: SyncProviderParams): Promise<SyncResult> {
     case 'rippling':
       return syncRippling({ connectionId, organizationId });
 
+    case 'jumpcloud':
+      return syncJumpCloud({ connectionId, organizationId });
+
     default:
       throw new Error(`No sync handler for provider: ${providerSlug}`);
   }
@@ -260,6 +263,42 @@ async function syncRippling({
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(`Rippling sync failed: ${response.status} - ${errorBody}`);
+  }
+
+  const data = await response.json();
+  return {
+    success: data.success,
+    imported: data.imported || 0,
+    reactivated: data.reactivated || 0,
+    deactivated: data.deactivated || 0,
+    skipped: data.skipped || 0,
+    errors: data.errors || 0,
+  };
+}
+
+async function syncJumpCloud({
+  connectionId,
+  organizationId,
+}: {
+  connectionId: string;
+  organizationId: string;
+}): Promise<SyncResult> {
+  const url = new URL(
+    `${API_BASE_URL}/v1/integrations/sync/jumpcloud/employees`,
+  );
+  url.searchParams.set('organizationId', organizationId);
+  url.searchParams.set('connectionId', connectionId);
+
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`JumpCloud sync failed: ${response.status} - ${errorBody}`);
   }
 
   const data = await response.json();

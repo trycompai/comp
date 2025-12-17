@@ -23,10 +23,10 @@ import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 import type { removeMember } from '../actions/removeMember';
 import type { revokeInvitation } from '../actions/revokeInvitation';
 
+import { usePeopleActions } from '@/hooks/use-people-api';
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 import { InviteMembersModal } from './InviteMembersModal';
-import { usePeopleActions } from '@/hooks/use-people-api';
 
 // Define prop types using typeof for the actions still used
 interface TeamMembersClientProps {
@@ -74,6 +74,7 @@ export function TeamMembersClient({
   const {
     googleWorkspaceConnectionId,
     ripplingConnectionId,
+    jumpcloudConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
@@ -85,7 +86,7 @@ export function TeamMembersClient({
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
 
-  const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling') => {
+  const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling' | 'jumpcloud') => {
     const result = await syncEmployees(provider);
     if (result?.success) {
       router.refresh();
@@ -378,6 +379,24 @@ export function TeamMembersClient({
                       />
                       Rippling
                       {selectedProvider === 'rippling' && (
+                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                )}
+                {jumpcloudConnectionId && (
+                  <SelectItem value="jumpcloud">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={getProviderLogo('jumpcloud')}
+                        alt="JumpCloud"
+                        width={16}
+                        height={16}
+                        className="rounded-sm"
+                        unoptimized
+                      />
+                      JumpCloud
+                      {selectedProvider === 'jumpcloud' && (
                         <span className="ml-auto text-xs text-muted-foreground">Active</span>
                       )}
                     </div>
