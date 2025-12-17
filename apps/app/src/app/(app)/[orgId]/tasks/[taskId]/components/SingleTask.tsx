@@ -205,8 +205,10 @@ export function SingleTask({
           {/* Browser Automations Section */}
           {isWebAutomationsEnabled && <BrowserAutomations taskId={task.id} />}
 
-          {/* Custom Automations Section - only show if no mapped integration checks available */}
-          {!hasMappedChecks && <TaskAutomations automations={automations || []} />}
+          {/* Custom Automations Section - always show if automations exist, or show empty state if no integration checks */}
+          {((automations && automations.length > 0) || !hasMappedChecks) && (
+            <TaskAutomations automations={automations || []} />
+          )}
 
           {/* Comments Section */}
           <div>

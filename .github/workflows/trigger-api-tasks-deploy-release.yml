@@ -28,6 +28,13 @@ jobs:
         working-directory: ./packages/db
         run: bun install --frozen-lockfile --ignore-scripts
 
+      - name: Install Integration Platform package dependencies
+        working-directory: ./packages/integration-platform
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Build Integration Platform package
+        working-directory: ./packages/integration-platform
+        run: bun run build
+
       - name: Build DB package
         working-directory: ./packages/db
         run: bun run build
