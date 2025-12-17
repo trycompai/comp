@@ -242,10 +242,14 @@ export class SyncController {
     };
 
     for (const gwUser of activeUsers) {
+      // Normalize email to lowercase for consistent database operations
+      // This matches how we build suspendedEmails and activeEmails sets
+      const normalizedEmail = gwUser.primaryEmail.toLowerCase();
+
       try {
         // Check if user already exists
         const existingUser = await db.user.findUnique({
-          where: { email: gwUser.primaryEmail },
+          where: { email: normalizedEmail },
         });
 
         let userId: string;
@@ -256,8 +260,8 @@ export class SyncController {
           // Create new user
           const newUser = await db.user.create({
             data: {
-              email: gwUser.primaryEmail,
-              name: gwUser.name.fullName || gwUser.primaryEmail.split('@')[0],
+              email: normalizedEmail,
+              name: gwUser.name.fullName || normalizedEmail.split('@')[0],
               emailVerified: true, // Google Workspace users are verified
             },
           });
@@ -281,14 +285,14 @@ export class SyncController {
             });
             results.reactivated++;
             results.details.push({
-              email: gwUser.primaryEmail,
+              email: normalizedEmail,
               status: 'reactivated',
               reason: 'User is active again in Google Workspace',
             });
           } else {
             results.skipped++;
             results.details.push({
-              email: gwUser.primaryEmail,
+              email: normalizedEmail,
               status: 'skipped',
               reason: 'Already a member',
             });
@@ -308,14 +312,14 @@ export class SyncController {
 
         results.imported++;
         results.details.push({
-          email: gwUser.primaryEmail,
+          email: normalizedEmail,
           status: 'imported',
         });
       } catch (error) {
         this.logger.error(`Error importing Google Workspace user: ${error}`);
         results.errors++;
         results.details.push({
-          email: gwUser.primaryEmail,
+          email: normalizedEmail,
           status: 'error',
           reason: error instanceof Error ? error.message : 'Unknown error',
         });
@@ -334,9 +338,10 @@ export class SyncController {
       },
     });
 
-    // Get the domain from active users to only check members with matching domain
+    // Get the domains from ALL users (including suspended) to track which domains Google Workspace manages
+    // This ensures members get deactivated even when an entire domain has no active users
     const gwDomains = new Set(
-      activeUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
+      users.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
     );
 
     for (const member of allOrgMembers) {
@@ -634,9 +639,10 @@ export class SyncController {
       `Found ${activeWorkers.length} active workers and ${inactiveEmails.size} inactive/terminated workers in Rippling`,
     );
 
-    // Derive domains from Rippling workers to match against our members
+    // Derive domains from ALL Rippling workers (including inactive) to track which domains Rippling manages
+    // This ensures members get deactivated even when an entire domain has no active workers
     const ripplingDomains = new Set(
-      activeWorkers.map((w) => getWorkerEmail(w).split('@')[1]).filter(Boolean),
+      workers.map((w) => getWorkerEmail(w).split('@')[1]).filter(Boolean),
     );
 
     // Get all existing members
@@ -1129,10 +1135,14 @@ export class SyncController {
     };
 
     for (const jcUser of activeUsers) {
+      // Normalize email to lowercase for consistent database operations
+      // This matches how we build suspendedEmails and activeEmails sets
+      const normalizedEmail = jcUser.email.toLowerCase();
+
       try {
         // Check if user already exists
         const existingUser = await db.user.findUnique({
-          where: { email: jcUser.email },
+          where: { email: normalizedEmail },
         });
 
         let userId: string;
@@ -1143,7 +1153,7 @@ export class SyncController {
           // Create new user
           const newUser = await db.user.create({
             data: {
-              email: jcUser.email,
+              email: normalizedEmail,
               name: getFullName(jcUser),
               emailVerified: true,
             },
@@ -1171,7 +1181,7 @@ export class SyncController {
             });
             results.reactivated++;
             results.details.push({
-              email: jcUser.email,
+              email: normalizedEmail,
               status: 'reactivated',
               reason: 'User is active again in JumpCloud',
               devices: deviceDetails,
@@ -1179,7 +1189,7 @@ export class SyncController {
           } else {
             results.skipped++;
             results.details.push({
-              email: jcUser.email,
+              email: normalizedEmail,
               status: 'skipped',
               reason: 'Already a member',
               devices: deviceDetails,
@@ -1200,7 +1210,7 @@ export class SyncController {
 
         results.imported++;
         results.details.push({
-          email: jcUser.email,
+          email: normalizedEmail,
           status: 'imported',
           devices: deviceDetails,
         });
@@ -1208,7 +1218,7 @@ export class SyncController {
         this.logger.error(`Error importing JumpCloud user: ${error}`);
         results.errors++;
         results.details.push({
-          email: jcUser.email,
+          email: normalizedEmail,
           status: 'error',
           reason: error instanceof Error ? error.message : 'Unknown error',
           devices: getUserDeviceDetails(jcUser._id),
@@ -1227,9 +1237,10 @@ export class SyncController {
       },
     });
 
-    // Get the domains from active users to only check members with matching domain
+    // Get the domains from ALL users (including suspended) to track which domains JumpCloud manages
+    // This ensures members get deactivated even when an entire domain has no active users
     const jcDomains = new Set(
-      activeUsers.map((u) => u.email.split('@')[1]?.toLowerCase()),
+      users.map((u) => u.email.split('@')[1]?.toLowerCase()),
     );
 
     for (const member of allOrgMembers) {
