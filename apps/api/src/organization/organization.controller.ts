@@ -133,7 +133,9 @@ export class OrganizationController {
     } else {
       // For JWT auth, use the authenticated user's ID
       if (!authContext.userId) {
-        throw new BadRequestException('User ID is required');
+        throw new BadRequestException(
+          'User ID is required for this operation. This endpoint requires session authentication.',
+        );
       }
       userId = authContext.userId;
     }
