@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateCommentDto {
   @ApiProperty({
@@ -11,4 +11,15 @@ export class UpdateCommentDto {
   @IsNotEmpty()
   @MaxLength(2000)
   content: string;
+
+  @ApiProperty({
+    description:
+      'User ID of the comment author (required for API key auth, ignored for JWT auth)',
+    example: 'usr_abc123def456',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  userId?: string;
 }
