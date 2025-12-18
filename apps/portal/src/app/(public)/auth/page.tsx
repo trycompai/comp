@@ -1,9 +1,16 @@
 import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
 import { env } from '@/env.mjs';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@comp/ui/card';
 import { Icons } from '@comp/ui/icons';
+import { Button } from '@trycompai/ui-new';
 import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -48,7 +55,7 @@ export default async function Page() {
                 Comp AI makes SOC 2, ISO 27001, HIPAA and GDPR effortless. Eliminate compliance
                 busywork, win more deals and accelerate growth.
               </p>
-              <Button variant="link" className="mt-2 p-0" asChild>
+              <Button variant="outline" className="mt-2 p-0" asChild>
                 <Link
                   href="https://trycomp.ai"
                   target="_blank"

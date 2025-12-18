@@ -126,7 +126,7 @@ export async function getFleetAgent({
   os,
 }: {
   os: 'macos' | 'windows' | 'linux';
-}) {
+}): Promise<unknown> {
   if (!s3Client) {
     throw new Error('S3 client not configured');
   }

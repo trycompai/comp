@@ -14,6 +14,7 @@
     "@trycompai/email": "workspace:*",
     "@trycompai/kv": "workspace:*",
     "@trycompai/ui": "workspace:*",
+    "@trycompai/ui-new": "workspace:*",
     "@types/jszip": "^3.4.1",
     "@upstash/ratelimit": "^2.0.5",
     "archiver": "^7.0.1",
@@ -43,8 +44,8 @@
     "typescript": "^5.8.3"
   },
   "peerDependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "private": true,
   "scripts": {
@@ -53,7 +54,7 @@
     "db:generate": "bun run db:getschema && prisma generate",
     "db:getschema": "node ../../packages/db/scripts/combine-schemas.js && cp ../../packages/db/dist/schema.prisma prisma/schema.prisma",
     "db:migrate": "cd ../../packages/db && bunx prisma migrate dev && cd ../../apps/portal",
-    "dev": "next dev --turbopack -p 3002",
+    "dev": "next dev -p 3002",
     "lint": "next lint && prettier --check .",
     "prebuild": "bun run db:generate",
     "start": "next start"

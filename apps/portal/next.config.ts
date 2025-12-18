@@ -4,7 +4,11 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config = {
-  transpilePackages: ['@trycompai/db'],
+  transpilePackages: ['@trycompai/db', '@trycompai/ui-new'],
+  serverExternalPackages: ['@ark-ui/react', '@zag-js/anatomy'],
+  experimental: {
+    optimizePackageImports: ['@chakra-ui/react'],
+  },
   images: {
     remotePatterns: [
       {
