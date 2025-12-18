@@ -57,6 +57,36 @@ export const OAuthConfigSchema = z.object({
       }),
     )
     .optional(),
+  /**
+   * Optional token revocation config for OAuth providers.
+   *
+   * Note: While RFC7009 exists, providers vary widely in practice (method, auth,
+   * path templating, and payload). This config is intentionally flexible.
+   */
+  revoke: z
+    .object({
+      /** Revocation URL. Supports templating with '{CLIENT_ID}'. */
+      url: z.string(),
+      /** HTTP method to use. */
+      method: z.enum(['POST', 'DELETE']).default('POST'),
+      /**
+       * How to authenticate the revocation request.
+       * - basic: Basic {client_id}:{client_secret}
+       * - bearer: Authorization: Bearer {access_token}
+       * - none: no auth header
+       */
+      auth: z.enum(['basic', 'bearer', 'none']).default('basic'),
+      /**
+       * Body format. Many providers use x-www-form-urlencoded (RFC7009),
+       * some use JSON (e.g. GitHub token revoke endpoint).
+       */
+      body: z.enum(['form', 'json']).default('form'),
+      /** Field name for the token in the body. */
+      tokenField: z.string().default('token'),
+      /** Optional additional static fields to include in the body. */
+      extraBodyFields: z.record(z.string(), z.string()).optional(),
+    })
+    .optional(),
 });
 
 export type OAuthConfig = z.infer<typeof OAuthConfigSchema>;

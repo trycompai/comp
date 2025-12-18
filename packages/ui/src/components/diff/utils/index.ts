@@ -1,2 +1,2 @@
-export * from "./parse";
-export * from "./guess-lang";
+export * from './guess-lang';
+export * from './parse';
