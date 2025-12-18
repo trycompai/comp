@@ -8,12 +8,9 @@ export function TestUiPage() {
   return (
     <Box pb="20">
       <Container maxW="1400px" py={8}>
-        <Heading size="2xl" mb={2}>
+        <Heading size="2xl" mb={8}>
           Design System Preview
         </Heading>
-        <Text color="secondary.700" mb={8}>
-          Theme palettes + components
-        </Text>
 
         <TestUiSectionsTop />
         <TestUiSectionsBottom />

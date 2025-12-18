@@ -2,7 +2,6 @@
 
 import {
   Badge,
-  Box,
   Button,
   Card,
   Checkbox,
@@ -17,142 +16,75 @@ import {
   Textarea,
   VStack,
 } from '@trycompai/ui-new';
+import { useState } from 'react';
+import { ButtonPaletteSwitcher, type ButtonColorPalette } from './ButtonPaletteSwitcher';
 import { ColorRow, Section, SubSection } from './TestUiPrimitives';
 
 export function TestUiSectionsTop() {
+  const [buttonPalette, setButtonPalette] = useState<ButtonColorPalette>('primary');
+
   return (
     <>
-      <Section title="Color Tokens (Comp)">
-        <Text color="gray.600" mb={4}>
-          Theme palettes (primary, secondary, and accent palettes)
-        </Text>
+      <Section title="Color Tokens">
         <VStack align="start" gap={8}>
-          <ColorRow name="primary" description="comp green" />
-          <ColorRow name="secondary" description="neutral / gray scale" />
-          <ColorRow name="blue" description="accent blue" />
-          <ColorRow name="orange" description="accent orange" />
-          <ColorRow name="rose" description="accent rose" />
-          <ColorRow name="yellow" description="accent yellow" />
-          <ColorRow name="sand" description="accent sand" />
+          <ColorRow name="primary" />
+          <ColorRow name="secondary" />
+          <ColorRow name="blue" />
+          <ColorRow name="orange" />
+          <ColorRow name="rose" />
+          <ColorRow name="yellow" />
+          <ColorRow name="sand" />
         </VStack>
       </Section>
 
-      <Section title="Surface Tokens">
-        <Text color="gray.600" mb={4}>
-          Simple surfaces using our theme palettes
-        </Text>
-        <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
-          <Box
-            bg="white"
-            color="gray.900"
-            p={4}
-            borderWidth="1px"
-            borderColor="secondary.200"
-            borderRadius="md"
-          >
-            white / gray.900
-          </Box>
-          <Box
-            bg="secondary.50"
-            color="secondary.900"
-            p={4}
-            borderWidth="1px"
-            borderColor="secondary.200"
-            borderRadius="md"
-          >
-            secondary.50 / secondary.900
-          </Box>
-          <Box
-            bg="secondary.100"
-            color="secondary.900"
-            p={4}
-            borderWidth="1px"
-            borderColor="secondary.200"
-            borderRadius="md"
-          >
-            secondary.100 / secondary.900
-          </Box>
-          <Box
-            bg="secondary.900"
-            color="white"
-            p={4}
-            borderWidth="1px"
-            borderColor="secondary.700"
-            borderRadius="md"
-          >
-            secondary.900 / white
-          </Box>
-          <Box
-            bg="primary.50"
-            color="primary.900"
-            p={4}
-            borderWidth="1px"
-            borderColor="primary.200"
-            borderRadius="md"
-          >
-            primary.50 / primary.900
-          </Box>
-          <Box
-            bg="blue.50"
-            color="blue.900"
-            p={4}
-            borderWidth="1px"
-            borderColor="blue.200"
-            borderRadius="md"
-          >
-            blue.50 / blue.900
-          </Box>
-        </Grid>
-        <HStack gap={4} mt={4} flexWrap="wrap">
-          <Box p={4} borderWidth="1px" borderColor="secondary.200" borderRadius="md">
-            border: secondary.200
-          </Box>
-          <Box p={4} borderWidth="2px" borderColor="primary.700" borderRadius="md">
-            focus: primary.700
-          </Box>
-        </HStack>
-      </Section>
-
       <Section title="Buttons">
-        <SubSection title="Default (Primary)">
-          <Text color="gray.600" fontSize="sm" mb={2}>
-            Button variants
-          </Text>
+        <HStack mb={3}>
+          <ButtonPaletteSwitcher value={buttonPalette} onChange={setButtonPalette} />
+        </HStack>
+        <SubSection title="Variants">
           <HStack gap={4} flexWrap="wrap">
-            <Button>Default Button</Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="plain">Plain</Button>
-          </HStack>
-        </SubSection>
-
-        <SubSection title="Color Palettes">
-          <HStack gap={4} flexWrap="wrap">
-            <Button colorPalette="primary">Primary</Button>
-            <Button colorPalette="secondary">Secondary</Button>
-            <Button colorPalette="blue">Blue</Button>
-            <Button colorPalette="orange">Orange</Button>
-            <Button colorPalette="rose">Rose</Button>
-            <Button colorPalette="yellow">Yellow</Button>
-            <Button colorPalette="sand">Sand</Button>
+            <Button colorPalette={buttonPalette}>Default Button</Button>
+            <Button colorPalette={buttonPalette} variant="outline">
+              Outline
+            </Button>
+            <Button colorPalette={buttonPalette} variant="ghost">
+              Ghost
+            </Button>
+            <Button colorPalette={buttonPalette} variant="link">
+              Link
+            </Button>
           </HStack>
         </SubSection>
 
         <SubSection title="Sizes">
           <HStack gap={4} alignItems="center" flexWrap="wrap">
-            <Button size="xs">XS</Button>
-            <Button size="sm">SM</Button>
-            <Button size="md">MD</Button>
-            <Button size="lg">LG</Button>
-            <Button size="xl">XL</Button>
+            <Button colorPalette={buttonPalette} size="xs">
+              XS
+            </Button>
+            <Button colorPalette={buttonPalette} size="sm">
+              SM
+            </Button>
+            <Button colorPalette={buttonPalette} size="md">
+              MD
+            </Button>
+            <Button colorPalette={buttonPalette} size="lg">
+              LG
+            </Button>
+            <Button colorPalette={buttonPalette} size="xl">
+              XL
+            </Button>
           </HStack>
         </SubSection>
 
         <SubSection title="States">
           <HStack gap={4} flexWrap="wrap">
-            <Button>Normal</Button>
-            <Button disabled>Disabled</Button>
-            <Button loading>Loading</Button>
+            <Button colorPalette={buttonPalette}>Normal</Button>
+            <Button colorPalette={buttonPalette} disabled>
+              Disabled
+            </Button>
+            <Button colorPalette={buttonPalette} loading>
+              Loading
+            </Button>
           </HStack>
         </SubSection>
       </Section>

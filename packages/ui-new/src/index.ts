@@ -17,6 +17,7 @@ export { system } from './theme';
 // Components
 export { Toaster, toaster } from './components/ui/toaster';
 export { Tooltip, type TooltipProps } from './components/ui/tooltip';
+export { SUPPORTED_COLOR_PALETTES, type SupportedColorPalette } from './theme/colors/palettes';
 
 // Re-export Chakra UI components for convenience
 export * from '@chakra-ui/react';

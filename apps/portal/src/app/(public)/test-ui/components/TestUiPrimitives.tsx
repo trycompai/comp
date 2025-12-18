@@ -43,10 +43,12 @@ export function ColorRow({
   name,
   description,
   shades = DEFAULT_SHADES,
+  highlightShade = '700',
 }: {
   name: string;
-  description: string;
+  description?: string;
   shades?: readonly string[];
+  highlightShade?: string;
 }) {
   return (
     <Box w="full">
@@ -54,9 +56,11 @@ export function ColorRow({
         <Text fontWeight="semibold" fontSize="sm">
           {name}
         </Text>
-        <Text fontSize="xs" color="gray.600">
-          {description}
-        </Text>
+        {description && (
+          <Text fontSize="xs" color="gray.600">
+            {description}
+          </Text>
+        )}
       </HStack>
       {/* Add top padding (lg+) so shade labels above swatches don't overlap the header */}
       <Flex gap={1} mt={2} pt={{ base: 0, lg: 6 }}>
@@ -69,6 +73,9 @@ export function ColorRow({
             borderRadius="sm"
             title={`${name}.${shade}`}
             position="relative"
+            outline={shade === highlightShade ? '2px solid' : undefined}
+            outlineColor={shade === highlightShade ? 'fg' : undefined}
+            outlineOffset={shade === highlightShade ? '2px' : undefined}
           >
             <Text
               position="absolute"

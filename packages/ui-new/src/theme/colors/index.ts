@@ -1,4 +1,8 @@
 export const colors = {
+  // Base colors used across recipes/semantic tokens.
+  transparent: { value: 'transparent' },
+  black: { value: '#000000' },
+  white: { value: '#FFFFFF' },
   primary: {
     50: { value: '#EAFDF3' },
     100: { value: '#D0FAE5' },

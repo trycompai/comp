@@ -7,13 +7,15 @@ export const BUTTON_BASE = {
   transition: 'all 0.2s ease-in-out',
   cursor: 'pointer',
   borderRadius: 'input',
-  border: 'none',
+  // Always reserve border space to avoid layout shift between variants/focus.
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
   outline: 'none',
   boxShadow: 'sm',
   _focusVisible: {
     borderColor: 'colorPalette.focusRing',
     boxShadow: 'focusRing',
     outline: 'none',
-    border: 'none',
   },
 } as const;
