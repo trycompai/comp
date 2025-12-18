@@ -95,4 +95,12 @@ export class CredentialRepository {
 
     return result.count;
   }
+
+  async deleteAllByConnection(connectionId: string): Promise<number> {
+    const result = await db.integrationCredentialVersion.deleteMany({
+      where: { connectionId },
+    });
+
+    return result.count;
+  }
 }

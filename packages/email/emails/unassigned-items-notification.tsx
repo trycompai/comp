@@ -5,8 +5,8 @@ import {
   Heading,
   Html,
   Link,
-  Section,
   Preview,
+  Section,
   Tailwind,
   Text,
 } from '@react-email/components';
@@ -40,7 +40,6 @@ export const UnassignedItemsNotificationEmail = ({
 }: Props) => {
   const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL ?? 'https://app.trycomp.ai';
   const link = `${baseUrl}/${organizationId}`;
-
 
   const getItemTypeLabel = (type: UnassignedItem['type']) => {
     switch (type) {
@@ -118,13 +117,12 @@ export const UnassignedItemsNotificationEmail = ({
               Member Removed - Items Require Reassignment
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Hi {userName},
-            </Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">Hi {userName},</Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              <strong>{removedMemberName}</strong> has been removed from <strong>{organizationName}</strong>.
-              As a result, the following items that were previously assigned to them now require a new assignee:
+              <strong>{removedMemberName}</strong> has been removed from{' '}
+              <strong>{organizationName}</strong>. As a result, the following items that were
+              previously assigned to them now require a new assignee:
             </Text>
 
             {Object.entries(groupedItems).map(([type, items]) => (
@@ -170,4 +168,3 @@ export const UnassignedItemsNotificationEmail = ({
 };
 
 export default UnassignedItemsNotificationEmail;
-
