@@ -8,6 +8,7 @@ import { Plus } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 import { CreateContextSheet } from './components/CreateContextSheet';
+import { PolicyUpdateProvider } from './components/policy-update-context';
 import { columns as getColumns } from './components/table/ContextColumns';
 
 export const ContextTable = ({ entries, pageCount }: { entries: Context[]; pageCount: number }) => {
@@ -29,7 +30,7 @@ export const ContextTable = ({ entries, pageCount }: { entries: Context[]; pageC
   });
   const [_, setOpenSheet] = useQueryState('create-context-sheet');
   return (
-    <>
+    <PolicyUpdateProvider>
       <DataTable table={table}>
         <DataTableToolbar table={table}>
           <Button
@@ -42,6 +43,6 @@ export const ContextTable = ({ entries, pageCount }: { entries: Context[]; pageC
         </DataTableToolbar>
       </DataTable>
       <CreateContextSheet />
-    </>
+    </PolicyUpdateProvider>
   );
 };

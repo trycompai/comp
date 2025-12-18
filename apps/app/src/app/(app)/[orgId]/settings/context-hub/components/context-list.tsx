@@ -34,10 +34,12 @@ import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ContextForm } from './context-form';
+import { usePolicyUpdate } from './policy-update-context';
 
 export function ContextList({ entries, locale }: { entries: Context[]; locale: string }) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
+  const { triggerPolicyUpdate } = usePolicyUpdate();
 
   const handleEditOpen = (id: string, open: boolean) => {
     setEditDialogOpen((prev) => ({ ...prev, [id]: open }));
@@ -108,7 +110,15 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
                           </DialogHeader>
                           <ContextForm
                             entry={entry}
-                            onSuccess={() => handleEditOpen(entry.id, false)}
+                            onSuccess={(updatedEntry) => {
+                              handleEditOpen(entry.id, false);
+                              if (updatedEntry) {
+                                triggerPolicyUpdate({
+                                  id: updatedEntry.id,
+                                  question: updatedEntry.question,
+                                });
+                              }
+                            }}
                           />
                         </DialogContent>
                       </Dialog>

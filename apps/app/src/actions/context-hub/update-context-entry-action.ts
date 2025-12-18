@@ -14,7 +14,7 @@ export const updateContextEntryAction = authActionClient
     const organizationId = ctx.session.activeOrganizationId;
     if (!organizationId) throw new Error('No active organization');
 
-    await db.context.update({
+    const updated = await db.context.update({
       where: { id, organizationId },
       data: {
         question,
@@ -34,5 +34,12 @@ export const updateContextEntryAction = authActionClient
 
     revalidatePath(path);
 
-    return { success: true };
+    return {
+      success: true,
+      entry: {
+        id: updated.id,
+        question: updated.question,
+        answer: updated.answer,
+      },
+    };
   });

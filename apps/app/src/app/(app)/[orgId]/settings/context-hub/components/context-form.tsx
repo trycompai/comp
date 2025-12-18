@@ -12,7 +12,13 @@ import { Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 
-export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?: () => void }) {
+export function ContextForm({
+  entry,
+  onSuccess,
+}: {
+  entry?: Context;
+  onSuccess?: (updatedEntry?: { id: string; question: string; answer: string }) => void;
+}) {
   const [isPending, startTransition] = useTransition();
 
   async function onSubmit(formData: FormData) {
@@ -24,9 +30,9 @@ export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?:
             question: formData.get('question') as string,
             answer: formData.get('answer') as string,
           });
-          if (result?.data) {
+          if (result?.data?.entry) {
             toast.success('Context entry updated');
-            onSuccess?.();
+            onSuccess?.(result.data.entry);
           }
         } else {
           const result = await createContextEntryAction({
