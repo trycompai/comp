@@ -3,7 +3,8 @@ import { serverApi } from '@/lib/server-api-client';
 export interface EmployeeSyncConnectionsData {
   googleWorkspaceConnectionId: string | null;
   ripplingConnectionId: string | null;
-  selectedProvider: 'google-workspace' | 'rippling' | null | undefined;
+  jumpcloudConnectionId: string | null;
+  selectedProvider: 'google-workspace' | 'rippling' | 'jumpcloud' | null | undefined;
   lastSyncAt: Date | null;
   nextSyncAt: Date | null;
 }
@@ -18,14 +19,17 @@ interface ConnectionStatus {
 export async function getEmployeeSyncConnections(
   organizationId: string,
 ): Promise<EmployeeSyncConnectionsData> {
-  const [gwResponse, ripplingResponse, providerResponse] = await Promise.all([
+  const [gwResponse, ripplingResponse, jumpcloudResponse, providerResponse] = await Promise.all([
     serverApi.post<ConnectionStatus>(
       `/v1/integrations/sync/google-workspace/status?organizationId=${organizationId}`,
     ),
     serverApi.post<ConnectionStatus>(
       `/v1/integrations/sync/rippling/status?organizationId=${organizationId}`,
     ),
-    serverApi.get<{ provider: 'google-workspace' | 'rippling' | null }>(
+    serverApi.post<ConnectionStatus>(
+      `/v1/integrations/sync/jumpcloud/status?organizationId=${organizationId}`,
+    ),
+    serverApi.get<{ provider: 'google-workspace' | 'rippling' | 'jumpcloud' | null }>(
       `/v1/integrations/sync/employee-sync-provider?organizationId=${organizationId}`,
     ),
   ]);
@@ -37,7 +41,9 @@ export async function getEmployeeSyncConnections(
       ? gwResponse.data
       : selectedProviderSlug === 'rippling'
         ? ripplingResponse.data
-        : null;
+        : selectedProviderSlug === 'jumpcloud'
+          ? jumpcloudResponse.data
+          : null;
 
   return {
     googleWorkspaceConnectionId:
@@ -47,6 +53,10 @@ export async function getEmployeeSyncConnections(
     ripplingConnectionId:
       ripplingResponse.data?.connected && ripplingResponse.data.connectionId
         ? ripplingResponse.data.connectionId
+        : null,
+    jumpcloudConnectionId:
+      jumpcloudResponse.data?.connected && jumpcloudResponse.data.connectionId
+        ? jumpcloudResponse.data.connectionId
         : null,
     selectedProvider: selectedProviderSlug,
     lastSyncAt: selectedConnection?.lastSyncAt ? new Date(selectedConnection.lastSyncAt) : null,

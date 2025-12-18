@@ -12,6 +12,8 @@ import { CredentialVaultService } from './services/credential-vault.service';
 import { ConnectionService } from './services/connection.service';
 import { OAuthCredentialsService } from './services/oauth-credentials.service';
 import { AutoCheckRunnerService } from './services/auto-check-runner.service';
+import { ConnectionAuthTeardownService } from './services/connection-auth-teardown.service';
+import { OAuthTokenRevocationService } from './services/oauth-token-revocation.service';
 import { ProviderRepository } from './repositories/provider.repository';
 import { ConnectionRepository } from './repositories/connection.repository';
 import { CredentialRepository } from './repositories/credential.repository';
@@ -38,6 +40,8 @@ import { CheckRunRepository } from './repositories/check-run.repository';
     ConnectionService,
     OAuthCredentialsService,
     AutoCheckRunnerService,
+    OAuthTokenRevocationService,
+    ConnectionAuthTeardownService,
     // Repositories
     ProviderRepository,
     ConnectionRepository,

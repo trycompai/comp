@@ -32,6 +32,15 @@ export const manifest: IntegrationManifest = {
       scopes: ['read:org', 'repo', 'read:user'],
       pkce: false,
       clientAuthMethod: 'body',
+      revoke: {
+        // Revoke the *grant* (app authorization), not just a single token.
+        // This forces GitHub to show a fresh authorization flow on reconnect.
+        url: 'https://api.github.com/applications/{CLIENT_ID}/grant',
+        method: 'DELETE',
+        auth: 'basic',
+        body: 'json',
+        tokenField: 'access_token',
+      },
       // GitHub tokens don't expire - they're valid until revoked
       supportsRefreshToken: false,
       authorizationParams: {

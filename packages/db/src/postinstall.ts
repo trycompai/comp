@@ -157,9 +157,9 @@ function shouldRunCli(force: boolean): boolean {
 
   return Boolean(
     process.env.TRIGGER_SECRET_KEY ||
-      process.env.TRIGGER_DEPLOYMENT ||
-      process.env.CI === 'true' ||
-      process.env.PRISMA_GENERATE_ON_INSTALL === '1',
+    process.env.TRIGGER_DEPLOYMENT ||
+    process.env.CI === 'true' ||
+    process.env.PRISMA_GENERATE_ON_INSTALL === '1',
   );
 }
 
