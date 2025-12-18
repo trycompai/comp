@@ -481,6 +481,11 @@
                     "type": "string",
                     "description": "Member ID of the new owner",
                     "example": "mem_xyz789"
+                  },
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID of the current owner initiating the transfer (required for API key auth, ignored for JWT auth)",
+                    "example": "usr_abc123def456"
                   }
                 },
                 "additionalProperties": false
@@ -1567,6 +1572,138 @@
           }
         ],
         "summary": "Delete member",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/{id}/unlink-device": {
+      "patch": {
+        "description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "operationId": "PeopleController_unlinkDevice_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeopleResponseDto"
+                },
+                "example": {
+                  "id": "mem_abc123def456",
+                  "organizationId": "org_abc123def456",
+                  "userId": "usr_abc123def456",
+                  "role": "member",
+                  "createdAt": "2024-01-01T00:00:00Z",
+                  "department": "it",
+                  "isActive": true,
+                  "fleetDmLabelId": 123,
+                  "user": {
+                    "id": "usr_abc123def456",
+                    "name": "John Doe",
+                    "email": "john.doe@company.com",
+                    "emailVerified": true,
+                    "image": "https://example.com/avatar.jpg",
+                    "createdAt": "2024-01-01T00:00:00Z",
+                    "updatedAt": "2024-01-15T00:00:00Z",
+                    "lastLogin": "2024-01-15T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid update data or user conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "User user@example.com is already a member of this organization"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication or insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization, member, or user not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Member with ID mem_abc123def456 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Unlink device from member",
         "tags": [
           "People"
         ]
@@ -4961,34 +5098,88 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PolicyResponseDto"
-                  }
-                },
-                "example": [
-                  {
-                    "id": "pol_abc123def456",
-                    "name": "Data Privacy Policy",
-                    "status": "draft",
-                    "content": [
-                      {
-                        "type": "paragraph",
-                        "content": [
-                          {
-                            "type": "text",
-                            "text": "..."
-                          }
-                        ]
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PolicyResponseDto"
+                      },
+                      "description": "Array of policies"
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session"
+                      ],
+                      "description": "How the request was authenticated"
+                    },
+                    "authenticatedUser": {
+                      "type": "object",
+                      "description": "Authenticated user information (only present for session auth)",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User ID",
+                          "example": "usr_abc123def456"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "User email",
+                          "example": "user@company.com"
+                        }
                       }
-                    ],
-                    "isRequiredToSign": true,
-                    "signedBy": [],
-                    "createdAt": "2024-01-01T00:00:00.000Z",
-                    "updatedAt": "2024-01-15T00:00:00.000Z",
-                    "organizationId": "org_abc123def456"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "authType"
+                  ]
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "pol_abc123def456",
+                      "name": "Data Privacy Policy",
+                      "description": "This policy outlines how we handle and protect personal data",
+                      "status": "draft",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "attrs": {
+                            "textAlign": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "This policy outlines our commitment to protecting personal data."
+                            }
+                          ]
+                        }
+                      ],
+                      "frequency": "yearly",
+                      "department": "IT",
+                      "isRequiredToSign": true,
+                      "signedBy": [],
+                      "reviewDate": "2024-12-31T00:00:00.000Z",
+                      "isArchived": false,
+                      "createdAt": "2024-01-01T00:00:00.000Z",
+                      "updatedAt": "2024-01-15T00:00:00.000Z",
+                      "lastArchivedAt": null,
+                      "lastPublishedAt": "2024-01-10T00:00:00.000Z",
+                      "organizationId": "org_abc123def456",
+                      "assigneeId": "usr_abc123def456",
+                      "approverId": "usr_xyz789abc123",
+                      "policyTemplateId": null
+                    }
+                  ],
+                  "authType": "session",
+                  "authenticatedUser": {
+                    "id": "usr_abc123def456",
+                    "email": "user@company.com"
                   }
-                ]
+                }
               }
             }
           },
@@ -7039,6 +7230,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "description": "Delete comment request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
+                    "example": "usr_abc123def456"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Comment deleted successfully",
@@ -10565,6 +10774,43 @@
         ]
       }
     },
+    "/v1/integrations/sync/jumpcloud/employees": {
+      "post": {
+        "operationId": "SyncController_syncJumpCloudEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/jumpcloud/status": {
+      "post": {
+        "operationId": "SyncController_getJumpCloudStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
     "/v1/integrations/sync/employee-sync-provider": {
       "get": {
         "operationId": "SyncController_getEmployeeSyncProvider_v1",
@@ -13375,6 +13621,11 @@
             "description": "Description of the attachment",
             "example": "Meeting notes from Q4 planning session",
             "maxLength": 500
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [
@@ -13543,6 +13794,11 @@
             "items": {
               "$ref": "#/components/schemas/UploadAttachmentDto"
             }
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [
@@ -13559,6 +13815,11 @@
             "description": "Updated content of the comment",
             "example": "This task needs to be completed by end of week (updated)",
             "maxLength": 2000
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [

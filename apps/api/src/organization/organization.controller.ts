@@ -119,25 +119,40 @@ export class OrganizationController {
     @AuthContext() authContext: AuthContextType,
     @Body() transferData: TransferOwnershipDto,
   ) {
-    if (!authContext.userId) {
-      throw new BadRequestException(
-        'User ID is required for this operation. This endpoint requires session authentication.',
-      );
+    // For API key auth, userId must be provided in the request body
+    // For JWT auth, userId comes from the authenticated session
+    let userId: string;
+    if (authContext.isApiKey) {
+      // For API key auth, userId must be provided in the DTO
+      if (!transferData.userId) {
+        throw new BadRequestException(
+          'User ID is required when using API key authentication. Provide userId in the request body.',
+        );
+      }
+      userId = transferData.userId;
+    } else {
+      // For JWT auth, use the authenticated user's ID
+      if (!authContext.userId) {
+        throw new BadRequestException(
+          'User ID is required for this operation. This endpoint requires session authentication.',
+        );
+      }
+      userId = authContext.userId;
     }
 
     const result = await this.organizationService.transferOwnership(
       organizationId,
-      authContext.userId,
+      userId,
       transferData.newOwnerId,
     );
 
     return {
       ...result,
       authType: authContext.authType,
-      // Include user context for session auth (helpful for debugging)
+      // Include user context (helpful for debugging)
       authenticatedUser: {
-        id: authContext.userId,
-        email: authContext.userEmail,
+        id: userId,
+        ...(authContext.userEmail && { email: authContext.userEmail }),
       },
     };
   }

@@ -49,4 +49,15 @@ export class CreateCommentDto {
   @ValidateNested({ each: true })
   @Type(() => UploadAttachmentDto)
   attachments?: UploadAttachmentDto[];
+
+  @ApiProperty({
+    description:
+      'User ID of the comment author (required for API key auth, ignored for JWT auth)',
+    example: 'usr_abc123def456',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  userId?: string;
 }

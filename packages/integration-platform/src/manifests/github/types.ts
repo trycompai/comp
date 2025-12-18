@@ -75,3 +75,23 @@ export interface GitHubCodeScanningDefaultSetup {
   query_suite?: 'default' | 'extended';
   updated_at?: string;
 }
+
+/**
+ * Git tree response
+ * Returned by /repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1
+ */
+export interface GitHubTreeResponse {
+  sha: string;
+  url: string;
+  truncated: boolean;
+  tree: GitHubTreeEntry[];
+}
+
+export interface GitHubTreeEntry {
+  path: string;
+  mode: string;
+  type: 'blob' | 'tree';
+  sha: string;
+  size?: number;
+  url: string;
+}
