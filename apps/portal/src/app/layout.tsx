@@ -4,9 +4,9 @@ import { initializeServer } from '@comp/analytics/server';
 import { cn } from '@comp/ui/cn';
 // import '@comp/ui/globals.css';
 import { Provider as ChakraProvider } from '@trycompai/ui-new';
+import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
-import localFont from 'next/font/local';
 import { headers } from 'next/headers';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Suspense } from 'react';
@@ -66,12 +66,6 @@ export const viewport = {
   ],
 };
 
-const font = localFont({
-  src: '../../public/fonts/GeneralSans-Variable.ttf',
-  display: 'swap',
-  variable: '--font-general-sans',
-});
-
 export const preferredRegion = ['auto'];
 
 if (env.NEXT_PUBLIC_POSTHOG_KEY && env.NEXT_PUBLIC_POSTHOG_HOST) {
@@ -92,7 +86,8 @@ export default async function Layout(props: { children: React.ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          `${GeistMono.variable} ${font.variable}`,
+          // `variable` only defines the CSS variables. `className` actually applies the font-family.
+          `${GeistSans.className} ${GeistSans.variable} ${GeistMono.variable}`,
           'overscroll-none whitespace-pre-line antialiased',
         )}
       >

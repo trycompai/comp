@@ -1,1 +1,1 @@
-export * from './button.recipe';
+export * from './button';

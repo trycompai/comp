@@ -64,7 +64,7 @@ export function ColorRow({
           <Box
             key={shade}
             bg={`${name}.${shade}`}
-            h={8}
+            h={16}
             flex={1}
             borderRadius="sm"
             title={`${name}.${shade}`}
