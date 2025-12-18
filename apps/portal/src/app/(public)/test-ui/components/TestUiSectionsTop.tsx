@@ -15,14 +15,11 @@ import {
   Text,
   Textarea,
   VStack,
+  type SupportedColorPalette,
 } from '@trycompai/ui-new';
-import { useState } from 'react';
-import { ButtonPaletteSwitcher, type ButtonColorPalette } from './ButtonPaletteSwitcher';
 import { ColorRow, Section, SubSection } from './TestUiPrimitives';
 
-export function TestUiSectionsTop() {
-  const [buttonPalette, setButtonPalette] = useState<ButtonColorPalette>('primary');
-
+export function TestUiSectionsTop({ palette }: { palette: SupportedColorPalette }) {
   return (
     <>
       <Section title="Color Tokens">
@@ -38,19 +35,16 @@ export function TestUiSectionsTop() {
       </Section>
 
       <Section title="Buttons">
-        <HStack mb={3}>
-          <ButtonPaletteSwitcher value={buttonPalette} onChange={setButtonPalette} />
-        </HStack>
         <SubSection title="Variants">
           <HStack gap={4} flexWrap="wrap">
-            <Button colorPalette={buttonPalette}>Default Button</Button>
-            <Button colorPalette={buttonPalette} variant="outline">
+            <Button colorPalette={palette}>Default Button</Button>
+            <Button colorPalette={palette} variant="outline">
               Outline
             </Button>
-            <Button colorPalette={buttonPalette} variant="ghost">
+            <Button colorPalette={palette} variant="ghost">
               Ghost
             </Button>
-            <Button colorPalette={buttonPalette} variant="link">
+            <Button colorPalette={palette} isLink>
               Link
             </Button>
           </HStack>
@@ -58,31 +52,31 @@ export function TestUiSectionsTop() {
 
         <SubSection title="Sizes">
           <HStack gap={4} alignItems="center" flexWrap="wrap">
-            <Button colorPalette={buttonPalette} size="xs">
-              XS
+            <Button colorPalette={palette} size="xs">
+              XS Button
             </Button>
-            <Button colorPalette={buttonPalette} size="sm">
-              SM
+            <Button colorPalette={palette} size="sm">
+              SM Button
             </Button>
-            <Button colorPalette={buttonPalette} size="md">
-              MD
+            <Button colorPalette={palette} size="md">
+              MD Button
             </Button>
-            <Button colorPalette={buttonPalette} size="lg">
-              LG
+            <Button colorPalette={palette} size="lg">
+              LG Button
             </Button>
-            <Button colorPalette={buttonPalette} size="xl">
-              XL
+            <Button colorPalette={palette} size="xl">
+              XL Button
             </Button>
           </HStack>
         </SubSection>
 
         <SubSection title="States">
           <HStack gap={4} flexWrap="wrap">
-            <Button colorPalette={buttonPalette}>Normal</Button>
-            <Button colorPalette={buttonPalette} disabled>
+            <Button colorPalette={palette}>Normal</Button>
+            <Button colorPalette={palette} disabled>
               Disabled
             </Button>
-            <Button colorPalette={buttonPalette} loading>
+            <Button colorPalette={palette} loading>
               Loading
             </Button>
           </HStack>
@@ -90,24 +84,20 @@ export function TestUiSectionsTop() {
       </Section>
 
       <Section title="Badges">
-        <SubSection title="Color Palettes">
-          <HStack gap={4} flexWrap="wrap">
-            <Badge colorPalette="primary">Primary</Badge>
-            <Badge colorPalette="secondary">Secondary</Badge>
-            <Badge colorPalette="blue">Blue</Badge>
-            <Badge colorPalette="orange">Orange</Badge>
-            <Badge colorPalette="rose">Rose</Badge>
-            <Badge colorPalette="yellow">Yellow</Badge>
-            <Badge colorPalette="sand">Sand</Badge>
-          </HStack>
-        </SubSection>
-
         <SubSection title="Variants">
           <HStack gap={4} flexWrap="wrap">
-            <Badge variant="solid">Solid</Badge>
-            <Badge variant="subtle">Subtle</Badge>
-            <Badge variant="outline">Outline</Badge>
-            <Badge variant="surface">Surface</Badge>
+            <Badge colorPalette={palette} variant="solid">
+              Solid
+            </Badge>
+            <Badge colorPalette={palette} variant="subtle">
+              Subtle
+            </Badge>
+            <Badge colorPalette={palette} variant="outline">
+              Outline
+            </Badge>
+            <Badge colorPalette={palette} variant="surface">
+              Surface
+            </Badge>
           </HStack>
         </SubSection>
       </Section>
@@ -131,30 +121,30 @@ export function TestUiSectionsTop() {
           <VStack align="stretch" gap={4}>
             <SubSection title="Checkbox">
               <VStack align="start" gap={2}>
-                <Checkbox.Root defaultChecked colorPalette="primary">
+                <Checkbox.Root defaultChecked colorPalette={palette}>
                   <Checkbox.HiddenInput />
                   <Checkbox.Control />
-                  <Checkbox.Label>Checked (primary)</Checkbox.Label>
+                  <Checkbox.Label>Checked</Checkbox.Label>
                 </Checkbox.Root>
-                <Checkbox.Root colorPalette="secondary">
+                <Checkbox.Root colorPalette={palette}>
                   <Checkbox.HiddenInput />
                   <Checkbox.Control />
-                  <Checkbox.Label>Unchecked (secondary)</Checkbox.Label>
+                  <Checkbox.Label>Unchecked</Checkbox.Label>
                 </Checkbox.Root>
               </VStack>
             </SubSection>
 
             <SubSection title="Switch">
               <VStack align="start" gap={2}>
-                <Switch.Root defaultChecked colorPalette="primary">
+                <Switch.Root defaultChecked colorPalette={palette}>
                   <Switch.HiddenInput />
                   <Switch.Control />
                   <Switch.Label>Enabled</Switch.Label>
                 </Switch.Root>
-                <Switch.Root colorPalette="secondary">
+                <Switch.Root colorPalette={palette}>
                   <Switch.HiddenInput />
                   <Switch.Control />
-                  <Switch.Label>Secondary color</Switch.Label>
+                  <Switch.Label>Disabled</Switch.Label>
                 </Switch.Root>
               </VStack>
             </SubSection>
@@ -204,17 +194,17 @@ export function TestUiSectionsTop() {
           <VStack align="stretch" gap={4}>
             <SubSection title="Progress Bar">
               <VStack align="stretch" gap={2}>
-                <Progress.Root value={30} colorPalette="primary">
+                <Progress.Root value={30} colorPalette={palette}>
                   <Progress.Track>
                     <Progress.Range />
                   </Progress.Track>
                 </Progress.Root>
-                <Progress.Root value={60} colorPalette="blue">
+                <Progress.Root value={60} colorPalette={palette}>
                   <Progress.Track>
                     <Progress.Range />
                   </Progress.Track>
                 </Progress.Root>
-                <Progress.Root value={80} colorPalette="orange">
+                <Progress.Root value={80} colorPalette={palette}>
                   <Progress.Track>
                     <Progress.Range />
                   </Progress.Track>
@@ -226,10 +216,8 @@ export function TestUiSectionsTop() {
           <VStack align="stretch" gap={4}>
             <SubSection title="Spinner">
               <HStack gap={6} flexWrap="wrap">
-                <Spinner colorPalette="primary" />
-                <Spinner colorPalette="blue" />
-                <Spinner colorPalette="orange" />
-                <Spinner size="lg" colorPalette="primary" />
+                <Spinner colorPalette={palette} />
+                <Spinner size="lg" colorPalette={palette} />
               </HStack>
             </SubSection>
 

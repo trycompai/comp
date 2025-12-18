@@ -13,7 +13,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "prettier --check ."
+    "lint": "prettier --check .",
+    "typegen": "bunx @chakra-ui/cli typegen ./src/theme/index.ts --outdir ./src/styled-system"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.30.0",
@@ -29,6 +30,7 @@
     "@trycompai/tsconfig": "*",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.1",
+    "@chakra-ui/cli": "^3.0.0",
     "eslint": "^9.17.0",
     "glob": "^11.0.0",
     "tsup": "^8.3.5",

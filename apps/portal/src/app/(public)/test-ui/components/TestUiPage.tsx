@@ -1,40 +1,51 @@
 'use client';
 
-import { Box, ColorModeButton, Container, Flex, Heading, Text } from '@trycompai/ui-new';
+import {
+  Box,
+  ColorModeButton,
+  Container,
+  Flex,
+  Heading,
+  type SupportedColorPalette,
+} from '@trycompai/ui-new';
+import { useState } from 'react';
+import { ButtonPaletteSwitcher } from './ButtonPaletteSwitcher';
 import { TestUiSectionsBottom } from './TestUiSectionsBottom';
 import { TestUiSectionsTop } from './TestUiSectionsTop';
 
 export function TestUiPage() {
+  const [palette, setPalette] = useState<SupportedColorPalette>('primary');
+
   return (
-    <Box pb="20">
-      <Container maxW="1400px" py={8}>
-        <Heading size="2xl" mb={8}>
-          Design System Preview
-        </Heading>
-
-        <TestUiSectionsTop />
-        <TestUiSectionsBottom />
-      </Container>
-
+    <Box pb="12">
       <Box
-        position="fixed"
-        bottom="0"
-        left="0"
-        right="0"
-        borderTopWidth="1px"
-        borderTopColor="border"
-        bg="white"
-        zIndex="overlay"
+        position="sticky"
+        top="0"
+        zIndex="sticky"
+        bg="bg"
+        borderBottomWidth="1px"
+        borderBottomColor="border"
       >
-        <Container maxW="1400px" py="3">
-          <Flex align="center" justify="space-between" gap="3">
-            <Text color="secondary.700" fontSize="sm">
-              Theme
-            </Text>
-            <ColorModeButton />
+        <Container maxW="1400px" py="4">
+          <Flex
+            align={{ base: 'stretch', md: 'center' }}
+            justify="space-between"
+            direction={{ base: 'column', md: 'row' }}
+            gap="4"
+          >
+            <Heading size="xl">Design System Preview</Heading>
+            <Flex align="center" justify="space-between" gap="4" flexWrap="wrap">
+              <ButtonPaletteSwitcher value={palette} onChange={setPalette} />
+              <ColorModeButton />
+            </Flex>
           </Flex>
         </Container>
       </Box>
+
+      <Container maxW="1400px" py={8}>
+        <TestUiSectionsTop palette={palette} />
+        <TestUiSectionsBottom palette={palette} />
+      </Container>
     </Box>
   );
 }

@@ -26,11 +26,6 @@ const PLAIN_INTERACTIONS = {
   _active: { color: 'colorPalette.active' },
 } as const;
 
-const LINK_INTERACTIONS = {
-  _hover: { color: 'colorPalette.emphasized', textDecoration: 'underline' },
-  _active: { color: 'colorPalette.active', textDecoration: 'underline' },
-} as const;
-
 export const BUTTON_VARIANTS = {
   solid: {
     bg: 'colorPalette.solid',
@@ -57,13 +52,5 @@ export const BUTTON_VARIANTS = {
     color: 'colorPalette.fg',
     boxShadow: 'none',
     ...PLAIN_INTERACTIONS,
-  },
-  link: {
-    bg: 'transparent',
-    borderColor: 'transparent',
-    color: 'colorPalette.fg',
-    boxShadow: 'none',
-    px: '0',
-    ...LINK_INTERACTIONS,
   },
 } as const;

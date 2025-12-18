@@ -1,11 +1,12 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
 import { colors } from './colors';
 import { globalCss } from './global-css';
-import { buttonRecipe } from './recipes';
+import { alertSlotRecipe, buttonRecipe } from './recipes';
 import { semanticColors } from './semantic-tokens';
 import { borders, fonts, fontWeights, letterSpacings, lineHeights, radii, shadows } from './tokens';
 
 const config = defineConfig({
+  preflight: true,
   globalCss,
   theme: {
     tokens: {
@@ -23,6 +24,9 @@ const config = defineConfig({
     },
     recipes: {
       button: buttonRecipe,
+    },
+    slotRecipes: {
+      alert: alertSlotRecipe,
     },
   },
 });

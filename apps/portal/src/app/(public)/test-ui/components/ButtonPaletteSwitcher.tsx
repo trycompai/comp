@@ -10,10 +10,6 @@ import {
 
 export type ButtonColorPalette = SupportedColorPalette;
 
-const isButtonColorPalette = (value: string): value is ButtonColorPalette => {
-  return (SUPPORTED_COLOR_PALETTES as readonly string[]).includes(value);
-};
-
 export function ButtonPaletteSwitcher({
   value,
   onChange,

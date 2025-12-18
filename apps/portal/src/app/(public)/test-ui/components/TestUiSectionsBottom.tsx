@@ -17,11 +17,12 @@ import {
   Tabs,
   Text,
   VStack,
+  type SupportedColorPalette,
 } from '@trycompai/ui-new';
 import { useState } from 'react';
 import { Section, SubSection } from './TestUiPrimitives';
 
-export function TestUiSectionsBottom() {
+export function TestUiSectionsBottom({ palette }: { palette: SupportedColorPalette }) {
   return (
     <>
       <Section title="Alerts">
@@ -58,7 +59,7 @@ export function TestUiSectionsBottom() {
       </Section>
 
       <Section title="Tabs">
-        <Tabs.Root defaultValue="tab1" colorPalette="primary">
+        <Tabs.Root defaultValue="tab1" colorPalette={palette}>
           <Tabs.List>
             <Tabs.Trigger value="tab1">Overview</Tabs.Trigger>
             <Tabs.Trigger value="tab2">Settings</Tabs.Trigger>
@@ -136,7 +137,9 @@ export function TestUiSectionsBottom() {
       <Section title="Menu">
         <Menu.Root>
           <Menu.Trigger asChild>
-            <Button variant="outline">Open Menu</Button>
+            <Button colorPalette={palette} variant="outline">
+              Open Menu
+            </Button>
           </Menu.Trigger>
           <Menu.Positioner>
             <Menu.Content>
@@ -152,7 +155,7 @@ export function TestUiSectionsBottom() {
       </Section>
 
       <Section title="Dialog">
-        <DialogExample />
+        <DialogExample palette={palette} />
       </Section>
 
       <Section title="Typography">
@@ -207,12 +210,14 @@ export function TestUiSectionsBottom() {
   );
 }
 
-function DialogExample() {
+function DialogExample({ palette }: { palette: SupportedColorPalette }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Open Dialog</Button>
+      <Button colorPalette={palette} onClick={() => setOpen(true)}>
+        Open Dialog
+      </Button>
       <Dialog.Root open={open} onOpenChange={(e) => setOpen(e.open)}>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -224,10 +229,12 @@ function DialogExample() {
               <Text>This is the dialog content.</Text>
             </Dialog.Body>
             <Dialog.Footer>
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button colorPalette={palette} variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => setOpen(false)}>Confirm</Button>
+              <Button colorPalette={palette} onClick={() => setOpen(false)}>
+                Confirm
+              </Button>
             </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>

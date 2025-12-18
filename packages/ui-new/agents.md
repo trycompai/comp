@@ -15,48 +15,6 @@ This package is our Chakra v3 design system (`@trycompai/ui-new`). The goal is *
 - **Light palettes can use black contrast**
   - `yellow` and `sand` intentionally use `colorPalette.contrast = black` for readability.
 
-### Folder structure
-
-```
-packages/ui-new/src/
-  components/
-    ui/
-      provider.tsx               # ChakraProvider wiring
-      color-mode.tsx             # Color mode helpers
-      ...                        # UI wrappers
-  theme/
-    index.ts                     # createSystem + theme config (imports everything)
-    global-css.ts                # token-driven globalCss (low specificity :where)
-    colors/
-      index.ts                   # raw palettes (primary/secondary/blue/orange/rose/yellow/sand)
-    tokens/
-      borders.ts                 # border style tokens (subtle/strong/none)
-      radii.ts                   # radii tokens + semantic radii (input/card)
-      shadows.ts                 # focus ring shadow token (palette-aware)
-      typography.ts              # Geist fonts + brand line-height/letter-spacing + weights
-      index.ts                   # barrel exports for tokens/*
-    semantic/
-      helpers.ts                 # {colors.<palette>.<shade>} refs + token helpers
-      types.ts                   # types used by semantic token factories
-      semantic-colors.ts         # exports semanticColors
-      palettes/
-        dark-palette.ts          # factory for “dark” palettes (white contrast)
-        light-palette.ts         # factory for “light” palettes (black contrast)
-        secondary-palette.ts     # neutral palette semantics
-      index.ts                   # barrel export
-    semantic-tokens.ts           # backwards-compatible re-export of semanticColors
-    recipes/
-      index.ts                   # exports recipes
-      shared/
-        color-palettes.ts        # SUPPORTED_COLOR_PALETTES + variant generator
-      button/
-        defaults.ts              # BUTTON_DEFAULT_VARIANTS
-        sizes.ts                 # BUTTON_SIZES
-        variants.ts              # BUTTON_VARIANTS
-        recipe.ts                # buttonRecipe
-        index.ts                 # barrel for button recipe folder
-```
-
 ### How to add a new color palette
 
 - **1) Add raw palette**
@@ -91,6 +49,18 @@ packages/ui-new/src/
   - `theme/global-css.ts` for document + headings + form controls
 
 ### Required checks (before shipping)
+
+### Typegen (required after theme changes)
+
+Chakra v3 relies on **generated TypeScript types** for tokens/recipes. When you change anything under `src/theme/` (tokens, semantic tokens, recipes, palettes), you **must** regenerate the types so consumers get correct prop types (e.g. new recipe props like `link`).
+
+Run:
+
+```bash
+bun run -F @trycompai/ui-new typegen
+```
+
+Then run the normal checks:
 
 Run these (scoped to this package):
 
