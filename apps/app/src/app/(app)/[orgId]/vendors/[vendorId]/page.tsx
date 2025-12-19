@@ -16,10 +16,14 @@ import { SecondaryFields } from './components/secondary-fields/secondary-fields'
 
 interface PageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;
+  searchParams?: Promise<{
+    taskItemId?: string;
+  }>;
 }
 
-export default async function VendorPage({ params }: PageProps) {
+export default async function VendorPage({ params, searchParams }: PageProps) {
   const { vendorId, orgId } = await params;
+  const { taskItemId } = (await searchParams) ?? {};
   const vendor = await getVendor(vendorId);
   const assignees = await getAssignees();
 
@@ -27,26 +31,39 @@ export default async function VendorPage({ params }: PageProps) {
     redirect('/');
   }
 
+  const shortTaskId = (id: string) => id.slice(-6).toUpperCase();
+
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
         { label: 'Vendors', href: `/${orgId}/vendors` },
-        { label: vendor.vendor?.name ?? '', current: true },
+        ...(taskItemId
+          ? [
+              { label: vendor.vendor?.name ?? '', href: `/${orgId}/vendors/${vendorId}` },
+              { label: shortTaskId(taskItemId), current: true },
+            ]
+          : [{ label: vendor.vendor?.name ?? '', current: true }]),
       ]}
       headerRight={<VendorActions vendorId={vendorId} />}
     >
       <div className="flex flex-col gap-4">
-        <SecondaryFields
-          vendor={vendor.vendor}
-          assignees={assignees}
-          globalVendor={vendor.globalVendor}
-        />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <VendorInherentRiskChart vendor={vendor.vendor} />
-          <VendorResidualRiskChart vendor={vendor.vendor} />
-        </div>
+        {!taskItemId && (
+          <>
+            <SecondaryFields
+              vendor={vendor.vendor}
+              assignees={assignees}
+              globalVendor={vendor.globalVendor}
+            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <VendorInherentRiskChart vendor={vendor.vendor} />
+              <VendorResidualRiskChart vendor={vendor.vendor} />
+            </div>
+          </>
+        )}
         <TaskItems entityId={vendorId} entityType="vendor" />
-        <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
+        {!taskItemId && (
+          <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
+        )}
       </div>
     </PageWithBreadcrumb>
   );

@@ -56,7 +56,7 @@ import {
   ChevronDown,
   Circle,
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { format } from 'date-fns';
@@ -103,6 +103,8 @@ interface TaskItemItemProps {
   sortBy?: TaskItemSortBy;
   sortOrder?: TaskItemSortOrder;
   filters?: TaskItemFilters;
+  isExpanded?: boolean;
+  onToggleExpanded?: () => void;
   onStatusOrPriorityChange?: () => void;
 }
 
@@ -115,10 +117,11 @@ export function TaskItemItem({
   sortBy = 'createdAt',
   sortOrder = 'desc',
   filters = {},
+  isExpanded = false,
+  onToggleExpanded,
   onStatusOrPriorityChange,
 }: TaskItemItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [editedTitle, setEditedTitle] = useState(taskItem.title);
   const [editedDescription, setEditedDescription] = useState(taskItem.description || '');
   const [editedStatus, setEditedStatus] = useState<TaskItemStatus>(taskItem.status);
@@ -157,7 +160,6 @@ export function TaskItemItem({
     setEditedStatus(taskItem.status);
     setEditedPriority(taskItem.priority);
     setEditedAssigneeId(taskItem.assignee?.id || null);
-    setIsDetailOpen(false); // Close detail dialog when opening edit form
     setIsEditDialogOpen(true);
   };
 
@@ -327,7 +329,7 @@ export function TaskItemItem({
           if (target.closest('button') || target.closest('[role="menuitem"]')) {
             return;
           }
-          setIsDetailOpen(true);
+          onToggleExpanded?.();
         }}
       >
         <div className="flex-1 flex items-center gap-3 text-sm w-full">
@@ -631,127 +633,21 @@ export function TaskItemItem({
         </DialogContent>
       </Dialog>
 
-      {/* Task Detail Dialog */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span>{taskItem.title}</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    className={`h-6 w-6 rounded-md cursor-pointer select-none transition-colors duration-150 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center justify-center ${getStatusColor(taskItem.status)}`}
-                    aria-label={`Status: ${taskItem.status.replace('_', ' ')}`}
-                    title={taskItem.status.replace('_', ' ')}
-                  >
-                    {(() => {
-                      const StatusIcon = getStatusIcon(taskItem.status);
-                      return <StatusIcon className="h-4 w-4 stroke-[2]" />;
-                    })()}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40">
-                  {STATUS_OPTIONS.map((option) => {
-                    const isSelected = taskItem.status === option.value;
-                    return (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onSelect={() => handleStatusChange(option.value)}
-                        className={`cursor-pointer ${isSelected ? 'bg-accent font-medium' : ''}`}
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          {(() => {
-                            const StatusIcon = getStatusIcon(option.value);
-                            return (
-                              <StatusIcon
-                                className={`h-3.5 w-3.5 stroke-[2] ${
-                                  option.value === 'done'
-                                      ? 'text-primary'
-                                    : option.value === 'in_progress'
-                                      ? 'text-blue-600 dark:text-blue-400'
-                                      : option.value === 'in_review'
-                                        ? 'text-purple-600 dark:text-purple-400'
-                                        : option.value === 'canceled'
-                                          ? 'text-slate-600 dark:text-slate-400'
-                                          : 'text-slate-600 dark:text-slate-400'
-                                }`}
-                              />
-                            );
-                          })()}
-                          <span>{option.label}</span>
-                          {isSelected && (
-                            <span className="ml-auto text-xs">✓</span>
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    className={`h-6 w-6 rounded-md cursor-pointer select-none transition-colors duration-150 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center justify-center ${getPriorityColor(taskItem.priority)}`}
-                    aria-label={`Priority: ${taskItem.priority}`}
-                    title={taskItem.priority}
-                  >
-                    {(() => {
-                      const PriorityIcon = getPriorityIcon(taskItem.priority);
-                      return <PriorityIcon className="h-4 w-4 stroke-[2]" />;
-                    })()}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40">
-                  {PRIORITY_OPTIONS.map((option) => {
-                    const isSelected = taskItem.priority === option.value;
-                    return (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onSelect={() => handlePriorityChange(option.value)}
-                        className={`cursor-pointer ${isSelected ? 'bg-accent font-medium' : ''}`}
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          {(() => {
-                            const PriorityIcon = getPriorityIcon(option.value);
-                            return (
-                              <PriorityIcon
-                                className={`h-3.5 w-3.5 stroke-[2] ${
-                                  option.value === 'urgent'
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : option.value === 'high'
-                                      ? 'text-pink-600 dark:text-pink-400'
-                                      : option.value === 'medium'
-                                        ? 'text-amber-600 dark:text-amber-400'
-                                        : option.value === 'low'
-                                          ? 'text-slate-600 dark:text-slate-400'
-                                          : 'text-slate-600 dark:text-slate-400'
-                                }`}
-                              />
-                            );
-                          })()}
-                          <span>{option.label}</span>
-                          {isSelected && (
-                            <span className="ml-auto text-xs">✓</span>
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div className="flex items-center gap-4 text-sm mt-2">
+      {/* Inline Task Details (no modal) */}
+      {isExpanded && (
+        <div className="mt-2 rounded-lg border border-border bg-muted/10 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-medium truncate">{taskItem.title}</h4>
                 <span className="text-[10px] font-mono font-medium text-muted-foreground/70 uppercase tracking-wider">
                   {getTaskIdShort(taskItem.id)}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  Created {formatShortDate(taskItem.createdAt)}
-                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>Created {formatShortDate(taskItem.createdAt)}</span>
                 {taskItem.assignee && (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
                     <Avatar className="h-4 w-4 border border-border">
                       <AvatarImage
                         src={taskItem.assignee.user.image || undefined}
@@ -765,26 +661,41 @@ export function TaskItemItem({
                   </span>
                 )}
               </div>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={onToggleExpanded}>
+                Close
+              </Button>
+              <Button size="sm" onClick={handleEditToggle}>
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Edit
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3">
             {taskItem.description ? (
               <div>
-                <h4 className="text-sm font-medium mb-2">Description</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{taskItem.description}</p>
+                <div className="text-xs font-medium mb-1">Description</div>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {taskItem.description}
+                </p>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic">No description provided.</p>
+              <p className="text-sm text-muted-foreground italic">
+                No description provided.
+              </p>
             )}
-            <div className="flex flex-col gap-1.5 text-xs text-muted-foreground pt-2 border-t">
-              <div className="flex items-center gap-2">
+
+            <div className="flex flex-col gap-1.5 text-xs text-muted-foreground pt-3 border-t border-border">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span>Created by {taskItem.createdBy.user.name}</span>
                 {taskItem.updatedBy && taskItem.updatedBy.id !== taskItem.createdBy.id && (
                   <span>• Updated by {taskItem.updatedBy.user.name}</span>
                 )}
               </div>
               {taskItem.assignee && (
-                <div className="flex items-center gap-1.5">
+                <div>
                   <span>
                     Assigned by{' '}
                     {taskItem.updatedBy && taskItem.updatedBy.id !== taskItem.createdBy.id
@@ -795,17 +706,8 @@ export function TaskItemItem({
               )}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
-              Close
-            </Button>
-            <Button onClick={() => { setIsDetailOpen(false); handleEditToggle(); }}>
-              <Pencil className="mr-2 h-3.5 w-3.5" />
-              Edit Task
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>

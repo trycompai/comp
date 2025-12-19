@@ -16,6 +16,8 @@ interface TaskItemListProps {
   sortBy?: TaskItemSortBy;
   sortOrder?: TaskItemSortOrder;
   filters?: TaskItemFilters;
+  selectedTaskItemId?: string | null;
+  onSelectTaskItemId?: (taskItemId: string | null) => void;
   onStatusOrPriorityChange?: () => void;
 }
 
@@ -28,6 +30,8 @@ export function TaskItemList({
   sortBy = 'createdAt',
   sortOrder = 'desc',
   filters = {},
+  selectedTaskItemId = null,
+  onSelectTaskItemId,
   onStatusOrPriorityChange,
 }: TaskItemListProps) {
   return (
@@ -43,6 +47,10 @@ export function TaskItemList({
           sortBy={sortBy}
           sortOrder={sortOrder}
           filters={filters}
+          isExpanded={selectedTaskItemId === taskItem.id}
+          onToggleExpanded={() =>
+            onSelectTaskItemId?.(selectedTaskItemId === taskItem.id ? null : taskItem.id)
+          }
           onStatusOrPriorityChange={onStatusOrPriorityChange}
         />
       ))}

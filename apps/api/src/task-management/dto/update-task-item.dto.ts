@@ -1,11 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskItemPriority, TaskItemStatus } from "@db";
-import { IsEnum, IsOptional, IsString, ValidateIf } from "class-validator";
+import { IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf } from "class-validator";
 
 export class UpdateTaskItemDto {
     @ApiPropertyOptional({ description: 'Task title' })
     @IsOptional()
     @IsString()
+    @IsNotEmpty()
     title?: string;
 
     @ApiPropertyOptional({ description: 'Task description' })

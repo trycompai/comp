@@ -1,18 +1,18 @@
 'use client';
 
-import { useTaskItems, useTaskItemsStats, type TaskItemSortBy, type TaskItemSortOrder, type TaskItemFilters, type TaskItemStatus, type TaskItemPriority } from '@/hooks/use-task-items';
+import { useTaskItems, useTaskItemsStats, type TaskItemSortBy, type TaskItemSortOrder, type TaskItemFilters } from '@/hooks/use-task-items';
 import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Badge } from '@comp/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Card, CardContent, CardHeader } from '@comp/ui/card';
 import type { TaskItemEntityType } from '@/hooks/use-task-items';
-import { Plus, X, Loader2, ArrowUpDown, Filter, Flag, Users } from 'lucide-react';
+import { Plus, X, Loader2 } from 'lucide-react';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { TaskItemForm } from './TaskItemForm';
-import { TaskItemList } from './TaskItemList';
-import { TaskItemPagination } from './TaskItemPagination';
+import { TaskItemFocusView } from './TaskItemFocusView';
+import { TaskItemsHeader } from './TaskItemsHeader';
+import { TaskItemsFilters } from './TaskItemsFilters';
+import { TaskItemsContent } from './TaskItemsContent';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 interface TaskItemsProps {
   entityId: string;
@@ -25,6 +25,8 @@ interface TaskItemsProps {
   variant?: 'card' | 'inline';
   /** Optional anchor id for deep-linking to this section */
   anchorId?: string;
+  /** Callback to notify parent when focus mode changes */
+  onFocusModeChange?: (isFocusMode: boolean) => void;
 }
 
 /**
@@ -51,6 +53,7 @@ export const TaskItems = ({
   description,
   variant = 'card',
   anchorId = 'task-items',
+  onFocusModeChange,
 }: TaskItemsProps) => {
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
@@ -58,7 +61,14 @@ export const TaskItems = ({
   const [sortBy, setSortBy] = useState<TaskItemSortBy>('createdAt');
   const [sortOrder, setSortOrder] = useState<TaskItemSortOrder>('desc');
   const [filters, setFilters] = useState<TaskItemFilters>({});
+  const [selectedTaskItemId, setSelectedTaskItemId] = useState<string | null>(
+    null,
+  );
   const previousDataRef = useRef<typeof taskItemsResponse>(undefined);
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const {
     data: taskItemsResponse,
@@ -112,7 +122,35 @@ export const TaskItems = ({
     setPage(1); // Reset to first page when filter changes
   };
 
-  const hasActiveFilters = filters.status || filters.priority || filters.assigneeId;
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
+  // Sync selected task with URL (?taskItemId=...) so breadcrumbs + notification deep-links work.
+  useEffect(() => {
+    const taskItemIdFromUrl = searchParams.get('taskItemId');
+    setSelectedTaskItemId(taskItemIdFromUrl || null);
+  }, [searchParams]);
+
+  // Notify parent when focus mode changes
+  useEffect(() => {
+    onFocusModeChange?.(Boolean(selectedTaskItemId));
+  }, [selectedTaskItemId, onFocusModeChange]);
+
+  const handleSelectTaskItemId = (taskItemId: string | null) => {
+    setSelectedTaskItemId(taskItemId);
+    const next = new URLSearchParams(searchParams.toString());
+    if (taskItemId) {
+      next.set('taskItemId', taskItemId);
+    } else {
+      next.delete('taskItemId');
+    }
+
+    const qs = next.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ''}#${anchorId}`, {
+      scroll: false,
+    });
+  };
 
   // Keep previous data visible while loading new page
   useEffect(() => {
@@ -126,6 +164,8 @@ export const TaskItems = ({
   const paginationMeta = displayResponse?.data?.meta;
   const stats = statsResponse?.data;
   const hasTasks = stats && stats.total > 0;
+  const isFocusMode = Boolean(selectedTaskItemId);
+  const selectedTaskItem = taskItems.find((t) => t.id === selectedTaskItemId) || null;
 
   // `useApiSWR` doesn't start fetching until organizationId is available, and during that time `isLoading` is false.
   // So we also treat "waiting for org" as initial loading for this section.
@@ -157,61 +197,14 @@ export const TaskItems = ({
     setPage(1); // Reset to first page when changing limit
   };
 
-  const content = (
-    <div className="space-y-4">
-      {showForm && (
-        <TaskItemForm
-          entityId={entityId}
-          entityType={entityType}
-          page={page}
-          limit={limit}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          filters={filters}
-          onSuccess={handleFormSubmit}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
-
-      {taskItemsError && (
-        <div className="text-destructive text-sm">
-          Failed to load tasks. Please try again.
-        </div>
-      )}
-
-      {shouldShowEmptyState ? (
-        <div className="text-muted-foreground text-sm text-center py-8">
-          {hasActiveFilters ? (
-            <div className="flex flex-col items-center gap-2">
-              <p>No tasks match the current filters.</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({})}
-                className="h-8"
-              >
-                Clear filters
-              </Button>
-            </div>
-          ) : showForm ? (
-            'Fill out the form above to create your first task.'
-          ) : (
-            'No tasks yet. Click the icon above to create one.'
-          )}
-        </div>
-      ) : taskItems.length > 0 ? (
-        <>
-          <div className="relative">
-            {taskItemsLoading && taskItems.length > 0 && (
-              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Loading...</span>
-                </div>
-              </div>
-            )}
-            <TaskItemList
-              taskItems={taskItems}
+  // Focus mode: show only the selected task in full view
+  if (isFocusMode && selectedTaskItem) {
+    return (
+      <section id={anchorId} className="scroll-mt-24">
+        <Card>
+          <CardContent className="p-6">
+            <TaskItemFocusView
+              taskItem={selectedTaskItem}
               entityId={entityId}
               entityType={entityType}
               page={page}
@@ -219,25 +212,16 @@ export const TaskItems = ({
               sortBy={sortBy}
               sortOrder={sortOrder}
               filters={filters}
+              onBack={() => handleSelectTaskItemId(null)}
               onStatusOrPriorityChange={refreshStats}
             />
-          </div>
-          {paginationMeta && (
-            <TaskItemPagination
-              page={paginationMeta.page}
-              limit={paginationMeta.limit}
-              total={paginationMeta.total}
-              totalPages={paginationMeta.totalPages}
-              hasNextPage={paginationMeta.hasNextPage}
-              hasPrevPage={paginationMeta.hasPrevPage}
-              onPageChange={handlePageChange}
-              onLimitChange={handleLimitChange}
-            />
-          )}
-        </>
-      ) : null}
-    </div>
-  );
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  const hasActiveFilters = filters.status || filters.priority || filters.assigneeId;
 
   if (variant === 'inline') {
     return (
@@ -278,7 +262,30 @@ export const TaskItems = ({
             <p className="text-sm text-muted-foreground">Loading tasks...</p>
           </div>
         ) : (
-          content
+          <TaskItemsContent
+            showForm={showForm}
+            taskItemsError={taskItemsError}
+            shouldShowEmptyState={shouldShowEmptyState}
+            hasActiveFilters={!!(filters.status || filters.priority || filters.assigneeId)}
+            taskItems={taskItems}
+            taskItemsLoading={taskItemsLoading}
+            paginationMeta={paginationMeta}
+            entityId={entityId}
+            entityType={entityType}
+            page={page}
+            limit={limit}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            filters={filters}
+            selectedTaskItemId={selectedTaskItemId}
+            onFormSuccess={handleFormSubmit}
+            onFormCancel={() => setShowForm(false)}
+            onSelectTaskItemId={handleSelectTaskItemId}
+            onStatusOrPriorityChange={refreshStats}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            onClearFilters={handleClearFilters}
+          />
         )}
       </section>
     );
@@ -288,191 +295,27 @@ export const TaskItems = ({
     <section id={anchorId} className="scroll-mt-24">
       <Card>
         <CardHeader>
-        <div className="flex flex-col gap-4">
-          {/* Title and Create Button Row */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <CardTitle>{title}</CardTitle>
-                {statsLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : (
-                  stats && stats.total > 0 && (
-                    <Badge variant="secondary" className="tabular-nums">
-                      {stats.total}
-                    </Badge>
-                  )
-                )}
-              </div>
-              <CardDescription className="mt-1">{defaultDescription}</CardDescription>
-              {!statsLoading && stats && stats.total > 0 && (
-                <div className="flex items-center gap-3 mt-3 flex-wrap">
-                  {stats.byStatus.todo > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {stats.byStatus.todo} Todo
-                      </span>
-                    </div>
-                  )}
-                  {stats.byStatus.in_progress > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
-                      <span className="text-xs text-muted-foreground">
-                        {stats.byStatus.in_progress} In Progress
-                      </span>
-                    </div>
-                  )}
-                  {stats.byStatus.in_review > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400" />
-                      <span className="text-xs text-muted-foreground">
-                        {stats.byStatus.in_review} In Review
-                      </span>
-                    </div>
-                  )}
-                  {stats.byStatus.done > 0 && (
-                    <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-primary" />
-                      <span className="text-xs text-muted-foreground">
-                        {stats.byStatus.done} Done
-                      </span>
-                    </div>
-                  )}
-                  {stats.byStatus.canceled > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {stats.byStatus.canceled} Canceled
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <Button
-              size="icon"
-              onClick={() => setShowForm(!showForm)}
-              variant={showForm ? 'outline' : 'default'}
-              aria-label={showForm ? 'Cancel' : 'Create Task'}
-              className="transition-all duration-200 flex-shrink-0"
-            >
-              <span className="relative inline-flex items-center justify-center">
-                <Plus
-                  className={`h-4 w-4 absolute transition-all duration-200 ${
-                    showForm ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
-                  }`}
-                />
-                <X
-                  className={`h-4 w-4 absolute transition-all duration-200 ${
-                    showForm ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
-                  }`}
-                />
-              </span>
-            </Button>
+          <div className="flex flex-col gap-4">
+            <TaskItemsHeader
+              title={title}
+              description={defaultDescription}
+              statsLoading={statsLoading}
+              stats={stats}
+              showForm={showForm}
+              onToggleForm={() => setShowForm(!showForm)}
+            />
+            <TaskItemsFilters
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              filters={filters}
+              assignableMembers={assignableMembers}
+              hasTasks={hasTasks ?? false}
+              statsLoading={statsLoading}
+              onSortChange={handleSortChange}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleClearFilters}
+            />
           </div>
-
-          {/* Sort and Filter Controls Row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select
-              value={`${sortBy}-${sortOrder}`}
-              onValueChange={handleSortChange}
-              disabled={!hasTasks || statsLoading}
-            >
-              <SelectTrigger className="h-9 w-[190px]">
-                <ArrowUpDown className="mr-2 h-4 w-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt-desc">Newest First</SelectItem>
-                <SelectItem value="createdAt-asc">Oldest First</SelectItem>
-                <SelectItem value="updatedAt-desc">Recently Updated</SelectItem>
-                <SelectItem value="updatedAt-asc">Least Updated</SelectItem>
-                <SelectItem value="priority-desc">Priority Low-High</SelectItem>
-                <SelectItem value="priority-asc">Priority High-Low</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={filters.status || 'all'}
-              onValueChange={(value) => handleFilterChange('status', value === 'all' ? null : value)}
-              disabled={!hasTasks || statsLoading}
-            >
-              <SelectTrigger className="h-9 w-[150px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="todo">Todo</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="in_review">In Review</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
-                <SelectItem value="canceled">Canceled</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={filters.priority || 'all'}
-              onValueChange={(value) => handleFilterChange('priority', value === 'all' ? null : value)}
-              disabled={!hasTasks || statsLoading}
-            >
-              <SelectTrigger className="h-9 w-[150px]">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <div className="flex items-center gap-2">
-                    <Flag className="h-4 w-4" />
-                    <span>All Priority</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {assignableMembers && assignableMembers.length > 0 && (
-              <Select
-                value={filters.assigneeId === '__unassigned__' ? 'unassigned' : filters.assigneeId || 'all'}
-                onValueChange={(value) => handleFilterChange('assigneeId', value === 'all' ? null : value)}
-                disabled={!hasTasks || statsLoading}
-              >
-                <SelectTrigger className="h-9 w-[160px]">
-                  <SelectValue placeholder="Assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>All Assignees</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {assignableMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.user.name || member.user.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({})}
-                className="h-9"
-                disabled={!hasTasks || statsLoading}
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        </div>
         </CardHeader>
         <CardContent>
         {isInitialLoad ? (
@@ -481,7 +324,30 @@ export const TaskItems = ({
             <p className="text-sm text-muted-foreground">Loading tasks...</p>
           </div>
         ) : (
-          content
+          <TaskItemsContent
+            showForm={showForm}
+            taskItemsError={taskItemsError}
+            shouldShowEmptyState={shouldShowEmptyState}
+            hasActiveFilters={!!(filters.status || filters.priority || filters.assigneeId)}
+            taskItems={taskItems}
+            taskItemsLoading={taskItemsLoading}
+            paginationMeta={paginationMeta}
+            entityId={entityId}
+            entityType={entityType}
+            page={page}
+            limit={limit}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            filters={filters}
+            selectedTaskItemId={selectedTaskItemId}
+            onFormSuccess={handleFormSubmit}
+            onFormCancel={() => setShowForm(false)}
+            onSelectTaskItemId={handleSelectTaskItemId}
+            onStatusOrPriorityChange={refreshStats}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            onClearFilters={handleClearFilters}
+          />
         )}
         </CardContent>
       </Card>

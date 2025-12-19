@@ -19,34 +19,49 @@ interface PageProps {
     sort?: string;
     page?: string;
     per_page?: string;
+    taskItemId?: string;
   }>;
   params: Promise<{ riskId: string; orgId: string }>;
 }
 
 export default async function RiskPage({ searchParams, params }: PageProps) {
   const { riskId, orgId } = await params;
+  const { taskItemId } = await searchParams;
   const risk = await getRisk(riskId);
   const assignees = await getAssignees();
   if (!risk) {
     redirect('/');
   }
 
+  const shortTaskId = (id: string) => id.slice(-6).toUpperCase();
+
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
         { label: 'Risks', href: `/${orgId}/risk` },
-        { label: risk.title, current: true },
+        ...(taskItemId
+          ? [
+              { label: risk.title, href: `/${orgId}/risk/${riskId}` },
+              { label: shortTaskId(taskItemId), current: true },
+            ]
+          : [{ label: risk.title, current: true }]),
       ]}
       headerRight={<RiskActions riskId={riskId} />}
     >
       <div className="flex flex-col gap-4">
-        <RiskOverview risk={risk} assignees={assignees} />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <InherentRiskChart risk={risk} />
-          <ResidualRiskChart risk={risk} />
-        </div>
+        {!taskItemId && (
+          <>
+            <RiskOverview risk={risk} assignees={assignees} />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <InherentRiskChart risk={risk} />
+              <ResidualRiskChart risk={risk} />
+            </div>
+          </>
+        )}
         <TaskItems entityId={riskId} entityType="risk" />
-        <Comments entityId={riskId} entityType={CommentEntityType.risk} />
+        {!taskItemId && (
+          <Comments entityId={riskId} entityType={CommentEntityType.risk} />
+        )}
       </div>
     </PageWithBreadcrumb>
   );

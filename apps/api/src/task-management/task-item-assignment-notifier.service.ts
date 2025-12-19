@@ -98,9 +98,11 @@ export class TaskItemAssignmentNotifierService {
         entityType,
         entityId,
       })}`;
-      const taskUrl = taskUrlBase.includes('#')
-        ? taskUrlBase
-        : `${taskUrlBase}#task-items`;
+      // Deep-link directly to the TaskItems section + select the task
+      const taskUrlObj = new URL(taskUrlBase);
+      taskUrlObj.searchParams.set('taskItemId', taskItemId);
+      taskUrlObj.hash = 'task-items';
+      const taskUrl = taskUrlObj.toString();
 
       const subscriberId = `${assigneeUser.id}-${organizationId}`;
       const workflowId = process.env.NOVU_WORKFLOW_TASK_ITEM_ASSIGNED ?? 'task-item-assigned';
