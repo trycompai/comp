@@ -9,6 +9,7 @@ export async function Header() {
     <Box
       as="header"
       position="sticky"
+      px="8"
       top="0"
       zIndex="10"
       borderBottomWidth="1px"

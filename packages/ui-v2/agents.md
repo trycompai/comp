@@ -6,11 +6,14 @@ This package is our Chakra v3 design system (`@trycompai/ui-v2`). The goal is **
 
 - **No hardcoded styling in recipes** if a token exists.
   - Use **tokens** (`radii`, `borders`, `shadows`, `fonts`, …) and **semantic tokens** (`colorPalette.*`, `bg/fg/border`) instead of raw values.
+- **Be as idiomatic as possible (Chakra-first APIs)**
+  - Prefer the **actual Chakra component** for the job over “generic” primitives.
+  - Avoid patterns like `Box as="li"` / `Box as="ol"` / `Text as="..."` when Chakra already provides a dedicated component/namespace (e.g. use `List.Root` + `List.Item`).
 - **Never use `chakra('...')` factories** (example: `chakra('ol')`).
   - This creates ad-hoc components and bypasses our “single source of truth” approach.
   - Use one of these instead:
-    - `Box`/`Text`/etc with `as="ol" | "ul" | ...` and Chakra props
     - Chakra components (e.g. `List` where applicable)
+    - `Box`/`Text`/etc with `as="..."` only when there is no Chakra component that matches the semantics
     - A small colocated component if the pattern is reused (e.g. `DeviceAgentOrderedList`)
 - **Prefer pre-made components first (Chakra docs + our library)**
   - Before building custom markup, first check what Chakra already provides and its supported props/parts.

@@ -1,7 +1,9 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
 import { colors } from './colors';
 import { globalCss } from './global-css';
-import { alertSlotRecipe, buttonRecipe } from './recipes';
+import { accordionSlotRecipe } from './recipes/accordion';
+import { alertSlotRecipe } from './recipes/alert';
+import { buttonRecipe } from './recipes/button';
 import { semanticColors } from './semantic-tokens';
 import { borders, fonts, fontWeights, letterSpacings, lineHeights, radii, shadows } from './tokens';
 
@@ -26,6 +28,7 @@ const config = defineConfig({
       button: buttonRecipe,
     },
     slotRecipes: {
+      accordion: accordionSlotRecipe,
       alert: alertSlotRecipe,
     },
   },

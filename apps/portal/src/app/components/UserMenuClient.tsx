@@ -43,9 +43,9 @@ export function UserMenuClient({ user, userInitials }: UserMenuClientProps) {
       </Menu.Trigger>
 
       {/* Disable portal so positioning is anchored to the trigger (fixes "menu opens elsewhere"). */}
-      <Portal disabled>
+      <Portal>
         <Menu.Positioner>
-          <Menu.Content minW="240px" p="0" overflow="visible">
+          <Menu.Content p="0" overflow="visible">
             <Box px="3" py="2.5">
               <HStack justify="space-between" gap="3" align="start">
                 <VStack align="start" gap="0" minW="0">
@@ -56,9 +56,6 @@ export function UserMenuClient({ user, userInitials }: UserMenuClientProps) {
                     {user?.email}
                   </Text>
                 </VStack>
-                <Box borderWidth="1px" borderColor="border" borderRadius="full" px="3" py="0.5">
-                  <Text fontSize="xs">Beta</Text>
-                </Box>
               </HStack>
             </Box>
 

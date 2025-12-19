@@ -1,7 +1,16 @@
 'use client';
 
 import type { SupportedOS } from '@/utils/os';
-import { Box, Button, createListCollection, HStack, Select, Text, VStack } from '@trycompai/ui-v2';
+import {
+  BodyText,
+  Button,
+  createListCollection,
+  HStack,
+  LabelText,
+  OrderedList,
+  Select,
+  VStack,
+} from '@trycompai/ui-v2';
 import { Download, Loader2 } from 'lucide-react';
 
 interface DeviceAgentInstructionsProps {
@@ -18,8 +27,15 @@ const ARCHITECTURE_OPTIONS = [
   { label: 'Intel', value: 'macos-intel' },
 ] as const;
 
+type ArchitectureValue = (typeof ARCHITECTURE_OPTIONS)[number]['value'];
+
+const ARCHITECTURE_ITEMS = ARCHITECTURE_OPTIONS.map((o) => ({
+  label: o.label,
+  value: o.value,
+})) satisfies Array<{ label: string; value: ArchitectureValue }>;
+
 const ARCHITECTURE_COLLECTION = createListCollection({
-  items: ARCHITECTURE_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
+  items: ARCHITECTURE_ITEMS,
 });
 
 export function DeviceAgentInstructions({
@@ -30,39 +46,27 @@ export function DeviceAgentInstructions({
   isDownloading,
   downloadDisabled,
 }: DeviceAgentInstructionsProps) {
+  const handleArchitectureChange = (nextValue: string | undefined) => {
+    if (!nextValue) return;
+    const next = ARCHITECTURE_OPTIONS.find((o) => o.value === nextValue);
+    if (!next) return;
+    onChangeDetectedOS(next.value);
+  };
+
   return (
     <VStack align="stretch" gap="3">
-      <Box
-        as="ol"
-        listStyleType="decimal"
-        ps="4"
-        fontSize="sm"
-        display="flex"
-        flexDirection="column"
-        gap="3"
-      >
-        <Box as="li">
-          <Text as="span" fontWeight="semibold" fontSize="sm">
-            Download the Device Agent installer.
-          </Text>
-          <Text fontSize="sm" color="fg.muted" marginTop="1" lineHeight="short">
+      <OrderedList>
+        <OrderedList.Item>
+          <LabelText fontWeight="semibold">Download the Device Agent installer.</LabelText>
+          <BodyText tone="muted" fontSize="sm" mt="1" lineHeight="short">
             Click the download button below to get the Device Agent installer.
-          </Text>
-          <HStack
-            gap="2"
-            marginTop="2"
-            align="center"
-            justify="flex-start"
-            flexWrap={{ base: 'wrap', sm: 'nowrap' }}
-          >
+          </BodyText>
+          <HStack gap="2" mt="2" flexWrap={{ base: 'wrap', sm: 'nowrap' }}>
             {isMacOS && (
               <Select.Root
                 collection={ARCHITECTURE_COLLECTION}
                 value={[detectedOS ?? 'macos']}
-                onValueChange={(e) => {
-                  const next = (e.value[0] ?? 'macos') as SupportedOS;
-                  onChangeDetectedOS(next);
-                }}
+                onValueChange={(e) => handleArchitectureChange(e.value[0])}
                 positioning={{ sameWidth: true }}
                 w={{ base: 'full', sm: '180px' }}
                 flex="0 0 auto"
@@ -83,7 +87,7 @@ export function DeviceAgentInstructions({
                   <Select.Content>
                     <Select.ItemGroup>
                       <Select.ItemGroupLabel>Architecture</Select.ItemGroupLabel>
-                      {ARCHITECTURE_OPTIONS.map((opt) => (
+                      {ARCHITECTURE_ITEMS.map((opt) => (
                         <Select.Item key={opt.value} item={{ label: opt.label, value: opt.value }}>
                           <Select.ItemText>{opt.label}</Select.ItemText>
                           <Select.ItemIndicator />
@@ -103,57 +107,49 @@ export function DeviceAgentInstructions({
               w={{ base: 'full', sm: 'auto' }}
             >
               <HStack gap="2">
-                {isDownloading ? <Loader2 className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                <Text as="span" fontSize="sm">
-                  {isDownloading ? 'Downloading…' : 'Download Agent'}
-                </Text>
+                {isDownloading ? <Loader2 size={16} /> : <Download size={16} />}
+                {isDownloading ? 'Downloading…' : 'Download Agent'}
               </HStack>
             </Button>
           </HStack>
-        </Box>
+        </OrderedList.Item>
 
-        <Box as="li">
-          <Text as="span" fontWeight="semibold" fontSize="sm">
-            Install the Comp AI Device Agent.
-          </Text>
-          <Text fontSize="sm" color="fg.muted" marginTop="1" lineHeight="short">
+        <OrderedList.Item>
+          <LabelText fontWeight="semibold">Install the Comp AI Device Agent.</LabelText>
+          <BodyText tone="muted" fontSize="sm" mt="1" lineHeight="short">
             {isMacOS
               ? 'Double-click the downloaded DMG file and follow the installation instructions.'
               : 'Double-click the downloaded EXE file and follow the installation instructions.'}
-          </Text>
-        </Box>
+          </BodyText>
+        </OrderedList.Item>
 
         {isMacOS ? (
-          <Box as="li">
-            <Text as="span" fontWeight="semibold" fontSize="sm">
-              Login with your work email.
-            </Text>
-            <Text fontSize="sm" color="fg.muted" marginTop="1" lineHeight="short">
+          <OrderedList.Item>
+            <LabelText fontWeight="semibold">Login with your work email.</LabelText>
+            <BodyText tone="muted" fontSize="sm" mt="1" lineHeight="short">
               After installation, login with your work email, select your organization and then
               click &quot;Link Device&quot; and &quot;Install Agent&quot;.
-            </Text>
-          </Box>
+            </BodyText>
+          </OrderedList.Item>
         ) : (
-          <Box as="li">
-            <Text as="span" fontWeight="semibold" fontSize="sm">
-              Enable MDM.
-            </Text>
-            <VStack align="stretch" gap="1.5" marginTop="1">
-              <Text fontSize="sm" color="fg.muted">
+          <OrderedList.Item>
+            <LabelText fontWeight="semibold">Enable MDM.</LabelText>
+            <VStack align="stretch" gap="1.5" mt="1">
+              <BodyText tone="muted" fontSize="sm">
                 Find the Fleet Desktop app in your system tray (bottom right corner). Click on it
                 and click My Device.
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
+              </BodyText>
+              <BodyText tone="muted" fontSize="sm">
                 You should see a banner that asks you to enable MDM. Click the button and follow the
                 instructions.
-              </Text>
-              <Text fontSize="sm" color="fg.muted">
+              </BodyText>
+              <BodyText tone="muted" fontSize="sm">
                 After you&apos;ve enabled MDM, refresh this page and the banner will disappear.
-              </Text>
+              </BodyText>
             </VStack>
-          </Box>
+          </OrderedList.Item>
         )}
-      </Box>
+      </OrderedList>
     </VStack>
   );
 }

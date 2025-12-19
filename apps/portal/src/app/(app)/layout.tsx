@@ -14,11 +14,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <Box minH="dvh" bg="bg" color="fg">
-      <Container maxW="7xl" py="0">
-        <Header />
-      </Container>
-      <Container as="main" maxW="7xl" py="8">
+    <Box minH="dvh" bg="bg" color="fg" display="flex" flexDirection="column">
+      <Header />
+      <Container as="main" maxW="3xl" py="8">
         {children}
       </Container>
     </Box>
