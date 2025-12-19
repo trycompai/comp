@@ -11673,7 +11673,7 @@
     },
     "/v1/task-management": {
       "get": {
-        "description": "Retrieve paginated task items for a specific entity (vendor, risk, policy, control)",
+        "description": "Retrieve paginated task items for a specific entity (vendor, risk)",
         "operationId": "TaskManagementController_getTaskItems_v1",
         "parameters": [
           {

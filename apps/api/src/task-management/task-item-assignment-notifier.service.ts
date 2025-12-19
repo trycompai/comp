@@ -2,7 +2,7 @@ import { db } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
 import { NovuService } from '../notifications/novu.service';
 
-type TaskItemEntityType = 'vendor' | 'risk' | 'policy' | 'control';
+type TaskItemEntityType = 'vendor' | 'risk';
 
 const getEntityUrlPath = ({
   organizationId,
@@ -18,10 +18,6 @@ const getEntityUrlPath = ({
       return `/${organizationId}/vendors/${entityId}`;
     case 'risk':
       return `/${organizationId}/risk/${entityId}`;
-    case 'policy':
-      return `/${organizationId}/policies/${entityId}`;
-    case 'control':
-      return `/${organizationId}/controls/${entityId}`;
     default:
       return `/${organizationId}`;
   }

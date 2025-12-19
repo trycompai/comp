@@ -4,7 +4,7 @@ import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
 import { useCallback } from 'react';
 
-export type TaskItemEntityType = 'vendor' | 'risk' | 'policy' | 'control';
+export type TaskItemEntityType = 'vendor' | 'risk';
 
 export type TaskItemStatus = 'todo' | 'in_progress' | 'in_review' | 'done' | 'canceled';
 
@@ -101,7 +101,7 @@ export interface TaskItemFilters {
 
 /**
  * Hook to fetch task items for any entity using SWR with pagination, filtering, and sorting
- * Universal hook that works with any entityType (vendor, risk, policy, control)
+ * Universal hook that works with any supported entityType (vendor, risk)
  */
 export function useTaskItems(
   entityId: string | null,

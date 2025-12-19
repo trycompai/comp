@@ -70,6 +70,8 @@ export class HybridAuthGuard implements CanActivate {
     request.organizationId = organizationId;
     request.authType = 'api-key';
     request.isApiKey = true;
+    // API keys are organization-scoped and are not tied to a specific user/member.
+    request.userRoles = null;
 
     return true;
   }

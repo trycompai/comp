@@ -103,7 +103,7 @@ export class TaskManagementController {
   @ApiOperation({
     summary: 'Get task items for an entity',
     description:
-      'Retrieve paginated task items for a specific entity (vendor, risk, policy, control)',
+      'Retrieve paginated task items for a specific entity (vendor, risk)',
   })
   @ApiResponse({
     status: 200,
