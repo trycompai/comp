@@ -9,14 +9,8 @@ export const sendPolicyNotificationEmail = async (params: {
   organizationId: string;
   notificationType: 'new' | 'updated' | 're-acceptance';
 }) => {
-  const {
-    email,
-    userName,
-    policyName,
-    organizationName,
-    organizationId,
-    notificationType,
-  } = params;
+  const { email, userName, policyName, organizationName, organizationId, notificationType } =
+    params;
   const subjectText = 'Please review and accept this policy';
 
   try {
