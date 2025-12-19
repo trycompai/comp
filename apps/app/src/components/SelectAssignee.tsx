@@ -52,8 +52,8 @@ export const SelectAssignee = ({
   };
 
   // Function to safely prepare image URLs
-  const getImageUrl = (image: string | null) => {
-    if (!image) return '';
+  const getImageUrl = (image: string | null): string | undefined => {
+    if (!image) return undefined;
 
     // If image is a relative URL, ensure it's properly formed
     if (image.startsWith('/')) {
@@ -80,7 +80,7 @@ export const SelectAssignee = ({
       <Select value={assigneeId || 'none'} onValueChange={handleAssigneeChange} disabled={disabled}>
         <SelectTrigger className="w-full">
           {selectedAssignee ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Avatar className="h-5 w-5 shrink-0">
                 <AvatarImage
                   src={getImageUrl(selectedAssignee.user.image)}
@@ -92,7 +92,7 @@ export const SelectAssignee = ({
                     '?'}
                 </AvatarFallback>
               </Avatar>
-              <span className="truncate">
+              <span className="truncate min-w-0 flex-1">
                 {selectedAssignee.user.name || selectedAssignee.user.email || 'Unknown User'}
               </span>
             </div>
@@ -104,13 +104,13 @@ export const SelectAssignee = ({
           )}
         </SelectTrigger>
         <SelectContent
-          className="z-50 w-auto max-w-[250px] min-w-[var(--radix-select-trigger-width)]"
+          className="z-50 w-[var(--radix-select-trigger-width)] min-w-[280px]"
           position="popper"
           sideOffset={5}
           align="start"
         >
-          <SelectItem value="none" className="hover:bg-accent w-full overflow-hidden p-0">
-            <div className="flex w-full items-center gap-2 px-3 py-1.5">
+          <SelectItem value="none" className="cursor-pointer pl-2">
+            <div className="flex items-center gap-2.5">
               {renderNoneAvatar()}
               <span>None</span>
             </div>
@@ -119,9 +119,9 @@ export const SelectAssignee = ({
             <SelectItem
               key={assignee.id}
               value={assignee.id}
-              className="hover:bg-accent w-full overflow-hidden p-0"
+              className="cursor-pointer pl-2"
             >
-              <div className="flex w-full items-center gap-2 px-3 py-1.5">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <Avatar className="h-5 w-5 shrink-0">
                   <AvatarImage
                     src={getImageUrl(assignee.user.image)}
@@ -133,7 +133,7 @@ export const SelectAssignee = ({
                       '?'}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate">
+                <span className="truncate min-w-0 flex-1 pr-2">
                   {assignee.user.name || assignee.user.email || 'Unknown User'}{' '}
                   {assignee.id === activeMember?.id && '(You)'}
                 </span>

@@ -9,6 +9,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { Comments } from '../../../../../components/comments/Comments';
+import { TaskItems } from '../../../../../components/task-items/TaskItems';
 import { RiskActions } from './components/RiskActions';
 
 interface PageProps {
@@ -44,6 +45,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
           <InherentRiskChart risk={risk} />
           <ResidualRiskChart risk={risk} />
         </div>
+        <TaskItems entityId={riskId} entityType="risk" />
         <Comments entityId={riskId} entityType={CommentEntityType.risk} />
       </div>
     </PageWithBreadcrumb>

@@ -111,6 +111,9 @@ model Member {
   reviewedAccessRequests TrustAccessRequest[] @relation("TrustAccessRequestReviewer")
   issuedGrants           TrustAccessGrant[]   @relation("IssuedGrants")
   revokedGrants          TrustAccessGrant[]   @relation("RevokedGrants")
+  createdTaskItems       TaskItem[]           @relation("TaskItemCreator")
+  updatedTaskItems       TaskItem[]           @relation("TaskItemUpdater")
+  assignedTaskItems      TaskItem[]           @relation("TaskItemAssignee")
 }
 
 model Invitation {

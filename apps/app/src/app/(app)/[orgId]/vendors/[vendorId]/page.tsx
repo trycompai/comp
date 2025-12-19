@@ -8,6 +8,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { Comments } from '../../../../../components/comments/Comments';
+import { TaskItems } from '../../../../../components/task-items/TaskItems';
 import { VendorActions } from './components/VendorActions';
 import { VendorInherentRiskChart } from './components/VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './components/VendorResidualRiskChart';
@@ -44,6 +45,7 @@ export default async function VendorPage({ params }: PageProps) {
           <VendorInherentRiskChart vendor={vendor.vendor} />
           <VendorResidualRiskChart vendor={vendor.vendor} />
         </div>
+        <TaskItems entityId={vendorId} entityType="vendor" />
         <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
       </div>
     </PageWithBreadcrumb>
