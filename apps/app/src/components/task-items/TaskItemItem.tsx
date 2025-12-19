@@ -29,7 +29,15 @@ import {
   SelectValue,
 } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import type { TaskItem, TaskItemStatus, TaskItemPriority } from '@/hooks/use-task-items';
+import type {
+  TaskItem,
+  TaskItemEntityType,
+  TaskItemFilters,
+  TaskItemPriority,
+  TaskItemSortBy,
+  TaskItemSortOrder,
+  TaskItemStatus,
+} from '@/hooks/use-task-items';
 import {
   MoreHorizontal,
   Pencil,
@@ -89,9 +97,12 @@ const PRIORITY_OPTIONS: { value: TaskItemPriority; label: string }[] = [
 interface TaskItemItemProps {
   taskItem: TaskItem;
   entityId: string;
-  entityType: string;
+  entityType: TaskItemEntityType;
   page?: number;
   limit?: number;
+  sortBy?: TaskItemSortBy;
+  sortOrder?: TaskItemSortOrder;
+  filters?: TaskItemFilters;
   onStatusOrPriorityChange?: () => void;
 }
 
@@ -101,6 +112,9 @@ export function TaskItemItem({
   entityType,
   page = 1,
   limit = 5,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  filters = {},
   onStatusOrPriorityChange,
 }: TaskItemItemProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -118,9 +132,12 @@ export function TaskItemItem({
 
   const { optimisticUpdate, optimisticDelete } = useOptimisticTaskItems(
     entityId,
-    entityType as any,
+    entityType,
     page,
     limit,
+    sortBy,
+    sortOrder,
+    filters,
   );
   const { members } = useOrganizationMembers();
   

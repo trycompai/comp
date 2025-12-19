@@ -1,12 +1,21 @@
 import { TaskItemItem } from './TaskItemItem';
-import type { TaskItem } from '@/hooks/use-task-items';
+import type {
+  TaskItem,
+  TaskItemEntityType,
+  TaskItemFilters,
+  TaskItemSortBy,
+  TaskItemSortOrder,
+} from '@/hooks/use-task-items';
 
 interface TaskItemListProps {
   taskItems: TaskItem[];
   entityId: string;
-  entityType: string;
+  entityType: TaskItemEntityType;
   page?: number;
   limit?: number;
+  sortBy?: TaskItemSortBy;
+  sortOrder?: TaskItemSortOrder;
+  filters?: TaskItemFilters;
   onStatusOrPriorityChange?: () => void;
 }
 
@@ -16,6 +25,9 @@ export function TaskItemList({
   entityType,
   page = 1,
   limit = 5,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  filters = {},
   onStatusOrPriorityChange,
 }: TaskItemListProps) {
   return (
@@ -28,6 +40,9 @@ export function TaskItemList({
           entityType={entityType}
           page={page}
           limit={limit}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          filters={filters}
           onStatusOrPriorityChange={onStatusOrPriorityChange}
         />
       ))}

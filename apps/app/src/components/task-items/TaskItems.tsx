@@ -165,6 +165,9 @@ export const TaskItems = ({
           entityType={entityType}
           page={page}
           limit={limit}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          filters={filters}
           onSuccess={handleFormSubmit}
           onCancel={() => setShowForm(false)}
         />
@@ -213,6 +216,9 @@ export const TaskItems = ({
               entityType={entityType}
               page={page}
               limit={limit}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              filters={filters}
               onStatusOrPriorityChange={refreshStats}
             />
           </div>

@@ -13,7 +13,14 @@ import {
   SelectValue,
 } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import type { TaskItemEntityType, TaskItemStatus, TaskItemPriority } from '@/hooks/use-task-items';
+import type {
+  TaskItemEntityType,
+  TaskItemFilters,
+  TaskItemPriority,
+  TaskItemSortBy,
+  TaskItemSortOrder,
+  TaskItemStatus,
+} from '@/hooks/use-task-items';
 import { Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -25,6 +32,9 @@ interface TaskItemFormProps {
   entityType: TaskItemEntityType;
   page?: number;
   limit?: number;
+  sortBy?: TaskItemSortBy;
+  sortOrder?: TaskItemSortOrder;
+  filters?: TaskItemFilters;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -49,6 +59,9 @@ export function TaskItemForm({
   entityType,
   page = 1,
   limit = 5,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  filters = {},
   onSuccess,
   onCancel,
 }: TaskItemFormProps) {
@@ -59,7 +72,15 @@ export function TaskItemForm({
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { optimisticCreate } = useOptimisticTaskItems(entityId, entityType, page, limit);
+  const { optimisticCreate } = useOptimisticTaskItems(
+    entityId,
+    entityType,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    filters,
+  );
   const { members } = useOrganizationMembers();
   
   // Filter members to only show owner and admin roles

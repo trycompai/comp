@@ -99,6 +99,77 @@ export interface TaskItemFilters {
   assigneeId?: string | null;
 }
 
+const PRIORITY_ORDER: Record<TaskItemPriority, number> = {
+  urgent: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+const matchesFilters = (item: TaskItem, filters: TaskItemFilters): boolean => {
+  if (filters.status && item.status !== filters.status) return false;
+  if (filters.priority && item.priority !== filters.priority) return false;
+  if (filters.assigneeId) {
+    if (filters.assigneeId === '__unassigned__') {
+      return item.assignee === null;
+    }
+    return item.assignee?.id === filters.assigneeId;
+  }
+  return true;
+};
+
+const compareTaskItems = (
+  a: TaskItem,
+  b: TaskItem,
+  sortBy: TaskItemSortBy,
+  sortOrder: TaskItemSortOrder,
+): number => {
+  const dir = sortOrder === 'asc' ? 1 : -1;
+
+  const cmp = (x: number, y: number) => (x === y ? 0 : x > y ? 1 : -1);
+
+  switch (sortBy) {
+    case 'createdAt': {
+      const av = new Date(a.createdAt).getTime();
+      const bv = new Date(b.createdAt).getTime();
+      return dir * cmp(av, bv);
+    }
+    case 'updatedAt': {
+      const av = new Date(a.updatedAt).getTime();
+      const bv = new Date(b.updatedAt).getTime();
+      return dir * cmp(av, bv);
+    }
+    case 'priority': {
+      const av = PRIORITY_ORDER[a.priority] ?? 0;
+      const bv = PRIORITY_ORDER[b.priority] ?? 0;
+      return dir * cmp(av, bv);
+    }
+    case 'title': {
+      return dir * a.title.localeCompare(b.title);
+    }
+    case 'status': {
+      return dir * a.status.localeCompare(b.status);
+    }
+    default:
+      return 0;
+  }
+};
+
+const recomputeMeta = (
+  meta: PaginatedTaskItemsResponse['meta'] | undefined,
+  opts: { page: number; limit: number; total: number },
+) => {
+  const totalPages = Math.max(1, Math.ceil(opts.total / opts.limit));
+  return {
+    page: meta?.page ?? opts.page,
+    limit: meta?.limit ?? opts.limit,
+    total: opts.total,
+    totalPages,
+    hasNextPage: (meta?.page ?? opts.page) < totalPages,
+    hasPrevPage: (meta?.page ?? opts.page) > 1,
+  };
+};
+
 /**
  * Hook to fetch task items for any entity using SWR with pagination, filtering, and sorting
  * Universal hook that works with any supported entityType (vendor, risk)
@@ -260,23 +331,28 @@ export function useOptimisticTaskItems(
           const currentTaskItems = currentResponse?.data || [];
           const currentMeta = currentResponse?.meta;
 
+          // If the created item doesn't match the current filters, do not show it in this view
+          if (!matchesFilters(newTaskItem, filters)) {
+            return {
+              data: {
+                data: currentTaskItems,
+                meta: currentMeta || recomputeMeta(undefined, { page, limit, total: currentTaskItems.length }),
+              },
+              status: 200,
+            };
+          }
+
+          const nextItems = [newTaskItem, ...currentTaskItems]
+            .filter((item) => matchesFilters(item, filters))
+            .sort((a, b) => compareTaskItems(a, b, sortBy, sortOrder))
+            .slice(0, limit);
+
+          const nextTotal = (currentMeta?.total ?? currentTaskItems.length) + 1;
+
           return {
             data: {
-              data: [newTaskItem, ...currentTaskItems],
-              meta: currentMeta
-                ? {
-                    ...currentMeta,
-                    total: currentMeta.total + 1,
-                    totalPages: Math.ceil((currentMeta.total + 1) / currentMeta.limit),
-                  }
-                : {
-                    page: 1,
-                    limit: limit,
-                    total: 1,
-                    totalPages: 1,
-                    hasNextPage: false,
-                    hasPrevPage: false,
-                  },
+              data: nextItems,
+              meta: recomputeMeta(currentMeta, { page, limit, total: nextTotal }),
             },
             status: 200,
           };
@@ -286,44 +362,41 @@ export function useOptimisticTaskItems(
             ? {
                 ...data,
                 data: {
-                  data: [optimisticTaskItem, ...(data.data?.data || [])],
-                  meta: data.data?.meta
-                    ? {
-                        ...data.data.meta,
-                        total: data.data.meta.total + 1,
-                        totalPages: Math.ceil((data.data.meta.total + 1) / data.data.meta.limit),
-                      }
-                    : {
-                        page: 1,
-                        limit: limit,
-                        total: 1,
-                        totalPages: 1,
-                        hasNextPage: false,
-                        hasPrevPage: false,
-                      },
+                  data: matchesFilters(optimisticTaskItem, filters)
+                    ? [optimisticTaskItem, ...(data.data?.data || [])]
+                        .filter((item) => matchesFilters(item, filters))
+                        .sort((a, b) => compareTaskItems(a, b, sortBy, sortOrder))
+                        .slice(0, limit)
+                    : (data.data?.data || []),
+                  meta: matchesFilters(optimisticTaskItem, filters)
+                    ? recomputeMeta(data.data?.meta, {
+                        page,
+                        limit,
+                        total: (data.data?.meta?.total ?? (data.data?.data || []).length) + 1,
+                      })
+                    : (data.data?.meta ??
+                        recomputeMeta(undefined, { page, limit, total: (data.data?.data || []).length })),
                 },
               }
             : {
                 data: {
-                  data: [optimisticTaskItem],
-                  meta: {
-                    page: 1,
-                    limit: limit,
-                    total: 1,
-                    totalPages: 1,
-                    hasNextPage: false,
-                    hasPrevPage: false,
-                  },
+                  data: matchesFilters(optimisticTaskItem, filters) ? [optimisticTaskItem] : [],
+                  meta: recomputeMeta(undefined, {
+                    page,
+                    limit,
+                    total: matchesFilters(optimisticTaskItem, filters) ? 1 : 0,
+                  }),
                 },
                 status: 200,
               },
           populateCache: true,
-          revalidate: false,
+          // Revalidate to keep pagination/meta perfectly consistent with server
+          revalidate: true,
           rollbackOnError: true,
         },
       );
     },
-    [mutate, createTaskItem, data],
+    [mutate, createTaskItem, data, filters, sortBy, sortOrder, page, limit],
   );
 
   const optimisticUpdate = useCallback(
@@ -333,20 +406,31 @@ export function useOptimisticTaskItems(
           const updatedTaskItem = await updateTaskItem(taskItemId, updateData);
           const currentResponse = data?.data;
           const currentTaskItems = currentResponse?.data || [];
+          const currentMeta = currentResponse?.meta;
+
+          const updatedList = currentTaskItems
+            .map((item) => (item.id === taskItemId ? updatedTaskItem : item))
+            .filter((item) => matchesFilters(item, filters))
+            .sort((a, b) => compareTaskItems(a, b, sortBy, sortOrder))
+            .slice(0, limit);
+
+          // If the item was visible but now no longer matches filters, decrement the filtered total
+          const existedBefore = currentTaskItems.some((item) => item.id === taskItemId);
+          const matchedBefore =
+            existedBefore &&
+            matchesFilters(
+              currentTaskItems.find((i) => i.id === taskItemId)!,
+              filters,
+            );
+          const matchedAfter = matchesFilters(updatedTaskItem, filters);
+
+          const totalDelta = matchedBefore && !matchedAfter ? -1 : !matchedBefore && matchedAfter ? 1 : 0;
+          const nextTotal = (currentMeta?.total ?? currentTaskItems.length) + totalDelta;
 
           return {
             data: {
-              data: currentTaskItems.map((item) =>
-                item.id === taskItemId ? updatedTaskItem : item,
-              ),
-              meta: currentResponse?.meta || {
-                page: 1,
-                limit: limit,
-                total: currentTaskItems.length,
-                totalPages: 1,
-                hasNextPage: false,
-                hasPrevPage: false,
-              },
+              data: updatedList,
+              meta: recomputeMeta(currentMeta, { page, limit, total: Math.max(0, nextTotal) }),
             },
             status: 200,
           };
@@ -356,29 +440,26 @@ export function useOptimisticTaskItems(
             ? {
                 ...data,
                 data: {
-                  data: (data.data?.data || []).map((item) =>
-                    item.id === taskItemId
-                      ? { ...item, ...updateData }
-                      : item,
-                  ),
-                  meta: data.data?.meta || {
-                    page: page,
-                    limit: limit,
-                    total: data.data?.data?.length || 0,
-                    totalPages: 1,
-                    hasNextPage: false,
-                    hasPrevPage: false,
-                  },
+                  data: (data.data?.data || [])
+                    .map((item) =>
+                      item.id === taskItemId ? { ...item, ...updateData } : item,
+                    )
+                    .filter((item) => matchesFilters(item as TaskItem, filters))
+                    .sort((a, b) =>
+                      compareTaskItems(a as TaskItem, b as TaskItem, sortBy, sortOrder),
+                    )
+                    .slice(0, limit),
+                  meta: data.data?.meta ?? recomputeMeta(undefined, { page, limit, total: (data.data?.data || []).length }),
                 },
               }
             : undefined,
           populateCache: true,
-          revalidate: false,
+          revalidate: true,
           rollbackOnError: true,
         },
       );
     },
-    [mutate, updateTaskItem, data],
+    [mutate, updateTaskItem, data, filters, sortBy, sortOrder, page, limit],
   );
 
   const optimisticDelete = useCallback(
