@@ -1,7 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { DropdownMenuItem } from '@comp/ui/dropdown-menu';
+import { Menu } from '@trycompai/ui-v2';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -22,8 +22,8 @@ export function Logout() {
   };
 
   return (
-    <DropdownMenuItem onClick={handleLogout}>
+    <Menu.Item value="logout" onClick={handleLogout} disabled={isLoading}>
       {isLoading ? 'Loading...' : 'Sign Out'}
-    </DropdownMenuItem>
+    </Menu.Item>
   );
 }

@@ -1,10 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@comp/ui/input-otp';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { Button, Field, PinInput, VStack } from '@trycompai/ui-v2';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -62,39 +59,36 @@ export function OtpForm({ email }: OtpFormProps) {
     }
   };
 
+  const otpError = form.formState.errors.otp?.message;
+  const otpChars = form.watch('otp').split('').slice(0, INPUT_LENGTH);
+  const pinValue = Array.from({ length: INPUT_LENGTH }).map((_, i) => otpChars[i] ?? '');
+
   return (
-    <Form {...form}>
-      <form className="grid gap-2" onSubmit={form.handleSubmit(onSubmit)}>
-        <FormField
-          control={form.control}
-          name="otp"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <InputOTP
-                  maxLength={INPUT_LENGTH}
-                  {...field}
-                  render={({ slots }) => (
-                    <InputOTPGroup>
-                      {slots.map((slot, index) => (
-                        <InputOTPSlot key={index} {...slot} />
-                      ))}
-                    </InputOTPGroup>
-                  )}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="flex h-[40px] w-fit space-x-2 px-6 py-4 font-medium active:scale-[0.98]"
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Continue</span>}
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      <VStack align="start" gap="3">
+        <Field.Root invalid={!!otpError}>
+          <Field.Label>One-time password</Field.Label>
+          <PinInput.Root
+            value={pinValue}
+            onValueChange={(e) =>
+              form.setValue('otp', e.value.join(''), { shouldValidate: true, shouldDirty: true })
+            }
+            otp
+          >
+            <PinInput.Control>
+              {Array.from({ length: INPUT_LENGTH }).map((_, index) => (
+                <PinInput.Input key={index} index={index} />
+              ))}
+              <PinInput.HiddenInput />
+            </PinInput.Control>
+          </PinInput.Root>
+          {otpError ? <Field.ErrorText>{otpError}</Field.ErrorText> : null}
+        </Field.Root>
+
+        <Button type="submit" loading={isLoading} colorPalette="primary">
+          Continue
         </Button>
-      </form>
-    </Form>
+      </VStack>
+    </form>
   );
 }

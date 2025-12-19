@@ -1,9 +1,9 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { Accordion } from '@comp/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@db';
+import { Accordion, Card, Progress, Text, VStack } from '@trycompai/ui-v2';
+import { useState } from 'react';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
@@ -24,6 +24,8 @@ export const EmployeeTasksList = ({
   fleetPolicies,
   host,
 }: EmployeeTasksListProps) => {
+  const [accordionValue, setAccordionValue] = useState<string[]>([]);
+
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
@@ -51,53 +53,45 @@ export const EmployeeTasksList = ({
     hasCompletedGeneralTraining,
   ].filter(Boolean).length;
 
-  const accordionItems = [
-    {
-      title: 'Accept security policies',
-      content: <PoliciesAccordionItem policies={policies} member={member} />,
-    },
-    {
-      title: 'Download and install Comp AI Device Agent',
-      content: (
-        <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
-      ),
-    },
-    {
-      title: 'Complete general security awareness training',
-      content: <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />,
-    },
-  ];
+  const totalCount = 3;
+  const progressPercent = (completedCount / totalCount) * 100;
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Overview</CardTitle>
-          <CardDescription>
+    <VStack align="stretch" gap="4">
+      <Card.Root>
+        <Card.Header>
+          <Card.Title>Overview</Card.Title>
+          <Card.Description>
             Please complete the following tasks to stay compliant and secure.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Progress indicator */}
-          <div>
-            <div className="text-muted-foreground text-sm">
-              {completedCount} of {accordionItems.length} tasks completed
-            </div>
-            <div className="w-full bg-muted rounded-full h-2.5">
-              <div
-                className="bg-primary h-full rounded-full"
-                style={{ width: `${(completedCount / accordionItems.length) * 100}%` }}
-              ></div>
-            </div>
-          </div>
+          </Card.Description>
+        </Card.Header>
 
-          <Accordion type="single" collapsible className="space-y-3">
-            {accordionItems.map((item, idx) => (
-              <div key={item.title ?? idx}>{item.content}</div>
-            ))}
-          </Accordion>
-        </CardContent>
-      </Card>
-    </div>
+        <Card.Body>
+          <VStack align="stretch" gap="4">
+            <VStack align="stretch" gap="2">
+              <Text fontSize="sm" color="fg.muted">
+                {completedCount} of {totalCount} tasks completed
+              </Text>
+              <Progress.Root value={progressPercent} colorPalette="primary">
+                <Progress.Track>
+                  <Progress.Range />
+                </Progress.Track>
+              </Progress.Root>
+            </VStack>
+
+            <Accordion.Root
+              multiple={false}
+              collapsible
+              value={accordionValue}
+              onValueChange={({ value }) => setAccordionValue(value)}
+            >
+              <PoliciesAccordionItem policies={policies} member={member} />
+              <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
+              <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />
+            </Accordion.Root>
+          </VStack>
+        </Card.Body>
+      </Card.Root>
+    </VStack>
   );
 };

@@ -6,7 +6,7 @@ import {
   SUPPORTED_COLOR_PALETTES,
   type SupportedColorPalette,
   Text,
-} from '@trycompai/ui-new';
+} from '@trycompai/ui-v2';
 
 export type ButtonColorPalette = SupportedColorPalette;
 

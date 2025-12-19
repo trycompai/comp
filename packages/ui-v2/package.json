@@ -1,0 +1,39 @@
+{
+  "name": "@trycompai/ui-v2",
+  "version": "0.0.0",
+  "description": "Chakra UI component library for Comp AI",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/ui/*": "./src/components/ui/*.tsx"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "prettier --check .",
+    "typegen": "bunx @chakra-ui/cli typegen ./src/theme/index.ts --outdir ./src/styled-system"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^3.30.0",
+    "@emotion/react": "^11.14.0",
+    "next-themes": "^0.4.6",
+    "react-icons": "^5.5.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@trycompai/tsconfig": "*",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.1",
+    "@chakra-ui/cli": "^3.0.0",
+    "eslint": "^9.17.0",
+    "glob": "^11.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.8.3"
+  }
+}

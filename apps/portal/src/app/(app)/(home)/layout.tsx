@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { Container } from '@trycompai/ui-v2';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -9,5 +10,5 @@ export default async function Layout({ children }: { children: React.ReactNode }
     return redirect('/auth');
   }
 
-  return <div className="mx-auto max-w-3xl">{children}</div>;
+  return <Container maxW="3xl">{children}</Container>;
 }

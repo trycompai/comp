@@ -5,20 +5,15 @@ import {
   Badge,
   Box,
   Button,
-  Code,
   Dialog,
-  Grid,
-  Heading,
   HStack,
-  Link,
   Menu,
-  Separator,
   Table,
   Tabs,
   Text,
   VStack,
   type SupportedColorPalette,
-} from '@trycompai/ui-new';
+} from '@trycompai/ui-v2';
 import { useState } from 'react';
 import { Section, SubSection } from './TestUiPrimitives';
 
@@ -156,30 +151,6 @@ export function TestUiSectionsBottom({ palette }: { palette: SupportedColorPalet
 
       <Section title="Dialog">
         <DialogExample palette={palette} />
-      </Section>
-
-      <Section title="Typography">
-        <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={8}>
-          <VStack align="start" gap={3}>
-            <Heading size="2xl">Heading 2XL</Heading>
-            <Heading size="xl">Heading XL</Heading>
-            <Heading size="lg">Heading LG</Heading>
-            <Heading size="md">Heading MD</Heading>
-            <Heading size="sm">Heading SM</Heading>
-          </VStack>
-          <VStack align="start" gap={3}>
-            <Text fontSize="xl">Text XL</Text>
-            <Text fontSize="lg">Text LG</Text>
-            <Text fontSize="md">Text MD (default)</Text>
-            <Text fontSize="sm">Text SM</Text>
-            <Text fontSize="xs">Text XS</Text>
-            <Separator />
-            <Text color="secondary.700">Muted text (secondary.700)</Text>
-            <Text color="secondary.600">Subtle text (secondary.600)</Text>
-            <Link href="#">Link text</Link>
-            <Code>inline code</Code>
-          </VStack>
-        </Grid>
       </Section>
 
       <Section title="Spacing & Radius">

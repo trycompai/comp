@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Flex, Heading, HStack, Text } from '@trycompai/ui-new';
+import { Box, Flex, Heading, HStack, Text } from '@trycompai/ui-v2';
 import type { ReactNode } from 'react';
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {

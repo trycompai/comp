@@ -1,21 +1,34 @@
 import { UserMenu } from '@/app/components/user-menu';
 import { Icons } from '@comp/ui/icons';
-import { Skeleton } from '@comp/ui/skeleton';
-import Link from 'next/link';
+import { Box, HStack, Link, Skeleton } from '@trycompai/ui-v2';
+import NextLink from 'next/link';
 import { Suspense } from 'react';
 
 export async function Header() {
   return (
-    <header className="border-border bg-background/70 sticky top-0 z-10 flex items-center justify-between border-b pt-4 pb-2 backdrop-blur-xl backdrop-filter md:bg-transparent md:pb-4 md:backdrop-filter-none">
-      <Link href="/">
-        <Icons.Logo />
-      </Link>
+    <Box
+      as="header"
+      position="sticky"
+      top="0"
+      zIndex="10"
+      borderBottomWidth="1px"
+      borderColor="border"
+      bg={{ base: 'bg', md: 'transparent' }}
+      backdropFilter={{ base: 'blur(12px)', md: 'none' }}
+      pt="4"
+      pb={{ base: '2', md: '4' }}
+    >
+      <HStack justify="space-between" gap="3">
+        <Link asChild>
+          <NextLink href="/">
+            <Icons.Logo />
+          </NextLink>
+        </Link>
 
-      <div className="flex items-center space-x-2">
-        <Suspense fallback={<Skeleton className="h-8 w-8 rounded-full" />}>
+        <Suspense fallback={<Skeleton boxSize="8" borderRadius="full" />}>
           <UserMenu />
         </Suspense>
-      </div>
-    </header>
+      </HStack>
+    </Box>
   );
 }

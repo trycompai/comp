@@ -49,6 +49,8 @@
       "@trycompai/kv/*": ["../../packages/kv/src/*"],
       "@trycompai/ui": ["../../packages/ui/src/components/index.ts"],
       "@trycompai/ui/*": ["../../packages/ui/src/components/*"],
+      "@trycompai/ui-v2": ["../../packages/ui-v2/src/index.ts"],
+      "@trycompai/ui-v2/*": ["../../packages/ui-v2/src/*"],
       "@trycompai/utils": ["../../packages/utils/src/index.ts"],
       "@trycompai/utils/*": ["../../packages/utils/src/*"],
       "@trycompai/analytics": ["../../packages/analytics/src/index.ts"],

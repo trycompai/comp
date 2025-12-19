@@ -55,13 +55,15 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
   const fleetData = await getFleetPolicies(member);
 
   return (
-    <OrganizationDashboard
-      key={orgId}
-      organizationId={orgId}
-      member={member}
-      fleetPolicies={fleetData.fleetPolicies}
-      host={fleetData.device}
-    />
+    <div className="chakra-scope">
+      <OrganizationDashboard
+        key={orgId}
+        organizationId={orgId}
+        member={member}
+        fleetPolicies={fleetData.fleetPolicies}
+        host={fleetData.device}
+      />
+    </div>
   );
 }
 

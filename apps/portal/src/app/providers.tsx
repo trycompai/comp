@@ -1,6 +1,7 @@
 'use client';
 
 import { AnalyticsProvider } from '@comp/analytics';
+import { ChakraProvider, ColorModeProvider, system } from '@trycompai/ui-v2';
 import { Session, User } from 'better-auth';
 import type { ReactNode } from 'react';
 
@@ -18,7 +19,9 @@ export function Providers({ children, session }: ProviderProps) {
       userId={session?.user?.id ?? undefined}
       userEmail={session?.user?.email ?? undefined}
     >
-      {children}
+      <ColorModeProvider>
+        <ChakraProvider value={system}>{children}</ChakraProvider>
+      </ColorModeProvider>
     </AnalyticsProvider>
   );
 }

@@ -34,6 +34,7 @@ OAuth integrations (GitHub, Google Workspace, GCP, etc.) require **platform-leve
 6. Click **Generate a new client secret** → Copy it
 
 **Add to platform:**
+
 - Go to `/admin/integrations` in your deployment
 - Find **GitHub** → Click **Configure**
 - Paste Client ID and Client Secret → Save
@@ -73,11 +74,13 @@ OAuth integrations (GitHub, Google Workspace, GCP, etc.) require **platform-leve
 **Add to platform:**
 
 **For Google Workspace:**
+
 - Go to `/admin/integrations`
 - Find **Google Workspace** → **Configure**
 - Paste Client ID and Client Secret → Save
 
 **For GCP (use same credentials):**
+
 - Find **Google Cloud Platform** → **Configure**
 - Paste the **same** Client ID and Client Secret → Save
 
@@ -97,6 +100,7 @@ OAuth integrations (GitHub, Google Workspace, GCP, etc.) require **platform-leve
 4. Create → Copy **Client ID** and **Client Secret**
 
 **Add to platform:**
+
 - Go to `/admin/integrations`
 - Find **Linear** → **Configure**
 - Paste Client ID and Client Secret → Save
@@ -115,6 +119,7 @@ OAuth integrations (GitHub, Google Workspace, GCP, etc.) require **platform-leve
 4. Create → Copy **Client ID**, **Client Secret**, and **Integration Slug**
 
 **Add to platform:**
+
 - Go to `/admin/integrations`
 - Find **Vercel** → **Configure**
 - Paste Client ID and Client Secret
@@ -135,6 +140,7 @@ OAuth integrations (GitHub, Google Workspace, GCP, etc.) require **platform-leve
    - App Name (your Rippling app identifier)
 
 **Add to platform:**
+
 - Go to `/admin/integrations`
 - Find **Rippling** → **Configure**
 - Paste Client ID and Client Secret
@@ -148,10 +154,12 @@ OAuth integrations (GitHub, Google Workspace, GCP, etc.) require **platform-leve
 These don't require platform setup - users provide their own credentials:
 
 ### AWS
+
 - **Auth**: IAM Role (users create their own role)
 - **No platform setup needed**
 
 ### Azure
+
 - **Auth**: Service Principal (users create their own)
 - **No platform setup needed**
 
@@ -172,6 +180,7 @@ These don't require platform setup - users provide their own credentials:
 **Problem:** Users get redirected to an error page after OAuth
 
 **Possible causes:**
+
 1. **Callback URL mismatch**: Make sure the redirect URI in the OAuth app matches your deployment URL exactly
 2. **Wrong client secret**: Double-check you copied the secret correctly
 3. **API not enabled**: Some providers require enabling APIs (Google Workspace, GCP)
@@ -186,6 +195,7 @@ Check API logs for the OAuth callback error message.
 **Problem:** Google shows a warning screen during OAuth
 
 **This is normal** for:
+
 - Development/testing
 - Before Google verification
 
@@ -209,6 +219,7 @@ Users can click **Advanced** → **Go to [app name] (unsafe)** to proceed.
 ### Principle of Least Privilege
 
 OAuth credentials grant broad access, but:
+
 - We only request the minimum scopes needed
 - Checks only perform read operations
 - User IAM roles further limit actual access
@@ -216,10 +227,12 @@ OAuth credentials grant broad access, but:
 ### Callback URL
 
 Always use **HTTPS** in production:
+
 - ✅ `https://yourapp.com/v1/integrations/oauth/callback`
 - ❌ `http://yourapp.com/...` (insecure)
 
 For local dev:
+
 - `http://localhost:3000/v1/integrations/oauth/callback` is fine
 
 ---
@@ -227,14 +240,15 @@ For local dev:
 ## Summary
 
 **Platform Admin (you) does:**
+
 1. Create OAuth apps with each provider (one-time, ~5-10 min each)
 2. Add Client ID/Secret to `/admin/integrations`
 3. That's it!
 
 **End Users do:**
+
 1. Click "Connect"
 2. Sign in with their account
 3. Done!
 
 **No environment variables, no secret management, no complexity.** All credentials are encrypted in the database and managed via the admin UI.
-

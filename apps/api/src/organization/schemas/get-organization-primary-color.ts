@@ -64,4 +64,3 @@ export const GET_ORGANIZATION_PRIMARY_COLOR_RESPONSES: Record<
     },
   },
 };
-

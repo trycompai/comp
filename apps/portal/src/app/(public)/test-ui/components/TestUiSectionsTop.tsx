@@ -4,19 +4,15 @@ import {
   Badge,
   Button,
   Card,
-  Checkbox,
   Grid,
   HStack,
-  Input,
   Progress,
   Skeleton,
   Spinner,
-  Switch,
   Text,
-  Textarea,
   VStack,
   type SupportedColorPalette,
-} from '@trycompai/ui-new';
+} from '@trycompai/ui-v2';
 import { ColorRow, Section, SubSection } from './TestUiPrimitives';
 
 export function TestUiSectionsTop({ palette }: { palette: SupportedColorPalette }) {
@@ -100,56 +96,6 @@ export function TestUiSectionsTop({ palette }: { palette: SupportedColorPalette 
             </Badge>
           </HStack>
         </SubSection>
-      </Section>
-
-      <Section title="Form Controls">
-        <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={8}>
-          <VStack align="stretch" gap={4}>
-            <SubSection title="Input">
-              <VStack align="stretch" gap={2}>
-                <Input placeholder="Default input" />
-                <Input placeholder="With border color" borderColor="secondary.300" />
-                <Input placeholder="Disabled" disabled />
-              </VStack>
-            </SubSection>
-
-            <SubSection title="Textarea">
-              <Textarea placeholder="Enter description..." rows={3} />
-            </SubSection>
-          </VStack>
-
-          <VStack align="stretch" gap={4}>
-            <SubSection title="Checkbox">
-              <VStack align="start" gap={2}>
-                <Checkbox.Root defaultChecked colorPalette={palette}>
-                  <Checkbox.HiddenInput />
-                  <Checkbox.Control />
-                  <Checkbox.Label>Checked</Checkbox.Label>
-                </Checkbox.Root>
-                <Checkbox.Root colorPalette={palette}>
-                  <Checkbox.HiddenInput />
-                  <Checkbox.Control />
-                  <Checkbox.Label>Unchecked</Checkbox.Label>
-                </Checkbox.Root>
-              </VStack>
-            </SubSection>
-
-            <SubSection title="Switch">
-              <VStack align="start" gap={2}>
-                <Switch.Root defaultChecked colorPalette={palette}>
-                  <Switch.HiddenInput />
-                  <Switch.Control />
-                  <Switch.Label>Enabled</Switch.Label>
-                </Switch.Root>
-                <Switch.Root colorPalette={palette}>
-                  <Switch.HiddenInput />
-                  <Switch.Control />
-                  <Switch.Label>Disabled</Switch.Label>
-                </Switch.Root>
-              </VStack>
-            </SubSection>
-          </VStack>
-        </Grid>
       </Section>
 
       <Section title="Cards">

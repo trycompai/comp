@@ -2,8 +2,6 @@ import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
 import { initializeServer } from '@comp/analytics/server';
 import { cn } from '@comp/ui/cn';
-// import '@comp/ui/globals.css';
-import { Provider as ChakraProvider } from '@trycompai/ui-new';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata } from 'next';
@@ -91,16 +89,14 @@ export default async function Layout(props: { children: React.ReactNode }) {
           'overscroll-none whitespace-pre-line antialiased',
         )}
       >
-        <ChakraProvider>
-          <Suspense>
-            <NuqsAdapter>
-              <Providers session={session}>
-                <main>{children}</main>
-              </Providers>
-            </NuqsAdapter>
-          </Suspense>
-          <Toaster richColors />
-        </ChakraProvider>
+        <Suspense>
+          <NuqsAdapter>
+            <Providers session={session}>
+              <main>{children}</main>
+            </Providers>
+          </NuqsAdapter>
+        </Suspense>
+        <Toaster richColors />
       </body>
     </html>
   );

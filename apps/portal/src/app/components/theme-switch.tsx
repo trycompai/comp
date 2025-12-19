@@ -1,59 +1,78 @@
 'use client';
 
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { ChevronDown, Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@comp/ui/select';
+import { Box, Button, HStack, Popover, Portal, Text, VStack } from '@trycompai/ui-v2';
 
 type Theme = 'dark' | 'system' | 'light';
 
-type Props = {
-  currentTheme?: Theme;
-};
-
-const ThemeIcon = ({ currentTheme }: Props) => {
-  switch (currentTheme) {
+const ThemeIcon = ({ theme }: { theme: Theme }) => {
+  switch (theme) {
     case 'dark':
       return <Moon size={12} />;
     case 'system':
       return <Monitor size={12} />;
+    case 'light':
     default:
       return <Sun size={12} />;
   }
 };
 
 export const ThemeSwitch = () => {
-  const { theme, setTheme, themes } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const current = (theme ?? 'system') as Theme;
+
+  const currentLabel = current === 'system' ? 'System' : current === 'dark' ? 'Dark' : 'Light';
 
   return (
-    <div className="relative flex items-center">
-      <Select defaultValue={theme} onValueChange={(value: Theme) => setTheme(value)}>
-        <SelectTrigger className="h-[32px] w-full bg-transparent py-1.5 pr-3 pl-6 text-xs capitalize outline-hidden">
-          <SelectValue placeholder="Theme" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {themes.map((theme) => (
-              <SelectItem key={theme} value={theme} className="capitalize">
-                {theme.toLowerCase() === 'dark' && 'Dark'}
-                {theme.toLowerCase() === 'system' && 'System'}
-                {theme.toLowerCase() === 'light' && 'Light'}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+    <Popover.Root
+      positioning={{ placement: 'bottom-start', gutter: 8, sameWidth: true, flip: false }}
+    >
+      <Popover.Trigger asChild>
+        <Button size="sm" variant="outline" w="140px" display="flex" justifyContent="space-between">
+          <HStack gap="2">
+            <ThemeIcon theme={current} />
+            <Text fontSize="sm">{currentLabel}</Text>
+          </HStack>
+          <ChevronDown size={14} />
+        </Button>
+      </Popover.Trigger>
 
-      <div className="pointer-events-none absolute left-2">
-        <ThemeIcon currentTheme={theme as Theme} />
-      </div>
-    </div>
+      <Portal disabled>
+        <Popover.Positioner>
+          <Popover.Content w="140px" p="1">
+            <VStack align="stretch" gap="1">
+              {(
+                [
+                  { value: 'system', label: 'System' },
+                  { value: 'light', label: 'Light' },
+                  { value: 'dark', label: 'Dark' },
+                ] as const
+              ).map((item) => {
+                const isActive = current === item.value;
+                return (
+                  <Button
+                    key={item.value}
+                    size="sm"
+                    variant="ghost"
+                    justifyContent="flex-start"
+                    onClick={() => setTheme(item.value)}
+                  >
+                    <HStack gap="2" w="full" justify="space-between">
+                      <HStack gap="2">
+                        <ThemeIcon theme={item.value} />
+                        <Text fontSize="sm">{item.label}</Text>
+                      </HStack>
+                      {isActive ? <Box boxSize="2" borderRadius="full" bg="primary.solid" /> : null}
+                    </HStack>
+                  </Button>
+                );
+              })}
+            </VStack>
+          </Popover.Content>
+        </Popover.Positioner>
+      </Portal>
+    </Popover.Root>
   );
 };

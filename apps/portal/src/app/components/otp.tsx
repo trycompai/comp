@@ -1,12 +1,9 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { Button, Field, Input, VStack } from '@trycompai/ui-v2';
+import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -31,6 +28,7 @@ export function OtpSignIn({ className }: Props) {
     defaultValues: {
       email: '',
     },
+    mode: 'onSubmit',
   });
 
   async function onSubmit({ email }: z.infer<typeof formSchema>) {
@@ -55,52 +53,35 @@ export function OtpSignIn({ className }: Props) {
 
   if (isSent) {
     return (
-      <div className={cn('flex flex-col space-y-4', className)}>
+      <VStack align="stretch" gap="4" className={className}>
         <OtpForm email={_email ?? ''} />
-      </div>
+      </VStack>
     );
   }
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className={cn('flex flex-col space-y-4', className)}>
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input
-                    placeholder="Your work email"
-                    {...field}
-                    autoFocus
-                    className="h-[40px]"
-                    autoCapitalize="false"
-                    autoCorrect="false"
-                    spellCheck="false"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+  const emailError = form.formState.errors.email?.message;
 
-          <Button
-            type="submit"
-            className="flex h-[40px] w-full space-x-2 px-6 py-4 font-medium active:scale-[0.98]"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <span>Continue</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
+      <VStack align="stretch" gap="4">
+        <Field.Root invalid={!!emailError}>
+          <Field.Label>Email</Field.Label>
+          <Input
+            placeholder="Your work email"
+            autoFocus
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            {...form.register('email')}
+          />
+          {emailError ? <Field.ErrorText>{emailError}</Field.ErrorText> : null}
+        </Field.Root>
+
+        <Button type="submit" w="full" size="lg" loading={isLoading} colorPalette="primary">
+          Continue
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </VStack>
+    </form>
   );
 }

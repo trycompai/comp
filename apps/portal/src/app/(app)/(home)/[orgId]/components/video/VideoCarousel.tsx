@@ -2,6 +2,7 @@
 
 import { trainingVideos } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion } from '@db';
+import { Text, VStack } from '@trycompai/ui-v2';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -119,14 +120,16 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
   const allVideosCompleted = trainingVideos.every((metadata) => completedVideoIds.has(metadata.id));
 
   return (
-    <div className="space-y-4">
+    <VStack align="stretch" gap="4">
       {allVideosCompleted && (
-        <div className="flex w-full flex-col items-center justify-center space-y-2 py-8">
-          <h2 className="text-2xl font-semibold">All Training Videos Completed!</h2>
-          <p className="text-muted-foreground text-center">
+        <VStack py="8" gap="2" textAlign="center">
+          <Text textStyle="xl" fontWeight="semibold">
+            All Training Videos Completed!
+          </Text>
+          <Text fontSize="sm" color="fg.muted">
             You're all done, now your manager won't pester you!
-          </p>
-        </div>
+          </Text>
+        </VStack>
       )}
       {!allVideosCompleted && (
         <>
@@ -150,6 +153,6 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
           />
         </>
       )}
-    </div>
+    </VStack>
   );
 }
