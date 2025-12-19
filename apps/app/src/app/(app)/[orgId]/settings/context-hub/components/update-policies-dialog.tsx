@@ -11,29 +11,131 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
+import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+
+import type { PolicyUpdateStatus } from '../hooks/use-policy-update-realtime';
 
 interface UpdatePoliciesDialogProps {
   context: { id: string; question: string } | null;
   onClose: () => void;
+  onRunStarted: (runId: string, accessToken: string) => void;
+  status: PolicyUpdateStatus | null;
+  onOpenSheet: () => void;
 }
 
-export function UpdatePoliciesDialog({ context, onClose }: UpdatePoliciesDialogProps) {
-  const { execute, status } = useAction(triggerPolicyUpdateFromContextAction, {
-    onSuccess: () => {
-      toast.success('Analyzing affected policies. Updates will run in the background.');
-      onClose();
+export function UpdatePoliciesDialog({
+  context,
+  onClose,
+  onRunStarted,
+  status,
+  onOpenSheet,
+}: UpdatePoliciesDialogProps) {
+  const toastIdRef = useRef<string | number | null>(null);
+  const hasTriggeredRef = useRef(false);
+
+  const { execute, status: actionStatus } = useAction(triggerPolicyUpdateFromContextAction, {
+    onSuccess: (result) => {
+      if (result.data?.success && result.data.runId && result.data.publicAccessToken) {
+        onRunStarted(result.data.runId, result.data.publicAccessToken);
+        onClose();
+      }
     },
     onError: () => {
       toast.error('Failed to trigger policy updates.');
+      hasTriggeredRef.current = false;
     },
   });
 
-  const isExecuting = status === 'executing';
+  const isExecuting = actionStatus === 'executing';
+
+  useEffect(() => {
+    if (!status) return;
+
+    const allPoliciesCompleted =
+      status.affectedPoliciesInfo.length > 0 &&
+      status.affectedPoliciesInfo.every(
+        (p) => status.policiesStatus[p.id] === 'completed',
+      );
+    const countsComplete =
+      status.policiesTotal > 0 &&
+      status.policiesCompleted >= status.policiesTotal;
+    const fullyDone = allPoliciesCompleted || countsComplete || status.isComplete;
+
+    const getToastMessage = () => {
+      if (status.phase === 'analyzing') {
+        const total = status.totalPolicies > 0 ? status.totalPolicies : '?';
+        return `Scanning policies... (${status.analyzedCount}/${total})`;
+      }
+      if (!fullyDone) {
+        return `Updating ${status.affectedCount} policies (${status.policiesCompleted}/${status.policiesTotal})`;
+      }
+      if (fullyDone) {
+        if (status.error) {
+          return 'Policy update failed';
+        }
+        if (status.affectedCount === 0) {
+          return 'No policies needed updating';
+        }
+        const patchedCount = status.policyDiffs.filter(d => d.sectionsModified.length > 0).length;
+        if (patchedCount === 0) {
+          return 'No policies were modified';
+        }
+        return `Patched ${patchedCount} ${patchedCount === 1 ? 'policy' : 'policies'}`;
+      }
+      return 'Processing...';
+    };
+
+    const message = getToastMessage();
+    const patchedCount = status.policyDiffs.filter(d => d.sectionsModified.length > 0).length;
+
+    if (fullyDone && status.phase !== 'analyzing') {
+      if (toastIdRef.current) {
+        if (status.error) {
+          toast.error(message, { id: toastIdRef.current });
+        } else {
+          toast.success(message, {
+            id: toastIdRef.current,
+            action: patchedCount > 0 ? {
+              label: 'View Details',
+              onClick: () => onOpenSheet(),
+            } : undefined,
+          });
+        }
+        toastIdRef.current = null;
+        hasTriggeredRef.current = false;
+      }
+    } else {
+      if (!toastIdRef.current) {
+        toastIdRef.current = toast.loading(message, {
+          description: status.affectedCount > 0
+            ? `${status.affectedCount} policies to process`
+            : undefined,
+          action: {
+            label: 'View Details',
+            onClick: () => onOpenSheet(),
+          },
+        });
+      } else {
+        toast.loading(message, {
+          id: toastIdRef.current,
+          description: status.affectedCount > 0
+            ? `${status.affectedCount} policies to process`
+            : undefined,
+          action: {
+            label: 'View Details',
+            onClick: () => onOpenSheet(),
+          },
+        });
+      }
+    }
+  }, [status, onOpenSheet]);
 
   const handleConfirm = () => {
-    if (context) {
+    if (context && !hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
       execute({ contextId: context.id });
     }
   };
@@ -61,7 +163,7 @@ export function UpdatePoliciesDialog({ context, onClose }: UpdatePoliciesDialogP
           <AlertDialogAction onClick={handleConfirm} disabled={isExecuting}>
             {isExecuting ? (
               <span className="flex items-center gap-2">
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <Loader2 className="h-3 w-3 animate-spin" />
                 Processing...
               </span>
             ) : (

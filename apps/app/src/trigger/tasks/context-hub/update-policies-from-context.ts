@@ -1,9 +1,10 @@
 import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
-import { logger, queue, schemaTask, tasks } from '@trigger.dev/sdk/v3';
+import { logger, metadata, queue, schemaTask, tasks } from '@trigger.dev/sdk/v3';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { updatePolicy } from '../onboarding/update-policy';
+
+import { patchPolicyFromContext } from './patch-policy-from-context';
 
 const updatePoliciesFromContextQueue = queue({
   name: 'update-policies-from-context',
@@ -23,7 +24,15 @@ export const updatePoliciesFromContext = schemaTask({
   run: async (payload) => {
     const { organizationId, contextQuestion, contextAnswer } = payload;
 
-    console.log('[update-policies-from-context] Starting', { organizationId, contextQuestion });
+    logger.info('Starting policy update from context', { organizationId });
+
+    metadata.set('phase', 'analyzing');
+    metadata.set('totalPolicies', 0);
+    metadata.set('analyzedCount', 0);
+    metadata.set('affectedCount', 0);
+    metadata.set('policiesTotal', 0);
+    metadata.set('policiesCompleted', 0);
+    metadata.set('affectedPoliciesInfo', []);
 
     const policies = await db.policy.findMany({
       where: { organizationId },
@@ -39,39 +48,28 @@ export const updatePoliciesFromContext = schemaTask({
     });
 
     if (policies.length === 0) {
-      console.log('[update-policies-from-context] No policies found, skipping', { organizationId });
+      logger.info('No policies found, skipping', { organizationId });
+      metadata.set('phase', 'completed');
       return { updatedCount: 0, analyzedCount: 0, skipped: true };
     }
 
-    console.log(`[update-policies-from-context] Found ${policies.length} policies to analyze`);
-
-    const contexts = await db.context.findMany({
-      where: { organizationId },
-      orderBy: { createdAt: 'asc' },
-    });
-    const contextHub = contexts.map((c) => `${c.question}\n${c.answer}`).join('\n');
+    metadata.set('totalPolicies', policies.length);
 
     const affectedPolicies: typeof policies = [];
+    const affectedPoliciesInfo: Array<{ id: string; name: string }> = [];
     const batchSize = 10;
 
     for (let i = 0; i < policies.length; i += batchSize) {
       const batch = policies.slice(i, i + batchSize);
-      console.log(
-        `[update-policies-from-context] Analyzing batch ${i / batchSize + 1}, policies: ${batch.map((p) => p.name).join(', ')}`,
-      );
 
       const results = await Promise.all(
         batch.map(async (policy) => {
           const policyName = policy.policyTemplate?.name ?? policy.name;
-          console.log(`[update-policies-from-context] Analyzing policy: ${policyName}`);
           const isAffected = await analyzePolicyRelevance(
             contextQuestion,
             contextAnswer,
             policyName,
             policy.policyTemplate?.description ?? '',
-          );
-          console.log(
-            `[update-policies-from-context] Policy "${policyName}" affected: ${isAffected}`,
           );
           return { policy, isAffected };
         }),
@@ -80,53 +78,47 @@ export const updatePoliciesFromContext = schemaTask({
       for (const { policy, isAffected } of results) {
         if (isAffected) {
           affectedPolicies.push(policy);
+          const policyName = policy.policyTemplate?.name ?? policy.name;
+          affectedPoliciesInfo.push({ id: policy.id, name: policyName });
         }
       }
+
+      metadata.set('analyzedCount', i + batch.length);
+      metadata.set('affectedCount', affectedPolicies.length);
+      metadata.set('affectedPoliciesInfo', affectedPoliciesInfo);
     }
 
     logger.info(`Found ${affectedPolicies.length} affected policies out of ${policies.length}`, {
       affectedPolicyIds: affectedPolicies.map((p) => p.id),
-      affectedPolicyNames: affectedPolicies.map((p) => p.name),
     });
 
     if (affectedPolicies.length === 0) {
-      logger.info('No policies affected by context change', {
-        organizationId,
-        analyzedCount: policies.length,
-      });
+      metadata.set('phase', 'completed');
       return { updatedCount: 0, analyzedCount: policies.length };
     }
 
-    const instances = await db.frameworkInstance.findMany({
-      where: { organizationId },
-      include: { framework: true },
-    });
+    metadata.set('phase', 'updating');
+    metadata.set('policiesTotal', affectedPolicies.length);
+    metadata.set('policiesCompleted', 0);
+    metadata.set('policyDiffs', []);
 
-    const uniqueFrameworks = Array.from(
-      new Map(instances.map((fi) => [fi.framework.id, fi.framework])).values(),
-    ).map((f) => ({
-      id: f.id,
-      name: f.name,
-      version: f.version,
-      description: f.description,
-      visible: f.visible,
-      createdAt: f.createdAt,
-      updatedAt: f.updatedAt,
-    }));
+    for (const policy of affectedPolicies) {
+      metadata.set(`policy_${policy.id}_status`, 'pending');
+    }
 
-    await tasks.batchTrigger<typeof updatePolicy>(
-      'update-policy',
+    await tasks.batchTrigger<typeof patchPolicyFromContext>(
+      'patch-policy-from-context',
       affectedPolicies.map((policy) => ({
         payload: {
           organizationId,
           policyId: policy.id,
-          contextHub,
-          frameworks: uniqueFrameworks,
+          contextQuestion,
+          contextAnswer,
         },
       })),
     );
 
-    logger.info(`Triggered updates for ${affectedPolicies.length} policies`);
+    metadata.set('phase', 'completed');
 
     return {
       updatedCount: affectedPolicies.length,
@@ -141,15 +133,13 @@ async function analyzePolicyRelevance(
   policyName: string,
   policyDescription: string,
 ): Promise<boolean> {
-  try {
-    console.log(`[analyzePolicyRelevance] Calling AI for policy: ${policyName}`);
-    const { object } = await generateObject({
-      model: openai('gpt-4.1'),
-      schema: z.object({
-        affected: z.boolean(),
-        reason: z.string(),
-      }),
-      prompt: `Analyze if this context change affects the given policy.
+  const { object } = await generateObject({
+    model: openai('gpt-4.1'),
+    schema: z.object({
+      affected: z.boolean(),
+      reason: z.string(),
+    }),
+    prompt: `Analyze if this context change affects the given policy.
 
 Context Change:
 Question: ${contextQuestion}
@@ -166,15 +156,7 @@ Does this context change likely affect this policy's content? Consider:
 
 Be conservative - only mark as affected if there's a clear connection.
 Respond with whether the policy is affected and a brief reason.`,
-    });
+  });
 
-    logger.info(`Policy "${policyName}" relevance: ${object.affected} - ${object.reason}`);
-    return object.affected;
-  } catch (error) {
-    console.error(
-      `[analyzePolicyRelevance] FAILED for "${policyName}":`,
-      error instanceof Error ? error.message : String(error),
-    );
-    return false;
-  }
+  return object.affected;
 }

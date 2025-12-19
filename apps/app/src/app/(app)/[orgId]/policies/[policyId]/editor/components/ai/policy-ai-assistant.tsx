@@ -160,10 +160,10 @@ export function PolicyAiAssistant({
                       };
 
                       const icons: Record<ToolState, React.ReactNode> = {
-                        'input-streaming': <CircleIcon className="size-3" />,
-                        'input-available': <ClockIcon className="size-3 animate-pulse" />,
-                        'output-available': <CheckCircleIcon className="size-3 text-emerald-600" />,
-                        'output-error': <XCircleIcon className="size-3 text-red-600" />,
+                        'input-streaming': <CircleIcon className="size-3 text-muted-foreground" />,
+                        'input-available': <ClockIcon className="size-3 animate-pulse text-primary" />,
+                        'output-available': <CheckCircleIcon className="size-3 text-chart-positive" />,
+                        'output-error': <XCircleIcon className="size-3 text-destructive" />,
                       };
 
                       return (

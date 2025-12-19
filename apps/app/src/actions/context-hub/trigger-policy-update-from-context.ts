@@ -2,7 +2,7 @@
 
 import { updatePoliciesFromContext } from '@/trigger/tasks/context-hub/update-policies-from-context';
 import { db } from '@db';
-import { tasks } from '@trigger.dev/sdk/v3';
+import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
 
@@ -25,12 +25,19 @@ export const triggerPolicyUpdateFromContextAction = authActionClient
 
     if (!context) throw new Error('Context not found');
 
-    await tasks.trigger<typeof updatePoliciesFromContext>('update-policies-from-context', {
-      organizationId,
-      contextId,
-      contextQuestion: context.question,
-      contextAnswer: context.answer,
-    });
+    const handle = await tasks.trigger<typeof updatePoliciesFromContext>(
+      'update-policies-from-context',
+      {
+        organizationId,
+        contextId,
+        contextQuestion: context.question,
+        contextAnswer: context.answer,
+      },
+    );
 
-    return { success: true };
+    return {
+      success: true,
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
+    };
   });

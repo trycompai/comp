@@ -1,8 +1,6 @@
 'use server';
 
 import { db } from '@db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { authActionClient } from '../safe-action';
 import { updateContextEntrySchema } from '../schema';
 
@@ -27,12 +25,6 @@ export const updateContextEntryAction = authActionClient
           : [],
       },
     });
-
-    const headersList = await headers();
-    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-    path = path.replace(/\/[a-z]{2}\//, '/');
-
-    revalidatePath(path);
 
     return {
       success: true,
