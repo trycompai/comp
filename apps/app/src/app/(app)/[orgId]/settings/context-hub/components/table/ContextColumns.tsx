@@ -23,6 +23,7 @@ import { Check, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { usePolicyUpdate } from '../policy-update-context';
 
 // Question cell (read-only display)
 function QuestionCell({ context }: { context: Context }) {
@@ -36,11 +37,18 @@ function EditableAnswerCell({ context }: { context: Context }) {
   const [structuredValue, setStructuredValue] = useState<Record<string, string> | null>(null);
   const [arrayValue, setArrayValue] = useState<Record<string, string>[] | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { triggerPolicyUpdate } = usePolicyUpdate();
 
   const { execute, status } = useAction(updateContextEntryAction, {
-    onSuccess: () => {
+    onSuccess: (result) => {
       setIsEditing(false);
       toast.success('Answer updated');
+      if (result.data?.entry) {
+        triggerPolicyUpdate({
+          id: result.data.entry.id,
+          question: result.data.entry.question,
+        });
+      }
     },
     onError: () => {
       setValue(context.answer);

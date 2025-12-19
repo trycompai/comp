@@ -1,8 +1,6 @@
 'use server';
 
 import { db } from '@db';
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { authActionClient } from '../safe-action';
 import { updateContextEntrySchema } from '../schema';
 
@@ -14,7 +12,7 @@ export const updateContextEntryAction = authActionClient
     const organizationId = ctx.session.activeOrganizationId;
     if (!organizationId) throw new Error('No active organization');
 
-    await db.context.update({
+    const updated = await db.context.update({
       where: { id, organizationId },
       data: {
         question,
@@ -28,11 +26,12 @@ export const updateContextEntryAction = authActionClient
       },
     });
 
-    const headersList = await headers();
-    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-    path = path.replace(/\/[a-z]{2}\//, '/');
-
-    revalidatePath(path);
-
-    return { success: true };
+    return {
+      success: true,
+      entry: {
+        id: updated.id,
+        question: updated.question,
+        answer: updated.answer,
+      },
+    };
   });
