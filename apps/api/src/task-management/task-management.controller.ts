@@ -32,6 +32,7 @@ import { UpdateTaskItemDto } from './dto/update-task-item.dto';
 import { TaskItemResponseDto } from './dto/task-item-response.dto';
 import { GetTaskItemQueryDto } from './dto/get-task-item-query.dto';
 import { PaginatedTaskItemResponseDto } from './dto/paginated-task-item-response.dto';
+import { GetTaskItemStatsQueryDto } from './dto/get-task-item-stats-query.dto';
 
 @ApiTags('Task Management')
 @Controller({ path: 'task-management', version: '1' })
@@ -85,14 +86,13 @@ export class TaskManagementController {
   })
   async getTaskItemsStats(
     @OrganizationId() organizationId: string,
-    @Query('entityId') entityId: string,
-    @Query('entityType') entityType: TaskItemEntityType,
+    @Query() query: GetTaskItemStatsQueryDto,
   ) {
     try {
       return await this.taskManagementService.getTaskItemsStats(
         organizationId,
-        entityId,
-        entityType,
+        query.entityId,
+        query.entityType,
       );
     } catch (error) {
       throw error;

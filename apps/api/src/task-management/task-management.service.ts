@@ -33,6 +33,12 @@ export class TaskManagementService {
     byStatus: Record<TaskItemStatus, number>;
   }> {
     try {
+      // Defensive guard: avoid returning org-wide stats if an endpoint is called without entity context.
+      // Validation should catch this first, but this ensures safety even if validation is misconfigured.
+      if (!entityId || !entityType) {
+        throw new BadRequestException('entityId and entityType are required');
+      }
+
       const [total, statusCounts] = await Promise.all([
         db.taskItem.count({
           where: {
