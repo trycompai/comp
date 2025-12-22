@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig/react-library.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": false,
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    "types": ["react", "react-dom"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

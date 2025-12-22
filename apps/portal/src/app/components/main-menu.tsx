@@ -1,15 +1,14 @@
 'use client';
 
-import { cn } from '@comp/ui/cn';
-import { Icons } from '@comp/ui/icons';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { cn } from '@trycompai/ui-shadcn/cn';
 import { Reorder, motion } from 'framer-motion';
+import { LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 const icons = {
-  '/': () => <Icons.Overview size={22} />,
+  '/': () => <LayoutDashboard className="h-[22px] w-[22px]" />,
 };
 
 interface ItemProps {
@@ -23,50 +22,36 @@ const Item = ({ item, isActive, onSelect, disabled }: ItemProps) => {
   const Icon = icons[item.path as keyof typeof icons];
   const linkDisabled = disabled || item.disabled;
 
-  return (
-    <TooltipProvider delayDuration={70}>
-      {linkDisabled ? (
-        <div className="flex h-[45px] w-[45px] items-center md:justify-center">Coming</div>
-      ) : (
-        <Link prefetch href={item.path} onClick={() => onSelect?.()}>
-          <Tooltip>
-            <TooltipTrigger className="w-full">
-              <Reorder.Item
-                key={item.path}
-                value={item}
-                id={item.path}
-                layoutRoot
-                className={cn(
-                  'relative flex h-[45px] items-center border border-transparent md:w-[45px] md:justify-center',
-                  'hover:bg-accent hover:border-[#DCDAD2] hover:dark:border-[#2C2C2C]',
-                  isActive &&
-                    'dark:bg-secondary border-[#DCDAD2] bg-[#F2F1EF] dark:border-[#2C2C2C]',
-                )}
-              >
-                <motion.div
-                  className="relative"
-                  initial={{ opacity: 1 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <div>
-                    <Icon />
-                    <span className="flex md:hidden">{item.name}</span>
-                  </div>
-                </motion.div>
-              </Reorder.Item>
-            </TooltipTrigger>
-            <TooltipContent
-              side="left"
-              className="hidden px-3 py-1.5 text-xs md:flex"
-              sideOffset={10}
-            >
-              {item.name}
-            </TooltipContent>
-          </Tooltip>
-        </Link>
-      )}
-    </TooltipProvider>
+  return linkDisabled ? (
+    <div className="flex h-[45px] w-[45px] items-center justify-center text-xs text-muted-foreground">
+      Coming
+    </div>
+  ) : (
+    <Link prefetch href={item.path} onClick={() => onSelect?.()} title={item.name}>
+      <Reorder.Item
+        key={item.path}
+        value={item}
+        id={item.path}
+        layoutRoot
+        className={cn(
+          'relative flex h-[45px] items-center justify-center rounded-md border border-transparent md:w-[45px]',
+          'hover:bg-accent hover:border-border',
+          isActive && 'bg-muted border-border',
+        )}
+      >
+        <motion.div
+          className="relative"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="flex items-center gap-2">
+            <Icon />
+            <span className="flex md:hidden">{item.name}</span>
+          </div>
+        </motion.div>
+      </Reorder.Item>
+    </Link>
   );
 };
 

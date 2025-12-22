@@ -1,13 +1,17 @@
 import PageCore from '@/components/pages/PageCore.tsx';
-import type { Metadata } from 'next';
-import { auth } from '@/utils/auth';
 import { env } from '@/env.mjs';
+import { auth } from '@/utils/auth';
 import { db } from '@db';
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { TrustPortalSwitch } from './components/TrustPortalSwitch';
 import { TrustPortalDomain } from './components/TrustPortalDomain';
+import { TrustPortalSwitch } from './components/TrustPortalSwitch';
 
-export default async function PortalSettingsPage({ params }: { params: Promise<{ orgId: string }> }) {
+export default async function PortalSettingsPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
   const { orgId } = await params;
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
@@ -170,7 +174,7 @@ async function fetchOrganizationPrimaryColor(orgId: string): Promise<string | nu
         ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
       },
     });
-    
+
     if (!response.ok) {
       console.warn('Failed to fetch organization primary color:', response.statusText);
       return null;
@@ -233,7 +237,7 @@ async function getJwtToken(cookieHeader: string): Promise<string | null> {
   }
 
   try {
-    const authUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000';
+    const authUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
     const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
       method: 'GET',
       headers: {
@@ -258,4 +262,3 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Portal Settings',
   };
 }
-

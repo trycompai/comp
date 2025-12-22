@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import type { Member, Policy } from '@db';
+import { Button } from '@trycompai/ui-shadcn';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyCarousel } from './PolicyCarousel';
@@ -31,9 +31,11 @@ export function PolicyContainer({ policies, member }: PolicyContainerProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleBackToGrid}>
-            <ArrowLeft className="h-4 w-4" />
-            Back to Policies
+          <Button variant="outline" size="sm" onClick={handleBackToGrid}>
+            <span className="inline-flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Policies
+            </span>
           </Button>
           <p className="text-muted-foreground text-sm">
             Policy {selectedPolicyIndex + 1} of {policies.length}

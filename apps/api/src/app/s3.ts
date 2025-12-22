@@ -1,4 +1,8 @@
-import { GetObjectCommand, S3Client, type GetObjectCommandOutput } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  S3Client,
+  type GetObjectCommandOutput,
+} from '@aws-sdk/client-s3';
 import { Logger } from '@nestjs/common';
 import '../config/load-env';
 

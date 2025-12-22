@@ -309,7 +309,9 @@ export class OrganizationService {
       });
 
       if (!primaryColor) {
-        throw new NotFoundException(`Organization with ID ${targetOrgId} not found`);
+        throw new NotFoundException(
+          `Organization with ID ${targetOrgId} not found`,
+        );
       }
 
       this.logger.log(

@@ -1,12 +1,8 @@
 {
   "mcpServers": {
-    "trigger": {
-      "command": "npx",
-      "args": [
-        "trigger.dev@latest",
-        "mcp",
-        "--dev-only"
-      ]
+    "chakra-ui": {
+      "command": "bunx",
+      "args": ["-y", "@chakra-ui/react-mcp"]
     }
   }
 }
