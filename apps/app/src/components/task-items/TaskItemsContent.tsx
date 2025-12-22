@@ -2,13 +2,11 @@
 
 import { Button } from '@comp/ui/button';
 import { Loader2 } from 'lucide-react';
-import { TaskItemForm } from './TaskItemForm';
 import { TaskItemList } from './TaskItemList';
 import { TaskItemPagination } from './TaskItemPagination';
 import type { TaskItem, TaskItemEntityType, TaskItemFilters, TaskItemSortBy, TaskItemSortOrder } from '@/hooks/use-task-items';
 
 interface TaskItemsContentProps {
-  showForm: boolean;
   taskItemsError: Error | null | undefined;
   shouldShowEmptyState: boolean;
   hasActiveFilters: boolean | undefined;
@@ -30,8 +28,6 @@ interface TaskItemsContentProps {
   sortOrder: TaskItemSortOrder;
   filters: TaskItemFilters;
   selectedTaskItemId: string | null;
-  onFormSuccess: () => void;
-  onFormCancel: () => void;
   onSelectTaskItemId: (taskItemId: string | null) => void;
   onStatusOrPriorityChange: () => void;
   onPageChange: (newPage: number) => void;
@@ -40,7 +36,6 @@ interface TaskItemsContentProps {
 }
 
 export function TaskItemsContent({
-  showForm,
   taskItemsError,
   shouldShowEmptyState,
   hasActiveFilters,
@@ -55,8 +50,6 @@ export function TaskItemsContent({
   sortOrder,
   filters,
   selectedTaskItemId,
-  onFormSuccess,
-  onFormCancel,
   onSelectTaskItemId,
   onStatusOrPriorityChange,
   onPageChange,
@@ -65,20 +58,6 @@ export function TaskItemsContent({
 }: TaskItemsContentProps) {
   return (
     <div className="space-y-4">
-      {showForm && (
-        <TaskItemForm
-          entityId={entityId}
-          entityType={entityType}
-          page={page}
-          limit={limit}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          filters={filters}
-          onSuccess={onFormSuccess}
-          onCancel={onFormCancel}
-        />
-      )}
-
       {taskItemsError && (
         <div className="text-destructive text-sm">
           Failed to load tasks. Please try again.
@@ -99,10 +78,8 @@ export function TaskItemsContent({
                 Clear filters
               </Button>
             </div>
-          ) : showForm ? (
-            'Fill out the form above to create your first task.'
           ) : (
-            'No tasks yet. Click the icon above to create one.'
+            'No tasks yet. Use the plus button to create one.'
           )}
         </div>
       ) : taskItems.length > 0 ? (

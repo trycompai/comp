@@ -1,15 +1,15 @@
 'use client';
 
 import { useTaskItems, useTaskItemsStats, type TaskItemSortBy, type TaskItemSortOrder, type TaskItemFilters } from '@/hooks/use-task-items';
-import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader } from '@comp/ui/card';
 import type { TaskItemEntityType } from '@/hooks/use-task-items';
-import { Plus, X, Loader2 } from 'lucide-react';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TaskItemFocusView } from './TaskItemFocusView';
 import { TaskItemsHeader } from './TaskItemsHeader';
 import { TaskItemsFilters } from './TaskItemsFilters';
-import { TaskItemsContent } from './TaskItemsContent';
+import { TaskItemCreateDialog } from './TaskItemCreateDialog';
+import { TaskItemsInline } from './TaskItemsInline';
+import { TaskItemsBody } from './TaskItemsBody';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -29,23 +29,6 @@ interface TaskItemsProps {
   onFocusModeChange?: (isFocusMode: boolean) => void;
 }
 
-/**
- * Reusable TaskItems component that works with any entity type.
- * Automatically handles data fetching, loading states, and error handling.
- *
- * @example
- * // Basic usage
- * <TaskItems entityId={vendorId} entityType="vendor" />
- *
- * @example
- * // Custom title and inline variant
- * <TaskItems
- *   entityId={riskId}
- *   entityType="risk"
- *   title="Risk Tasks"
- *   variant="inline"
- * />
- */
 export const TaskItems = ({
   entityId,
   entityType,
@@ -55,7 +38,7 @@ export const TaskItems = ({
   anchorId = 'task-items',
   onFocusModeChange,
 }: TaskItemsProps) => {
-  const [showForm, setShowForm] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(5);
   const [sortBy, setSortBy] = useState<TaskItemSortBy>('createdAt');
@@ -178,14 +161,18 @@ export const TaskItems = ({
   const defaultDescription =
     description || `Manage tasks related to this ${entityType}`;
 
-  const handleFormSubmit = () => {
-    setShowForm(false);
+  const handleCreateSuccess = () => {
+    setIsCreateOpen(false);
     refreshTaskItems();
     refreshStats();
     // Reset to first page if we're not on it
     if (page !== 1) {
       setPage(1);
     }
+  };
+
+  const handleCreateOpenChange = (open: boolean) => {
+    setIsCreateOpen(open);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -221,73 +208,59 @@ export const TaskItems = ({
     );
   }
 
-  const hasActiveFilters = filters.status || filters.priority || filters.assigneeId;
+  const hasActiveFilters = Boolean(filters.status || filters.priority || filters.assigneeId);
+
+  const content = (
+    <TaskItemsBody
+      isInitialLoad={isInitialLoad}
+      taskItemsError={taskItemsError}
+      shouldShowEmptyState={shouldShowEmptyState}
+      hasActiveFilters={hasActiveFilters}
+      taskItems={taskItems}
+      taskItemsLoading={taskItemsLoading}
+      paginationMeta={paginationMeta}
+      entityId={entityId}
+      entityType={entityType}
+      page={page}
+      limit={limit}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      filters={filters}
+      selectedTaskItemId={selectedTaskItemId}
+      onSelectTaskItemId={handleSelectTaskItemId}
+      onStatusOrPriorityChange={refreshStats}
+      onPageChange={handlePageChange}
+      onLimitChange={handleLimitChange}
+      onClearFilters={handleClearFilters}
+    />
+  );
+
+  const createDialog = (
+    <TaskItemCreateDialog
+      open={isCreateOpen}
+      onOpenChange={handleCreateOpenChange}
+      entityId={entityId}
+      entityType={entityType}
+      page={page}
+      limit={limit}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      filters={filters}
+      onSuccess={handleCreateSuccess}
+    />
+  );
 
   if (variant === 'inline') {
     return (
-      <section id={anchorId} className="scroll-mt-24 space-y-4">
-        {title && (
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium">{title}</h3>
-              {description && (
-                <p className="text-muted-foreground text-sm mt-1">{description}</p>
-              )}
-            </div>
-            <Button
-              size="icon"
-              onClick={() => setShowForm(!showForm)}
-              variant={showForm ? 'outline' : 'default'}
-              aria-label={showForm ? 'Cancel' : 'Create Task'}
-              className="transition-all duration-200"
-            >
-              <span className="relative inline-flex items-center justify-center">
-                <Plus
-                  className={`h-4 w-4 absolute transition-all duration-200 ${
-                    showForm ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
-                  }`}
-                />
-                <X
-                  className={`h-4 w-4 absolute transition-all duration-200 ${
-                    showForm ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
-                  }`}
-                />
-              </span>
-            </Button>
-          </div>
-        )}
-        {isInitialLoad ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">Loading tasks...</p>
-          </div>
-        ) : (
-          <TaskItemsContent
-            showForm={showForm}
-            taskItemsError={taskItemsError}
-            shouldShowEmptyState={shouldShowEmptyState}
-            hasActiveFilters={!!(filters.status || filters.priority || filters.assigneeId)}
-            taskItems={taskItems}
-            taskItemsLoading={taskItemsLoading}
-            paginationMeta={paginationMeta}
-            entityId={entityId}
-            entityType={entityType}
-            page={page}
-            limit={limit}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            filters={filters}
-            selectedTaskItemId={selectedTaskItemId}
-            onFormSuccess={handleFormSubmit}
-            onFormCancel={() => setShowForm(false)}
-            onSelectTaskItemId={handleSelectTaskItemId}
-            onStatusOrPriorityChange={refreshStats}
-            onPageChange={handlePageChange}
-            onLimitChange={handleLimitChange}
-            onClearFilters={handleClearFilters}
-          />
-        )}
-      </section>
+      <TaskItemsInline
+        anchorId={anchorId}
+        title={title}
+        description={description}
+        isCreateOpen={isCreateOpen}
+        onToggleCreate={() => setIsCreateOpen((prev) => !prev)}
+        content={content}
+        createDialog={createDialog}
+      />
     );
   }
 
@@ -301,8 +274,8 @@ export const TaskItems = ({
               description={defaultDescription}
               statsLoading={statsLoading}
               stats={stats}
-              showForm={showForm}
-              onToggleForm={() => setShowForm(!showForm)}
+              isCreateOpen={isCreateOpen}
+              onToggleCreate={() => setIsCreateOpen((prev) => !prev)}
             />
             <TaskItemsFilters
               sortBy={sortBy}
@@ -317,40 +290,9 @@ export const TaskItems = ({
             />
           </div>
         </CardHeader>
-        <CardContent>
-        {isInitialLoad ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">Loading tasks...</p>
-          </div>
-        ) : (
-          <TaskItemsContent
-            showForm={showForm}
-            taskItemsError={taskItemsError}
-            shouldShowEmptyState={shouldShowEmptyState}
-            hasActiveFilters={!!(filters.status || filters.priority || filters.assigneeId)}
-            taskItems={taskItems}
-            taskItemsLoading={taskItemsLoading}
-            paginationMeta={paginationMeta}
-            entityId={entityId}
-            entityType={entityType}
-            page={page}
-            limit={limit}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            filters={filters}
-            selectedTaskItemId={selectedTaskItemId}
-            onFormSuccess={handleFormSubmit}
-            onFormCancel={() => setShowForm(false)}
-            onSelectTaskItemId={handleSelectTaskItemId}
-            onStatusOrPriorityChange={refreshStats}
-            onPageChange={handlePageChange}
-            onLimitChange={handleLimitChange}
-            onClearFilters={handleClearFilters}
-          />
-        )}
-        </CardContent>
+        <CardContent>{content}</CardContent>
       </Card>
+      {createDialog}
     </section>
   );
 };

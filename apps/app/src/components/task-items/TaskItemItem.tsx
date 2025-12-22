@@ -4,6 +4,7 @@ import { useOptimisticTaskItems } from '@/hooks/use-task-items';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
+import { TaskItemDescriptionView } from './TaskItemDescriptionView';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -677,9 +678,10 @@ export function TaskItemItem({
             {taskItem.description ? (
               <div>
                 <div className="text-xs font-medium mb-1">Description</div>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {taskItem.description}
-                </p>
+                <TaskItemDescriptionView
+                  description={taskItem.description}
+                  className="text-sm"
+                />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground italic">

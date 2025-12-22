@@ -19,8 +19,8 @@ interface TaskItemsHeaderProps {
       canceled: number;
     };
   } | null;
-  showForm: boolean;
-  onToggleForm: () => void;
+  isCreateOpen: boolean;
+  onToggleCreate: () => void;
 }
 
 export function TaskItemsHeader({
@@ -28,8 +28,8 @@ export function TaskItemsHeader({
   description,
   statsLoading,
   stats,
-  showForm,
-  onToggleForm,
+  isCreateOpen,
+  onToggleCreate,
 }: TaskItemsHeaderProps) {
   return (
     <div className="flex items-start justify-between gap-4">
@@ -94,20 +94,20 @@ export function TaskItemsHeader({
       </div>
       <Button
         size="icon"
-        onClick={onToggleForm}
-        variant={showForm ? 'outline' : 'default'}
-        aria-label={showForm ? 'Cancel' : 'Create Task'}
+        onClick={onToggleCreate}
+        variant={isCreateOpen ? 'outline' : 'default'}
+        aria-label={isCreateOpen ? 'Close create task' : 'Create task'}
         className="transition-all duration-200 flex-shrink-0"
       >
         <span className="relative inline-flex items-center justify-center">
           <Plus
             className={`h-4 w-4 absolute transition-all duration-200 ${
-              showForm ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
+              isCreateOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
             }`}
           />
           <X
             className={`h-4 w-4 absolute transition-all duration-200 ${
-              showForm ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
+              isCreateOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
             }`}
           />
         </span>

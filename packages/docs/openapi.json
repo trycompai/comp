@@ -11976,6 +11976,136 @@
           "Task Management"
         ]
       }
+    },
+    "/v1/task-management/attachments": {
+      "post": {
+        "description": "Upload a file attachment for a task item with proper S3 path structure: org_{orgId}/attachments/task-item/{entityType}/{entityId}/files",
+        "operationId": "TaskManagementController_uploadTaskItemAttachment_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadTaskItemAttachmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Attachment uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload attachment to task item",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/task-management/attachments/{attachmentId}": {
+      "delete": {
+        "description": "Delete a file attachment for a task item (removes from S3 and database)",
+        "operationId": "TaskManagementController_deleteTaskItemAttachment_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "description": "Attachment ID",
+            "schema": {
+              "example": "att_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Attachment deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete attachment from task item",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/task-management/{id}/activity": {
+      "get": {
+        "description": "Retrieve all activity/audit logs for a specific task item",
+        "operationId": "TaskManagementController_getTaskItemActivity_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Task item ID",
+            "schema": {
+              "example": "tski_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity logs retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task item activity log",
+        "tags": [
+          "Task Management"
+        ]
+      }
     }
   },
   "info": {
@@ -15208,6 +15338,48 @@
             "nullable": true
           }
         }
+      },
+      "UploadTaskItemAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Name of the file",
+            "example": "document.pdf",
+            "maxLength": 255
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded file data",
+            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "entityType": {
+            "type": "string",
+            "description": "Type of entity this task item belongs to (vendor or risk)",
+            "enum": [
+              "vendor",
+              "risk"
+            ],
+            "example": "vendor"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the entity this task item belongs to",
+            "example": "vnd_abc123def456"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData",
+          "entityType",
+          "entityId"
+        ]
       }
     }
   }

@@ -15,11 +15,19 @@ import { TaskItemResponseDto } from './dto/task-item-response.dto';
 import { PaginatedTaskItemResponseDto, PaginationMetaDto } from './dto/paginated-task-item-response.dto';
 import type { GetTaskItemQueryDto } from './dto/get-task-item-query.dto';
 import { TaskItemAssignmentNotifierService } from './task-item-assignment-notifier.service';
+import { TaskItemMentionNotifierService } from './task-item-mention-notifier.service';
+import { TaskItemAuditService } from './task-item-audit.service';
+import { extractMentionedUserIds } from './utils/extract-mentions';
+import { formatStatus, formatPriority } from './utils/format-activity';
 
 @Injectable()
 export class TaskManagementService {
   private readonly logger = new Logger(TaskManagementService.name);
-  constructor(private readonly notifier: TaskItemAssignmentNotifierService) {}
+  constructor(
+    private readonly notifier: TaskItemAssignmentNotifierService,
+    private readonly mentionNotifier: TaskItemMentionNotifierService,
+    private readonly auditService: TaskItemAuditService,
+  ) {}
 
   /**
    * Get task items overview/stats for an entity
@@ -267,7 +275,22 @@ export class TaskManagementService {
         `Created task item: ${taskItem.id} for organization ${organizationId} by ${member.id}`,
       );
 
+      // Log task creation in audit log
+      void this.auditService.logTaskItemCreated({
+        taskItemId: taskItem.id,
+        organizationId,
+        userId: authContext.userId,
+        memberId: member.id,
+        taskTitle: taskItem.title,
+        entityType: taskItem.entityType,
+        entityId: taskItem.entityId,
+      });
+
       if (createTaskItemDto.assigneeId && authContext.userId) {
+        this.logger.log(
+          `[ASSIGNEE DEBUG] Sending assignment notification to ${createTaskItemDto.assigneeId} for task ${taskItem.id}`,
+        );
+        
         // Fire-and-forget: notification failures should not block task creation
         void this.notifier.notifyAssignee({
           organizationId,
@@ -278,6 +301,48 @@ export class TaskManagementService {
           assigneeMemberId: createTaskItemDto.assigneeId,
           assignedByUserId: authContext.userId,
         });
+
+        // Log initial assignment in audit log
+        if (taskItem.assignee) {
+          void this.auditService.logTaskItemAssigned({
+            taskItemId: taskItem.id,
+            organizationId,
+            userId: authContext.userId,
+            memberId: member.id,
+            taskTitle: taskItem.title,
+            assigneeId: createTaskItemDto.assigneeId,
+            assigneeName: taskItem.assignee.user.name || taskItem.assignee.user.email,
+            entityType: taskItem.entityType,
+            entityId: taskItem.entityId,
+          });
+        }
+      }
+
+      // Notify mentioned users
+      if (createTaskItemDto.description && authContext.userId) {
+        const mentionedUserIds = extractMentionedUserIds(createTaskItemDto.description);
+        this.logger.log(
+          `[MENTION DEBUG] Extracted ${mentionedUserIds.length} mentioned users: ${JSON.stringify(mentionedUserIds)}`,
+        );
+        if (mentionedUserIds.length > 0) {
+          this.logger.log(
+            `[MENTION DEBUG] Calling mention notifier for task ${taskItem.id}`,
+          );
+          // Fire-and-forget: notification failures should not block task creation
+          void this.mentionNotifier.notifyMentionedUsers({
+            organizationId,
+            taskItemId: taskItem.id,
+            taskTitle: taskItem.title,
+            entityType: taskItem.entityType,
+            entityId: taskItem.entityId,
+            mentionedUserIds,
+            mentionedByUserId: authContext.userId,
+          });
+        } else {
+          this.logger.log(
+            `[MENTION DEBUG] No mentions found in description`,
+          );
+        }
       }
 
       return {
@@ -430,20 +495,125 @@ export class TaskManagementService {
         `Updated task item: ${taskItem.id} by ${member.id}`,
       );
 
+      // Track what changed for audit log
+      const changes: string[] = [];
+      if (updateTaskItemDto.title !== undefined && updateTaskItemDto.title !== existingTaskItem.title) {
+        changes.push('changed the title');
+      }
+      if (updateTaskItemDto.description !== undefined && updateTaskItemDto.description !== existingTaskItem.description) {
+        changes.push('updated the description');
+      }
+      if (updateTaskItemDto.status !== undefined && updateTaskItemDto.status !== existingTaskItem.status) {
+        changes.push(
+          `changed status from ${formatStatus(existingTaskItem.status)} to ${formatStatus(updateTaskItemDto.status)}`
+        );
+      }
+      if (updateTaskItemDto.priority !== undefined && updateTaskItemDto.priority !== existingTaskItem.priority) {
+        changes.push(
+          `changed priority from ${formatPriority(existingTaskItem.priority)} to ${formatPriority(updateTaskItemDto.priority)}`
+        );
+      }
+
+      // Notify assignee only when assignee changes
       const assigneeChanged =
         updateTaskItemDto.assigneeId !== undefined &&
         (existingTaskItem.assigneeId ?? null) !== (taskItem.assigneeId ?? null);
 
-      if (assigneeChanged && taskItem.assigneeId && authContext.userId) {
-        void this.notifier.notifyAssignee({
-          organizationId,
+      // Don't add 'assignee' to changes array - it's logged separately below
+
+      // Log update in audit log (only for non-assignee changes)
+      if (changes.length > 0) {
+        void this.auditService.logTaskItemUpdated({
           taskItemId: taskItem.id,
-          entityType: taskItem.entityType as any,
-          entityId: taskItem.entityId,
+          organizationId,
+          userId: authContext.userId,
+          memberId: member.id,
           taskTitle: taskItem.title,
-          assigneeMemberId: taskItem.assigneeId,
-          assignedByUserId: authContext.userId,
+          changes,
+          entityType: taskItem.entityType,
+          entityId: taskItem.entityId,
         });
+      }
+
+      if (assigneeChanged && authContext.userId) {
+        if (taskItem.assigneeId) {
+          // Assigned to someone
+          this.logger.log(
+            `[ASSIGNEE DEBUG] Assignee changed to ${taskItem.assigneeId}, sending notification for task ${taskItem.id}`,
+          );
+          
+          void this.notifier.notifyAssignee({
+            organizationId,
+            taskItemId: taskItem.id,
+            entityType: taskItem.entityType as any,
+            entityId: taskItem.entityId,
+            taskTitle: taskItem.title,
+            assigneeMemberId: taskItem.assigneeId,
+            assignedByUserId: authContext.userId,
+          });
+
+          // Log assignee change in audit log
+          if (taskItem.assignee) {
+            void this.auditService.logTaskItemAssigned({
+              taskItemId: taskItem.id,
+              organizationId,
+              userId: authContext.userId,
+              memberId: member.id,
+              taskTitle: taskItem.title,
+              assigneeId: taskItem.assigneeId,
+              assigneeName: taskItem.assignee.user.name || taskItem.assignee.user.email,
+              entityType: taskItem.entityType,
+              entityId: taskItem.entityId,
+            });
+          }
+        } else {
+          // Assignee removed
+          this.logger.log(
+            `[ASSIGNEE DEBUG] Assignee removed from task ${taskItem.id}`,
+          );
+
+          // Log assignee removal in audit log
+          void this.auditService.logTaskItemUpdated({
+            taskItemId: taskItem.id,
+            organizationId,
+            userId: authContext.userId,
+            memberId: member.id,
+            taskTitle: taskItem.title,
+            changes: ['removed the assignee'],
+            entityType: taskItem.entityType,
+            entityId: taskItem.entityId,
+          });
+        }
+      } else if (updateTaskItemDto.assigneeId !== undefined) {
+        this.logger.log(
+          `[ASSIGNEE DEBUG] Assignee did not change, skipping notification`,
+        );
+      }
+
+      // Notify mentioned users every time (no time restrictions)
+      if (updateTaskItemDto.description !== undefined && authContext.userId) {
+        const mentionedUserIds = extractMentionedUserIds(taskItem.description);
+        
+        this.logger.log(
+          `[MENTION DEBUG] Sending notifications to ${mentionedUserIds.length} mentioned users`,
+        );
+
+        if (mentionedUserIds.length > 0) {
+          // Fire-and-forget: notification failures should not block task update
+          void this.mentionNotifier.notifyMentionedUsers({
+            organizationId,
+            taskItemId: taskItem.id,
+            taskTitle: taskItem.title,
+            entityType: taskItem.entityType,
+            entityId: taskItem.entityId,
+            mentionedUserIds,
+            mentionedByUserId: authContext.userId,
+          });
+        } else {
+          this.logger.log(
+            `[MENTION DEBUG] No mentions found in description`,
+          );
+        }
       }
 
       return {

@@ -60,6 +60,7 @@ export function TaskItemFocusView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedTaskId, setCopiedTaskId] = useState(false);
+  const [refreshActivity, setRefreshActivity] = useState<(() => void) | null>(null);
 
   const pathname = usePathname();
 
@@ -86,6 +87,8 @@ export function TaskItemFocusView({
     setIsUpdating(true);
     try {
       await optimisticUpdate(taskItem.id, updates);
+      // Refresh activity timeline
+      refreshActivity?.();
     } finally {
       setIsUpdating(false);
     }
@@ -98,6 +101,8 @@ export function TaskItemFocusView({
       await optimisticUpdate(taskItem.id, { status: newStatus });
       toast.success('Status updated');
       onStatusOrPriorityChange?.();
+      // Refresh activity timeline
+      refreshActivity?.();
     } catch (error) {
       toast.error('Failed to update status');
     }
@@ -110,6 +115,8 @@ export function TaskItemFocusView({
       await optimisticUpdate(taskItem.id, { priority: newPriority });
       toast.success('Priority updated');
       onStatusOrPriorityChange?.();
+      // Refresh activity timeline
+      refreshActivity?.();
     } catch (error) {
       toast.error('Failed to update priority');
     }
@@ -164,12 +171,17 @@ export function TaskItemFocusView({
             isUpdating={isUpdating}
             onUpdate={handleUpdate}
             onStatusOrPriorityChange={onStatusOrPriorityChange}
+            entityId={entityId}
+            entityType={entityType}
           />
 
           {/* Divider */}
           <div className="border-t border-border" />
 
-          <TaskItemActivityTimeline taskItem={taskItem} />
+          <TaskItemActivityTimeline 
+            taskItem={taskItem}
+            onActivityLoaded={(mutate) => setRefreshActivity(() => mutate)}
+          />
         </div>
 
         <TaskItemFocusSidebar
@@ -185,6 +197,8 @@ export function TaskItemFocusView({
           onPriorityChange={handlePriorityChange}
           onAssigneeChange={async (newAssigneeId) => {
             await optimisticUpdate(taskItem.id, { assigneeId: newAssigneeId });
+            // Refresh activity timeline
+            refreshActivity?.();
           }}
           onStatusOrPriorityChange={onStatusOrPriorityChange}
         />

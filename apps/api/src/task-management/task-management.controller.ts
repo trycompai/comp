@@ -33,6 +33,10 @@ import { TaskItemResponseDto } from './dto/task-item-response.dto';
 import { GetTaskItemQueryDto } from './dto/get-task-item-query.dto';
 import { PaginatedTaskItemResponseDto } from './dto/paginated-task-item-response.dto';
 import { GetTaskItemStatsQueryDto } from './dto/get-task-item-stats-query.dto';
+import { AttachmentsService } from '../attachments/attachments.service';
+import { UploadTaskItemAttachmentDto } from './dto/upload-task-item-attachment.dto';
+import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
+import { TaskItemAuditService } from './task-item-audit.service';
 
 @ApiTags('Task Management')
 @Controller({ path: 'task-management', version: '1' })
@@ -45,7 +49,11 @@ import { GetTaskItemStatsQueryDto } from './dto/get-task-item-stats-query.dto';
   required: false,
 })
 export class TaskManagementController {
-  constructor(private readonly taskManagementService: TaskManagementService) {}
+  constructor(
+    private readonly taskManagementService: TaskManagementService,
+    private readonly attachmentsService: AttachmentsService,
+    private readonly auditService: TaskItemAuditService,
+  ) {}
 
   @Get('stats')
   @ApiOperation({
@@ -205,6 +213,97 @@ export class TaskManagementController {
   ): Promise<void> {
     try {
       await this.taskManagementService.deleteTaskItem(taskItemId, organizationId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Post('attachments')
+  @ApiOperation({
+    summary: 'Upload attachment to task item',
+    description: 'Upload a file attachment for a task item with proper S3 path structure: org_{orgId}/attachments/task-item/{entityType}/{entityId}/files',
+  })
+  @ApiBody({ type: UploadTaskItemAttachmentDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Attachment uploaded successfully',
+    type: AttachmentResponseDto,
+  })
+  async uploadTaskItemAttachment(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() uploadDto: UploadTaskItemAttachmentDto,
+  ): Promise<AttachmentResponseDto> {
+    try {
+      // Pass entityType and entityId via description field for S3 path construction
+      // Format: "{entityType}|{entityId}" - e.g., "vendor|vnd_abc123"
+      const description = `${uploadDto.entityType}|${uploadDto.entityId}`;
+      
+      return await this.attachmentsService.uploadAttachment(
+        organizationId,
+        uploadDto.entityId, // This is the vendor/risk ID (used as entityId in attachment record)
+        'task_item', // This is the AttachmentEntityType
+        {
+          fileName: uploadDto.fileName,
+          fileType: uploadDto.fileType,
+          fileData: uploadDto.fileData,
+          description, // Contains task item's entityType and entityId for S3 path
+        },
+        authContext.userId,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Delete('attachments/:attachmentId')
+  @ApiOperation({
+    summary: 'Delete attachment from task item',
+    description: 'Delete a file attachment for a task item (removes from S3 and database)',
+  })
+  @ApiParam({
+    name: 'attachmentId',
+    description: 'Attachment ID',
+    example: 'att_abc123def456',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Attachment deleted successfully',
+  })
+  async deleteTaskItemAttachment(
+    @OrganizationId() organizationId: string,
+    @Param('attachmentId') attachmentId: string,
+  ): Promise<void> {
+    try {
+      await this.attachmentsService.deleteAttachment(
+        organizationId,
+        attachmentId,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Get(':id/activity')
+  @ApiOperation({
+    summary: 'Get task item activity log',
+    description: 'Retrieve all activity/audit logs for a specific task item',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Task item ID',
+    example: 'tski_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Activity logs retrieved successfully',
+  })
+  async getTaskItemActivity(
+    @Param('id') taskItemId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    try {
+      return await this.auditService.getTaskItemActivity(taskItemId, organizationId);
     } catch (error) {
       throw error;
     }
