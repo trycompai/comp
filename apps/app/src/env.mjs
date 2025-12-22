@@ -54,7 +54,7 @@ export const env = createEnv({
     NEXT_PUBLIC_LINKEDIN_PARTNER_ID: z.string().optional(),
     NEXT_PUBLIC_LINKEDIN_CONVERSION_ID: z.string().optional(),
     NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: z.string().optional(),
-    NEXT_PUBLIC_API_URL: z.string().optional(),
+    NEXT_PUBLIC_API_URL: z.string(),
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().optional(),
     NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: z.string().optional(),
   },

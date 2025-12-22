@@ -6,20 +6,19 @@ import {
   WINDOWS_FILENAME,
 } from '@/app/api/download-agent/constants';
 import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
-import type { Member } from '@db';
 import { Accordion, HStack, Text, VStack } from '@trycompai/ui-v2';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import type { FleetPolicy, Host } from '../../types';
+import type { EmployeePortalDashboard } from '../../types/employee-portal';
 import { DeviceAgentInfoAccordion } from './device-agent/DeviceAgentInfoAccordion';
 import { DeviceAgentInstructions } from './device-agent/DeviceAgentInstructions';
 import { DeviceAgentPolicyStatusCard } from './device-agent/DeviceAgentPolicyStatusCard';
 
 interface DeviceAgentAccordionItemProps {
-  member: Member;
-  host: Host | null;
-  fleetPolicies?: FleetPolicy[];
+  member: EmployeePortalDashboard['member'];
+  host: EmployeePortalDashboard['host'];
+  fleetPolicies?: EmployeePortalDashboard['fleetPolicies'];
 }
 
 export function DeviceAgentAccordionItem({
@@ -37,7 +36,7 @@ export function DeviceAgentAccordionItem({
 
   const mdmEnabledStatus = useMemo((): { name: string; response: 'pass' | 'fail' } => {
     return {
-      response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
+      response: host?.mdm?.connected_to_fleet ? 'pass' : 'fail',
       name: 'MDM Enabled',
     };
   }, [host]);

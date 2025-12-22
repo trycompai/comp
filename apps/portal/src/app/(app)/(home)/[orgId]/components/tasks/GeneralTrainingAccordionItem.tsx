@@ -1,13 +1,13 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion } from '@db';
 import { Accordion, HStack, Text, VStack } from '@trycompai/ui-v2';
 import { CheckCircle2, Circle } from 'lucide-react';
+import type { EmployeePortalDashboard } from '../../types/employee-portal';
 import { VideoCarousel } from '../video/VideoCarousel';
 
 interface GeneralTrainingAccordionItemProps {
-  trainingVideoCompletions: EmployeeTrainingVideoCompletion[];
+  trainingVideoCompletions: EmployeePortalDashboard['trainingVideos'];
 }
 
 export function GeneralTrainingAccordionItem({

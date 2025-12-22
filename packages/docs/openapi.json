@@ -1,6 +1,27 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/v1/me/organizations": {
+      "get": {
+        "description": "JWT-authenticated endpoint that does not require X-Organization-Id.",
+        "operationId": "MeController_listOrganizations_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Memberships with organization info"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List organizations the current user belongs to",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
     "/v1/organization": {
       "get": {
         "description": "Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -675,6 +696,105 @@
         "summary": "Get organization primary color",
         "tags": [
           "Organization"
+        ]
+      }
+    },
+    "/v1/people/me": {
+      "get": {
+        "operationId": "PeopleMeController_getMe_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member record"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get the current user’s member record for the organization",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/me/training-videos": {
+      "get": {
+        "operationId": "PeopleMeController_getTrainingVideos_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Training video completions"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get training video completions for the current user",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/me/training-videos/{videoId}/complete": {
+      "post": {
+        "operationId": "PeopleMeController_completeTrainingVideo_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "videoId",
+            "required": true,
+            "in": "path",
+            "description": "Training video metadata ID (e.g. sat-1)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Completion recorded"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Mark a training video as completed for the current user",
+        "tags": [
+          "People"
         ]
       }
     },
@@ -5724,6 +5844,124 @@
           }
         ],
         "summary": "Chat with AI about a policy",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/acknowledge": {
+      "post": {
+        "operationId": "PolicyAcknowledgementsController_acknowledgePolicy_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acknowledgement recorded"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Acknowledge (sign) a policy for the current user",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/acknowledge-bulk": {
+      "post": {
+        "operationId": "PolicyAcknowledgementsController_acknowledgePolicies_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcknowledgePoliciesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledgements recorded"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Acknowledge (sign) multiple policies for the current user",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/pdf-url": {
+      "get": {
+        "operationId": "PolicyAcknowledgementsController_getPolicyPdfUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL payload"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a signed URL for a policy PDF (if available)",
         "tags": [
           "Policies"
         ]
@@ -13458,6 +13696,25 @@
         },
         "required": [
           "instructions"
+        ]
+      },
+      "AcknowledgePoliciesDto": {
+        "type": "object",
+        "properties": {
+          "policyIds": {
+            "description": "Policy IDs to acknowledge for the current user",
+            "example": [
+              "pol_abc123",
+              "pol_def456"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "policyIds"
         ]
       },
       "TaskResponseDto": {

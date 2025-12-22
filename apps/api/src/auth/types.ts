@@ -1,7 +1,7 @@
 // Types for API authentication - supports API keys and JWT tokens only
 
 export interface AuthenticatedRequest extends Request {
-  organizationId: string;
+  organizationId?: string;
   authType: 'api-key' | 'jwt';
   isApiKey: boolean;
   userId?: string;

@@ -3,11 +3,11 @@
 import { Card, HStack, Link, Text, VStack } from '@trycompai/ui-v2';
 import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
 
-import type { FleetPolicy, Host } from '../../../types';
+import type { EmployeePortalDashboard } from '../../../types/employee-portal';
 
 interface DeviceAgentPolicyStatusCardProps {
-  host: Host;
-  fleetPolicies: FleetPolicy[];
+  host: NonNullable<EmployeePortalDashboard['host']>;
+  fleetPolicies: EmployeePortalDashboard['fleetPolicies'];
   isMacOS: boolean;
   mdmEnabledStatus: { name: string; response: 'pass' | 'fail' };
 }

@@ -1,20 +1,19 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@db';
 import { Accordion, Card, Progress, Text, VStack } from '@trycompai/ui-v2';
 import { useState } from 'react';
-import type { FleetPolicy, Host } from '../types';
+import type { EmployeePortalDashboard } from '../types/employee-portal';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
 import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 
 interface EmployeeTasksListProps {
-  policies: Policy[];
-  trainingVideos: EmployeeTrainingVideoCompletion[];
-  member: Member;
-  fleetPolicies: FleetPolicy[];
-  host: Host | null;
+  policies: EmployeePortalDashboard['policies'];
+  trainingVideos: EmployeePortalDashboard['trainingVideos'];
+  member: EmployeePortalDashboard['member'];
+  fleetPolicies: EmployeePortalDashboard['fleetPolicies'];
+  host: EmployeePortalDashboard['host'];
 }
 
 export const EmployeeTasksList = ({

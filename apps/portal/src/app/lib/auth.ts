@@ -4,13 +4,15 @@ import { db } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, multiSession, organization } from 'better-auth/plugins';
+import { bearer, emailOTP, jwt, multiSession, organization } from 'better-auth/plugins';
 import { ac, admin, auditor, contractor, employee, owner } from './permissions';
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
+  // IMPORTANT: Keep this aligned with apps/api's BETTER_AUTH_URL so JWT issuer/audience matches.
+  baseURL: env.NEXT_PUBLIC_BETTER_AUTH_URL,
   advanced: {
     database: {
       // This will enable us to fall back to DB for ID generation.
@@ -18,7 +20,7 @@ export const auth = betterAuth({
       generateId: false,
     },
   },
-  trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
+  trustedOrigins: ['http://localhost:3000', 'http://localhost:3002', 'https://*.trycomp.ai'],
   secret: env.AUTH_SECRET!,
   plugins: [
     organization({
@@ -69,6 +71,20 @@ export const auth = betterAuth({
         });
       },
     }),
+    jwt({
+      jwt: {
+        definePayload: ({ user }) => {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            emailVerified: user.emailVerified,
+          };
+        },
+        expirationTime: '1h',
+      },
+    }),
+    bearer(),
     nextCookies(),
     multiSession(),
   ],

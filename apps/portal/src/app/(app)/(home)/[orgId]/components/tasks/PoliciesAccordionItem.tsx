@@ -1,21 +1,21 @@
 'use client';
 
-import { acceptAllPolicies } from '@/actions/accept-policies';
-import type { Member, Policy } from '@db';
+import { apiClient } from '@/lib/api-client';
 import { Accordion, Button, HStack, Link, Text, VStack } from '@trycompai/ui-v2';
 import { CheckCircle2, Circle, FileText } from 'lucide-react';
 import NextLink from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
+import type { EmployeePortalDashboard } from '../../types/employee-portal';
 
 interface PoliciesAccordionItemProps {
-  policies: Policy[];
-  member: Member;
+  policies: EmployeePortalDashboard['policies'];
+  member: EmployeePortalDashboard['member'];
 }
 
 export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionItemProps) {
-  const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [acceptedPolicies, setAcceptedPolicies] = useState<string[]>(
     policies.filter((p) => p.signedBy.includes(member.id)).map((p) => p.id),
   );
@@ -30,12 +30,16 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
         .filter((p) => !acceptedPolicies.includes(p.id))
         .map((p) => p.id);
 
-      const result = await acceptAllPolicies(unacceptedPolicyIds, member.id);
+      const result = await apiClient.post<{ success: boolean; error?: string }>(
+        '/v1/policies/acknowledge-bulk',
+        { policyIds: unacceptedPolicyIds },
+        member.organizationId,
+      );
 
-      if (result.success) {
+      if (!result.error) {
         setAcceptedPolicies([...acceptedPolicies, ...unacceptedPolicyIds]);
         toast.success('All policies accepted successfully');
-        router.refresh();
+        await mutate(['employee-portal-overview', member.organizationId]);
       } else {
         toast.error(result.error || 'Failed to accept policies');
       }

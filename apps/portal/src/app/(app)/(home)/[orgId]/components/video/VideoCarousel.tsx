@@ -1,17 +1,17 @@
 'use client';
 
+import { apiClient } from '@/lib/api-client';
 import { trainingVideos } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion } from '@db';
 import { Text, VStack } from '@trycompai/ui-v2';
-import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { markVideoAsCompleted } from '../../../actions/markVideoAsCompleted';
+import { useSWRConfig } from 'swr';
+import type { EmployeePortalDashboard } from '../../types/employee-portal';
 import { CarouselControls } from './CarouselControls';
 import { YoutubeEmbed } from './YoutubeEmbed';
 
 interface VideoCarouselProps {
-  videos: EmployeeTrainingVideoCompletion[];
+  videos: EmployeePortalDashboard['trainingVideos'];
 }
 
 export function VideoCarousel({ videos }: VideoCarouselProps) {
@@ -53,25 +53,8 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
 
   const [completedVideoIds, setCompletedVideoIds] = useState<Set<string>>(initialCompletedVideoIds);
 
-  const { execute: executeMarkComplete, isExecuting } = useAction(markVideoAsCompleted, {
-    onSuccess: (data) => {
-      // Update local UI state immediately upon successful action
-      const completedMetadataId = mergedVideos[currentIndex].id;
-      setCompletedVideoIds((prev) => new Set([...prev, completedMetadataId]));
-
-      // If a new record was created, update our completion records map
-      if (data.data && !completionRecordsMap.get(completedMetadataId)) {
-        const newMap = new Map(completionRecordsMap);
-        newMap.set(completedMetadataId, data.data);
-        // Note: We're not updating the map state because it's not stateful
-        // The next page refresh will have the updated records
-      }
-    },
-    onError: (error) => {
-      console.error('Failed to mark video as completed:', error);
-      // TODO: Consider showing a user-facing toast notification
-    },
-  });
+  const [isMarkingComplete, setIsMarkingComplete] = useState(false);
+  const { mutate } = useSWRConfig();
 
   // Effect to synchronize local UI state with changes in DB records (props)
   useEffect(() => {
@@ -108,9 +91,23 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
       return;
     }
 
-    // Execute the action with the metadata video ID (like 'sat-1')
-    // The action will create the record if it doesn't exist
-    executeMarkComplete({ videoId: metadataVideoId, organizationId: orgId });
+    setIsMarkingComplete(true);
+    try {
+      const res = await apiClient.post<{ success: boolean }>(
+        `/v1/people/me/training-videos/${metadataVideoId}/complete`,
+        undefined,
+        orgId,
+      );
+      if (res.error) {
+        console.error('Failed to mark video as completed:', res.error);
+        return;
+      }
+
+      setCompletedVideoIds((prev) => new Set([...prev, metadataVideoId]));
+      await mutate(['employee-portal-overview', orgId]);
+    } finally {
+      setIsMarkingComplete(false);
+    }
   };
 
   // Determine completion based on the local UI state (using metadata ID)
@@ -137,7 +134,7 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
             video={mergedVideos[currentIndex]} // Pass the merged object
             isCompleted={isCurrentVideoCompleted} // Use local state for UI
             onComplete={handleVideoComplete}
-            isMarkingComplete={isExecuting}
+            isMarkingComplete={isMarkingComplete}
             onNext={isCurrentVideoCompleted && hasNextVideo ? goToNext : undefined}
             allVideosCompleted={allVideosCompleted} // Use local state for UI
             onWatchAgain={() => {

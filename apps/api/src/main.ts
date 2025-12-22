@@ -9,17 +9,24 @@ import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from './auth/better-auth';
 
 let app: INestApplication | null = null;
 
 async function bootstrap(): Promise<void> {
   app = await NestFactory.create(AppModule);
 
-  // Enable CORS for all origins - security is handled by authentication
   app.enableCors({
     origin: true,
     credentials: true,
   });
+
+  // Mount Better Auth at /api/auth/* (outside versioned /v1 routes)
+  const expressApp = app.getHttpAdapter().getInstance() as express.Express;
+  const betterAuthHandler = toNodeHandler(auth);
+
+  expressApp.use('/api/auth', (req, res) => void betterAuthHandler(req, res));
 
   // STEP 2: Security headers
   app.use(

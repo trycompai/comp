@@ -1,6 +1,6 @@
 'use client';
 
-import { acceptPolicy } from '@/actions/accept-policies';
+import { apiClient } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -9,17 +9,11 @@ import { toast } from 'sonner';
 
 interface PolicyAcceptButtonProps {
   policyId: string;
-  memberId: string;
   isAccepted: boolean;
   orgId: string;
 }
 
-export function PolicyAcceptButton({
-  policyId,
-  memberId,
-  isAccepted,
-  orgId,
-}: PolicyAcceptButtonProps) {
+export function PolicyAcceptButton({ policyId, isAccepted, orgId }: PolicyAcceptButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [accepted, setAccepted] = useState(isAccepted);
@@ -27,8 +21,13 @@ export function PolicyAcceptButton({
   const handleAccept = async () => {
     startTransition(async () => {
       try {
-        const result = await acceptPolicy(policyId, memberId);
-        if (result.success) {
+        const result = await apiClient.post<{ success: boolean; error?: string }>(
+          `/v1/policies/${policyId}/acknowledge`,
+          undefined,
+          orgId,
+        );
+
+        if (!result.error) {
           setAccepted(true);
           toast.success('Policy accepted successfully');
           router.refresh();
