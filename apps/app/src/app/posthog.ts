@@ -1,11 +1,9 @@
-'use server';
-
 import { Properties } from 'posthog-js';
 import { PostHog } from 'posthog-node';
 
 let posthogInstance: PostHog | null = null;
 
-async function getPostHogClient(): Promise<PostHog | null> {
+function getPostHogClient(): PostHog | null {
   if (posthogInstance) {
     return posthogInstance;
   }
@@ -37,7 +35,7 @@ export async function track(distinctId: string, eventName: string, properties?: 
 
   console.log('[PostHog]: Tracking server side event:', eventName);
 
-  await client.capture({
+  client.capture({
     distinctId,
     event: eventName,
     properties,
@@ -48,7 +46,7 @@ export async function identify(distinctId: string, properties?: Properties) {
   const client = getPostHogClient();
   if (!client) return;
 
-  await client.identify({
+  client.identify({
     distinctId,
     properties,
   });
@@ -58,6 +56,6 @@ export async function getFeatureFlags(distinctId: string) {
   const client = getPostHogClient();
   if (!client) return {};
 
-  const flags = await client?.getAllFlags(distinctId);
+  const flags = await client.getAllFlags(distinctId);
   return flags;
 }
