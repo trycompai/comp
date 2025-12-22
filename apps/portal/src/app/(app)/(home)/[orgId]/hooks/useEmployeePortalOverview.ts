@@ -26,16 +26,16 @@ export function useEmployeePortalOverview({
     employeePortalOverviewKey(organizationId),
     async ([, orgId]) => {
       const organizationId = String(orgId);
-      const memberRes = await apiClient.get<unknown>('/v1/people/me', organizationId);
+      const memberRes = await apiClient.get('/v1/people/me', organizationId);
       if (memberRes.error) return { status: memberRes.status, error: memberRes.error };
       if (!memberRes.data) return { status: memberRes.status, error: 'No member returned' };
 
       const member = MemberSchema.parse(memberRes.data);
 
       const [policiesRes, trainingRes, devicesRes] = await Promise.all([
-        apiClient.get<unknown>('/v1/policies', organizationId),
-        apiClient.get<unknown>('/v1/people/me/training-videos', organizationId),
-        apiClient.get<unknown>(`/v1/devices/member/${member.id}`, organizationId),
+        apiClient.get('/v1/policies', organizationId),
+        apiClient.get('/v1/people/me/training-videos', organizationId),
+        apiClient.get(`/v1/devices/member/${member.id}`, organizationId),
       ]);
 
       if (policiesRes.error) return { status: policiesRes.status, error: policiesRes.error };

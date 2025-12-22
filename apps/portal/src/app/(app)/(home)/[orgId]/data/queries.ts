@@ -12,16 +12,16 @@ import {
 export async function getEmployeePortalOverview(
   organizationId: string,
 ): Promise<EmployeePortalDashboard> {
-  const memberRes = await serverApi.get<unknown>('/v1/people/me', organizationId);
+  const memberRes = await serverApi.get('/v1/people/me', organizationId);
   if (memberRes.error) throw new Error(memberRes.error);
   if (!memberRes.data) throw new Error('No member returned');
 
   const member = MemberSchema.parse(memberRes.data);
 
-  const policiesRes = await serverApi.get<unknown>('/v1/policies', organizationId);
+  const policiesRes = await serverApi.get('/v1/policies', organizationId);
   if (policiesRes.error) throw new Error(policiesRes.error);
 
-  const trainingRes = await serverApi.get<unknown>('/v1/people/me/training-videos', organizationId);
+  const trainingRes = await serverApi.get('/v1/people/me/training-videos', organizationId);
   if (trainingRes.error) throw new Error(trainingRes.error);
 
   const policiesWrapper = z
@@ -32,10 +32,7 @@ export async function getEmployeePortalOverview(
   const trainingVideos = z.array(TrainingVideoCompletionSchema).parse(trainingRes.data ?? []);
 
   // Devices are optional (org/member may not have Fleet configured) — don't hard-fail.
-  const devicesRes = await serverApi.get<unknown>(
-    `/v1/devices/member/${member.id}`,
-    organizationId,
-  );
+  const devicesRes = await serverApi.get(`/v1/devices/member/${member.id}`, organizationId);
   const devicesWrapper = z
     .object({ data: z.array(z.unknown()) })
     .passthrough()

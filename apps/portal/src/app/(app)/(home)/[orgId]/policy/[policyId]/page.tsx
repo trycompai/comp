@@ -48,7 +48,7 @@ export default async function PolicyPage({
     redirect('/auth');
   }
 
-  const policyRes = await serverApi.get<unknown>(`/v1/policies/${policyId}`, orgId);
+  const policyRes = await serverApi.get(`/v1/policies/${policyId}`, orgId);
   if (policyRes.error || !policyRes.data) {
     redirect(`/${orgId}`);
   }
@@ -59,7 +59,7 @@ export default async function PolicyPage({
     redirect(`/${orgId}`);
   }
 
-  const memberRes = await serverApi.get<unknown>('/v1/people/me', orgId);
+  const memberRes = await serverApi.get('/v1/people/me', orgId);
   if (memberRes.error || !memberRes.data) {
     redirect('/');
   }
