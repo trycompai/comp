@@ -14,10 +14,17 @@ export class NovuService {
 
     const novuApiKey = process.env.NOVU_API_KEY;
     if (!novuApiKey) {
-      // Silent skip in environments without Novu configured
+      this.logger.warn(
+        `NOVU_API_KEY not configured. Skipping Novu workflow trigger for "${workflowId}"`,
+      );
       return;
     }
 
+    this.logger.log(
+      `Triggering Novu workflow "${workflowId}" for subscriber "${subscriberId}"`,
+    );
+
+    try {
     const response = await fetch('https://api.novu.co/v1/events/trigger', {
       method: 'POST',
       headers: {
@@ -36,11 +43,20 @@ export class NovuService {
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      this.logger.warn(
+        this.logger.error(
         `Failed to trigger Novu workflow "${workflowId}" (${response.status}). ${text}`,
+        );
+      } else {
+        const result = await response.json().catch(() => ({}));
+        this.logger.log(
+          `Successfully triggered Novu workflow "${workflowId}" for subscriber "${subscriberId}"`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error triggering Novu workflow "${workflowId}":`,
+        error instanceof Error ? error.message : 'Unknown error',
       );
     }
   }
 }
-
-

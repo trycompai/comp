@@ -55,9 +55,10 @@ export class TaskItemAuditService {
     entityId: string;
   }): Promise<void> {
     try {
-      const changeDescription = params.changes.length > 0 
-        ? params.changes.join(', ')
-        : 'updated the task';
+      const changeDescription =
+        params.changes.length > 0
+          ? params.changes.join(', ')
+          : 'updated the task';
 
       await db.auditLog.create({
         data: {
@@ -154,4 +155,3 @@ export class TaskItemAuditService {
     }
   }
 }
-

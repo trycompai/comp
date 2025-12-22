@@ -11,16 +11,16 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiHeader,
-    ApiOperation,
-    ApiParam,
+  ApiBody,
+  ApiHeader,
+  ApiOperation,
+  ApiParam,
   ApiQuery,
-    ApiResponse,
-    ApiSecurity,
-    ApiTags,
-    ApiExtraModels,
-  } from '@nestjs/swagger';
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+  ApiExtraModels,
+} from '@nestjs/swagger';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
@@ -107,7 +107,7 @@ export class TaskManagementController {
     }
   }
 
-    @Get()
+  @Get()
   @ApiOperation({
     summary: 'Get task items for an entity',
     description:
@@ -130,7 +130,7 @@ export class TaskManagementController {
     } catch (error) {
       throw error;
     }
-}
+  }
 
   @Post()
   @ApiOperation({
@@ -212,7 +212,10 @@ export class TaskManagementController {
     @OrganizationId() organizationId: string,
   ): Promise<void> {
     try {
-      await this.taskManagementService.deleteTaskItem(taskItemId, organizationId);
+      await this.taskManagementService.deleteTaskItem(
+        taskItemId,
+        organizationId,
+      );
     } catch (error) {
       throw error;
     }
@@ -221,7 +224,8 @@ export class TaskManagementController {
   @Post('attachments')
   @ApiOperation({
     summary: 'Upload attachment to task item',
-    description: 'Upload a file attachment for a task item with proper S3 path structure: org_{orgId}/attachments/task-item/{entityType}/{entityId}/files',
+    description:
+      'Upload a file attachment for a task item with proper S3 path structure: org_{orgId}/attachments/task-item/{entityType}/{entityId}/files',
   })
   @ApiBody({ type: UploadTaskItemAttachmentDto })
   @ApiResponse({
@@ -238,7 +242,7 @@ export class TaskManagementController {
       // Pass entityType and entityId via description field for S3 path construction
       // Format: "{entityType}|{entityId}" - e.g., "vendor|vnd_abc123"
       const description = `${uploadDto.entityType}|${uploadDto.entityId}`;
-      
+
       return await this.attachmentsService.uploadAttachment(
         organizationId,
         uploadDto.entityId, // This is the vendor/risk ID (used as entityId in attachment record)
@@ -259,7 +263,8 @@ export class TaskManagementController {
   @Delete('attachments/:attachmentId')
   @ApiOperation({
     summary: 'Delete attachment from task item',
-    description: 'Delete a file attachment for a task item (removes from S3 and database)',
+    description:
+      'Delete a file attachment for a task item (removes from S3 and database)',
   })
   @ApiParam({
     name: 'attachmentId',
@@ -303,10 +308,12 @@ export class TaskManagementController {
     @OrganizationId() organizationId: string,
   ) {
     try {
-      return await this.auditService.getTaskItemActivity(taskItemId, organizationId);
+      return await this.auditService.getTaskItemActivity(
+        taskItemId,
+        organizationId,
+      );
     } catch (error) {
       throw error;
     }
   }
 }
-

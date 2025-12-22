@@ -9,7 +9,8 @@ export const AuthContext = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): AuthContextType => {
     const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    const { organizationId, authType, isApiKey, userId, userEmail, userRoles } = request;
+    const { organizationId, authType, isApiKey, userId, userEmail, userRoles } =
+      request;
 
     if (!organizationId || !authType) {
       throw new Error(

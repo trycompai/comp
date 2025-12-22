@@ -172,7 +172,7 @@ export class HybridAuthGuard implements CanActivate {
           `User does not have access to organization: ${explicitOrgId}`,
         );
       }
-      
+
       const member = await db.member.findFirst({
         where: {
           userId,
@@ -185,7 +185,7 @@ export class HybridAuthGuard implements CanActivate {
       });
 
       const userRoles = member?.role ? member.role.split(',') : null;
-      
+
       // Set request context for JWT auth
       request.userId = userId;
       request.userEmail = userEmail;

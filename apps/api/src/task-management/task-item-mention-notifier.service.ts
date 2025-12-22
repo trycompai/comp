@@ -1,12 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
+import { isUserUnsubscribed } from '@trycompai/email';
+import { sendEmail } from '../email/resend';
+import { TaskItemMentionedEmail } from '../email/templates/task-item-mentioned';
 import { NovuService } from '../notifications/novu.service';
 
 @Injectable()
 export class TaskItemMentionNotifierService {
   private readonly logger = new Logger(TaskItemMentionNotifierService.name);
 
-  constructor(private readonly novu: NovuService) {}
+  constructor(private readonly novuService: NovuService) {}
 
   /**
    * Notify mentioned users in a task item
@@ -70,45 +73,115 @@ export class TaskItemMentionNotifierService {
         entityName = vendor?.name || 'Unknown Vendor';
       }
 
-      const workflowId = process.env.NOVU_WORKFLOW_TASK_ITEM_MENTIONED ?? 'task-item-mentioned';
-
       // Convert entity type to correct route path
-      const entityRoutePath = entityType === 'vendor' ? 'vendors' : 'risks';
+      // Note: vendors is plural, but risk is singular in routes
+      const entityRoutePath = entityType === 'vendor' ? 'vendors' : 'risk';
+
+      // Build task URL
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.BETTER_AUTH_URL ??
+        'https://app.trycomp.ai';
+      const taskUrlBase = `${appUrl}/${organizationId}/${entityRoutePath}/${entityId}`;
+      const taskUrlObj = new URL(taskUrlBase);
+      taskUrlObj.searchParams.set('taskItemId', taskItemId);
+      taskUrlObj.hash = 'task-items';
+      const taskUrl = taskUrlObj.toString();
+
+      const mentionedByName =
+        mentionedByUser.name || mentionedByUser.email || 'Someone';
 
       this.logger.log(
-        `[MENTION DEBUG] Workflow ID: ${workflowId}, Mentioned users count: ${mentionedUsers.length}`,
+        `Sending mention notifications to ${mentionedUsers.length} users for task ${taskItemId}`,
       );
 
-      // Send notification to each mentioned user
+      // Send email notification to each mentioned user
       for (const user of mentionedUsers) {
         // Don't notify the user who mentioned themselves
-        // if (user.id === mentionedByUserId) continue;
+        if (user.id === mentionedByUserId) {
+          continue;
+        }
 
+        if (!user.email) {
+          this.logger.warn(
+            `Skipping mention notification: user ${user.id} has no email`,
+          );
+          continue;
+        }
+
+        // Check if user is unsubscribed from task mention notifications
+        const isUnsubscribed = await isUserUnsubscribed(db, user.email, 'taskMentions');
+        if (isUnsubscribed) {
+          this.logger.log(
+            `Skipping mention notification: user ${user.email} is unsubscribed from task mentions`,
+          );
+          continue;
+        }
+
+        const userName = user.name || user.email || 'User';
+
+        // Send email notification via Resend
+        try {
+          const { id } = await sendEmail({
+            to: user.email,
+            subject: `${mentionedByName} mentioned you in a task`,
+            react: TaskItemMentionedEmail({
+              toName: userName,
+              toEmail: user.email,
+              taskTitle,
+              mentionedByName,
+              entityName,
+              entityRoutePath,
+              entityId,
+              organizationId,
+              taskUrl,
+            }),
+            system: true,
+          });
+
+          this.logger.log(
+            `Mention email sent to ${user.email} (ID: ${id}) for task "${taskTitle}"`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to send mention email to ${user.email}:`,
+            error instanceof Error ? error.message : 'Unknown error',
+          );
+          // Continue with other users even if one fails
+        }
+
+        // Send in-app notification via Novu
         this.logger.log(
-          `[MENTION DEBUG] Sending notification to user ${user.id} (${user.email}) for task ${taskItemId}`,
+          `[NOVU] Attempting to send in-app notification to ${user.id} (subscriber: ${user.id}-${organizationId}) for task "${taskTitle}"`,
         );
+        try {
+          await this.novuService.trigger({
+            workflowId: 'task-item-mentioned',
+            subscriberId: `${user.id}-${organizationId}`,
+            email: user.email,
+            payload: {
+              taskTitle,
+              taskItemId,
+              mentionedByName,
+              entityName,
+              entityType,
+              entityRoutePath,
+              entityId,
+              organizationId,
+              taskUrl,
+            },
+          });
 
-        await this.novu.trigger({
-          workflowId,
-          subscriberId: user.id,
-          email: user.email,
-          payload: {
-            taskItemId,
-            taskTitle,
-            entityType,
-            entityRoutePath, // 'vendors' or 'risk' - correct route path
-            entityId,
-            entityName,
-            mentionedByName: mentionedByUser.name || mentionedByUser.email,
-            mentionedByEmail: mentionedByUser.email,
-            organizationId,
-            BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || '',
-          },
-        });
-
-        this.logger.log(
-          `[MENTION DEBUG] Notification sent successfully to ${user.email}`,
-        );
+          this.logger.log(
+            `[NOVU] Mention in-app notification sent to ${user.id} for task "${taskTitle}"`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `[NOVU] Failed to send mention in-app notification to ${user.id}:`,
+            error instanceof Error ? error.message : 'Unknown error',
+          );
+          // Continue with other users even if one fails
+        }
       }
 
       this.logger.log(
@@ -123,4 +196,3 @@ export class TaskItemMentionNotifierService {
     }
   }
 }
-

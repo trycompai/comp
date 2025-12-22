@@ -12,7 +12,10 @@ import type { CreateTaskItemDto } from './dto/create-task-item.dto';
 import type { UpdateTaskItemDto } from './dto/update-task-item.dto';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { TaskItemResponseDto } from './dto/task-item-response.dto';
-import { PaginatedTaskItemResponseDto, PaginationMetaDto } from './dto/paginated-task-item-response.dto';
+import {
+  PaginatedTaskItemResponseDto,
+  PaginationMetaDto,
+} from './dto/paginated-task-item-response.dto';
 import type { GetTaskItemQueryDto } from './dto/get-task-item-query.dto';
 import { TaskItemAssignmentNotifierService } from './task-item-assignment-notifier.service';
 import { TaskItemMentionNotifierService } from './task-item-mention-notifier.service';
@@ -75,13 +78,15 @@ export class TaskManagementService {
       };
 
       statusCounts.forEach((item) => {
-        byStatus[item.status as TaskItemStatus] = item._count;
+        byStatus[item.status] = item._count;
       });
 
       return { total, byStatus };
     } catch (error) {
       this.logger.error('Error fetching task items stats:', error);
-      throw new InternalServerErrorException('Failed to fetch task items stats');
+      throw new InternalServerErrorException(
+        'Failed to fetch task items stats',
+      );
     }
   }
 
@@ -93,7 +98,17 @@ export class TaskManagementService {
     query: GetTaskItemQueryDto,
   ): Promise<PaginatedTaskItemResponseDto> {
     try {
-      const { entityId, entityType, page = 1, limit = 5, status, priority, assigneeId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+      const {
+        entityId,
+        entityType,
+        page = 1,
+        limit = 5,
+        status,
+        priority,
+        assigneeId,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+      } = query;
       const skip = (page - 1) * limit;
 
       // Build where clause
@@ -290,7 +305,7 @@ export class TaskManagementService {
         this.logger.log(
           `[ASSIGNEE DEBUG] Sending assignment notification to ${createTaskItemDto.assigneeId} for task ${taskItem.id}`,
         );
-        
+
         // Fire-and-forget: notification failures should not block task creation
         void this.notifier.notifyAssignee({
           organizationId,
@@ -311,7 +326,8 @@ export class TaskManagementService {
             memberId: member.id,
             taskTitle: taskItem.title,
             assigneeId: createTaskItemDto.assigneeId,
-            assigneeName: taskItem.assignee.user.name || taskItem.assignee.user.email,
+            assigneeName:
+              taskItem.assignee.user.name || taskItem.assignee.user.email,
             entityType: taskItem.entityType,
             entityId: taskItem.entityId,
           });
@@ -320,7 +336,9 @@ export class TaskManagementService {
 
       // Notify mentioned users
       if (createTaskItemDto.description && authContext.userId) {
-        const mentionedUserIds = extractMentionedUserIds(createTaskItemDto.description);
+        const mentionedUserIds = extractMentionedUserIds(
+          createTaskItemDto.description,
+        );
         this.logger.log(
           `[MENTION DEBUG] Extracted ${mentionedUserIds.length} mentioned users: ${JSON.stringify(mentionedUserIds)}`,
         );
@@ -339,9 +357,7 @@ export class TaskManagementService {
             mentionedByUserId: authContext.userId,
           });
         } else {
-          this.logger.log(
-            `[MENTION DEBUG] No mentions found in description`,
-          );
+          this.logger.log(`[MENTION DEBUG] No mentions found in description`);
         }
       }
 
@@ -491,26 +507,36 @@ export class TaskManagementService {
         },
       });
 
-      this.logger.log(
-        `Updated task item: ${taskItem.id} by ${member.id}`,
-      );
+      this.logger.log(`Updated task item: ${taskItem.id} by ${member.id}`);
 
       // Track what changed for audit log
       const changes: string[] = [];
-      if (updateTaskItemDto.title !== undefined && updateTaskItemDto.title !== existingTaskItem.title) {
+      if (
+        updateTaskItemDto.title !== undefined &&
+        updateTaskItemDto.title !== existingTaskItem.title
+      ) {
         changes.push('changed the title');
       }
-      if (updateTaskItemDto.description !== undefined && updateTaskItemDto.description !== existingTaskItem.description) {
+      if (
+        updateTaskItemDto.description !== undefined &&
+        updateTaskItemDto.description !== existingTaskItem.description
+      ) {
         changes.push('updated the description');
       }
-      if (updateTaskItemDto.status !== undefined && updateTaskItemDto.status !== existingTaskItem.status) {
+      if (
+        updateTaskItemDto.status !== undefined &&
+        updateTaskItemDto.status !== existingTaskItem.status
+      ) {
         changes.push(
-          `changed status from ${formatStatus(existingTaskItem.status)} to ${formatStatus(updateTaskItemDto.status)}`
+          `changed status from ${formatStatus(existingTaskItem.status)} to ${formatStatus(updateTaskItemDto.status)}`,
         );
       }
-      if (updateTaskItemDto.priority !== undefined && updateTaskItemDto.priority !== existingTaskItem.priority) {
+      if (
+        updateTaskItemDto.priority !== undefined &&
+        updateTaskItemDto.priority !== existingTaskItem.priority
+      ) {
         changes.push(
-          `changed priority from ${formatPriority(existingTaskItem.priority)} to ${formatPriority(updateTaskItemDto.priority)}`
+          `changed priority from ${formatPriority(existingTaskItem.priority)} to ${formatPriority(updateTaskItemDto.priority)}`,
         );
       }
 
@@ -541,7 +567,7 @@ export class TaskManagementService {
           this.logger.log(
             `[ASSIGNEE DEBUG] Assignee changed to ${taskItem.assigneeId}, sending notification for task ${taskItem.id}`,
           );
-          
+
           void this.notifier.notifyAssignee({
             organizationId,
             taskItemId: taskItem.id,
@@ -561,7 +587,8 @@ export class TaskManagementService {
               memberId: member.id,
               taskTitle: taskItem.title,
               assigneeId: taskItem.assigneeId,
-              assigneeName: taskItem.assignee.user.name || taskItem.assignee.user.email,
+              assigneeName:
+                taskItem.assignee.user.name || taskItem.assignee.user.email,
               entityType: taskItem.entityType,
               entityId: taskItem.entityId,
             });
@@ -593,7 +620,7 @@ export class TaskManagementService {
       // Notify mentioned users every time (no time restrictions)
       if (updateTaskItemDto.description !== undefined && authContext.userId) {
         const mentionedUserIds = extractMentionedUserIds(taskItem.description);
-        
+
         this.logger.log(
           `[MENTION DEBUG] Sending notifications to ${mentionedUserIds.length} mentioned users`,
         );
@@ -610,9 +637,7 @@ export class TaskManagementService {
             mentionedByUserId: authContext.userId,
           });
         } else {
-          this.logger.log(
-            `[MENTION DEBUG] No mentions found in description`,
-          );
+          this.logger.log(`[MENTION DEBUG] No mentions found in description`);
         }
       }
 
@@ -712,4 +737,3 @@ export class TaskManagementService {
     }
   }
 }
-

@@ -22,10 +22,12 @@ export class PaginationMetaDto {
 }
 
 export class PaginatedTaskItemResponseDto {
-  @ApiProperty({ type: [TaskItemResponseDto], description: 'Array of task items' })
+  @ApiProperty({
+    type: [TaskItemResponseDto],
+    description: 'Array of task items',
+  })
   data: TaskItemResponseDto[];
 
   @ApiProperty({ type: PaginationMetaDto, description: 'Pagination metadata' })
   meta: PaginationMetaDto;
 }
-

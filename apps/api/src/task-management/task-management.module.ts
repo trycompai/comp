@@ -5,8 +5,8 @@ import { AuthModule } from '@/auth/auth.module';
 import { TaskItemAssignmentNotifierService } from './task-item-assignment-notifier.service';
 import { TaskItemMentionNotifierService } from './task-item-mention-notifier.service';
 import { TaskItemAuditService } from './task-item-audit.service';
-import { NovuService } from '../notifications/novu.service';
 import { AttachmentsModule } from '../attachments/attachments.module';
+import { NovuService } from '../notifications/novu.service';
 
 @Module({
   imports: [AuthModule, AttachmentsModule],

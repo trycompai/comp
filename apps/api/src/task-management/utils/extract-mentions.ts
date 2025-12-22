@@ -5,8 +5,9 @@ export function extractMentionedUserIds(description: string | null): string[] {
   if (!description) return [];
 
   try {
-    const parsed = typeof description === 'string' ? JSON.parse(description) : description;
-    
+    const parsed =
+      typeof description === 'string' ? JSON.parse(description) : description;
+
     if (!parsed || typeof parsed !== 'object') return [];
 
     const mentionedUserIds: string[] = [];
@@ -35,4 +36,3 @@ export function extractMentionedUserIds(description: string | null): string[] {
     return [];
   }
 }
-

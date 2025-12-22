@@ -26,4 +26,3 @@ export function formatPriority(priority: string): string {
 
   return priorityMap[priority] || priority;
 }
-

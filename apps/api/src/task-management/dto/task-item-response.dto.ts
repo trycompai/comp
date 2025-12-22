@@ -62,13 +62,21 @@ export class TaskItemResponseDto {
   @ApiProperty({ description: 'Type of entity', enum: TaskItemEntityType })
   entityType: TaskItemEntityType;
 
-  @ApiProperty({ description: 'Assignee information', nullable: true, type: TaskItemAssigneeDto })
+  @ApiProperty({
+    description: 'Assignee information',
+    nullable: true,
+    type: TaskItemAssigneeDto,
+  })
   assignee: TaskItemAssigneeDto | null;
 
   @ApiProperty({ description: 'Creator information', type: TaskItemCreatorDto })
   createdBy: TaskItemCreatorDto;
 
-  @ApiProperty({ description: 'Last updater information', nullable: true, type: TaskItemUpdaterDto })
+  @ApiProperty({
+    description: 'Last updater information',
+    nullable: true,
+    type: TaskItemUpdaterDto,
+  })
   updatedBy: TaskItemUpdaterDto | null;
 
   @ApiProperty({ description: 'Creation timestamp' })
@@ -77,4 +85,3 @@ export class TaskItemResponseDto {
   @ApiProperty({ description: 'Last update timestamp' })
   updatedAt: Date;
 }
-

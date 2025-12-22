@@ -267,8 +267,8 @@ export function TaskItemEditableFields({
                 }, 300);
               }
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
                 // Clear any pending blur timeout
                 if (blurTimeoutRef.current) {
                   clearTimeout(blurTimeoutRef.current);
@@ -314,7 +314,7 @@ export function TaskItemEditableFields({
                 }}
                 entityId={entityId}
                 entityType={entityType}
-              />
+            />
           </div>
         ) : (
           <div

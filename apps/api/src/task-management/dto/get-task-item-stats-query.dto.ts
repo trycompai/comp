@@ -19,5 +19,3 @@ export class GetTaskItemStatsQueryDto {
   @IsEnum(TaskItemEntityType)
   entityType: TaskItemEntityType;
 }
-
-

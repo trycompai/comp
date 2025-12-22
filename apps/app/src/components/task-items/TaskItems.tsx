@@ -213,26 +213,26 @@ export const TaskItems = ({
   const content = (
     <TaskItemsBody
       isInitialLoad={isInitialLoad}
-      taskItemsError={taskItemsError}
-      shouldShowEmptyState={shouldShowEmptyState}
+            taskItemsError={taskItemsError}
+            shouldShowEmptyState={shouldShowEmptyState}
       hasActiveFilters={hasActiveFilters}
-      taskItems={taskItems}
-      taskItemsLoading={taskItemsLoading}
-      paginationMeta={paginationMeta}
-      entityId={entityId}
-      entityType={entityType}
-      page={page}
-      limit={limit}
-      sortBy={sortBy}
-      sortOrder={sortOrder}
-      filters={filters}
-      selectedTaskItemId={selectedTaskItemId}
-      onSelectTaskItemId={handleSelectTaskItemId}
-      onStatusOrPriorityChange={refreshStats}
-      onPageChange={handlePageChange}
-      onLimitChange={handleLimitChange}
-      onClearFilters={handleClearFilters}
-    />
+            taskItems={taskItems}
+            taskItemsLoading={taskItemsLoading}
+            paginationMeta={paginationMeta}
+            entityId={entityId}
+            entityType={entityType}
+            page={page}
+            limit={limit}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            filters={filters}
+            selectedTaskItemId={selectedTaskItemId}
+            onSelectTaskItemId={handleSelectTaskItemId}
+            onStatusOrPriorityChange={refreshStats}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            onClearFilters={handleClearFilters}
+          />
   );
 
   const createDialog = (

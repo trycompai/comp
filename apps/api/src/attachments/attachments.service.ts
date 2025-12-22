@@ -129,14 +129,16 @@ export class AttachmentsService {
       const fileId = randomBytes(16).toString('hex');
       const sanitizedFileName = this.sanitizeFileName(uploadDto.fileName);
       const timestamp = Date.now();
-      
+
       // Special S3 path structure for task items: org_{orgId}/attachments/task-item/{entityType}/{entityId}
       let s3Key: string;
       if (entityType === 'task_item') {
         // For task items, extract entityType and entityId from metadata
         // Metadata should contain taskItemEntityType and taskItemEntityId
-        const taskItemEntityType = uploadDto.description?.split('|')[0] || 'unknown';
-        const taskItemEntityId = uploadDto.description?.split('|')[1] || entityId;
+        const taskItemEntityType =
+          uploadDto.description?.split('|')[0] || 'unknown';
+        const taskItemEntityId =
+          uploadDto.description?.split('|')[1] || entityId;
         s3Key = `org_${organizationId}/attachments/task-item/${taskItemEntityType}/${taskItemEntityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
       } else {
         s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;

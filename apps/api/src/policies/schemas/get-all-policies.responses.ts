@@ -21,7 +21,8 @@ export const GET_ALL_POLICIES_RESPONSES: Record<string, ApiResponseOptions> = {
             },
             authenticatedUser: {
               type: 'object',
-              description: 'Authenticated user information (only present for session auth)',
+              description:
+                'Authenticated user information (only present for session auth)',
               properties: {
                 id: {
                   type: 'string',
@@ -43,7 +44,8 @@ export const GET_ALL_POLICIES_RESPONSES: Record<string, ApiResponseOptions> = {
             {
               id: 'pol_abc123def456',
               name: 'Data Privacy Policy',
-              description: 'This policy outlines how we handle and protect personal data',
+              description:
+                'This policy outlines how we handle and protect personal data',
               status: 'draft',
               content: [
                 {

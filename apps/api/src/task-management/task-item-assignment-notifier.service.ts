@@ -1,5 +1,8 @@
 import { db } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
+import { isUserUnsubscribed } from '@trycompai/email';
+import { sendEmail } from '../email/resend';
+import { TaskItemAssignedEmail } from '../email/templates/task-item-assigned';
 import { NovuService } from '../notifications/novu.service';
 
 type TaskItemEntityType = 'vendor' | 'risk';
@@ -27,7 +30,7 @@ const getEntityUrlPath = ({
 export class TaskItemAssignmentNotifierService {
   private readonly logger = new Logger(TaskItemAssignmentNotifierService.name);
 
-  constructor(private readonly novu: NovuService) {}
+  constructor(private readonly novuService: NovuService) {}
 
   async notifyAssignee(params: {
     organizationId: string;
@@ -92,7 +95,10 @@ export class TaskItemAssignmentNotifierService {
         return;
       }
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.BETTER_AUTH_URL ?? 'https://app.trycomp.ai';
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.BETTER_AUTH_URL ??
+        'https://app.trycomp.ai';
       const taskUrlBase = `${appUrl}${getEntityUrlPath({
         organizationId,
         entityType,
@@ -104,43 +110,93 @@ export class TaskItemAssignmentNotifierService {
       taskUrlObj.hash = 'task-items';
       const taskUrl = taskUrlObj.toString();
 
-      const subscriberId = `${assigneeUser.id}-${organizationId}`;
-      const workflowId = process.env.NOVU_WORKFLOW_TASK_ITEM_ASSIGNED ?? 'task-item-assigned';
       const assigneeName =
         assigneeUser.name?.trim() || assigneeUser.email?.trim() || 'User';
-      const assignedByEmail = assignedByUser?.email?.trim() || null;
+
+      // Check if user is unsubscribed from task assignment notifications
+      const isUnsubscribed = await isUserUnsubscribed(
+        db,
+        assigneeUser.email,
+        'taskAssignments',
+      );
+      if (isUnsubscribed) {
+        this.logger.log(
+          `Skipping assignment notification: user ${assigneeUser.email} is unsubscribed from task assignments`,
+        );
+        return;
+      }
 
       this.logger.log(
-        `Sending assignment notification to assignee: ${assigneeUser.email} (subscriberId: ${subscriberId}, workflow: ${workflowId}, assignedByName: ${assignedByName})`,
+        `Sending assignment notification to assignee: ${assigneeUser.email} for task "${taskTitle}"`,
       );
 
-      await this.novu.trigger({
-        workflowId,
-        subscriberId,
+      // Send email notification via Resend
+      try {
+        const { id } = await sendEmail({
+          to: assigneeUser.email,
+          subject: `You were assigned to a task: ${taskTitle}`,
+          react: TaskItemAssignedEmail({
+            toName: assigneeName,
+            toEmail: assigneeUser.email,
+            taskTitle,
+            assignedByName,
+            organizationName,
+            taskUrl,
+          }),
+          system: true,
+        });
+
+        this.logger.log(
+          `Assignment email sent to ${assigneeUser.email} (ID: ${id}) for task "${taskTitle}"`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send assignment email to ${assigneeUser.email}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+        throw error; // Re-throw to maintain existing error handling behavior
+      }
+
+      // Send in-app notification via Novu
+      this.logger.log(
+        `[NOVU] Attempting to send in-app notification to ${assigneeUser.id} (subscriber: ${assigneeUser.id}-${organizationId}) for task "${taskTitle}"`,
+      );
+      // Get entity route path for Novu payload
+      const entityRoutePath = entityType === 'vendor' ? 'vendors' : 'risks';
+
+      try {
+        await this.novuService.trigger({
+          workflowId: 'task-item-assigned',
+          subscriberId: `${assigneeUser.id}-${organizationId}`,
         email: assigneeUser.email,
         payload: {
-          organizationId,
+            taskTitle,
+            taskItemId,
+            assignedByName,
           organizationName,
-          taskItemId,
-          taskTitle,
           entityType,
+            entityRoutePath,
           entityId,
+            organizationId,
           taskUrl,
-          assignedByName,
-          assigneeName,
-          assigneeEmail: assigneeUser.email,
-          assignedByEmail,
-          assignedByUserId,
         },
       });
 
       this.logger.log(
-        `Assignment notification sent successfully to ${assigneeUser.email} for task "${taskTitle}"`,
+          `[NOVU] Assignment in-app notification sent to ${assigneeUser.id} for task "${taskTitle}"`,
       );
+      } catch (error) {
+        this.logger.error(
+          `[NOVU] Failed to send assignment in-app notification to ${assigneeUser.id}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+        // Don't throw - in-app notification failures should not block task operations
+      }
     } catch (error) {
-      this.logger.error('Failed to send assignment notification', error as Error);
+      this.logger.error(
+        'Failed to send assignment notification',
+        error as Error,
+      );
     }
   }
 }
-
-

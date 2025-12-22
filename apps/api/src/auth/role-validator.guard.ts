@@ -24,9 +24,7 @@ export class RoleValidator implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context
-      .switchToHttp()
-      .getRequest<AuthenticatedRequest>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     const { userRoles, userId, organizationId, authType, isApiKey } = request;
 

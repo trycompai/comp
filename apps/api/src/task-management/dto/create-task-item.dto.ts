@@ -13,19 +13,19 @@ export class CreateTaskItemDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Task status',
     enum: TaskItemStatus,
-    default: TaskItemStatus.todo
+    default: TaskItemStatus.todo,
   })
   @IsOptional()
   @IsEnum(TaskItemStatus)
   status?: TaskItemStatus;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Task priority',
     enum: TaskItemPriority,
-    default: TaskItemPriority.medium
+    default: TaskItemPriority.medium,
   })
   @IsOptional()
   @IsEnum(TaskItemPriority)
@@ -36,10 +36,10 @@ export class CreateTaskItemDto {
   @IsNotEmpty()
   entityId: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Type of entity',
     enum: TaskItemEntityType,
-    example: TaskItemEntityType.vendor
+    example: TaskItemEntityType.vendor,
   })
   @IsEnum(TaskItemEntityType)
   entityType: TaskItemEntityType;

@@ -11,10 +11,39 @@ import {
   CommentResponseDto,
 } from './dto/comment-responses.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CommentMentionNotifierService } from './comment-mention-notifier.service';
+
+// Reuse the extract mentions utility
+function extractMentionedUserIds(content: string | null): string[] {
+  if (!content) return [];
+
+  try {
+    const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+    if (!parsed || typeof parsed !== 'object') return [];
+
+    const mentionedUserIds: string[] = [];
+    function traverse(node: any) {
+      if (!node || typeof node !== 'object') return;
+      if (node.type === 'mention' && node.attrs?.id) {
+        mentionedUserIds.push(node.attrs.id);
+      }
+      if (Array.isArray(node.content)) {
+        node.content.forEach(traverse);
+      }
+    }
+    traverse(parsed);
+    return [...new Set(mentionedUserIds)];
+  } catch {
+    return [];
+  }
+}
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly attachmentsService: AttachmentsService) {}
+  constructor(
+    private readonly attachmentsService: AttachmentsService,
+    private readonly mentionNotifier: CommentMentionNotifierService,
+  ) {}
 
   /**
    * Validate that the target entity exists and belongs to the organization
@@ -28,10 +57,11 @@ export class CommentsService {
 
     switch (entityType) {
       case CommentEntityType.task: {
-        const task = await db.task.findFirst({
+        // Task comments are for task items, not tasks
+        const taskItem = await db.taskItem.findFirst({
           where: { id: entityId, organizationId },
         });
-        entityExists = !!task;
+        entityExists = !!taskItem;
         break;
       }
 
@@ -205,6 +235,23 @@ export class CommentsService {
         };
       });
 
+      // Notify mentioned users
+      if (createCommentDto.content && userId) {
+        const mentionedUserIds = extractMentionedUserIds(createCommentDto.content);
+        if (mentionedUserIds.length > 0) {
+          // Fire-and-forget: notification failures should not block comment creation
+          void this.mentionNotifier.notifyMentionedUsers({
+            organizationId,
+            commentId: result.comment.id,
+            commentContent: createCommentDto.content,
+            entityType: createCommentDto.entityType,
+            entityId: createCommentDto.entityId,
+            mentionedUserIds,
+            mentionedByUserId: userId,
+          });
+        }
+      }
+
       return {
         id: result.comment.id,
         content: result.comment.content,
@@ -278,6 +325,23 @@ export class CommentsService {
         commentId,
         AttachmentEntityType.comment,
       );
+
+      // Notify mentioned users on update
+      if (content && userId) {
+        const mentionedUserIds = extractMentionedUserIds(content);
+        if (mentionedUserIds.length > 0) {
+          // Fire-and-forget: notification failures should not block comment update
+          void this.mentionNotifier.notifyMentionedUsers({
+            organizationId,
+            commentId: updatedComment.id,
+            commentContent: content,
+            entityType: existingComment.entityType,
+            entityId: existingComment.entityId,
+            mentionedUserIds,
+            mentionedByUserId: userId,
+          });
+        }
+      }
 
       return {
         id: updatedComment.id,

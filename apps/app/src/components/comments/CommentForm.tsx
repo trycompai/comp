@@ -10,12 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { Textarea } from '@comp/ui/textarea';
 import type { CommentEntityType } from '@db';
 import { Camera, FileIcon, Loader2, Paperclip, X } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import type { JSONContent } from '@tiptap/react';
+import { CommentRichTextField } from './CommentRichTextField';
+import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface CommentFormProps {
   entityId: string;
@@ -23,16 +27,30 @@ interface CommentFormProps {
 }
 
 export function CommentForm({ entityId, entityType }: CommentFormProps) {
-  const [newComment, setNewComment] = useState('');
+  const [newComment, setNewComment] = useState<JSONContent | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [filesToAdd, setFilesToAdd] = useState<File[]>([]);
+  const [isSelectingMention, setIsSelectingMention] = useState(false);
+  const pathname = usePathname();
 
   // Use SWR hooks for generic comments
   const { mutate: refreshComments } = useComments(entityId, entityType);
   const { createCommentWithFiles } = useCommentWithAttachments();
+  const { members } = useOrganizationMembers();
+
+  // Convert members to MentionUser format
+  const mentionMembers = useMemo(() => {
+    if (!members) return [];
+    return members.map((member) => ({
+      id: member.user.id,
+      name: member.user.name || member.user.email || 'Unknown',
+      email: member.user.email || '',
+      image: member.user.image,
+    }));
+  }, [members]);
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -56,9 +74,23 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
       }
     }
 
+    // Skip modal if we're on risks or vendors pages - directly add files
+    const isRiskPage = pathname?.includes('/risk/');
+    const isVendorPage = pathname?.includes('/vendors/');
+    
+    if (isRiskPage || isVendorPage) {
+      setPendingFiles((prev) => [...prev, ...newFiles]);
+      newFiles.forEach((file) => {
+        toast.success(`File "${file.name}" ready for attachment.`);
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Show modal for policies and other pages
     setFilesToAdd(newFiles);
     setShowReminderDialog(true);
-  }, []);
+  }, [entityType, pathname]);
 
   const handleReminderConfirm = useCallback(() => {
     setShowReminderDialog(false);
@@ -83,14 +115,47 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     toast.info('File removed from comment draft.');
   };
 
+  // Convert TipTap JSON to string for API
+  const getCommentText = useCallback((content: JSONContent | null): string => {
+    if (!content) return '';
+    
+    // If it's a valid TipTap doc, convert to JSON string
+    if (content.type === 'doc' && content.content) {
+      return JSON.stringify(content);
+    }
+    
+    return '';
+  }, []);
+
+  // Check if comment has content
+  const hasContent = useCallback((content: JSONContent | null): boolean => {
+    if (!content || !content.content) return false;
+    
+    // Check if there's any text content
+    const hasText = content.content.some((node) => {
+      if (node.type === 'paragraph' && node.content) {
+        return node.content.some((child) => {
+          if (child.type === 'text' && child.text?.trim()) return true;
+          if (child.type === 'mention') return true; // Mentions count as content
+          return false;
+        });
+      }
+      if (node.type === 'mention') return true;
+      return false;
+    });
+    
+    return hasText;
+  }, []);
+
   const handleCommentSubmit = async () => {
-    if (!newComment.trim() && pendingFiles.length === 0) return;
+    if (!hasContent(newComment) && pendingFiles.length === 0) return;
 
     setIsSubmitting(true);
 
     try {
+      const commentText = getCommentText(newComment);
       // Use direct API call instead of server action
-      await createCommentWithFiles(newComment, entityId, entityType, pendingFiles);
+      await createCommentWithFiles(commentText, entityId, entityType, pendingFiles);
 
       toast.success('Comment added!');
 
@@ -98,7 +163,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
       refreshComments();
 
       // Reset form
-      setNewComment('');
+      setNewComment(null);
       setPendingFiles([]);
     } catch (error) {
       console.error('Error creating comment:', error);
@@ -108,19 +173,6 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
     }
   };
 
-  // Always show the actual form - no loading gate
-  // Users can start typing immediately, authentication is checked on submit
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (
-      (event.metaKey || event.ctrlKey) &&
-      event.key === 'Enter' &&
-      !isSubmitting &&
-      (newComment.trim() || pendingFiles.length > 0)
-    ) {
-      event.preventDefault(); // Prevent default newline behavior
-      handleCommentSubmit();
-    }
-  };
 
   return (
     <div className="rounded-lg border border-border bg-muted/10">
@@ -133,17 +185,14 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
           onChange={handleFileSelect}
           disabled={isSubmitting}
         />
-        <div className="flex-1 space-y-3">
-          <Textarea
-            placeholder="Leave a comment..."
-            className="resize-none border-0 bg-transparent p-4 placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+        <div className="flex-1 space-y-2">
+          <CommentRichTextField
             value={newComment}
-            onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
-              setNewComment(e.target.value)
-            }
+            onChange={setNewComment}
+            members={mentionMembers}
             disabled={isSubmitting}
-            onKeyDown={handleKeyDown}
-            rows={3}
+            placeholder="Leave a comment... Mention users with @"
+            onMentionSelect={() => setIsSelectingMention(true)}
           />
 
           {pendingFiles.length > 0 && (
@@ -187,7 +236,7 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
             <Button
               size="sm"
               onClick={handleCommentSubmit}
-              disabled={isSubmitting || (!newComment.trim() && pendingFiles.length === 0)}
+              disabled={isSubmitting || (!hasContent(newComment) && pendingFiles.length === 0)}
               aria-label="Submit comment"
               className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
             >
@@ -210,10 +259,6 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
               Ensure your organisation name is clearly visible within the screenshot.
             </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Auditors require this to verify the source of the data; without it, evidence may be
-            rejected.
-          </p>
           <DialogFooter>
             <Button variant="outline" onClick={handleReminderClose}>
               Cancel

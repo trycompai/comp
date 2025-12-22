@@ -80,7 +80,7 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
       <div className="relative">
         {/* Timeline line */}
         {activity.length > 0 && (
-          <div className="absolute left-3 top-6 bottom-0 w-px bg-border" />
+        <div className="absolute left-3 top-6 bottom-0 w-px bg-border" />
         )}
         
         <div className="space-y-4">
@@ -97,7 +97,7 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
               <div className="flex items-center gap-3 relative">
                 <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center relative z-10">
                   <Circle className="h-2 w-2 text-muted-foreground fill-current" />
-                </div>
+              </div>
                 <Button
                   variant="ghost"
                   size="sm"

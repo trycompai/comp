@@ -29,6 +29,8 @@ import { TaskItemEditableFields } from './TaskItemEditableFields';
 import { TaskItemActivityTimeline } from './TaskItemActivityTimeline';
 import { TaskItemFocusSidebar } from './TaskItemFocusSidebar';
 import { getTaskIdShort } from './task-item-utils';
+import { Comments } from '../comments/Comments';
+import { CommentEntityType } from '@db';
 
 interface TaskItemFocusViewProps {
   taskItem: TaskItem;
@@ -181,6 +183,17 @@ export function TaskItemFocusView({
           <TaskItemActivityTimeline 
             taskItem={taskItem}
             onActivityLoaded={(mutate) => setRefreshActivity(() => mutate)}
+          />
+
+          {/* Divider */}
+          <div className="border-t border-border" />
+
+          <Comments 
+            entityId={taskItem.id} 
+            entityType={CommentEntityType.task}
+            title="Comments"
+            description="Add comments, ask questions, or share updates about this task"
+            variant="inline"
           />
         </div>
 
