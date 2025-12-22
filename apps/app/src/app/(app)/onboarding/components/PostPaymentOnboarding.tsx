@@ -34,7 +34,9 @@ export function PostPaymentOnboarding({
     isLoading,
     onSubmit,
     handleBack,
+    handleSkip,
     isLastStep,
+    isSkippable,
     currentStepNumber,
     totalSteps,
     completeNow,
@@ -45,7 +47,9 @@ export function PostPaymentOnboarding({
     userEmail,
   });
 
-  // Only show skip button for internal team members
+  const isLocal = process.env.NODE_ENV !== 'production';
+
+  // Internal-only: fast-path to complete onboarding (not exposed to customers)
   const canSkipOnboarding = useMemo(() => {
     if (!userEmail) return false;
     return userEmail.endsWith('@trycomp.ai');
@@ -188,7 +192,29 @@ export function PostPaymentOnboarding({
               </motion.div>
             )}
           </AnimatePresence>
-          {canSkipOnboarding && (
+          <AnimatePresence>
+            {isSkippable && (
+              <motion.div
+                key="skip"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.25 }}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="flex items-center gap-2 text-muted-foreground"
+                  onClick={handleSkip}
+                  disabled={isOnboarding || isFinalizing || isLoading}
+                  data-testid="onboarding-skip-button"
+                >
+                  Skip for now
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {(isLocal || canSkipOnboarding) && (
             <motion.div
               key="complete-now"
               initial={{ opacity: 0, x: 20 }}
