@@ -1,8 +1,8 @@
 'use client';
 
 import { AnalyticsProvider } from '@comp/analytics';
-import { ChakraProvider, ColorModeProvider, system } from '@trycompai/ui-v2';
 import { Session, User } from 'better-auth';
+import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
 
 type ProviderProps = {
@@ -15,13 +15,13 @@ type ProviderProps = {
 
 export function Providers({ children, session }: ProviderProps) {
   return (
-    <AnalyticsProvider
-      userId={session?.user?.id ?? undefined}
-      userEmail={session?.user?.email ?? undefined}
-    >
-      <ColorModeProvider>
-        <ChakraProvider value={system}>{children}</ChakraProvider>
-      </ColorModeProvider>
-    </AnalyticsProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <AnalyticsProvider
+        userId={session?.user?.id ?? undefined}
+        userEmail={session?.user?.email ?? undefined}
+      >
+        {children}
+      </AnalyticsProvider>
+    </ThemeProvider>
   );
 }

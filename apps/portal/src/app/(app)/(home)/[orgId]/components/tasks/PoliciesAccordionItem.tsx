@@ -1,8 +1,8 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { Accordion, Button, HStack, Link, Text, VStack } from '@trycompai/ui-v2';
-import { CheckCircle2, Circle, FileText } from 'lucide-react';
+import { Button } from '@trycompai/ui-shadcn';
+import { CheckCircle2, ChevronDown, Circle, FileText } from 'lucide-react';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -52,79 +52,74 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
   };
 
   return (
-    <Accordion.Item value="policies">
-      <Accordion.ItemTrigger>
-        <HStack gap="3" flex="1" textAlign="start">
+    <details className="group px-4 py-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+        <div className="flex flex-1 items-center gap-3 text-left">
           {hasAcceptedPolicies ? (
             <CheckCircle2 className="h-5 w-5" />
           ) : (
             <Circle className="h-5 w-5" />
           )}
-          <Text
-            textStyle="md"
-            color={hasAcceptedPolicies ? 'fg.muted' : 'fg'}
-            textDecoration={hasAcceptedPolicies ? 'line-through' : undefined}
+          <span
+            className={
+              hasAcceptedPolicies
+                ? 'text-sm font-medium text-muted-foreground line-through'
+                : 'text-sm font-medium text-foreground'
+            }
           >
             Accept security policies
-          </Text>
-        </HStack>
-        <Accordion.ItemIndicator />
-      </Accordion.ItemTrigger>
+          </span>
+        </div>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
 
-      <Accordion.ItemContent>
-        <Accordion.ItemBody>
-          <VStack align="stretch" gap="4">
-            {policies.length > 0 ? (
-              <>
-                <Text fontSize="sm" color="fg.muted">
-                  Please review and accept the following security policies:
-                </Text>
+      <div className="mt-4 flex flex-col gap-4">
+        {policies.length > 0 ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Please review and accept the following security policies:
+            </p>
 
-                <VStack align="stretch" gap="2">
-                  {policies.map((policy) => {
-                    const isAccepted = acceptedPolicies.includes(policy.id);
+            <div className="flex flex-col gap-2">
+              {policies.map((policy) => {
+                const isAccepted = acceptedPolicies.includes(policy.id);
 
-                    return (
-                      <HStack key={policy.id} gap="2" align="center">
-                        <Link asChild fontSize="sm" color="fg" _hover={{ color: 'primary.solid' }}>
-                          <NextLink href={`/${member.organizationId}/policy/${policy.id}`}>
-                            <HStack gap="2">
-                              <FileText className="h-4 w-4" />
-                              <Text
-                                as="span"
-                                textDecoration={isAccepted ? 'line-through' : undefined}
-                                color={isAccepted ? 'fg.muted' : 'fg'}
-                              >
-                                {policy.name}
-                              </Text>
-                            </HStack>
-                          </NextLink>
-                        </Link>
+                return (
+                  <div key={policy.id} className="flex items-center justify-between gap-3">
+                    <NextLink
+                      href={`/${member.organizationId}/policy/${policy.id}`}
+                      className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span
+                        className={isAccepted ? 'text-muted-foreground line-through' : undefined}
+                      >
+                        {policy.name}
+                      </span>
+                    </NextLink>
 
-                        {isAccepted && <CheckCircle2 className="h-4 w-4" />}
-                      </HStack>
-                    );
-                  })}
-                </VStack>
+                    {isAccepted ? <CheckCircle2 className="h-4 w-4" /> : null}
+                  </div>
+                );
+              })}
+            </div>
 
-                <Button
-                  size="sm"
-                  onClick={handleAcceptAllPolicies}
-                  disabled={hasAcceptedPolicies || isAcceptingAll}
-                  loading={isAcceptingAll}
-                  colorPalette="primary"
-                >
-                  {hasAcceptedPolicies ? 'All Policies Accepted' : 'Accept All'}
-                </Button>
-              </>
-            ) : (
-              <Text fontSize="sm" color="fg.muted">
-                No policies to accept.
-              </Text>
-            )}
-          </VStack>
-        </Accordion.ItemBody>
-      </Accordion.ItemContent>
-    </Accordion.Item>
+            <Button
+              size="sm"
+              onClick={handleAcceptAllPolicies}
+              disabled={hasAcceptedPolicies || isAcceptingAll}
+            >
+              {hasAcceptedPolicies
+                ? 'All Policies Accepted'
+                : isAcceptingAll
+                  ? 'Accepting…'
+                  : 'Accept All'}
+            </Button>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">No policies to accept.</p>
+        )}
+      </div>
+    </details>
   );
 }

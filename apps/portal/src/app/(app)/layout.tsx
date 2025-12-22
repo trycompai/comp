@@ -1,6 +1,5 @@
 import { Header } from '@/app/components/header';
 import { auth } from '@/app/lib/auth';
-import { Box, Container } from '@trycompai/ui-v2';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -14,11 +13,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <Box minH="dvh" bg="bg" color="fg" display="flex" flexDirection="column">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <Header />
-      <Container as="main" maxW="3xl" py="8">
-        {children}
-      </Container>
-    </Box>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+    </div>
   );
 }

@@ -21,19 +21,14 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: ['http://localhost:3000', 'http://localhost:3002', 'https://*.trycomp.ai'],
-  secret: env.AUTH_SECRET!,
+  secret: env.AUTH_SECRET,
   plugins: [
     organization({
       membershipLimit: 100000000000,
       async sendInvitationEmail(data) {
-        console.log(
-          'process.env.NEXT_PUBLIC_BETTER_AUTH_URL',
-          process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-        );
-
         const isLocalhost = process.env.NODE_ENV === 'development';
         const protocol = isLocalhost ? 'http' : 'https';
-        const domain = isLocalhost ? 'localhost:3000' : process.env.NEXT_PUBLIC_BETTER_AUTH_URL!;
+        const domain = isLocalhost ? 'localhost:3000' : env.NEXT_PUBLIC_BETTER_AUTH_URL;
         const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
 
         const url = `${protocol}://${domain}/auth`;
@@ -89,15 +84,19 @@ export const auth = betterAuth({
     multiSession(),
   ],
   socialProviders: {
-    google: {
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-    },
-    ...(process.env.AUTH_MICROSOFT_CLIENT_ID && process.env.AUTH_MICROSOFT_CLIENT_SECRET
+    ...(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET
+      ? {
+          google: {
+            clientId: env.AUTH_GOOGLE_ID,
+            clientSecret: env.AUTH_GOOGLE_SECRET,
+          },
+        }
+      : {}),
+    ...(env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET
       ? {
           microsoft: {
-            clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
-            clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
+            clientId: env.AUTH_MICROSOFT_CLIENT_ID,
+            clientSecret: env.AUTH_MICROSOFT_CLIENT_SECRET,
             tenantId: 'common',
             prompt: 'select_account',
           },

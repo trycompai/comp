@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { Button } from '@comp/ui/button';
+import { Button } from '@trycompai/ui-shadcn';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -48,8 +48,10 @@ export function PolicyAcceptButton({ policyId, isAccepted, orgId }: PolicyAccept
   if (accepted) {
     return (
       <Button disabled className="w-full">
-        <Check className="mr-2 h-4 w-4" />
-        Policy Accepted
+        <span className="inline-flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          Policy Accepted
+        </span>
       </Button>
     );
   }

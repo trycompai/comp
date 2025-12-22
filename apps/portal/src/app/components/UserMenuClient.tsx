@@ -1,9 +1,18 @@
 'use client';
 
-import { Avatar, Box, chakra, HStack, Menu, Portal, Text, VStack } from '@trycompai/ui-v2';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@trycompai/ui-shadcn';
+import { Monitor, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 import { Logout } from './logout';
-import { ThemeSwitch } from './theme-switch';
 
 interface UserMenuClientProps {
   user: {
@@ -15,65 +24,75 @@ interface UserMenuClientProps {
 }
 
 export function UserMenuClient({ user, userInitials }: UserMenuClientProps) {
-  const TriggerButton = chakra('button');
+  const { theme, setTheme } = useTheme();
+  const current = (theme ?? 'system') as 'dark' | 'system' | 'light';
 
   return (
-    <Menu.Root positioning={{ placement: 'bottom-end', gutter: 10 }}>
-      <Menu.Trigger asChild>
-        <TriggerButton
-          type="button"
-          display="inline-flex"
-          p="0"
-          borderRadius="full"
-          bg="transparent"
-          borderWidth="0"
-          aria-label="Open user menu"
-        >
-          <Avatar.Root boxSize="8">
-            {user?.image ? (
-              <Avatar.Image src={user.image} alt={user.name ?? 'User avatar'} />
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        type="button"
+        aria-label="Open user menu"
+        className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-muted text-foreground"
+      >
+        {user?.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.image}
+            alt={user.name ?? 'User avatar'}
+            className="h-8 w-8 rounded-full object-cover"
+          />
+        ) : (
+          <span className="text-xs font-semibold">{userInitials}</span>
+        )}
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="w-64">
+        <div className="px-3 py-2.5">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{user?.name ?? 'Account'}</p>
+            {user?.email ? (
+              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             ) : null}
-            <Avatar.Fallback name={user?.name ?? undefined}>
-              <Text fontSize="xs" fontWeight="semibold">
-                {userInitials}
-              </Text>
-            </Avatar.Fallback>
-          </Avatar.Root>
-        </TriggerButton>
-      </Menu.Trigger>
+          </div>
+        </div>
 
-      {/* Disable portal so positioning is anchored to the trigger (fixes "menu opens elsewhere"). */}
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content p="0" overflow="visible">
-            <Box px="3" py="2.5">
-              <HStack justify="space-between" gap="3" align="start">
-                <VStack align="start" gap="0" minW="0">
-                  <Text fontSize="sm" fontWeight="medium" lineClamp={1} maxW="155px">
-                    {user?.name}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted" lineClamp={1} maxW="155px">
-                    {user?.email}
-                  </Text>
-                </VStack>
-              </HStack>
-            </Box>
+        <DropdownMenuSeparator />
 
-            <Menu.Separator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Theme</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => setTheme('system')}>
+            <div className="flex w-full items-center justify-between">
+              <span className="inline-flex items-center gap-2">
+                <Monitor className="h-4 w-4" />
+                System
+              </span>
+              {current === 'system' ? <span className="h-2 w-2 rounded-full bg-primary" /> : null}
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme('light')}>
+            <div className="flex w-full items-center justify-between">
+              <span className="inline-flex items-center gap-2">
+                <Sun className="h-4 w-4" />
+                Light
+              </span>
+              {current === 'light' ? <span className="h-2 w-2 rounded-full bg-primary" /> : null}
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme('dark')}>
+            <div className="flex w-full items-center justify-between">
+              <span className="inline-flex items-center gap-2">
+                <Moon className="h-4 w-4" />
+                Dark
+              </span>
+              {current === 'dark' ? <span className="h-2 w-2 rounded-full bg-primary" /> : null}
+            </div>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
 
-            <Box px="3" py="2">
-              <Text fontSize="xs" color="fg.muted" mb="2">
-                Theme
-              </Text>
-              <ThemeSwitch />
-            </Box>
+        <DropdownMenuSeparator />
 
-            <Menu.Separator />
-
-            <Logout />
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
+        <Logout />
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

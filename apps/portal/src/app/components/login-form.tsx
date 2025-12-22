@@ -1,6 +1,6 @@
 'use client';
 
-import { HStack, Separator, Text, VStack } from '@trycompai/ui-v2';
+import { Separator } from '@trycompai/ui-shadcn';
 import { useSearchParams } from 'next/navigation';
 import { GoogleSignIn } from './google-sign-in';
 import { MicrosoftSignIn } from './microsoft-sign-in';
@@ -19,23 +19,21 @@ export function LoginForm({ inviteCode, showGoogle, showMicrosoft }: LoginFormPr
   }
 
   return (
-    <VStack align="stretch" gap="4">
-      <HStack gap="3" align="center">
-        <Separator flex="1" />
-        <Text fontSize="xs" color="fg.muted" fontWeight="medium">
-          OR
-        </Text>
-        <Separator flex="1" />
-      </HStack>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs font-medium text-muted-foreground">OR</span>
+        <Separator className="flex-1" />
+      </div>
 
-      <VStack align="stretch" gap="4">
+      <div className="flex flex-col gap-4">
         {showGoogle ? (
           <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
         ) : null}
         {showMicrosoft ? (
           <MicrosoftSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
         ) : null}
-      </VStack>
-    </VStack>
+      </div>
+    </div>
   );
 }

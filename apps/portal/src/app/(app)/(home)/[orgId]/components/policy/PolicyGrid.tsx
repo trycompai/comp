@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Member, Policy } from '@db';
+import { Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
 import { Check } from 'lucide-react';
 
 interface PolicyGridProps {
@@ -35,33 +35,38 @@ export function PolicyGrid({ policies, onPolicyClick, member }: PolicyGridProps)
           {policies.map((policy, index) => {
             const isCompleted = policy.signedBy.includes(member.id);
             return (
-              <Card
+              <button
                 key={policy.id}
-                className="relative flex h-[280px] cursor-pointer flex-col transition-shadow hover:shadow-lg"
+                type="button"
                 onClick={() => onPolicyClick(index)}
+                className="relative h-[280px] w-full text-left transition-shadow hover:shadow-lg"
               >
-                {isCompleted && (
-                  <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px]">
-                    <Check className="text-primary h-12 w-12" />
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="text-xl">{policy.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <p className="text-muted-foreground line-clamp-4">{policy.description}</p>
-                  <div className="absolute right-6 bottom-6 left-6">
-                    <p className="text-muted-foreground text-sm">
-                      Status: {policy.status}
-                      {policy.updatedAt && (
-                        <span className="ml-2">
-                          (Updated: {new Date(policy.updatedAt).toLocaleDateString()})
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                <Card>
+                  {isCompleted ? (
+                    <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px]">
+                      <Check className="text-primary h-12 w-12" />
+                    </div>
+                  ) : null}
+
+                  <CardHeader>
+                    <h3 className="text-lg font-semibold leading-snug">{policy.name}</h3>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="flex h-[180px] flex-col justify-between">
+                      <p className="text-muted-foreground line-clamp-4">{policy.description}</p>
+                      <p className="text-muted-foreground text-sm">
+                        Status: {policy.status}
+                        {policy.updatedAt ? (
+                          <span className="ml-2">
+                            (Updated: {new Date(policy.updatedAt).toLocaleDateString()})
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </button>
             );
           })}
         </div>

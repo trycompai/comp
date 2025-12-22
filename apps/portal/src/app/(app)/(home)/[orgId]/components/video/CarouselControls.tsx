@@ -1,4 +1,4 @@
-import { Button, HStack, Text } from '@trycompai/ui-v2';
+import { Button } from '@trycompai/ui-shadcn';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CarouselControlsProps {
@@ -17,32 +17,30 @@ export function CarouselControls({
   const isFirstVideo = currentIndex === 0;
 
   return (
-    <HStack justify="space-between">
+    <div className="flex items-center justify-between">
       <Button
         variant="outline"
-        size="sm"
+        size="icon-sm"
         onClick={onPrevious}
         disabled={isFirstVideo}
         aria-label="Previous video"
-        colorPalette="secondary"
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <Text fontSize="sm" color="fg.muted">
+      <span className="text-sm text-muted-foreground">
         {currentIndex + 1} of {total}
-      </Text>
+      </span>
 
       <Button
         variant="outline"
-        size="sm"
+        size="icon-sm"
         onClick={onNext}
         disabled={!onNext}
         aria-label="Next video"
-        colorPalette="secondary"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
-    </HStack>
+    </div>
   );
 }

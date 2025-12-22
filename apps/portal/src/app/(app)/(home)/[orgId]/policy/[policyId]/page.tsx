@@ -1,13 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { serverApi } from '@/lib/server-api-client';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@comp/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@trycompai/ui-shadcn';
 import { ArrowLeft, Check } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
@@ -22,6 +15,8 @@ const PolicyResponseSchema = z
     name: z.string(),
     description: z.string().nullable().optional(),
     content: z.unknown().optional(),
+    displayFormat: z.string().optional(),
+    pdfUrl: z.string().nullable().optional(),
     signedBy: z.array(z.string()).default([]),
     updatedAt: z.string().datetime().nullable().optional(),
   })
@@ -80,7 +75,7 @@ export default async function PolicyPage({
         </Link>
       </div>
 
-      <Card className="shadow-md">
+      <Card>
         {isAccepted && (
           <div className="bg-green-50 border-green-200 mb-4 flex items-center gap-2 rounded-t-xs border p-3">
             <Check className="text-green-600 h-5 w-5" />
@@ -90,17 +85,15 @@ export default async function PolicyPage({
           </div>
         )}
         <CardHeader>
-          <CardTitle className="text-2xl">{policy.name}</CardTitle>
-          {policy.description && (
-            <CardDescription className="text-muted-foreground">
-              {policy.description}
-            </CardDescription>
-          )}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl font-semibold">{policy.name}</h1>
+            {policy.description && (
+              <p className="text-sm text-muted-foreground">{policy.description}</p>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="prose max-w-none">
-            <PolicyViewer policy={policy} />
-          </div>
+          <PolicyViewer policy={policy} />
           {policy.updatedAt && (
             <p className="text-muted-foreground mt-6 text-sm">
               Last updated: {new Date(policy.updatedAt).toLocaleDateString()}

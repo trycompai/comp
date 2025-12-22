@@ -2,7 +2,6 @@
 
 import { apiClient } from '@/lib/api-client';
 import { trainingVideos } from '@/lib/data/training-videos';
-import { Text, VStack } from '@trycompai/ui-v2';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useSWRConfig } from 'swr';
@@ -117,16 +116,14 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
   const allVideosCompleted = trainingVideos.every((metadata) => completedVideoIds.has(metadata.id));
 
   return (
-    <VStack align="stretch" gap="4">
+    <div className="flex flex-col gap-4">
       {allVideosCompleted && (
-        <VStack py="8" gap="2" textAlign="center">
-          <Text textStyle="xl" fontWeight="semibold">
-            All Training Videos Completed!
-          </Text>
-          <Text fontSize="sm" color="fg.muted">
+        <div className="py-8 text-center">
+          <p className="text-xl font-semibold">All Training Videos Completed!</p>
+          <p className="text-sm text-muted-foreground">
             You're all done, now your manager won't pester you!
-          </Text>
-        </VStack>
+          </p>
+        </div>
       )}
       {!allVideosCompleted && (
         <>
@@ -150,6 +147,6 @@ export function VideoCarousel({ videos }: VideoCarouselProps) {
           />
         </>
       )}
-    </VStack>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { Card, HStack, Link, Text, VStack } from '@trycompai/ui-v2';
+import { Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
+import { cn } from '@trycompai/ui-shadcn/cn';
 import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
 
 import type { EmployeePortalDashboard } from '../../../types/employee-portal';
@@ -19,86 +20,86 @@ export function DeviceAgentPolicyStatusCard({
   mdmEnabledStatus,
 }: DeviceAgentPolicyStatusCardProps) {
   return (
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>{host.computer_name}</Card.Title>
-      </Card.Header>
-      <Card.Body>
-        <VStack align="stretch" gap="3">
+    <Card>
+      <CardHeader>
+        <h3 className="text-base font-semibold">{host.computer_name}</h3>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-3">
           {fleetPolicies.length > 0 ? (
             <>
               {fleetPolicies.map((policy) => {
                 const isPass = policy.response === 'pass';
                 return (
-                  <HStack
+                  <div
                     key={policy.id}
-                    justify="space-between"
-                    borderWidth="1px"
-                    borderColor="border"
-                    borderLeftWidth="4px"
-                    borderLeftColor={isPass ? 'green.500' : 'red.500'}
-                    borderRadius="md"
-                    padding="3"
+                    className={cn(
+                      'flex items-center justify-between rounded-md border border-border border-l-4 p-3',
+                      isPass ? 'border-l-green-500' : 'border-l-red-500',
+                    )}
                   >
-                    <Text fontSize="sm" fontWeight="medium">
-                      {policy.name}
-                    </Text>
-                    <HStack gap="1" color={isPass ? 'green.600' : 'red.600'}>
+                    <p className="text-sm font-medium">{policy.name}</p>
+                    <div
+                      className={cn(
+                        'inline-flex items-center gap-1 text-sm',
+                        isPass
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400',
+                      )}
+                    >
                       {isPass ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                      <Text fontSize="sm">{isPass ? 'Pass' : 'Fail'}</Text>
-                    </HStack>
-                  </HStack>
+                      <span>{isPass ? 'Pass' : 'Fail'}</span>
+                    </div>
+                  </div>
                 );
               })}
 
-              {isMacOS && (
-                <HStack
-                  justify="space-between"
-                  borderWidth="1px"
-                  borderColor="border"
-                  borderLeftWidth="4px"
-                  borderLeftColor={mdmEnabledStatus.response === 'pass' ? 'green.500' : 'red.500'}
-                  borderRadius="md"
-                  padding="3"
+              {isMacOS ? (
+                <div
+                  className={cn(
+                    'flex items-center justify-between rounded-md border border-border border-l-4 p-3',
+                    mdmEnabledStatus.response === 'pass'
+                      ? 'border-l-green-500'
+                      : 'border-l-red-500',
+                  )}
                 >
-                  <HStack gap="2">
-                    <Text fontSize="sm" fontWeight="medium">
-                      {mdmEnabledStatus.name}
-                    </Text>
-                    {mdmEnabledStatus.response === 'fail' && (
-                      <Link
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
+                    {mdmEnabledStatus.response === 'fail' ? (
+                      <a
                         href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
                         target="_blank"
                         rel="noopener noreferrer"
-                        color="fg.muted"
-                        _hover={{ color: 'fg' }}
+                        className="text-muted-foreground hover:text-foreground"
                         aria-label="Open MDM instructions"
                       >
                         <HelpCircle size={14} />
-                      </Link>
+                      </a>
+                    ) : null}
+                  </div>
+                  <div
+                    className={cn(
+                      'inline-flex items-center gap-1 text-sm',
+                      mdmEnabledStatus.response === 'pass'
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-600 dark:text-red-400',
                     )}
-                  </HStack>
-                  {mdmEnabledStatus.response === 'pass' ? (
-                    <HStack gap="1" color="green.600">
+                  >
+                    {mdmEnabledStatus.response === 'pass' ? (
                       <CheckCircle2 size={16} />
-                      <Text fontSize="sm">Pass</Text>
-                    </HStack>
-                  ) : (
-                    <HStack gap="1" color="red.600">
+                    ) : (
                       <XCircle size={16} />
-                      <Text fontSize="sm">Fail</Text>
-                    </HStack>
-                  )}
-                </HStack>
-              )}
+                    )}
+                    <span>{mdmEnabledStatus.response === 'pass' ? 'Pass' : 'Fail'}</span>
+                  </div>
+                </div>
+              ) : null}
             </>
           ) : (
-            <Text fontSize="sm" color="fg.muted">
-              No policies configured for this device.
-            </Text>
+            <p className="text-sm text-muted-foreground">No policies configured for this device.</p>
           )}
-        </VStack>
-      </Card.Body>
-    </Card.Root>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

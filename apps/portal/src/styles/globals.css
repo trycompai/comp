@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+@config '../../tailwind.config.ts';
+
+html,
+body {
+  height: 100%;
+}
+
+*:focus {
+  outline: none;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

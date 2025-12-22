@@ -1,8 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Icons } from '@comp/ui/icons';
-import { Button, HStack, Spinner, Text } from '@trycompai/ui-v2';
+import { Button } from '@trycompai/ui-shadcn';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -82,19 +81,11 @@ export function MicrosoftSignIn({
     <Button
       onClick={handleSignIn}
       variant="outline"
-      colorPalette="secondary"
-      w="full"
       size="lg"
       disabled={isLoading}
+      className="w-full"
     >
-      {isLoading ? (
-        <Spinner size="sm" />
-      ) : (
-        <HStack gap="2">
-          <Icons.Microsoft width={16} height={16} />
-          <Text as="span">Continue with Microsoft</Text>
-        </HStack>
-      )}
+      {isLoading ? 'Redirecting…' : 'Continue with Microsoft'}
     </Button>
   );
 }

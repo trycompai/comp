@@ -1,8 +1,7 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { Accordion, Card, Progress, Text, VStack } from '@trycompai/ui-v2';
-import { useState } from 'react';
+import { Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
 import type { EmployeePortalDashboard } from '../types/employee-portal';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
@@ -23,8 +22,6 @@ export const EmployeeTasksList = ({
   fleetPolicies,
   host,
 }: EmployeeTasksListProps) => {
-  const [accordionValue, setAccordionValue] = useState<string[]>([]);
-
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
@@ -56,41 +53,39 @@ export const EmployeeTasksList = ({
   const progressPercent = (completedCount / totalCount) * 100;
 
   return (
-    <VStack align="stretch" gap="4">
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Overview</Card.Title>
-          <Card.Description>
-            Please complete the following tasks to stay compliant and secure.
-          </Card.Description>
-        </Card.Header>
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-base font-semibold">Overview</h2>
+            <p className="text-sm text-muted-foreground">
+              Please complete the following tasks to stay compliant and secure.
+            </p>
+          </div>
+        </CardHeader>
 
-        <Card.Body>
-          <VStack align="stretch" gap="4">
-            <VStack align="stretch" gap="2">
-              <Text fontSize="sm" color="fg.muted">
+        <CardContent>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">
                 {completedCount} of {totalCount} tasks completed
-              </Text>
-              <Progress.Root value={progressPercent} colorPalette="primary">
-                <Progress.Track>
-                  <Progress.Range />
-                </Progress.Track>
-              </Progress.Root>
-            </VStack>
+              </p>
+              <div className="h-2 w-full rounded-full bg-muted">
+                <div
+                  className="h-2 rounded-full bg-primary transition-[width]"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
 
-            <Accordion.Root
-              multiple={false}
-              collapsible
-              value={accordionValue}
-              onValueChange={({ value }) => setAccordionValue(value)}
-            >
+            <div className="divide-y divide-border rounded-md border border-border">
               <PoliciesAccordionItem policies={policies} member={member} />
               <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
               <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />
-            </Accordion.Root>
-          </VStack>
-        </Card.Body>
-      </Card.Root>
-    </VStack>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

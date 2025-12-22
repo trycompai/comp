@@ -1,7 +1,7 @@
 'use client';
 
 import { useApiSWR } from '@/hooks/use-api-swr';
-import { Card, CardContent } from '@comp/ui/card';
+import { Card, CardContent } from '@trycompai/ui-shadcn';
 import { FileText, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -48,14 +48,18 @@ export function PortalPdfViewer({ policyId, s3Key }: PortalPdfViewerProps) {
 
   // Fallback UI if there's no PDF or an error occurs
   return (
-    <Card className="flex h-[500px] w-full flex-col items-center justify-center">
-      <CardContent className="text-center">
-        <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-        <p className="mt-4 font-semibold">PDF Document Not Available</p>
-        <p className="text-sm text-muted-foreground">
-          This policy is stored as a PDF, but it could not be loaded.
-        </p>
-      </CardContent>
-    </Card>
+    <div className="h-[500px] w-full">
+      <Card>
+        <CardContent>
+          <div className="flex h-[420px] w-full flex-col items-center justify-center text-center">
+            <FileText className="h-12 w-12 text-muted-foreground" />
+            <p className="mt-4 font-semibold">PDF Document Not Available</p>
+            <p className="text-sm text-muted-foreground">
+              This policy is stored as a PDF, but it could not be loaded.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

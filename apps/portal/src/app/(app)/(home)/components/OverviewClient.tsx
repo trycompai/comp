@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { Card, Text } from '@trycompai/ui-v2';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui-shadcn';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -42,20 +42,18 @@ export function OverviewClient({ initialMemberships }: OverviewClientProps) {
 
   return (
     <div className="space-y-8">
-      <h1>Your Organizations</h1>
+      <h1 className="text-lg font-semibold">Your Organizations</h1>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {memberships.map((m) => (
           <Link href={`/${m.organization.id}`} key={m.memberId}>
-            <Card.Root>
-              <Card.Header>
-                <Card.Title>{m.organization.name}</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Text fontSize="sm" color="fg.muted">
-                  View organization
-                </Text>
-              </Card.Body>
-            </Card.Root>
+            <Card>
+              <CardHeader>
+                <CardTitle>{m.organization.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">View organization</p>
+              </CardContent>
+            </Card>
           </Link>
         ))}
       </div>

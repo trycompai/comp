@@ -1,7 +1,7 @@
 'use client';
 
 import type { EmployeeTrainingVideoCompletion } from '@db';
-import { Box, Button, chakra, HStack, Text, VStack } from '@trycompai/ui-v2';
+import { Button } from '@trycompai/ui-shadcn';
 import { ArrowRight, Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -39,86 +39,55 @@ export function YoutubeEmbed({
   isMarkingComplete,
 }: YoutubeEmbedProps) {
   const [isRewatching, setIsRewatching] = useState(false);
-  const YoutubeIframe = chakra('iframe');
 
   return (
-    <VStack align="stretch" gap="4">
+    <div className="flex flex-col gap-4">
       {!allVideosCompleted && (
-        <HStack justify="flex-end">
-          <Button
-            variant="outline"
-            colorPalette={isCompleted ? 'secondary' : 'primary'}
-            onClick={onComplete}
-            disabled={isCompleted}
-            loading={isMarkingComplete}
-          >
-            <HStack gap="2">
-              {isMarkingComplete ? (
-                <>
-                  <Loader2 className="h-4 w-4" />
-                  <Text as="span">Marking as Complete...</Text>
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" />
-                  <Text as="span">{isCompleted ? 'Completed' : 'Mark as Complete'}</Text>
-                </>
-              )}
-            </HStack>
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={onComplete} disabled={isCompleted}>
+            <span className="inline-flex items-center gap-2">
+              {isMarkingComplete ? <Loader2 className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+              {isMarkingComplete
+                ? 'Marking as Complete…'
+                : isCompleted
+                  ? 'Completed'
+                  : 'Mark as Complete'}
+            </span>
           </Button>
-        </HStack>
+        </div>
       )}
 
-      <Box position="relative" width="full" paddingTop="56.25%">
+      <div className="relative w-full pt-[56.25%]">
         {isCompleted && !isRewatching && (
-          <Box
-            position="absolute"
-            inset="0"
-            zIndex="1"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            bg="bg"
-            opacity={0.9}
-            backdropFilter="blur(8px)"
-          >
-            <VStack gap="4" textAlign="center">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+            <div className="space-y-4 text-center">
               <Check className="h-12 w-12" />
-              <Text textStyle="lg" fontWeight="semibold">
-                Video Completed
-              </Text>
-              <HStack justify="center" gap="2">
-                <Button
-                  variant="outline"
-                  colorPalette="secondary"
-                  onClick={() => setIsRewatching(true)}
-                >
-                  Watch Again
+              <p className="text-lg font-semibold">Video Completed</p>
+              <div className="flex justify-center gap-2">
+                <Button variant="outline" onClick={() => setIsRewatching(true)}>
+                  <span className="inline-flex items-center gap-2">Watch Again</span>
                 </Button>
                 {onNext && (
-                  <Button onClick={onNext} colorPalette="primary">
-                    <HStack gap="2">
-                      <Text as="span">Next Video</Text>
+                  <Button onClick={onNext}>
+                    <span className="inline-flex items-center gap-2">
+                      Next Video
                       <ArrowRight className="h-4 w-4" />
-                    </HStack>
+                    </span>
                   </Button>
                 )}
-              </HStack>
-            </VStack>
-          </Box>
+              </div>
+            </div>
+          </div>
         )}
 
-        <YoutubeIframe
-          position="absolute"
-          inset="0"
-          width="full"
-          height="full"
+        <iframe
+          className="absolute inset-0 h-full w-full"
           src={`https://www.youtube.com/embed/${video.youtubeId}?enablejsapi=1`}
           title={video.title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
-      </Box>
-    </VStack>
+      </div>
+    </div>
   );
 }

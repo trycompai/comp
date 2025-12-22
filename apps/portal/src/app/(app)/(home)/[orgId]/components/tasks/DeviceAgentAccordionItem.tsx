@@ -6,8 +6,7 @@ import {
   WINDOWS_FILENAME,
 } from '@/app/api/download-agent/constants';
 import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
-import { Accordion, HStack, Text, VStack } from '@trycompai/ui-v2';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Circle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { EmployeePortalDashboard } from '../../types/employee-portal';
@@ -118,56 +117,54 @@ export function DeviceAgentAccordionItem({
   }, []);
 
   return (
-    <Accordion.Item value="device-agent">
-      <Accordion.ItemTrigger>
-        <HStack gap="3" flex="1" textAlign="start">
+    <details className="group px-4 py-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+        <div className="flex flex-1 items-center gap-3 text-left">
           {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
-          <Text
-            textStyle="md"
-            color={isCompleted ? 'fg.muted' : 'fg'}
-            textDecoration={isCompleted ? 'line-through' : undefined}
+          <span
+            className={
+              isCompleted
+                ? 'text-sm font-medium text-muted-foreground line-through'
+                : 'text-sm font-medium text-foreground'
+            }
           >
             Download and install Comp AI Device Agent
-          </Text>
-          {hasInstalledAgent && failedPoliciesCount > 0 && (
-            <Text fontSize="xs" color="fg.muted" marginStart="auto">
+          </span>
+          {hasInstalledAgent && failedPoliciesCount > 0 ? (
+            <span className="ml-auto text-xs text-muted-foreground">
               {failedPoliciesCount} policies failing
-            </Text>
-          )}
-        </HStack>
-        <Accordion.ItemIndicator />
-      </Accordion.ItemTrigger>
+            </span>
+          ) : null}
+        </div>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
 
-      <Accordion.ItemContent>
-        <Accordion.ItemBody>
-          <VStack align="stretch" gap="4">
-            <Text fontSize="sm" color="fg.muted">
-              Installing Comp AI Device Agent helps you and your security administrator keep your
-              device protected against security threats.
-            </Text>
+      <div className="mt-4 flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">
+          Installing Comp AI Device Agent helps you and your security administrator keep your device
+          protected against security threats.
+        </p>
 
-            {!hasInstalledAgent ? (
-              <DeviceAgentInstructions
-                isMacOS={isMacOS}
-                detectedOS={detectedOS}
-                onChangeDetectedOS={setDetectedOS}
-                onDownload={handleDownload}
-                isDownloading={isDownloading}
-                downloadDisabled={isDownloading || hasInstalledAgent}
-              />
-            ) : (
-              <DeviceAgentPolicyStatusCard
-                host={host}
-                fleetPolicies={fleetPolicies}
-                isMacOS={isMacOS}
-                mdmEnabledStatus={mdmEnabledStatus}
-              />
-            )}
+        {!hasInstalledAgent ? (
+          <DeviceAgentInstructions
+            isMacOS={isMacOS}
+            detectedOS={detectedOS}
+            onChangeDetectedOS={setDetectedOS}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            downloadDisabled={isDownloading || hasInstalledAgent}
+          />
+        ) : (
+          <DeviceAgentPolicyStatusCard
+            host={host}
+            fleetPolicies={fleetPolicies}
+            isMacOS={isMacOS}
+            mdmEnabledStatus={mdmEnabledStatus}
+          />
+        )}
 
-            <DeviceAgentInfoAccordion />
-          </VStack>
-        </Accordion.ItemBody>
-      </Accordion.ItemContent>
-    </Accordion.Item>
+        <DeviceAgentInfoAccordion />
+      </div>
+    </details>
   );
 }

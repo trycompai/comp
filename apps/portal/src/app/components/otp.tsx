@@ -2,7 +2,7 @@
 
 import { authClient } from '@/app/lib/auth-client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Field, Input, VStack } from '@trycompai/ui-v2';
+import { Button, Input, Label } from '@trycompai/ui-shadcn';
 import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -53,9 +53,9 @@ export function OtpSignIn({ className }: Props) {
 
   if (isSent) {
     return (
-      <VStack align="stretch" gap="4" className={className}>
+      <div className={className}>
         <OtpForm email={_email ?? ''} />
-      </VStack>
+      </div>
     );
   }
 
@@ -63,10 +63,11 @@ export function OtpSignIn({ className }: Props) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-      <VStack align="stretch" gap="4">
-        <Field.Root invalid={!!emailError}>
-          <Field.Label>Email</Field.Label>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">Email</Label>
           <Input
+            id="email"
             placeholder="Your work email"
             autoFocus
             autoCapitalize="none"
@@ -74,14 +75,20 @@ export function OtpSignIn({ className }: Props) {
             spellCheck={false}
             {...form.register('email')}
           />
-          {emailError ? <Field.ErrorText>{emailError}</Field.ErrorText> : null}
-        </Field.Root>
+          {emailError ? <p className="text-sm text-destructive">{emailError}</p> : null}
+        </div>
 
-        <Button type="submit" w="full" size="lg" loading={isLoading} colorPalette="primary">
-          Continue
-          <ArrowRight className="h-4 w-4" />
+        <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+          {isLoading ? (
+            'Sending...'
+          ) : (
+            <>
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
         </Button>
-      </VStack>
+      </div>
     </form>
   );
 }

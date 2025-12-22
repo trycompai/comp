@@ -1,35 +1,19 @@
 import { UserMenu } from '@/app/components/user-menu';
-import { Icons } from '@comp/ui/icons';
-import { Box, HStack, Link, Skeleton } from '@trycompai/ui-v2';
 import NextLink from 'next/link';
 import { Suspense } from 'react';
 
 export async function Header() {
   return (
-    <Box
-      as="header"
-      position="sticky"
-      px="8"
-      top="0"
-      zIndex="10"
-      borderBottomWidth="1px"
-      borderColor="border"
-      bg={{ base: 'bg', md: 'transparent' }}
-      backdropFilter={{ base: 'blur(12px)', md: 'none' }}
-      pt="4"
-      pb={{ base: '2', md: '4' }}
-    >
-      <HStack justify="space-between" gap="3">
-        <Link asChild>
-          <NextLink href="/">
-            <Icons.Logo />
-          </NextLink>
-        </Link>
+    <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex w-full items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+        <NextLink href="/" className="text-sm font-semibold tracking-tight">
+          Comp AI
+        </NextLink>
 
-        <Suspense fallback={<Skeleton boxSize="8" borderRadius="full" />}>
+        <Suspense fallback={<div className="h-8 w-8 rounded-full bg-muted" />}>
           <UserMenu />
         </Suspense>
-      </HStack>
-    </Box>
+      </div>
+    </header>
   );
 }

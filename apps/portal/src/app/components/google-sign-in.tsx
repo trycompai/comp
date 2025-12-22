@@ -1,8 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Icons } from '@comp/ui/icons';
-import { Button, HStack, Text } from '@trycompai/ui-v2';
+import { Button } from '@trycompai/ui-shadcn';
 import { useState } from 'react';
 
 export function GoogleSignIn({
@@ -39,16 +38,11 @@ export function GoogleSignIn({
     <Button
       onClick={handleSignIn}
       variant="outline"
-      colorPalette="secondary"
-      w="full"
       size="lg"
       disabled={isLoading}
-      loading={isLoading}
+      className="w-full"
     >
-      <HStack gap="2">
-        <Icons.Google width={16} height={16} />
-        <Text as="span">Continue with Google</Text>
-      </HStack>
+      {isLoading ? 'Redirecting…' : 'Continue with Google'}
     </Button>
   );
 }
