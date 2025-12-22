@@ -8,9 +8,40 @@ if (!stripeSecretKey) {
   console.warn('STRIPE_SECRET_KEY is not set - Stripe auto-approval will be disabled');
 }
 
+// Domains that should NEVER be used for domain-based auto-approval.
+// These are shared/public mailbox providers where domain ownership does not imply company affiliation.
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  // Google
+  'gmail.com',
+  'googlemail.com',
+  // Microsoft
+  'outlook.com',
+  'hotmail.com',
+  'live.com',
+  'msn.com',
+  // Yahoo
+  'yahoo.com',
+  'ymail.com',
+  // Apple
+  'icloud.com',
+  'me.com',
+  'mac.com',
+  // Proton
+  'proton.me',
+  'protonmail.com',
+  'pm.me',
+  // AOL
+  'aol.com',
+]);
+
+export const isPublicEmailDomain = (domain: string): boolean => {
+  const normalized = domain.toLowerCase().trim().replace(/\.$/, '');
+  return PUBLIC_EMAIL_DOMAINS.has(normalized);
+};
+
 export const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2025-11-17.clover',
+      apiVersion: '2025-12-15.clover',
     })
   : null;
 
@@ -110,7 +141,18 @@ export const findStripeCustomerByDomain = async (
  * @returns true if domain has an active subscription
  */
 export const isDomainActiveStripeCustomer = async (domain: string): Promise<boolean> => {
-  const customer = await findStripeCustomerByDomain(domain);
+  const normalizedDomain = domain.toLowerCase().trim().replace(/\.$/, '');
+
+  if (!normalizedDomain) {
+    return false;
+  }
+
+  // Never auto-approve based on public email domains.
+  if (isPublicEmailDomain(normalizedDomain)) {
+    return false;
+  }
+
+  const customer = await findStripeCustomerByDomain(normalizedDomain);
 
   if (!customer) {
     return false;

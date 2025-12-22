@@ -1,4 +1,4 @@
-import { extractDomain, isDomainActiveStripeCustomer } from '@/lib/stripe';
+import { extractDomain, isDomainActiveStripeCustomer, isPublicEmailDomain } from '@/lib/stripe';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -45,16 +45,23 @@ export default async function UpgradePage({ params }: PageProps) {
   // Auto-approve based on user's email domain
   if (!hasAccess) {
     const userEmail = authSession.user.email;
-    const emailDomain = extractDomain(userEmail ?? '');
+    const userEmailDomain = extractDomain(userEmail ?? '');
+    const orgWebsiteDomain = extractDomain(member.organization.website ?? '');
 
-    if (emailDomain) {
+    if (userEmailDomain) {
       // Auto-approve for trycomp.ai emails (internal team)
-      const isTrycompEmail = emailDomain === 'trycomp.ai';
+      const isTrycompEmail = userEmailDomain === 'trycomp.ai';
+
+      const canAutoApproveViaDomain =
+        !isTrycompEmail &&
+        Boolean(orgWebsiteDomain) &&
+        userEmailDomain === orgWebsiteDomain &&
+        !isPublicEmailDomain(userEmailDomain);
 
       // Check Stripe for other domains
-      const isStripeCustomer = isTrycompEmail
-        ? false
-        : await isDomainActiveStripeCustomer(emailDomain);
+      const isStripeCustomer = canAutoApproveViaDomain
+        ? await isDomainActiveStripeCustomer(userEmailDomain)
+        : false;
 
       if (isTrycompEmail || isStripeCustomer) {
         await db.organization.update({
