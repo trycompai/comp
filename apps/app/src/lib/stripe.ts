@@ -94,26 +94,15 @@ export const findStripeCustomerByDomain = async (
     return null;
   }
 
-  const normalizedDomain = domain.toLowerCase().trim();
+  const normalizedDomain = domain.toLowerCase().trim().replace(/\.$/, '');
+
+  // Defense-in-depth: never treat public mailbox domains as proof of company ownership.
+  if (isPublicEmailDomain(normalizedDomain)) {
+    return null;
+  }
 
   try {
-    // Search for customers with emails matching this domain
-    // Stripe's search supports email domain matching
-    const customers = await stripe.customers.search({
-      query: `email~"@${normalizedDomain}"`,
-      limit: 1,
-    });
-
-    if (customers.data.length > 0) {
-      const customer = customers.data[0];
-      return {
-        customerId: customer.id,
-        customerName: customer.name ?? null,
-      };
-    }
-
-    // Fallback: Check customers with domain in metadata
-    // This handles cases where customer email might not match company domain
+    // Prefer exact domain match via metadata when available.
     const customersWithMetadata = await stripe.customers.search({
       query: `metadata["domain"]:"${normalizedDomain}"`,
       limit: 1,
@@ -124,6 +113,25 @@ export const findStripeCustomerByDomain = async (
       return {
         customerId: customer.id,
         customerName: customer.name ?? null,
+      };
+    }
+
+    // Fallback: Stripe's email~ operator is substring matching; post-filter for exact email domain.
+    const customers = await stripe.customers.search({
+      query: `email~"@${normalizedDomain}"`,
+      limit: 25,
+    });
+
+    const exactDomainCustomer = customers.data.find((customer) => {
+      const email = customer.email ?? '';
+      const emailDomain = email.split('@')[1]?.toLowerCase().trim() ?? '';
+      return emailDomain === normalizedDomain;
+    });
+
+    if (exactDomainCustomer) {
+      return {
+        customerId: exactDomainCustomer.id,
+        customerName: exactDomainCustomer.name ?? null,
       };
     }
 
