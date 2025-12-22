@@ -1,0 +1,38 @@
+version: 0.2
+
+# Simplified buildspec that uses multi stage Docker build
+# al building happens inside Docker - CodeBuild just orchestrates ECR/ECS
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+
+  build:
+    commands:
+      - echo "Building Docker image with multi-stage build..."
+      - cd apps/api
+      - docker build --build-arg BUILDKIT_INLINE_CACHE=1 --target production -f Dockerfile.multistage -t $ECR_REPOSITORY_URI:$IMAGE_TAG ../..
+      - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing images to ECR..."
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - docker push $ECR_REPOSITORY_URI:latest
+      - echo "Updating ECS service..."
+      - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
+      - 'printf "[{\"name\":\"%s-container\",\"imageUri\":\"%s\"}]" api $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json'
+
+cache:
+  paths:
+    - '/root/.docker/buildx/cache/**/*'
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  name: ${APP_NAME}-build
+

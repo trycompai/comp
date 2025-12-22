@@ -78,6 +78,12 @@
                       "description": "Whether FleetDM setup is completed",
                       "example": false
                     },
+                    "primaryColor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Organization primary color in hex format",
+                      "example": "#3B82F6"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -189,6 +195,11 @@
                     "type": "boolean",
                     "description": "Whether FleetDM setup is completed",
                     "example": false
+                  },
+                  "primaryColor": {
+                    "type": "string",
+                    "description": "Organization primary color in hex format",
+                    "example": "#3B82F6"
                   }
                 },
                 "additionalProperties": false
@@ -257,6 +268,12 @@
                       "type": "boolean",
                       "description": "Whether FleetDM setup is completed",
                       "example": false
+                    },
+                    "primaryColor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Organization primary color in hex format",
+                      "example": "#3B82F6"
                     },
                     "createdAt": {
                       "type": "string",
@@ -464,6 +481,11 @@
                     "type": "string",
                     "description": "Member ID of the new owner",
                     "example": "mem_xyz789"
+                  },
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID of the current owner initiating the transfer (required for API key auth, ignored for JWT auth)",
+                    "example": "usr_abc123def456"
                   }
                 },
                 "additionalProperties": false
@@ -556,6 +578,101 @@
           }
         ],
         "summary": "Transfer organization ownership",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/organization/primary-color": {
+      "get": {
+        "description": "Returns the primary color of the organization. Supports three access methods: 1) API key authentication (X-API-Key header), 2) Session authentication (cookies + X-Organization-Id header), or 3) Public access using an access token query parameter (?token=tok_xxx). When using an access token, no authentication is required.",
+        "operationId": "OrganizationController_getPrimaryColor_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": false,
+            "in": "query",
+            "description": "Access token for public access (alternative to authentication). When provided, authentication is not required.",
+            "schema": {
+              "example": "tok_abc123def456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization primary color retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "primaryColor": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The primary color in hex format (e.g., #FF5733)",
+                      "example": "#3B82F6"
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session"
+                      ],
+                      "description": "How the request was authenticated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication or insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid or expired API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Organization with ID org_abc123def456 not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get organization primary color",
         "tags": [
           "Organization"
         ]
@@ -1455,6 +1572,138 @@
           }
         ],
         "summary": "Delete member",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/{id}/unlink-device": {
+      "patch": {
+        "description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "operationId": "PeopleController_unlinkDevice_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeopleResponseDto"
+                },
+                "example": {
+                  "id": "mem_abc123def456",
+                  "organizationId": "org_abc123def456",
+                  "userId": "usr_abc123def456",
+                  "role": "member",
+                  "createdAt": "2024-01-01T00:00:00Z",
+                  "department": "it",
+                  "isActive": true,
+                  "fleetDmLabelId": 123,
+                  "user": {
+                    "id": "usr_abc123def456",
+                    "name": "John Doe",
+                    "email": "john.doe@company.com",
+                    "emailVerified": true,
+                    "image": "https://example.com/avatar.jpg",
+                    "createdAt": "2024-01-01T00:00:00Z",
+                    "updatedAt": "2024-01-15T00:00:00Z",
+                    "lastLogin": "2024-01-15T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid update data or user conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "User user@example.com is already a member of this organization"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication or insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization, member, or user not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Member with ID mem_abc123def456 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Unlink device from member",
         "tags": [
           "People"
         ]
@@ -4849,34 +5098,88 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PolicyResponseDto"
-                  }
-                },
-                "example": [
-                  {
-                    "id": "pol_abc123def456",
-                    "name": "Data Privacy Policy",
-                    "status": "draft",
-                    "content": [
-                      {
-                        "type": "paragraph",
-                        "content": [
-                          {
-                            "type": "text",
-                            "text": "..."
-                          }
-                        ]
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PolicyResponseDto"
+                      },
+                      "description": "Array of policies"
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session"
+                      ],
+                      "description": "How the request was authenticated"
+                    },
+                    "authenticatedUser": {
+                      "type": "object",
+                      "description": "Authenticated user information (only present for session auth)",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User ID",
+                          "example": "usr_abc123def456"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "User email",
+                          "example": "user@company.com"
+                        }
                       }
-                    ],
-                    "isRequiredToSign": true,
-                    "signedBy": [],
-                    "createdAt": "2024-01-01T00:00:00.000Z",
-                    "updatedAt": "2024-01-15T00:00:00.000Z",
-                    "organizationId": "org_abc123def456"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "authType"
+                  ]
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "pol_abc123def456",
+                      "name": "Data Privacy Policy",
+                      "description": "This policy outlines how we handle and protect personal data",
+                      "status": "draft",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "attrs": {
+                            "textAlign": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "This policy outlines our commitment to protecting personal data."
+                            }
+                          ]
+                        }
+                      ],
+                      "frequency": "yearly",
+                      "department": "IT",
+                      "isRequiredToSign": true,
+                      "signedBy": [],
+                      "reviewDate": "2024-12-31T00:00:00.000Z",
+                      "isArchived": false,
+                      "createdAt": "2024-01-01T00:00:00.000Z",
+                      "updatedAt": "2024-01-15T00:00:00.000Z",
+                      "lastArchivedAt": null,
+                      "lastPublishedAt": "2024-01-10T00:00:00.000Z",
+                      "organizationId": "org_abc123def456",
+                      "assigneeId": "usr_abc123def456",
+                      "approverId": "usr_xyz789abc123",
+                      "policyTemplateId": null
+                    }
+                  ],
+                  "authType": "session",
+                  "authenticatedUser": {
+                    "id": "usr_abc123def456",
+                    "email": "user@company.com"
                   }
-                ]
+                }
               }
             }
           },
@@ -6927,6 +7230,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "description": "Delete comment request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
+                    "example": "usr_abc123def456"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Comment deleted successfully",
@@ -8687,7 +9008,7 @@
                       "xlsx"
                     ],
                     "default": "xlsx",
-                    "description": "Output format (defaults to XLSX)"
+                    "description": "Output format (ignored - always exports all formats as ZIP)"
                   }
                 },
                 "required": [
@@ -10453,6 +10774,43 @@
         ]
       }
     },
+    "/v1/integrations/sync/jumpcloud/employees": {
+      "post": {
+        "operationId": "SyncController_syncJumpCloudEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/jumpcloud/status": {
+      "post": {
+        "operationId": "SyncController_getJumpCloudStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
     "/v1/integrations/sync/employee-sync-provider": {
       "get": {
         "operationId": "SyncController_getEmployeeSyncProvider_v1",
@@ -10525,6 +10883,705 @@
         },
         "tags": [
           "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/browserbase/org-context": {
+      "post": {
+        "description": "Gets the existing browser context for the org or creates a new one",
+        "operationId": "BrowserbaseController_getOrCreateOrgContext_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Context retrieved or created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get or create organization browser context",
+        "tags": [
+          "Browserbase"
+        ]
+      },
+      "get": {
+        "description": "Gets the current browser context for the org if it exists",
+        "operationId": "BrowserbaseController_getOrgContextStatus_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Context status"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get organization browser context status",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/session": {
+      "post": {
+        "description": "Creates a new browser session using the org context",
+        "operationId": "BrowserbaseController_createSession_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a new browser session",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/session/close": {
+      "post": {
+        "operationId": "BrowserbaseController_closeSession_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session closed"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Close a browser session",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/navigate": {
+      "post": {
+        "description": "Navigates the browser session to the specified URL",
+        "operationId": "BrowserbaseController_navigateToUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NavigateToUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Navigation result"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Navigate to a URL",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/check-auth": {
+      "post": {
+        "description": "Checks if the user is logged in on the specified site",
+        "operationId": "BrowserbaseController_checkAuth_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckAuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Auth status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Check authentication status",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/automations": {
+      "post": {
+        "operationId": "BrowserbaseController_createAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBrowserAutomationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Automation created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserAutomationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a browser automation",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/automations/task/{taskId}": {
+      "get": {
+        "operationId": "BrowserbaseController_getAutomationsForTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of automations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrowserAutomationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all browser automations for a task",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/automations/{automationId}": {
+      "get": {
+        "operationId": "BrowserbaseController_getAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserAutomationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a browser automation by ID",
+        "tags": [
+          "Browserbase"
+        ]
+      },
+      "patch": {
+        "operationId": "BrowserbaseController_updateAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBrowserAutomationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Automation updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserAutomationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a browser automation",
+        "tags": [
+          "Browserbase"
+        ]
+      },
+      "delete": {
+        "operationId": "BrowserbaseController_deleteAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation deleted"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a browser automation",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/automations/{automationId}/start-live": {
+      "post": {
+        "description": "Creates a session and returns live view URL for watching execution",
+        "operationId": "BrowserbaseController_startAutomationLive_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session started with live view URL"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Start automation with live view",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/automations/{automationId}/execute": {
+      "post": {
+        "description": "Runs the automation on a pre-created session",
+        "operationId": "BrowserbaseController_executeAutomationOnSession_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Execution result"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Execute automation on existing session",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/automations/{automationId}/run": {
+      "post": {
+        "description": "Executes the automation and returns the result",
+        "operationId": "BrowserbaseController_runAutomation_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAutomationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Run a browser automation",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/automations/{automationId}/runs": {
+      "get": {
+        "operationId": "BrowserbaseController_getAutomationRuns_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrowserAutomationRunResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get run history for an automation",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/runs/{runId}": {
+      "get": {
+        "operationId": "BrowserbaseController_getRunById_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "description": "Run ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserAutomationRunResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a specific run by ID",
+        "tags": [
+          "Browserbase"
         ]
       }
     }
@@ -12564,6 +13621,11 @@
             "description": "Description of the attachment",
             "example": "Meeting notes from Q4 planning session",
             "maxLength": 500
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [
@@ -12732,6 +13794,11 @@
             "items": {
               "$ref": "#/components/schemas/UploadAttachmentDto"
             }
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [
@@ -12748,6 +13815,11 @@
             "description": "Updated content of the comment",
             "example": "This task needs to be completed by end of week (updated)",
             "maxLength": 2000
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the comment author (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [
@@ -13153,6 +14225,284 @@
       "SubmitSOAForApprovalDto": {
         "type": "object",
         "properties": {}
+      },
+      "ContextResponseDto": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contextId",
+          "isNew"
+        ]
+      },
+      "CreateSessionDto": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "description": "Browserbase context ID"
+          }
+        },
+        "required": [
+          "contextId"
+        ]
+      },
+      "SessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "liveViewUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "liveViewUrl"
+        ]
+      },
+      "CloseSessionDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Browserbase session ID"
+          }
+        },
+        "required": [
+          "sessionId"
+        ]
+      },
+      "NavigateToUrlDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Browserbase session ID"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL to navigate to"
+          }
+        },
+        "required": [
+          "sessionId",
+          "url"
+        ]
+      },
+      "CheckAuthDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Browserbase session ID"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL to check auth status on"
+          }
+        },
+        "required": [
+          "sessionId",
+          "url"
+        ]
+      },
+      "AuthStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "isLoggedIn": {
+            "type": "boolean"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "isLoggedIn"
+        ]
+      },
+      "CreateBrowserAutomationDto": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "description": "Task ID this automation belongs to"
+          },
+          "name": {
+            "type": "string",
+            "description": "Automation name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Automation description"
+          },
+          "targetUrl": {
+            "type": "string",
+            "description": "Target URL to start from"
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Natural language instruction for navigation"
+          },
+          "schedule": {
+            "type": "string",
+            "description": "Cron schedule expression"
+          }
+        },
+        "required": [
+          "taskId",
+          "name",
+          "targetUrl",
+          "instruction"
+        ]
+      },
+      "BrowserAutomationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "targetUrl": {
+            "type": "string"
+          },
+          "instruction": {
+            "type": "string"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "schedule": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "taskId",
+          "targetUrl",
+          "instruction",
+          "isEnabled",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UpdateBrowserAutomationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Automation name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Automation description"
+          },
+          "targetUrl": {
+            "type": "string",
+            "description": "Target URL to start from"
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Natural language instruction"
+          },
+          "schedule": {
+            "type": "string",
+            "description": "Cron schedule expression"
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "description": "Whether automation is enabled"
+          }
+        }
+      },
+      "RunAutomationResponseDto": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "screenshotUrl": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "needsReauth": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "runId",
+          "success"
+        ]
+      },
+      "BrowserAutomationRunResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "automationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "number"
+          },
+          "screenshotUrl": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "automationId",
+          "status",
+          "createdAt"
+        ]
       }
     }
   }

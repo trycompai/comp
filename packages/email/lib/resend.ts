@@ -25,20 +25,15 @@ export const sendEmail = async ({
     throw new Error('Resend not initialized - missing API key');
   }
 
-
-    // 1) Pull each env var into its own constant
+  // 1) Pull each env var into its own constant
   const fromMarketing = process.env.RESEND_FROM_MARKETING;
-  const fromSystem    = process.env.RESEND_FROM_SYSTEM;
-  const fromDefault   = process.env.RESEND_FROM_DEFAULT;
-  const toTest        = process.env.RESEND_TO_TEST;
-  const replyMarketing= process.env.RESEND_REPLY_TO_MARKETING;
+  const fromSystem = process.env.RESEND_FROM_SYSTEM;
+  const fromDefault = process.env.RESEND_FROM_DEFAULT;
+  const toTest = process.env.RESEND_TO_TEST;
+  const replyMarketing = process.env.RESEND_REPLY_TO_MARKETING;
 
   // 2) Decide which one you need for this email
-  const fromAddress = marketing
-    ? fromMarketing
-    : system
-      ? fromSystem
-      : fromDefault;
+  const fromAddress = marketing ? fromMarketing : system ? fromSystem : fromDefault;
 
   const toAddress = test ? toTest : to;
 
@@ -54,8 +49,8 @@ export const sendEmail = async ({
 
   try {
     const { data, error } = await resend.emails.send({
-      from: fromAddress,      // now always a string
-      to: toAddress,          // now always a string
+      from: fromAddress, // now always a string
+      to: toAddress, // now always a string
       cc,
       replyTo,
       subject,

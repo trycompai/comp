@@ -23,6 +23,7 @@ import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 import type { removeMember } from '../actions/removeMember';
 import type { revokeInvitation } from '../actions/revokeInvitation';
 
+import { usePeopleActions } from '@/hooks/use-people-api';
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 import { InviteMembersModal } from './InviteMembersModal';
@@ -34,6 +35,7 @@ interface TeamMembersClientProps {
   removeMemberAction: typeof removeMember;
   revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
+  isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
 }
 
@@ -55,12 +57,15 @@ export function TeamMembersClient({
   removeMemberAction,
   revokeInvitationAction,
   canManageMembers,
+  isCurrentUserOwner,
   employeeSyncData,
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
   const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
+
+  const { unlinkDevice } = usePeopleActions();
 
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -69,6 +74,7 @@ export function TeamMembersClient({
   const {
     googleWorkspaceConnectionId,
     ripplingConnectionId,
+    jumpcloudConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
@@ -80,7 +86,7 @@ export function TeamMembersClient({
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
 
-  const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling') => {
+  const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling' | 'jumpcloud') => {
     const result = await syncEmployees(provider);
     if (result?.success) {
       router.refresh();
@@ -186,6 +192,12 @@ export function TeamMembersClient({
       console.error('Remove Member Error:', errorMessage);
       toast.error(errorMessage);
     }
+  };
+
+  const handleRemoveDevice = async (memberId: string) => {
+    await unlinkDevice(memberId);
+    toast.success('Device unlinked successfully');
+    router.refresh(); // Revalidate data to update UI
   };
 
   // Update handleUpdateRole to use authClient and add toasts
@@ -372,6 +384,24 @@ export function TeamMembersClient({
                     </div>
                   </SelectItem>
                 )}
+                {jumpcloudConnectionId && (
+                  <SelectItem value="jumpcloud">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={getProviderLogo('jumpcloud')}
+                        alt="JumpCloud"
+                        width={16}
+                        height={16}
+                        className="rounded-sm"
+                        unoptimized
+                      />
+                      JumpCloud
+                      {selectedProvider === 'jumpcloud' && (
+                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -389,8 +419,10 @@ export function TeamMembersClient({
                 key={member.displayId}
                 member={member as MemberWithUser}
                 onRemove={handleRemoveMember}
+                onRemoveDevice={handleRemoveDevice}
                 onUpdateRole={handleUpdateRole}
                 canEdit={canManageMembers}
+                isCurrentUserOwner={isCurrentUserOwner}
               />
             ))}
           </div>

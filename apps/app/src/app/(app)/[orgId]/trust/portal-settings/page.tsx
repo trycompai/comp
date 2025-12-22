@@ -11,6 +11,7 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
   const { orgId } = await params;
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
+  const primaryColor = await fetchOrganizationPrimaryColor(orgId); // can be null
 
   return (
     <PageCore>
@@ -26,6 +27,7 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
             domain={trustPortal?.domain ?? ''}
             domainVerified={trustPortal?.domainVerified ?? false}
             contactEmail={trustPortal?.contactEmail ?? null}
+            primaryColor={primaryColor ?? null}
             orgId={orgId}
             soc2type1={trustPortal?.soc2type1 ?? false}
             soc2type2={trustPortal?.soc2type2 ?? false}
@@ -152,6 +154,35 @@ const DEFAULT_CERTIFICATE_FILES: CertificateFiles = {
   iso9001FileName: null,
 };
 
+async function fetchOrganizationPrimaryColor(orgId: string): Promise<string | null> {
+  const headersList = await headers();
+  const cookieHeader = headersList.get('cookie') || '';
+
+  const jwtToken = await getJwtToken(cookieHeader);
+  const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+
+  try {
+    const response = await fetch(`${apiUrl}/v1/organization/primary-color`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Organization-Id': orgId,
+        ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to fetch organization primary color:', response.statusText);
+      return null;
+    }
+
+    const payload = await response.json();
+    return payload?.primaryColor;
+  } catch (error) {
+    console.warn('Error fetching organization primary color:', error);
+    return null;
+  }
+}
 async function fetchComplianceCertificates(orgId: string): Promise<CertificateFiles> {
   const result: CertificateFiles = { ...DEFAULT_CERTIFICATE_FILES };
   const headersList = await headers();

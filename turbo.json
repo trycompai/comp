@@ -1,9 +1,13 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalDependencies": ["**/.env"],
-  "ui": "stream",
+  "ui": "tui",
   "tasks": {
     "prisma:generate": {
+      "cache": false,
+      "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
+    },
+    "db:generate": {
       "cache": false,
       "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
     },

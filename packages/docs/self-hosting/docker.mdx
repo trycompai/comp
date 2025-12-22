@@ -1,0 +1,291 @@
+---
+title: "Docker Self-Hosting"
+description: "Deploy Comp with Docker Compose using per-service environment files"
+---
+
+## Overview
+
+This guide covers running Comp with Docker Compose. The stack includes:
+
+| Service | Purpose | Port |
+|---------|---------|------|
+| `migrator` | Runs Prisma migrations against your database | - |
+| `seeder` | Loads reference data (frameworks, controls) | - |
+| `app` | Main Comp application | 3000 |
+| `portal` | Customer trust portal | 3002 |
+
+## Prerequisites
+
+- Docker Desktop or Docker Engine installed
+- External PostgreSQL 14+ with SSL (e.g., Neon, DigitalOcean, RDS)
+- [Resend](https://resend.com) account for transactional email
+- [Trigger.dev](https://cloud.trigger.dev) account for background workflows
+
+## Environment File Layout
+
+<Warning>
+Docker uses **per-service env files**, not a root `.env` file.
+</Warning>
+
+| File | Services |
+|------|----------|
+| `packages/db/.env` | migrator, seeder |
+| `apps/app/.env` | app |
+| `apps/portal/.env` | portal |
+
+Each service reads only its designated env file via `env_file:` in `docker-compose.yml`.
+
+## Minimal Required Environment
+
+For a functional Docker deployment, you need:
+
+<AccordionGroup>
+  <Accordion title="packages/db/.env">
+    ```bash
+    DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
+    ```
+  </Accordion>
+
+  <Accordion title="apps/app/.env">
+    ```bash
+    # Database
+    DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
+
+    # Auth
+    AUTH_SECRET="<openssl rand -base64 32>"
+    SECRET_KEY="<openssl rand -base64 32>"
+    BETTER_AUTH_URL="https://app.yourdomain.com"
+    NEXT_PUBLIC_BETTER_AUTH_URL="https://app.yourdomain.com"
+    NEXT_PUBLIC_PORTAL_URL="https://portal.yourdomain.com"
+
+    # Email
+    RESEND_API_KEY="re_..."
+
+    # Workflows (required)
+    TRIGGER_SECRET_KEY="tr_..."
+
+    # Revalidation
+    REVALIDATION_SECRET="<random string>"
+    ```
+  </Accordion>
+
+  <Accordion title="apps/portal/.env">
+    ```bash
+    # Database
+    DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
+
+    # Auth
+    BETTER_AUTH_SECRET="<openssl rand -base64 32>"
+    BETTER_AUTH_URL="https://portal.yourdomain.com"
+    NEXT_PUBLIC_BETTER_AUTH_URL="https://portal.yourdomain.com"
+
+    # Email
+    RESEND_API_KEY="re_..."
+    ```
+  </Accordion>
+</AccordionGroup>
+
+See the [Environment Reference](/self-hosting/env-reference) for all variables.
+
+## Build-Time vs Runtime Variables
+
+| Phase | Variables | How They're Set |
+|-------|-----------|-----------------|
+| Build-time | `NEXT_PUBLIC_*` | Docker build args in `docker-compose.yml` |
+| Runtime | Everything else | Service env files (`.env`) |
+
+The Dockerfile defines these build args for the app:
+- `NEXT_PUBLIC_BETTER_AUTH_URL`
+- `NEXT_PUBLIC_PORTAL_URL`
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `NEXT_PUBLIC_POSTHOG_HOST`
+- `NEXT_PUBLIC_IS_DUB_ENABLED`
+- `NEXT_PUBLIC_GTM_ID`
+- `NEXT_PUBLIC_LINKEDIN_PARTNER_ID`
+- `NEXT_PUBLIC_LINKEDIN_CONVERSION_ID`
+- `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL`
+- `NEXT_PUBLIC_API_URL`
+
+For portal, only `NEXT_PUBLIC_BETTER_AUTH_URL` is used at build time.
+
+<Note>
+`docker-compose.yml` passes build args from shell environment variables (e.g., `${BETTER_AUTH_URL}`). Export these before running `docker compose build`, or set them inline.
+</Note>
+
+## Build & Run
+
+### 1. Prepare Environment Files
+
+```bash
+# Copy examples to create your env files
+cp packages/db/.env.example packages/db/.env
+cp apps/app/.env.example apps/app/.env
+cp apps/portal/.env.example apps/portal/.env
+
+# Edit each file with your production values
+```
+
+### 2. Export Build Args
+
+Export the build-time variables needed by `docker-compose.yml`:
+
+```bash
+export BETTER_AUTH_URL="https://app.yourdomain.com"
+export BETTER_AUTH_URL_PORTAL="https://portal.yourdomain.com"
+```
+
+### 3. Build Images
+
+```bash
+docker compose build --no-cache
+```
+
+### 4. Run Migrations & Seed
+
+```bash
+docker compose run --rm migrator
+docker compose run --rm seeder
+```
+
+<Info>
+**migrator** runs `prisma migrate deploy` — safe to run repeatedly.  
+**seeder** upserts reference data (frameworks, controls) — idempotent.
+</Info>
+
+### 5. Start Services
+
+```bash
+docker compose up -d app portal
+```
+
+### 6. Verify Health
+
+```bash
+curl -s http://localhost:3000/api/health
+curl -s http://localhost:3002/
+```
+
+## Deploy Trigger.dev Tasks
+
+Trigger.dev runs as a hosted service. Deploy your tasks from your workstation:
+
+```bash
+cd apps/app
+bunx trigger.dev@latest login
+bunx trigger.dev@latest deploy
+```
+
+Set `TRIGGER_SECRET_KEY` in `apps/app/.env` from your Trigger.dev project settings.
+
+## Fresh Install (Optional Clean)
+
+To remove all images and volumes for a clean rebuild:
+
+```bash
+docker compose down --rmi all --volumes --remove-orphans
+docker builder prune --all --force
+```
+
+## Logging
+
+Docker Compose is configured with log rotation to prevent disk exhaustion. All services use the `json-file` driver with these defaults:
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `max-size` | 10m | Rotate logs at 10 MB |
+| `max-file` | 5 | Keep up to 5 rotated files (~50 MB per service) |
+| `compress` | true | Compress rotated files |
+
+### Viewing Logs
+
+```bash
+# Tail logs for a specific service
+docker compose logs -f app
+
+# Tail multiple services
+docker compose logs -f app portal
+
+# View last 100 lines
+docker compose logs --tail=100 app
+
+# View logs for one-shot jobs
+docker compose logs migrator
+docker compose logs seeder
+```
+
+### Custom Log Configuration
+
+To adjust logging for a specific service (e.g., if `app` is particularly chatty), create a `docker-compose.override.yml`:
+
+```yaml
+services:
+  app:
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '10'
+        compress: 'true'
+```
+
+<Note>
+For centralized logging (ELK, Loki, Splunk), you can switch the logging driver to `fluentd`, `gelf`, or `loki`. See Docker's [logging driver documentation](https://docs.docker.com/engine/logging/configure/).
+</Note>
+
+## Production Tips
+
+<CardGroup cols={2}>
+  <Card title="HTTPS & Domains" icon="lock">
+    Place a reverse proxy (nginx, Caddy, Traefik) in front. Update `BETTER_AUTH_URL` and `NEXT_PUBLIC_BETTER_AUTH_URL` to your public HTTPS domains.
+  </Card>
+  <Card title="Strong Secrets" icon="key">
+    Generate secrets with `openssl rand -base64 32`. Rotate periodically.
+  </Card>
+  <Card title="Database Security" icon="database">
+    Require SSL. Restrict network access via VPC, IP allowlist, or private networking.
+  </Card>
+  <Card title="Disk Monitoring" icon="hard-drive">
+    Monitor `/var/lib/docker` disk usage. Periodically prune unused containers and images.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Builds succeed but containers crash at startup
+
+The Dockerfile sets `SKIP_ENV_VALIDATION=true` at build time, so missing env vars are only caught at runtime.
+
+Check logs to identify missing variables:
+
+```bash
+docker compose logs app
+docker compose logs portal
+```
+
+Look for errors mentioning `process.env.*` or "Missing env var", then compare with the [Environment Reference](/self-hosting/env-reference).
+
+### Common Misconfigurations
+
+| Issue | Solution |
+|-------|----------|
+| Using root `.env` | Docker reads per-service env files only |
+| Missing `DATABASE_URL` | Must be set in all three env files |
+| Missing `TRIGGER_SECRET_KEY` | Required in `apps/app/.env` for workflows |
+| Mismatched auth URLs | Ensure `BETTER_AUTH_URL` matches `NEXT_PUBLIC_BETTER_AUTH_URL` |
+| Build args not exported | Export `BETTER_AUTH_URL` and `BETTER_AUTH_URL_PORTAL` before build |
+
+### Container won't start
+
+```bash
+# Check if container exists
+docker compose ps -a
+
+# View detailed logs
+docker compose logs --tail=100 app
+```
+
+### Database connection fails
+
+1. Verify `DATABASE_URL` format: `postgresql://user:pass@host:5432/db?sslmode=require`
+2. Ensure your IP is allowlisted in the database firewall
+3. Test connectivity: `docker compose run --rm app sh -c "nc -zv <db-host> 5432"`

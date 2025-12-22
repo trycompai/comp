@@ -151,11 +151,88 @@ export class TrustAccessService {
       },
     });
 
+    // Send notification email to organization
+    await this.sendAccessRequestNotificationToOrg(
+      trust.organizationId,
+      request.id,
+      trust.organization.name,
+      dto,
+    );
+
     return {
       id: request.id,
       status: request.status,
       message: 'Access request submitted for review',
     };
+  }
+
+  private async sendAccessRequestNotificationToOrg(
+    organizationId: string,
+    requestId: string,
+    organizationName: string,
+    dto: CreateAccessRequestDto,
+  ) {
+    // Get contact email from Trust or fallback to owner/admin emails
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { contactEmail: true },
+    });
+
+    let notificationEmails: string[] = [];
+
+    // Use contactEmail if available
+    if (trust?.contactEmail) {
+      notificationEmails.push(trust.contactEmail);
+    } else {
+      // Fallback: Get owner and admin emails
+      const members = await db.member.findMany({
+        where: {
+          organizationId,
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      });
+
+      // Filter for members with owner or admin role (handles comma-separated roles)
+      const ownerAdminMembers = members.filter((m) => {
+        const role = m.role.toLowerCase();
+        return role.includes('owner') || role.includes('admin');
+      });
+
+      notificationEmails = ownerAdminMembers
+        .map((m) => m.user.email)
+        .filter((email): email is string => !!email);
+    }
+
+    // If no notification emails found, skip sending
+    if (notificationEmails.length === 0) {
+      return;
+    }
+
+    // Construct review URL
+    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust`;
+
+    // Send notification to all recipients
+    const emailPromises = notificationEmails.map((email) =>
+      this.emailService.sendAccessRequestNotification({
+        toEmail: email,
+        organizationName,
+        requesterName: dto.name,
+        requesterEmail: dto.email,
+        requesterCompany: dto.company,
+        requesterJobTitle: dto.jobTitle,
+        purpose: dto.purpose,
+        requestedDurationDays: dto.requestedDurationDays,
+        reviewUrl,
+      }),
+    );
+
+    await Promise.allSettled(emailPromises);
   }
 
   async listAccessRequests(organizationId: string, dto: ListAccessRequestsDto) {

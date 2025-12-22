@@ -1,3 +1,29 @@
+# [1.71.0](https://github.com/trycompai/comp/compare/v1.70.0...v1.71.0) (2025-12-16)
+
+
+### Features
+
+* Added logout function to onboarding/setup ([#1914](https://github.com/trycompai/comp/issues/1914)) ([d58341b](https://github.com/trycompai/comp/commit/d58341b6f84dbce8309f9059bc845a1846021fa6))
+* **integrations:** update sanitized inputs for github to read monorepo apps ([#1929](https://github.com/trycompai/comp/issues/1929)) ([5912194](https://github.com/trycompai/comp/commit/5912194a1bcd728a09c98d5f15264de00252dc72))
+* **onboarding:** add skip functionality to onboarding steps ([#1925](https://github.com/trycompai/comp/issues/1925)) ([b522c10](https://github.com/trycompai/comp/commit/b522c10231ad82a8391881d66230c3df7c050c58))
+
+
+### Reverts
+
+* Revert "[dev] [Itsnotaka] daniel/ui ([#1915](https://github.com/trycompai/comp/issues/1915))" ([#1928](https://github.com/trycompai/comp/issues/1928)) ([ec93c2e](https://github.com/trycompai/comp/commit/ec93c2ee8add06e598213a17a0eb29eca073d56c))
+
+# [1.70.0](https://github.com/trycompai/comp/compare/v1.69.0...v1.70.0) (2025-12-12)
+
+
+### Bug Fixes
+
+* **auditor:** increase max poll duration to 30 minutes and add limit to scrape ([#1897](https://github.com/trycompai/comp/issues/1897)) ([764d605](https://github.com/trycompai/comp/commit/764d6055fb8a1c7d4fa90d8d41c8234fc55c3de9))
+
+
+### Features
+
+* **api:** add access request notification email functionality ([#1910](https://github.com/trycompai/comp/issues/1910)) ([8d2a811](https://github.com/trycompai/comp/commit/8d2a81127c523e92decc56e29a7ef4f53e28986d))
+
 # [1.69.0](https://github.com/trycompai/comp/compare/v1.68.1...v1.69.0) (2025-12-08)
 
 

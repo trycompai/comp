@@ -15,14 +15,8 @@ export const sendUnassignedItemsNotificationEmail = async (params: {
   removedMemberName: string;
   unassignedItems: UnassignedItem[];
 }) => {
-  const {
-    email,
-    userName,
-    organizationName,
-    organizationId,
-    removedMemberName,
-    unassignedItems,
-  } = params;
+  const { email, userName, organizationName, organizationId, removedMemberName, unassignedItems } =
+    params;
 
   if (unassignedItems.length === 0) {
     return { success: true };
@@ -56,4 +50,3 @@ export const sendUnassignedItemsNotificationEmail = async (params: {
     return { success: false };
   }
 };
-

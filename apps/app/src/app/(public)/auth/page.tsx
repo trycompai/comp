@@ -41,6 +41,7 @@ export default async function Page({
 
   const showGoogle = !!(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
   const showGithub = !!(env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET);
+  const showMicrosoft = !!(env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET);
 
   return (
     <div className="flex min-h-dvh flex-col text-foreground">
@@ -56,7 +57,7 @@ export default async function Page({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pb-6 px-8">
-            <LoginForm inviteCode={inviteCode} showGoogle={showGoogle} showGithub={showGithub} />
+            <LoginForm inviteCode={inviteCode} showGoogle={showGoogle} showGithub={showGithub} showMicrosoft={showMicrosoft} />
           </CardContent>
           <CardFooter className="pb-10">
             <p className="w-full px-6 text-center text-xs text-muted-foreground">

@@ -13,9 +13,9 @@ export const OAuthConfigSchema = z.object({
   scopes: z.array(z.string()),
   pkce: z.boolean().default(false),
   /** Additional parameters to send during authorization */
-  authorizationParams: z.record(z.string()).optional(),
+  authorizationParams: z.record(z.string(), z.string()).optional(),
   /** Additional parameters to send during token exchange */
-  tokenParams: z.record(z.string()).optional(),
+  tokenParams: z.record(z.string(), z.string()).optional(),
   /** How to send client credentials: 'body' or 'header' (Basic auth) */
   clientAuthMethod: z.enum(['body', 'header']).default('body'),
   /**
@@ -56,6 +56,36 @@ export const OAuthConfigSchema = z.object({
         token: z.string().optional(),
       }),
     )
+    .optional(),
+  /**
+   * Optional token revocation config for OAuth providers.
+   *
+   * Note: While RFC7009 exists, providers vary widely in practice (method, auth,
+   * path templating, and payload). This config is intentionally flexible.
+   */
+  revoke: z
+    .object({
+      /** Revocation URL. Supports templating with '{CLIENT_ID}'. */
+      url: z.string(),
+      /** HTTP method to use. */
+      method: z.enum(['POST', 'DELETE']).default('POST'),
+      /**
+       * How to authenticate the revocation request.
+       * - basic: Basic {client_id}:{client_secret}
+       * - bearer: Authorization: Bearer {access_token}
+       * - none: no auth header
+       */
+      auth: z.enum(['basic', 'bearer', 'none']).default('basic'),
+      /**
+       * Body format. Many providers use x-www-form-urlencoded (RFC7009),
+       * some use JSON (e.g. GitHub token revoke endpoint).
+       */
+      body: z.enum(['form', 'json']).default('form'),
+      /** Field name for the token in the body. */
+      tokenField: z.string().default('token'),
+      /** Optional additional static fields to include in the body. */
+      extraBodyFields: z.record(z.string(), z.string()).optional(),
+    })
     .optional(),
 });
 

@@ -7,7 +7,7 @@ import useSWR from 'swr';
 
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 
-type SyncProvider = 'google-workspace' | 'rippling';
+type SyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud';
 
 interface SyncResult {
   success: boolean;
@@ -27,6 +27,7 @@ interface UseEmployeeSyncOptions {
 interface UseEmployeeSyncReturn {
   googleWorkspaceConnectionId: string | null;
   ripplingConnectionId: string | null;
+  jumpcloudConnectionId: string | null;
   selectedProvider: SyncProvider | null;
   isSyncing: boolean;
   syncEmployees: (provider: SyncProvider) => Promise<SyncResult | null>;
@@ -47,6 +48,11 @@ const PROVIDER_CONFIG = {
     shortName: 'Rippling',
     logo: 'https://img.logo.dev/rippling.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true',
   },
+  jumpcloud: {
+    name: 'JumpCloud',
+    shortName: 'JumpCloud',
+    logo: 'https://img.logo.dev/jumpcloud.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true',
+  },
 } as const;
 
 export const useEmployeeSync = ({
@@ -63,6 +69,7 @@ export const useEmployeeSync = ({
 
   const googleWorkspaceConnectionId = data?.googleWorkspaceConnectionId ?? null;
   const ripplingConnectionId = data?.ripplingConnectionId ?? null;
+  const jumpcloudConnectionId = data?.jumpcloudConnectionId ?? null;
   const selectedProvider = data?.selectedProvider ?? null;
 
   const setSyncProvider = async (provider: SyncProvider | null) => {
@@ -86,7 +93,11 @@ export const useEmployeeSync = ({
 
   const syncEmployees = async (provider: SyncProvider): Promise<SyncResult | null> => {
     const connectionId =
-      provider === 'google-workspace' ? googleWorkspaceConnectionId : ripplingConnectionId;
+      provider === 'google-workspace'
+        ? googleWorkspaceConnectionId
+        : provider === 'rippling'
+          ? ripplingConnectionId
+          : jumpcloudConnectionId;
 
     if (!connectionId) {
       toast.error(`${PROVIDER_CONFIG[provider].name} is not connected`);
@@ -149,11 +160,16 @@ export const useEmployeeSync = ({
   return {
     googleWorkspaceConnectionId,
     ripplingConnectionId,
+    jumpcloudConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
     setSyncProvider,
-    hasAnyConnection: !!(googleWorkspaceConnectionId || ripplingConnectionId),
+    hasAnyConnection: !!(
+      googleWorkspaceConnectionId ||
+      ripplingConnectionId ||
+      jumpcloudConnectionId
+    ),
     getProviderName,
     getProviderLogo,
   };
