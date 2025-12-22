@@ -11012,6 +11012,43 @@
         ]
       }
     },
+    "/v1/integrations/sync/jumpcloud/employees": {
+      "post": {
+        "operationId": "SyncController_syncJumpCloudEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/jumpcloud/status": {
+      "post": {
+        "operationId": "SyncController_getJumpCloudStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
     "/v1/integrations/sync/employee-sync-provider": {
       "get": {
         "operationId": "SyncController_getEmployeeSyncProvider_v1",
