@@ -24,14 +24,24 @@ import { searchGlobalVendorsAction } from '../actions/search-global-vendors-acti
 
 const createVendorSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  website: z.string().url('URL must be valid and start with https://').optional(),
+  // Allow empty string in the input and treat it as "not provided"
+  website: z
+    .union([z.string().url('URL must be valid and start with https://'), z.literal('')])
+    .transform((value) => (value === '' ? undefined : value))
+    .optional(),
   description: z.string().optional(),
   category: z.nativeEnum(VendorCategory),
   status: z.nativeEnum(VendorStatus),
   assigneeId: z.string().optional(),
 });
 
-export function CreateVendorForm({ assignees }: { assignees: (Member & { user: User })[] }) {
+export function CreateVendorForm({
+  assignees,
+  organizationId,
+}: {
+  assignees: (Member & { user: User })[];
+  organizationId: string;
+}) {
   const [_, setCreateVendorSheet] = useQueryState('createVendorSheet');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,7 +98,7 @@ export function CreateVendorForm({ assignees }: { assignees: (Member & { user: U
   });
 
   const onSubmit = async (data: z.infer<typeof createVendorSchema>) => {
-    createVendor.execute(data);
+    createVendor.execute({ ...data, organizationId });
 
     if (data.website) {
       await researchVendor.execute({

@@ -24,8 +24,8 @@ interface PageProps {
 export default async function VendorPage({ params, searchParams }: PageProps) {
   const { vendorId, orgId } = await params;
   const { taskItemId } = (await searchParams) ?? {};
-  const vendor = await getVendor(vendorId);
-  const assignees = await getAssignees();
+  const vendor = await getVendor({ vendorId, organizationId: orgId });
+  const assignees = await getAssignees(orgId);
 
   if (!vendor || !vendor.vendor) {
     redirect('/');
@@ -60,7 +60,7 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
             </div>
           </>
         )}
-        <TaskItems entityId={vendorId} entityType="vendor" />
+        <TaskItems entityId={vendorId} entityType="vendor" organizationId={orgId} />
         {!taskItemId && (
           <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
         )}
@@ -69,19 +69,20 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
   );
 }
 
-const getVendor = cache(async (vendorId: string) => {
+const getVendor = cache(async (params: { vendorId: string; organizationId: string }) => {
+  const { vendorId, organizationId } = params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session || !session.session.activeOrganizationId) {
+  if (!session?.user?.id) {
     return null;
   }
 
   const vendor = await db.vendor.findUnique({
     where: {
       id: vendorId,
-      organizationId: session.session.activeOrganizationId,
+      organizationId,
     },
     include: {
       assignee: {
@@ -111,18 +112,18 @@ const getVendor = cache(async (vendorId: string) => {
   };
 });
 
-const getAssignees = cache(async () => {
+const getAssignees = cache(async (organizationId: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session || !session.session.activeOrganizationId) {
+  if (!session?.user?.id) {
     return [];
   }
 
   const assignees = await db.member.findMany({
     where: {
-      organizationId: session.session.activeOrganizationId,
+      organizationId,
       role: {
         notIn: ['employee', 'contractor'],
       },

@@ -99,7 +99,7 @@ export const SelectAssignee = ({
           ) : (
             <div className="flex items-center gap-2">
               {renderNoneAvatar()}
-              <span>None</span>
+              <span>Unassigned</span>
             </div>
           )}
         </SelectTrigger>
@@ -112,7 +112,7 @@ export const SelectAssignee = ({
           <SelectItem value="none" className="cursor-pointer pl-2">
             <div className="flex items-center gap-2.5">
               {renderNoneAvatar()}
-              <span>None</span>
+              <span>Unassigned</span>
             </div>
           </SelectItem>
           {assignees.map((assignee) => (

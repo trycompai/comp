@@ -17,6 +17,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 interface TaskItemsProps {
   entityId: string;
   entityType: TaskItemEntityType;
+  /** Optional organization ID (if not provided, uses active org from session) */
+  organizationId?: string;
   /** Optional custom title for the task items section */
   title?: string;
   /** Optional custom description */
@@ -32,6 +34,7 @@ interface TaskItemsProps {
 export const TaskItems = ({
   entityId,
   entityType,
+  organizationId,
   title = 'Tasks',
   description,
   variant = 'card',
@@ -59,14 +62,18 @@ export const TaskItems = ({
     isLoading: taskItemsLoading,
     mutate: refreshTaskItems,
     organizationId: tasksOrgId,
-  } = useTaskItems(entityId, entityType, page, limit, sortBy, sortOrder, filters);
+  } = useTaskItems(entityId, entityType, page, limit, sortBy, sortOrder, filters, {
+    organizationId,
+  });
 
   const {
     data: statsResponse,
     isLoading: statsLoading,
     mutate: refreshStats,
     organizationId: statsOrgId,
-  } = useTaskItemsStats(entityId, entityType);
+  } = useTaskItemsStats(entityId, entityType, {
+    organizationId,
+  });
 
   const { members } = useOrganizationMembers();
   

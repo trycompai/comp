@@ -1,9 +1,10 @@
 'use server';
 
-import { authActionClient } from '@/actions/safe-action';
+import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { steps } from '@/app/(app)/setup/lib/constants';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
+import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
@@ -41,7 +42,7 @@ const onboardingCompletionSchema = z.object({
   }),
 });
 
-export const completeOnboarding = authActionClient
+export const completeOnboarding = authActionClientWithoutOrg
   .inputSchema(onboardingCompletionSchema)
   .metadata({
     name: 'complete-onboarding',
@@ -52,16 +53,6 @@ export const completeOnboarding = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     try {
-      const { activeOrganizationId } = ctx.session;
-
-      // Verify the organization ID matches the active org
-      if (parsedInput.organizationId !== activeOrganizationId) {
-        return {
-          success: false,
-          error: 'Organization mismatch',
-        };
-      }
-
       // Verify user has access to this organization
       const member = await db.member.findFirst({
         where: {
@@ -77,6 +68,15 @@ export const completeOnboarding = authActionClient
           error: 'Access denied',
         };
       }
+
+      // Ensure the newly onboarded org is the active org.
+      // This prevents the "Setting up your organization" flow from accidentally using a previous org session.
+      await auth.api.setActiveOrganization({
+        headers: await headers(),
+        body: {
+          organizationId: parsedInput.organizationId,
+        },
+      });
 
       // Save the remaining steps to context
       const postPaymentSteps = steps.slice(3); // Steps 4-12

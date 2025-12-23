@@ -58,7 +58,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
             </div>
           </>
         )}
-        <TaskItems entityId={riskId} entityType="risk" />
+        <TaskItems entityId={riskId} entityType="risk" organizationId={orgId} />
         {!taskItemId && (
           <Comments entityId={riskId} entityType={CommentEntityType.risk} />
         )}

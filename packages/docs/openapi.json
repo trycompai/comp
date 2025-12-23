@@ -4006,6 +4006,41 @@
         ]
       }
     },
+    "/v1/internal/vendors/risk-assessment/trigger-batch": {
+      "post": {
+        "operationId": "InternalVendorAutomationController_triggerVendorRiskAssessmentBatch_v1",
+        "parameters": [
+          {
+            "name": "X-Internal-Token",
+            "in": "header",
+            "description": "Internal service token (required in production)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriggerVendorRiskAssessmentBatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks triggered"
+          }
+        },
+        "summary": "Trigger vendor risk assessment tasks for a batch of vendors (internal)",
+        "tags": [
+          "Internal - Vendors"
+        ]
+      }
+    },
     "/v1/context": {
       "get": {
         "description": "Returns all context entries for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -12875,6 +12910,56 @@
             "example": "mem_abc123def456"
           }
         }
+      },
+      "TriggerVendorRiskAssessmentVendorDto": {
+        "type": "object",
+        "properties": {
+          "vendorId": {
+            "type": "string",
+            "description": "Vendor ID",
+            "example": "vnd_abc123"
+          },
+          "vendorName": {
+            "type": "string",
+            "description": "Vendor name",
+            "example": "CloudTech Solutions"
+          },
+          "vendorWebsite": {
+            "type": "object",
+            "description": "Vendor website (optional)",
+            "example": "https://cloudtechsolutions.com"
+          }
+        },
+        "required": [
+          "vendorId",
+          "vendorName"
+        ]
+      },
+      "TriggerVendorRiskAssessmentBatchDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID",
+            "example": "org_abc123"
+          },
+          "withResearch": {
+            "type": "boolean",
+            "description": "If false, skips Firecrawl research (cheaper). Defaults to true.",
+            "default": true
+          },
+          "vendors": {
+            "description": "Vendors to trigger risk assessment for",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TriggerVendorRiskAssessmentVendorDto"
+            }
+          }
+        },
+        "required": [
+          "organizationId",
+          "vendors"
+        ]
       },
       "CreateContextDto": {
         "type": "object",

@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { AttachmentsService } from '../attachments/attachments.service';
@@ -40,6 +41,8 @@ function extractMentionedUserIds(content: string | null): string[] {
 
 @Injectable()
 export class CommentsService {
+  private readonly logger = new Logger(CommentsService.name);
+
   constructor(
     private readonly attachmentsService: AttachmentsService,
     private readonly mentionNotifier: CommentMentionNotifierService,
@@ -78,6 +81,22 @@ export class CommentsService {
           where: { id: entityId, organizationId },
         });
         entityExists = !!vendor;
+        if (!entityExists) {
+          // Check if vendor exists in a different org for better error message
+          const vendorInOtherOrg = await db.vendor.findFirst({
+            where: { id: entityId },
+            select: { organizationId: true },
+          });
+          if (vendorInOtherOrg) {
+            this.logger.warn('Vendor exists but in different organization', {
+              entityId,
+              requestedOrgId: organizationId,
+              actualOrgId: vendorInOtherOrg.organizationId,
+            });
+          } else {
+            this.logger.warn('Vendor not found', { entityId, organizationId });
+          }
+        }
         break;
       }
 
@@ -94,7 +113,9 @@ export class CommentsService {
     }
 
     if (!entityExists) {
-      throw new BadRequestException(`${entityType} not found or access denied`);
+      throw new BadRequestException(
+        `${entityType} with id ${entityId} not found in organization ${organizationId} or access denied`,
+      );
     }
   }
 

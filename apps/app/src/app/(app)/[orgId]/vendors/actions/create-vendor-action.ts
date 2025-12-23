@@ -9,8 +9,13 @@ import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const schema = z.object({
+  organizationId: z.string().min(1, 'Organization ID is required'),
   name: z.string().min(1, 'Name is required'),
-  website: z.string().url('Must be a valid URL').optional(),
+  // Treat empty string as "not provided" so the form default doesn't block submission
+  website: z
+    .union([z.string().url('Must be a valid URL (include https://)'), z.literal('')])
+    .transform((value) => (value === '' ? undefined : value))
+    .optional(),
   description: z.string().optional(),
   category: z.nativeEnum(VendorCategory),
   status: z.nativeEnum(VendorStatus).default(VendorStatus.not_assessed),
@@ -25,7 +30,7 @@ export const createVendorAction = createSafeActionClient()
         headers: await headers(),
       });
 
-      if (!session?.session?.activeOrganizationId) {
+      if (!session?.user?.id) {
         throw new Error('Unauthorized');
       }
 
@@ -36,11 +41,12 @@ export const createVendorAction = createSafeActionClient()
           category: input.parsedInput.category,
           status: input.parsedInput.status,
           assigneeId: input.parsedInput.assigneeId,
-          organizationId: session.session.activeOrganizationId,
+          website: input.parsedInput.website,
+          organizationId: input.parsedInput.organizationId,
         },
       });
 
-      revalidatePath(`/${session.session.activeOrganizationId}/vendors`);
+      revalidatePath(`/${input.parsedInput.organizationId}/vendors`);
 
       return { success: true, data: vendor };
     } catch (error) {

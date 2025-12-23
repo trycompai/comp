@@ -175,6 +175,7 @@ export function TaskItemFocusView({
             onStatusOrPriorityChange={onStatusOrPriorityChange}
             entityId={entityId}
             entityType={entityType}
+            descriptionMaxHeightClass="max-h-80"
           />
 
           {/* Divider */}
