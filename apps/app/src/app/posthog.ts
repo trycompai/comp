@@ -1,5 +1,3 @@
-'use server';
-
 import { Properties } from 'posthog-js';
 import { PostHog } from 'posthog-node';
 
