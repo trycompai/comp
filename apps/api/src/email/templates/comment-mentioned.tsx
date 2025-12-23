@@ -14,7 +14,7 @@ import {
 } from '@react-email/components';
 import { Footer } from '../components/footer';
 import { Logo } from '../components/logo';
-import { getUnsubscribeUrl } from '@comp/email';
+import { getUnsubscribeUrl } from '@trycompai/email';
 
 interface Props {
   toName: string;

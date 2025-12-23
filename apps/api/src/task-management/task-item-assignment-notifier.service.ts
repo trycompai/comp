@@ -1,6 +1,6 @@
 import { db } from '@db';
 import { Injectable, Logger } from '@nestjs/common';
-import { isUserUnsubscribed } from '@comp/email';
+import { isUserUnsubscribed } from '@trycompai/email';
 import { sendEmail } from '../email/resend';
 import { TaskItemAssignedEmail } from '../email/templates/task-item-assigned';
 import { NovuService } from '../notifications/novu.service';
