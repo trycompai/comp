@@ -25,33 +25,33 @@ export class NovuService {
     );
 
     try {
-    const response = await fetch('https://api.novu.co/v1/events/trigger', {
-      method: 'POST',
-      headers: {
-        Authorization: `ApiKey ${novuApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: workflowId,
-        to: {
-          subscriberId,
-          email,
+      const response = await fetch('https://api.novu.co/v1/events/trigger', {
+        method: 'POST',
+        headers: {
+          Authorization: `ApiKey ${novuApiKey}`,
+          'Content-Type': 'application/json',
         },
-        payload,
-      }),
-    });
+        body: JSON.stringify({
+          name: workflowId,
+          to: {
+            subscriberId,
+            email,
+          },
+          payload,
+        }),
+      });
 
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
         this.logger.error(
-        `Failed to trigger Novu workflow "${workflowId}" (${response.status}). ${text}`,
+          `Failed to trigger Novu workflow "${workflowId}" (${response.status}). ${text}`,
         );
-      } else {
-        const result = await response.json().catch(() => ({}));
-        this.logger.log(
-          `Successfully triggered Novu workflow "${workflowId}" for subscriber "${subscriberId}"`,
-        );
+        return;
       }
+
+      this.logger.log(
+        `Successfully triggered Novu workflow "${workflowId}" for subscriber "${subscriberId}"`,
+      );
     } catch (error) {
       this.logger.error(
         `Error triggering Novu workflow "${workflowId}":`,
