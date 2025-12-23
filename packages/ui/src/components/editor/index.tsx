@@ -150,3 +150,6 @@ export {
   isValidTipTapContent,
   validateAndFixTipTapContent,
 } from './utils/validate-content';
+
+// Export mention extension
+export { createMentionExtension, type MentionUser } from './extensions/mention';

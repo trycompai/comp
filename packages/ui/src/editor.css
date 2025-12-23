@@ -67,8 +67,8 @@ pre {
 /* Base editor styles */
 .ProseMirror {
   @reference w-full text-sm leading-normal;
-  height: 100%;
-  min-height: 350px;
+  height: var(--editor-height, 100%);
+  min-height: var(--editor-min-height, 350px);
 }
 
 .ProseMirror:focus {

@@ -28,6 +28,7 @@ import { SOAModule } from './soa/soa.module';
 import { IntegrationPlatformModule } from './integration-platform/integration-platform.module';
 import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 import { BrowserbaseModule } from './browserbase/browserbase.module';
+import { TaskManagementModule } from './task-management/task-management.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { BrowserbaseModule } from './browserbase/browserbase.module';
     IntegrationPlatformModule,
     CloudSecurityModule,
     BrowserbaseModule,
+    TaskManagementModule,
   ],
   controllers: [AppController],
   providers: [
