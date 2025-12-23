@@ -10,10 +10,10 @@ COPY package.json bun.lock ./
 
 # Copy all workspace package.json files
 COPY packages/db/package.json ./packages/db/
-COPY packages/email/package.json ./packages/email/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/integration-platform/package.json ./packages/integration-platform/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY packages/email/package.json ./packages/email/
 
 # Copy API package.json
 COPY apps/api/package.json ./apps/api/
@@ -30,10 +30,10 @@ WORKDIR /app
 
 # Copy workspace packages source
 COPY packages/db ./packages/db
-COPY packages/email ./packages/email
 COPY packages/utils ./packages/utils
 COPY packages/integration-platform ./packages/integration-platform
 COPY packages/tsconfig ./packages/tsconfig
+COPY packages/email ./packages/email
 
 # Copy API source
 COPY apps/api ./apps/api
@@ -44,6 +44,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Build workspace packages
 RUN cd packages/db && bun run build && cd ../..
 RUN cd packages/integration-platform && bun run build && cd ../..
+RUN cd packages/email && bun run build && cd ../..
 
 # Generate Prisma client for API (copy schema and generate)
 RUN cd packages/db && node scripts/combine-schemas.js && cd ../..
@@ -74,10 +75,10 @@ COPY --from=builder /app/apps/api/package.json ./package.json
 
 # Copy workspace packages that are referenced by node_modules symlinks
 COPY --from=builder /app/packages/db ./packages/db
-COPY --from=builder /app/packages/email ./packages/email
 COPY --from=builder /app/packages/utils ./packages/utils
 COPY --from=builder /app/packages/integration-platform ./packages/integration-platform
 COPY --from=builder /app/packages/tsconfig ./packages/tsconfig
+COPY --from=builder /app/packages/email ./packages/email
 
 # Copy production node_modules (includes symlinks to workspace packages above)
 COPY --from=builder /app/node_modules ./node_modules
@@ -104,4 +105,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start the application
 CMD ["node", "dist/src/main.js"]
-
