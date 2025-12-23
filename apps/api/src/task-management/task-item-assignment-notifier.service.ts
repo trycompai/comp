@@ -154,7 +154,7 @@ export class TaskItemAssignmentNotifierService {
           `Failed to send assignment email to ${assigneeUser.email}:`,
           error instanceof Error ? error.message : 'Unknown error',
         );
-        throw error; // Re-throw to maintain existing error handling behavior
+        // Don't throw: still attempt in-app notification via Novu even if email fails.
       }
 
       // Send in-app notification via Novu

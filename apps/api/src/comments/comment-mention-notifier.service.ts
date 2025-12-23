@@ -99,7 +99,7 @@ export class CommentMentionNotifierService {
       // For task comments, we need to get the parent entity route
       let entityRoutePath = '';
       if (taskItem?.entityType === 'risk') {
-        entityRoutePath = 'risks';
+        entityRoutePath = 'risk';
       } else if (taskItem?.entityType === 'vendor') {
         entityRoutePath = 'vendors';
       }
