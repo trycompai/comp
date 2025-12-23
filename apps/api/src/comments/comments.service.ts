@@ -60,11 +60,23 @@ export class CommentsService {
 
     switch (entityType) {
       case CommentEntityType.task: {
-        // Task comments are for task items, not tasks
+        // Backward compatible:
+        // - TaskItem detail view uses CommentEntityType.task with a TaskItem id
+        // - Legacy compliance "Task" pages also use CommentEntityType.task with a Task id
+        //
+        // Prefer TaskItem lookup first, then fall back to Task.
         const taskItem = await db.taskItem.findFirst({
           where: { id: entityId, organizationId },
         });
-        entityExists = !!taskItem;
+        if (taskItem) {
+          entityExists = true;
+          break;
+        }
+
+        const task = await db.task.findFirst({
+          where: { id: entityId, organizationId },
+        });
+        entityExists = !!task;
         break;
       }
 
@@ -347,10 +359,18 @@ export class CommentsService {
         AttachmentEntityType.comment,
       );
 
-      // Notify mentioned users on update
+      // Notify only newly mentioned users on update (avoid re-notifying on typo edits)
       if (content && userId) {
-        const mentionedUserIds = extractMentionedUserIds(content);
-        if (mentionedUserIds.length > 0) {
+        const previousMentioned = new Set(
+          extractMentionedUserIds(existingComment.content),
+        );
+        const currentMentioned = extractMentionedUserIds(content);
+
+        const newlyMentionedUserIds = currentMentioned.filter(
+          (id) => !previousMentioned.has(id),
+        );
+
+        if (newlyMentionedUserIds.length > 0) {
           // Fire-and-forget: notification failures should not block comment update
           void this.mentionNotifier.notifyMentionedUsers({
             organizationId,
@@ -358,7 +378,7 @@ export class CommentsService {
             commentContent: content,
             entityType: existingComment.entityType,
             entityId: existingComment.entityId,
-            mentionedUserIds,
+            mentionedUserIds: newlyMentionedUserIds,
             mentionedByUserId: userId,
           });
         }

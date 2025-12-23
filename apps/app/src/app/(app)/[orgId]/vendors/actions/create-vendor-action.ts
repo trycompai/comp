@@ -34,6 +34,21 @@ export const createVendorAction = createSafeActionClient()
         throw new Error('Unauthorized');
       }
 
+      // Security: verify the current user is a member of the target organization.
+      // We intentionally do NOT rely on session.activeOrganizationId because it can be stale.
+      const member = await db.member.findFirst({
+        where: {
+          userId: session.user.id,
+          organizationId: input.parsedInput.organizationId,
+          deactivated: false,
+        },
+        select: { id: true },
+      });
+
+      if (!member) {
+        throw new Error('Unauthorized');
+      }
+
       const vendor = await db.vendor.create({
         data: {
           name: input.parsedInput.name,

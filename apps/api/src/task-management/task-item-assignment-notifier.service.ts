@@ -162,28 +162,29 @@ export class TaskItemAssignmentNotifierService {
         `[NOVU] Attempting to send in-app notification to ${assigneeUser.id} (subscriber: ${assigneeUser.id}-${organizationId}) for task "${taskTitle}"`,
       );
       // Get entity route path for Novu payload
-      const entityRoutePath = entityType === 'vendor' ? 'vendors' : 'risks';
+      // vendors is plural, but risk is singular in routes
+      const entityRoutePath = entityType === 'vendor' ? 'vendors' : 'risk';
 
       try {
         await this.novuService.trigger({
           workflowId: 'task-item-assigned',
           subscriberId: `${assigneeUser.id}-${organizationId}`,
-        email: assigneeUser.email,
-        payload: {
+          email: assigneeUser.email,
+          payload: {
             taskTitle,
             taskItemId,
             assignedByName,
-          organizationName,
-          entityType,
+            organizationName,
+            entityType,
             entityRoutePath,
-          entityId,
+            entityId,
             organizationId,
-          taskUrl,
-        },
-      });
+            taskUrl,
+          },
+        });
 
       this.logger.log(
-          `[NOVU] Assignment in-app notification sent to ${assigneeUser.id} for task "${taskTitle}"`,
+        `[NOVU] Assignment in-app notification sent to ${assigneeUser.id} for task "${taskTitle}"`,
       );
       } catch (error) {
         this.logger.error(

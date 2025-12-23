@@ -93,24 +93,30 @@ export function CommentRichTextField({
     [placeholder, mentionExtension],
   );
 
-  const editor = useEditor({
-    extensions,
-    content: value || '',
-    editable: !disabled,
-    immediatelyRender: false,
-    onUpdate: ({ editor }) => {
-      if (!editor.isDestroyed) {
-        const content = editor.getJSON();
-        onChange(content);
-      }
-    },
-    editorProps: {
-      attributes: {
-        class:
-          'comment-editor prose-sm max-w-none focus:outline-none px-3 py-2 text-sm [&_p]:m-0 [&_p]:p-0 [&_p]:text-sm [&_p]:leading-normal',
+  const editor = useEditor(
+    {
+      extensions,
+      content: value || '',
+      editable: !disabled,
+      immediatelyRender: false,
+      onUpdate: ({ editor }) => {
+        if (!editor.isDestroyed) {
+          const content = editor.getJSON();
+          onChange(content);
+        }
+      },
+      editorProps: {
+        attributes: {
+          class:
+            'comment-editor prose-sm max-w-none focus:outline-none px-3 py-2 text-sm [&_p]:m-0 [&_p]:p-0 [&_p]:text-sm [&_p]:leading-normal',
+        },
       },
     },
-  });
+    // TipTap only creates the Editor once by default. After a hard refresh, members often
+    // load async via SWR, so we re-create the editor when the members list becomes available.
+    // (This is why "navigate away and back" fixed it before.)
+    [members.length, disabled, placeholder],
+  );
 
   // Sync external value changes to editor
   useEffect(() => {

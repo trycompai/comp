@@ -212,21 +212,22 @@ export function TaskRichDescriptionField({
     [placeholder, mentionExtension, fileAttachmentExtension],
   );
 
-  const editor = useEditor({
-    extensions,
-    content: value || '',
-    editable: !disabled,
-    immediatelyRender: false,
-    onUpdate: ({ editor }) => {
-      // Get content immediately when editor updates
-      // This is called automatically when content changes (including when we insert files)
-      if (!editor.isDestroyed) {
-        const content = editor.getJSON();
-        onChange(content);
-      }
-    },
-    editorProps: {
-      handleDrop: (view, event, _slice, moved) => {
+  const editor = useEditor(
+    {
+      extensions,
+      content: value || '',
+      editable: !disabled,
+      immediatelyRender: false,
+      onUpdate: ({ editor }) => {
+        // Get content immediately when editor updates
+        // This is called automatically when content changes (including when we insert files)
+        if (!editor.isDestroyed) {
+          const content = editor.getJSON();
+          onChange(content);
+        }
+      },
+      editorProps: {
+        handleDrop: (view, event, _slice, moved) => {
         if (!moved && event.dataTransfer && event.dataTransfer.files) {
           const files = Array.from(event.dataTransfer.files);
           if (files.length > 0) {
@@ -278,7 +279,7 @@ export function TaskRichDescriptionField({
         }
         return false;
       },
-      handlePaste: (view, event, _slice) => {
+        handlePaste: (view, event, _slice) => {
         const items = Array.from(event.clipboardData?.items || []);
         const files = items
           .filter((item) => item.kind === 'file')
@@ -327,22 +328,29 @@ export function TaskRichDescriptionField({
         }
         return false;
       },
-      attributes: {
-        class:
-          'prose prose-lg max-w-none focus:outline-none [&_p]:text-base [&_p]:leading-relaxed [&_li]:text-base [&_li]:leading-relaxed min-h-[150px] max-h-[300px] overflow-y-auto p-3 pb-20',
-      },
-      handleDOMEvents: {
-        mousedown: (view, event) => {
-          // Allow clicks on suggestion dropdowns to work
-          const target = event.target as HTMLElement;
-          if (target?.closest('.tippy-box') || target?.closest('[role="listbox"]')) {
-            return true; // Let the event propagate to the dropdown
-          }
-          return false;
+        attributes: {
+          class:
+            'prose prose-lg max-w-none focus:outline-none [&_p]:text-base [&_p]:leading-relaxed [&_li]:text-base [&_li]:leading-relaxed min-h-[150px] max-h-[300px] overflow-y-auto p-3 pb-20',
+        },
+        handleDOMEvents: {
+          mousedown: (view, event) => {
+            // Allow clicks on suggestion dropdowns to work
+            const target = event.target as HTMLElement;
+            if (
+              target?.closest('.tippy-box') ||
+              target?.closest('[role="listbox"]')
+            ) {
+              return true; // Let the event propagate to the dropdown
+            }
+            return false;
+          },
         },
       },
     },
-  });
+    // After hard refresh, members are fetched async; re-create the editor when they arrive
+    // so mention suggestions start working without needing a navigation/remount.
+    [members.length, disabled, placeholder],
+  );
 
   // Update editor content when value changes externally
   useEffect(() => {
@@ -544,11 +552,8 @@ export function TaskRichDescriptionField({
   };
 
   return (
-    <div className="border border-border rounded-md bg-background overflow-hidden relative">
-        <EditorContent
-          editor={editor}
-          className="min-h-[150px] max-h-[300px]"
-        />
+    <div className="border border-border rounded-md bg-background overflow-hidden relative [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50">
+      <EditorContent editor={editor} className="min-h-[150px] max-h-[300px]" />
       <div className="flex items-center justify-end px-3 py-1.5 relative z-10">
         <Button
           type="button"

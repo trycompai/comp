@@ -139,7 +139,7 @@ export class AttachmentsService {
           uploadDto.description?.split('|')[0] || 'unknown';
         const taskItemEntityId =
           uploadDto.description?.split('|')[1] || entityId;
-        s3Key = `org_${organizationId}/attachments/task-item/${taskItemEntityType}/${taskItemEntityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+        s3Key = `${organizationId}/attachments/task-item/${taskItemEntityType}/${taskItemEntityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
       } else {
         s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
       }

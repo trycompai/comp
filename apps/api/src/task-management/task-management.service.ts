@@ -84,9 +84,10 @@ export class TaskManagementService {
       return { total, byStatus };
     } catch (error) {
       this.logger.error('Error fetching task items stats:', error);
-      throw new InternalServerErrorException(
-        'Failed to fetch task items stats',
-      );
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to fetch task items stats');
     }
   }
 
@@ -240,6 +241,13 @@ export class TaskManagementService {
     createTaskItemDto: CreateTaskItemDto,
   ): Promise<TaskItemResponseDto> {
     try {
+      // Option A: Do not allow API key auth for creating task items (requires a user actor for audit + notifications)
+      if (authContext.isApiKey) {
+        throw new BadRequestException(
+          'Task item creation is not supported with API key authentication',
+        );
+      }
+
       if (!authContext.userId) {
         throw new BadRequestException('User ID is required');
       }
@@ -426,6 +434,13 @@ export class TaskManagementService {
     updateTaskItemDto: UpdateTaskItemDto,
   ): Promise<TaskItemResponseDto> {
     try {
+      // Option A: Do not allow API key auth for updating task items (requires a user actor for audit + notifications)
+      if (authContext.isApiKey) {
+        throw new BadRequestException(
+          'Task item updates are not supported with API key authentication',
+        );
+      }
+
       if (!authContext.userId) {
         throw new BadRequestException('User ID is required');
       }
