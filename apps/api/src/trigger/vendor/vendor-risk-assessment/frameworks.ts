@@ -45,7 +45,7 @@ const DEFAULT_FRAMEWORKS: OrgFramework[] = [
     description: 'Service Organization Control 2 (Trust Services Criteria)',
   },
   {
-    id: 'default_iso42001',
+    id: 'default_iso27001',
     name: 'ISO 27001',
     version: 'Latest',
     description: 'AI management / security standard',
