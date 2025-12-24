@@ -131,7 +131,7 @@ export function CommentRichTextField({
   }, [value, editor]);
 
   return (
-    <div className="rounded-md border border-input bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50" style={editorSizeStyles}>
+    <div className="rounded-md bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50" style={editorSizeStyles}>
       <EditorContent editor={editor} />
     </div>
   );

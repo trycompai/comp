@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface TaskItemEditableTitleProps {
   title: string;
   isUpdating: boolean;
   onUpdate: (updates: { title?: string }) => Promise<void>;
   onAfterUpdate?: () => void;
+  className?: string;
 }
 
 export function TaskItemEditableTitle({
@@ -13,6 +15,7 @@ export function TaskItemEditableTitle({
   isUpdating,
   onUpdate,
   onAfterUpdate,
+  className,
 }: TaskItemEditableTitleProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
@@ -73,14 +76,14 @@ export function TaskItemEditableTitle({
               }
             }}
             disabled={isUpdating}
-            className="w-full text-2xl font-semibold bg-transparent border-none outline-none resize-none rounded px-2 py-1 -mx-2 -my-1 overflow-hidden"
+            className={cn('w-full text-2xl font-semibold bg-transparent border-none outline-none resize-none rounded px-2 py-1 -mx-2 -my-1 overflow-hidden', className)}
             rows={1}
           />
         </div>
       ) : (
         <h1
           onClick={() => setIsEditingTitle(true)}
-          className="text-2xl font-semibold cursor-text hover:bg-accent/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors"
+          className={cn('text-2xl font-semibold cursor-text hover:bg-accent/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors', className)}
         >
           {title}
         </h1>

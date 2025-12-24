@@ -24,8 +24,10 @@ export function TaskItemScrollableDescription({
   const handleMeasure = () => {
     const el = containerRef.current;
     if (!el) return;
-    // Small buffer for rounding differences
-    const overflowing = el.scrollHeight > el.clientHeight + 4;
+    // Only show overflow hint if there's significant overflow (more than 20px)
+    // This prevents showing the hint for tiny amounts of overflow due to padding/margins
+    const overflowAmount = el.scrollHeight - el.clientHeight;
+    const overflowing = overflowAmount > 20;
     setIsOverflowing(overflowing);
   };
 

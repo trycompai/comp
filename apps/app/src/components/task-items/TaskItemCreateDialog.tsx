@@ -40,7 +40,7 @@ export function TaskItemCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create task</DialogTitle>
           <DialogDescription>Add a new task for this record.</DialogDescription>
