@@ -89,10 +89,11 @@ export const vendorRiskAssessmentTask = schemaTask({
         entityId: payload.vendorId,
         title: VENDOR_RISK_ASSESSMENT_TASK_TITLE,
       },
-      select: { id: true },
+      select: { id: true, status: true, createdById: true, assigneeId: true },
     });
 
-    if (existing) {
+    // If an existing task is already complete (i.e. not "generating"), don't create another one.
+    if (existing && existing.status !== TaskItemStatus.in_progress) {
       logger.info('Risk assessment task already exists for vendor, skipping', {
         vendorId: payload.vendorId,
         taskItemId: existing.id,
@@ -104,6 +105,49 @@ export const vendorRiskAssessmentTask = schemaTask({
       organizationId: payload.organizationId,
       createdByUserId: payload.createdByUserId ?? null,
     });
+    // focused frameworks
+    const organizationFrameworks = getDefaultFrameworks();
+    const frameworkChecklist = buildFrameworkChecklist(organizationFrameworks);
+
+    // Create a placeholder task immediately so UI can show a skeleton while research runs.
+    // If an in-progress placeholder already exists, reuse it.
+    const taskItemId =
+      existing?.id ??
+      (
+        await db.taskItem.create({
+          data: {
+            title: VENDOR_RISK_ASSESSMENT_TASK_TITLE,
+            // Keep a structured marker so frontend can reliably detect this task type,
+            // but keep status=in_progress so it renders as "generating".
+            description: buildRiskAssessmentDescription({
+              vendorName: payload.vendorName,
+              vendorWebsite: payload.vendorWebsite ?? null,
+              research: null,
+              frameworkChecklist,
+              organizationFrameworks,
+            }),
+            status: TaskItemStatus.in_progress,
+            priority: TaskItemPriority.high,
+            entityId: payload.vendorId,
+            entityType: 'vendor',
+            organizationId: payload.organizationId,
+            assigneeId: assigneeMemberId,
+            createdById: creatorMemberId,
+          },
+          select: { id: true },
+        })
+      ).id;
+
+    if (!existing) {
+      await logAutomatedTaskCreation({
+        organizationId: payload.organizationId,
+        taskItemId,
+        taskTitle: VENDOR_RISK_ASSESSMENT_TASK_TITLE,
+        memberId: creatorMemberId,
+        entityType: 'vendor',
+        entityId: payload.vendorId,
+      });
+    }
 
     const research =
       payload.withResearch && payload.vendorWebsite
@@ -113,9 +157,6 @@ export const vendorRiskAssessmentTask = schemaTask({
           })
         : null;
 
-    const organizationFrameworks = getDefaultFrameworks();
-    const frameworkChecklist = buildFrameworkChecklist(organizationFrameworks);
-
     const description = buildRiskAssessmentDescription({
       vendorName: payload.vendorName,
       vendorWebsite: payload.vendorWebsite ?? null,
@@ -124,37 +165,26 @@ export const vendorRiskAssessmentTask = schemaTask({
       organizationFrameworks,
     });
 
-    const taskItem = await db.taskItem.create({
+    // Mark as ready for normal UX: clickable + full renderer
+    await db.taskItem.update({
+      where: { id: taskItemId },
       data: {
-        title: VENDOR_RISK_ASSESSMENT_TASK_TITLE,
         description,
         status: TaskItemStatus.todo,
-        priority: TaskItemPriority.high,
-        entityId: payload.vendorId,
-        entityType: 'vendor',
-        organizationId: payload.organizationId,
-        assigneeId: assigneeMemberId,
-        createdById: creatorMemberId,
+        // Keep stable creator/assignee for reused placeholders
+        assigneeId: existing?.assigneeId ?? assigneeMemberId,
+        updatedById: existing?.createdById ?? creatorMemberId,
       },
       select: { id: true },
     });
 
-    await logAutomatedTaskCreation({
-      organizationId: payload.organizationId,
-      taskItemId: taskItem.id,
-      taskTitle: VENDOR_RISK_ASSESSMENT_TASK_TITLE,
-      memberId: creatorMemberId,
-      entityType: 'vendor',
-      entityId: payload.vendorId,
-    });
-
     logger.info('Created vendor risk assessment task item', {
       vendorId: payload.vendorId,
-      taskItemId: taskItem.id,
+      taskItemId,
       researched: Boolean(research),
     });
 
-    return { success: true, taskItemId: taskItem.id, deduped: false, researched: Boolean(research) };
+    return { success: true, taskItemId, deduped: Boolean(existing), researched: Boolean(research) };
   },
 });
 

@@ -109,14 +109,14 @@ export function VendorRiskAssessmentCertificationsCard({
         ) : (
           <Collapsible open={open} onOpenChange={setOpen}>
             <div className="space-y-3">
-              {preview.map((cert) => (
-                <CertificationRow key={`${cert.type}-${cert.url ?? ''}`} cert={cert} />
+              {preview.map((cert, index) => (
+                <CertificationRow key={`${cert.type}-${cert.status}-${index}`} cert={cert} />
               ))}
 
               {rest.length > 0 ? (
                 <CollapsibleContent className="space-y-3">
-                  {rest.map((cert) => (
-                    <CertificationRow key={`${cert.type}-${cert.url ?? ''}`} cert={cert} />
+                  {rest.map((cert, index) => (
+                    <CertificationRow key={`${cert.type}-${cert.status}-${previewCount + index}`} cert={cert} />
                   ))}
                 </CollapsibleContent>
               ) : null}

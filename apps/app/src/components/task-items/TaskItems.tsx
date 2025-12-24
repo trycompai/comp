@@ -13,6 +13,7 @@ import { TaskItemsBody } from './TaskItemsBody';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { isVendorRiskAssessmentTaskItem } from './generated-task/vendor-risk-assessment/is-vendor-risk-assessment-task-item';
 
 interface TaskItemsProps {
   entityId: string;
@@ -65,6 +66,26 @@ export const TaskItems = ({
   } = useTaskItems(entityId, entityType, page, limit, sortBy, sortOrder, filters, {
     organizationId,
   });
+
+  // Check if any tasks are currently generating (in_progress vendor risk assessments)
+  // If yes, enable polling so skeleton updates automatically when generation completes
+  const hasGeneratingTasks = useMemo(() => {
+    const taskItems = taskItemsResponse?.data?.data ?? [];
+    return taskItems.some(
+      (taskItem) =>
+        taskItem.status === 'in_progress' && isVendorRiskAssessmentTaskItem(taskItem),
+    );
+  }, [taskItemsResponse?.data?.data]);
+
+  // Re-fetch with polling enabled if there are generating tasks
+  useEffect(() => {
+    if (hasGeneratingTasks) {
+      const interval = setInterval(() => {
+        refreshTaskItems();
+      }, 3000); // Poll every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [hasGeneratingTasks, refreshTaskItems]);
 
   const {
     data: statsResponse,

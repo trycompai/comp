@@ -61,6 +61,8 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { format } from 'date-fns';
+import { isVendorRiskAssessmentTaskItem } from './generated-task/vendor-risk-assessment/is-vendor-risk-assessment-task-item';
+import { VendorRiskAssessmentTaskItemSkeletonRow } from './generated-task/vendor-risk-assessment/VendorRiskAssessmentTaskItemSkeletonRow';
 
 const formatShortDate = (date: string | Date): string => {
   try {
@@ -122,6 +124,12 @@ export function TaskItemItem({
   onToggleExpanded,
   onStatusOrPriorityChange,
 }: TaskItemItemProps) {
+  const isGeneratingVendorRiskAssessment =
+    taskItem.status === 'in_progress' && isVendorRiskAssessmentTaskItem(taskItem);
+  if (isGeneratingVendorRiskAssessment) {
+    return <VendorRiskAssessmentTaskItemSkeletonRow />;
+  }
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedTitle, setEditedTitle] = useState(taskItem.title);
   const [editedDescription, setEditedDescription] = useState(taskItem.description || '');
