@@ -32,6 +32,7 @@ import { Comments } from '../comments/Comments';
 import { CommentEntityType } from '@db';
 import { GeneratedTaskItemMainContent } from './generated-task/GeneratedTaskItemMainContent';
 import { CustomTaskItemMainContent } from './custom-task/CustomTaskItemMainContent';
+import { isVendorRiskAssessmentTaskItem } from './generated-task/vendor-risk-assessment/is-vendor-risk-assessment-task-item';
 
 interface TaskItemFocusViewProps {
   taskItem: TaskItem;
@@ -67,7 +68,7 @@ export function TaskItemFocusView({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const pathname = usePathname();
-  const isGeneratedTask = taskItem.title === 'Risk Assessment' && taskItem.entityType === 'vendor';
+  const isGeneratedTask = isVendorRiskAssessmentTaskItem(taskItem);
 
   const { optimisticUpdate, optimisticDelete } = useOptimisticTaskItems(
     entityId,

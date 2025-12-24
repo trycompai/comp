@@ -167,14 +167,33 @@ Focus on their official website (especially trust/security/compliance pages), pr
     })) ?? [];
 
   const news =
-    parsed.data.news?.map((n) => ({
-      date: normalizeIso(n.date) ?? n.date,
-      title: n.title,
-      summary: n.summary ?? null,
-      source: n.source ?? null,
-      url: normalizeUrl(n.url ?? null),
-      sentiment: n.sentiment ?? null,
-    })) ?? [];
+    parsed.data.news
+      ?.flatMap((n) => {
+        const isoDate = normalizeIso(n.date);
+        if (!isoDate) {
+          // Avoid storing invalid/non-ISO dates (frontend uses Date parsing + formatting).
+          logger.debug('Skipping news item due to invalid date', {
+            vendorWebsite,
+            title: n.title,
+            date: n.date,
+            source: n.source ?? null,
+          });
+          return [];
+        }
+
+        return [
+          {
+            date: isoDate,
+            title: n.title,
+            summary: n.summary ?? null,
+            source: n.source ?? null,
+            url: normalizeUrl(n.url ?? null),
+            sentiment: n.sentiment ?? null,
+          },
+        ];
+      })
+      // Extra guard, in case future changes return null-ish entries
+      .filter(Boolean) ?? [];
 
   const result: VendorRiskAssessmentDataV1 = {
     kind: 'vendorRiskAssessmentV1',
