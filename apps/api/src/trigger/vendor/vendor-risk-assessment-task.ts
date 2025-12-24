@@ -66,7 +66,7 @@ async function logAutomatedTaskCreation(params: {
 
 export const vendorRiskAssessmentTask = schemaTask({
   id: VENDOR_RISK_ASSESSMENT_TASK_ID,
-  queue: queue({ name: 'vendor-risk-assessment', concurrencyLimit: 5 }),
+  queue: queue({ name: 'vendor-risk-assessment', concurrencyLimit: 10 }),
   schema: vendorRiskAssessmentPayloadSchema,
   retry: {
     maxAttempts: 3,
