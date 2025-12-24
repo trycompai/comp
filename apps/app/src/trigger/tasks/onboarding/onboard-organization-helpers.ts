@@ -386,6 +386,27 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
     process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
   const token = process.env.INTERNAL_API_TOKEN;
 
+  // Sanitize vendor websites - only send valid URLs or null
+  const sanitizeWebsite = (
+    website: string | null | undefined,
+    vendorName: string,
+  ): string | null => {
+    if (!website || website.trim() === '') return null;
+
+    const trimmed = website.trim();
+    // If it doesn't have a protocol, try adding https://
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+    try {
+      const url = new URL(withProtocol);
+      return url.toString();
+    } catch {
+      // Invalid URL, return null
+      logger.warn('Invalid vendor website, will skip research', { website, vendorName });
+      return null;
+    }
+  };
+
   logger.info('Calling vendor risk assessment API endpoint', {
     organizationId,
     vendorCount: vendors.length,
@@ -400,11 +421,15 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
       {
         organizationId,
         withResearch,
-        vendors: vendors.map((v) => ({
-          vendorId: v.id,
-          vendorName: v.name,
-          vendorWebsite: v.website,
-        })),
+        vendors: vendors.map((v) => {
+          const sanitized = sanitizeWebsite(v.website, v.name);
+          return {
+            vendorId: v.id,
+            vendorName: v.name,
+            // Only include vendorWebsite if it's a valid URL (undefined triggers @IsOptional)
+            ...(sanitized && { vendorWebsite: sanitized }),
+          };
+        }),
       },
       {
         headers: token ? { 'X-Internal-Token': token } : undefined,

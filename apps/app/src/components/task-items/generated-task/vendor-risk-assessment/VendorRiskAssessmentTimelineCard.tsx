@@ -75,8 +75,8 @@ export function VendorRiskAssessmentTimelineCard({
         ) : (
           <Collapsible open={open} onOpenChange={setOpen}>
             <div className="space-y-5">
-              {preview.map((item) => (
-                <div key={`${item.date}-${item.title}`} className="space-y-2">
+              {preview.map((item, index) => (
+                <div key={`${item.date}-${item.title}-${index}`} className="space-y-2">
                   <NewsRow item={item} />
                   <Separator />
                 </div>
@@ -84,8 +84,8 @@ export function VendorRiskAssessmentTimelineCard({
 
               {rest.length > 0 ? (
                 <CollapsibleContent className="space-y-5">
-                  {rest.map((item) => (
-                    <div key={`${item.date}-${item.title}`} className="space-y-2">
+                  {rest.map((item, index) => (
+                    <div key={`${item.date}-${item.title}-${previewCount + index}`} className="space-y-2">
                       <NewsRow item={item} />
                       <Separator />
                     </div>

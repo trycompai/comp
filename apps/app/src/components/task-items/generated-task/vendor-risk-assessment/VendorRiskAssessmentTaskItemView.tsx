@@ -261,11 +261,11 @@ export function VendorRiskAssessmentTaskItemView({ taskItem }: { taskItem: TaskI
               {links.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">No links found.</p>
               ) : (
-                links.map((link) => {
+                links.map((link, index) => {
                   const LinkIcon = getLinkIcon(link.label);
                   return (
                   <Button
-                    key={link.url}
+                    key={`${link.url}-${link.label}-${index}`}
                     variant="outline"
                     className="w-full justify-between"
                     onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
