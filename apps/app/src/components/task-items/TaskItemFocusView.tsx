@@ -13,7 +13,7 @@ import type {
   TaskItemSortOrder,
   TaskItemStatus,
 } from '@/hooks/use-task-items';
-import { Loader2 } from 'lucide-react';
+import { ChevronsLeft, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { usePathname } from 'next/navigation';
@@ -25,12 +25,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@comp/ui/dialog';
-import { TaskItemEditableFields } from './TaskItemEditableFields';
 import { TaskItemActivityTimeline } from './TaskItemActivityTimeline';
 import { TaskItemFocusSidebar } from './TaskItemFocusSidebar';
 import { getTaskIdShort } from './task-item-utils';
 import { Comments } from '../comments/Comments';
 import { CommentEntityType } from '@db';
+import { GeneratedTaskItemMainContent } from './generated-task/GeneratedTaskItemMainContent';
+import { CustomTaskItemMainContent } from './custom-task/CustomTaskItemMainContent';
+import { isVendorRiskAssessmentTaskItem } from './generated-task/vendor-risk-assessment/is-vendor-risk-assessment-task-item';
 
 interface TaskItemFocusViewProps {
   taskItem: TaskItem;
@@ -63,8 +65,10 @@ export function TaskItemFocusView({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedTaskId, setCopiedTaskId] = useState(false);
   const [refreshActivity, setRefreshActivity] = useState<(() => void) | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const pathname = usePathname();
+  const isGeneratedTask = isVendorRiskAssessmentTaskItem(taskItem);
 
   const { optimisticUpdate, optimisticDelete } = useOptimisticTaskItems(
     entityId,
@@ -165,18 +169,21 @@ export function TaskItemFocusView({
 
   return (
     <>
-      <div className="flex gap-6">
+      <div className="flex gap-6 transition-all duration-300 ease-in-out">
         {/* Main Content */}
         <div className="flex-1 space-y-6 min-w-0">
-          <TaskItemEditableFields
+          {isGeneratedTask ? (
+            <GeneratedTaskItemMainContent taskItem={taskItem} />
+          ) : (
+            <CustomTaskItemMainContent
             taskItem={taskItem}
             isUpdating={isUpdating}
             onUpdate={handleUpdate}
             onStatusOrPriorityChange={onStatusOrPriorityChange}
             entityId={entityId}
             entityType={entityType}
-            descriptionMaxHeightClass="max-h-80"
           />
+          )}
 
           {/* Divider */}
           <div className="border-t border-border" />
@@ -204,9 +211,11 @@ export function TaskItemFocusView({
           isUpdating={isUpdating}
           copiedLink={copiedLink}
           copiedTaskId={copiedTaskId}
+          isCollapsed={isSidebarCollapsed}
           onCopyLink={handleCopyLink}
           onCopyTaskId={handleCopyTaskId}
           onDelete={() => setIsDeleteOpen(true)}
+          onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onStatusChange={handleStatusChange}
           onPriorityChange={handlePriorityChange}
           onAssigneeChange={async (newAssigneeId) => {

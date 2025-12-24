@@ -7,7 +7,7 @@ import {
   VENDOR_RISK_ASSESSMENT_TASK_TITLE,
 } from './vendor-risk-assessment/constants';
 import { buildRiskAssessmentDescription } from './vendor-risk-assessment/description';
-import { firecrawlExtractVendorData } from './vendor-risk-assessment/firecrawl';
+import { firecrawlAgentVendorRiskAssessment } from './vendor-risk-assessment/firecrawl-agent';
 import {
   buildFrameworkChecklist,
   getDefaultFrameworks,
@@ -107,7 +107,10 @@ export const vendorRiskAssessmentTask = schemaTask({
 
     const research =
       payload.withResearch && payload.vendorWebsite
-        ? await firecrawlExtractVendorData(payload.vendorWebsite)
+        ? await firecrawlAgentVendorRiskAssessment({
+            vendorName: payload.vendorName,
+            vendorWebsite: payload.vendorWebsite,
+          })
         : null;
 
     const organizationFrameworks = getDefaultFrameworks();

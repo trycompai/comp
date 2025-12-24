@@ -303,9 +303,11 @@ export function TaskItemEditableDescription({
               isSelectingFileRef.current = true;
             }}
             onFileSelectEnd={() => {
+              // Small delay to ensure React state update has propagated
+              // before allowing blur/save handlers to run
               setTimeout(() => {
                 isSelectingFileRef.current = false;
-              }, 500);
+              }, 50);
             }}
             entityId={entityId}
             entityType={entityType}

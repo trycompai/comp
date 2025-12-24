@@ -266,6 +266,8 @@ export function TaskRichDescriptionField({
                   });
                   contentToInsert.push({ type: 'paragraph' });
                   editor.chain().focus().setTextSelection(pos).insertContent(contentToInsert).run();
+                  // Ensure onChange is called after drop insertion
+                  onChange(editor.getJSON());
                 }
               } catch (error) {
                 console.error('Failed to upload files:', error);
@@ -316,6 +318,8 @@ export function TaskRichDescriptionField({
                 contentToInsert.push({ type: 'paragraph' });
                 const currentPos = editor.state.selection.from;
                 editor.chain().focus().setTextSelection(currentPos).insertContent(contentToInsert).run();
+                // Ensure onChange is called after paste insertion
+                onChange(editor.getJSON());
               }
             } catch (error) {
               console.error('Failed to upload files:', error);
@@ -349,8 +353,17 @@ export function TaskRichDescriptionField({
     },
     // After hard refresh, members are fetched async; re-create the editor when they arrive
     // so mention suggestions start working without needing a navigation/remount.
-    [members.length, disabled, placeholder],
+    // NOTE: Do NOT include `disabled` here - it changes during upload and would destroy the editor mid-upload.
+    // Instead, we update editable state via useEffect below.
+    [members.length, placeholder],
   );
+
+  // Update editable state separately to avoid recreating editor during upload
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+      editor.setEditable(!disabled);
+    }
+  }, [editor, disabled]);
 
   // Update editor content when value changes externally
   useEffect(() => {
@@ -522,6 +535,13 @@ export function TaskRichDescriptionField({
         }
         
         console.log('Files inserted successfully');
+        
+        // Manually trigger onChange to ensure parent state is synced
+        // TipTap's onUpdate should fire, but we ensure it here for reliability
+        if (editor && !editor.isDestroyed) {
+          const content = editor.getJSON();
+          onChange(content);
+        }
       } catch (error) {
         console.error('Failed to upload files:', error);
         toast.error('Failed to attach file');
@@ -546,8 +566,19 @@ export function TaskRichDescriptionField({
         fileInputRef.current.value = '';
       }
     } else {
+      // Log why we didn't process files
+      if (fileList.length > 0) {
+        console.warn('Cannot attach files:', {
+          editorExists: !!editor,
+          editorDestroyed: editor?.isDestroyed,
+        });
+      }
       // Notify parent that file selection ended even if no files selected
       onFileSelectEnd?.();
+      // Reset input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
