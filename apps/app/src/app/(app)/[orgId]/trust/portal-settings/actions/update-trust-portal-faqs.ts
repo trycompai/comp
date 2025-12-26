@@ -27,13 +27,22 @@ export const updateTrustPortalFaqsAction = authActionClient
       throw new Error('No active organization');
     }
 
+    // Normalize order values on the server to prevent gaps/duplicates and ensure stable rendering.
+    const normalizedFaqs = faqs.map((faq, index) => ({
+      ...faq,
+      order: index,
+    }));
+
     try {
       await db.organization.update({
         where: {
           id: activeOrganizationId,
         },
         data: {
-          trustPortalFaqs: faqs.length > 0 ? (JSON.parse(JSON.stringify(faqs)) as any) : (null as any),
+          trustPortalFaqs:
+            normalizedFaqs.length > 0
+              ? (JSON.parse(JSON.stringify(normalizedFaqs)) as any)
+              : (null as any),
         },
       });
 

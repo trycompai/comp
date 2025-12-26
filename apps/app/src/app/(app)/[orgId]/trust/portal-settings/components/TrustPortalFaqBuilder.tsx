@@ -11,6 +11,12 @@ import { updateTrustPortalFaqsAction } from '../actions/update-trust-portal-faqs
 import { Plus, Trash2, ChevronUp, ChevronDown, Save, Loader2 } from 'lucide-react';
 import type { FaqItem } from '../types/faq';
 
+const normalizeFaqs = (items: FaqItem[]): FaqItem[] => {
+  return [...items]
+    .sort((a, b) => a.order - b.order)
+    .map((faq, index) => ({ ...faq, order: index }));
+};
+
 export function TrustPortalFaqBuilder({
   initialFaqs,
   orgId,
@@ -18,7 +24,9 @@ export function TrustPortalFaqBuilder({
   initialFaqs: FaqItem[] | null;
   orgId: string;
 }) {
-  const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs ?? []);
+  const [faqs, setFaqs] = useState<FaqItem[]>(() =>
+    normalizeFaqs(initialFaqs ?? []),
+  );
   const [isDirty, setIsDirty] = useState(false);
 
   const updateFaqs = useAction(updateTrustPortalFaqsAction, {
@@ -32,80 +40,90 @@ export function TrustPortalFaqBuilder({
   });
 
   const handleAddFaq = useCallback(() => {
-    const newFaq: FaqItem = {
-      id: `temp-${Date.now()}`,
-      question: '',
-      answer: '',
-      order: faqs.length,
-    };
-    setFaqs([...faqs, newFaq]);
+    setFaqs((prev) => {
+      const normalized = normalizeFaqs(prev);
+      const newFaq: FaqItem = {
+        id: `temp-${Date.now()}`,
+        question: '',
+        answer: '',
+        order: normalized.length,
+      };
+      return [...normalized, newFaq];
+    });
     setIsDirty(true);
-  }, [faqs]);
+  }, []);
 
   const handleUpdateFaq = useCallback(
     (id: string, field: 'question' | 'answer', value: string) => {
-      setFaqs(
-        faqs.map((faq) =>
-          faq.id === id ? { ...faq, [field]: value } : faq
-        )
+      setFaqs((prev) =>
+        prev.map((faq) => (faq.id === id ? { ...faq, [field]: value } : faq)),
       );
       setIsDirty(true);
     },
-    [faqs]
+    [],
   );
 
   const handleDeleteFaq = useCallback(
     (id: string) => {
-      const updated = faqs
-        .filter((faq) => faq.id !== id)
-        .map((faq, index) => ({ ...faq, order: index }));
-      setFaqs(updated);
+      setFaqs((prev) =>
+        prev
+          .filter((faq) => faq.id !== id)
+          .map((faq, index) => ({ ...faq, order: index })),
+      );
       setIsDirty(true);
     },
-    [faqs]
+    [],
   );
 
   const handleMoveUp = useCallback(
     (index: number) => {
       if (index === 0) return;
-      const updated = [...faqs];
-      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-      setFaqs(updated.map((faq, i) => ({ ...faq, order: i })));
+      setFaqs((prev) => {
+        const updated = [...prev];
+        [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+        return updated.map((faq, i) => ({ ...faq, order: i }));
+      });
       setIsDirty(true);
     },
-    [faqs]
+    [],
   );
 
   const handleMoveDown = useCallback(
     (index: number) => {
-      if (index === faqs.length - 1) return;
-      const updated = [...faqs];
-      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-      setFaqs(updated.map((faq, i) => ({ ...faq, order: i })));
+      setFaqs((prev) => {
+        if (index === prev.length - 1) return prev;
+        const updated = [...prev];
+        [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+        return updated.map((faq, i) => ({ ...faq, order: i }));
+      });
       setIsDirty(true);
     },
-    [faqs]
+    [],
   );
 
   const handleSave = useCallback(() => {
     // Filter out FAQs where both question and answer are empty (draft FAQs)
-    const validFaqs = faqs.filter(
-      (faq) => faq.question.trim() !== '' || faq.answer.trim() !== ''
-    );
-    
+    const validFaqs = faqs.filter((faq) => faq.question.trim() !== '' || faq.answer.trim() !== '');
+
     // Check if any FAQ has only question or only answer (incomplete)
     const incompleteFaqs = validFaqs.filter(
-      (faq) => 
+      (faq) =>
         (faq.question.trim() === '' && faq.answer.trim() !== '') ||
-        (faq.question.trim() !== '' && faq.answer.trim() === '')
+        (faq.question.trim() !== '' && faq.answer.trim() === ''),
     );
-    
+
     if (incompleteFaqs.length > 0) {
       toast.error('Please fill both question and answer for all FAQs');
       return;
     }
-    
-    updateFaqs.execute({ faqs: validFaqs });
+
+    // Normalize order values to prevent gaps/duplicates (e.g., [0, 2] -> [0, 1])
+    const normalized = validFaqs.map((faq, index) => ({ ...faq, order: index }));
+
+    // Also normalize local state (remove empty drafts + keep UI consistent)
+    setFaqs(normalized);
+
+    updateFaqs.execute({ faqs: normalized });
   }, [faqs, updateFaqs]);
 
   const isSaving = updateFaqs.status === 'executing';
