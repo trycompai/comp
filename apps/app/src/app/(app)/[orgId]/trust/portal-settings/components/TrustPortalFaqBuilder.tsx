@@ -194,7 +194,7 @@ export function TrustPortalFaqBuilder({
       <div className="space-y-3">
         {faqs.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No FAQs yet. Click "Add FAQ" below to get started.
+            No FAQs yet. Click "Add FAQ" to get started.
           </p>
         ) : (
           faqs.map((faq, index) => (
