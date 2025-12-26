@@ -10,7 +10,7 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Switch } from '@comp/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ExternalLink, FileText, Upload, Download, Eye, FileCheck2 } from 'lucide-react';
+import { ExternalLink, FileText, Upload, Download, Eye, FileCheck2, HelpCircle, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
+import { TrustPortalFaqMarkdown } from './TrustPortalFaqMarkdown';
 import {
   GDPR,
   HIPAA,
@@ -118,6 +119,7 @@ export function TrustPortalSwitch({
   iso9001,
   iso9001Status,
   friendlyUrl,
+  faqMarkdown,
   // File props - will be passed from page.tsx later
   iso27001FileName,
   iso42001FileName,
@@ -155,6 +157,7 @@ export function TrustPortalSwitch({
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
+  faqMarkdown: string | null;
   iso27001FileName?: string | null;
   iso42001FileName?: string | null;
   gdprFileName?: string | null;
@@ -425,6 +428,7 @@ export function TrustPortalSwitch({
   >('idle');
   const lastCheckedUrlRef = useRef<string>('');
   const processingResultRef = useRef<string>('');
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
 
   useEffect(() => {
     if (!debouncedFriendlyUrl || debouncedFriendlyUrl === (friendlyUrl ?? '')) {
@@ -537,7 +541,7 @@ export function TrustPortalSwitch({
             {form.watch('enabled') && (
               <div className="pt-2">
                 <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
-                <div className="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-4 lg:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="friendlyUrl"
@@ -658,14 +662,72 @@ export function TrustPortalSwitch({
                                   />
                                 </div>
                               </div>
-                              <p className="mt-1.5 text-xs text-muted-foreground">
-                                Used for branding across your trust portal
-                              </p>
                             </div>
                           </FormControl>
                         </FormItem>
                       )}
                     />
+                    <FormItem className="w-full mt-[2px] mb-0">
+                      <FormLabel>FAQ Content</FormLabel>
+                      <FormControl>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="default"
+                                className="w-full gap-2 justify-between group mb-0"
+                                onClick={() => setIsFaqOpen(!isFaqOpen)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <HelpCircle className="h-4 w-4" />
+                                  <span>
+                                    {isFaqOpen
+                                      ? 'Close FAQ Editor'
+                                      : faqMarkdown
+                                        ? 'Manage FAQ Content'
+                                        : 'Add FAQ Content'}
+                                  </span>
+                                  
+                                </div>
+                                {isFaqOpen ? (
+                                  <ChevronUp className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {faqMarkdown
+                                  ? 'Edit your frequently asked questions for the trust portal'
+                                  : 'Add frequently asked questions to display on your trust portal'}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </FormControl>
+                    </FormItem>
+                </div>
+                <div className="grid grid-cols-1 gap-x-4 lg:grid-cols-2 mt-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    Used for branding across your trust portal
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Edit your frequently asked questions for the trust portal
+                  </p>
+                </div>
+                <div
+                  className={`w-full lg:col-span-2 grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                    isFaqOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="pt-4">
+                      <TrustPortalFaqMarkdown initialMarkdown={faqMarkdown} orgId={orgId} />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1357,3 +1419,4 @@ function ComplianceFramework({
     </>
   );
 }
+

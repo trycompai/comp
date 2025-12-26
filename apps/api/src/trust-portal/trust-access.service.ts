@@ -1187,6 +1187,31 @@ export class TrustAccessService {
     }));
   }
 
+  /**
+   * Get FAQ markdown for a published trust portal.
+   *
+   * Recommended markdown format:
+   * - Use ### headings for questions (e.g., "### What is your security policy?")
+   * - Use regular markdown text for answers
+   * - Supports standard markdown: links, lists, code blocks, etc.
+   *
+   * Important: Render markdown WITHOUT rehype-raw (no raw HTML) for security.
+   *
+   * @param friendlyUrl - Trust portal friendly URL or organization ID
+   * @returns FAQ markdown content (empty string if not configured)
+   */
+  async getFaqMarkdown(friendlyUrl: string): Promise<{ markdown: string }> {
+    const trust = await this.findPublishedTrustByRouteId(friendlyUrl);
+    const organization = await db.organization.findUnique({
+      where: { id: trust.organizationId },
+      select: { trustPortalFaqMarkdown: true },
+    });
+
+    return {
+      markdown: organization?.trustPortalFaqMarkdown ?? '',
+    };
+  }
+
   async getComplianceResourceUrlByAccessToken(
     token: string,
     framework: TrustFramework,

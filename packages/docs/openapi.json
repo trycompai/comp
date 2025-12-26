@@ -8253,6 +8253,48 @@
         ]
       }
     },
+    "/v1/trust-access/{friendlyUrl}/faq-markdown": {
+      "get": {
+        "description": "Retrieve the FAQ markdown content for a published trust portal. Returns empty string if no FAQ is configured.",
+        "operationId": "TrustAccessController_getFaqMarkdown_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FAQ markdown returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "markdown": {
+                      "type": "string",
+                      "description": "FAQ markdown content (empty string if not configured)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trust portal not found or not published"
+          }
+        },
+        "summary": "Get FAQ markdown for trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
