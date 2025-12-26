@@ -424,8 +424,8 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
         vendors: vendors.map((v) => {
           const sanitized = sanitizeWebsite(v.website, v.name);
           return {
-            vendorId: v.id,
-            vendorName: v.name,
+          vendorId: v.id,
+          vendorName: v.name,
             // Only include vendorWebsite if it's a valid URL (undefined triggers @IsOptional)
             ...(sanitized && { vendorWebsite: sanitized }),
           };

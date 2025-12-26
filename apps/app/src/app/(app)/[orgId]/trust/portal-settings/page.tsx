@@ -12,7 +12,7 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
   const primaryColor = await fetchOrganizationPrimaryColor(orgId); // can be null
-  const faqMarkdown = await fetchOrganizationFaqMarkdown(orgId); // can be null
+  const faqs = await fetchOrganizationFaqs(orgId); // can be null
 
   return (
     <PageCore>
@@ -49,7 +49,7 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
             nen7510Status={trustPortal?.nen7510Status ?? 'started'}
             iso9001Status={trustPortal?.iso9001Status ?? 'started'}
             friendlyUrl={trustPortal?.friendlyUrl ?? null}
-            faqMarkdown={faqMarkdown}
+            faqs={faqs}
             iso27001FileName={certificateFiles.iso27001FileName}
             iso42001FileName={certificateFiles.iso42001FileName}
             gdprFileName={certificateFiles.gdprFileName}
@@ -229,15 +229,20 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
   return result;
 }
 
-async function fetchOrganizationFaqMarkdown(orgId: string): Promise<string | null> {
+async function fetchOrganizationFaqs(orgId: string): Promise<any[] | null> {
   try {
     const organization = await db.organization.findUnique({
       where: { id: orgId },
-      select: { trustPortalFaqMarkdown: true },
+      select: { trustPortalFaqs: true },
     });
-    return organization?.trustPortalFaqMarkdown ?? null;
+    
+    if (!organization?.trustPortalFaqs || organization.trustPortalFaqs === null) {
+      return null;
+    }
+
+    return Array.isArray(organization.trustPortalFaqs) ? organization.trustPortalFaqs : null;
   } catch (error) {
-    console.warn('Error fetching organization FAQ markdown:', error);
+    console.warn('Error fetching organization FAQs:', error);
     return null;
   }
 }

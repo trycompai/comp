@@ -8253,10 +8253,10 @@
         ]
       }
     },
-    "/v1/trust-access/{friendlyUrl}/faq-markdown": {
+    "/v1/trust-access/{friendlyUrl}/faqs": {
       "get": {
-        "description": "Retrieve the FAQ markdown content for a published trust portal. Returns empty string if no FAQ is configured.",
-        "operationId": "TrustAccessController_getFaqMarkdown_v1",
+        "description": "Retrieve the frequently asked questions for a published trust portal as structured data.",
+        "operationId": "TrustAccessController_getFaqs_v1",
         "parameters": [
           {
             "name": "friendlyUrl",
@@ -8270,15 +8270,32 @@
         ],
         "responses": {
           "200": {
-            "description": "FAQ markdown returned",
+            "description": "FAQs retrieved successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "markdown": {
-                      "type": "string",
-                      "description": "FAQ markdown content (empty string if not configured)"
+                    "faqs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "answer": {
+                            "type": "string"
+                          },
+                          "order": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "nullable": true
                     }
                   }
                 }
@@ -8286,10 +8303,10 @@
             }
           },
           "404": {
-            "description": "Trust portal not found or not published"
+            "description": "Trust site not found or not published"
           }
         },
-        "summary": "Get FAQ markdown for trust portal",
+        "summary": "Get FAQs for a trust portal",
         "tags": [
           "Trust Access"
         ]

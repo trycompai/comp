@@ -1200,16 +1200,15 @@ export class TrustAccessService {
    * @param friendlyUrl - Trust portal friendly URL or organization ID
    * @returns FAQ markdown content (empty string if not configured)
    */
-  async getFaqMarkdown(friendlyUrl: string): Promise<{ markdown: string }> {
+  async getFaqs(friendlyUrl: string): Promise<{ faqs: any[] | null }> {
     const trust = await this.findPublishedTrustByRouteId(friendlyUrl);
     const organization = await db.organization.findUnique({
       where: { id: trust.organizationId },
-      select: { trustPortalFaqMarkdown: true },
+      select: { trustPortalFaqs: true },
     });
 
-    return {
-      markdown: organization?.trustPortalFaqMarkdown ?? '',
-    };
+    const faqs = organization?.trustPortalFaqs;
+    return { faqs: Array.isArray(faqs) ? faqs : null };
   }
 
   async getComplianceResourceUrlByAccessToken(

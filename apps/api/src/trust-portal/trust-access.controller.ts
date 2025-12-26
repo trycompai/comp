@@ -489,12 +489,12 @@ export class TrustAccessController {
     );
   }
 
-  @Get(':friendlyUrl/faq-markdown')
+  @Get(':friendlyUrl/faqs')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Get FAQ markdown for trust portal',
+    summary: 'Get FAQs for a trust portal',
     description:
-      'Retrieve the FAQ markdown content for a published trust portal. Returns empty string if no FAQ is configured.',
+      'Retrieve the frequently asked questions for a published trust portal as structured data.',
   })
   @ApiParam({
     name: 'friendlyUrl',
@@ -502,22 +502,31 @@ export class TrustAccessController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'FAQ markdown returned',
+    description: 'FAQs retrieved successfully',
     schema: {
       type: 'object',
       properties: {
-        markdown: {
-          type: 'string',
-          description: 'FAQ markdown content (empty string if not configured)',
+        faqs: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              question: { type: 'string' },
+              answer: { type: 'string' },
+              order: { type: 'number' },
+            },
+          },
+          nullable: true,
         },
       },
     },
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
-    description: 'Trust portal not found or not published',
+    description: 'Trust site not found or not published',
   })
-  async getFaqMarkdown(@Param('friendlyUrl') friendlyUrl: string) {
-    return this.trustAccessService.getFaqMarkdown(friendlyUrl);
+  async getFaqs(@Param('friendlyUrl') friendlyUrl: string) {
+    return this.trustAccessService.getFaqs(friendlyUrl);
   }
 }
