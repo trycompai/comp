@@ -186,7 +186,7 @@ export const TASK_TEMPLATES = {
   /** Employee Descriptions */
   employeeDescriptions: 'frk_tt_684069a3a0dd8322b2ac3f03',
   /** 2FA */
-  '2fa': 'frk_tt_68406cd9dde2d8cd4c463fe0',
+  twoFactorAuth: 'frk_tt_68406cd9dde2d8cd4c463fe0', // 2FA
   /** Role-based Access Controls */
   rolebasedAccessControls: 'frk_tt_68e80544d9734e0402cfa807',
   /** Employee Performance Evaluations */
@@ -222,13 +222,13 @@ export const TASK_TEMPLATE_INFO: Record<
   TaskTemplateId,
   { name: string; description: string; department: string; frequency: string }
 > = {
-  frk_tt_68407ae5274a64092c305104: {
+  'frk_tt_68407ae5274a64092c305104': {
     name: 'Secure Secrets',
     description: `Use your cloud providers default secret manager for storing secrets. Don't commit secrets to Git and...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_6849c1a1038c3f18cfff47bf: {
+  'frk_tt_6849c1a1038c3f18cfff47bf': {
     name: 'Utility Monitoring',
     description: `Maintain a list of approved privileged utilities (e.g. iptables, tcpdump, disk‑encryption tools)
 
@@ -236,25 +236,25 @@ Sh...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68406951bd282273ebe286cc: {
+  'frk_tt_68406951bd282273ebe286cc': {
     name: 'Employee Verification',
     description: `Maintain a list of reference checks you made for every new hire. Verify the identity of every new hi...`,
     department: 'hr',
     frequency: 'yearly',
   },
-  frk_tt_68406e7abae2a9b16c2cc197: {
+  'frk_tt_68406e7abae2a9b16c2cc197': {
     name: 'Planning',
     description: `Make sure you have point in time recovery / backups enabled and that you test this works on an annua...`,
     department: 'gov',
     frequency: 'yearly',
   },
-  frk_tt_68406a514e90bb6e32e0b107: {
+  'frk_tt_68406a514e90bb6e32e0b107': {
     name: 'Contact Information',
     description: `You need to show what services/software you offer and provide clear instructions on how your custome...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68406f411fe27e47a0d6d5f3: {
+  'frk_tt_68406f411fe27e47a0d6d5f3': {
     name: 'TLS / HTTPS',
     description: `Ensure TLS / HTTPS is enabled.
 
@@ -262,19 +262,19 @@ Upload a screenshot from SSL Labs to show this is enabled....`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68406e353df3bc002994acef: {
+  'frk_tt_68406e353df3bc002994acef': {
     name: 'Secure Code',
     description: `Ensure dependabot or it's equivalent is enabled to automatically identify insecure or patched depend...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68406af04a4acb93083413b9: {
+  'frk_tt_68406af04a4acb93083413b9': {
     name: 'Monitoring & Alerting',
     description: `Ensure you have logging enabled in cloud environments (e.g. Google Cloud or Vercel) and review it pe...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_686b51339d7e9f8ef2081a70: {
+  'frk_tt_686b51339d7e9f8ef2081a70': {
     name: 'Data Masking',
     description: `Hide Sensitive fields
 
@@ -282,37 +282,37 @@ PCI: Mask PAN when displayed outside the secure CDE, ensuring only truncated ...
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68406d64f09f13271c14dd01: {
+  'frk_tt_68406d64f09f13271c14dd01': {
     name: 'Code Changes',
     description: `Enable branch protection on your main branch to prevent direct pushes and enforce pull requests. Ens...`,
     department: 'gov',
     frequency: 'yearly',
   },
-  frk_tt_684076a02261faf3d331289d: {
+  'frk_tt_684076a02261faf3d331289d': {
     name: 'Publish Policies',
     description: `Make sure all of the policies in Comp AI have been published and all employees have signed/agreed to...`,
     department: 'gov',
     frequency: 'yearly',
   },
-  frk_tt_68406903839203801ac8041a: {
+  'frk_tt_68406903839203801ac8041a': {
     name: 'Device List',
     description: `Keep and maintain a list of your devices (laptops/servers). If you install the Comp AI agent on your...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68b59e7a29bec89c57014868: {
+  'frk_tt_68b59e7a29bec89c57014868': {
     name: 'Statement of Applicability',
     description: `The Statement of Applicability identifies relevant ISO 27001 Annex A controls, explains their inclus...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68406d2e86acc048d1774ea6: {
+  'frk_tt_68406d2e86acc048d1774ea6': {
     name: 'App Availability',
     description: `Make sure your website or app doesn't slow down or crash because too many people are using it, or if...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68406eedf0f0ddd220ea19c2: {
+  'frk_tt_68406eedf0f0ddd220ea19c2': {
     name: 'Sanitized Inputs',
     description: `Implement input validation and sanitization using libraries such as Zod, Pydantic, or equivalent. 
 
@@ -320,37 +320,37 @@ PCI: Mask PAN when displayed outside the secure CDE, ensuring only truncated ...
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_6840796f77d8a0dff53f947a: {
+  'frk_tt_6840796f77d8a0dff53f947a': {
     name: 'Secure Devices',
     description: `Ensure all devices have BitLocker/FileVault enabled, screen lock enabled after 5 minutes (for mac) o...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68b5ce9dd597ac7d650e4915: {
+  'frk_tt_68b5ce9dd597ac7d650e4915': {
     name: 'Reassess Legal Basis for Processing',
     description: `Review and document the lawful basis for each processing activity under GDPR Article 6 (e.g., consen...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68b5ce9b5393ae083c3beadf: {
+  'frk_tt_68b5ce9b5393ae083c3beadf': {
     name: 'Appoint or Review Data Protection Officer',
     description: `Assess whether your organization is required to appoint a Data Protection Officer (DPO) under GDPR (...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68e52b2618cb9d9722c6edfd: {
+  'frk_tt_68e52b2618cb9d9722c6edfd': {
     name: 'Internal Security Audit',
     description: `Upload evidence of a recent internal information security audit - e.g., audit plan/scope, auditor in...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68cc327ff5d3130a1b42420b: {
+  'frk_tt_68cc327ff5d3130a1b42420b': {
     name: 'AI MS Communication Plan',
     description: `Document and maintain a plan outlining internal and external communication relevant to the AI MS: wh...`,
     department: 'hr',
     frequency: 'yearly',
   },
-  frk_tt_68c3248edf65e750909dfd07: {
+  'frk_tt_68c3248edf65e750909dfd07': {
     name: 'Attestation of Compliance',
     description: `Download and complete the AoC form. Once complete, upload the file here. 
 
@@ -358,73 +358,73 @@ For Merchants - https://d...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68c332c3bc6d696bb61e7351: {
+  'frk_tt_68c332c3bc6d696bb61e7351': {
     name: 'Self-Assessment Questionnaires',
     description: `- SAQ A: For merchants fully outsourcing all card data functions to PCI-validated 3rd parties (you r...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68b5ce9d508cacf8e4517b56: {
+  'frk_tt_68b5ce9d508cacf8e4517b56': {
     name: 'Review International Data Transfers',
     description: `Review and document all international data transfers to ensure compliance with GDPR Chapter V. Confi...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68cc25658bacb2ccff56adf9: {
+  'frk_tt_68cc25658bacb2ccff56adf9': {
     name: 'AI Context Register',
     description: `Maintain a register of internal and external issues relevant to AI systems, including organizational...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_6840791cac0a7b780dbaf932: {
+  'frk_tt_6840791cac0a7b780dbaf932': {
     name: 'Public Policies',
     description: `Add a comment with links to your privacy policy / terms of service. Ensure Privacy policy has  a for...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc27431d1266e3c77d7c0f: {
+  'frk_tt_68cc27431d1266e3c77d7c0f': {
     name: 'Stakeholder Register / Interested Parties Log',
     description: `Document a register of interested parties (e.g., regulators, customers, employees, partners, societa...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68e52b26bf0e656af9e4e9c3: {
+  'frk_tt_68e52b26bf0e656af9e4e9c3': {
     name: 'Encryption at Rest',
     description: `Upload evidence that all data stores are encrypted at rest -cloud console screenshots showing encryp...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68b5ce9c6c1bdb171870f623: {
+  'frk_tt_68b5ce9c6c1bdb171870f623': {
     name: 'Manage Third-party and EU Representative Relationships',
     description: `Ensure all third-party processors have GDPR-compliant Data Processing Agreements (DPAs) in place. If...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68e52a484cad0014de7a628f: {
+  'frk_tt_68e52a484cad0014de7a628f': {
     name: 'Separation of Environments',
     description: `Upload proof that dev/test/staging and production are segregated - e.g., a cloud console screenshot ...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68406b4f40c87c12ae0479ce: {
+  'frk_tt_68406b4f40c87c12ae0479ce': {
     name: 'Incident Response',
     description: `Keep a record of all security incidents and how they were resolved. If there haven't been any, add a...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68c8309516fdbc514404988d: {
+  'frk_tt_68c8309516fdbc514404988d': {
     name: 'Board Meetings & Independence',
     description: `Submit the most recent board (or management) meeting agenda and minutes covering security topics. In...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68cc2ce9cb0d2a4774975ace: {
+  'frk_tt_68cc2ce9cb0d2a4774975ace': {
     name: 'AI MS Roles & Responsibilities Assignment',
     description: `Define and communicate responsibilities for the AI MS, including who ensures compliance with 42001 r...`,
     department: 'hr',
     frequency: 'yearly',
   },
-  frk_tt_6849aad98c50d734dd904d98: {
+  'frk_tt_6849aad98c50d734dd904d98': {
     name: 'Diagramming',
     description: `Architecture Diagram: Draw a single‑page diagram (Figma, Draw.io, Lucidchart—whatever is fastest)
 
@@ -432,79 +432,79 @@ F...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc2f30b51920e5515465e6: {
+  'frk_tt_68cc2f30b51920e5515465e6': {
     name: 'AI System Impact Assessment Procedure',
     description: `Define a process to identify/assess potential consequences of AI system deployment, intended use, an...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc2fa423533e602e4dee25: {
+  'frk_tt_68cc2fa423533e602e4dee25': {
     name: 'AI Objectives Register',
     description: `Define measurable AI objectives (aligned to AI Policy and compliance requirements), assign resources...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68cc301a8fd914534ab95b11: {
+  'frk_tt_68cc301a8fd914534ab95b11': {
     name: 'AI System Change Log',
     description: `Maintain a documented log of changes to the AI management system, including model retraining, policy...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc30fbbeabb8a4c2f56082: {
+  'frk_tt_68cc30fbbeabb8a4c2f56082': {
     name: 'AI MS Resource Allocation Record',
     description: `Maintain documented evidence of resources allocated for the AI MS, including skills, tools, infrastr...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc395b90e179fe3209b795: {
+  'frk_tt_68cc395b90e179fe3209b795': {
     name: 'AI MS Operational Control Procedure',
     description: `Document and implement an AI Operational Controls procedure defining process criteria, monitoring ef...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc3f427e309607f1ad5ba4: {
+  'frk_tt_68cc3f427e309607f1ad5ba4': {
     name: 'AI Risk Treatment Implementation Record',
     description: `Maintain documented evidence of risk treatment implementation corresponding to the treatment plan. R...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc3ffab3fb703917f51e19: {
+  'frk_tt_68cc3ffab3fb703917f51e19': {
     name: 'AI Impact Assessment Log',
     description: `Conduct AI system impact assessments at planned intervals or when significant changes occur. Documen...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc4190caf0b458effcee6e: {
+  'frk_tt_68cc4190caf0b458effcee6e': {
     name: 'AI MS Internal Audit Program',
     description: `Establish and maintain an internal audit program for the AI MS. Define frequency, methods, auditor r...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc41ad7cbd2839c0bc7104: {
+  'frk_tt_68cc41ad7cbd2839c0bc7104': {
     name: 'AI Internal Audit Reports',
     description: `Conduct AI MS audits at planned intervals. Maintain documented evidence of objectives, criteria, sco...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68cc459ed57b70a4cb631e72: {
+  'frk_tt_68cc459ed57b70a4cb631e72': {
     name: 'AI MS Continual Improvement Log',
     description: `Maintain a documented continual improvement log for the AI MS. Capture decisions, actions, and imple...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68d28f68f117d45c0adcba33: {
+  'frk_tt_68d28f68f117d45c0adcba33': {
     name: 'Legal Proof of Company Registration',
     description: `Upload official proof of legal entity registration—e.g., a certificate of incorporation or governmen...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_68cc39efd7916e240451cae5: {
+  'frk_tt_68cc39efd7916e240451cae5': {
     name: 'AI Risk Assessment Execution (Log)',
     description: `Add AI related Risks to the risk register....`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68dc1a3a9b92bb4ffb89e334: {
+  'frk_tt_68dc1a3a9b92bb4ffb89e334': {
     name: 'Systems Description',
     description: `Provide a short paragraph giving a description of your app & any architecture around it.
 
@@ -512,101 +512,101 @@ F...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68e1d5667f2b14a9b0c2daf8: {
+  'frk_tt_68e1d5667f2b14a9b0c2daf8': {
     name: 'NEN 7510 Risk Assessments',
     description: `Create and assess risks, in the risk register tab, that identifies and evaluates information‑securit...`,
     department: 'hr',
     frequency: 'yearly',
   },
-  frk_tt_68e1d619944625cc1876540c: {
+  'frk_tt_68e1d619944625cc1876540c': {
     name: 'Management Review Minutes',
     description: `Prove that top management reviews the performance of the ISMS - including incidents, risks, audits, ...`,
     department: 'admin',
     frequency: 'quarterly',
   },
-  frk_tt_68e52b274a7c38c62db08e80: {
+  'frk_tt_68e52b274a7c38c62db08e80': {
     name: 'Organisation Chart',
     description: `Upload a hierarchical organization chart showing reporting lines, with each box including the person...`,
     department: 'hr',
     frequency: 'yearly',
   },
-  frk_tt_684069a3a0dd8322b2ac3f03: {
+  'frk_tt_684069a3a0dd8322b2ac3f03': {
     name: 'Employee Descriptions',
     description: `We need to make sure every employee has a clear job description. Once a year, you'll meet with each ...`,
     department: 'hr',
     frequency: 'yearly',
   },
-  frk_tt_68406cd9dde2d8cd4c463fe0: {
+  'frk_tt_68406cd9dde2d8cd4c463fe0': {
     name: '2FA',
     description: `Always enable 2FA/MFA (Two-Factor Authentication/Multi-Factor Authentication) on Google Workspace, t...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68e80544d9734e0402cfa807: {
+  'frk_tt_68e80544d9734e0402cfa807': {
     name: 'Role-based Access Controls',
     description: `Upload proof that access is managed by roles- RBAC matrix and role definitions or use our template:
 ...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68e52b27c4bdbf1b24051b8b: {
+  'frk_tt_68e52b27c4bdbf1b24051b8b': {
     name: 'Employee Performance Evaluations',
     description: `Employee Performance Evaluations
 Upload one recent employee performance evaluation (anonymized) - ei...`,
     department: 'hr',
     frequency: 'yearly',
   },
-  frk_tt_68406ca292d9fffb264991b9: {
+  'frk_tt_68406ca292d9fffb264991b9': {
     name: 'Employee Access',
     description: `Ensure you are using an identity provider like Google Workspace and upload a screenshot of a list of...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68e80545a8b432bc59eb8037: {
+  'frk_tt_68e80545a8b432bc59eb8037': {
     name: 'Incident Response Tabletop Exercise',
     description: `Upload evidence of a recent incident response tabletop exercise - agenda/scenario, attendee list and...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68e805457c2dcc784e72e3cc: {
+  'frk_tt_68e805457c2dcc784e72e3cc': {
     name: 'Access Review Log',
     description: `Upload an access review log for key systems -showing review dates, reviewers/owners, users/roles rev...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68e52b269db179c434734766: {
+  'frk_tt_68e52b269db179c434734766': {
     name: 'Backup Restoration Test',
     description: `Provide evidence of a recent backup restoration test - either share a link to a short screen recordi...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_68e52b26b166e2c0a0d11956: {
+  'frk_tt_68e52b26b166e2c0a0d11956': {
     name: 'Backup logs',
     description: `Upload backup job logs covering the last 10 consecutive days (all critical systems) - e.g., exported...`,
     department: 'it',
     frequency: 'yearly',
   },
-  frk_tt_6901e040a21d5e8fdc9736e8: {
+  'frk_tt_6901e040a21d5e8fdc9736e8': {
     name: 'Building / Workplace Rules',
     description: `Email or note from your building contact (landlord, building manager, or coworking operator) that in...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_6901e041bb02b41fa3b7dca9: {
+  'frk_tt_6901e041bb02b41fa3b7dca9': {
     name: 'Office Access & Door Monitoring',
     description: `If you use a smart lock/alarm system:
 - Access list (export or simple table): name, role, code/badge...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_6901e0aa49fb834934748c93: {
+  'frk_tt_6901e0aa49fb834934748c93': {
     name: 'Visitor Control',
     description: `Upload a Visitor log sample for a recent week (paper scan or form export).
 Photo of visitor badge/st...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_6901e0aa6d3f2bbab1ea5b84: {
+  'frk_tt_6901e0aa6d3f2bbab1ea5b84': {
     name: 'Secure Storage',
     description: `Physical storage (cabinet/media):
 - Photo of locked cabinet
@@ -615,13 +615,13 @@ Photo of visitor badge/st...`,
     department: 'admin',
     frequency: 'yearly',
   },
-  frk_tt_69033a6bfeb4759be36257bc: {
+  'frk_tt_69033a6bfeb4759be36257bc': {
     name: 'Infrastructure Inventory',
     description: `Upload an up-to-date inventory of infrastructure assets—cloud accounts/resources (compute, DBs, stor...`,
     department: 'itsm',
     frequency: 'yearly',
   },
-  frk_tt_68fa2a852e70f757188f0c39: {
+  'frk_tt_68fa2a852e70f757188f0c39': {
     name: 'Production Firewall & No-Public-Access Controls',
     description: `Upload proof that production hosts enforce a deny-by-default firewall and that production databases ...`,
     department: 'itsm',
