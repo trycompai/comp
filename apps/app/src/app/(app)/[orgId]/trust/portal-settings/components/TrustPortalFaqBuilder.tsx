@@ -17,6 +17,15 @@ const normalizeFaqs = (items: FaqItem[]): FaqItem[] => {
     .map((faq, index) => ({ ...faq, order: index }));
 };
 
+const createTempFaqId = (): string => {
+  // Use a collision-safe id for React keys/state updates.
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `temp-${crypto.randomUUID()}`;
+  }
+
+  return `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 export function TrustPortalFaqBuilder({
   initialFaqs,
   orgId,
@@ -43,7 +52,7 @@ export function TrustPortalFaqBuilder({
     setFaqs((prev) => {
       const normalized = normalizeFaqs(prev);
       const newFaq: FaqItem = {
-        id: `temp-${Date.now()}`,
+        id: createTempFaqId(),
         question: '',
         answer: '',
         order: normalized.length,
@@ -90,13 +99,20 @@ export function TrustPortalFaqBuilder({
 
   const handleMoveDown = useCallback(
     (index: number) => {
+      let didMove = false;
+
       setFaqs((prev) => {
         if (index === prev.length - 1) return prev;
+        didMove = true;
         const updated = [...prev];
         [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
         return updated.map((faq, i) => ({ ...faq, order: i }));
       });
-      setIsDirty(true);
+
+      // Only mark dirty if something actually changed.
+      if (didMove) {
+        setIsDirty(true);
+      }
     },
     [],
   );
