@@ -18,7 +18,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Textarea } from '@comp/ui/textarea';
+import { CommentRichTextField } from './CommentRichTextField';
+import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import type { JSONContent } from '@tiptap/react';
+import { useMemo } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -39,6 +42,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils';
 import type { CommentWithAuthor } from './Comments';
+import { CommentContentView } from './CommentContentView';
 
 // Helper function to generate gravatar URL
 function getGravatarUrl(email: string | null | undefined, size = 64): string {
@@ -86,17 +90,50 @@ interface CommentItemProps {
 
 export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(comment.content);
+  const [editedContent, setEditedContent] = useState<JSONContent | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Use API hooks instead of server actions
   const { updateComment, deleteComment } = useCommentActions();
   const { get: apiGet } = useApi();
+  const { members } = useOrganizationMembers();
+
+  // Convert members to MentionUser format
+  const mentionMembers = useMemo(() => {
+    if (!members) return [];
+    return members.map((member) => ({
+      id: member.user.id,
+      name: member.user.name || member.user.email || 'Unknown',
+      email: member.user.email || '',
+      image: member.user.image,
+    }));
+  }, [members]);
+
+  // Parse comment content to JSONContent
+  const parseContent = (content: string): JSONContent | null => {
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
+        return parsed as JSONContent;
+      }
+    } catch {
+      // Not JSON, return null
+    }
+    return null;
+  };
+
+  // Convert JSONContent to string for API
+  const contentToString = (content: JSONContent | null): string => {
+    if (!content) return '';
+    return JSON.stringify(content);
+  };
 
   const handleEditToggle = () => {
     if (!isEditing) {
-      setEditedContent(comment.content);
+      // Parse existing content or create empty content
+      const parsed = parseContent(comment.content);
+      setEditedContent(parsed);
     }
     setIsEditing(!isEditing);
   };
@@ -106,7 +143,8 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   };
 
   const handleSaveEdit = async () => {
-    const contentChanged = editedContent !== comment.content;
+    const contentString = contentToString(editedContent);
+    const contentChanged = contentString !== comment.content;
 
     if (!contentChanged) {
       toast.info('No changes detected.');
@@ -116,7 +154,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
 
     try {
       // Use API hook directly instead of server action
-      await updateComment(comment.id, { content: editedContent });
+      await updateComment(comment.id, { content: contentString });
 
       toast.success('Comment updated successfully.');
       refreshComments();
@@ -238,18 +276,14 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
             </div>
 
             {!isEditing ? (
-              <p className="whitespace-pre-wrap break-words">
-                {renderContentWithLinks(comment.content)}
-              </p>
+              <CommentContentView content={comment.content} />
             ) : (
-              <Textarea
+              <CommentRichTextField
                 value={editedContent}
-                onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
-                  setEditedContent(e.target.value)
-                }
-                className="bg-muted/50 border-border min-h-[80px] text-sm resize-none"
+                onChange={setEditedContent}
+                members={mentionMembers}
+                disabled={false}
                 placeholder="Edit comment..."
-                autoFocus
               />
             )}
 

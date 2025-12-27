@@ -138,16 +138,15 @@ export class QuestionnaireService {
       dto.organizationId,
     );
     console.log(Date.now(), 'Generated answers for questions');
-    
-    const vendorName =
-      dto.vendorName || dto.fileName || 'questionnaire';
-    
+
+    const vendorName = dto.vendorName || dto.fileName || 'questionnaire';
+
     // Check if we need to export in all formats
     if (dto.exportInAllExtensions) {
       // Generate all three formats
       const formats: ExportFormat[] = ['pdf', 'csv', 'xlsx'];
       const zip = new AdmZip();
-      
+
       for (const format of formats) {
         const exportFile = generateExportFile(
           answered.map((a) => ({ question: a.question, answer: a.answer })),
@@ -156,24 +155,24 @@ export class QuestionnaireService {
         );
         zip.addFile(exportFile.filename, exportFile.fileBuffer);
       }
-      
+
       const zipBuffer = zip.toBuffer();
-      
+
       await persistQuestionnaireResult(
         {
-        organizationId: dto.organizationId,
-        fileName: dto.fileName || vendorName,
-        fileType: dto.fileType,
-        fileSize:
-          uploadInfo?.fileSize ??
-          (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
-        s3Key: uploadInfo?.s3Key ?? null,
-        questionsAndAnswers: answered,
-        source: dto.source || 'internal',
+          organizationId: dto.organizationId,
+          fileName: dto.fileName || vendorName,
+          fileType: dto.fileType,
+          fileSize:
+            uploadInfo?.fileSize ??
+            (dto.fileData ? Buffer.from(dto.fileData, 'base64').length : 0),
+          s3Key: uploadInfo?.s3Key ?? null,
+          questionsAndAnswers: answered,
+          source: dto.source || 'internal',
         },
         this.storageLogger,
       );
-      
+
       return {
         fileBuffer: zipBuffer,
         mimeType: 'application/zip',
@@ -181,7 +180,7 @@ export class QuestionnaireService {
         questionsAndAnswers: answered,
       };
     }
-    
+
     // Single format export (default behavior)
     const exportFile = generateExportFile(
       answered.map((a) => ({ question: a.question, answer: a.answer })),

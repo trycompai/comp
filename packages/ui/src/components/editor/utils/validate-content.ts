@@ -107,6 +107,12 @@ function fixNode(node: any): JSONContent | null {
       return fixCodeBlock(node);
     case 'hardBreak':
       return { type: 'hardBreak' };
+    case 'fileAttachment':
+      // File attachment nodes - preserve all attributes
+      return {
+        type: 'fileAttachment',
+        ...(attrs && typeof attrs === 'object' && { attrs }),
+      };
     default:
       // For other valid nodes, just fix their content if they have any
       return {

@@ -1,6 +1,6 @@
 'use server';
 
-import { authActionClient } from '@/actions/safe-action';
+import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { db } from '@db';
 import { z } from 'zod';
 
@@ -8,7 +8,7 @@ const schema = z.object({
   name: z.string().min(1),
 });
 
-export const searchGlobalVendorsAction = authActionClient
+export const searchGlobalVendorsAction = authActionClientWithoutOrg
   .inputSchema(schema)
   .metadata({
     name: 'search-global-vendors',

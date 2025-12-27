@@ -75,7 +75,7 @@ export default async function Page({
             },
           ]}
         />
-        <CreateVendorSheet assignees={assignees} />
+        <CreateVendorSheet assignees={assignees} organizationId={orgId} />
       </div>
     );
   }

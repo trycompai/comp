@@ -11,6 +11,8 @@ const DEFAULT_PREFERENCES: EmailPreferences = {
   taskReminders: true,
   weeklyTaskDigest: true,
   unassignedItemsNotifications: true,
+  taskMentions: true,
+  taskAssignments: true,
 };
 
 async function fetchUserPreferences(
@@ -38,6 +40,8 @@ async function fetchUserPreferences(
         taskReminders: false,
         weeklyTaskDigest: false,
         unassignedItemsNotifications: false,
+        taskMentions: false,
+        taskAssignments: false,
       },
     };
   }

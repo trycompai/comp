@@ -130,8 +130,13 @@ export class FleetService {
         hostIds,
       };
     } catch (error) {
-      this.logger.error(`Failed to remove hosts for label ${fleetDmLabelId}:`, error);
-      throw new Error(`Failed to remove hosts for label ${fleetDmLabelId}: ${error.message}`);
+      this.logger.error(
+        `Failed to remove hosts for label ${fleetDmLabelId}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to remove hosts for label ${fleetDmLabelId}: ${error.message}`,
+      );
     }
   }
 }

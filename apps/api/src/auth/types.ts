@@ -6,6 +6,7 @@ export interface AuthenticatedRequest extends Request {
   isApiKey: boolean;
   userId?: string;
   userEmail?: string;
+  userRoles: string[] | null;
 }
 
 export interface AuthContext {
@@ -14,4 +15,5 @@ export interface AuthContext {
   isApiKey: boolean;
   userId?: string; // Only available for JWT auth
   userEmail?: string; // Only available for JWT auth
+  userRoles: string[] | null;
 }

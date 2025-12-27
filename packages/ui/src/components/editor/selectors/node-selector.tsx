@@ -92,7 +92,7 @@ export const NodeSelector = ({ open, onOpenChange, editor }: NodeSelectorProps) 
   return (
     <Popover modal={true} open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild className="hover:bg-accent gap-2 rounded-sm border-none focus:ring-0">
-        <Button size="sm" variant="ghost" className="gap-2">
+        <Button type="button" size="sm" variant="ghost" className="gap-2">
           <span className="text-sm whitespace-nowrap">{activeItem.name}</span>
           <ChevronDown className="h-4 w-4" />
         </Button>

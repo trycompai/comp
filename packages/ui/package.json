@@ -430,6 +430,18 @@
       "types": "./dist/components/editor/selectors/link-selector.d.ts",
       "import": "./dist/components/editor/selectors/link-selector.js"
     },
+    "./editor/extensions/mention": {
+      "types": "./dist/components/editor/extensions/mention.d.ts",
+      "import": "./dist/components/editor/extensions/mention.js"
+    },
+    "./editor/extensions/file-attachment": {
+      "types": "./dist/components/editor/extensions/file-attachment.d.ts",
+      "import": "./dist/components/editor/extensions/file-attachment.js"
+    },
+    "./editor/extensions/file-attachment-view": {
+      "types": "./dist/components/editor/extensions/file-attachment-view.d.ts",
+      "import": "./dist/components/editor/extensions/file-attachment-view.js"
+    },
     "./diff/index": {
       "types": "./dist/components/diff/index.d.ts",
       "import": "./dist/components/diff/index.js"

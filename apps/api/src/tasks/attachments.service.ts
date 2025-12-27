@@ -20,7 +20,7 @@ import { UploadAttachmentDto } from './dto/upload-attachment.dto';
 export class AttachmentsService {
   private s3Client: S3Client;
   private bucketName: string;
-  private readonly MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+  private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {

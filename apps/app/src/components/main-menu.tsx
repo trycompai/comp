@@ -110,7 +110,7 @@ export function MainMenu({
     {
       id: 'tasks',
       path: '/:organizationId/tasks',
-      name: 'Tasks',
+      name: 'Evidence',
       disabled: false,
       icon: ListCheck,
       protected: false,

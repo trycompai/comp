@@ -1,0 +1,55 @@
+model TaskItem {
+  id          String            @id @default(dbgenerated("generate_prefixed_cuid('tski'::text)"))
+  title       String
+  description String?
+  status      TaskItemStatus    @default(todo)
+  priority    TaskItemPriority  @default(medium)
+  
+  // Polymorphic relation (like Comment and Attachment)
+  entityId   String
+  entityType TaskItemEntityType
+  
+  // Assignment (nullable)
+  assigneeId  String?
+  assignee   Member?           @relation("TaskItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  
+  // Creator & Updater
+  createdById String
+  createdBy   Member           @relation("TaskItemCreator", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   Member?          @relation("TaskItemUpdater", fields: [updatedById], references: [id])
+  
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([entityId, entityType])
+  @@index([organizationId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([priority])
+}
+
+enum TaskItemStatus {
+  todo
+  in_progress
+  in_review
+  done
+  canceled
+}
+
+enum TaskItemPriority {
+  urgent
+  high
+  medium
+  low
+}
+
+enum TaskItemEntityType {
+  vendor
+  risk
+}

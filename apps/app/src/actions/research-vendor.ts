@@ -3,9 +3,9 @@
 import { researchVendor } from '@/trigger/tasks/scrape/research';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
-import { authActionClient } from './safe-action';
+import { authActionClientWithoutOrg } from './safe-action';
 
-export const researchVendorAction = authActionClient
+export const researchVendorAction = authActionClientWithoutOrg
   .inputSchema(
     z.object({
       website: z.string().url({ message: 'Invalid URL format' }),
@@ -14,17 +14,8 @@ export const researchVendorAction = authActionClient
   .metadata({
     name: 'research-vendor',
   })
-  .action(async ({ parsedInput: { website }, ctx: { session } }) => {
+  .action(async ({ parsedInput: { website } }) => {
     try {
-      const { activeOrganizationId } = session;
-
-      if (!activeOrganizationId) {
-        return {
-          success: false,
-          error: 'Not authorized',
-        };
-      }
-
       const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
         website,
       });

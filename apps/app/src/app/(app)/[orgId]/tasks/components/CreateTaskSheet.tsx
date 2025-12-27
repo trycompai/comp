@@ -56,12 +56,12 @@ export function CreateTaskSheet({
 
   const createTask = useAction(createTaskAction, {
     onSuccess: () => {
-      toast.success('Task created successfully');
+      toast.success('Evidence created successfully');
       setCreateTaskOpen(null);
       form.reset();
     },
     onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to create task');
+      toast.error(error.error?.serverError || 'Failed to create evidence');
     },
   });
 
@@ -164,7 +164,7 @@ export function CreateTaskSheet({
           name="taskTemplateId"
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Task Template (Optional)</FormLabel>
+              <FormLabel>Evidence Template (Optional)</FormLabel>
               <Select
                 value={field.value || 'none'}
                 onValueChange={(value) => handleTaskTemplateChange(value, field.onChange)}
@@ -193,11 +193,11 @@ export function CreateTaskSheet({
           name="title"
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Task Title</FormLabel>
+              <FormLabel>Evidence Title</FormLabel>
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="A short, descriptive title for the task"
+                  placeholder="A short, descriptive title for the evidence"
                   autoCorrect="off"
                   className="w-full"
                 />
@@ -349,7 +349,7 @@ export function CreateTaskSheet({
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={createTask.status === 'executing'}>
             <div className="flex items-center justify-center">
-              Create Task
+              Create Evidence
               <ArrowRightIcon className="ml-2 h-4 w-4" />
             </div>
           </Button>
@@ -372,7 +372,7 @@ export function CreateTaskSheet({
         <Sheet open={isOpen} onOpenChange={handleOpenChange}>
           <SheetContent stack className="flex flex-col overflow-visible [&>div]:!overflow-visible">
             <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-              <SheetTitle>Create New Task</SheetTitle>
+              <SheetTitle>Create New Evidence</SheetTitle>
               <Button
                 size="icon"
                 variant="ghost"
@@ -394,7 +394,7 @@ export function CreateTaskSheet({
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>Create New Task</DrawerTitle>
+      <DrawerTitle hidden>Create New Evidence</DrawerTitle>
       <DrawerContent className="p-6">
         <div className="w-full">{taskForm}</div>
       </DrawerContent>

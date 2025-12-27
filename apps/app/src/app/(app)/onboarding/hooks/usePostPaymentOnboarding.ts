@@ -126,8 +126,9 @@ export function usePostPaymentOnboarding({
           total_steps: steps.length,
         });
 
-        // Redirect to the organization dashboard
-        router.push(data.redirectUrl);
+        // Hard navigate to ensure updated auth cookies (active org) are applied immediately.
+        // This prevents flakiness where the app still uses the previous activeOrganizationId.
+        window.location.assign(data.redirectUrl);
       } else {
         toast.error('Failed to complete onboarding');
         setIsFinalizing(false);

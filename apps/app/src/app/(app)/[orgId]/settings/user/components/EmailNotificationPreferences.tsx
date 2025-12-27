@@ -20,6 +20,8 @@ interface EmailPreferences {
   taskReminders: boolean;
   weeklyTaskDigest: boolean;
   unassignedItemsNotifications: boolean;
+  taskMentions: boolean;
+  taskAssignments: boolean;
 }
 
 interface Props {
@@ -59,6 +61,8 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
       taskReminders: !allEnabled,
       weeklyTaskDigest: !allEnabled,
       unassignedItemsNotifications: !allEnabled,
+      taskMentions: !allEnabled,
+      taskAssignments: !allEnabled,
     });
   };
 
@@ -146,6 +150,34 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
               <div className="font-medium text-foreground">Unassigned Items Notifications</div>
               <div className="text-sm text-muted-foreground">
                 Receive notifications when items need reassignment after a member is removed
+              </div>
+            </div>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+            <Checkbox
+              checked={preferences.taskMentions}
+              onCheckedChange={(checked) => handleToggle('taskMentions', checked === true)}
+              className="mt-1 shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-foreground">Task Mentions</div>
+              <div className="text-sm text-muted-foreground">
+                Receive notifications when someone mentions you in a task
+              </div>
+            </div>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+            <Checkbox
+              checked={preferences.taskAssignments}
+              onCheckedChange={(checked) => handleToggle('taskAssignments', checked === true)}
+              className="mt-1 shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-foreground">Task Assignments</div>
+              <div className="text-sm text-muted-foreground">
+                Receive notifications when someone assigns a task to you
               </div>
             </div>
           </label>

@@ -488,4 +488,45 @@ export class TrustAccessController {
       framework as any,
     );
   }
+
+  @Get(':friendlyUrl/faqs')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get FAQs for a trust portal',
+    description:
+      'Retrieve the frequently asked questions for a published trust portal as structured data.',
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'FAQs retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        faqs: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              question: { type: 'string' },
+              answer: { type: 'string' },
+              order: { type: 'number' },
+            },
+          },
+          nullable: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Trust site not found or not published',
+  })
+  async getFaqs(@Param('friendlyUrl') friendlyUrl: string) {
+    return this.trustAccessService.getFaqs(friendlyUrl);
+  }
 }

@@ -3,13 +3,17 @@ const DEFAULT_PREFERENCES = {
   taskReminders: true,
   weeklyTaskDigest: true,
   unassignedItemsNotifications: true,
+  taskMentions: true,
+  taskAssignments: true,
 };
 
 type EmailPreferenceType =
   | 'policyNotifications'
   | 'taskReminders'
   | 'weeklyTaskDigest'
-  | 'unassignedItemsNotifications';
+  | 'unassignedItemsNotifications'
+  | 'taskMentions'
+  | 'taskAssignments';
 
 /**
  * Helper function to check if a user is unsubscribed from a specific type of email notification

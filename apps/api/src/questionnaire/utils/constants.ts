@@ -8,7 +8,7 @@ export const MIN_CHUNK_SIZE_CHARS = 5_000;
 export const MAX_QUESTIONS_PER_CHUNK = 1;
 
 // File size limits
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+export const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
 // LLM Model identifiers
 export const PARSING_MODEL = 'gpt-5-mini';

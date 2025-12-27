@@ -14,6 +14,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
+export * from './extensions/file-attachment';
+export * from './extensions/mention';
 
 type DefaultExtensionsOptions = {
   placeholder?: string;

@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { AttachmentsService } from '../attachments/attachments.service';
@@ -11,10 +12,41 @@ import {
   CommentResponseDto,
 } from './dto/comment-responses.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CommentMentionNotifierService } from './comment-mention-notifier.service';
+
+// Reuse the extract mentions utility
+function extractMentionedUserIds(content: string | null): string[] {
+  if (!content) return [];
+
+  try {
+    const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+    if (!parsed || typeof parsed !== 'object') return [];
+
+    const mentionedUserIds: string[] = [];
+    function traverse(node: any) {
+      if (!node || typeof node !== 'object') return;
+      if (node.type === 'mention' && node.attrs?.id) {
+        mentionedUserIds.push(node.attrs.id);
+      }
+      if (Array.isArray(node.content)) {
+        node.content.forEach(traverse);
+      }
+    }
+    traverse(parsed);
+    return [...new Set(mentionedUserIds)];
+  } catch {
+    return [];
+  }
+}
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly attachmentsService: AttachmentsService) {}
+  private readonly logger = new Logger(CommentsService.name);
+
+  constructor(
+    private readonly attachmentsService: AttachmentsService,
+    private readonly mentionNotifier: CommentMentionNotifierService,
+  ) {}
 
   /**
    * Validate that the target entity exists and belongs to the organization
@@ -28,6 +60,19 @@ export class CommentsService {
 
     switch (entityType) {
       case CommentEntityType.task: {
+        // Backward compatible:
+        // - TaskItem detail view uses CommentEntityType.task with a TaskItem id
+        // - Legacy compliance "Task" pages also use CommentEntityType.task with a Task id
+        //
+        // Prefer TaskItem lookup first, then fall back to Task.
+        const taskItem = await db.taskItem.findFirst({
+          where: { id: entityId, organizationId },
+        });
+        if (taskItem) {
+          entityExists = true;
+          break;
+        }
+
         const task = await db.task.findFirst({
           where: { id: entityId, organizationId },
         });
@@ -48,6 +93,22 @@ export class CommentsService {
           where: { id: entityId, organizationId },
         });
         entityExists = !!vendor;
+        if (!entityExists) {
+          // Check if vendor exists in a different org for better error message
+          const vendorInOtherOrg = await db.vendor.findFirst({
+            where: { id: entityId },
+            select: { organizationId: true },
+          });
+          if (vendorInOtherOrg) {
+            this.logger.warn('Vendor exists but in different organization', {
+              entityId,
+              requestedOrgId: organizationId,
+              actualOrgId: vendorInOtherOrg.organizationId,
+            });
+          } else {
+            this.logger.warn('Vendor not found', { entityId, organizationId });
+          }
+        }
         break;
       }
 
@@ -64,7 +125,9 @@ export class CommentsService {
     }
 
     if (!entityExists) {
-      throw new BadRequestException(`${entityType} not found or access denied`);
+      throw new BadRequestException(
+        `${entityType} with id ${entityId} not found in organization ${organizationId} or access denied`,
+      );
     }
   }
 
@@ -205,6 +268,23 @@ export class CommentsService {
         };
       });
 
+      // Notify mentioned users
+      if (createCommentDto.content && userId) {
+        const mentionedUserIds = extractMentionedUserIds(createCommentDto.content);
+        if (mentionedUserIds.length > 0) {
+          // Fire-and-forget: notification failures should not block comment creation
+          void this.mentionNotifier.notifyMentionedUsers({
+            organizationId,
+            commentId: result.comment.id,
+            commentContent: createCommentDto.content,
+            entityType: createCommentDto.entityType,
+            entityId: createCommentDto.entityId,
+            mentionedUserIds,
+            mentionedByUserId: userId,
+          });
+        }
+      }
+
       return {
         id: result.comment.id,
         content: result.comment.content,
@@ -278,6 +358,31 @@ export class CommentsService {
         commentId,
         AttachmentEntityType.comment,
       );
+
+      // Notify only newly mentioned users on update (avoid re-notifying on typo edits)
+      if (content && userId) {
+        const previousMentioned = new Set(
+          extractMentionedUserIds(existingComment.content),
+        );
+        const currentMentioned = extractMentionedUserIds(content);
+
+        const newlyMentionedUserIds = currentMentioned.filter(
+          (id) => !previousMentioned.has(id),
+        );
+
+        if (newlyMentionedUserIds.length > 0) {
+          // Fire-and-forget: notification failures should not block comment update
+          void this.mentionNotifier.notifyMentionedUsers({
+            organizationId,
+            commentId: updatedComment.id,
+            commentContent: content,
+            entityType: existingComment.entityType,
+            entityId: existingComment.entityId,
+            mentionedUserIds: newlyMentionedUserIds,
+            mentionedByUserId: userId,
+          });
+        }
+      }
 
       return {
         id: updatedComment.id,

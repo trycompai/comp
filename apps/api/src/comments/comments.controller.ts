@@ -263,11 +263,7 @@ export class CommentsController {
       userId = authContext.userId;
     }
 
-    await this.commentsService.deleteComment(
-      organizationId,
-      commentId,
-      userId,
-    );
+    await this.commentsService.deleteComment(organizationId, commentId, userId);
 
     return {
       success: true,
