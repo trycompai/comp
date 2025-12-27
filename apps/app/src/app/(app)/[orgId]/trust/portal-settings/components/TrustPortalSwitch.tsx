@@ -1043,9 +1043,9 @@ function ComplianceFramework({
       return;
     }
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const MAX_FILE_SIZE = 100 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
-      toast.error('File size must be less than 10MB');
+      toast.error('File size must be less than 100MB');
       return;
     }
 
@@ -1346,7 +1346,7 @@ function ComplianceFramework({
                         {isDragging ? 'Drop your certificate here' : 'Drag & drop certificate'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        or click to browse • PDF only, max 10MB
+                        or click to browse • PDF only, max 100MB
                       </p>
                     </div>
                   </div>

@@ -3,7 +3,7 @@
  */
 
 // File size limits
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+export const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
 // Signed URL expiration
 export const SIGNED_URL_EXPIRATION_SECONDS = 3600; // 1 hour
