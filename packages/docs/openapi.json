@@ -8253,6 +8253,65 @@
         ]
       }
     },
+    "/v1/trust-access/{friendlyUrl}/faqs": {
+      "get": {
+        "description": "Retrieve the frequently asked questions for a published trust portal as structured data.",
+        "operationId": "TrustAccessController_getFaqs_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FAQs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "faqs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "answer": {
+                            "type": "string"
+                          },
+                          "order": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trust site not found or not published"
+          }
+        },
+        "summary": "Get FAQs for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
