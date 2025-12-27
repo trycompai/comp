@@ -442,7 +442,7 @@ export function AdditionalDocumentsSection({
                   'image/webp': ['.webp'],
                   'image/svg+xml': ['.svg'],
                 }}
-                maxSize={10 * 1024 * 1024} // 10MB
+                maxSize={100 * 1024 * 1024} // 100MB
                 disabled={isUploading}
                 progresses={uploadProgress}
               />

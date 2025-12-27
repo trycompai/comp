@@ -34,8 +34,8 @@ export function useTaskItemAttachmentUpload({
         return null;
       }
 
-      // Validate file size (60MB limit)
-      const MAX_FILE_SIZE = 60 * 1024 * 1024;
+      // Validate file size (100MB limit)
+      const MAX_FILE_SIZE = 100 * 1024 * 1024;
       if (file.size > MAX_FILE_SIZE) {
         toast.error(`File exceeds the ${MAX_FILE_SIZE / (1024 * 1024)}MB limit`);
         return null;

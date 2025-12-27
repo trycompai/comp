@@ -134,7 +134,7 @@ export function TaskBody({
             return resolve(null);
           }
 
-          const MAX_FILE_SIZE_MB = 10;
+          const MAX_FILE_SIZE_MB = 100;
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           if (file.size > MAX_FILE_SIZE_BYTES) {
             toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
@@ -415,7 +415,7 @@ export function TaskBody({
                   </span>
                   {!isUploading && !isDragging && (
                     <span className="text-xs text-muted-foreground transition-colors group-hover:text-muted-foreground/80">
-                      or click to browse • max 10MB • most file types accepted
+                      or click to browse • max 100MB • most file types accepted
                     </span>
                   )}
                 </div>
