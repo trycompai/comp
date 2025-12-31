@@ -850,11 +850,12 @@ export async function createVendors(
     triggeredCount: vendorsForRiskAssessment.length,
   });
 
-  await triggerVendorRiskAssessmentsViaApi({
-    organizationId,
-    vendors: vendorsForRiskAssessment,
-    withResearch: true,
-  });
+  // TODO: Un-comment this when UI part is ready
+  // await triggerVendorRiskAssessmentsViaApi({
+  //   organizationId,
+  //   vendors: vendorsForRiskAssessment,
+  //   withResearch: true,
+  // });
 
   // Trigger background research for each vendor (best-effort)
   await triggerVendorResearch(createdVendors);
