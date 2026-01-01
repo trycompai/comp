@@ -8,8 +8,13 @@
     "verbatimModuleSyntax": false,
     "jsx": "preserve",
     "skipLibCheck": true,
-    "types": ["react", "react-dom"]
+    "types": ["react", "react-dom"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/hooks/*": ["./hooks/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["src", "lib/utils.ts", "hooks/use-mobile.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,1 +1,0 @@
-export { semanticColors } from './semantic';

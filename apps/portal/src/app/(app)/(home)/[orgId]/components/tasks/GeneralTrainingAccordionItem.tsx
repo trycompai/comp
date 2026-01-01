@@ -1,7 +1,8 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { CheckCircle2, ChevronDown, Circle } from 'lucide-react';
+import { AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui-shadcn';
+import { CheckCircle2, Circle } from 'lucide-react';
 import type { EmployeePortalDashboard } from '../../types/employee-portal';
 import { VideoCarousel } from '../video/VideoCarousel';
 
@@ -37,8 +38,8 @@ export function GeneralTrainingAccordionItem({
   const totalCount = generalTrainingVideoIds.length;
 
   return (
-    <details className="group px-4 py-3">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+    <AccordionItem value="general-training">
+      <AccordionTrigger className="px-4 py-3 hover:no-underline">
         <div className="flex flex-1 items-center gap-3 text-left">
           {hasCompletedGeneralTraining ? (
             <CheckCircle2 className="h-5 w-5" />
@@ -60,17 +61,16 @@ export function GeneralTrainingAccordionItem({
               : `${completedCount}/${totalCount} completed`}
           </span>
         </div>
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-      </summary>
+      </AccordionTrigger>
 
-      <div className="mt-4 flex flex-col gap-4">
+      <AccordionContent className="px-4 pt-1">
         <p className="text-sm text-muted-foreground">
           Complete the general security awareness training videos to learn about best practices for
           keeping company data secure.
         </p>
 
         <VideoCarousel videos={generalTrainingCompletions} />
-      </div>
-    </details>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

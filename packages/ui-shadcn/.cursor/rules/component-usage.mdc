@@ -1,0 +1,57 @@
+---
+description: How to use ui-shadcn components - auto-loaded when editing files that import from this package
+globs:
+  - "**/*.tsx"
+  - "**/*.ts"
+---
+
+# ui-shadcn Component Usage
+
+## Golden Rule
+
+**`className` is NOT a valid prop. Use variants and props only.**
+
+## Quick Reference
+
+```tsx
+// ❌ Will NOT compile - className removed from all components
+<Button className="bg-red-500">Delete</Button>
+<Card className="shadow-xl">Content</Card>
+
+// ✅ GOOD - use variants and props
+<Button variant="destructive">Delete</Button>
+<Card maxWidth="lg">Content</Card>
+```
+
+## Layout Positioning
+
+Use wrapper elements for layout concerns:
+
+```tsx
+// ✅ Wrapper for width
+<div className="w-full">
+  <Button>Full Width</Button>
+</div>
+
+// ✅ Use Stack/Grid for spacing
+<Stack gap="4">
+  <Button>First</Button>
+  <Button>Second</Button>
+</Stack>
+```
+
+## Common Components
+
+| Component | Key Props |
+|-----------|-----------|
+| `Button` | `variant`, `size`, `loading`, `iconLeft`, `iconRight` |
+| `Card` | `maxWidth` (sm/md/lg/xl/2xl/3xl/full) |
+| `Stack` | `direction`, `gap`, `align`, `justify` |
+| `Heading` | `level` (1-6), `variant` |
+| `Text` | `size`, `variant`, `weight` |
+| `Badge` | `variant` |
+| `PageLayout` | `variant` (default/center), `padding` |
+
+## Missing a variant?
+
+Add it to the component's `cva` definition. Never use wrapper divs to apply what should be component styling.

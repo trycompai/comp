@@ -1,7 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
-import { cn } from '@trycompai/ui-shadcn/cn';
+import { Card, CardContent, CardHeader, cn } from '@trycompai/ui-shadcn';
 import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
 
 import type { EmployeePortalDashboard } from '../../../types/employee-portal';

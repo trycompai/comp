@@ -1,7 +1,7 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
+import { Accordion, Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
 import type { EmployeePortalDashboard } from '../types/employee-portal';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
@@ -78,10 +78,16 @@ export const EmployeeTasksList = ({
               </div>
             </div>
 
-            <div className="divide-y divide-border rounded-md border border-border">
-              <PoliciesAccordionItem policies={policies} member={member} />
-              <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
-              <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />
+            <div className="overflow-hidden rounded-md border border-border">
+              <Accordion multiple>
+                <PoliciesAccordionItem policies={policies} member={member} />
+                <DeviceAgentAccordionItem
+                  member={member}
+                  host={host}
+                  fleetPolicies={fleetPolicies}
+                />
+                <GeneralTrainingAccordionItem trainingVideoCompletions={trainingVideoCompletions} />
+              </Accordion>
             </div>
           </div>
         </CardContent>

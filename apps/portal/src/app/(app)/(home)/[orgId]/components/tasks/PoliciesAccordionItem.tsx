@@ -1,8 +1,8 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { Button } from '@trycompai/ui-shadcn';
-import { CheckCircle2, ChevronDown, Circle, FileText } from 'lucide-react';
+import { AccordionContent, AccordionItem, AccordionTrigger, Button } from '@trycompai/ui-shadcn';
+import { CheckCircle2, Circle, FileText } from 'lucide-react';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -52,8 +52,8 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
   };
 
   return (
-    <details className="group px-4 py-3">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+    <AccordionItem value="policies">
+      <AccordionTrigger className="px-4 py-3 hover:no-underline">
         <div className="flex flex-1 items-center gap-3 text-left">
           {hasAcceptedPolicies ? (
             <CheckCircle2 className="h-5 w-5" />
@@ -70,10 +70,9 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
             Accept security policies
           </span>
         </div>
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-      </summary>
+      </AccordionTrigger>
 
-      <div className="mt-4 flex flex-col gap-4">
+      <AccordionContent className="px-4 pt-1">
         {policies.length > 0 ? (
           <>
             <p className="text-sm text-muted-foreground">
@@ -119,7 +118,7 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
         ) : (
           <p className="text-sm text-muted-foreground">No policies to accept.</p>
         )}
-      </div>
-    </details>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

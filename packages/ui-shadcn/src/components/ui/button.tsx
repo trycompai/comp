@@ -1,7 +1,8 @@
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
+import * as React from 'react';
 
-import { cn } from '../../lib/utils';
+import { Spinner } from './spinner';
 
 const buttonVariants = cva(
   "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-[3px] aria-invalid:ring-[3px] [&_svg:not([class*='size-'])]:size-4 inline-flex items-center justify-center whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none",
@@ -31,6 +32,22 @@ const buttonVariants = cva(
         'icon-sm':
           'size-8 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-md',
         'icon-lg': 'size-10',
+        // Calendar day button - special size for calendar day cells
+        'calendar-day': [
+          // Base sizing
+          'relative isolate z-10 aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal',
+          // Selection states
+          'data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground',
+          'data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground data-[range-middle=true]:rounded-none',
+          'data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:rounded-l-(--cell-radius)',
+          'data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:rounded-r-(--cell-radius)',
+          // Focus states (from parent day cell)
+          'group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-ring/50 group-data-[focused=true]/day:ring-[3px]',
+          // Dark mode hover
+          'dark:hover:text-foreground',
+          // Nested span styling for additional content
+          '[&>span]:text-xs [&>span]:opacity-70',
+        ].join(' '),
       },
     },
     defaultVariants: {
@@ -40,19 +57,60 @@ const buttonVariants = cva(
   },
 );
 
-function Button({
-  className,
-  variant = 'default',
-  size = 'default',
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return (
-    <ButtonPrimitive
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  );
-}
+type ButtonProps = Omit<ButtonPrimitive.Props, 'className'> &
+  VariantProps<typeof buttonVariants> & {
+    /** Show loading spinner and disable button */
+    loading?: boolean;
+    /** Icon to show on the left side of the button */
+    iconLeft?: React.ReactNode;
+    /** Icon to show on the right side of the button */
+    iconRight?: React.ReactNode;
+  };
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      variant = 'default',
+      size = 'default',
+      loading = false,
+      iconLeft,
+      iconRight,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const isDisabled = disabled || loading;
+
+    return (
+      <ButtonPrimitive
+        ref={ref}
+        data-slot="button"
+        data-loading={loading || undefined}
+        disabled={isDisabled}
+        className={buttonVariants({ variant, size })}
+        {...props}
+      >
+        {loading ? (
+          <Spinner />
+        ) : iconLeft ? (
+          <span data-icon="inline-start" className="shrink-0">
+            {iconLeft}
+          </span>
+        ) : null}
+        {children}
+        {!loading && iconRight ? (
+          <span data-icon="inline-end" className="shrink-0">
+            {iconRight}
+          </span>
+        ) : null}
+      </ButtonPrimitive>
+    );
+  },
+);
+
+Button.displayName = 'Button';
 
 export { Button, buttonVariants };
+export type { ButtonProps };

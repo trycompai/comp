@@ -3,9 +3,8 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { useMemo } from 'react';
 
-import { cn } from '../../lib/utils';
-import { Label } from './label';
-import { Separator } from './separator';
+import { Separator as SeparatorPrimitive } from '@base-ui/react/separator';
+import { cn } from '../../../lib/utils';
 
 function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
   return (
@@ -92,15 +91,11 @@ function FieldContent({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
+function FieldLabel({ ...props }: Omit<React.ComponentProps<'label'>, 'className'>) {
   return (
-    <Label
+    <label
       data-slot="field-label"
-      className={cn(
-        'has-data-checked:bg-primary/5 has-data-checked:border-primary dark:has-data-checked:bg-primary/10 gap-2 group-data-[disabled=true]/field:opacity-50 has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-3 group/field-label peer/field-label flex w-fit leading-snug',
-        'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col',
-        className,
-      )}
+      className="gap-2 text-sm leading-none font-medium group-data-[disabled=true]:opacity-50 peer-disabled:opacity-50 flex items-center select-none group-data-[disabled=true]:pointer-events-none peer-disabled:cursor-not-allowed has-data-checked:bg-primary/5 has-data-checked:border-primary dark:has-data-checked:bg-primary/10 group-data-[disabled=true]/field:opacity-50 has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-3 group/field-label peer/field-label w-fit leading-snug has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col"
       {...props}
     />
   );
@@ -136,22 +131,18 @@ function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
 
 function FieldSeparator({
   children,
-  className,
   ...props
-}: React.ComponentProps<'div'> & {
+}: Omit<React.ComponentProps<'div'>, 'className'> & {
   children?: React.ReactNode;
 }) {
   return (
     <div
       data-slot="field-separator"
       data-content={!!children}
-      className={cn(
-        '-my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2 relative',
-        className,
-      )}
+      className="-my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2 relative"
       {...props}
     >
-      <Separator className="absolute inset-0 top-1/2" />
+      <SeparatorPrimitive className="bg-border shrink-0 h-px w-full absolute inset-0 top-1/2" />
       {children && (
         <span
           className="text-muted-foreground px-2 bg-background relative mx-auto block w-fit"

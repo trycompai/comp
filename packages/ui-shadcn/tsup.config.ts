@@ -23,6 +23,6 @@ export default defineConfig({
   outDir: 'dist',
   onSuccess: async () => {
     const { cp } = await import('fs/promises');
-    await cp('src/globals.css', 'dist/globals.css');
+    await cp('src/styles/globals.css', 'dist/globals.css');
   },
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@trycompai/ui-shadcn/cn';
+import { cn } from '@trycompai/ui-shadcn';
 import { Reorder, motion } from 'framer-motion';
 import { LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';

@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+
+/* Import the design system styles */
+@import '@trycompai/ui-shadcn/globals.css';
+
+/* Scan for Tailwind classes in stories and ui-shadcn components */
+@source "../stories";
+@source "../../../packages/ui-shadcn/src";

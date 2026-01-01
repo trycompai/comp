@@ -6,7 +6,8 @@ import {
   WINDOWS_FILENAME,
 } from '@/app/api/download-agent/constants';
 import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
-import { CheckCircle2, ChevronDown, Circle } from 'lucide-react';
+import { AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui-shadcn';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { EmployeePortalDashboard } from '../../types/employee-portal';
@@ -117,8 +118,8 @@ export function DeviceAgentAccordionItem({
   }, []);
 
   return (
-    <details className="group px-4 py-3">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+    <AccordionItem value="device-agent">
+      <AccordionTrigger className="px-4 py-3 hover:no-underline">
         <div className="flex flex-1 items-center gap-3 text-left">
           {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
           <span
@@ -136,10 +137,9 @@ export function DeviceAgentAccordionItem({
             </span>
           ) : null}
         </div>
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-      </summary>
+      </AccordionTrigger>
 
-      <div className="mt-4 flex flex-col gap-4">
+      <AccordionContent className="px-4 pt-1">
         <p className="text-sm text-muted-foreground">
           Installing Comp AI Device Agent helps you and your security administrator keep your device
           protected against security threats.
@@ -164,7 +164,7 @@ export function DeviceAgentAccordionItem({
         )}
 
         <DeviceAgentInfoAccordion />
-      </div>
-    </details>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

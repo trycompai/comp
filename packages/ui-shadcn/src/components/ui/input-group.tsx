@@ -1,12 +1,10 @@
-'use client';
-
+import { Button as ButtonPrimitive } from '@base-ui/react/button';
+import { Input as InputPrimitive } from '@base-ui/react/input';
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
-import { cn } from '../../lib/utils';
-import { Button } from './button';
-import { Input } from './input';
-import { Textarea } from './textarea';
+import { cn } from '../../../lib/utils';
+import { buttonVariants } from './button';
 
 function InputGroup({ className, ...props }: React.ComponentProps<'div'>) {
   return (
@@ -78,21 +76,20 @@ const inputGroupButtonVariants = cva('gap-2 text-sm shadow-none flex items-cente
 });
 
 function InputGroupButton({
-  className,
   type = 'button',
   variant = 'ghost',
   size = 'xs',
   ...props
-}: Omit<React.ComponentProps<typeof Button>, 'size' | 'type'> &
+}: Omit<ButtonPrimitive.Props, 'className' | 'type'> &
   VariantProps<typeof inputGroupButtonVariants> & {
+    variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'destructive' | 'link';
     type?: 'button' | 'submit' | 'reset';
   }) {
   return (
-    <Button
+    <ButtonPrimitive
       type={type}
       data-size={size}
-      variant={variant}
-      className={cn(inputGroupButtonVariants({ size }), className)}
+      className={cn(buttonVariants({ variant }), inputGroupButtonVariants({ size }))}
       {...props}
     />
   );
@@ -110,27 +107,21 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
   );
 }
 
-function InputGroupInput({ className, ...props }: React.ComponentProps<'input'>) {
+function InputGroupInput({ ...props }: Omit<React.ComponentProps<'input'>, 'className'>) {
   return (
-    <Input
+    <InputPrimitive
       data-slot="input-group-control"
-      className={cn(
-        'rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 aria-invalid:ring-0 dark:bg-transparent flex-1',
-        className,
-      )}
+      className="h-9 rounded-none border-0 bg-transparent px-2.5 py-1 text-base shadow-none ring-0 transition-[color,box-shadow] focus-visible:ring-0 aria-invalid:ring-0 md:text-sm placeholder:text-muted-foreground w-full min-w-0 outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-transparent flex-1"
       {...props}
     />
   );
 }
 
-function InputGroupTextarea({ className, ...props }: React.ComponentProps<'textarea'>) {
+function InputGroupTextarea({ ...props }: Omit<React.ComponentProps<'textarea'>, 'className'>) {
   return (
-    <Textarea
+    <textarea
       data-slot="input-group-control"
-      className={cn(
-        'rounded-none border-0 bg-transparent py-2 shadow-none ring-0 focus-visible:ring-0 aria-invalid:ring-0 dark:bg-transparent flex-1 resize-none',
-        className,
-      )}
+      className="rounded-none border-0 bg-transparent px-2.5 py-2 text-base shadow-none ring-0 transition-[color,box-shadow] focus-visible:ring-0 aria-invalid:ring-0 md:text-sm placeholder:text-muted-foreground flex field-sizing-content min-h-16 w-full outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-transparent flex-1 resize-none"
       {...props}
     />
   );

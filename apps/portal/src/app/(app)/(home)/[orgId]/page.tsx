@@ -16,8 +16,6 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
   const initialDashboard = await getEmployeePortalOverview(orgId).catch(() => undefined);
 
   return (
-    <div className="chakra-scope">
-      <OrganizationDashboardGateClient organizationId={orgId} initialDashboard={initialDashboard} />
-    </div>
+    <OrganizationDashboardGateClient organizationId={orgId} initialDashboard={initialDashboard} />
   );
 }

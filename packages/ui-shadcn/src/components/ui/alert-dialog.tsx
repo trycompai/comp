@@ -1,9 +1,7 @@
-'use client';
-
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
 import * as React from 'react';
 
-import { cn } from '../../lib/utils';
+import { cn } from '../../../lib/utils';
 import { Button } from './button';
 
 function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
@@ -125,21 +123,22 @@ function AlertDialogDescription({
   );
 }
 
-function AlertDialogAction({ className, ...props }: React.ComponentProps<typeof Button>) {
-  return <Button data-slot="alert-dialog-action" className={cn(className)} {...props} />;
+function AlertDialogAction({
+  variant = 'default',
+  ...props
+}: Omit<React.ComponentProps<typeof Button>, 'className'>) {
+  return <Button data-slot="alert-dialog-action" variant={variant} {...props} />;
 }
 
 function AlertDialogCancel({
-  className,
-  variant = 'outline',
+  variant = 'secondary',
   size = 'default',
   ...props
-}: AlertDialogPrimitive.Close.Props &
+}: Omit<AlertDialogPrimitive.Close.Props, 'className'> &
   Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {
   return (
     <AlertDialogPrimitive.Close
       data-slot="alert-dialog-cancel"
-      className={cn(className)}
       render={<Button variant={variant} size={size} />}
       {...props}
     />

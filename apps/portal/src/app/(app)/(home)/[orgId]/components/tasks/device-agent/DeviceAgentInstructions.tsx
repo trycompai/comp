@@ -1,7 +1,15 @@
 'use client';
 
 import type { SupportedOS } from '@/utils/os';
-import { Button } from '@trycompai/ui-shadcn';
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui-shadcn';
 import { Download, Loader2 } from 'lucide-react';
 
 interface DeviceAgentInstructionsProps {
@@ -18,6 +26,8 @@ const ARCHITECTURE_OPTIONS = [
   { label: 'Intel', value: 'macos-intel' },
 ] as const;
 
+type ArchitectureOptionValue = (typeof ARCHITECTURE_OPTIONS)[number]['value'];
+
 export function DeviceAgentInstructions({
   isMacOS,
   detectedOS,
@@ -26,27 +36,44 @@ export function DeviceAgentInstructions({
   isDownloading,
   downloadDisabled,
 }: DeviceAgentInstructionsProps) {
+  const architectureValue: ArchitectureOptionValue =
+    detectedOS === 'macos-intel' ? 'macos-intel' : 'macos';
+
+  const selectedArchitectureLabel =
+    ARCHITECTURE_OPTIONS.find((opt) => opt.value === architectureValue)?.label ??
+    ARCHITECTURE_OPTIONS[0].label;
+
+  const handleArchitectureChange = (value: ArchitectureOptionValue | null) => {
+    if (!value) return;
+    onChangeDetectedOS(value);
+  };
+
   return (
-    <div className="flex flex-col gap-3">
-      <ol className="list-decimal space-y-4 pl-5 text-sm">
-        <li>
-          <p className="font-semibold">Download the Device Agent installer.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Click the download button below to get the Device Agent installer.
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-4">
+      <ol className="grid list-decimal gap-4 pl-5 text-sm">
+        <li className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <p className="font-semibold">Download the Device Agent installer.</p>
+            <p className="text-muted-foreground">
+              Click the download button below to get the Device Agent installer.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             {isMacOS ? (
-              <select
-                className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-2.5 text-sm shadow-xs outline-none focus-visible:ring-[3px] sm:w-[180px]"
-                value={detectedOS ?? 'macos'}
-                onChange={(e) => onChangeDetectedOS(e.target.value as SupportedOS)}
-              >
-                {ARCHITECTURE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              <Select value={architectureValue} onValueChange={handleArchitectureChange}>
+                <SelectTrigger size="sm" className="w-full sm:w-44">
+                  <SelectValue>{selectedArchitectureLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {ARCHITECTURE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             ) : null}
 
             <Button
@@ -55,17 +82,19 @@ export function DeviceAgentInstructions({
               disabled={downloadDisabled}
               className="w-full sm:w-auto"
             >
-              <span className="inline-flex items-center gap-2">
-                {isDownloading ? <Loader2 size={16} /> : <Download size={16} />}
-                {isDownloading ? 'Downloading…' : 'Download Agent'}
-              </span>
+              {isDownloading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              {isDownloading ? 'Downloading…' : 'Download Agent'}
             </Button>
           </div>
         </li>
 
-        <li>
+        <li className="flex flex-col gap-1">
           <p className="font-semibold">Install the Comp AI Device Agent.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-muted-foreground">
             {isMacOS
               ? 'Double-click the downloaded DMG file and follow the installation instructions.'
               : 'Double-click the downloaded EXE file and follow the installation instructions.'}
@@ -73,28 +102,26 @@ export function DeviceAgentInstructions({
         </li>
 
         {isMacOS ? (
-          <li>
+          <li className="flex flex-col gap-1">
             <p className="font-semibold">Login with your work email.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-muted-foreground">
               After installation, login with your work email, select your organization and then
               click &quot;Link Device&quot; and &quot;Install Agent&quot;.
             </p>
           </li>
         ) : (
-          <li>
+          <li className="flex flex-col gap-2">
             <p className="font-semibold">Enable MDM.</p>
-            <div className="mt-1 flex flex-col gap-1.5">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col gap-1.5 text-muted-foreground">
+              <p>
                 Find the Fleet Desktop app in your system tray (bottom right corner). Click on it
                 and click My Device.
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p>
                 You should see a banner that asks you to enable MDM. Click the button and follow the
                 instructions.
               </p>
-              <p className="text-sm text-muted-foreground">
-                After you&apos;ve enabled MDM, refresh this page and the banner will disappear.
-              </p>
+              <p>After you&apos;ve enabled MDM, refresh this page and the banner will disappear.</p>
             </div>
           </li>
         )}
