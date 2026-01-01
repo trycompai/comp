@@ -341,7 +341,8 @@ export class QuestionnaireController {
           type: 'string',
           enum: ['pdf', 'csv', 'xlsx'],
           default: 'xlsx',
-          description: 'Output format (ignored - always exports all formats as ZIP)',
+          description:
+            'Output format (ignored - always exports all formats as ZIP)',
         },
       },
       required: ['file'],
@@ -380,7 +381,7 @@ export class QuestionnaireController {
       source: 'external', // Always external for token-based access
       exportInAllExtensions: true, // Export in all formats (PDF, CSV, XLSX) as ZIP
     };
-    
+
     const result = await this.questionnaireService.autoAnswerAndExport(dto);
 
     res.setHeader('Content-Type', result.mimeType);
