@@ -27,7 +27,22 @@ function parseDescription(desc: string | null | undefined): JSONContent | null {
       return parsed as JSONContent;
     }
   } catch {
-    // Not JSON, return null
+    // Not JSON - convert plain text to TipTap JSON format
+    // Wrap plain text in a TipTap document structure
+    return {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: desc,
+            },
+          ],
+        },
+      ],
+    };
   }
   return null;
 }

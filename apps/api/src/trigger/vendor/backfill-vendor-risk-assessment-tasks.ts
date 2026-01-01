@@ -1,7 +1,7 @@
 import { db } from '@db';
 import { logger, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
-import { VENDOR_RISK_ASSESSMENT_TASK_ID, VENDOR_RISK_ASSESSMENT_TASK_TITLE } from './vendor-risk-assessment/constants';
+import { VENDOR_RISK_ASSESSMENT_TASK_ID } from './vendor-risk-assessment/constants';
 import { vendorRiskAssessmentTask } from './vendor-risk-assessment-task';
 
 const schema = z.object({
@@ -26,7 +26,7 @@ export const backfillVendorRiskAssessmentTasks = schemaTask({
   schema,
   maxDuration: 1000 * 60 * 15,
   run: async (payload) => {
-    logger.info('Backfill vendor risk assessment tasks started', payload);
+    logger.info('Backfill vendor risk assessments started', payload);
 
     const orgIds = payload.organizationId
       ? [payload.organizationId]
@@ -48,18 +48,23 @@ export const backfillVendorRiskAssessmentTasks = schemaTask({
 
       if (vendors.length === 0) continue;
 
-      // Fetch existing Risk Assessment task items for vendors in this org
-      const existingTaskItems = await db.taskItem.findMany({
+      // Check which vendors are missing risk assessments in GlobalVendors
+      const vendorsWithWebsites = vendors.filter((v) => v.website);
+      const globalVendorsMap = new Map(
+        (
+          await db.globalVendors.findMany({
         where: {
-          organizationId,
-          entityType: 'vendor',
-          title: VENDOR_RISK_ASSESSMENT_TASK_TITLE,
+              website: { in: vendorsWithWebsites.map((v) => v.website!).filter(Boolean) },
         },
-        select: { entityId: true },
-      });
+            select: { website: true, riskAssessmentData: true },
+          })
+        ).map((gv) => [gv.website, gv]),
+      );
 
-      const vendorIdsWithTasks = new Set(existingTaskItems.map((t) => t.entityId));
-      const missingVendors = vendors.filter((v) => !vendorIdsWithTasks.has(v.id));
+      // Backfill vendors missing a stored risk assessment in GlobalVendors
+      const missingVendors = vendorsWithWebsites.filter(
+        (v) => !globalVendorsMap.get(v.website!)?.riskAssessmentData,
+      );
 
       const limitedMissing = missingVendors.slice(0, payload.limit - totalMissing);
       totalMissing += limitedMissing.length;
@@ -67,7 +72,6 @@ export const backfillVendorRiskAssessmentTasks = schemaTask({
       logger.info('Backfill org scan', {
         organizationId,
         vendors: vendors.length,
-        existingTasks: vendorIdsWithTasks.size,
         missing: limitedMissing.length,
       });
 

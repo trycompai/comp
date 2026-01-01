@@ -851,11 +851,13 @@ export async function createVendors(
   });
 
   // TODO: Un-comment this when UI part is ready
-  // await triggerVendorRiskAssessmentsViaApi({
-  //   organizationId,
-  //   vendors: vendorsForRiskAssessment,
-  //   withResearch: true,
-  // });
+  await triggerVendorRiskAssessmentsViaApi({
+    organizationId,
+    vendors: vendorsForRiskAssessment,
+    // Onboarding should NOT force expensive research if GlobalVendors already has data.
+    // If data is missing, the API/Trigger pipeline will still do research.
+    withResearch: false,
+  });
 
   // Trigger background research for each vendor (best-effort)
   await triggerVendorResearch(createdVendors);

@@ -298,8 +298,8 @@ export class TaskManagementService {
         `Created task item: ${taskItem.id} for organization ${organizationId} by ${member.id}`,
       );
 
-      // Log task creation in audit log
-      void this.auditService.logTaskItemCreated({
+      // Log task creation in audit log first (await to ensure it's created before assignment log)
+      await this.auditService.logTaskItemCreated({
         taskItemId: taskItem.id,
         organizationId,
         userId: authContext.userId,
@@ -325,9 +325,9 @@ export class TaskManagementService {
           assignedByUserId: authContext.userId,
         });
 
-        // Log initial assignment in audit log
+        // Log initial assignment in audit log (after creation log to ensure correct order)
         if (taskItem.assignee) {
-          void this.auditService.logTaskItemAssigned({
+          await this.auditService.logTaskItemAssigned({
             taskItemId: taskItem.id,
             organizationId,
             userId: authContext.userId,
