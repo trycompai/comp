@@ -76,7 +76,7 @@
     "docker:down": "bun run -F @comp/db docker:down",
     "docker:up": "bun run -F @comp/db docker:up",
     "format": "prettier --write .",
-    "lint": "turbo lint --filter=@comp/portal --filter=@trycompai/ui-v2",
+    "lint": "turbo lint --filter=@comp/portal --filter=@comp/storybook --filter=@trycompai/ui-shadcn",
     "prepare": "husky",
     "test": "turbo test --parallel",
     "test:release": "node scripts/test-release.js",

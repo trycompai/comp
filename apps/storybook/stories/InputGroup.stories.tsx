@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   InputGroup,
+  InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-  InputGroupText,
   Label,
   Stack,
 } from '@trycompai/ui-shadcn';
@@ -25,9 +25,9 @@ export const WithIconLeft: Story = {
   render: () => (
     <div className="w-[300px]">
       <InputGroup>
-        <InputGroupText>
-          <Search className="h-4 w-4" />
-        </InputGroupText>
+        <InputGroupAddon align="inline-start">
+          <Search />
+        </InputGroupAddon>
         <InputGroupInput placeholder="Search..." />
       </InputGroup>
     </div>
@@ -39,9 +39,9 @@ export const WithIconRight: Story = {
     <div className="w-[300px]">
       <InputGroup>
         <InputGroupInput placeholder="Enter email" />
-        <InputGroupText>
-          <Mail className="h-4 w-4" />
-        </InputGroupText>
+        <InputGroupAddon align="inline-end">
+          <Mail />
+        </InputGroupAddon>
       </InputGroup>
     </div>
   ),
@@ -51,7 +51,7 @@ export const WithPrefix: Story = {
   render: () => (
     <div className="w-[300px]">
       <InputGroup>
-        <InputGroupText>https://</InputGroupText>
+        <InputGroupAddon align="inline-start">https://</InputGroupAddon>
         <InputGroupInput placeholder="example.com" />
       </InputGroup>
     </div>
@@ -63,7 +63,7 @@ export const WithSuffix: Story = {
     <div className="w-[300px]">
       <InputGroup>
         <InputGroupInput placeholder="Username" />
-        <InputGroupText>@company.com</InputGroupText>
+        <InputGroupAddon align="inline-end">@company.com</InputGroupAddon>
       </InputGroup>
     </div>
   ),
@@ -73,11 +73,11 @@ export const Currency: Story = {
   render: () => (
     <div className="w-[200px]">
       <InputGroup>
-        <InputGroupText>
-          <DollarSign className="h-4 w-4" />
-        </InputGroupText>
+        <InputGroupAddon align="inline-start">
+          <DollarSign />
+        </InputGroupAddon>
         <InputGroupInput type="number" placeholder="0.00" />
-        <InputGroupText>USD</InputGroupText>
+        <InputGroupAddon align="inline-end">USD</InputGroupAddon>
       </InputGroup>
     </div>
   ),
@@ -89,7 +89,7 @@ export const WithButton: Story = {
       <InputGroup>
         <InputGroupInput defaultValue="https://example.com/share/abc123" readOnly />
         <InputGroupButton>
-          <Copy className="h-4 w-4 mr-2" />
+          <Copy />
           Copy
         </InputGroupButton>
       </InputGroup>
@@ -104,9 +104,9 @@ export const AllExamples: Story = {
         <Stack gap="2">
           <Label>Search</Label>
           <InputGroup>
-            <InputGroupText>
-              <Search className="h-4 w-4" />
-            </InputGroupText>
+            <InputGroupAddon align="inline-start">
+              <Search />
+            </InputGroupAddon>
             <InputGroupInput placeholder="Search..." />
           </InputGroup>
         </Stack>
@@ -114,7 +114,7 @@ export const AllExamples: Story = {
         <Stack gap="2">
           <Label>Website</Label>
           <InputGroup>
-            <InputGroupText>https://</InputGroupText>
+            <InputGroupAddon align="inline-start">https://</InputGroupAddon>
             <InputGroupInput placeholder="example.com" />
           </InputGroup>
         </Stack>
@@ -122,9 +122,9 @@ export const AllExamples: Story = {
         <Stack gap="2">
           <Label>Price</Label>
           <InputGroup>
-            <InputGroupText>$</InputGroupText>
+            <InputGroupAddon align="inline-start">$</InputGroupAddon>
             <InputGroupInput type="number" placeholder="0.00" />
-            <InputGroupText>USD</InputGroupText>
+            <InputGroupAddon align="inline-end">USD</InputGroupAddon>
           </InputGroup>
         </Stack>
       </Stack>

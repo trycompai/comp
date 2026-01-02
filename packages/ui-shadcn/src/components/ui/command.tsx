@@ -4,8 +4,8 @@ import { Command as CommandPrimitive } from 'cmdk';
 import * as React from 'react';
 
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
-import { CheckIcon, SearchIcon } from 'lucide-react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { CheckIcon, SearchIcon } from 'lucide-react';
 
 const commandVariants = cva(
   'bg-popover text-popover-foreground rounded-xl p-1 flex size-full flex-col overflow-hidden',
@@ -25,17 +25,12 @@ const commandVariants = cva(
 );
 
 interface CommandProps
-  extends Omit<React.ComponentProps<typeof CommandPrimitive>, 'className'>,
+  extends
+    Omit<React.ComponentProps<typeof CommandPrimitive>, 'className'>,
     VariantProps<typeof commandVariants> {}
 
 function Command({ width, ...props }: CommandProps) {
-  return (
-    <CommandPrimitive
-      data-slot="command"
-      className={commandVariants({ width })}
-      {...props}
-    />
-  );
+  return <CommandPrimitive data-slot="command" className={commandVariants({ width })} {...props} />;
 }
 
 function CommandDialog({

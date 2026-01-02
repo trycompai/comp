@@ -93,10 +93,7 @@ function SelectLabel({ ...props }: Omit<SelectPrimitive.GroupLabel.Props, 'class
   );
 }
 
-function SelectItem({
-  children,
-  ...props
-}: Omit<SelectPrimitive.Item.Props, 'className'>) {
+function SelectItem({ children, ...props }: Omit<SelectPrimitive.Item.Props, 'className'>) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"

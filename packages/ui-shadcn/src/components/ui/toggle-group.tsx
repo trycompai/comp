@@ -84,4 +84,4 @@ function ToggleGroupItem({
 }
 
 export { ToggleGroup, ToggleGroupItem };
-export type { ToggleGroupProps, ToggleGroupItemProps };
+export type { ToggleGroupItemProps, ToggleGroupProps };

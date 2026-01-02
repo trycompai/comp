@@ -42,8 +42,7 @@ const textVariants = cva('', {
 });
 
 interface TextProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, 'className'>,
-    VariantProps<typeof textVariants> {
+  extends Omit<React.HTMLAttributes<HTMLElement>, 'className'>, VariantProps<typeof textVariants> {
   as?: 'p' | 'span' | 'div';
 }
 

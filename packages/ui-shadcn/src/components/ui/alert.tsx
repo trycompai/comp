@@ -34,7 +34,8 @@ const variantIcons = {
 type AlertVariant = NonNullable<VariantProps<typeof alertVariants>['variant']>;
 
 interface AlertProps
-  extends Omit<React.ComponentProps<'div'>, 'className' | 'title'>,
+  extends
+    Omit<React.ComponentProps<'div'>, 'className' | 'title'>,
     VariantProps<typeof alertVariants> {
   /** Alert title - renders AlertTitle component */
   title?: React.ReactNode;

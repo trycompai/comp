@@ -5,15 +5,6 @@ import { cn } from '../../../lib/utils';
 
 const gridVariants = cva('grid', {
   variants: {
-    cols: {
-      '1': 'grid-cols-1',
-      '2': 'grid-cols-2',
-      '3': 'grid-cols-3',
-      '4': 'grid-cols-4',
-      '5': 'grid-cols-5',
-      '6': 'grid-cols-6',
-      '12': 'grid-cols-12',
-    },
     gap: {
       '0': 'gap-0',
       '1': 'gap-1',
@@ -34,9 +25,25 @@ const gridVariants = cva('grid', {
     },
   },
   defaultVariants: {
-    cols: '1',
     gap: '4',
     align: 'stretch',
+  },
+});
+
+const gridColsVariants = cva('', {
+  variants: {
+    cols: {
+      '1': 'grid-cols-1',
+      '2': 'grid-cols-2',
+      '3': 'grid-cols-3',
+      '4': 'grid-cols-4',
+      '5': 'grid-cols-5',
+      '6': 'grid-cols-6',
+      '12': 'grid-cols-12',
+    },
+  },
+  defaultVariants: {
+    cols: '1',
   },
 });
 
@@ -98,8 +105,9 @@ const responsiveColsMap: Record<string, Record<string, string>> = {
 
 const getResponsiveClasses = (cols: ResponsiveCols): string => {
   const classes: string[] = [];
+  const withBase: ResponsiveCols = cols.base ? cols : { base: '1', ...cols };
 
-  for (const [breakpoint, value] of Object.entries(cols)) {
+  for (const [breakpoint, value] of Object.entries(withBase)) {
     if (value && responsiveColsMap[breakpoint]?.[value]) {
       classes.push(responsiveColsMap[breakpoint][value]);
     }
@@ -111,20 +119,16 @@ const getResponsiveClasses = (cols: ResponsiveCols): string => {
 interface GridProps
   extends
     Omit<React.ComponentProps<'div'>, 'cols' | 'className'>,
-    Omit<VariantProps<typeof gridVariants>, 'cols'> {
+    VariantProps<typeof gridVariants> {
   cols?: '1' | '2' | '3' | '4' | '5' | '6' | '12' | ResponsiveCols;
 }
 
 function Grid({ cols = '1', gap, align, ...props }: GridProps) {
   const colsClasses =
-    typeof cols === 'object' ? getResponsiveClasses(cols) : gridVariants({ cols });
+    typeof cols === 'object' ? getResponsiveClasses(cols) : gridColsVariants({ cols });
 
   return (
-    <div
-      data-slot="grid"
-      className={cn('grid', colsClasses, gridVariants({ gap, align, cols: undefined }))}
-      {...props}
-    />
+    <div data-slot="grid" className={cn(gridVariants({ gap, align }), colsClasses)} {...props} />
   );
 }
 

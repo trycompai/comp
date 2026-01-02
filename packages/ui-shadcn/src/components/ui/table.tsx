@@ -57,7 +57,9 @@ function TableCell({ ...props }: Omit<React.ComponentProps<'td'>, 'className'>) 
 }
 
 function TableCaption({ ...props }: Omit<React.ComponentProps<'caption'>, 'className'>) {
-  return <caption data-slot="table-caption" className="text-muted-foreground mt-4 text-sm" {...props} />;
+  return (
+    <caption data-slot="table-caption" className="text-muted-foreground mt-4 text-sm" {...props} />
+  );
 }
 
 export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow };
