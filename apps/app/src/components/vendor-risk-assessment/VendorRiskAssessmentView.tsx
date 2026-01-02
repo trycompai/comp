@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { ShieldCheck } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useMemo } from 'react';
 import { parseVendorRiskAssessmentDescription } from './parse-vendor-risk-assessment-description';
 import { VendorRiskAssessmentTimelineCard } from './VendorRiskAssessmentTimelineCard';
@@ -30,7 +30,7 @@ export function VendorRiskAssessmentView({ source }: { source: VendorRiskAssessm
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4" />
+              <Shield className="h-4 w-4" />
               Security Assessment
             </CardTitle>
           </CardHeader>
