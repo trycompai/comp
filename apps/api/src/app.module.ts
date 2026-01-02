@@ -29,6 +29,7 @@ import { IntegrationPlatformModule } from './integration-platform/integration-pl
 import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 import { BrowserbaseModule } from './browserbase/browserbase.module';
 import { TaskManagementModule } from './task-management/task-management.module';
+import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { TaskManagementModule } from './task-management/task-management.module';
     CloudSecurityModule,
     BrowserbaseModule,
     TaskManagementModule,
+    AssistantChatModule,
   ],
   controllers: [AppController],
   providers: [
