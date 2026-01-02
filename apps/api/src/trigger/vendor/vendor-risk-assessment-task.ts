@@ -20,6 +20,53 @@ import { vendorRiskAssessmentPayloadSchema } from './vendor-risk-assessment/sche
 
 const VERIFY_RISK_ASSESSMENT_TASK_TITLE = 'Verify risk assessment' as const;
 
+function parseVersionNumber(version: string | null | undefined): number {
+  if (!version || !version.startsWith('v')) return 0;
+  const n = Number.parseInt(version.slice(1), 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function maxVersion(
+  vendors: Array<{ riskAssessmentVersion: string | null | undefined }>,
+): string | null {
+  let best: string | null = null;
+  let bestN = 0;
+  for (const v of vendors) {
+    const n = parseVersionNumber(v.riskAssessmentVersion);
+    if (n > bestN) {
+      bestN = n;
+      best = v.riskAssessmentVersion ?? null;
+    }
+  }
+  return best;
+}
+
+async function withAdvisoryLock<T>({
+  lockKey,
+  run,
+}: {
+  lockKey: string;
+  run: () => Promise<T>;
+}): Promise<T> {
+  // We use a Postgres advisory lock keyed by website/domain to serialize
+  // the final "version increment + write" step (short critical section).
+  // If the DB isn't Postgres or the lock fails, we fall back to running without a lock.
+  try {
+    await db.$executeRaw`SELECT pg_advisory_lock(hashtext(${lockKey}))`;
+    try {
+      return await run();
+    } finally {
+      await db.$executeRaw`SELECT pg_advisory_unlock(hashtext(${lockKey}))`;
+    }
+  } catch (error) {
+    logger.warn('Advisory lock unavailable; proceeding without lock', {
+      lockKey,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return await run();
+  }
+}
+
 /**
  * Increments version number (v1 -> v2 -> v3, etc.)
  */
@@ -292,19 +339,18 @@ export const vendorRiskAssessmentTask = schemaTask({
         ).id;
 
       // If task already exists but is still blocked, flip it to todo (unless done/canceled).
-      if (
-        existingVerifyTask?.status === TaskItemStatus.in_progress
-      ) {
-        await db.taskItem.update({
-          where: { id: verifyTaskItemId },
-          data: {
-            status: TaskItemStatus.todo,
-            description: 'Review the latest Risk Assessment and confirm it is accurate.',
-            assigneeId: assigneeMemberId,
-            updatedById: creatorMemberId,
-          },
-        });
-      }
+      await db.taskItem.updateMany({
+        where: {
+          id: verifyTaskItemId,
+          status: { notIn: [TaskItemStatus.done, TaskItemStatus.canceled] },
+        },
+        data: {
+          status: TaskItemStatus.todo,
+          description: 'Review the latest Risk Assessment and confirm it is accurate.',
+          assigneeId: assigneeMemberId,
+          updatedById: creatorMemberId,
+        },
+      });
 
       // Audit log for automated task creation (best-effort)
       if (isNewTask && creatorMember?.userId) {
@@ -344,9 +390,6 @@ export const vendorRiskAssessmentTask = schemaTask({
         riskAssessmentVersion: globalVendor?.riskAssessmentVersion ?? 'v1',
       };
     }
-
-    // Calculate next version (increment if updating existing, v1 if new)
-    const nextVersion = incrementVersion(globalVendor?.riskAssessmentVersion);
 
     // Mark vendor as in-progress immediately so UI can show "generating"
     await db.vendor.update({
@@ -457,47 +500,71 @@ export const vendorRiskAssessmentTask = schemaTask({
 
     // Upsert GlobalVendors with risk assessment data (shared across all organizations)
     // Version is auto-incremented (v1 -> v2 -> v3, etc.)
-    // Update ALL duplicates (www vs non-www) to ensure consistency
-    if (globalVendors.length > 0) {
-      // Update all existing duplicates with the same data
-      await Promise.all(
-        globalVendors.map((gv) =>
-          db.globalVendors.update({
-            where: { website: gv.website },
-            data: {
-              company_name: payload.vendorName,
-              riskAssessmentData: data,
-              riskAssessmentVersion: nextVersion,
-              riskAssessmentUpdatedAt: new Date(),
-            },
-          }),
-        ),
-      );
-      
-      if (globalVendors.length > 1) {
-        logger.info('Updated multiple duplicates', {
-          vendor: payload.vendorName,
-          count: globalVendors.length,
-          websites: globalVendors.map((gv) => gv.website),
+    // Concurrency: serialize the final "read latest version + write + bump version" step.
+    const lockKey = domain ?? normalizedWebsite;
+    const { nextVersion, updatedWebsites } = await withAdvisoryLock({
+      lockKey,
+      run: async () => {
+        const latestGlobalVendors = domain
+          ? await db.globalVendors.findMany({
+              where: { website: { contains: domain } },
+              select: {
+                website: true,
+                riskAssessmentVersion: true,
+                riskAssessmentUpdatedAt: true,
+              },
+              orderBy: [{ riskAssessmentUpdatedAt: 'desc' }, { createdAt: 'desc' }],
+            })
+          : [];
+
+        const currentMax = maxVersion(latestGlobalVendors);
+        const computedNext = incrementVersion(currentMax);
+        const now = new Date();
+
+        if (latestGlobalVendors.length > 0) {
+          for (const gv of latestGlobalVendors) {
+            await db.globalVendors.update({
+              where: { website: gv.website },
+              data: {
+                company_name: payload.vendorName,
+                riskAssessmentData: data,
+                riskAssessmentVersion: computedNext,
+                riskAssessmentUpdatedAt: now,
+              },
+            });
+          }
+          return {
+            nextVersion: computedNext,
+            updatedWebsites: latestGlobalVendors.map((gv) => gv.website),
+          };
+        }
+
+        await db.globalVendors.upsert({
+          where: { website: normalizedWebsite },
+          create: {
+            website: normalizedWebsite,
+            company_name: payload.vendorName,
+            riskAssessmentData: data,
+            riskAssessmentVersion: computedNext,
+            riskAssessmentUpdatedAt: now,
+          },
+          update: {
+            company_name: payload.vendorName,
+            riskAssessmentData: data,
+            riskAssessmentVersion: computedNext,
+            riskAssessmentUpdatedAt: now,
+          },
         });
-      }
-    } else {
-      // No existing records - create new one with normalized key
-      await db.globalVendors.upsert({
-        where: { website: normalizedWebsite },
-        create: {
-          website: normalizedWebsite,
-          company_name: payload.vendorName,
-          riskAssessmentData: data,
-          riskAssessmentVersion: nextVersion,
-          riskAssessmentUpdatedAt: new Date(),
-        },
-        update: {
-          company_name: payload.vendorName,
-          riskAssessmentData: data,
-          riskAssessmentVersion: nextVersion,
-          riskAssessmentUpdatedAt: new Date(),
-        },
+
+        return { nextVersion: computedNext, updatedWebsites: [normalizedWebsite] };
+      },
+    });
+
+    if (updatedWebsites.length > 1) {
+      logger.info('Updated multiple duplicates', {
+        vendor: payload.vendorName,
+        count: updatedWebsites.length,
+        websites: updatedWebsites,
       });
     }
 
@@ -510,22 +577,19 @@ export const vendorRiskAssessmentTask = schemaTask({
     });
 
     // Flip verify task to "todo" once the risk assessment is ready (only if it wasn't already completed/canceled).
-    if (
-      existingVerifyTask?.status !== TaskItemStatus.done &&
-      existingVerifyTask?.status !== TaskItemStatus.canceled
-    ) {
-      await db.taskItem.update({
-        where: { id: verifyTaskItemId },
-        data: {
-        status: TaskItemStatus.todo,
-          description: 'Review the latest Risk Assessment and confirm it is accurate.',
-          // Keep stable assignee/creator
-          assigneeId: assigneeMemberId,
-          updatedById: creatorMemberId,
+    await db.taskItem.updateMany({
+      where: {
+        id: verifyTaskItemId,
+        status: { notIn: [TaskItemStatus.done, TaskItemStatus.canceled] },
       },
-      select: { id: true },
+      data: {
+        status: TaskItemStatus.todo,
+        description: 'Review the latest Risk Assessment and confirm it is accurate.',
+        // Keep stable assignee/creator
+        assigneeId: assigneeMemberId,
+        updatedById: creatorMemberId,
+      },
     });
-    }
 
     logger.info('✅ COMPLETED', {
       vendor: payload.vendorName,

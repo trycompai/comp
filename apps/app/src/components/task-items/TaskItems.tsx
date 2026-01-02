@@ -171,6 +171,26 @@ export const TaskItems = ({
   // Only show empty state if we're not loading AND we have no data AND we've received a response
   const shouldShowEmptyState = !taskItemsLoading && !taskItemsError && taskItems.length === 0 && taskItemsResponse !== undefined;
 
+  // If the vendor risk assessment is generating, we show a disabled-looking row.
+  // We need lightweight polling so the UI flips from in_progress -> todo automatically
+  // once the background job updates the task status.
+  const hasGeneratingVerifyRiskAssessmentTask = useMemo(() => {
+    return allTaskItems.some(
+      (t) => t.title === 'Verify risk assessment' && t.status === 'in_progress',
+    );
+  }, [allTaskItems]);
+
+  useEffect(() => {
+    if (selectedTaskItemId) return;
+    if (!hasGeneratingVerifyRiskAssessmentTask) return;
+
+    const interval = setInterval(() => {
+      refreshTaskItems();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [hasGeneratingVerifyRiskAssessmentTask, refreshTaskItems, selectedTaskItemId]);
+
   const defaultDescription =
     description || `Manage tasks related to this ${entityType}`;
 
