@@ -29,7 +29,6 @@ export const vendorRiskAssessmentMonthlySchedule = schedules.task({
         website: true,
         organizationId: true,
       },
-      distinct: ['website'], // Only one vendor per website (to avoid duplicates)
     });
 
     logger.info(`Found ${vendors.length} unique vendors with websites`);
