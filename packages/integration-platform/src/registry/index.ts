@@ -15,6 +15,7 @@ import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { manifest as jumpcloudManifest } from '../manifests/jumpcloud';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
+import { manifest as aikidoManifest } from '../manifests/aikido';
 
 // ============================================================================
 // Registry Implementation
@@ -105,6 +106,7 @@ const allManifests: IntegrationManifest[] = [
   jumpcloudManifest,
   ripplingManifest,
   vercelManifest,
+  aikidoManifest,
 ];
 
 // Create and export the registry singleton
