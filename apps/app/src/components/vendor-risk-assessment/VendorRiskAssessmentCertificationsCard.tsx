@@ -4,17 +4,10 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
-import { ExternalLink, ChevronDown, ChevronUp, ShieldCheck, Shield, XCircle, Clock, Calendar } from 'lucide-react';
-import { format, isValid } from 'date-fns';
+import { Clock, ExternalLink, Shield, ShieldCheck, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { filterCertifications } from './filter-certifications';
 import type { VendorRiskAssessmentCertification } from './vendor-risk-assessment-types';
-
-function formatLongDate(value: string | Date | null | undefined): string {
-  if (!value) return '—';
-  const d = typeof value === 'string' ? new Date(value) : value;
-  if (!isValid(d)) return '—';
-  return format(d, 'MMM yyyy');
-}
 
 function CertificationRow({ cert }: { cert: VendorRiskAssessmentCertification }) {
   const statusIcon =
@@ -28,6 +21,15 @@ function CertificationRow({ cert }: { cert: VendorRiskAssessmentCertification })
       <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
     );
 
+  const statusBadge =
+    cert.status === 'verified' ? (
+      <Badge variant="success">verified</Badge>
+    ) : cert.status === 'expired' ? (
+      <Badge variant="destructive">expired</Badge>
+    ) : cert.status === 'not_certified' ? (
+      <Badge variant="outline">not certified</Badge>
+    ) : null;
+
   return (
     <div className="space-y-0.5">
       <div className="flex items-center justify-between gap-3">
@@ -36,26 +38,11 @@ function CertificationRow({ cert }: { cert: VendorRiskAssessmentCertification })
           <p className="text-sm font-medium truncate">{cert.type}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {cert.status === 'verified' && (
-            <Badge variant="default" className="text-[10px] h-4 px-1 py-0 leading-none">
-              verified
-            </Badge>
-          )}
-          {cert.status === 'expired' && (
-            <Badge variant="destructive" className="text-[10px] h-4 px-1 py-0 leading-none">
-              expired
-            </Badge>
-          )}
-          {cert.status === 'not_certified' && (
-            <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 leading-none">
-              not certified
-            </Badge>
-          )}
+          {statusBadge}
           {cert.url ? (
             <Button
               variant="ghost"
               size="icon"
-              className="shrink-0 h-8 w-8"
               onClick={() => window.open(cert.url ?? undefined, '_blank', 'noopener,noreferrer')}
               aria-label="Open certification link"
             >
@@ -79,14 +66,15 @@ export function VendorRiskAssessmentCertificationsCard({
 }) {
   const [open, setOpen] = useState(false);
 
-  const preview = useMemo(
-    () => certifications.slice(0, previewCount),
-    [certifications, previewCount],
+  // Filter to only show specific certifications
+  const filteredCerts = useMemo(() => filterCertifications(certifications), [certifications]);
+  const filteredVerifiedCount = useMemo(
+    () => filteredCerts.filter((c) => c.status === 'verified').length,
+    [filteredCerts],
   );
-  const rest = useMemo(
-    () => certifications.slice(previewCount),
-    [certifications, previewCount],
-  );
+
+  const preview = useMemo(() => filteredCerts.slice(0, previewCount), [filteredCerts, previewCount]);
+  const rest = useMemo(() => filteredCerts.slice(previewCount), [filteredCerts, previewCount]);
 
   return (
     <Card>
@@ -96,15 +84,13 @@ export function VendorRiskAssessmentCertificationsCard({
             <Shield className="h-4 w-4" />
             Certifications
           </div>
-          {certifications.length > 0 ? (
-            <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 leading-none">
-              {verifiedCount} verified
-            </Badge>
+          {filteredCerts.length > 0 ? (
+            <Badge variant="outline">{filteredVerifiedCount} verified</Badge>
           ) : null}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {certifications.length === 0 ? (
+        {filteredCerts.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">No certifications found.</p>
         ) : (
           <Collapsible open={open} onOpenChange={setOpen}>
@@ -116,7 +102,10 @@ export function VendorRiskAssessmentCertificationsCard({
               {rest.length > 0 ? (
                 <CollapsibleContent className="space-y-3">
                   {rest.map((cert, index) => (
-                    <CertificationRow key={`${cert.type}-${cert.status}-${previewCount + index}`} cert={cert} />
+                    <CertificationRow
+                      key={`${cert.type}-${cert.status}-${previewCount + index}`}
+                      cert={cert}
+                    />
                   ))}
                 </CollapsibleContent>
               ) : null}

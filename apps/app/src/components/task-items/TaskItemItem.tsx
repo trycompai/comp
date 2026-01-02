@@ -40,7 +40,6 @@ import type {
   TaskItemStatus,
 } from '@/hooks/use-task-items';
 import {
-  MoreHorizontal,
   Pencil,
   Trash2,
   List,
@@ -61,8 +60,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { format } from 'date-fns';
-import { isVendorRiskAssessmentTaskItem } from './generated-task/vendor-risk-assessment/is-vendor-risk-assessment-task-item';
-import { VendorRiskAssessmentTaskItemSkeletonRow } from './generated-task/vendor-risk-assessment/VendorRiskAssessmentTaskItemSkeletonRow';
+import { VerifyRiskAssessmentTaskItemSkeletonRow } from './verify-risk-assessment/VerifyRiskAssessmentTaskItemSkeletonRow';
 
 const formatShortDate = (date: string | Date): string => {
   try {
@@ -124,10 +122,8 @@ export function TaskItemItem({
   onToggleExpanded,
   onStatusOrPriorityChange,
 }: TaskItemItemProps) {
-  const isGeneratingVendorRiskAssessment =
-    taskItem.status === 'in_progress' && isVendorRiskAssessmentTaskItem(taskItem);
-  if (isGeneratingVendorRiskAssessment) {
-    return <VendorRiskAssessmentTaskItemSkeletonRow />;
+  if (taskItem.title === 'Verify risk assessment' && taskItem.status === 'in_progress') {
+    return <VerifyRiskAssessmentTaskItemSkeletonRow />;
   }
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -499,39 +495,20 @@ export function TaskItemItem({
                   <span className="text-sm text-muted-foreground whitespace-nowrap cursor-pointer">{formatShortDate(taskItem.createdAt)}</span>
                 </div>
 
-                {/* Options Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                {/* Delete Button */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDeleteOpen(true);
+                  }}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                      aria-label="Task options"
+                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  aria-label="Delete task"
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        handleEditToggle();
-                      }}
-                    >
-                      <Pencil className="mr-2 h-3.5 w-3.5" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      onSelect={() => setIsDeleteOpen(true)}
-                    >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
         </div>
       </div>

@@ -33,7 +33,8 @@ export class InternalVendorAutomationController {
 
     const result = await this.vendorsService.triggerVendorRiskAssessments({
       organizationId: body.organizationId,
-      withResearch: body.withResearch ?? true,
+      // Default to "ensure" mode (cheap). Only scheduled refreshes should force research.
+      withResearch: body.withResearch ?? false,
       vendors: body.vendors,
     });
 

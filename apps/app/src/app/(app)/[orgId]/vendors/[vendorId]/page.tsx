@@ -2,6 +2,7 @@
 
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { extractDomain } from '@/utils/normalize-website';
 import { CommentEntityType, db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -12,6 +13,8 @@ import { TaskItems } from '../../../../../components/task-items/TaskItems';
 import { VendorActions } from './components/VendorActions';
 import { VendorInherentRiskChart } from './components/VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './components/VendorResidualRiskChart';
+import { VendorTabs } from './components/VendorTabs';
+import { VendorHeader } from './components/VendorHeader';
 import { SecondaryFields } from './components/secondary-fields/secondary-fields';
 
 interface PageProps {
@@ -24,35 +27,41 @@ interface PageProps {
 export default async function VendorPage({ params, searchParams }: PageProps) {
   const { vendorId, orgId } = await params;
   const { taskItemId } = (await searchParams) ?? {};
-  const vendor = await getVendor({ vendorId, organizationId: orgId });
-  const assignees = await getAssignees(orgId);
+  
+  // Fetch data in parallel for faster loading
+  const [vendor, assignees] = await Promise.all([
+    getVendor({ vendorId, organizationId: orgId }),
+    getAssignees(orgId),
+  ]);
 
   if (!vendor || !vendor.vendor) {
     redirect('/');
   }
 
-  const shortTaskId = (id: string) => id.slice(-6).toUpperCase();
+  // Hide vendor-level content when viewing a task in focus mode
+  const isViewingTask = Boolean(taskItemId);
 
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
         { label: 'Vendors', href: `/${orgId}/vendors` },
-        ...(taskItemId
-          ? [
-              { label: vendor.vendor?.name ?? '', href: `/${orgId}/vendors/${vendorId}` },
-              { label: shortTaskId(taskItemId), current: true },
-            ]
-          : [{ label: vendor.vendor?.name ?? '', current: true }]),
+        {
+          label: vendor.vendor?.name ?? '',
+          // Make vendor name clickable when viewing a task to navigate back to vendor overview
+          href: isViewingTask ? `/${orgId}/vendors/${vendorId}` : undefined,
+          current: !isViewingTask,
+        },
       ]}
       headerRight={<VendorActions vendorId={vendorId} />}
     >
+      {!isViewingTask && <VendorHeader vendor={vendor.vendor} />}
+      {!isViewingTask && <VendorTabs vendorId={vendorId} orgId={orgId} />}
       <div className="flex flex-col gap-4">
-        {!taskItemId && (
+        {!isViewingTask && (
           <>
             <SecondaryFields
               vendor={vendor.vendor}
               assignees={assignees}
-              globalVendor={vendor.globalVendor}
             />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <VendorInherentRiskChart vendor={vendor.vendor} />
@@ -60,8 +69,12 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
             </div>
           </>
         )}
-        <TaskItems entityId={vendorId} entityType="vendor" organizationId={orgId} />
-        {!taskItemId && (
+        <TaskItems
+          entityId={vendorId}
+          entityType="vendor"
+          organizationId={orgId}
+        />
+        {!isViewingTask && (
           <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
         )}
       </div>
@@ -93,22 +106,46 @@ const getVendor = cache(async (params: { vendorId: string; organizationId: strin
     },
   });
 
-  if (vendor?.website) {
-    const globalVendor = await db.globalVendors.findFirst({
+  // Fetch risk assessment from GlobalVendors if vendor has a website
+  // Find ALL duplicates and prefer the one WITH risk assessment data (most recent)
+  const domain = extractDomain(vendor?.website ?? null);
+  let globalVendor = null;
+  if (domain) {
+    const duplicates = await db.globalVendors.findMany({
       where: {
-        website: vendor.website,
+        website: {
+          contains: domain,
+        },
       },
+      select: {
+        website: true,
+        riskAssessmentData: true,
+        riskAssessmentVersion: true,
+        riskAssessmentUpdatedAt: true,
+      },
+      orderBy: [
+        { riskAssessmentUpdatedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
     });
-
-    return {
-      vendor: vendor,
-      globalVendor,
-    };
+    
+    // Prefer record WITH risk assessment data (most recent)
+    globalVendor = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
   }
 
+  // Merge GlobalVendors risk assessment data into vendor object for backward compatibility
+  const vendorWithRiskAssessment = vendor
+    ? {
+        ...vendor,
+        riskAssessmentData: globalVendor?.riskAssessmentData ?? null,
+        riskAssessmentVersion: globalVendor?.riskAssessmentVersion ?? null,
+        riskAssessmentUpdatedAt: globalVendor?.riskAssessmentUpdatedAt ?? null,
+      }
+    : null;
+
   return {
-    vendor: vendor,
-    globalVendor: null,
+    vendor: vendorWithRiskAssessment,
+    globalVendor,
   };
 });
 

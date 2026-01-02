@@ -49,6 +49,7 @@ export function TaskRichDescriptionField({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { orgId: organizationId } = useParams<{ orgId: string }>();
   const [isUploading, setIsUploading] = useState(false);
+  const isUploadingRef = useRef(false);
   
   // Add pulse animation and skeleton styles
   useEffect(() => {
@@ -221,9 +222,20 @@ export function TaskRichDescriptionField({
       onUpdate: ({ editor }) => {
         // Get content immediately when editor updates
         // This is called automatically when content changes (including when we insert files)
+        // Defer onChange during file uploads to avoid flushSync errors
         if (!editor.isDestroyed) {
           const content = editor.getJSON();
+          if (isUploadingRef.current) {
+            // During upload, defer to avoid flushSync during render
+            queueMicrotask(() => {
+              if (!editor.isDestroyed) {
+                onChange(content);
+              }
+            });
+          } else {
+            // Normal typing - can call synchronously
           onChange(content);
+          }
         }
       },
       editorProps: {
@@ -243,6 +255,7 @@ export function TaskRichDescriptionField({
             // Handle async upload without blocking
             (async () => {
               setIsUploading(true);
+              isUploadingRef.current = true;
               try {
                 const results = await onFileUpload(files);
                 if (results && results.length > 0 && editor && !editor.isDestroyed) {
@@ -266,13 +279,18 @@ export function TaskRichDescriptionField({
                   });
                   contentToInsert.push({ type: 'paragraph' });
                   editor.chain().focus().setTextSelection(pos).insertContent(contentToInsert).run();
-                  // Ensure onChange is called after drop insertion
+                  // Ensure onChange is called after drop insertion (defer to avoid flushSync during render)
+                  queueMicrotask(() => {
+                    if (!editor.isDestroyed) {
                   onChange(editor.getJSON());
+                    }
+                  });
                 }
               } catch (error) {
                 console.error('Failed to upload files:', error);
               } finally {
                 setIsUploading(false);
+                isUploadingRef.current = false;
               }
             })();
             
@@ -294,6 +312,7 @@ export function TaskRichDescriptionField({
           // Handle async upload without blocking
           (async () => {
             setIsUploading(true);
+            isUploadingRef.current = true;
             try {
               const results = await onFileUpload(files);
               if (results && results.length > 0 && editor && !editor.isDestroyed) {
@@ -318,13 +337,18 @@ export function TaskRichDescriptionField({
                 contentToInsert.push({ type: 'paragraph' });
                 const currentPos = editor.state.selection.from;
                 editor.chain().focus().setTextSelection(currentPos).insertContent(contentToInsert).run();
-                // Ensure onChange is called after paste insertion
+                // Ensure onChange is called after paste insertion (defer to avoid flushSync during render)
+                queueMicrotask(() => {
+                  if (!editor.isDestroyed) {
                 onChange(editor.getJSON());
+                  }
+                });
               }
             } catch (error) {
               console.error('Failed to upload files:', error);
             } finally {
               setIsUploading(false);
+              isUploadingRef.current = false;
             }
           })();
           
@@ -389,6 +413,7 @@ export function TaskRichDescriptionField({
       // Notify parent that file selection started
       onFileSelectStart?.();
       setIsUploading(true);
+      isUploadingRef.current = true;
       
       // Get current selection position before upload
       editor.chain().focus().run();
@@ -538,10 +563,13 @@ export function TaskRichDescriptionField({
         
         // Manually trigger onChange to ensure parent state is synced
         // TipTap's onUpdate should fire, but we ensure it here for reliability
+        // Defer to avoid flushSync during render cycle
+        queueMicrotask(() => {
         if (editor && !editor.isDestroyed) {
           const content = editor.getJSON();
           onChange(content);
         }
+        });
       } catch (error) {
         console.error('Failed to upload files:', error);
         toast.error('Failed to attach file');
@@ -558,6 +586,7 @@ export function TaskRichDescriptionField({
         }
       } finally {
         setIsUploading(false);
+        isUploadingRef.current = false;
         // Notify parent that file selection ended
         onFileSelectEnd?.();
       }
