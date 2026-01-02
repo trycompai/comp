@@ -28,6 +28,17 @@ interface PolicyForPDF {
 @Injectable()
 export class PolicyPdfRendererService {
   private cleanTextForPDF(text: string): string {
+    // Strip invisible/control-ish unicode chars that commonly appear via copy/paste.
+    // These aren't visible in the editor, but previous logic converted unknown unicode to
+    // "?" which looks like random corruption in the generated PDF.
+    const strippedText = text
+      .replace(/\u00AD/g, '')
+      .replace(/[\u200B-\u200F]/g, '')
+      .replace(/[\u202A-\u202E]/g, '')
+      .replace(/[\u2060-\u206F]/g, '')
+      .replace(/\uFEFF/g, '')
+      .replace(/\uFFFD/g, '');
+
     const replacements: { [key: string]: string } = {
       '\u2018': "'",
       '\u2019': "'",
@@ -52,7 +63,7 @@ export class PolicyPdfRendererService {
       '\u2194': '<->',
     };
 
-    let cleanedText = text;
+    let cleanedText = strippedText;
     for (const [unicode, replacement] of Object.entries(replacements)) {
       cleanedText = cleanedText.replace(new RegExp(unicode, 'g'), replacement);
     }
@@ -122,7 +133,10 @@ export class PolicyPdfRendererService {
         Ç: 'C',
         Ý: 'Y',
       };
-      return fallbacks[char] || '?';
+      // Preserve unknown characters instead of coercing to "?".
+      // If a glyph isn't supported by the active PDF font, viewers may show a tofu box,
+      // but inserting "?" is worse because it looks like text was modified.
+      return fallbacks[char] ?? char;
     });
   }
 

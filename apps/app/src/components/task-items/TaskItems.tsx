@@ -13,7 +13,6 @@ import { TaskItemsBody } from './TaskItemsBody';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { isVendorRiskAssessmentTaskItem } from './generated-task/vendor-risk-assessment/is-vendor-risk-assessment-task-item';
 
 interface TaskItemsProps {
   entityId: string;
@@ -66,26 +65,6 @@ export const TaskItems = ({
   } = useTaskItems(entityId, entityType, page, limit, sortBy, sortOrder, filters, {
     organizationId,
   });
-
-  // Check if any tasks are currently generating (in_progress vendor risk assessments)
-  // If yes, enable polling so skeleton updates automatically when generation completes
-  const hasGeneratingTasks = useMemo(() => {
-    const taskItems = taskItemsResponse?.data?.data ?? [];
-    return taskItems.some(
-      (taskItem) =>
-        taskItem.status === 'in_progress' && isVendorRiskAssessmentTaskItem(taskItem),
-    );
-  }, [taskItemsResponse?.data?.data]);
-
-  // Re-fetch with polling enabled if there are generating tasks
-  useEffect(() => {
-    if (hasGeneratingTasks) {
-      const interval = setInterval(() => {
-        refreshTaskItems();
-      }, 3000); // Poll every 3 seconds
-      return () => clearInterval(interval);
-    }
-  }, [hasGeneratingTasks, refreshTaskItems]);
 
   const {
     data: statsResponse,
@@ -171,12 +150,18 @@ export const TaskItems = ({
   }, [taskItemsResponse]);
 
   const displayResponse = taskItemsResponse || previousDataRef.current;
-  const taskItems = displayResponse?.data?.data || [];
+  const allTaskItems = displayResponse?.data?.data || [];
+  const taskItems = allTaskItems;
   const paginationMeta = displayResponse?.data?.meta;
   const stats = statsResponse?.data;
   const hasTasks = stats && stats.total > 0;
   const isFocusMode = Boolean(selectedTaskItemId);
-  const selectedTaskItem = taskItems.find((t) => t.id === selectedTaskItemId) || null;
+  // When in focus mode, check allTaskItems first (before filtering) to ensure we can show the selected task
+  // even if it would be filtered out. Fall back to filtered taskItems if not found.
+  const selectedTaskItem = 
+    allTaskItems.find((t) => t.id === selectedTaskItemId) || 
+    taskItems.find((t) => t.id === selectedTaskItemId) || 
+    null;
 
   // `useApiSWR` doesn't start fetching until organizationId is available, and during that time `isLoading` is false.
   // So we also treat "waiting for org" as initial loading for this section.
@@ -185,6 +170,26 @@ export const TaskItems = ({
     isWaitingForOrg || (!taskItemsResponse && !taskItemsError && taskItems.length === 0);
   // Only show empty state if we're not loading AND we have no data AND we've received a response
   const shouldShowEmptyState = !taskItemsLoading && !taskItemsError && taskItems.length === 0 && taskItemsResponse !== undefined;
+
+  // If the vendor risk assessment is generating, we show a disabled-looking row.
+  // We need lightweight polling so the UI flips from in_progress -> todo automatically
+  // once the background job updates the task status.
+  const hasGeneratingVerifyRiskAssessmentTask = useMemo(() => {
+    return allTaskItems.some(
+      (t) => t.title === 'Verify risk assessment' && t.status === 'in_progress',
+    );
+  }, [allTaskItems]);
+
+  useEffect(() => {
+    if (selectedTaskItemId) return;
+    if (!hasGeneratingVerifyRiskAssessmentTask) return;
+
+    const interval = setInterval(() => {
+      refreshTaskItems();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [hasGeneratingVerifyRiskAssessmentTask, refreshTaskItems, selectedTaskItemId]);
 
   const defaultDescription =
     description || `Manage tasks related to this ${entityType}`;

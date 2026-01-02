@@ -30,9 +30,7 @@ import { TaskItemFocusSidebar } from './TaskItemFocusSidebar';
 import { getTaskIdShort } from './task-item-utils';
 import { Comments } from '../comments/Comments';
 import { CommentEntityType } from '@db';
-import { GeneratedTaskItemMainContent } from './generated-task/GeneratedTaskItemMainContent';
 import { CustomTaskItemMainContent } from './custom-task/CustomTaskItemMainContent';
-import { isVendorRiskAssessmentTaskItem } from './generated-task/vendor-risk-assessment/is-vendor-risk-assessment-task-item';
 
 interface TaskItemFocusViewProps {
   taskItem: TaskItem;
@@ -68,7 +66,6 @@ export function TaskItemFocusView({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const pathname = usePathname();
-  const isGeneratedTask = isVendorRiskAssessmentTaskItem(taskItem);
 
   const { optimisticUpdate, optimisticDelete } = useOptimisticTaskItems(
     entityId,
@@ -172,9 +169,6 @@ export function TaskItemFocusView({
       <div className="flex gap-6 transition-all duration-300 ease-in-out">
         {/* Main Content */}
         <div className="flex-1 space-y-6 min-w-0">
-          {isGeneratedTask ? (
-            <GeneratedTaskItemMainContent taskItem={taskItem} />
-          ) : (
             <CustomTaskItemMainContent
             taskItem={taskItem}
             isUpdating={isUpdating}
@@ -183,7 +177,6 @@ export function TaskItemFocusView({
             entityId={entityId}
             entityType={entityType}
           />
-          )}
 
           {/* Divider */}
           <div className="border-t border-border" />

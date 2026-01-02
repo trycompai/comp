@@ -1,4 +1,7 @@
-import type { VendorRiskAssessmentDataV1, VendorRiskAssessmentLink } from './vendor-risk-assessment-types';
+import type {
+  VendorRiskAssessmentDataV1,
+  VendorRiskAssessmentLink,
+} from './vendor-risk-assessment-types';
 
 type TipTapNode = {
   type?: string;

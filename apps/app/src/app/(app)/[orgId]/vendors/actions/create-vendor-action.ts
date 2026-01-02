@@ -2,11 +2,96 @@
 
 import type { ActionResponse } from '@/types/actions';
 import { auth } from '@/utils/auth';
+import { extractDomain, normalizeWebsite } from '@/utils/normalize-website';
 import { db, type Vendor, VendorCategory, VendorStatus } from '@db';
+import axios from 'axios';
 import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+
+const getApiBaseUrl = (): string => {
+  return process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
+};
+
+const triggerRiskAssessmentIfMissing = async (params: {
+  organizationId: string;
+  vendor: Pick<Vendor, 'id' | 'name' | 'website'>;
+}): Promise<void> => {
+  const normalizedWebsite = normalizeWebsite(params.vendor.website ?? null);
+  if (!normalizedWebsite) {
+    console.log('[createVendorAction] Skip risk assessment trigger (no valid website)', {
+      organizationId: params.organizationId,
+      vendorId: params.vendor.id,
+      vendorName: params.vendor.name,
+      vendorWebsite: params.vendor.website ?? null,
+    });
+    return;
+  }
+
+  // Check if GlobalVendors already has risk assessment data for this domain
+  // Find ALL duplicates and check if ANY has risk assessment data
+  const domain = extractDomain(params.vendor.website ?? null);
+  let existing = null;
+  if (domain) {
+    const duplicates = await db.globalVendors.findMany({
+      where: {
+        website: {
+          contains: domain,
+        },
+      },
+      select: { website: true, riskAssessmentData: true },
+      orderBy: [
+        { riskAssessmentUpdatedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+    
+    // Prefer record WITH risk assessment data
+    existing = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
+  }
+  const existingHasData = Boolean(existing?.riskAssessmentData);
+
+  // Only trigger *research* when GlobalVendors is missing data.
+  if (existingHasData) {
+    console.log('[createVendorAction] Skip risk assessment trigger (GlobalVendors already has data)', {
+      organizationId: params.organizationId,
+      vendorId: params.vendor.id,
+      vendorName: params.vendor.name,
+      normalizedWebsite,
+    });
+    return;
+  }
+
+  const token = process.env.INTERNAL_API_TOKEN;
+
+  console.log('[createVendorAction] Trigger risk assessment research (GlobalVendors missing data)', {
+    organizationId: params.organizationId,
+    vendorId: params.vendor.id,
+    vendorName: params.vendor.name,
+    normalizedWebsite,
+    hasInternalToken: Boolean(token),
+  });
+
+  await axios.post(
+    `${getApiBaseUrl()}/v1/internal/vendors/risk-assessment/trigger-batch`,
+    {
+      organizationId: params.organizationId,
+      withResearch: true,
+      vendors: [
+        {
+          vendorId: params.vendor.id,
+          vendorName: params.vendor.name,
+          vendorWebsite: normalizedWebsite,
+        },
+      ],
+    },
+    {
+      headers: token ? { 'X-Internal-Token': token } : undefined,
+      timeout: 15_000,
+    },
+  );
+};
 
 const schema = z.object({
   organizationId: z.string().min(1, 'Organization ID is required'),
@@ -60,6 +145,22 @@ export const createVendorAction = createSafeActionClient()
           organizationId: input.parsedInput.organizationId,
         },
       });
+
+      // If we don't already have GlobalVendors risk assessment data for this website, trigger research.
+      // Best-effort: vendor creation should succeed even if the trigger fails.
+      try {
+        await triggerRiskAssessmentIfMissing({
+          organizationId: input.parsedInput.organizationId,
+          vendor,
+        });
+      } catch (error) {
+        console.warn('[createVendorAction] Risk assessment trigger failed (non-blocking)', {
+          organizationId: input.parsedInput.organizationId,
+          vendorId: vendor.id,
+          vendorName: vendor.name,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
 
       revalidatePath(`/${input.parsedInput.organizationId}/vendors`);
 

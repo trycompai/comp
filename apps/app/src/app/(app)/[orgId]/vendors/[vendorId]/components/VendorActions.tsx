@@ -18,10 +18,12 @@ import {
 } from '@comp/ui/dropdown-menu';
 import { Cog } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 export function VendorActions({ vendorId }: { vendorId: string }) {
+  const [_, setOpen] = useQueryState('vendor-overview-sheet');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const regenerate = useAction(regenerateVendorMitigationAction, {
     onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
@@ -43,6 +45,9 @@ export function VendorActions({ vendorId }: { vendorId: string }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setOpen('true')}>
+            Edit vendor name and description
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsConfirmOpen(true)}>
             Regenerate Risk Mitigation
           </DropdownMenuItem>

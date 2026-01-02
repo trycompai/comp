@@ -12200,6 +12200,120 @@
           "Task Management"
         ]
       }
+    },
+    "/v1/assistant-chat/history": {
+      "get": {
+        "description": "Returns the current user-scoped assistant chat history (ephemeral session context).",
+        "operationId": "AssistantChatController_getHistory_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get assistant chat history",
+        "tags": [
+          "Assistant Chat"
+        ]
+      },
+      "put": {
+        "description": "Replaces the current user-scoped assistant chat history (ephemeral session context).",
+        "operationId": "AssistantChatController_saveHistory_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAssistantChatHistoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Save assistant chat history",
+        "tags": [
+          "Assistant Chat"
+        ]
+      },
+      "delete": {
+        "description": "Deletes the current user-scoped assistant chat history.",
+        "operationId": "AssistantChatController_clearHistory_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Clear assistant chat history",
+        "tags": [
+          "Assistant Chat"
+        ]
+      }
     }
   },
   "info": {
@@ -15523,6 +15637,52 @@
           "fileData",
           "entityType",
           "entityId"
+        ]
+      },
+      "AssistantChatMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "msg_abc123"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "example": "user"
+          },
+          "text": {
+            "type": "string",
+            "example": "How do I invite a teammate?"
+          },
+          "createdAt": {
+            "type": "number",
+            "example": 1735781554000,
+            "description": "Unix epoch millis"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "text",
+          "createdAt"
+        ]
+      },
+      "SaveAssistantChatHistoryDto": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantChatMessageDto"
+            }
+          }
+        },
+        "required": [
+          "messages"
         ]
       }
     }
