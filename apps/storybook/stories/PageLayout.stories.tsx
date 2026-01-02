@@ -59,22 +59,20 @@ export const Default: Story = {
 export const Centered: Story = {
   render: () => (
     <div className="min-h-[400px]">
-      <PageLayout variant="center" padding="default">
-        <Card maxWidth="sm">
+      <PageLayout variant="center" contentWidth="md">
+        <Card width="full">
           <CardHeader>
-            <Stack align="center" gap="2">
+            <Stack align="center" gap="1.5" textAlign="center">
               <Heading level="2">Sign In</Heading>
               <Text variant="muted">Welcome back! Please sign in to continue.</Text>
             </Stack>
           </CardHeader>
           <CardContent>
-            <Stack gap="4">
-              <div className="w-full">
-                <Button>Sign In with Email</Button>
-              </div>
-              <div className="w-full">
-                <Button variant="outline">Continue with Google</Button>
-              </div>
+            <Stack gap="3">
+              <Button width="full">Sign In with Email</Button>
+              <Button variant="outline" width="full">
+                Continue with Google
+              </Button>
             </Stack>
           </CardContent>
         </Card>
@@ -86,10 +84,10 @@ export const Centered: Story = {
 export const AuthPage: Story = {
   render: () => (
     <div className="min-h-[500px]">
-      <PageLayout variant="center" padding="lg">
-        <Card maxWidth="md">
+      <PageLayout variant="center" padding="lg" contentWidth="lg">
+        <Card width="full">
           <CardHeader>
-            <Stack align="center" gap="3">
+            <Stack align="center" gap="3" textAlign="center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <span className="text-xl font-bold text-primary">A</span>
               </div>
@@ -101,9 +99,7 @@ export const AuthPage: Story = {
           </CardHeader>
           <CardContent>
             <Stack gap="4">
-              <div className="w-full">
-                <Button>Sign up with Email</Button>
-              </div>
+              <Button width="full">Sign up with Email</Button>
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -114,10 +110,14 @@ export const AuthPage: Story = {
               </div>
               <Stack direction="row" gap="2">
                 <div className="flex-1">
-                  <Button variant="outline">Google</Button>
+                  <Button variant="outline" width="full">
+                    Google
+                  </Button>
                 </div>
                 <div className="flex-1">
-                  <Button variant="outline">GitHub</Button>
+                  <Button variant="outline" width="full">
+                    GitHub
+                  </Button>
                 </div>
               </Stack>
             </Stack>

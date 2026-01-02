@@ -2,7 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
 const cardVariants = cva(
-  'ring-foreground/10 bg-card text-card-foreground gap-6 overflow-hidden rounded-xl py-6 text-sm shadow-xs ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group/card flex flex-col',
+  'ring-foreground/10 bg-card text-card-foreground gap-8 overflow-hidden rounded-xl py-6 text-sm shadow-xs ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group/card flex flex-col',
   {
     variants: {
       width: {
@@ -24,9 +24,14 @@ const cardVariants = cva(
         '3xl': 'max-w-3xl',
         full: 'max-w-full',
       },
+      spacing: {
+        default: '',
+        tight: 'gap-6',
+      },
     },
     defaultVariants: {
       width: 'auto',
+      spacing: 'default',
     },
   },
 );

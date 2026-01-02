@@ -20,6 +20,10 @@ const buttonVariants = cva(
           'bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30',
         link: 'text-primary underline-offset-4 hover:underline',
       },
+      width: {
+        auto: '',
+        full: 'w-full',
+      },
       size: {
         default:
           'h-9 gap-1.5 px-2.5 in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
@@ -52,6 +56,7 @@ const buttonVariants = cva(
     },
     defaultVariants: {
       variant: 'default',
+      width: 'auto',
       size: 'default',
     },
   },
@@ -71,6 +76,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       variant = 'default',
+      width = 'auto',
       size = 'default',
       loading = false,
       iconLeft,
@@ -89,7 +95,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         data-slot="button"
         data-loading={loading || undefined}
         disabled={isDisabled}
-        className={buttonVariants({ variant, size })}
+        className={buttonVariants({ variant, width, size })}
         {...props}
       >
         {loading ? (

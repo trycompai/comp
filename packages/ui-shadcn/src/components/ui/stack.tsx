@@ -16,6 +16,11 @@ const stackVariants = cva('flex', {
       stretch: 'items-stretch',
       baseline: 'items-baseline',
     },
+    textAlign: {
+      left: 'text-left',
+      center: 'text-center',
+      right: 'text-right',
+    },
     justify: {
       start: 'justify-start',
       center: 'justify-center',
@@ -54,11 +59,11 @@ const stackVariants = cva('flex', {
 interface StackProps
   extends Omit<React.ComponentProps<'div'>, 'className'>, VariantProps<typeof stackVariants> {}
 
-function Stack({ direction, align, justify, gap, wrap, ...props }: StackProps) {
+function Stack({ direction, align, justify, gap, wrap, textAlign, ...props }: StackProps) {
   return (
     <div
       data-slot="stack"
-      className={stackVariants({ direction, align, justify, gap, wrap })}
+      className={stackVariants({ direction, align, justify, gap, wrap, textAlign })}
       {...props}
     />
   );
