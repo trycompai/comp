@@ -41,7 +41,15 @@ export default function Chat() {
 
   const lastSavedJsonRef = useRef<string>('');
   const isHydratingRef = useRef<boolean>(false);
-  const latestStoredMessagesRef = useRef<AssistantStoredMessage[] | null>(null);
+  const latestSnapshotRef = useRef<{
+    organizationId: string;
+    messages: AssistantStoredMessage[];
+  } | null>(null);
+  const resolvedOrganizationIdRef = useRef<string | undefined>(resolvedOrganizationId);
+
+  useEffect(() => {
+    resolvedOrganizationIdRef.current = resolvedOrganizationId;
+  }, [resolvedOrganizationId]);
 
   const { messages, sendMessage, error, status, stop, setMessages } = useChat({
     id:
@@ -67,10 +75,17 @@ export default function Chat() {
 
     isHydratingRef.current = true;
 
+    // Clear current messages immediately so we never show cross-org history while loading.
+    setMessages([]);
+
+    const controller = new AbortController();
+    const orgIdAtStart = resolvedOrganizationId;
+
     void (async () => {
       const res = await apiClient.get<{ messages: AssistantStoredMessage[] }>(
         '/v1/assistant-chat/history',
         resolvedOrganizationId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       );
 
       if (res.error || res.status !== 200) {
@@ -80,8 +95,14 @@ export default function Chat() {
         });
       }
 
+      // If the org changed while we were loading, ignore this result.
+      if (resolvedOrganizationIdRef.current !== orgIdAtStart) {
+        isHydratingRef.current = false;
+        return;
+      }
+
       const stored = res.data?.messages ?? [];
-      latestStoredMessagesRef.current = stored;
+      latestSnapshotRef.current = { organizationId: orgIdAtStart, messages: stored };
       lastSavedJsonRef.current = JSON.stringify(stored);
 
       const uiMessages: UIMessage[] = stored.map((m) => ({
@@ -93,6 +114,10 @@ export default function Chat() {
       setMessages(uiMessages);
       isHydratingRef.current = false;
     })();
+
+    return () => {
+      controller.abort();
+    };
   }, [resolvedOrganizationId, setMessages, userId]);
 
   useEffect(() => {
@@ -130,7 +155,12 @@ export default function Chat() {
     const json = JSON.stringify(storedMessages);
     if (json === lastSavedJsonRef.current) return;
     lastSavedJsonRef.current = json;
-    latestStoredMessagesRef.current = storedMessages;
+    if (resolvedOrganizationId) {
+      latestSnapshotRef.current = {
+        organizationId: resolvedOrganizationId,
+        messages: storedMessages,
+      };
+    }
 
     // Debounce while streaming; save immediately once ready.
     const delayMs = isLoading ? 300 : 0;
@@ -154,14 +184,17 @@ export default function Chat() {
     if (!resolvedOrganizationId || !userId) return;
 
     return () => {
-      const latest = latestStoredMessagesRef.current;
-      if (!latest || latest.length === 0) return;
+      const snapshot = latestSnapshotRef.current;
+      if (!snapshot || snapshot.messages.length === 0) return;
+
+      // IMPORTANT: Always flush using the orgId that the snapshot was created for,
+      // not the orgId captured by this effect's closure (prevents cross-org mixups).
       void apiClient.call(
         '/v1/assistant-chat/history',
         {
           method: 'PUT',
-          body: JSON.stringify({ messages: latest }),
-          organizationId: resolvedOrganizationId,
+          body: JSON.stringify({ messages: snapshot.messages }),
+          organizationId: snapshot.organizationId,
           keepalive: true,
         },
         false,

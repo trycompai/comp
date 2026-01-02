@@ -34,6 +34,25 @@ import type { AssistantChatMessage } from './assistant-chat.types';
 export class AssistantChatController {
   constructor(private readonly assistantChatService: AssistantChatService) {}
 
+  private getUserScopedContext(auth: AuthContextType): { organizationId: string; userId: string } {
+    // Defensive checks (should already be guaranteed by HybridAuthGuard + AuthContext decorator)
+    if (!auth.organizationId) {
+      throw new BadRequestException('Organization ID is required');
+    }
+
+    if (auth.isApiKey) {
+      throw new BadRequestException(
+        'Assistant chat history is only available for user-authenticated requests (Bearer JWT).',
+      );
+    }
+
+    if (!auth.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    return { organizationId: auth.organizationId, userId: auth.userId };
+  }
+
   @Get('history')
   @ApiOperation({
     summary: 'Get assistant chat history',
@@ -51,19 +70,11 @@ export class AssistantChatController {
     },
   })
   async getHistory(@AuthContext() auth: AuthContextType): Promise<{ messages: AssistantChatMessage[] }> {
-    if (auth.isApiKey) {
-      throw new BadRequestException(
-        'Assistant chat history is only available for user-authenticated requests (Bearer JWT).',
-      );
-    }
-
-    if (!auth.userId) {
-      throw new BadRequestException('User ID is required');
-    }
+    const { organizationId, userId } = this.getUserScopedContext(auth);
 
     const messages = await this.assistantChatService.getHistory({
-      organizationId: auth.organizationId,
-      userId: auth.userId,
+      organizationId,
+      userId,
     });
 
     return { messages };
@@ -79,18 +90,10 @@ export class AssistantChatController {
     @AuthContext() auth: AuthContextType,
     @Body() dto: SaveAssistantChatHistoryDto,
   ): Promise<{ success: true }> {
-    if (auth.isApiKey) {
-      throw new BadRequestException(
-        'Assistant chat history is only available for user-authenticated requests (Bearer JWT).',
-      );
-    }
-
-    if (!auth.userId) {
-      throw new BadRequestException('User ID is required');
-    }
+    const { organizationId, userId } = this.getUserScopedContext(auth);
 
     await this.assistantChatService.saveHistory(
-      { organizationId: auth.organizationId, userId: auth.userId },
+      { organizationId, userId },
       dto.messages,
     );
 
@@ -103,19 +106,11 @@ export class AssistantChatController {
     description: 'Deletes the current user-scoped assistant chat history.',
   })
   async clearHistory(@AuthContext() auth: AuthContextType): Promise<{ success: true }> {
-    if (auth.isApiKey) {
-      throw new BadRequestException(
-        'Assistant chat history is only available for user-authenticated requests (Bearer JWT).',
-      );
-    }
-
-    if (!auth.userId) {
-      throw new BadRequestException('User ID is required');
-    }
+    const { organizationId, userId } = this.getUserScopedContext(auth);
 
     await this.assistantChatService.clearHistory({
-      organizationId: auth.organizationId,
-      userId: auth.userId,
+      organizationId,
+      userId,
     });
 
     return { success: true };
