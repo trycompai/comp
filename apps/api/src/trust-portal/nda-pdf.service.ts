@@ -253,7 +253,14 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
     try {
       pdfDoc = await PDFDocument.load(pdfBuffer);
     } catch (error) {
-      if (error instanceof EncryptedPDFError) {
+      // Check for encrypted PDF error - use name/message check as instanceof can fail across module boundaries
+      const isEncryptedError =
+        error instanceof EncryptedPDFError ||
+        (error instanceof Error &&
+          (error.name === 'EncryptedPDFError' ||
+            error.message.includes('is encrypted')));
+
+      if (isEncryptedError) {
         // Encrypted PDF - return as-is without watermark
         // User already signed NDA for accountability, encrypted PDFs require password anyway
         this.logger.debug(
