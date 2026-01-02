@@ -1,18 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   ContextMenu,
+  ContextMenuCheckboxItem,
   ContextMenuContent,
+  ContextMenuGroup,
   ContextMenuItem,
-  ContextMenuTrigger,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
   ContextMenuSeparator,
   ContextMenuShortcut,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-  ContextMenuCheckboxItem,
-  ContextMenuRadioGroup,
-  ContextMenuRadioItem,
-  ContextMenuLabel,
+  ContextMenuTrigger,
 } from '@trycompai/ui-shadcn';
 
 const meta = {
@@ -70,11 +71,13 @@ export const Default: Story = {
         </ContextMenuCheckboxItem>
         <ContextMenuCheckboxItem>Show Full URLs</ContextMenuCheckboxItem>
         <ContextMenuSeparator />
-        <ContextMenuRadioGroup value="person1">
+        <ContextMenuGroup>
           <ContextMenuLabel>People</ContextMenuLabel>
-          <ContextMenuRadioItem value="person1">John Doe</ContextMenuRadioItem>
-          <ContextMenuRadioItem value="person2">Jane Smith</ContextMenuRadioItem>
-        </ContextMenuRadioGroup>
+          <ContextMenuRadioGroup value="person1">
+            <ContextMenuRadioItem value="person1">John Doe</ContextMenuRadioItem>
+            <ContextMenuRadioItem value="person2">Jane Smith</ContextMenuRadioItem>
+          </ContextMenuRadioGroup>
+        </ContextMenuGroup>
       </ContextMenuContent>
     </ContextMenu>
   ),
@@ -100,4 +103,3 @@ export const Simple: Story = {
     </ContextMenu>
   ),
 };
-

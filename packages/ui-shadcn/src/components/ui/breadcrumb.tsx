@@ -228,10 +228,7 @@ function BreadcrumbEllipsisMenu({ collapsedItems }: { collapsedItems?: Breadcrum
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="size-5 [&>svg]:size-4 flex items-center justify-center cursor-pointer hover:text-foreground transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Show hidden breadcrumb items"
-      >
+      <DropdownMenuTrigger variant="ellipsis" aria-label="Show hidden breadcrumb items">
         <MoreHorizontalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">

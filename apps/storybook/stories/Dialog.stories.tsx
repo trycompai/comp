@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   Button,
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -88,7 +89,7 @@ export const Destructive: Story = {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline">Cancel</Button>
+          <DialogClose render={<Button variant="secondary" />}>Cancel</DialogClose>
           <Button variant="destructive">Delete</Button>
         </DialogFooter>
       </DialogContent>
