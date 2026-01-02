@@ -45,8 +45,10 @@ async function bootstrap(): Promise<void> {
   );
 
   // STEP 3: Configure body parser
-  app.use(express.json({ limit: '70mb' }));
-  app.use(express.urlencoded({ limit: '70mb', extended: true }));
+  // NOTE: Attachment uploads are sent as base64 in JSON, so request payloads are
+  // larger than the raw file size. Keep this above the user-facing max file size.
+  app.use(express.json({ limit: '150mb' }));
+  app.use(express.urlencoded({ limit: '150mb', extended: true }));
 
   // STEP 4: Enable global pipes and filters
   app.useGlobalPipes(

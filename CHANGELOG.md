@@ -1,3 +1,18 @@
+# [1.72.0](https://github.com/trycompai/comp/compare/v1.71.0...v1.72.0) (2026-01-01)
+
+
+### Bug Fixes
+
+* **email:** update import paths for unsubscribe URL to new package ([#1950](https://github.com/trycompai/comp/issues/1950)) ([a133735](https://github.com/trycompai/comp/commit/a133735712fa2ca2b275d4ff97fb637f483c1f2e))
+
+
+### Features
+
+* **api:** enhance vendor risk assessment task with status handling and skeleton UI ([#1956](https://github.com/trycompai/comp/issues/1956)) ([012cba9](https://github.com/trycompai/comp/commit/012cba98eef37b25a168a27f7d257e3ebd45e912))
+* **api:** increase concurrency limit for vendor risk assessment task ([#1957](https://github.com/trycompai/comp/issues/1957)) ([0a2bd7a](https://github.com/trycompai/comp/commit/0a2bd7acdb80c598e1885c086dbc4ef66573367f))
+* **api:** increase file upload size limits to 100MB ([#1959](https://github.com/trycompai/comp/issues/1959)) ([31da681](https://github.com/trycompai/comp/commit/31da6813b4151064aaf926155d7cc5b95ff95c6f))
+* **email:** add email package and update import paths for notifications ([#1951](https://github.com/trycompai/comp/issues/1951)) ([79407cf](https://github.com/trycompai/comp/commit/79407cfd74068a32eeb5a658c85ed9b1cb782c35))
+
 # [1.71.0](https://github.com/trycompai/comp/compare/v1.70.0...v1.71.0) (2025-12-16)
 
 

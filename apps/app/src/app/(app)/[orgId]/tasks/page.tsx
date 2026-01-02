@@ -6,7 +6,7 @@ import { TaskList } from './components/TaskList';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Tasks',
+    title: 'Evidence',
   };
 }
 

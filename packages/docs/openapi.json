@@ -4126,6 +4126,41 @@
         ]
       }
     },
+    "/v1/internal/vendors/risk-assessment/trigger-batch": {
+      "post": {
+        "operationId": "InternalVendorAutomationController_triggerVendorRiskAssessmentBatch_v1",
+        "parameters": [
+          {
+            "name": "X-Internal-Token",
+            "in": "header",
+            "description": "Internal service token (required in production)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriggerVendorRiskAssessmentBatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks triggered"
+          }
+        },
+        "summary": "Trigger vendor risk assessment tasks for a batch of vendors (internal)",
+        "tags": [
+          "Internal - Vendors"
+        ]
+      }
+    },
     "/v1/context": {
       "get": {
         "description": "Returns all context entries for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -8456,6 +8491,65 @@
         ]
       }
     },
+    "/v1/trust-access/{friendlyUrl}/faqs": {
+      "get": {
+        "description": "Retrieve the frequently asked questions for a published trust portal as structured data.",
+        "operationId": "TrustAccessController_getFaqs_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FAQs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "faqs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "answer": {
+                            "type": "string"
+                          },
+                          "order": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trust site not found or not published"
+          }
+        },
+        "summary": "Get FAQs for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/framework-editor/task-template": {
       "get": {
         "description": "Retrieve all framework editor task templates",
@@ -11822,6 +11916,642 @@
           "Browserbase"
         ]
       }
+    },
+    "/v1/task-management/stats": {
+      "get": {
+        "description": "Retrieve task items statistics (total count, counts by status) for a specific entity",
+        "operationId": "TaskManagementController_getTaskItemsStats_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the entity to get task items stats for",
+            "schema": {
+              "example": "vnd_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": true,
+            "in": "query",
+            "description": "Type of entity",
+            "schema": {
+              "enum": [
+                "vendor",
+                "risk"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task items statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "number"
+                    },
+                    "byStatus": {
+                      "type": "object",
+                      "properties": {
+                        "todo": {
+                          "type": "number"
+                        },
+                        "in_progress": {
+                          "type": "number"
+                        },
+                        "in_review": {
+                          "type": "number"
+                        },
+                        "done": {
+                          "type": "number"
+                        },
+                        "canceled": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task items statistics for an entity",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/task-management": {
+      "get": {
+        "description": "Retrieve paginated task items for a specific entity (vendor, risk)",
+        "operationId": "TaskManagementController_getTaskItems_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the entity to get task items for",
+            "schema": {
+              "example": "vnd_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": true,
+            "in": "query",
+            "description": "Type of entity",
+            "schema": {
+              "example": "vendor",
+              "type": "string",
+              "enum": [
+                "vendor",
+                "risk"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-indexed)",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 5,
+              "example": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "example": "todo",
+              "type": "string",
+              "enum": [
+                "todo",
+                "in_progress",
+                "in_review",
+                "done",
+                "canceled"
+              ]
+            }
+          },
+          {
+            "name": "priority",
+            "required": false,
+            "in": "query",
+            "description": "Filter by priority",
+            "schema": {
+              "example": "high",
+              "type": "string",
+              "enum": [
+                "urgent",
+                "high",
+                "medium",
+                "low"
+              ]
+            }
+          },
+          {
+            "name": "assigneeId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by assignee ID",
+            "schema": {
+              "example": "mbr_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort by field",
+            "schema": {
+              "default": "createdAt",
+              "example": "createdAt",
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "updatedAt",
+                "title",
+                "status",
+                "priority"
+              ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "example": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task items retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedTaskItemResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task items for an entity",
+        "tags": [
+          "Task Management"
+        ]
+      },
+      "post": {
+        "description": "Create a task item for an entity",
+        "operationId": "TaskManagementController_createTaskItem_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task item created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskItemResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a new task item",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/task-management/{id}": {
+      "put": {
+        "description": "Update an existing task item",
+        "operationId": "TaskManagementController_updateTaskItem_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Task item ID",
+            "schema": {
+              "example": "tski_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task item updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskItemResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a task item",
+        "tags": [
+          "Task Management"
+        ]
+      },
+      "delete": {
+        "description": "Delete an existing task item",
+        "operationId": "TaskManagementController_deleteTaskItem_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Task item ID",
+            "schema": {
+              "example": "tski_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Task item deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a task item",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/task-management/attachments": {
+      "post": {
+        "description": "Upload a file attachment for a task item with proper S3 path structure: org_{orgId}/attachments/task-item/{entityType}/{entityId}/files",
+        "operationId": "TaskManagementController_uploadTaskItemAttachment_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadTaskItemAttachmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Attachment uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload attachment to task item",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/task-management/attachments/{attachmentId}": {
+      "delete": {
+        "description": "Delete a file attachment for a task item (removes from S3 and database)",
+        "operationId": "TaskManagementController_deleteTaskItemAttachment_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "description": "Attachment ID",
+            "schema": {
+              "example": "att_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Attachment deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete attachment from task item",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/task-management/{id}/activity": {
+      "get": {
+        "description": "Retrieve all activity/audit logs for a specific task item",
+        "operationId": "TaskManagementController_getTaskItemActivity_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Task item ID",
+            "schema": {
+              "example": "tski_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity logs retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task item activity log",
+        "tags": [
+          "Task Management"
+        ]
+      }
+    },
+    "/v1/assistant-chat/history": {
+      "get": {
+        "description": "Returns the current user-scoped assistant chat history (ephemeral session context).",
+        "operationId": "AssistantChatController_getHistory_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get assistant chat history",
+        "tags": [
+          "Assistant Chat"
+        ]
+      },
+      "put": {
+        "description": "Replaces the current user-scoped assistant chat history (ephemeral session context).",
+        "operationId": "AssistantChatController_saveHistory_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAssistantChatHistoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Save assistant chat history",
+        "tags": [
+          "Assistant Chat"
+        ]
+      },
+      "delete": {
+        "description": "Deletes the current user-scoped assistant chat history.",
+        "operationId": "AssistantChatController_clearHistory_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for JWT auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Clear assistant chat history",
+        "tags": [
+          "Assistant Chat"
+        ]
+      }
     }
   },
   "info": {
@@ -12591,6 +13321,56 @@
             "example": "mem_abc123def456"
           }
         }
+      },
+      "TriggerVendorRiskAssessmentVendorDto": {
+        "type": "object",
+        "properties": {
+          "vendorId": {
+            "type": "string",
+            "description": "Vendor ID",
+            "example": "vnd_abc123"
+          },
+          "vendorName": {
+            "type": "string",
+            "description": "Vendor name",
+            "example": "CloudTech Solutions"
+          },
+          "vendorWebsite": {
+            "type": "object",
+            "description": "Vendor website (optional)",
+            "example": "https://cloudtechsolutions.com"
+          }
+        },
+        "required": [
+          "vendorId",
+          "vendorName"
+        ]
+      },
+      "TriggerVendorRiskAssessmentBatchDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID",
+            "example": "org_abc123"
+          },
+          "withResearch": {
+            "type": "boolean",
+            "description": "If false, skips Firecrawl research (cheaper). Defaults to true.",
+            "default": true
+          },
+          "vendors": {
+            "description": "Vendors to trigger risk assessment for",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TriggerVendorRiskAssessmentVendorDto"
+            }
+          }
+        },
+        "required": [
+          "organizationId",
+          "vendors"
+        ]
       },
       "CreateContextDto": {
         "type": "object",
@@ -14759,6 +15539,407 @@
           "automationId",
           "status",
           "createdAt"
+        ]
+      },
+      "TaskItemAssigneeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Member ID"
+          },
+          "user": {
+            "type": "object",
+            "description": "User information"
+          }
+        },
+        "required": [
+          "id",
+          "user"
+        ]
+      },
+      "TaskItemCreatorDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Member ID"
+          },
+          "user": {
+            "type": "object",
+            "description": "User information"
+          }
+        },
+        "required": [
+          "id",
+          "user"
+        ]
+      },
+      "TaskItemUpdaterDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Member ID"
+          },
+          "user": {
+            "type": "object",
+            "description": "User information"
+          }
+        },
+        "required": [
+          "id",
+          "user"
+        ]
+      },
+      "TaskItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Task item ID",
+            "example": "tski_abc123def456"
+          },
+          "title": {
+            "type": "string",
+            "description": "Task title",
+            "example": "Review vendor contract"
+          },
+          "description": {
+            "type": "object",
+            "description": "Task description",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "canceled"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "description": "Task priority",
+            "enum": [
+              "urgent",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the entity this task belongs to"
+          },
+          "entityType": {
+            "type": "string",
+            "description": "Type of entity",
+            "enum": [
+              "vendor",
+              "risk"
+            ]
+          },
+          "assignee": {
+            "description": "Assignee information",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskItemAssigneeDto"
+              }
+            ]
+          },
+          "createdBy": {
+            "description": "Creator information",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskItemCreatorDto"
+              }
+            ]
+          },
+          "updatedBy": {
+            "description": "Last updater information",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskItemUpdaterDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Creation timestamp"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "priority",
+          "entityId",
+          "entityType",
+          "assignee",
+          "createdBy",
+          "updatedBy",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "description": "Current page number"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Number of items per page"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total number of items"
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "Total number of pages"
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "description": "Whether there are more pages"
+          },
+          "hasPrevPage": {
+            "type": "boolean",
+            "description": "Whether there are previous pages"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "totalPages",
+          "hasNextPage",
+          "hasPrevPage"
+        ]
+      },
+      "PaginatedTaskItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "Array of task items",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskItemResponseDto"
+            }
+          },
+          "meta": {
+            "description": "Pagination metadata",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationMetaDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "CreateTaskItemDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Task title",
+            "example": "Review vendor contract"
+          },
+          "description": {
+            "type": "string",
+            "description": "Task description"
+          },
+          "status": {
+            "type": "string",
+            "description": "Task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "canceled"
+            ],
+            "default": "todo"
+          },
+          "priority": {
+            "type": "string",
+            "description": "Task priority",
+            "enum": [
+              "urgent",
+              "high",
+              "medium",
+              "low"
+            ],
+            "default": "medium"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the entity this task belongs to"
+          },
+          "entityType": {
+            "type": "string",
+            "description": "Type of entity",
+            "enum": [
+              "vendor",
+              "risk"
+            ],
+            "example": "vendor"
+          },
+          "assigneeId": {
+            "type": "string",
+            "description": "Assignee member ID"
+          }
+        },
+        "required": [
+          "title",
+          "entityId",
+          "entityType"
+        ]
+      },
+      "UpdateTaskItemDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Task description"
+          },
+          "status": {
+            "type": "string",
+            "description": "Task status",
+            "enum": [
+              "todo",
+              "in_progress",
+              "in_review",
+              "done",
+              "canceled"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "description": "Task priority",
+            "enum": [
+              "urgent",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "assigneeId": {
+            "type": "object",
+            "description": "Assignee member ID (set to null to unassign)",
+            "nullable": true
+          }
+        }
+      },
+      "UploadTaskItemAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Name of the file",
+            "example": "document.pdf",
+            "maxLength": 255
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded file data",
+            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "entityType": {
+            "type": "string",
+            "description": "Type of entity this task item belongs to (vendor or risk)",
+            "enum": [
+              "vendor",
+              "risk"
+            ],
+            "example": "vendor"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the entity this task item belongs to",
+            "example": "vnd_abc123def456"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData",
+          "entityType",
+          "entityId"
+        ]
+      },
+      "AssistantChatMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "msg_abc123"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "example": "user"
+          },
+          "text": {
+            "type": "string",
+            "example": "How do I invite a teammate?"
+          },
+          "createdAt": {
+            "type": "number",
+            "example": 1735781554000,
+            "description": "Unix epoch millis"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "text",
+          "createdAt"
+        ]
+      },
+      "SaveAssistantChatHistoryDto": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantChatMessageDto"
+            }
+          }
+        },
+        "required": [
+          "messages"
         ]
       }
     }

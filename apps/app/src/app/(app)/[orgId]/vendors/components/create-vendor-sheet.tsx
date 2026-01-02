@@ -10,7 +10,13 @@ import { X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { CreateVendorForm } from './create-vendor-form';
 
-export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: User })[] }) {
+export function CreateVendorSheet({
+  assignees,
+  organizationId,
+}: {
+  assignees: (Member & { user: User })[];
+  organizationId: string;
+}) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useQueryState('createVendorSheet');
   const isOpen = Boolean(open);
@@ -36,7 +42,7 @@ export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: 
           </SheetHeader>
 
           <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
-            <CreateVendorForm assignees={assignees} />
+            <CreateVendorForm assignees={assignees} organizationId={organizationId} />
           </ScrollArea>
         </SheetContent>
       </Sheet>
@@ -47,7 +53,7 @@ export function CreateVendorSheet({ assignees }: { assignees: (Member & { user: 
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerTitle hidden>{'Create Vendor'}</DrawerTitle>
       <DrawerContent className="p-6">
-        <CreateVendorForm assignees={assignees} />
+        <CreateVendorForm assignees={assignees} organizationId={organizationId} />
       </DrawerContent>
     </Drawer>
   );

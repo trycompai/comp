@@ -59,7 +59,7 @@ export function QuestionnaireUpload({
         ) : (
           <Dropzone
             onDrop={onFileSelect}
-            maxSize={10 * 1024 * 1024}
+            maxSize={100 * 1024 * 1024}
             maxFiles={1}
             multiple={false}
             disabled={isLoading}
@@ -89,7 +89,7 @@ export function QuestionnaireUpload({
                       {isDragActive ? 'Drop file here' : 'Drag & drop or click to select'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      PDF, Excel, CSV (max 10MB)
+                      PDF, Excel, CSV (max 100MB)
                     </p>
                   </div>
                 </div>

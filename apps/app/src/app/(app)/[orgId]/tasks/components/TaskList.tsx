@@ -261,9 +261,9 @@ export function TaskList({
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">Tasks</h1>
+          <h1 className="text-foreground text-xl font-semibold tracking-tight">Evidence</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
-            Manage and track your compliance tasks
+            Manage and track your compliance evidence
           </p>
         </div>
         <Button
@@ -273,7 +273,7 @@ export function TaskList({
           onClick={() => setCreateTaskOpen('true')}
         >
           <Plus className="h-3.5 w-3.5" />
-          <span className="text-xs">New Task</span>
+          <span className="text-xs">New Evidence</span>
         </Button>
       </div>
 
@@ -523,7 +523,7 @@ export function TaskList({
           <div className="flex w-full flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-2 lg:flex-1">
             <div className="w-full sm:flex-1 lg:max-w-[200px]">
               <SearchInput
-                placeholder="Search tasks..."
+                placeholder="Search evidence..."
                 className="text-xs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

@@ -25,6 +25,7 @@ enum AttachmentEntityType {
   risk
   comment
   trust_nda
+  task_item
 }
 
 enum AttachmentType {

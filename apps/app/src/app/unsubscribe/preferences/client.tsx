@@ -12,6 +12,8 @@ export interface EmailPreferences {
   taskReminders: boolean;
   weeklyTaskDigest: boolean;
   unassignedItemsNotifications: boolean;
+  taskMentions: boolean;
+  taskAssignments: boolean;
 }
 
 interface Props {
@@ -27,6 +29,8 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
     taskReminders: !initialPreferences.taskReminders,
     weeklyTaskDigest: !initialPreferences.weeklyTaskDigest,
     unassignedItemsNotifications: !initialPreferences.unassignedItemsNotifications,
+    taskMentions: !initialPreferences.taskMentions,
+    taskAssignments: !initialPreferences.taskAssignments,
   });
   const [error, setError] = useState<string>('');
 
@@ -57,6 +61,8 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
       taskReminders: !allUnsubscribed,
       weeklyTaskDigest: !allUnsubscribed,
       unassignedItemsNotifications: !allUnsubscribed,
+      taskMentions: !allUnsubscribed,
+      taskAssignments: !allUnsubscribed,
     });
   };
 
@@ -68,6 +74,8 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
       taskReminders: !preferences.taskReminders,
       weeklyTaskDigest: !preferences.weeklyTaskDigest,
       unassignedItemsNotifications: !preferences.unassignedItemsNotifications,
+      taskMentions: !preferences.taskMentions,
+      taskAssignments: !preferences.taskAssignments,
     };
 
     execute({
@@ -167,6 +175,38 @@ export function UnsubscribePreferencesClient({ email, token, initialPreferences 
                 <div className="text-sm text-muted-foreground">
                   Stop receiving notifications when items need reassignment after a member is
                   removed
+                </div>
+              </div>
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+              <Checkbox
+                checked={preferences.taskMentions}
+                onCheckedChange={(checked) => handleToggle('taskMentions', checked === true)}
+                className="mt-1 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground">
+                  Unsubscribe from Task Mentions
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Stop receiving notifications when someone mentions you in a task
+                </div>
+              </div>
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+              <Checkbox
+                checked={preferences.taskAssignments}
+                onCheckedChange={(checked) => handleToggle('taskAssignments', checked === true)}
+                className="mt-1 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground">
+                  Unsubscribe from Task Assignments
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Stop receiving notifications when someone assigns a task to you
                 </div>
               </div>
             </label>
