@@ -21,14 +21,7 @@ interface TaskItemEditableDescriptionProps {
 
 function parseDescription(desc: string | null | undefined): JSONContent | null {
   if (!desc) return null;
-  try {
-    const parsed = typeof desc === 'string' ? JSON.parse(desc) : desc;
-    if (parsed && typeof parsed === 'object' && (parsed.type === 'doc' || Array.isArray(parsed))) {
-      return parsed as JSONContent;
-    }
-  } catch {
-    // Not JSON - convert plain text to TipTap JSON format
-    // Wrap plain text in a TipTap document structure
+  const wrapPlainText = (text: string): JSONContent => {
     return {
       type: 'doc',
       content: [
@@ -37,14 +30,26 @@ function parseDescription(desc: string | null | undefined): JSONContent | null {
           content: [
             {
               type: 'text',
-              text: desc,
+              text,
             },
           ],
         },
       ],
     };
+  };
+
+  try {
+    const parsed = typeof desc === 'string' ? JSON.parse(desc) : desc;
+    if (parsed && typeof parsed === 'object' && (parsed.type === 'doc' || Array.isArray(parsed))) {
+      return parsed as JSONContent;
+    }
+
+    // Valid JSON, but not a TipTap doc/array — preserve the original content as plain text.
+    return wrapPlainText(desc);
+  } catch {
+    // Not JSON - convert plain text to TipTap JSON format
+    return wrapPlainText(desc);
   }
-  return null;
 }
 
 export function TaskItemEditableDescription({

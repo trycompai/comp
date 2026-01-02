@@ -2,6 +2,7 @@
 
 import type { ActionResponse } from '@/types/actions';
 import { auth } from '@/utils/auth';
+import { extractDomain, normalizeWebsite } from '@/utils/normalize-website';
 import { db, type Vendor, VendorCategory, VendorStatus } from '@db';
 import axios from 'axios';
 import { createSafeActionClient } from 'next-safe-action';
@@ -13,25 +14,11 @@ const getApiBaseUrl = (): string => {
   return process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
 };
 
-const normalizeWebsite = (website: string | undefined): string | null => {
-  if (!website || website.trim() === '') return null;
-
-  const trimmed = website.trim();
-  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-
-  try {
-    const url = new URL(withProtocol);
-    return url.toString();
-  } catch {
-    return null;
-  }
-};
-
 const triggerRiskAssessmentIfMissing = async (params: {
   organizationId: string;
   vendor: Pick<Vendor, 'id' | 'name' | 'website'>;
 }): Promise<void> => {
-  const normalizedWebsite = normalizeWebsite(params.vendor.website ?? undefined);
+  const normalizedWebsite = normalizeWebsite(params.vendor.website ?? null);
   if (!normalizedWebsite) {
     console.log('[createVendorAction] Skip risk assessment trigger (no valid website)', {
       organizationId: params.organizationId,
@@ -42,13 +29,31 @@ const triggerRiskAssessmentIfMissing = async (params: {
     return;
   }
 
-  const globalVendor = await db.globalVendors.findUnique({
-    where: { website: normalizedWebsite },
-    select: { riskAssessmentData: true },
-  });
+  // Check if GlobalVendors already has risk assessment data for this domain
+  // Find ALL duplicates and check if ANY has risk assessment data
+  const domain = extractDomain(params.vendor.website ?? null);
+  let existing = null;
+  if (domain) {
+    const duplicates = await db.globalVendors.findMany({
+      where: {
+        website: {
+          contains: domain,
+        },
+      },
+      select: { website: true, riskAssessmentData: true },
+      orderBy: [
+        { riskAssessmentUpdatedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+    
+    // Prefer record WITH risk assessment data
+    existing = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
+  }
+  const existingHasData = Boolean(existing?.riskAssessmentData);
 
   // Only trigger *research* when GlobalVendors is missing data.
-  if (globalVendor?.riskAssessmentData) {
+  if (existingHasData) {
     console.log('[createVendorAction] Skip risk assessment trigger (GlobalVendors already has data)', {
       organizationId: params.organizationId,
       vendorId: params.vendor.id,

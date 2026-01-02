@@ -2,6 +2,7 @@
 
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { extractDomain } from '@/utils/normalize-website';
 import { CommentEntityType, db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -106,16 +107,30 @@ const getVendor = cache(async (params: { vendorId: string; organizationId: strin
   });
 
   // Fetch risk assessment from GlobalVendors if vendor has a website
+  // Find ALL duplicates and prefer the one WITH risk assessment data (most recent)
+  const domain = extractDomain(vendor?.website ?? null);
   let globalVendor = null;
-  if (vendor?.website) {
-    globalVendor = await db.globalVendors.findUnique({
-      where: { website: vendor.website },
+  if (domain) {
+    const duplicates = await db.globalVendors.findMany({
+      where: {
+        website: {
+          contains: domain,
+        },
+      },
       select: {
+        website: true,
         riskAssessmentData: true,
         riskAssessmentVersion: true,
         riskAssessmentUpdatedAt: true,
       },
+      orderBy: [
+        { riskAssessmentUpdatedAt: 'desc' },
+        { createdAt: 'desc' },
+      ],
     });
+    
+    // Prefer record WITH risk assessment data (most recent)
+    globalVendor = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
   }
 
   // Merge GlobalVendors risk assessment data into vendor object for backward compatibility

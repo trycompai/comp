@@ -12,12 +12,38 @@ const normalizeWebsite = (website: string | null | undefined): string | null => 
   const trimmed = website.trim();
   if (!trimmed) return null;
 
-  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  // Require explicit protocol (do not silently force https)
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return null;
+  }
 
   try {
-    const url = new URL(withProtocol);
-    const normalized = url.toString().replace(/\/$/, '');
-    return normalized;
+    const url = new URL(trimmed);
+    const protocol = url.protocol.toLowerCase();
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
+    const port = url.port ? `:${url.port}` : '';
+    return `${protocol}//${hostname}${port}`;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Extract domain from website URL for GlobalVendors lookup.
+ * Removes www. prefix and returns just the domain (e.g., "example.com").
+ */
+const extractDomain = (website: string | null | undefined): string | null => {
+  if (!website) return null;
+
+  const trimmed = website.trim();
+  if (!trimmed) return null;
+
+  try {
+    // Add protocol if missing to make URL parsing work
+    const urlString = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const url = new URL(urlString);
+    // Remove www. prefix and return just the domain
+    return url.hostname.toLowerCase().replace(/^www\./, '');
   } catch {
     return null;
   }
@@ -144,33 +170,48 @@ export class VendorsService {
     let updatedVerifyTasks = 0;
 
     if (!withResearch) {
-      const websites = vendors
-        .map((v) => normalizeWebsite(v.vendorWebsite ?? null))
-        .filter((w): w is string => typeof w === 'string' && w.trim() !== '');
+      // Extract domains for all vendors and check which ones already have risk assessment data
+      const vendorDomains = vendors
+        .map((v) => ({
+          vendor: v,
+          domain: extractDomain(v.vendorWebsite ?? null),
+        }))
+        .filter((vd): vd is { vendor: TriggerVendorRiskAssessmentVendorDto; domain: string } => vd.domain !== null);
 
-      const existing = websites.length
-        ? await db.globalVendors.findMany({
-            where: {
-              website: { in: websites },
-              // Json fields require Prisma null sentinels (DbNull/JsonNull), not literal null
-              riskAssessmentData: { not: Prisma.DbNull },
-            },
-            select: { website: true },
-          })
-        : [];
+      // Check which domains already have risk assessment data using contains filter
+      const existingDomains = new Set<string>();
+      if (vendorDomains.length > 0) {
+        const uniqueDomains = Array.from(new Set(vendorDomains.map((vd) => vd.domain)));
+        const existing = await db.globalVendors.findMany({
+          where: {
+            OR: uniqueDomains.map((domain) => ({
+              website: { contains: domain },
+            })),
+            // Json fields require Prisma null sentinels (DbNull/JsonNull), not literal null
+            riskAssessmentData: { not: Prisma.DbNull },
+          },
+          select: { website: true },
+        });
 
-      const existingWebsiteSet = new Set(existing.map((g) => g.website));
+        // Extract domains from existing records to build the set
+        for (const gv of existing) {
+          const domain = extractDomain(gv.website);
+          if (domain) {
+            existingDomains.add(domain);
+          }
+        }
+      }
 
       vendorsToTrigger = vendors.filter((v) => {
-        const website = normalizeWebsite(v.vendorWebsite ?? null);
-        if (!website) return true; // Let the task handle "no website" skip behavior.
-        return !existingWebsiteSet.has(website);
+        const domain = extractDomain(v.vendorWebsite ?? null);
+        if (!domain) return true; // Let the task handle "no website" skip behavior.
+        return !existingDomains.has(domain);
       });
 
       skippedVendors = vendors.filter((v) => {
-        const website = normalizeWebsite(v.vendorWebsite ?? null);
-        if (!website) return false;
-        return existingWebsiteSet.has(website);
+        const domain = extractDomain(v.vendorWebsite ?? null);
+        if (!domain) return false;
+        return existingDomains.has(domain);
       });
 
       skippedBecauseAlreadyHasData = vendors.length - vendorsToTrigger.length;
@@ -274,43 +315,29 @@ export class VendorsService {
       }
     }
 
-    this.logger.log('Preparing to batch trigger vendor risk assessment tasks', {
-      organizationId,
-      vendorCount: vendors.length,
-      toTriggerCount: vendorsToTrigger.length,
-      skippedBecauseAlreadyHasData,
-      createdVerifyTasks,
-      updatedVerifyTasks,
-      withResearch,
-      vendorIds: vendorsToTrigger.map((v) => v.vendorId),
-    });
-
-    // Explicitly show which vendors we will trigger (and which we skipped) for observability.
-    // Keep payload small: only log id/name/website.
+    // Simplified logging: clear lists of what needs research vs what doesn't
     if (!withResearch && skippedVendors.length > 0) {
-      this.logger.log('Skipping vendors (GlobalVendors already has risk assessment data)', {
-        organizationId,
-        skippedCount: skippedVendors.length,
-        skipped: skippedVendors.map((v) => ({
-          vendorId: v.vendorId,
-          vendorName: v.vendorName,
-          vendorWebsite: v.vendorWebsite ?? null,
-        })),
+      this.logger.log('✅ Vendors that DO NOT need research (already have data)', {
+        count: skippedVendors.length,
+        vendors: skippedVendors.map((v) => `${v.vendorName} (${v.vendorWebsite ?? 'no website'})`),
       });
     }
 
-    this.logger.log('Triggering vendors for risk assessment task', {
-      organizationId,
-      triggerCount: vendorsToTrigger.length,
-      withResearch,
-      toTrigger: vendorsToTrigger.map((v) => ({
-        vendorId: v.vendorId,
-        vendorName: v.vendorName,
-        vendorWebsite: v.vendorWebsite ?? null,
-      })),
-    });
+    if (vendorsToTrigger.length > 0) {
+      this.logger.log('🔍 Vendors that NEED research (missing data)', {
+        count: vendorsToTrigger.length,
+        withResearch,
+        vendors: vendorsToTrigger.map((v) => `${v.vendorName} (${v.vendorWebsite ?? 'no website'})`),
+      });
+    } else {
+      this.logger.log('✅ All vendors already have risk assessment data - no research needed', {
+        totalVendors: vendors.length,
+      });
+    }
 
     // Use batchTrigger for efficiency (less overhead than N individual triggers)
+    // If we're triggering the task, it means research is needed (we've already filtered)
+    // So always pass withResearch: true when triggering
     const batch = vendorsToTrigger.map((v) => ({
       payload: {
         vendorId: v.vendorId,
@@ -319,31 +346,21 @@ export class VendorsService {
         vendorWebsite: normalizeWebsite(v.vendorWebsite ?? null),
         organizationId,
         createdByUserId: null,
-        withResearch,
+        withResearch: true, // Always true - if task is triggered, research is needed
       },
     }));
 
     try {
       if (vendorsToTrigger.length === 0) {
-        this.logger.log('No vendors need risk assessment triggering (all already have data)', {
-          organizationId,
-          vendorCount: vendors.length,
-          withResearch,
-        });
         return { triggered: 0, batchId: null };
       }
 
       const batchHandle = await tasks.batchTrigger('vendor-risk-assessment-task', batch);
 
-      this.logger.log(
-        `Successfully triggered ${vendorsToTrigger.length} vendor risk assessment tasks for organization ${organizationId}`,
-        {
-          batchId: batchHandle.batchId,
-          vendorCount: vendorsToTrigger.length,
-          skippedBecauseAlreadyHasData,
-          requestedVendorCount: vendors.length,
-        },
-      );
+      this.logger.log('✅ Triggered risk assessment tasks', {
+        count: vendorsToTrigger.length,
+        batchId: batchHandle.batchId,
+      });
 
       return {
         triggered: vendorsToTrigger.length,

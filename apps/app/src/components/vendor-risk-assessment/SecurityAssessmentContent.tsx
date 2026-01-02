@@ -3,6 +3,8 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import remarkGfm from 'remark-gfm';
+import { MemoizedReactMarkdown } from '@/components/markdown';
 
 interface SecurityAssessmentContentProps {
   text: string;
@@ -15,11 +17,15 @@ export function SecurityAssessmentContent({
 }: SecurityAssessmentContentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isLong = text.length > maxLength;
-  const preview = isLong ? text.slice(0, maxLength) : text;
-  const rest = isLong ? text.slice(maxLength) : '';
 
   if (!isLong) {
-    return <p className="text-sm text-foreground/90 leading-7">{text}</p>;
+    return (
+      <div className="text-sm text-foreground/90 leading-7">
+        <MemoizedReactMarkdown remarkPlugins={[remarkGfm]}>
+          {text}
+        </MemoizedReactMarkdown>
+      </div>
+    );
   }
 
   return (
@@ -30,21 +36,19 @@ export function SecurityAssessmentContent({
             isExpanded ? '' : 'max-h-48 overflow-hidden transition-all duration-300 ease-in-out'
           }
         >
-          <p className="text-sm text-foreground/90 leading-7">
-            {preview}
-            {!isExpanded && rest && '...'}
-          </p>
+          <div className="text-sm text-foreground/90 leading-7">
+            <MemoizedReactMarkdown remarkPlugins={[remarkGfm]}>
+              {text}
+            </MemoizedReactMarkdown>
+          </div>
         </div>
         <div
           className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card via-card/80 to-transparent pointer-events-none transition-opacity duration-300 ease-in-out ${
             isExpanded ? 'opacity-0' : 'opacity-100'
           }`}
         />
-        {isExpanded && (
-          <CollapsibleContent className="animate-in fade-in slide-in-from-top-2 duration-300">
-            <p className="text-sm text-foreground/90 leading-7 mt-0">{rest}</p>
-          </CollapsibleContent>
-        )}
+        {/* CollapsibleContent is intentionally unused: we render the full markdown once and control visibility via max-height */}
+        <CollapsibleContent />
       </div>
       <div className="pt-3">
         <CollapsibleTrigger asChild>

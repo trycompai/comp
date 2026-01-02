@@ -35,21 +35,24 @@ function incrementVersion(currentVersion: string | null | undefined): string {
 }
 
 /**
- * Determines if research is needed based on vendor existence and data availability
+ * Determines if research is needed.
+ * If withResearch is true, always do research (task was triggered because research is needed).
+ * Otherwise, check if data exists - if not, do research.
  */
 function shouldDoResearch(
   globalVendor: { riskAssessmentData: unknown; riskAssessmentVersion: string | null } | null,
-  forceResearch: boolean,
+  withResearch: boolean,
 ): boolean {
-  // Always do research if explicitly requested
-  if (forceResearch) {
+  // If withResearch is true, task was triggered because research is needed (we filter before triggering)
+  if (withResearch) {
     return true;
   }
 
-  // Do research if vendor doesn't exist in GlobalVendors or has no data
+  // Fallback: do research if vendor doesn't exist in GlobalVendors or has no data
+  // (This shouldn't happen if filtering works correctly, but kept as safety check)
   if (!globalVendor || !globalVendor.riskAssessmentData) {
     return true;
-    }
+  }
 
   // Otherwise, skip research (use existing data)
   return false;
@@ -93,15 +96,43 @@ function parseRiskAssessmentJson(value: string): Prisma.InputJsonValue {
   return parsed;
 }
 
+/**
+ * Extract domain from website URL for GlobalVendors lookup.
+ * Removes www. prefix and returns just the domain (e.g., "example.com").
+ */
+function extractDomain(website: string | null | undefined): string | null {
+  if (!website) return null;
+
+  const trimmed = website.trim();
+  if (!trimmed) return null;
+
+  try {
+    // Add protocol if missing to make URL parsing work
+    const urlString = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const url = new URL(urlString);
+    // Remove www. prefix and return just the domain
+    return url.hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
 function normalizeWebsite(website: string): string | null {
   const trimmed = website.trim();
   if (!trimmed) return null;
 
-  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  // Require explicit protocol (do not silently force https)
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return null;
+  }
 
   try {
-    const url = new URL(withProtocol);
-    return url.toString().replace(/\/$/, '');
+    const url = new URL(trimmed);
+    const protocol = url.protocol.toLowerCase();
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
+    const port = url.port ? `:${url.port}` : '';
+    // Canonical key ignores path/query/hash
+    return `${protocol}//${hostname}${port}`;
   } catch {
     return null;
   }
@@ -119,10 +150,6 @@ export const vendorRiskAssessmentTask = schemaTask({
   },
   maxDuration: 1000 * 60 * 10,
   run: async (payload) => {
-    logger.info('Vendor risk assessment task started', {
-      vendorId: payload.vendorId,
-      organizationId: payload.organizationId,
-    });
 
     const vendor = await db.vendor.findFirst({
       where: {
@@ -143,11 +170,7 @@ export const vendorRiskAssessmentTask = schemaTask({
     }
 
     if (!vendor.website) {
-      logger.info('Skipping vendor risk assessment - vendor has no website', {
-        vendorId: payload.vendorId,
-        organizationId: payload.organizationId,
-        vendorName: payload.vendorName,
-      });
+      logger.info('⏭️ SKIP (no website)', { vendor: payload.vendorName });
       // Mark vendor as assessed even without website (no risk assessment possible)
       await db.vendor.update({
         where: { id: vendor.id },
@@ -166,12 +189,7 @@ export const vendorRiskAssessmentTask = schemaTask({
 
     const normalizedWebsite = normalizeWebsite(vendor.website);
     if (!normalizedWebsite) {
-      logger.info('Skipping vendor risk assessment - invalid website', {
-        vendorId: payload.vendorId,
-        organizationId: payload.organizationId,
-        vendorName: payload.vendorName,
-        website: vendor.website,
-      });
+      logger.info('⏭️ SKIP (invalid website)', { vendor: payload.vendorName, website: vendor.website });
       await db.vendor.update({
         where: { id: vendor.id },
         data: { status: VendorStatus.assessed },
@@ -187,48 +205,47 @@ export const vendorRiskAssessmentTask = schemaTask({
       };
     }
 
-    // Check GlobalVendors for existing risk assessment
-    const globalVendor = await db.globalVendors.findUnique({
-      where: { website: normalizedWebsite },
-      select: {
-        riskAssessmentVersion: true,
-        riskAssessmentUpdatedAt: true,
-        riskAssessmentData: true,
-      },
-    });
+    // Check GlobalVendors for existing risk assessment using domain-based lookup
+    // Find ALL duplicates to update them all (not just the most recent)
+    const domain = extractDomain(vendor.website);
+    const globalVendors = domain
+      ? await db.globalVendors.findMany({
+          where: {
+            website: {
+              contains: domain,
+            },
+          },
+          select: {
+            website: true,
+            riskAssessmentVersion: true,
+            riskAssessmentUpdatedAt: true,
+            riskAssessmentData: true,
+          },
+          orderBy: [
+            { riskAssessmentUpdatedAt: 'desc' },
+            { createdAt: 'desc' },
+          ],
+        })
+      : [];
+    
+    // Use the most recent one for reading/checking, but we'll update all duplicates
+    const globalVendor = globalVendors[0] ?? null;
 
     // Determine if research is needed
+    // If withResearch is true, task was triggered because research is needed (we filter before triggering)
     const needsResearch = shouldDoResearch(globalVendor, payload.withResearch ?? false);
 
     if (needsResearch) {
-      const reason =
-        payload.withResearch === true
-          ? 'forced'
-          : !globalVendor
-            ? 'no_global_vendor_row'
-            : 'missing_risk_assessment_data';
-
-      logger.info('Vendor risk assessment will perform research', {
-        vendorId: payload.vendorId,
-        organizationId: payload.organizationId,
-        vendorName: payload.vendorName,
+      logger.info('🔍 DOING RESEARCH', {
+        vendor: payload.vendorName,
         website: normalizedWebsite,
-        reason,
-        existingVersion: globalVendor?.riskAssessmentVersion ?? null,
-        existingHasData: Boolean(globalVendor?.riskAssessmentData),
       });
-    }
-
-    // If we have existing data and don't need research, skip regeneration
-    if (!needsResearch && globalVendor?.riskAssessmentData) {
-      logger.info('Global vendor risk assessment already exists, skipping research', {
-        vendorId: payload.vendorId,
+    } else {
+      // This shouldn't happen if filtering works correctly, but kept as safety
+      logger.info('✅ SKIP RESEARCH (already has data)', {
+        vendor: payload.vendorName,
         website: normalizedWebsite,
-        organizationId: payload.organizationId,
-        vendorName: payload.vendorName,
-        forceResearch: payload.withResearch ?? false,
-        riskAssessmentVersion: globalVendor.riskAssessmentVersion,
-        riskAssessmentUpdatedAt: globalVendor.riskAssessmentUpdatedAt,
+        version: globalVendor ? globalVendor.riskAssessmentVersion : null,
       });
 
       // Still ensure a "Verify risk assessment" task exists so humans can confirm accuracy,
@@ -324,7 +341,7 @@ export const vendorRiskAssessmentTask = schemaTask({
         vendorId: vendor.id,
         deduped: true,
         researched: false,
-        riskAssessmentVersion: globalVendor.riskAssessmentVersion ?? 'v1',
+        riskAssessmentVersion: globalVendor?.riskAssessmentVersion ?? 'v1',
       };
     }
 
@@ -440,22 +457,49 @@ export const vendorRiskAssessmentTask = schemaTask({
 
     // Upsert GlobalVendors with risk assessment data (shared across all organizations)
     // Version is auto-incremented (v1 -> v2 -> v3, etc.)
-    await db.globalVendors.upsert({
-      where: { website: normalizedWebsite },
-      create: {
-        website: normalizedWebsite,
-        company_name: payload.vendorName,
-        riskAssessmentData: data,
-        riskAssessmentVersion: nextVersion,
-        riskAssessmentUpdatedAt: new Date(),
-      },
-      update: {
-        company_name: payload.vendorName,
-        riskAssessmentData: data,
-        riskAssessmentVersion: nextVersion,
-        riskAssessmentUpdatedAt: new Date(),
-      },
-    });
+    // Update ALL duplicates (www vs non-www) to ensure consistency
+    if (globalVendors.length > 0) {
+      // Update all existing duplicates with the same data
+      await Promise.all(
+        globalVendors.map((gv) =>
+          db.globalVendors.update({
+            where: { website: gv.website },
+            data: {
+              company_name: payload.vendorName,
+              riskAssessmentData: data,
+              riskAssessmentVersion: nextVersion,
+              riskAssessmentUpdatedAt: new Date(),
+            },
+          }),
+        ),
+      );
+      
+      if (globalVendors.length > 1) {
+        logger.info('Updated multiple duplicates', {
+          vendor: payload.vendorName,
+          count: globalVendors.length,
+          websites: globalVendors.map((gv) => gv.website),
+        });
+      }
+    } else {
+      // No existing records - create new one with normalized key
+      await db.globalVendors.upsert({
+        where: { website: normalizedWebsite },
+        create: {
+          website: normalizedWebsite,
+          company_name: payload.vendorName,
+          riskAssessmentData: data,
+          riskAssessmentVersion: nextVersion,
+          riskAssessmentUpdatedAt: new Date(),
+        },
+        update: {
+          company_name: payload.vendorName,
+          riskAssessmentData: data,
+          riskAssessmentVersion: nextVersion,
+          riskAssessmentUpdatedAt: new Date(),
+        },
+      });
+    }
 
     // Mark org-specific vendor as assessed
     await db.vendor.update({
@@ -483,12 +527,10 @@ export const vendorRiskAssessmentTask = schemaTask({
     });
     }
 
-    logger.info('Stored vendor risk assessment on vendor', {
-      vendorId: payload.vendorId,
-      website: vendor.website,
+    logger.info('✅ COMPLETED', {
+      vendor: payload.vendorName,
       researched: Boolean(research),
       version: nextVersion,
-      verifyTaskItemId,
     });
 
     return {
