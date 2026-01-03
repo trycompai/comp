@@ -1,5 +1,6 @@
 'use client';
 
+import { env } from '@/env.mjs';
 import { authClient } from './auth-client';
 
 interface TokenInfo {
@@ -104,7 +105,7 @@ class JWTManager {
       // If that didn't work, try the explicit token endpoint
       if (!newToken) {
         try {
-          const tokenResponse = await fetch('/api/auth/token', {
+          const tokenResponse = await fetch(`${env.NEXT_PUBLIC_API_URL}/api/auth/token`, {
             credentials: 'include',
           });
 

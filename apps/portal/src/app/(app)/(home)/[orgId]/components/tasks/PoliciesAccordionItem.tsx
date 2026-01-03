@@ -1,23 +1,21 @@
 'use client';
 
-import { acceptAllPolicies } from '@/actions/accept-policies';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import type { Member, Policy } from '@db';
+import { apiClient } from '@/lib/api-client';
+import { AccordionContent, AccordionItem, AccordionTrigger, Button } from '@trycompai/ui-shadcn';
 import { CheckCircle2, Circle, FileText } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import NextLink from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
+import type { EmployeePortalDashboard } from '../../types/employee-portal';
 
 interface PoliciesAccordionItemProps {
-  policies: Policy[];
-  member: Member;
+  policies: EmployeePortalDashboard['policies'];
+  member: EmployeePortalDashboard['member'];
 }
 
 export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionItemProps) {
-  const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [acceptedPolicies, setAcceptedPolicies] = useState<string[]>(
     policies.filter((p) => p.signedBy.includes(member.id)).map((p) => p.id),
   );
@@ -32,12 +30,16 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
         .filter((p) => !acceptedPolicies.includes(p.id))
         .map((p) => p.id);
 
-      const result = await acceptAllPolicies(unacceptedPolicyIds, member.id);
+      const result = await apiClient.post<{ success: boolean; error?: string }>(
+        '/v1/policies/acknowledge-bulk',
+        { policyIds: unacceptedPolicyIds },
+        member.organizationId,
+      );
 
-      if (result.success) {
+      if (!result.error) {
         setAcceptedPolicies([...acceptedPolicies, ...unacceptedPolicyIds]);
         toast.success('All policies accepted successfully');
-        router.refresh();
+        await mutate(['employee-portal-overview', member.organizationId]);
       } else {
         toast.error(result.error || 'Failed to accept policies');
       }
@@ -50,62 +52,72 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
   };
 
   return (
-    <AccordionItem value="policies" className="border rounded-xs">
-      <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
-        <div className="flex items-center gap-3">
+    <AccordionItem value="policies">
+      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+        <div className="flex flex-1 items-center gap-3 text-left">
           {hasAcceptedPolicies ? (
-            <CheckCircle2 className="text-primary h-5 w-5" />
+            <CheckCircle2 className="h-5 w-5" />
           ) : (
-            <Circle className="text-muted-foreground h-5 w-5" />
+            <Circle className="h-5 w-5" />
           )}
           <span
-            className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
+            className={
+              hasAcceptedPolicies
+                ? 'text-sm font-medium text-muted-foreground line-through'
+                : 'text-sm font-medium text-foreground'
+            }
           >
             Accept security policies
           </span>
         </div>
       </AccordionTrigger>
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4">
-          {policies.length > 0 ? (
-            <>
-              <p className="text-muted-foreground text-sm">
-                Please review and accept the following security policies:
-              </p>
-              <div>
-                {policies.map((policy) => {
-                  const isAccepted = acceptedPolicies.includes(policy.id);
 
-                  return (
-                    <div key={policy.id} className="underline flex gap-2 items-center">
-                      <Link
-                        href={`/${member.organizationId}/policy/${policy.id}`}
-                        className="hover:text-primary flex items-center gap-2 text-sm transition-colors"
+      <AccordionContent className="px-4 pt-1">
+        {policies.length > 0 ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Please review and accept the following security policies:
+            </p>
+
+            <div className="flex flex-col gap-2">
+              {policies.map((policy) => {
+                const isAccepted = acceptedPolicies.includes(policy.id);
+
+                return (
+                  <div key={policy.id} className="flex items-center justify-between gap-3">
+                    <NextLink
+                      href={`/${member.organizationId}/policy/${policy.id}`}
+                      className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span
+                        className={isAccepted ? 'text-muted-foreground line-through' : undefined}
                       >
-                        <FileText className="text-muted-foreground h-4 w-4" />
-                        <span className={cn(isAccepted && 'line-through')}>{policy.name}</span>
-                      </Link>
-                      {isAccepted && <CheckCircle2 className="text-primary h-3 w-3" />}
-                    </div>
-                  );
-                })}
-              </div>
-              <Button
-                size="sm"
-                onClick={handleAcceptAllPolicies}
-                disabled={hasAcceptedPolicies || isAcceptingAll}
-              >
-                {isAcceptingAll
-                  ? 'Accepting...'
-                  : hasAcceptedPolicies
-                    ? 'All Policies Accepted'
-                    : 'Accept All'}
-              </Button>
-            </>
-          ) : (
-            <p className="text-muted-foreground text-sm">No policies to accept.</p>
-          )}
-        </div>
+                        {policy.name}
+                      </span>
+                    </NextLink>
+
+                    {isAccepted ? <CheckCircle2 className="h-4 w-4" /> : null}
+                  </div>
+                );
+              })}
+            </div>
+
+            <Button
+              size="sm"
+              onClick={handleAcceptAllPolicies}
+              disabled={hasAcceptedPolicies || isAcceptingAll}
+            >
+              {hasAcceptedPolicies
+                ? 'All Policies Accepted'
+                : isAcceptingAll
+                  ? 'Accepting…'
+                  : 'Accept All'}
+            </Button>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">No policies to accept.</p>
+        )}
       </AccordionContent>
     </AccordionItem>
   );

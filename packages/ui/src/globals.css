@@ -94,7 +94,7 @@
 }
 
 @layer base {
-  * {
+  :where(*):not(:where(.chakra-scope, .chakra-scope *)) {
     @apply border-border;
   }
   body {
@@ -377,7 +377,7 @@
 }
 
 /* Firefox scrollbar styles */
-* {
+:where(*):not(:where(.chakra-scope, .chakra-scope *)) {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--secondary)) hsl(var(--background));
 }

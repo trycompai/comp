@@ -1,9 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@trycompai/ui-shadcn';
 import { useState } from 'react';
 
 export function GoogleSignIn({
@@ -30,8 +28,6 @@ export function GoogleSignIn({
       });
     }
 
-    console.log('******* redirectTo', redirectTo.toString());
-
     await authClient.signIn.social({
       provider: 'google',
       callbackURL: redirectTo.toString(),
@@ -41,18 +37,12 @@ export function GoogleSignIn({
   return (
     <Button
       onClick={handleSignIn}
-      className="w-full h-11 font-medium"
       variant="outline"
+      size="lg"
       disabled={isLoading}
+      className="w-full"
     >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <>
-          <Icons.Google className="h-4 w-4" />
-          Continue with Google
-        </>
-      )}
+      {isLoading ? 'Redirecting…' : 'Continue with Google'}
     </Button>
   );
 }
