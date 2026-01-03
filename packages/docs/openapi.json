@@ -7595,6 +7595,219 @@
         ]
       }
     },
+    "/v1/trust-portal/documents/upload": {
+      "post": {
+        "description": "Stores a document in the organization assets bucket and registers it for the trust portal.",
+        "operationId": "TrustPortalController_uploadTrustDocument_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadTrustDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload an additional trust portal document",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/documents/list": {
+      "post": {
+        "operationId": "TrustPortalController_listTrustDocuments_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListComplianceResourcesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documents retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrustDocumentResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List additional trust portal documents for the organization",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/documents/{documentId}/download": {
+      "post": {
+        "operationId": "TrustPortalController_getTrustDocumentUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrustDocumentSignedUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed URL generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustDocumentUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Generate a temporary signed URL for a trust portal document",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/documents/{documentId}/delete": {
+      "post": {
+        "operationId": "TrustPortalController_deleteTrustDocument_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteTrustDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete (deactivate) a trust portal document",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
     "/v1/trust-access/{friendlyUrl}/requests": {
       "post": {
         "description": "External users submit request for data access from trust site",
@@ -8197,6 +8410,97 @@
           }
         },
         "summary": "List compliance resources by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/documents": {
+      "get": {
+        "description": "Get list of trust portal additional documents available for download",
+        "operationId": "TrustAccessController_getTrustDocumentsByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents list returned"
+          }
+        },
+        "summary": "List additional documents by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/documents/download-all": {
+      "get": {
+        "description": "Creates a ZIP archive of all active trust portal additional documents and returns a signed download URL",
+        "operationId": "TrustAccessController_downloadAllTrustDocuments_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL for ZIP archive returned"
+          }
+        },
+        "summary": "Download all additional documents as a ZIP by access token",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/documents/{documentId}": {
+      "get": {
+        "description": "Get signed URL to download a specific trust portal additional document",
+        "operationId": "TrustAccessController_getTrustDocumentUrlByAccessToken_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "description": "Trust document ID",
+            "schema": {
+              "example": "tdoc_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL for document returned"
+          },
+          "400": {
+            "description": "Invalid access token"
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        },
+        "summary": "Download additional document by access token",
         "tags": [
           "Trust Access"
         ]
@@ -14795,6 +15099,112 @@
           "organizationId": {
             "type": "string",
             "description": "Organization ID that owns the compliance resources",
+            "example": "org_6914cd0e16e4c7dccbb54426"
+          }
+        },
+        "required": [
+          "organizationId"
+        ]
+      },
+      "UploadTrustDocumentDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the document",
+            "example": "org_6914cd0e16e4c7dccbb54426"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original file name",
+            "example": "security-overview.pdf"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type (optional)",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64-encoded file contents (no data URL prefix)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description shown in the trust portal",
+            "example": "Overview of our security program"
+          }
+        },
+        "required": [
+          "organizationId",
+          "fileName",
+          "fileData"
+        ]
+      },
+      "TrustDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "tdoc_abc123"
+          },
+          "name": {
+            "type": "string",
+            "example": "security-overview.pdf"
+          },
+          "description": {
+            "type": "object",
+            "example": "Overview of our security program"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-01-02T10:15:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-01-02T10:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TrustDocumentSignedUrlDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the document",
+            "example": "org_6914cd0e16e4c7dccbb54426"
+          }
+        },
+        "required": [
+          "organizationId"
+        ]
+      },
+      "TrustDocumentUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "signedUrl": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "signedUrl",
+          "fileName"
+        ]
+      },
+      "DeleteTrustDocumentDto": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the document",
             "example": "org_6914cd0e16e4c7dccbb54426"
           }
         },
