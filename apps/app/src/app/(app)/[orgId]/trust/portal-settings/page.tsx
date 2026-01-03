@@ -13,6 +13,11 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
   const certificateFiles = await fetchComplianceCertificates(orgId);
   const primaryColor = await fetchOrganizationPrimaryColor(orgId); // can be null
   const faqs = await fetchOrganizationFaqs(orgId); // can be null
+  const additionalDocuments = await db.trustDocument.findMany({
+    where: { organizationId: orgId, isActive: true },
+    select: { id: true, name: true, description: true, createdAt: true, updatedAt: true },
+    orderBy: { createdAt: 'desc' },
+  });
 
   return (
     <PageCore>
@@ -59,6 +64,13 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
             pcidssFileName={certificateFiles.pcidssFileName}
             nen7510FileName={certificateFiles.nen7510FileName}
             iso9001FileName={certificateFiles.iso9001FileName}
+            additionalDocuments={additionalDocuments.map((doc) => ({
+              id: doc.id,
+              name: doc.name,
+              description: doc.description,
+              createdAt: doc.createdAt.toISOString(),
+              updatedAt: doc.updatedAt.toISOString(),
+            }))}
           />
           <TrustPortalDomain
             domain={trustPortal?.domain ?? ''}
