@@ -1310,7 +1310,9 @@ export class TrustAccessService {
 
     archive.pipe(zipStream);
 
-    const usedNames = new Set<string>();
+    // Track names case-insensitively to avoid collisions on case-insensitive filesystems
+    // (e.g. Windows/macOS): "Report.pdf" vs "report.pdf"
+    const usedNamesLower = new Set<string>();
     const toSafeName = (name: string): string => {
       const sanitized = name.replace(/[^\w.\-() ]/g, '_').trim() || 'document';
       const dot = sanitized.lastIndexOf('.');
@@ -1319,11 +1321,11 @@ export class TrustAccessService {
 
       let candidate = `${base}${ext}`;
       let i = 1;
-      while (usedNames.has(candidate)) {
+      while (usedNamesLower.has(candidate.toLowerCase())) {
         candidate = `${base} (${i})${ext}`;
         i += 1;
       }
-      usedNames.add(candidate);
+      usedNamesLower.add(candidate.toLowerCase());
       return candidate;
     };
 
