@@ -2,7 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
 const cardVariants = cva(
-  'ring-foreground/10 bg-card text-card-foreground gap-6 overflow-hidden rounded-xl py-6 text-sm shadow-xs ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group/card flex flex-col',
+  'ring-foreground/10 bg-card text-card-foreground gap-4 overflow-hidden rounded-xl py-4 text-sm ring-1 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group/card flex flex-col',
   {
     variants: {
       width: {
@@ -26,8 +26,8 @@ const cardVariants = cva(
       },
       spacing: {
         default: '',
-        tight: 'gap-4',
-        relaxed: 'gap-8',
+        tight: 'gap-3',
+        relaxed: 'gap-6',
       },
     },
     defaultVariants: {
@@ -97,7 +97,7 @@ function CardHeader({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>
   return (
     <div
       data-slot="card-header"
-      className="gap-1 rounded-t-xl px-6 pb-4 group-data-[size=sm]/card:px-4 group-data-[size=sm]/card:pb-3 [.border-b]:pb-6 group-data-[size=sm]/card:[.border-b]:pb-4 group/card-header @container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]"
+      className="gap-1 rounded-t-xl px-4 group-data-[size=sm]/card:px-3 [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3 group/card-header @container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]"
       {...props}
     />
   );
@@ -107,7 +107,7 @@ function CardTitle({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>)
   return (
     <div
       data-slot="card-title"
-      className="text-base leading-normal font-medium group-data-[size=sm]/card:text-sm"
+      className="text-base leading-snug font-medium group-data-[size=sm]/card:text-sm"
       {...props}
     />
   );
@@ -129,7 +129,7 @@ function CardAction({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>
 
 function CardContent({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>) {
   return (
-    <div data-slot="card-content" className="px-6 group-data-[size=sm]/card:px-4" {...props} />
+    <div data-slot="card-content" className="px-4 group-data-[size=sm]/card:px-3" {...props} />
   );
 }
 
@@ -137,7 +137,7 @@ function CardFooter({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>
   return (
     <div
       data-slot="card-footer"
-      className="rounded-b-xl px-6 group-data-[size=sm]/card:px-4 [.border-t]:pt-6 group-data-[size=sm]/card:[.border-t]:pt-4 flex items-center justify-end gap-2"
+      className="bg-muted/50 rounded-b-xl border-t p-4 group-data-[size=sm]/card:p-3 flex items-center"
       {...props}
     />
   );

@@ -53,7 +53,7 @@ function SheetContent({
           <SheetPrimitive.Close
             data-slot="sheet-close"
             render={<Button variant="ghost" size="icon-sm" />}
-            className="absolute top-4 right-4"
+            className="absolute top-3 right-3"
           >
             <XIcon />
             <span className="sr-only">Close</span>
@@ -65,7 +65,7 @@ function SheetContent({
 }
 
 function SheetHeader({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>) {
-  return <div data-slot="sheet-header" className="gap-1.5 p-4 flex flex-col" {...props} />;
+  return <div data-slot="sheet-header" className="gap-0.5 p-4 flex flex-col" {...props} />;
 }
 
 function SheetFooter({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>) {
@@ -76,7 +76,7 @@ function SheetTitle({ ...props }: Omit<SheetPrimitive.Title.Props, 'className'>)
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className="text-foreground font-medium"
+      className="text-foreground text-base font-medium"
       {...props}
     />
   );

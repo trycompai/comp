@@ -13,6 +13,7 @@ export * from './carousel';
 export * from './chart';
 export * from './checkbox';
 export * from './collapsible';
+export * from './combobox';
 export * from './command';
 export * from './container';
 export * from './context-menu';

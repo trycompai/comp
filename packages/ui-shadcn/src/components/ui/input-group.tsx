@@ -11,7 +11,7 @@ function InputGroup({ ...props }: Omit<React.ComponentProps<'div'>, 'className'>
     <div
       data-slot="input-group"
       role="group"
-      className="border-input dark:bg-input/30 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot][aria-invalid=true]]:ring-destructive/20 has-[[data-slot][aria-invalid=true]]:border-destructive dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40 h-9 rounded-md border shadow-xs transition-[color,box-shadow] has-[[data-slot=input-group-control]:focus-visible]:ring-[3px] has-[[data-slot][aria-invalid=true]]:ring-[3px] has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-end]]:[&>input]:pt-3 has-[>[data-align=block-start]]:[&>input]:pb-3 has-[>[data-align=inline-end]]:[&>input]:pr-1.5 has-[>[data-align=inline-start]]:[&>input]:pl-1.5 [[data-slot=combobox-content]_&]:focus-within:border-inherit [[data-slot=combobox-content]_&]:focus-within:ring-0 group/input-group relative flex w-full min-w-0 items-center outline-none has-[>textarea]:h-auto"
+      className="border-input dark:bg-input/30 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot][aria-invalid=true]]:ring-destructive/20 has-[[data-slot][aria-invalid=true]]:border-destructive dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40 has-disabled:bg-input/50 dark:has-disabled:bg-input/80 h-8 rounded-lg border transition-colors has-disabled:opacity-50 has-[[data-slot=input-group-control]:focus-visible]:ring-[3px] has-[[data-slot][aria-invalid=true]]:ring-[3px] has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-end]]:[&>input]:pt-3 has-[>[data-align=block-start]]:[&>input]:pb-3 has-[>[data-align=inline-end]]:[&>input]:pr-1.5 has-[>[data-align=inline-start]]:[&>input]:pl-1.5 [[data-slot=combobox-content]_&]:focus-within:border-inherit [[data-slot=combobox-content]_&]:focus-within:ring-0 group/input-group relative flex w-full min-w-0 items-center outline-none has-[>textarea]:h-auto"
       {...props}
     />
   );
@@ -102,7 +102,7 @@ function InputGroupInput({ ...props }: Omit<React.ComponentProps<'input'>, 'clas
   return (
     <InputPrimitive
       data-slot="input-group-control"
-      className="h-9 rounded-none border-0 bg-transparent px-2.5 py-1 text-base shadow-none ring-0 transition-[color,box-shadow] focus-visible:ring-0 aria-invalid:ring-0 md:text-sm placeholder:text-muted-foreground w-full min-w-0 outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-transparent flex-1"
+      className="h-8 rounded-none border-0 bg-transparent px-2.5 py-1 text-base shadow-none ring-0 transition-colors focus-visible:ring-0 aria-invalid:ring-0 md:text-sm placeholder:text-muted-foreground w-full min-w-0 outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-transparent flex-1"
       {...props}
     />
   );
@@ -112,7 +112,7 @@ function InputGroupTextarea({ ...props }: Omit<React.ComponentProps<'textarea'>,
   return (
     <textarea
       data-slot="input-group-control"
-      className="rounded-none border-0 bg-transparent px-2.5 py-2 text-base shadow-none ring-0 transition-[color,box-shadow] focus-visible:ring-0 aria-invalid:ring-0 md:text-sm placeholder:text-muted-foreground flex field-sizing-content min-h-16 w-full outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-transparent flex-1 resize-none"
+      className="rounded-none border-0 bg-transparent px-2.5 py-2 text-base shadow-none ring-0 transition-colors focus-visible:ring-0 aria-invalid:ring-0 md:text-sm placeholder:text-muted-foreground flex field-sizing-content min-h-16 w-full outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-transparent flex-1 resize-none"
       {...props}
     />
   );
