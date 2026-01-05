@@ -41,9 +41,12 @@ export default async function Layout({
   const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
   let publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
+  // Get headers once to avoid multiple async calls
+  const requestHeaders = await headers();
+
   // Check if user has access to this organization
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
 
   if (!session) {
@@ -72,6 +75,23 @@ export default async function Layout({
   if (!member) {
     // User doesn't have access to this organization
     return redirect('/auth/unauthorized');
+  }
+
+  // Sync activeOrganizationId BEFORE any redirects that might use it
+  // This ensures session.activeOrganizationId is always correct for users with multiple orgs
+  const currentActiveOrgId = session.session.activeOrganizationId;
+  if (!currentActiveOrgId || currentActiveOrgId !== requestedOrgId) {
+    try {
+      await auth.api.setActiveOrganization({
+        headers: requestHeaders,
+        body: {
+          organizationId: requestedOrgId,
+        },
+      });
+    } catch (error) {
+      console.error('[Layout] Failed to sync activeOrganizationId:', error);
+      // Continue anyway - the URL params are the source of truth for this request
+    }
   }
 
   const roles = parseRolesString(member.role);
