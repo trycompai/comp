@@ -1,6 +1,7 @@
 'use client';
 
 import { regenerateRiskMitigationAction } from '@/app/(app)/[orgId]/risk/[riskId]/actions/regenerate-risk-mitigation';
+import { useRisk } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -23,8 +24,16 @@ import { toast } from 'sonner';
 
 export function RiskActions({ riskId }: { riskId: string }) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  
+  // Get SWR mutate function to refresh risk data after mutations
+  const { mutate: refreshRisk } = useRisk(riskId);
+  
   const regenerate = useAction(regenerateRiskMitigationAction, {
-    onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
+    onSuccess: () => {
+      toast.success('Regeneration triggered. This may take a moment.');
+      // Trigger SWR revalidation to refresh risk data
+      refreshRisk();
+    },
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
 

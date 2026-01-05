@@ -1,6 +1,7 @@
 'use client';
 
 import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
+import { useVendor } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -25,8 +26,16 @@ import { toast } from 'sonner';
 export function VendorActions({ vendorId }: { vendorId: string }) {
   const [_, setOpen] = useQueryState('vendor-overview-sheet');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  // Get SWR mutate function to refresh vendor data after mutations
+  const { mutate: refreshVendor } = useVendor(vendorId);
+
   const regenerate = useAction(regenerateVendorMitigationAction, {
-    onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
+    onSuccess: () => {
+      toast.success('Regeneration triggered. This may take a moment.');
+      // Trigger SWR revalidation to refresh vendor data
+      refreshVendor();
+    },
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
 
