@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
   UseGuards,
@@ -33,6 +34,13 @@ import {
   ComplianceResourceUrlResponseDto,
   UploadComplianceResourceDto,
 } from './dto/compliance-resource.dto';
+import {
+  DeleteTrustDocumentDto,
+  TrustDocumentResponseDto,
+  TrustDocumentSignedUrlDto,
+  TrustDocumentUrlResponseDto,
+  UploadTrustDocumentDto,
+} from './dto/trust-document.dto';
 import { TrustPortalService } from './trust-portal.service';
 
 class ListComplianceResourcesDto {
@@ -151,6 +159,91 @@ export class TrustPortalController {
   ): Promise<ComplianceResourceResponseDto[]> {
     this.assertOrganizationAccess(dto.organizationId, authContext);
     return this.trustPortalService.listComplianceResources(dto.organizationId);
+  }
+
+  @Post('documents/upload')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Upload an additional trust portal document',
+    description:
+      'Stores a document in the organization assets bucket and registers it for the trust portal.',
+  })
+  @ApiBody({ type: UploadTrustDocumentDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Document uploaded successfully',
+    type: TrustDocumentResponseDto,
+  })
+  async uploadTrustDocument(
+    @Body() dto: UploadTrustDocumentDto,
+    @AuthContext() authContext: AuthContextType,
+  ): Promise<TrustDocumentResponseDto> {
+    this.assertOrganizationAccess(dto.organizationId, authContext);
+    return this.trustPortalService.uploadTrustDocument(dto);
+  }
+
+  @Post('documents/list')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List additional trust portal documents for the organization',
+  })
+  @ApiBody({ type: ListComplianceResourcesDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Documents retrieved successfully',
+    type: [TrustDocumentResponseDto],
+  })
+  async listTrustDocuments(
+    @Body() dto: ListComplianceResourcesDto,
+    @AuthContext() authContext: AuthContextType,
+  ): Promise<TrustDocumentResponseDto[]> {
+    this.assertOrganizationAccess(dto.organizationId, authContext);
+    return this.trustPortalService.listTrustDocuments(dto.organizationId);
+  }
+
+  @Post('documents/:documentId/download')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate a temporary signed URL for a trust portal document',
+  })
+  @ApiBody({ type: TrustDocumentSignedUrlDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL generated successfully',
+    type: TrustDocumentUrlResponseDto,
+  })
+  async getTrustDocumentUrl(
+    @Body() dto: TrustDocumentSignedUrlDto,
+    @Param('documentId') documentId: string,
+    @AuthContext() authContext: AuthContextType,
+  ): Promise<TrustDocumentUrlResponseDto> {
+    this.assertOrganizationAccess(dto.organizationId, authContext);
+    return this.trustPortalService.getTrustDocumentUrl(documentId, dto);
+  }
+
+  @Post('documents/:documentId/delete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete (deactivate) a trust portal document',
+  })
+  @ApiBody({ type: DeleteTrustDocumentDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Document deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+      },
+    },
+  })
+  async deleteTrustDocument(
+    @Body() dto: DeleteTrustDocumentDto,
+    @Param('documentId') documentId: string,
+    @AuthContext() authContext: AuthContextType,
+  ): Promise<{ success: boolean }> {
+    this.assertOrganizationAccess(dto.organizationId, authContext);
+    return this.trustPortalService.deleteTrustDocument(documentId, dto);
   }
 
   private assertOrganizationAccess(

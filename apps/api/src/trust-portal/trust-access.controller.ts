@@ -455,6 +455,70 @@ export class TrustAccessController {
     return this.trustAccessService.getComplianceResourcesByAccessToken(token);
   }
 
+  @Get('access/:token/documents')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List additional documents by access token',
+    description:
+      'Get list of trust portal additional documents available for download',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Documents list returned',
+  })
+  async getTrustDocumentsByAccessToken(@Param('token') token: string) {
+    return this.trustAccessService.getTrustDocumentsByAccessToken(token);
+  }
+
+  @Get('access/:token/documents/download-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download all additional documents as a ZIP by access token',
+    description:
+      'Creates a ZIP archive of all active trust portal additional documents and returns a signed download URL',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL for ZIP archive returned',
+  })
+  async downloadAllTrustDocuments(@Param('token') token: string) {
+    return this.trustAccessService.downloadAllTrustDocumentsByAccessToken(token);
+  }
+
+  @Get('access/:token/documents/:documentId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download additional document by access token',
+    description:
+      'Get signed URL to download a specific trust portal additional document',
+  })
+  @ApiParam({
+    name: 'documentId',
+    description: 'Trust document ID',
+    example: 'tdoc_abc123',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL for document returned',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Document not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid access token',
+  })
+  async getTrustDocumentUrlByAccessToken(
+    @Param('token') token: string,
+    @Param('documentId') documentId: string,
+  ) {
+    return this.trustAccessService.getTrustDocumentUrlByAccessToken(
+      token,
+      documentId,
+    );
+  }
+
   @Get('access/:token/compliance-resources/:framework')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
