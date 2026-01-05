@@ -477,12 +477,13 @@ export class TrustPortalService {
       throw new NotFoundException('Document not found');
     }
 
-    await this.safeDeleteObject(record.s3Key);
-
     await db.trustDocument.update({
       where: { id: record.id },
       data: { isActive: false },
     });
+
+    // Best-effort cleanup: if S3 deletion fails, the document is already hidden from users
+    await this.safeDeleteObject(record.s3Key);
 
     return { success: true };
   }

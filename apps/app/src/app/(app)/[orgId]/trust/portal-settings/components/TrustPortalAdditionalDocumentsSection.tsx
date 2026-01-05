@@ -262,6 +262,7 @@ export function TrustPortalAdditionalDocumentsSection({
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                      if (isDownloading || isDeleting) return;
                       void handleDownload(doc.id, doc.name);
                     }
                   }}
