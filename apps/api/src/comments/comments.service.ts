@@ -279,6 +279,7 @@ export class CommentsService {
             commentContent: createCommentDto.content,
             entityType: createCommentDto.entityType,
             entityId: createCommentDto.entityId,
+            contextUrl: createCommentDto.contextUrl,
             mentionedUserIds,
             mentionedByUserId: userId,
           });
@@ -315,6 +316,7 @@ export class CommentsService {
     commentId: string,
     userId: string,
     content: string,
+    contextUrl?: string,
   ): Promise<CommentResponseDto> {
     try {
       // Get comment and verify ownership/permissions
@@ -378,6 +380,7 @@ export class CommentsService {
             commentContent: content,
             entityType: existingComment.entityType,
             entityId: existingComment.entityId,
+            contextUrl,
             mentionedUserIds: newlyMentionedUserIds,
             mentionedByUserId: userId,
           });
