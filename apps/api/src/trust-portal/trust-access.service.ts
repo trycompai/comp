@@ -1289,70 +1289,94 @@ export class TrustAccessService {
 
     const archive = archiver('zip', { zlib: { level: 9 } });
     const zipStream = new PassThrough();
+    let putPromise:
+      | Promise<unknown>
+      | undefined;
 
-    const putPromise = s3Client.send(
-      new PutObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: zipKey,
-        Body: zipStream,
-        ContentType: 'application/zip',
-        Metadata: {
-          organizationId,
-          grantId: grant.id,
-          kind: 'trust_documents_bundle',
-        },
-      }),
-    );
-
-    archive.on('error', (err) => {
-      zipStream.destroy(err);
-    });
-
-    archive.pipe(zipStream);
-
-    // Track names case-insensitively to avoid collisions on case-insensitive filesystems
-    // (e.g. Windows/macOS): "Report.pdf" vs "report.pdf"
-    const usedNamesLower = new Set<string>();
-    const toSafeName = (name: string): string => {
-      const sanitized = name.replace(/[^\w.\-() ]/g, '_').trim() || 'document';
-      const dot = sanitized.lastIndexOf('.');
-      const base = dot > 0 ? sanitized.slice(0, dot) : sanitized;
-      const ext = dot > 0 ? sanitized.slice(dot) : '';
-
-      let candidate = `${base}${ext}`;
-      let i = 1;
-      while (usedNamesLower.has(candidate.toLowerCase())) {
-        candidate = `${base} (${i})${ext}`;
-        i += 1;
-      }
-      usedNamesLower.add(candidate.toLowerCase());
-      return candidate;
-    };
-
-    for (const doc of documents) {
-      const response = await s3Client.send(
-        new GetObjectCommand({
+    try {
+      putPromise = s3Client.send(
+        new PutObjectCommand({
           Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-          Key: doc.s3Key,
+          Key: zipKey,
+          Body: zipStream,
+          ContentType: 'application/zip',
+          Metadata: {
+            organizationId,
+            grantId: grant.id,
+            kind: 'trust_documents_bundle',
+          },
         }),
       );
 
-      if (!response.Body) {
-        throw new InternalServerErrorException(
-          `No file data received from S3 for document ${doc.id}`,
+      archive.on('error', (err) => {
+        zipStream.destroy(err);
+      });
+
+      archive.pipe(zipStream);
+
+      // Track names case-insensitively to avoid collisions on case-insensitive filesystems
+      // (e.g. Windows/macOS): "Report.pdf" vs "report.pdf"
+      const usedNamesLower = new Set<string>();
+      const toSafeName = (name: string): string => {
+        const sanitized =
+          name.replace(/[^\w.\-() ]/g, '_').trim() || 'document';
+        const dot = sanitized.lastIndexOf('.');
+        const base = dot > 0 ? sanitized.slice(0, dot) : sanitized;
+        const ext = dot > 0 ? sanitized.slice(dot) : '';
+
+        let candidate = `${base}${ext}`;
+        let i = 1;
+        while (usedNamesLower.has(candidate.toLowerCase())) {
+          candidate = `${base} (${i})${ext}`;
+          i += 1;
+        }
+        usedNamesLower.add(candidate.toLowerCase());
+        return candidate;
+      };
+
+      for (const doc of documents) {
+        const response = await s3Client.send(
+          new GetObjectCommand({
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+            Key: doc.s3Key,
+          }),
+        );
+
+        if (!response.Body) {
+          throw new InternalServerErrorException(
+            `No file data received from S3 for document ${doc.id}`,
+          );
+        }
+
+        const bodyStream =
+          response.Body instanceof Readable
+            ? response.Body
+            : Readable.from(response.Body as any);
+
+        archive.append(bodyStream, { name: toSafeName(doc.name) });
+      }
+
+      await archive.finalize();
+      await putPromise;
+    } catch (error) {
+      // Ensure the upload stream is closed, otherwise the S3 PutObject may hang/reject later.
+      try {
+        archive.abort();
+      } catch {
+        // ignore
+      }
+
+      if (!zipStream.destroyed) {
+        zipStream.destroy(
+          error instanceof Error ? error : new Error('ZIP generation failed'),
         );
       }
 
-      const bodyStream =
-        response.Body instanceof Readable
-          ? response.Body
-          : Readable.from(response.Body as any);
+      // Avoid unhandled rejections from an in-flight S3 put.
+      await putPromise?.catch(() => undefined);
 
-      archive.append(bodyStream, { name: toSafeName(doc.name) });
+      throw error;
     }
-
-    await archive.finalize();
-    await putPromise;
 
     const signedUrl = await getSignedUrl(
       s3Client,
