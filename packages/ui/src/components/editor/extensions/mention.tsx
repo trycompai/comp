@@ -258,9 +258,12 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
             // Ensure items is always an array
             const items = Array.isArray(props.items) ? props.items : [];
 
+            // Include onSelect and onKeyDownRef to preserve keyboard navigation
             component.updateProps({
               ...props,
               items,
+              onSelect: suggestion.onSelect,
+              onKeyDownRef: keyDownHandlerRef,
             });
 
             if (!props.clientRect) {
