@@ -36,6 +36,7 @@ interface CreateCommentData {
   content: string;
   entityId: string;
   entityType: CommentEntityType;
+  contextUrl?: string;
   attachments?: Array<{
     fileName: string;
     fileType: string;
@@ -45,6 +46,7 @@ interface CreateCommentData {
 
 interface UpdateCommentData {
   content: string;
+  contextUrl?: string;
 }
 
 /**
@@ -69,7 +71,11 @@ export function useCommentActions() {
 
   const createComment = useCallback(
     async (data: CreateCommentData) => {
-      const response = await api.post<Comment>('/v1/comments', data);
+      const response = await api.post<Comment>('/v1/comments', {
+        ...data,
+        contextUrl:
+          data.contextUrl ?? (typeof window !== 'undefined' ? window.location.href : undefined),
+      });
       if (response.error) {
         throw new Error(response.error);
       }
@@ -80,7 +86,11 @@ export function useCommentActions() {
 
   const updateComment = useCallback(
     async (commentId: string, data: UpdateCommentData) => {
-      const response = await api.put<Comment>(`/v1/comments/${commentId}`, data);
+      const response = await api.put<Comment>(`/v1/comments/${commentId}`, {
+        ...data,
+        contextUrl:
+          data.contextUrl ?? (typeof window !== 'undefined' ? window.location.href : undefined),
+      });
       if (response.error) {
         throw new Error(response.error);
       }
@@ -144,6 +154,7 @@ export function useCommentWithAttachments() {
         content,
         entityId,
         entityType,
+        contextUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         attachments,
       });
     },

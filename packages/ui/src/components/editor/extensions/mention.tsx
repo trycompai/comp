@@ -17,13 +17,27 @@ export interface MentionListProps {
   items: MentionUser[];
   command: (item: MentionUser) => void;
   onSelect?: () => void;
+  // Callback to register the onKeyDown handler for parent access
+  onKeyDownRef?: React.MutableRefObject<((props: { event: KeyboardEvent }) => boolean) | null>;
 }
 
-function MentionList({ items, command, onSelect }: MentionListProps) {
+function MentionList({ items, command, onSelect, onKeyDownRef }: MentionListProps) {
   const safeItems = items || [];
   const [selectedIndex, setSelectedIndex] = useState(0);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Store current state in refs for the keydown handler
+  const selectedIndexRef = useRef(selectedIndex);
+  const safeItemsRef = useRef(safeItems);
+  
+  useEffect(() => {
+    selectedIndexRef.current = selectedIndex;
+  }, [selectedIndex]);
+  
+  useEffect(() => {
+    safeItemsRef.current = safeItems;
+  }, [safeItems]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -50,6 +64,8 @@ function MentionList({ items, command, onSelect }: MentionListProps) {
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (safeItems.length === 0) return;
+    
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setSelectedIndex((prev) => (prev + 1) % safeItems.length);
@@ -64,30 +80,41 @@ function MentionList({ items, command, onSelect }: MentionListProps) {
     }
   };
 
-  // Expose onKeyDown for ReactRenderer
+  // Register the onKeyDown handler for external access
   useEffect(() => {
-    if (containerRef.current) {
-      (containerRef.current as any).onKeyDown = (props: { event: KeyboardEvent }) => {
+    if (onKeyDownRef) {
+      onKeyDownRef.current = (props: { event: KeyboardEvent }) => {
         const { event } = props;
+        const currentItems = safeItemsRef.current;
+        const currentIndex = selectedIndexRef.current;
+        
+        if (currentItems.length === 0) return false;
+        
         if (event.key === 'ArrowDown') {
           event.preventDefault();
-          setSelectedIndex((prev) => (prev + 1) % safeItems.length);
+          setSelectedIndex((prev) => (prev + 1) % currentItems.length);
           return true;
         } else if (event.key === 'ArrowUp') {
           event.preventDefault();
-          setSelectedIndex((prev) => (prev - 1 + safeItems.length) % safeItems.length);
+          setSelectedIndex((prev) => (prev - 1 + currentItems.length) % currentItems.length);
           return true;
         } else if (event.key === 'Enter') {
           event.preventDefault();
-          if (safeItems[selectedIndex]) {
-            handleSelect(safeItems[selectedIndex]);
+          if (currentItems[currentIndex]) {
+            handleSelect(currentItems[currentIndex]);
           }
           return true;
         }
         return false;
       };
     }
-  }, [safeItems, selectedIndex]);
+    
+    return () => {
+      if (onKeyDownRef) {
+        onKeyDownRef.current = null;
+      }
+    };
+  }, [onKeyDownRef, command, onSelect]);
 
   if (safeItems.length === 0) {
     return (
@@ -183,19 +210,22 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
       render: () => {
         let component: ReactRenderer;
         let popup: TippyInstance | null = null;
+        // Mutable ref to store the keydown handler from the component
+        const keyDownHandlerRef: { current: ((props: { event: KeyboardEvent }) => boolean) | null } = { current: null };
 
         return {
           onStart: (props) => {
             // Ensure items is always an array
             const items = Array.isArray(props.items) ? props.items : [];
 
-            component = new ReactRenderer(MentionList as any, {
+            component = new ReactRenderer(MentionList, {
               props: {
                 ...props,
                 items,
                 onSelect: suggestion.onSelect,
+                onKeyDownRef: keyDownHandlerRef,
               },
-              editor: props.editor as any,
+              editor: props.editor,
             });
 
             if (!props.clientRect) {
@@ -248,15 +278,9 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
               return true;
             }
 
-            // Use the ref's onKeyDown method if available
-            const ref = component.ref as {
-              onKeyDown?: (p: { event: KeyboardEvent }) => boolean;
-            } | null;
-            if (ref?.onKeyDown) {
-              const result = ref.onKeyDown(props);
-              if (result) {
-                return true;
-              }
+            // Use the registered keydown handler from the component
+            if (keyDownHandlerRef.current) {
+              return keyDownHandlerRef.current(props);
             }
 
             return false;

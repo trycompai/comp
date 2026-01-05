@@ -41,15 +41,21 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const { createCommentWithFiles } = useCommentWithAttachments();
   const { members } = useOrganizationMembers();
 
-  // Convert members to MentionUser format
+  // Convert members to MentionUser format - only show admin/owner users
   const mentionMembers = useMemo(() => {
     if (!members) return [];
-    return members.map((member) => ({
-      id: member.user.id,
-      name: member.user.name || member.user.email || 'Unknown',
-      email: member.user.email || '',
-      image: member.user.image,
-    }));
+    return members
+      .filter((member) => {
+        if (!member.role) return false;
+        const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
+        return roles.includes('owner') || roles.includes('admin');
+      })
+      .map((member) => ({
+        id: member.user.id,
+        name: member.user.name || member.user.email || 'Unknown',
+        email: member.user.email || '',
+        image: member.user.image,
+      }));
   }, [members]);
 
   const triggerFileInput = () => {
