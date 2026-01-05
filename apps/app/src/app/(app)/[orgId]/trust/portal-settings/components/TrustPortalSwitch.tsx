@@ -20,6 +20,11 @@ import { z } from 'zod';
 import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
+import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
+import {
+  TrustPortalAdditionalDocumentsSection,
+  type TrustPortalDocument,
+} from './TrustPortalAdditionalDocumentsSection';
 import {
   GDPR,
   HIPAA,
@@ -118,6 +123,7 @@ export function TrustPortalSwitch({
   iso9001,
   iso9001Status,
   friendlyUrl,
+  faqs,
   // File props - will be passed from page.tsx later
   iso27001FileName,
   iso42001FileName,
@@ -128,6 +134,7 @@ export function TrustPortalSwitch({
   pcidssFileName,
   nen7510FileName,
   iso9001FileName,
+  additionalDocuments,
 }: {
   enabled: boolean;
   slug: string;
@@ -155,6 +162,7 @@ export function TrustPortalSwitch({
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
   friendlyUrl: string | null;
+  faqs: any[] | null;
   iso27001FileName?: string | null;
   iso42001FileName?: string | null;
   gdprFileName?: string | null;
@@ -164,6 +172,7 @@ export function TrustPortalSwitch({
   pcidssFileName?: string | null;
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
+  additionalDocuments: TrustPortalDocument[];
 }) {
   const [certificateFiles, setCertificateFiles] = useState<Record<string, string | null>>({
     iso27001: iso27001FileName ?? null,
@@ -537,7 +546,7 @@ export function TrustPortalSwitch({
             {form.watch('enabled') && (
               <div className="pt-2">
                 <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
-                <div className="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-4 lg:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="friendlyUrl"
@@ -658,19 +667,27 @@ export function TrustPortalSwitch({
                                   />
                                 </div>
                               </div>
-                              <p className="mt-1.5 text-xs text-muted-foreground">
-                                Used for branding across your trust portal
-                              </p>
                             </div>
                           </FormControl>
                         </FormItem>
                       )}
                     />
                 </div>
+                <div className="w-full lg:col-span-2 mt-1.5">
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Used for branding across your trust portal
+                  </p>
+                </div>
               </div>
             )}
             {form.watch('enabled') && (
-              <div className="">
+              <div className="pt-6">
+                {/* FAQ Section */}
+                <TrustPortalFaqBuilder initialFaqs={faqs} orgId={orgId} />
+              </div>
+            )}
+            {form.watch('enabled') && (
+              <div className="pt-6">
                 {/* Compliance Frameworks Section */}
                 <div>
                   <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
@@ -988,6 +1005,15 @@ export function TrustPortalSwitch({
                 </div>
               </div>
             )}
+            {form.watch('enabled') && (
+              <div className="pt-6">
+                <TrustPortalAdditionalDocumentsSection
+                  organizationId={orgId}
+                  enabled={true}
+                  documents={additionalDocuments}
+                />
+              </div>
+            )}
           </div>
         </div>
       </form>
@@ -1032,9 +1058,9 @@ function ComplianceFramework({
       return;
     }
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const MAX_FILE_SIZE = 100 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
-      toast.error('File size must be less than 10MB');
+      toast.error('File size must be less than 100MB');
       return;
     }
 
@@ -1335,7 +1361,7 @@ function ComplianceFramework({
                         {isDragging ? 'Drop your certificate here' : 'Drag & drop certificate'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        or click to browse • PDF only, max 10MB
+                        or click to browse • PDF only, max 100MB
                       </p>
                     </div>
                   </div>
@@ -1357,3 +1383,5 @@ function ComplianceFramework({
     </>
   );
 }
+
+

@@ -12,6 +12,12 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
   const primaryColor = await fetchOrganizationPrimaryColor(orgId); // can be null
+  const faqs = await fetchOrganizationFaqs(orgId); // can be null
+  const additionalDocuments = await db.trustDocument.findMany({
+    where: { organizationId: orgId, isActive: true },
+    select: { id: true, name: true, description: true, createdAt: true, updatedAt: true },
+    orderBy: { createdAt: 'desc' },
+  });
 
   return (
     <PageCore>
@@ -48,6 +54,7 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
             nen7510Status={trustPortal?.nen7510Status ?? 'started'}
             iso9001Status={trustPortal?.iso9001Status ?? 'started'}
             friendlyUrl={trustPortal?.friendlyUrl ?? null}
+            faqs={faqs}
             iso27001FileName={certificateFiles.iso27001FileName}
             iso42001FileName={certificateFiles.iso42001FileName}
             gdprFileName={certificateFiles.gdprFileName}
@@ -57,6 +64,13 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
             pcidssFileName={certificateFiles.pcidssFileName}
             nen7510FileName={certificateFiles.nen7510FileName}
             iso9001FileName={certificateFiles.iso9001FileName}
+            additionalDocuments={additionalDocuments.map((doc) => ({
+              id: doc.id,
+              name: doc.name,
+              description: doc.description,
+              createdAt: doc.createdAt.toISOString(),
+              updatedAt: doc.updatedAt.toISOString(),
+            }))}
           />
           <TrustPortalDomain
             domain={trustPortal?.domain ?? ''}
@@ -225,6 +239,24 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
   }
 
   return result;
+}
+
+async function fetchOrganizationFaqs(orgId: string): Promise<any[] | null> {
+  try {
+    const organization = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { trustPortalFaqs: true },
+    });
+    
+    if (!organization?.trustPortalFaqs || organization.trustPortalFaqs === null) {
+      return null;
+    }
+
+    return Array.isArray(organization.trustPortalFaqs) ? organization.trustPortalFaqs : null;
+  } catch (error) {
+    console.warn('Error fetching organization FAQs:', error);
+    return null;
+  }
 }
 
 async function getJwtToken(cookieHeader: string): Promise<string | null> {

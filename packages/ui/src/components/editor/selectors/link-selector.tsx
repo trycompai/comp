@@ -43,6 +43,7 @@ export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) 
     <Popover modal={true} open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           size="sm"
           variant="ghost"
           className={cn('hover:bg-accent gap-2', {
@@ -64,6 +65,7 @@ export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) 
         {value && (
           <div className="p-1">
             <Button
+              type="button"
               onClick={() => {
                 if (value) {
                   editor.chain().focus().extendMarkRange('link').setLink({ href: value }).run();
@@ -83,6 +85,7 @@ export const LinkSelector = ({ open, onOpenChange, editor }: LinkSelectorProps) 
         {isActive && (
           <div className="p-1">
             <Button
+              type="button"
               onClick={() => {
                 editor.chain().focus().unsetLink().run();
                 onOpenChange(false);

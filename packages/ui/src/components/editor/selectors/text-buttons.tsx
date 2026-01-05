@@ -14,6 +14,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
   return (
     <div className="flex space-x-1">
       <Button
+        type="button"
         size="sm"
         variant="ghost"
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -24,6 +25,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         <Bold className="h-4 w-4" />
       </Button>
       <Button
+        type="button"
         size="sm"
         variant="ghost"
         onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -34,6 +36,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         <Italic className="h-4 w-4" />
       </Button>
       <Button
+        type="button"
         size="sm"
         variant="ghost"
         onClick={() => editor.chain().focus().toggleUnderline().run()}
@@ -44,6 +47,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         <Underline className="h-4 w-4" />
       </Button>
       <Button
+        type="button"
         size="sm"
         variant="ghost"
         onClick={() => editor.chain().focus().toggleStrike().run()}
@@ -54,6 +58,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         <Strikethrough className="h-4 w-4" />
       </Button>
       <Button
+        type="button"
         size="sm"
         variant="ghost"
         onClick={() => editor.chain().focus().toggleCode().run()}

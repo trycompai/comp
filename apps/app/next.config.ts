@@ -52,7 +52,9 @@ const config: NextConfig = {
 
   experimental: {
     serverActions: {
-      bodySizeLimit: '15mb',
+      // NOTE: Attachment uploads may be sent as base64 strings, which increases payload size.
+      // Keep this above the user-facing max file size.
+      bodySizeLimit: '150mb',
       allowedOrigins:
         process.env.NODE_ENV === 'production'
           ? ([process.env.NEXT_PUBLIC_PORTAL_URL, 'https://app.trycomp.ai'].filter(

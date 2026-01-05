@@ -66,6 +66,11 @@ model GlobalVendors {
   subprocessors               String[]
   type_of_company             String?
 
+  // Vendor Risk Assessment (shared across all organizations)
+  riskAssessmentData      Json?
+  riskAssessmentVersion   String?
+  riskAssessmentUpdatedAt DateTime?
+
   approved  Boolean  @default(false)
   createdAt DateTime @default(now())
 

@@ -29,12 +29,11 @@
  * --syntax-cursor-line: hsla(230, 8%, 24%, 0.05);
  */
 
-  code[class*="language-"],
-  pre[class*="language-"] {
+  code[class*='language-'],
+  pre[class*='language-'] {
     background: hsl(230, 1%, 98%);
     color: hsl(230, 8%, 24%);
-    font-family:
-      "Fira Code", "Fira Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-family: 'Fira Code', 'Fira Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     direction: ltr;
     text-align: left;
     white-space: pre;
@@ -51,22 +50,22 @@
   }
 
   /* Selection */
-  code[class*="language-"]::-moz-selection,
-  code[class*="language-"] *::-moz-selection,
-  pre[class*="language-"] *::-moz-selection {
+  code[class*='language-']::-moz-selection,
+  code[class*='language-'] *::-moz-selection,
+  pre[class*='language-'] *::-moz-selection {
     background: hsl(230, 1%, 90%);
     color: inherit;
   }
 
-  code[class*="language-"]::selection,
-  code[class*="language-"] *::selection,
-  pre[class*="language-"] *::selection {
+  code[class*='language-']::selection,
+  code[class*='language-'] *::selection,
+  pre[class*='language-'] *::selection {
     background: hsl(230, 1%, 90%);
     color: inherit;
   }
 
   /* Code blocks */
-  pre[class*="language-"] {
+  pre[class*='language-'] {
     padding: 1em;
     margin: 0.5em 0;
     overflow: auto;
@@ -74,7 +73,7 @@
   }
 
   /* Inline code */
-  :not(pre) > code[class*="language-"] {
+  :not(pre) > code[class*='language-'] {
     padding: 0.2em 0.3em;
     border-radius: 0.3em;
     white-space: normal;
@@ -303,9 +302,7 @@
 
   /* Hovering over a linkable line number (in the gutter area) */
   /* Requires Line Numbers plugin as well */
-  pre[id].linkable-line-numbers.linkable-line-numbers
-    span.line-numbers-rows
-    > span:hover:before {
+  pre[id].linkable-line-numbers.linkable-line-numbers span.line-numbers-rows > span:hover:before {
     background-color: hsla(230, 8%, 24%, 0.05);
   }
 
@@ -358,10 +355,7 @@
   pre.diff-highlight > code .token.token.deleted:not(.prefix)::-moz-selection,
   pre.diff-highlight > code .token.token.deleted:not(.prefix) *::-moz-selection,
   pre > code.diff-highlight .token.token.deleted:not(.prefix)::-moz-selection,
-  pre
-    > code.diff-highlight
-    .token.token.deleted:not(.prefix)
-    *::-moz-selection {
+  pre > code.diff-highlight .token.token.deleted:not(.prefix) *::-moz-selection {
     background-color: hsla(353, 95%, 66%, 0.25);
   }
 
@@ -378,15 +372,9 @@
   }
 
   pre.diff-highlight > code .token.token.inserted:not(.prefix)::-moz-selection,
-  pre.diff-highlight
-    > code
-    .token.token.inserted:not(.prefix)
-    *::-moz-selection,
+  pre.diff-highlight > code .token.token.inserted:not(.prefix) *::-moz-selection,
   pre > code.diff-highlight .token.token.inserted:not(.prefix)::-moz-selection,
-  pre
-    > code.diff-highlight
-    .token.token.inserted:not(.prefix)
-    *::-moz-selection {
+  pre > code.diff-highlight .token.token.inserted:not(.prefix) *::-moz-selection {
     background-color: hsla(135, 73%, 55%, 0.25);
   }
 
@@ -480,13 +468,12 @@
  * --syntax-cursor-line: hsla(220, 100%, 80%, 0.04);
  */
 
-  code[class*="language-"],
-  pre[class*="language-"] {
+  code[class*='language-'],
+  pre[class*='language-'] {
     background: hsl(220, 13%, 18%);
     color: hsl(220, 14%, 71%);
     text-shadow: 0 1px rgba(0, 0, 0, 0.3);
-    font-family:
-      "Fira Code", "Fira Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-family: 'Fira Code', 'Fira Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     direction: ltr;
     text-align: left;
     white-space: pre;
@@ -503,24 +490,24 @@
   }
 
   /* Selection */
-  code[class*="language-"]::-moz-selection,
-  code[class*="language-"] *::-moz-selection,
-  pre[class*="language-"] *::-moz-selection {
+  code[class*='language-']::-moz-selection,
+  code[class*='language-'] *::-moz-selection,
+  pre[class*='language-'] *::-moz-selection {
     background: hsl(220, 13%, 28%);
     color: inherit;
     text-shadow: none;
   }
 
-  code[class*="language-"]::selection,
-  code[class*="language-"] *::selection,
-  pre[class*="language-"] *::selection {
+  code[class*='language-']::selection,
+  code[class*='language-'] *::selection,
+  pre[class*='language-'] *::selection {
     background: hsl(220, 13%, 28%);
     color: inherit;
     text-shadow: none;
   }
 
   /* Code blocks */
-  pre[class*="language-"] {
+  pre[class*='language-'] {
     padding: 1em;
     margin: 0.5em 0;
     overflow: auto;
@@ -528,7 +515,7 @@
   }
 
   /* Inline code */
-  :not(pre) > code[class*="language-"] {
+  :not(pre) > code[class*='language-'] {
     padding: 0.2em 0.3em;
     border-radius: 0.3em;
     white-space: normal;
@@ -536,8 +523,8 @@
 
   /* Print */
   @media print {
-    code[class*="language-"],
-    pre[class*="language-"] {
+    code[class*='language-'],
+    pre[class*='language-'] {
       text-shadow: none;
     }
   }
@@ -761,9 +748,7 @@
 
   /* Hovering over a linkable line number (in the gutter area) */
   /* Requires Line Numbers plugin as well */
-  pre[id].linkable-line-numbers.linkable-line-numbers
-    span.line-numbers-rows
-    > span:hover:before {
+  pre[id].linkable-line-numbers.linkable-line-numbers span.line-numbers-rows > span:hover:before {
     background-color: hsla(220, 100%, 80%, 0.04);
   }
 
@@ -816,10 +801,7 @@
   pre.diff-highlight > code .token.token.deleted:not(.prefix)::-moz-selection,
   pre.diff-highlight > code .token.token.deleted:not(.prefix) *::-moz-selection,
   pre > code.diff-highlight .token.token.deleted:not(.prefix)::-moz-selection,
-  pre
-    > code.diff-highlight
-    .token.token.deleted:not(.prefix)
-    *::-moz-selection {
+  pre > code.diff-highlight .token.token.deleted:not(.prefix) *::-moz-selection {
     background-color: hsla(353, 95%, 66%, 0.25);
   }
 
@@ -836,15 +818,9 @@
   }
 
   pre.diff-highlight > code .token.token.inserted:not(.prefix)::-moz-selection,
-  pre.diff-highlight
-    > code
-    .token.token.inserted:not(.prefix)
-    *::-moz-selection,
+  pre.diff-highlight > code .token.token.inserted:not(.prefix) *::-moz-selection,
   pre > code.diff-highlight .token.token.inserted:not(.prefix)::-moz-selection,
-  pre
-    > code.diff-highlight
-    .token.token.inserted:not(.prefix)
-    *::-moz-selection {
+  pre > code.diff-highlight .token.token.inserted:not(.prefix) *::-moz-selection {
     background-color: hsla(135, 73%, 55%, 0.25);
   }
 
@@ -907,20 +883,20 @@
   }
 }
 
-tr[data-comment-highlight="true"] {
+tr[data-comment-highlight='true'] {
   @apply !bg-[var(--color-yellow)]/20;
   transition: background-color 150ms ease;
 }
 
-.dark tr[data-comment-highlight="true"] {
+.dark tr[data-comment-highlight='true'] {
   @apply !bg-[var(--color-yellow)]/20;
   background-color: rgba(188, 133, 255, 0.22);
 }
 
-tr[data-comment-draft="true"] {
+tr[data-comment-draft='true'] {
   background-color: rgba(59, 130, 246, 0.12);
 }
 
-tr[data-comment-draft="true"] td:first-child {
+tr[data-comment-draft='true'] td:first-child {
   border-left-color: rgba(59, 130, 246, 0.4);
 }

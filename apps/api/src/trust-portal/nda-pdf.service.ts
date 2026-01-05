@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
+import {
+  PDFDocument,
+  rgb,
+  StandardFonts,
+  degrees,
+  EncryptedPDFError,
+} from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 
 @Injectable()
@@ -242,7 +248,30 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
     },
   ): Promise<Buffer> {
     const { name, email, docId, watermarkText } = params;
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
+
+    let pdfDoc: PDFDocument;
+    try {
+      pdfDoc = await PDFDocument.load(pdfBuffer);
+    } catch (error) {
+      // Check for encrypted PDF error - use name/message check as instanceof can fail across module boundaries
+      const isEncryptedError =
+        error instanceof EncryptedPDFError ||
+        (error instanceof Error &&
+          (error.name === 'EncryptedPDFError' ||
+            error.message.includes('is encrypted')));
+
+      if (isEncryptedError) {
+        // Encrypted PDF - return as-is without watermark
+        // User already signed NDA for accountability, encrypted PDFs require password anyway
+        this.logger.debug(
+          `Skipping watermark for PDF ${docId} - file is encrypted`,
+        );
+        return pdfBuffer;
+      }
+      // Re-throw other parsing errors
+      throw error;
+    }
+
     await this.addWatermark(pdfDoc, name, email, docId, watermarkText);
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);

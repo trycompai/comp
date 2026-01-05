@@ -44,6 +44,8 @@ export const env = createEnv({
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
     NOVU_API_KEY: z.string().optional(),
+    INTERNAL_API_TOKEN: z.string().optional(),
+    STRIPE_SECRET_KEY: z.string().optional(),
   },
 
   client: {
@@ -111,6 +113,8 @@ export const env = createEnv({
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
     NOVU_API_KEY: process.env.NOVU_API_KEY,
     NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: process.env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER,
+    INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

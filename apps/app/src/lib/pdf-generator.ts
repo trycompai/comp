@@ -32,6 +32,28 @@ interface PDFConfig {
 
 // Helper function to clean text for PDF rendering
 const cleanTextForPDF = (text: string): string => {
+  // Strip invisible/control-ish unicode chars that commonly appear via copy/paste.
+  // These aren't visible in the editor, but our previous implementation converted them
+  // into "?" which *is* visible and looks like random corruption in PDFs.
+  //
+  // - U+00AD: soft hyphen
+  // - U+200B..U+200F: zero-width space/joiners + direction marks
+  // - U+202A..U+202E: bidi embedding/override marks
+  // - U+2060..U+206F: word joiner + other format chars
+  // - U+FEFF: byte order mark
+  // - U+FFFD: replacement character
+  const stripInvisibleChars = (value: string): string => {
+    return value
+      .replace(/\u00AD/g, '')
+      .replace(/[\u200B-\u200F]/g, '')
+      .replace(/[\u202A-\u202E]/g, '')
+      .replace(/[\u2060-\u206F]/g, '')
+      .replace(/\uFEFF/g, '')
+      .replace(/\uFFFD/g, '');
+  };
+
+  const strippedText = stripInvisibleChars(text);
+
   // First, handle specific problematic characters that cause font issues
   const replacements: { [key: string]: string } = {
     '\u2018': "'", // left single quotation mark
@@ -58,14 +80,14 @@ const cleanTextForPDF = (text: string): string => {
   };
 
   // Replace known problematic characters
-  let cleanedText = text;
+  let cleanedText = strippedText;
   for (const [unicode, replacement] of Object.entries(replacements)) {
     cleanedText = cleanedText.replace(new RegExp(unicode, 'g'), replacement);
   }
 
   // For any remaining non-ASCII characters, try to preserve them first
   // Only replace if they cause font rendering issues
-  return cleanedText.replace(/[^\x00-\x7F]/g, function(char) {
+  return cleanedText.replace(/[^\x00-\x7F]/g, function (char) {
     // Common accented characters that should work fine in most PDF fonts
     const safeChars = /[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß]/;
     
@@ -89,7 +111,10 @@ const cleanTextForPDF = (text: string): string => {
       'Ñ': 'N', 'Ç': 'C', 'Ý': 'Y'
     };
     
-    return fallbacks[char] || '?'; // Use ? for unknown characters
+    // Preserve unknown characters instead of coercing to "?".
+    // If the active PDF font can't render a glyph, viewers may show a tofu box,
+    // but that's still preferable to inserting random "?" where the editor shows nothing.
+    return fallbacks[char] ?? char;
   });
 };
 

@@ -26,6 +26,13 @@ import {
   UploadComplianceResourceDto,
 } from './dto/compliance-resource.dto';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import {
+  DeleteTrustDocumentDto,
+  TrustDocumentResponseDto,
+  TrustDocumentSignedUrlDto,
+  TrustDocumentUrlResponseDto,
+  UploadTrustDocumentDto,
+} from './dto/trust-document.dto';
 
 interface VercelDomainVerification {
   type: string;
@@ -44,7 +51,7 @@ interface VercelDomainResponse {
 export class TrustPortalService {
   private readonly logger = new Logger(TrustPortalService.name);
   private readonly vercelApi: AxiosInstance;
-  private readonly MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+  private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
   private readonly SIGNED_URL_EXPIRY_SECONDS = 900;
 
   constructor() {
@@ -330,6 +337,157 @@ export class TrustPortalService {
     };
   }
 
+  async listTrustDocuments(
+    organizationId: string,
+  ): Promise<TrustDocumentResponseDto[]> {
+    const records = await db.trustDocument.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return records.map((record) => ({
+      id: record.id,
+      name: record.name,
+      description: record.description,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+    }));
+  }
+
+  async uploadTrustDocument(
+    dto: UploadTrustDocumentDto,
+  ): Promise<TrustDocumentResponseDto> {
+    this.ensureS3Availability();
+
+    const { fileBuffer, sanitizedFileName } = this.prepareGenericFilePayload({
+      fileData: dto.fileData,
+      fileName: dto.fileName,
+    });
+
+    const timestamp = Date.now();
+    const s3Prefix = `${dto.organizationId}/trust-documents`;
+    const s3Key = `${s3Prefix}/${timestamp}-${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: s3Key,
+      Body: fileBuffer,
+      ContentType: dto.fileType || 'application/octet-stream',
+      Metadata: {
+        organizationId: dto.organizationId,
+        originalFileName: dto.fileName,
+      },
+    });
+
+    await s3Client!.send(putCommand);
+
+    const record = await db.trustDocument.create({
+      data: {
+        organizationId: dto.organizationId,
+        name: dto.fileName,
+        description: dto.description || null,
+        s3Key,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      id: record.id,
+      name: record.name,
+      description: record.description,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+    };
+  }
+
+  async getTrustDocumentUrl(
+    documentId: string,
+    dto: TrustDocumentSignedUrlDto,
+  ): Promise<TrustDocumentUrlResponseDto> {
+    this.ensureS3Availability();
+
+    const record = await db.trustDocument.findUnique({
+      where: {
+        id: documentId,
+        organizationId: dto.organizationId,
+      },
+      select: {
+        s3Key: true,
+        name: true,
+        isActive: true,
+      },
+    });
+
+    if (!record || !record.isActive) {
+      throw new NotFoundException('Document not found');
+    }
+
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: record.s3Key,
+      ResponseContentDisposition: `attachment; filename="${record.name.replaceAll('"', '')}"`,
+    });
+
+    const signedUrl = await getSignedUrl(s3Client!, getCommand, {
+      expiresIn: this.SIGNED_URL_EXPIRY_SECONDS,
+    });
+
+    return {
+      signedUrl,
+      fileName: record.name,
+    };
+  }
+
+  async deleteTrustDocument(
+    documentId: string,
+    dto: DeleteTrustDocumentDto,
+  ): Promise<{ success: boolean }> {
+    const record = await db.trustDocument.findUnique({
+      where: {
+        id: documentId,
+        organizationId: dto.organizationId,
+      },
+      select: {
+        id: true,
+        s3Key: true,
+        isActive: true,
+      },
+    });
+
+    if (!record || !record.isActive) {
+      throw new NotFoundException('Document not found');
+    }
+
+    await db.trustDocument.update({
+      where: { id: record.id },
+      data: { isActive: false },
+    });
+
+    // Best-effort cleanup: if S3 deletion fails, the document is already hidden from users
+    await this.safeDeleteObject(record.s3Key);
+
+    return { success: true };
+  }
+
   private async assertFrameworkIsCompliant(
     organizationId: string,
     framework: TrustFramework,
@@ -394,6 +552,36 @@ export class TrustPortalService {
 
     const sanitizedFileName = dto.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
 
+    return { fileBuffer, sanitizedFileName };
+  }
+
+  private prepareGenericFilePayload({
+    fileData,
+    fileName,
+  }: {
+    fileData: string;
+    fileName: string;
+  }) {
+    let fileBuffer: Buffer;
+    try {
+      fileBuffer = Buffer.from(fileData, 'base64');
+    } catch {
+      throw new BadRequestException(
+        'Invalid file data. Expected base64 string.',
+      );
+    }
+
+    if (!fileBuffer.length) {
+      throw new BadRequestException('File cannot be empty');
+    }
+
+    if (fileBuffer.length > this.MAX_FILE_SIZE_BYTES) {
+      throw new BadRequestException(
+        `File exceeds the ${this.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB limit`,
+      );
+    }
+
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     return { fileBuffer, sanitizedFileName };
   }
 

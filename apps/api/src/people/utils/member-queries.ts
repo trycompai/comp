@@ -147,9 +147,7 @@ export class MemberQueries {
   /**
    * Unlink device by resetting fleetDmLabelId to null
    */
-  static async unlinkDevice(
-    memberId: string,
-  ): Promise<PeopleResponseDto> {
+  static async unlinkDevice(memberId: string): Promise<PeopleResponseDto> {
     return db.member.update({
       where: { id: memberId },
       data: { fleetDmLabelId: null },

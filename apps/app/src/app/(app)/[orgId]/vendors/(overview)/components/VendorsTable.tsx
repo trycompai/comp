@@ -329,7 +329,7 @@ export function VendorsTable({
           title="AI is working on your vendors"
           description="Our AI is analyzing your organization and creating vendor assessments. This may take a few moments."
         />
-        <CreateVendorSheet assignees={assignees} />
+        <CreateVendorSheet assignees={assignees} organizationId={orgId} />
       </>
     );
   }
@@ -381,7 +381,7 @@ export function VendorsTable({
           </>
         </DataTable>
       </VendorOnboardingProvider>
-      <CreateVendorSheet assignees={assignees} />
+      <CreateVendorSheet assignees={assignees} organizationId={orgId} />
     </>
   );
 }

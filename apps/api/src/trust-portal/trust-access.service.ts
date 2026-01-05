@@ -17,10 +17,12 @@ import { TrustEmailService } from './email.service';
 import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
 import { TrustFramework } from '@prisma/client';
+import archiver from 'archiver';
+import { PassThrough, Readable } from 'stream';
 
 @Injectable()
 export class TrustAccessService {
@@ -1185,6 +1187,236 @@ export class TrustAccessService {
       fileSize: resource.fileSize,
       updatedAt: resource.updatedAt.toISOString(),
     }));
+  }
+
+  async getTrustDocumentsByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
+
+    const documents = await db.trustDocument.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return documents.map((d) => ({
+      id: d.id,
+      name: d.name,
+      description: d.description,
+      createdAt: d.createdAt.toISOString(),
+      updatedAt: d.updatedAt.toISOString(),
+    }));
+  }
+
+  async getTrustDocumentUrlByAccessToken(token: string, documentId: string) {
+    const grant = await this.validateAccessToken(token);
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const document = await db.trustDocument.findFirst({
+      where: {
+        id: documentId,
+        organizationId: grant.accessRequest.organizationId,
+        isActive: true,
+      },
+      select: {
+        name: true,
+        s3Key: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: document.s3Key,
+      ResponseContentDisposition: `attachment; filename="${document.name.replaceAll('"', '')}"`,
+    });
+
+    const signedUrl = await getSignedUrl(s3Client, getCommand, {
+      expiresIn: 900,
+    });
+
+    return {
+      signedUrl,
+      fileName: document.name,
+    };
+  }
+
+  async downloadAllTrustDocumentsByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const organizationId = grant.accessRequest.organizationId;
+    const documents = await db.trustDocument.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        s3Key: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (documents.length === 0) {
+      throw new NotFoundException('No additional documents available');
+    }
+
+    const timestamp = Date.now();
+    const zipKey = `${organizationId}/trust-documents/bundles/${grant.id}-${timestamp}.zip`;
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    const zipStream = new PassThrough();
+    let putPromise:
+      | Promise<unknown>
+      | undefined;
+
+    try {
+      putPromise = s3Client.send(
+        new PutObjectCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Key: zipKey,
+          Body: zipStream,
+          ContentType: 'application/zip',
+          Metadata: {
+            organizationId,
+            grantId: grant.id,
+            kind: 'trust_documents_bundle',
+          },
+        }),
+      );
+
+      archive.on('error', (err) => {
+        zipStream.destroy(err);
+      });
+
+      archive.pipe(zipStream);
+
+      // Track names case-insensitively to avoid collisions on case-insensitive filesystems
+      // (e.g. Windows/macOS): "Report.pdf" vs "report.pdf"
+      const usedNamesLower = new Set<string>();
+      const toSafeName = (name: string): string => {
+        const sanitized =
+          name.replace(/[^\w.\-() ]/g, '_').trim() || 'document';
+        const dot = sanitized.lastIndexOf('.');
+        const base = dot > 0 ? sanitized.slice(0, dot) : sanitized;
+        const ext = dot > 0 ? sanitized.slice(dot) : '';
+
+        let candidate = `${base}${ext}`;
+        let i = 1;
+        while (usedNamesLower.has(candidate.toLowerCase())) {
+          candidate = `${base} (${i})${ext}`;
+          i += 1;
+        }
+        usedNamesLower.add(candidate.toLowerCase());
+        return candidate;
+      };
+
+      for (const doc of documents) {
+        const response = await s3Client.send(
+          new GetObjectCommand({
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+            Key: doc.s3Key,
+          }),
+        );
+
+        if (!response.Body) {
+          throw new InternalServerErrorException(
+            `No file data received from S3 for document ${doc.id}`,
+          );
+        }
+
+        const bodyStream =
+          response.Body instanceof Readable
+            ? response.Body
+            : Readable.from(response.Body as any);
+
+        archive.append(bodyStream, { name: toSafeName(doc.name) });
+      }
+
+      await archive.finalize();
+      await putPromise;
+    } catch (error) {
+      // Ensure the upload stream is closed, otherwise the S3 PutObject may hang/reject later.
+      try {
+        archive.abort();
+      } catch {
+        // ignore
+      }
+
+      if (!zipStream.destroyed) {
+        zipStream.destroy(
+          error instanceof Error ? error : new Error('ZIP generation failed'),
+        );
+      }
+
+      // Avoid unhandled rejections from an in-flight S3 put.
+      await putPromise?.catch(() => undefined);
+
+      throw error;
+    }
+
+    const signedUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: zipKey,
+        ResponseContentDisposition: `attachment; filename="additional-documents-${timestamp}.zip"`,
+      }),
+      { expiresIn: 900 },
+    );
+
+    return {
+      name: 'Additional Documents',
+      fileCount: documents.length,
+      downloadUrl: signedUrl,
+    };
+  }
+
+  /**
+   * Get FAQ markdown for a published trust portal.
+   *
+   * Recommended markdown format:
+   * - Use ### headings for questions (e.g., "### What is your security policy?")
+   * - Use regular markdown text for answers
+   * - Supports standard markdown: links, lists, code blocks, etc.
+   *
+   * Important: Render markdown WITHOUT rehype-raw (no raw HTML) for security.
+   *
+   * @param friendlyUrl - Trust portal friendly URL or organization ID
+   * @returns FAQ markdown content (empty string if not configured)
+   */
+  async getFaqs(friendlyUrl: string): Promise<{ faqs: any[] | null }> {
+    const trust = await this.findPublishedTrustByRouteId(friendlyUrl);
+    const organization = await db.organization.findUnique({
+      where: { id: trust.organizationId },
+      select: { trustPortalFaqs: true },
+    });
+
+    const faqs = organization?.trustPortalFaqs;
+    return { faqs: Array.isArray(faqs) ? faqs : null };
   }
 
   async getComplianceResourceUrlByAccessToken(

@@ -1,3 +1,34 @@
+## [1.72.2](https://github.com/trycompai/comp/compare/v1.72.1...v1.72.2) (2026-01-05)
+
+
+### Bug Fixes
+
+* **integrations:** enhance combobox to support custom values ([#1969](https://github.com/trycompai/comp/issues/1969)) ([4888865](https://github.com/trycompai/comp/commit/488886522639cb26304fb4cd1770b3eae6c45508))
+
+## [1.72.1](https://github.com/trycompai/comp/compare/v1.72.0...v1.72.1) (2026-01-02)
+
+
+### Bug Fixes
+
+* **api:** enhance error handling for encrypted PDFs in NDA processing ([#1966](https://github.com/trycompai/comp/issues/1966)) ([d786d79](https://github.com/trycompai/comp/commit/d786d79d1d20cc5c30d5ad5d56176e2ab56d830b))
+* **api:** handle encrypted PDFs in NDA PDF processing ([#1965](https://github.com/trycompai/comp/issues/1965)) ([2808706](https://github.com/trycompai/comp/commit/28087064e8635f0a8bc4ac174f4dba34a7907b52))
+* **api:** improve text cleaning for PDF rendering by stripping invisible unicode characters ([#1962](https://github.com/trycompai/comp/issues/1962)) ([67a37d5](https://github.com/trycompai/comp/commit/67a37d5a7263ab5269f85e2980892f4ad6d54750))
+
+# [1.72.0](https://github.com/trycompai/comp/compare/v1.71.0...v1.72.0) (2026-01-01)
+
+
+### Bug Fixes
+
+* **email:** update import paths for unsubscribe URL to new package ([#1950](https://github.com/trycompai/comp/issues/1950)) ([a133735](https://github.com/trycompai/comp/commit/a133735712fa2ca2b275d4ff97fb637f483c1f2e))
+
+
+### Features
+
+* **api:** enhance vendor risk assessment task with status handling and skeleton UI ([#1956](https://github.com/trycompai/comp/issues/1956)) ([012cba9](https://github.com/trycompai/comp/commit/012cba98eef37b25a168a27f7d257e3ebd45e912))
+* **api:** increase concurrency limit for vendor risk assessment task ([#1957](https://github.com/trycompai/comp/issues/1957)) ([0a2bd7a](https://github.com/trycompai/comp/commit/0a2bd7acdb80c598e1885c086dbc4ef66573367f))
+* **api:** increase file upload size limits to 100MB ([#1959](https://github.com/trycompai/comp/issues/1959)) ([31da681](https://github.com/trycompai/comp/commit/31da6813b4151064aaf926155d7cc5b95ff95c6f))
+* **email:** add email package and update import paths for notifications ([#1951](https://github.com/trycompai/comp/issues/1951)) ([79407cf](https://github.com/trycompai/comp/commit/79407cfd74068a32eeb5a658c85ed9b1cb782c35))
+
 # [1.71.0](https://github.com/trycompai/comp/compare/v1.70.0...v1.71.0) (2025-12-16)
 
 

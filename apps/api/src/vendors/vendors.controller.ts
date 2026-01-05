@@ -115,6 +115,7 @@ export class VendorsController {
     const vendor = await this.vendorsService.create(
       organizationId,
       createVendorDto,
+      authContext.userId, // Pass user ID for task assignment
     );
 
     return {

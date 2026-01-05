@@ -1,4 +1,8 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  S3Client,
+  type GetObjectCommandOutput,
+} from '@aws-sdk/client-s3';
 import { Logger } from '@nestjs/common';
 import '../config/load-env';
 
@@ -126,7 +130,7 @@ export async function getFleetAgent({
   os,
 }: {
   os: 'macos' | 'windows' | 'linux';
-}) {
+}): Promise<GetObjectCommandOutput['Body']> {
   if (!s3Client) {
     throw new Error('S3 client not configured');
   }
