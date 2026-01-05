@@ -86,7 +86,7 @@ async function buildFallbackCommentContext(params: {
   entityName: string;
   entityRoutePath: string;
   commentUrl: string;
-}> {
+} | null> {
   const { organizationId, entityType, entityId } = params;
   const appUrl = getAppBaseUrl();
 
@@ -94,8 +94,9 @@ async function buildFallbackCommentContext(params: {
     // CommentEntityType.task can be:
     // - TaskItem id (preferred)
     // - Task id (legacy)
-    const taskItem = await db.taskItem.findUnique({
-      where: { id: entityId },
+    // Use findFirst with organizationId to ensure entity belongs to correct org
+    const taskItem = await db.taskItem.findFirst({
+      where: { id: entityId, organizationId },
       select: { title: true, entityType: true, entityId: true },
     });
 
@@ -114,56 +115,77 @@ async function buildFallbackCommentContext(params: {
       };
     }
 
-    const task = await db.task.findUnique({
-      where: { id: entityId },
+    const task = await db.task.findFirst({
+      where: { id: entityId, organizationId },
       select: { title: true },
     });
+
+    if (!task) {
+      // Entity not found in this organization - do not send notification
+      return null;
+    }
+
     const url = new URL(`${appUrl}/${organizationId}/tasks/${entityId}`);
 
     return {
-      entityName: task?.title || 'Task',
+      entityName: task.title || 'Task',
       entityRoutePath: 'tasks',
       commentUrl: url.toString(),
     };
   }
 
   if (entityType === CommentEntityType.vendor) {
-    const vendor = await db.vendor.findUnique({
-      where: { id: entityId },
+    const vendor = await db.vendor.findFirst({
+      where: { id: entityId, organizationId },
       select: { name: true },
     });
+
+    if (!vendor) {
+      return null;
+    }
+
     const url = new URL(`${appUrl}/${organizationId}/vendors/${entityId}`);
 
     return {
-      entityName: vendor?.name || 'Vendor',
+      entityName: vendor.name || 'Vendor',
       entityRoutePath: 'vendors',
       commentUrl: url.toString(),
     };
   }
 
   if (entityType === CommentEntityType.risk) {
-    const risk = await db.risk.findUnique({
-      where: { id: entityId },
+    const risk = await db.risk.findFirst({
+      where: { id: entityId, organizationId },
       select: { title: true },
     });
+
+    if (!risk) {
+      return null;
+    }
+
     const url = new URL(`${appUrl}/${organizationId}/risk/${entityId}`);
 
     return {
-      entityName: risk?.title || 'Risk',
+      entityName: risk.title || 'Risk',
       entityRoutePath: 'risk',
       commentUrl: url.toString(),
     };
   }
 
   // CommentEntityType.policy
-  const policy = await db.policy.findUnique({
-    where: { id: entityId },
+  const policy = await db.policy.findFirst({
+    where: { id: entityId, organizationId },
     select: { name: true },
   });
+
+  if (!policy) {
+    return null;
+  }
+
   const url = new URL(`${appUrl}/${organizationId}/policies/${entityId}`);
 
   return {
-    entityName: policy?.name || 'Policy',
+    entityName: policy.name || 'Policy',
     entityRoutePath: 'policies',
     commentUrl: url.toString(),
   };
@@ -232,6 +254,15 @@ export class CommentMentionNotifierService {
         entityType,
         entityId,
       });
+
+      // If entity not found in this organization, skip notifications for security
+      if (!fallback) {
+        this.logger.warn(
+          `Skipping comment mention notifications: entity ${entityId} (${entityType}) not found in organization ${organizationId}`,
+        );
+        return;
+      }
+
       const entityName = fallback.entityName;
       const entityRoutePath = fallback.entityRoutePath;
       const commentUrl = normalizedContextUrl ?? fallback.commentUrl;
