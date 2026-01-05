@@ -96,7 +96,10 @@ function CredentialInput({
         label: opt.label,
       })) || [];
 
-    const selectedItem = items.find((item) => item.id === value);
+    // Find existing item or create synthetic one for custom values
+    const selectedItem = value
+      ? items.find((item) => item.id === value) ?? { id: value, label: value }
+      : undefined;
 
     return (
       <ComboboxDropdown
