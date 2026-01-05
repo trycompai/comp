@@ -2,10 +2,11 @@
 
 import { Comments } from '@/components/comments/Comments';
 import { TaskItems } from '@/components/task-items/TaskItems';
-import { useVendor } from '@/hooks/use-vendors';
+import { useVendor, type VendorResponse } from '@/hooks/use-vendors';
 import { CommentEntityType } from '@db';
 import type { Member, User, Vendor } from '@db';
 import type { Prisma } from '@prisma/client';
+import { useMemo } from 'react';
 import { SecondaryFields } from './secondary-fields/secondary-fields';
 import { VendorHeader } from './VendorHeader';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
@@ -19,6 +20,27 @@ type VendorWithRiskAssessment = Vendor & {
   riskAssessmentVersion?: string | null;
   riskAssessmentUpdatedAt?: Date | null;
 };
+
+/**
+ * Normalize API response to match Prisma types
+ * API returns dates as strings, Prisma returns Date objects
+ */
+function normalizeVendor(apiVendor: VendorResponse): VendorWithRiskAssessment {
+  return {
+    ...apiVendor,
+    createdAt: new Date(apiVendor.createdAt),
+    updatedAt: new Date(apiVendor.updatedAt),
+    riskAssessmentUpdatedAt: apiVendor.riskAssessmentUpdatedAt
+      ? new Date(apiVendor.riskAssessmentUpdatedAt)
+      : null,
+    assignee: apiVendor.assignee
+      ? {
+          ...apiVendor.assignee,
+          user: apiVendor.assignee.user as User | null,
+        }
+      : null,
+  } as unknown as VendorWithRiskAssessment;
+}
 
 interface VendorPageClientProps {
   vendorId: string;
@@ -34,7 +56,7 @@ interface VendorPageClientProps {
  * 
  * Benefits:
  * - Instant initial render (uses server-fetched data)
- * - Background revalidation keeps data fresh
+ * - Real-time updates via polling (5s interval)
  * - Mutations trigger automatic refresh via mutate()
  */
 export function VendorPageClient({
@@ -44,19 +66,19 @@ export function VendorPageClient({
   assignees,
   isViewingTask,
 }: VendorPageClientProps) {
-  // Initialize SWR cache with this vendor for shared cache across components
-  // VendorActions and other components that use useVendor(vendorId) will share this cache
-  // When they call mutate(), it warms the cache for subsequent page loads
-  useVendor(vendorId, {
+  // Use SWR for real-time updates with polling
+  const { vendor: swrVendor, isLoading } = useVendor(vendorId, {
     organizationId: orgId,
-    revalidateOnMount: false, // Don't fetch on mount - we have server data
-    revalidateOnFocus: false,
   });
 
-  // Use server-fetched vendor for display
-  // Server data includes GlobalVendors merge which API doesn't provide
-  // SWR cache is used by mutation components (VendorActions) for revalidation
-  const vendor = initialVendor;
+  // Normalize and memoize the vendor data
+  // Use SWR data when available, fall back to initial data
+  const vendor = useMemo(() => {
+    if (swrVendor) {
+      return normalizeVendor(swrVendor);
+    }
+    return initialVendor;
+  }, [swrVendor, initialVendor]);
 
   return (
     <>

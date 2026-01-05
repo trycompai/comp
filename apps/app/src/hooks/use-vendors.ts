@@ -10,12 +10,16 @@ import type {
   Likelihood,
   Impact,
 } from '@db';
+import type { JsonValue } from '@prisma/client/runtime/library';
+
+// Default polling interval for real-time updates (5 seconds)
+const DEFAULT_POLLING_INTERVAL = 5000;
 
 export interface VendorAssignee {
   id: string;
   user: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
     image: string | null;
   };
@@ -44,8 +48,14 @@ export interface VendorsResponse {
   count: number;
 }
 
+/**
+ * Vendor response from API includes GlobalVendors risk assessment data
+ */
 export interface VendorResponse extends Vendor {
-  authType?: string;
+  // GlobalVendors risk assessment data merged by API
+  riskAssessmentData?: JsonValue | null;
+  riskAssessmentVersion?: string | null;
+  riskAssessmentUpdatedAt?: string | null;
 }
 
 interface CreateVendorData {
@@ -112,7 +122,7 @@ export function useVendors(options: UseVendorsOptions = {}) {
 
 /**
  * Hook to fetch a single vendor by ID using SWR
- * Returns null endpoint when vendorId is null to disable the request
+ * Provides real-time updates via polling
  * 
  * @example
  * // With server-side initial data (recommended for detail pages)
@@ -128,16 +138,31 @@ export function useVendor(
 ) {
   const { initialData, ...restOptions } = options;
 
-  return useApiSWR<VendorResponse>(vendorId ? `/v1/vendors/${vendorId}` : null, {
-    ...restOptions,
-    // Use initial data as fallback for instant render
-    ...(initialData && {
-      fallbackData: {
-        data: initialData,
-        status: 200,
-      } as ApiResponse<VendorResponse>,
-    }),
-  });
+  const swrResult = useApiSWR<VendorResponse>(
+    vendorId ? `/v1/vendors/${vendorId}` : null,
+    {
+      ...restOptions,
+      // Enable polling for real-time updates (when trigger.dev tasks complete)
+      refreshInterval: restOptions.refreshInterval ?? DEFAULT_POLLING_INTERVAL,
+      // Continue polling even when window is not focused
+      refreshWhenHidden: false,
+      // Use initial data as fallback for instant render
+      ...(initialData && {
+        fallbackData: {
+          data: initialData,
+          status: 200,
+        } as ApiResponse<VendorResponse>,
+      }),
+    },
+  );
+
+  // Extract vendor data from response
+  const vendor = swrResult.data?.data ?? null;
+
+  return {
+    ...swrResult,
+    vendor,
+  };
 }
 
 /**

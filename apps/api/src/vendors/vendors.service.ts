@@ -82,6 +82,20 @@ export class VendorsService {
           id,
           organizationId,
         },
+        include: {
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!vendor) {
@@ -90,8 +104,51 @@ export class VendorsService {
         );
       }
 
+      // Fetch risk assessment from GlobalVendors if vendor has a website
+      const domain = extractDomain(vendor.website);
+      let globalVendorData: {
+        website: string;
+        riskAssessmentData: Prisma.JsonValue;
+        riskAssessmentVersion: string | null;
+        riskAssessmentUpdatedAt: Date | null;
+      } | null = null;
+
+      if (domain) {
+        const duplicates = await db.globalVendors.findMany({
+          where: {
+            website: {
+              contains: domain,
+            },
+          },
+          select: {
+            website: true,
+            riskAssessmentData: true,
+            riskAssessmentVersion: true,
+            riskAssessmentUpdatedAt: true,
+          },
+          orderBy: [
+            { riskAssessmentUpdatedAt: 'desc' },
+            { createdAt: 'desc' },
+          ],
+        });
+
+        // Prefer record WITH risk assessment data (most recent)
+        globalVendorData =
+          duplicates.find((gv) => gv.riskAssessmentData !== null) ??
+          duplicates[0] ??
+          null;
+      }
+
+      // Merge GlobalVendors risk assessment data into response
+      const vendorWithRiskAssessment = {
+        ...vendor,
+        riskAssessmentData: globalVendorData?.riskAssessmentData ?? null,
+        riskAssessmentVersion: globalVendorData?.riskAssessmentVersion ?? null,
+        riskAssessmentUpdatedAt: globalVendorData?.riskAssessmentUpdatedAt ?? null,
+      };
+
       this.logger.log(`Retrieved vendor: ${vendor.name} (${id})`);
-      return vendor;
+      return vendorWithRiskAssessment;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

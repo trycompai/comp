@@ -13,11 +13,14 @@ import type {
   RiskTreatmentType,
 } from '@db';
 
+// Default polling interval for real-time updates (5 seconds)
+const DEFAULT_POLLING_INTERVAL = 5000;
+
 export interface RiskAssignee {
   id: string;
   user: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
     image: string | null;
   };
@@ -48,9 +51,10 @@ export interface RisksResponse {
   count: number;
 }
 
-export interface RiskResponse extends Risk {
-  authType?: string;
-}
+/**
+ * Risk response from API - same as Risk for now
+ */
+export type RiskResponse = Risk;
 
 interface CreateRiskData {
   title: string;
@@ -123,7 +127,7 @@ export function useRisks(options: UseRisksOptions = {}) {
 
 /**
  * Hook to fetch a single risk by ID using SWR
- * Returns null endpoint when riskId is null to disable the request
+ * Provides real-time updates via polling
  * 
  * @example
  * // With server-side initial data (recommended for detail pages)
@@ -139,16 +143,31 @@ export function useRisk(
 ) {
   const { initialData, ...restOptions } = options;
 
-  return useApiSWR<RiskResponse>(riskId ? `/v1/risks/${riskId}` : null, {
-    ...restOptions,
-    // Use initial data as fallback for instant render
-    ...(initialData && {
-      fallbackData: {
-        data: initialData,
-        status: 200,
-      } as ApiResponse<RiskResponse>,
-    }),
-  });
+  const swrResult = useApiSWR<RiskResponse>(
+    riskId ? `/v1/risks/${riskId}` : null,
+    {
+      ...restOptions,
+      // Enable polling for real-time updates (when trigger.dev tasks complete)
+      refreshInterval: restOptions.refreshInterval ?? DEFAULT_POLLING_INTERVAL,
+      // Continue polling even when window is not focused
+      refreshWhenHidden: false,
+      // Use initial data as fallback for instant render
+      ...(initialData && {
+        fallbackData: {
+          data: initialData,
+          status: 200,
+        } as ApiResponse<RiskResponse>,
+      }),
+    },
+  );
+
+  // Extract risk data from response
+  const risk = swrResult.data?.data ?? null;
+
+  return {
+    ...swrResult,
+    risk,
+  };
 }
 
 /**

@@ -5,13 +5,32 @@ import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
 import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
 import { RiskOverview } from '@/components/risks/risk-overview';
 import { TaskItems } from '@/components/task-items/TaskItems';
-import { useRisk } from '@/hooks/use-risks';
+import { useRisk, type RiskResponse } from '@/hooks/use-risks';
 import { CommentEntityType } from '@db';
 import type { Member, Risk, User } from '@db';
+import { useMemo } from 'react';
 
 type RiskWithAssignee = Risk & {
   assignee: { user: User } | null;
 };
+
+/**
+ * Normalize API response to match Prisma types
+ * API returns dates as strings, Prisma returns Date objects
+ */
+function normalizeRisk(apiRisk: RiskResponse): RiskWithAssignee {
+  return {
+    ...apiRisk,
+    createdAt: new Date(apiRisk.createdAt),
+    updatedAt: new Date(apiRisk.updatedAt),
+    assignee: apiRisk.assignee
+      ? {
+          ...apiRisk.assignee,
+          user: apiRisk.assignee.user as User,
+        }
+      : null,
+  } as unknown as RiskWithAssignee;
+}
 
 interface RiskPageClientProps {
   riskId: string;
@@ -27,7 +46,7 @@ interface RiskPageClientProps {
  * 
  * Benefits:
  * - Instant initial render (uses server-fetched data)
- * - Background revalidation keeps data fresh
+ * - Real-time updates via polling (5s interval)
  * - Mutations trigger automatic refresh via mutate()
  */
 export function RiskPageClient({
@@ -37,18 +56,19 @@ export function RiskPageClient({
   assignees,
   isViewingTask,
 }: RiskPageClientProps) {
-  // Initialize SWR cache with this risk for shared cache across components
-  // RiskActions and other components that use useRisk(riskId) will share this cache
-  // When they call mutate(), it warms the cache for subsequent page loads
-  useRisk(riskId, {
+  // Use SWR for real-time updates with polling
+  const { risk: swrRisk, isLoading } = useRisk(riskId, {
     organizationId: orgId,
-    revalidateOnMount: false, // Don't fetch on mount - we have server data
-    revalidateOnFocus: false,
   });
 
-  // Use server-fetched risk for display
-  // SWR cache is used by mutation components (RiskActions) for revalidation
-  const risk = initialRisk;
+  // Normalize and memoize the risk data
+  // Use SWR data when available, fall back to initial data
+  const risk = useMemo(() => {
+    if (swrRisk) {
+      return normalizeRisk(swrRisk);
+    }
+    return initialRisk;
+  }, [swrRisk, initialRisk]);
 
   return (
     <div className="flex flex-col gap-4">
