@@ -102,10 +102,11 @@ export const RisksTable = ({
     return await getRisksAction({ orgId, searchParams: currentSearchParams });
   }, [orgId, currentSearchParams]);
 
-  // Use SWR to fetch risks with polling when onboarding is active
+  // Use SWR to fetch risks with polling for real-time updates
+  // Poll faster during onboarding, slower otherwise
   const { data: risksData } = useSWR(swrKey, fetcher, {
     fallbackData: { data: initialRisks, pageCount: initialPageCount },
-    refreshInterval: isActive ? 1000 : 0, // Poll every 1 second when onboarding is active
+    refreshInterval: isActive ? 1000 : 5000, // 1s during onboarding, 5s otherwise
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     keepPreviousData: true,

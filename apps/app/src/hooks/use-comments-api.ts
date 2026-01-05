@@ -49,8 +49,12 @@ interface UpdateCommentData {
   contextUrl?: string;
 }
 
+// Default polling interval for real-time updates (5 seconds)
+const DEFAULT_COMMENTS_POLLING_INTERVAL = 5000;
+
 /**
  * Generic hook to fetch comments for any entity using SWR
+ * Includes polling for real-time updates (e.g., when trigger.dev tasks create comments)
  */
 export function useComments(
   entityId: string | null,
@@ -60,7 +64,11 @@ export function useComments(
   const endpoint =
     entityId && entityType ? `/v1/comments?entityId=${entityId}&entityType=${entityType}` : null;
 
-  return useApiSWR<Comment[]>(endpoint, options);
+  return useApiSWR<Comment[]>(endpoint, {
+    ...options,
+    // Enable polling for real-time updates (when trigger.dev tasks create comments)
+    refreshInterval: options.refreshInterval ?? DEFAULT_COMMENTS_POLLING_INTERVAL,
+  });
 }
 
 /**

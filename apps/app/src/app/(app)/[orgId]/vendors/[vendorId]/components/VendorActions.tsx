@@ -22,8 +22,10 @@ import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 
 export function VendorActions({ vendorId }: { vendorId: string }) {
+  const { mutate: globalMutate } = useSWRConfig();
   const [_, setOpen] = useQueryState('vendor-overview-sheet');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -33,8 +35,19 @@ export function VendorActions({ vendorId }: { vendorId: string }) {
   const regenerate = useAction(regenerateVendorMitigationAction, {
     onSuccess: () => {
       toast.success('Regeneration triggered. This may take a moment.');
-      // Trigger SWR revalidation to refresh vendor data
+      // Trigger SWR revalidation for vendor detail, list views, and comments
       refreshVendor();
+      globalMutate(
+        (key) => Array.isArray(key) && key[0] === 'vendors',
+        undefined,
+        { revalidate: true },
+      );
+      // Invalidate comments cache for this vendor
+      globalMutate(
+        (key) => typeof key === 'string' && key.includes(`/v1/comments`) && key.includes(vendorId),
+        undefined,
+        { revalidate: true },
+      );
     },
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
