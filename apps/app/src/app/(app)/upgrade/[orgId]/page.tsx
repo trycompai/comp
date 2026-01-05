@@ -27,22 +27,7 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect('/sign-in');
   }
 
-  // Sync activeOrganizationId if it doesn't match the URL
-  const currentActiveOrgId = authSession.session.activeOrganizationId;
-  if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
-    try {
-      await auth.api.setActiveOrganization({
-        headers: requestHeaders,
-        body: {
-          organizationId: orgId,
-        },
-      });
-    } catch (error) {
-      console.error('[UpgradePage] Failed to sync activeOrganizationId:', error);
-    }
-  }
-
-  // Verify user has access to this org
+  // Verify user has access to this org BEFORE syncing activeOrganizationId
   const member = await db.member.findFirst({
     where: {
       organizationId: orgId,
@@ -56,6 +41,21 @@ export default async function UpgradePage({ params }: PageProps) {
 
   if (!member) {
     redirect('/');
+  }
+
+  // Sync activeOrganizationId only after membership is verified
+  const currentActiveOrgId = authSession.session.activeOrganizationId;
+  if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
+    try {
+      await auth.api.setActiveOrganization({
+        headers: requestHeaders,
+        body: {
+          organizationId: orgId,
+        },
+      });
+    } catch (error) {
+      console.error('[UpgradePage] Failed to sync activeOrganizationId:', error);
+    }
   }
 
   let hasAccess = member.organization.hasAccess;
