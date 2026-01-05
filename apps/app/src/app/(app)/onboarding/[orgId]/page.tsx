@@ -11,13 +11,31 @@ interface OnboardingPageProps {
 export default async function OnboardingPage({ params }: OnboardingPageProps) {
   const { orgId } = await params;
 
+  // Get headers once to avoid multiple async calls
+  const requestHeaders = await headers();
+
   // Get current user
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
 
   if (!session?.user?.id) {
     redirect('/auth');
+  }
+
+  // Sync activeOrganizationId if it doesn't match the URL
+  const currentActiveOrgId = session.session.activeOrganizationId;
+  if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
+    try {
+      await auth.api.setActiveOrganization({
+        headers: requestHeaders,
+        body: {
+          organizationId: orgId,
+        },
+      });
+    } catch (error) {
+      console.error('[OnboardingPage] Failed to sync activeOrganizationId:', error);
+    }
   }
 
   // Get organization with subscription info

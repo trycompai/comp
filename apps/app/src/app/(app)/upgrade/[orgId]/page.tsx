@@ -15,13 +15,31 @@ interface PageProps {
 export default async function UpgradePage({ params }: PageProps) {
   const { orgId } = await params;
 
+  // Get headers once to avoid multiple async calls
+  const requestHeaders = await headers();
+
   // Check auth
   const authSession = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
 
   if (!authSession?.user?.id) {
     redirect('/sign-in');
+  }
+
+  // Sync activeOrganizationId if it doesn't match the URL
+  const currentActiveOrgId = authSession.session.activeOrganizationId;
+  if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
+    try {
+      await auth.api.setActiveOrganization({
+        headers: requestHeaders,
+        body: {
+          organizationId: orgId,
+        },
+      });
+    } catch (error) {
+      console.error('[UpgradePage] Failed to sync activeOrganizationId:', error);
+    }
   }
 
   // Verify user has access to this org
