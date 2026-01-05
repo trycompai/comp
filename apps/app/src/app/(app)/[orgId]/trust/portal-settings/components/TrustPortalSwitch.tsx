@@ -22,6 +22,10 @@ import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
 import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
 import {
+  TrustPortalAdditionalDocumentsSection,
+  type TrustPortalDocument,
+} from './TrustPortalAdditionalDocumentsSection';
+import {
   GDPR,
   HIPAA,
   ISO27001,
@@ -130,6 +134,7 @@ export function TrustPortalSwitch({
   pcidssFileName,
   nen7510FileName,
   iso9001FileName,
+  additionalDocuments,
 }: {
   enabled: boolean;
   slug: string;
@@ -167,6 +172,7 @@ export function TrustPortalSwitch({
   pcidssFileName?: string | null;
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
+  additionalDocuments: TrustPortalDocument[];
 }) {
   const [certificateFiles, setCertificateFiles] = useState<Record<string, string | null>>({
     iso27001: iso27001FileName ?? null,
@@ -997,6 +1003,15 @@ export function TrustPortalSwitch({
                     />
                   </div>
                 </div>
+              </div>
+            )}
+            {form.watch('enabled') && (
+              <div className="pt-6">
+                <TrustPortalAdditionalDocumentsSection
+                  organizationId={orgId}
+                  enabled={true}
+                  documents={additionalDocuments}
+                />
               </div>
             )}
           </div>
