@@ -21,8 +21,10 @@ import { Cog } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 
 export function RiskActions({ riskId }: { riskId: string }) {
+  const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   
   // Get SWR mutate function to refresh risk data after mutations
@@ -31,8 +33,19 @@ export function RiskActions({ riskId }: { riskId: string }) {
   const regenerate = useAction(regenerateRiskMitigationAction, {
     onSuccess: () => {
       toast.success('Regeneration triggered. This may take a moment.');
-      // Trigger SWR revalidation to refresh risk data
+      // Trigger SWR revalidation for risk detail, list views, and comments
       refreshRisk();
+      globalMutate(
+        (key) => Array.isArray(key) && key[0] === 'risks',
+        undefined,
+        { revalidate: true },
+      );
+      // Invalidate comments cache for this risk
+      globalMutate(
+        (key) => typeof key === 'string' && key.includes(`/v1/comments`) && key.includes(riskId),
+        undefined,
+        { revalidate: true },
+      );
     },
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
