@@ -70,7 +70,8 @@ function tryNormalizeContextUrl(params: {
     if (!allowedOrigins.has(url.origin)) return null;
 
     // Ensure the URL is for the same org so we don't accidentally deep-link elsewhere.
-    if (!url.pathname.includes(`/${organizationId}/`)) return null;
+    // Use startsWith to prevent path traversal attacks (e.g., /attacker_org/victim_org/)
+    if (!url.pathname.startsWith(`/${organizationId}/`)) return null;
 
     return url.toString();
   } catch {

@@ -49,7 +49,7 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
           current: !isViewingTask,
         },
       ]}
-      headerRight={<VendorActions vendorId={vendorId} />}
+      headerRight={<VendorActions vendorId={vendorId} orgId={orgId} />}
     >
       <VendorPageClient
         vendorId={vendorId}
