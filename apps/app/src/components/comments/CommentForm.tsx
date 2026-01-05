@@ -19,14 +19,16 @@ import type { JSONContent } from '@tiptap/react';
 import { CommentRichTextField } from './CommentRichTextField';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { useMemo } from 'react';
-import { usePathname } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 
 interface CommentFormProps {
   entityId: string;
   entityType: CommentEntityType;
+  /** Optional org override; otherwise uses `orgId` from URL params */
+  organizationId?: string;
 }
 
-export function CommentForm({ entityId, entityType }: CommentFormProps) {
+export function CommentForm({ entityId, entityType, organizationId }: CommentFormProps) {
   const [newComment, setNewComment] = useState<JSONContent | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,9 +37,21 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const [filesToAdd, setFilesToAdd] = useState<File[]>([]);
   const [isSelectingMention, setIsSelectingMention] = useState(false);
   const pathname = usePathname();
+  const params = useParams();
+  const orgIdFromParams =
+    typeof params?.orgId === 'string'
+      ? params.orgId
+      : Array.isArray(params?.orgId)
+        ? params.orgId[0]
+        : undefined;
+  const resolvedOrgId = organizationId ?? orgIdFromParams;
 
   // Use SWR hooks for generic comments
-  const { mutate: refreshComments } = useComments(entityId, entityType);
+  // Pass organizationId explicitly to ensure correct org context
+  const { mutate: refreshComments } = useComments(entityId, entityType, {
+    organizationId: resolvedOrgId,
+    enabled: Boolean(resolvedOrgId),
+  });
   const { createCommentWithFiles } = useCommentWithAttachments();
   const { members } = useOrganizationMembers();
 

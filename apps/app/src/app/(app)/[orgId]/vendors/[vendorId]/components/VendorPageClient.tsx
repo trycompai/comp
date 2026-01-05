@@ -100,7 +100,7 @@ export function VendorPageClient({
           organizationId={orgId}
         />
         {!isViewingTask && (
-          <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
+          <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
         )}
       </div>
     </>

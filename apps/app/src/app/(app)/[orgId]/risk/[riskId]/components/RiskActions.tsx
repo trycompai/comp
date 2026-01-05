@@ -23,12 +23,13 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 
-export function RiskActions({ riskId }: { riskId: string }) {
+export function RiskActions({ riskId, orgId }: { riskId: string; orgId: string }) {
   const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   
   // Get SWR mutate function to refresh risk data after mutations
-  const { mutate: refreshRisk } = useRisk(riskId);
+  // Pass orgId to ensure same cache key as RiskPageClient
+  const { mutate: refreshRisk } = useRisk(riskId, { organizationId: orgId });
   
   const regenerate = useAction(regenerateRiskMitigationAction, {
     onSuccess: () => {

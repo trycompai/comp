@@ -49,7 +49,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
             ]
           : [{ label: risk.title, current: true }]),
       ]}
-      headerRight={<RiskActions riskId={riskId} />}
+      headerRight={<RiskActions riskId={riskId} orgId={orgId} />}
     >
       <RiskPageClient
         riskId={riskId}

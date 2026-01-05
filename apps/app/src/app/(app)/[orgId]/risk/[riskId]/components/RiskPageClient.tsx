@@ -83,7 +83,7 @@ export function RiskPageClient({
       )}
       <TaskItems entityId={riskId} entityType="risk" organizationId={orgId} />
       {!isViewingTask && (
-        <Comments entityId={riskId} entityType={CommentEntityType.risk} />
+        <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
       )}
     </div>
   );

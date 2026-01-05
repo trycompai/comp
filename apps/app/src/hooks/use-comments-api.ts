@@ -52,14 +52,22 @@ interface UpdateCommentData {
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_COMMENTS_POLLING_INTERVAL = 5000;
 
+export interface UseCommentsOptions extends UseApiSWROptions<Comment[]> {
+  /** Organization ID - MUST be passed to ensure correct org context */
+  organizationId?: string;
+}
+
 /**
  * Generic hook to fetch comments for any entity using SWR
  * Includes polling for real-time updates (e.g., when trigger.dev tasks create comments)
+ * 
+ * IMPORTANT: Always pass organizationId from URL params to ensure correct org context
+ * when user navigates to a different org's page while active org is different.
  */
 export function useComments(
   entityId: string | null,
   entityType: CommentEntityType | null,
-  options: UseApiSWROptions<Comment[]> = {},
+  options: UseCommentsOptions = {},
 ) {
   const endpoint =
     entityId && entityType ? `/v1/comments?entityId=${entityId}&entityType=${entityType}` : null;
@@ -126,10 +134,18 @@ export function useCommentActions() {
   };
 }
 
+export interface UseCommentWithAttachmentsOptions {
+  /** Organization ID - for consistency with other hooks */
+  organizationId?: string;
+}
+
 /**
  * Utility hook that combines file handling with comment creation
  */
-export function useCommentWithAttachments() {
+export function useCommentWithAttachments(_options: UseCommentWithAttachmentsOptions = {}) {
+  // Note: useCommentActions uses useApi which gets orgId from URL params
+  // The options.organizationId is accepted for API consistency but not currently used
+  // since useApi already handles org context from URL
   const { createComment } = useCommentActions();
 
   const createCommentWithFiles = useCallback(
@@ -322,7 +338,7 @@ export function useOptimisticComments(entityId: string, entityType: CommentEntit
 /**
  * Convenience hook for task comments
  */
-export function useTaskComments(taskId: string | null, options: UseApiSWROptions<Comment[]> = {}) {
+export function useTaskComments(taskId: string | null, options: UseCommentsOptions = {}) {
   return useComments(taskId, 'task', options);
 }
 
@@ -331,7 +347,7 @@ export function useTaskComments(taskId: string | null, options: UseApiSWROptions
  */
 export function usePolicyComments(
   policyId: string | null,
-  options: UseApiSWROptions<Comment[]> = {},
+  options: UseCommentsOptions = {},
 ) {
   return useComments(policyId, 'policy', options);
 }
@@ -341,7 +357,7 @@ export function usePolicyComments(
  */
 export function useVendorComments(
   vendorId: string | null,
-  options: UseApiSWROptions<Comment[]> = {},
+  options: UseCommentsOptions = {},
 ) {
   return useComments(vendorId, 'vendor', options);
 }
@@ -349,7 +365,7 @@ export function useVendorComments(
 /**
  * Convenience hook for risk comments
  */
-export function useRiskComments(riskId: string | null, options: UseApiSWROptions<Comment[]> = {}) {
+export function useRiskComments(riskId: string | null, options: UseCommentsOptions = {}) {
   return useComments(riskId, 'risk', options);
 }
 

@@ -24,13 +24,14 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 
-export function VendorActions({ vendorId }: { vendorId: string }) {
+export function VendorActions({ vendorId, orgId }: { vendorId: string; orgId: string }) {
   const { mutate: globalMutate } = useSWRConfig();
   const [_, setOpen] = useQueryState('vendor-overview-sheet');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   // Get SWR mutate function to refresh vendor data after mutations
-  const { mutate: refreshVendor } = useVendor(vendorId);
+  // Pass orgId to ensure same cache key as VendorPageClient
+  const { mutate: refreshVendor } = useVendor(vendorId, { organizationId: orgId });
 
   const regenerate = useAction(regenerateVendorMitigationAction, {
     onSuccess: () => {
