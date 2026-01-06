@@ -30,6 +30,168 @@ function extractMentionedUserIds(content: string | null): string[] {
 }
 import { CommentEntityType } from '@db';
 
+function getAppBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.BETTER_AUTH_URL ??
+    'https://app.trycomp.ai'
+  );
+}
+
+function getAllowedOrigins(): string[] {
+  const candidates = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.BETTER_AUTH_URL,
+    'https://app.trycomp.ai',
+  ].filter(Boolean) as string[];
+
+  const origins = new Set<string>();
+  for (const candidate of candidates) {
+    try {
+      origins.add(new URL(candidate).origin);
+    } catch {
+      // ignore invalid env values
+    }
+  }
+
+  return [...origins];
+}
+
+function tryNormalizeContextUrl(params: {
+  organizationId: string;
+  contextUrl?: string;
+}): string | null {
+  const { organizationId, contextUrl } = params;
+  if (!contextUrl) return null;
+
+  try {
+    const url = new URL(contextUrl);
+    const allowedOrigins = new Set(getAllowedOrigins());
+    if (!allowedOrigins.has(url.origin)) return null;
+
+    // Ensure the URL is for the same org so we don't accidentally deep-link elsewhere.
+    // Use startsWith to prevent path traversal attacks (e.g., /attacker_org/victim_org/)
+    if (!url.pathname.startsWith(`/${organizationId}/`)) return null;
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+async function buildFallbackCommentContext(params: {
+  organizationId: string;
+  entityType: CommentEntityType;
+  entityId: string;
+}): Promise<{
+  entityName: string;
+  entityRoutePath: string;
+  commentUrl: string;
+} | null> {
+  const { organizationId, entityType, entityId } = params;
+  const appUrl = getAppBaseUrl();
+
+  if (entityType === CommentEntityType.task) {
+    // CommentEntityType.task can be:
+    // - TaskItem id (preferred)
+    // - Task id (legacy)
+    // Use findFirst with organizationId to ensure entity belongs to correct org
+    const taskItem = await db.taskItem.findFirst({
+      where: { id: entityId, organizationId },
+      select: { title: true, entityType: true, entityId: true },
+    });
+
+    if (taskItem) {
+      const parentRoutePath = taskItem.entityType === 'vendor' ? 'vendors' : 'risk';
+      const url = new URL(
+        `${appUrl}/${organizationId}/${parentRoutePath}/${taskItem.entityId}`,
+      );
+      url.searchParams.set('taskItemId', entityId);
+      url.hash = 'task-items';
+
+      return {
+        entityName: taskItem.title || 'Task',
+        entityRoutePath: parentRoutePath,
+        commentUrl: url.toString(),
+      };
+    }
+
+    const task = await db.task.findFirst({
+      where: { id: entityId, organizationId },
+      select: { title: true },
+    });
+
+    if (!task) {
+      // Entity not found in this organization - do not send notification
+      return null;
+    }
+
+    const url = new URL(`${appUrl}/${organizationId}/tasks/${entityId}`);
+
+    return {
+      entityName: task.title || 'Task',
+      entityRoutePath: 'tasks',
+      commentUrl: url.toString(),
+    };
+  }
+
+  if (entityType === CommentEntityType.vendor) {
+    const vendor = await db.vendor.findFirst({
+      where: { id: entityId, organizationId },
+      select: { name: true },
+    });
+
+    if (!vendor) {
+      return null;
+    }
+
+    const url = new URL(`${appUrl}/${organizationId}/vendors/${entityId}`);
+
+    return {
+      entityName: vendor.name || 'Vendor',
+      entityRoutePath: 'vendors',
+      commentUrl: url.toString(),
+    };
+  }
+
+  if (entityType === CommentEntityType.risk) {
+    const risk = await db.risk.findFirst({
+      where: { id: entityId, organizationId },
+      select: { title: true },
+    });
+
+    if (!risk) {
+      return null;
+    }
+
+    const url = new URL(`${appUrl}/${organizationId}/risk/${entityId}`);
+
+    return {
+      entityName: risk.title || 'Risk',
+      entityRoutePath: 'risk',
+      commentUrl: url.toString(),
+    };
+  }
+
+  // CommentEntityType.policy
+  const policy = await db.policy.findFirst({
+    where: { id: entityId, organizationId },
+    select: { name: true },
+  });
+
+  if (!policy) {
+    return null;
+  }
+
+  const url = new URL(`${appUrl}/${organizationId}/policies/${entityId}`);
+
+  return {
+    entityName: policy.name || 'Policy',
+    entityRoutePath: 'policies',
+    commentUrl: url.toString(),
+  };
+}
+
 @Injectable()
 export class CommentMentionNotifierService {
   private readonly logger = new Logger(CommentMentionNotifierService.name);
@@ -45,6 +207,7 @@ export class CommentMentionNotifierService {
     commentContent: string;
     entityType: CommentEntityType;
     entityId: string;
+    contextUrl?: string;
     mentionedUserIds: string[];
     mentionedByUserId: string;
   }): Promise<void> {
@@ -54,19 +217,12 @@ export class CommentMentionNotifierService {
       commentContent,
       entityType,
       entityId,
+      contextUrl,
       mentionedUserIds,
       mentionedByUserId,
     } = params;
 
     if (!mentionedUserIds || mentionedUserIds.length === 0) {
-      return;
-    }
-
-    // Only send notifications for task comments
-    if (entityType !== CommentEntityType.task) {
-      this.logger.log(
-        `Skipping comment mention notifications: only task comments are supported (entityType: ${entityType})`,
-      );
       return;
     }
 
@@ -90,31 +246,27 @@ export class CommentMentionNotifierService {
         },
       });
 
-      // Get entity name for context (only for task comments)
-      const taskItem = await db.taskItem.findUnique({
-        where: { id: entityId },
-        select: { title: true, entityType: true, entityId: true },
+      const normalizedContextUrl = tryNormalizeContextUrl({
+        organizationId,
+        contextUrl,
       });
-      const entityName = taskItem?.title || 'Unknown Task';
-      // For task comments, we need to get the parent entity route
-      let entityRoutePath = '';
-      if (taskItem?.entityType === 'risk') {
-        entityRoutePath = 'risk';
-      } else if (taskItem?.entityType === 'vendor') {
-        entityRoutePath = 'vendors';
+      const fallback = await buildFallbackCommentContext({
+        organizationId,
+        entityType,
+        entityId,
+      });
+
+      // If entity not found in this organization, skip notifications for security
+      if (!fallback) {
+        this.logger.warn(
+          `Skipping comment mention notifications: entity ${entityId} (${entityType}) not found in organization ${organizationId}`,
+        );
+        return;
       }
 
-      // Build comment URL (only for task comments)
-      const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
-      
-      // For task comments, link to the task item's parent entity
-      const parentRoutePath = taskItem?.entityType === 'vendor' ? 'vendors' : 'risk';
-      const commentUrl = taskItem
-        ? `${appUrl}/${organizationId}/${parentRoutePath}/${taskItem.entityId}?taskItemId=${entityId}#task-items`
-        : '';
+      const entityName = fallback.entityName;
+      const entityRoutePath = fallback.entityRoutePath;
+      const commentUrl = normalizedContextUrl ?? fallback.commentUrl;
 
       const mentionedByName =
         mentionedByUser.name || mentionedByUser.email || 'Someone';

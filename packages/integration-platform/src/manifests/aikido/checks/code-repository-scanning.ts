@@ -7,7 +7,7 @@
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
-import type { AikidoCodeRepository, AikidoCodeRepositoriesResponse } from '../types';
+import type { AikidoCodeRepositoriesResponse, AikidoCodeRepository } from '../types';
 import { targetRepositoriesVariable } from '../variables';
 
 const PER_PAGE = 100;
@@ -56,7 +56,7 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
       );
 
       // Handle both array response (legacy) and wrapped response formats
-      const pageRepos = Array.isArray(response) ? response : response.repositories ?? [];
+      const pageRepos = Array.isArray(response) ? response : (response.repositories ?? []);
 
       if (pageRepos.length === 0) {
         break;

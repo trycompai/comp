@@ -6,6 +6,9 @@ import { useCallback } from 'react';
 
 export type TaskItemEntityType = 'vendor' | 'risk';
 
+// Default polling interval for cross-user updates (5 seconds)
+const DEFAULT_TASK_ITEMS_POLLING_INTERVAL = 5000;
+
 export type TaskItemStatus = 'todo' | 'in_progress' | 'in_review' | 'done' | 'canceled';
 
 export type TaskItemPriority = 'urgent' | 'high' | 'medium' | 'low';
@@ -211,6 +214,9 @@ export function useTaskItems(
 
   return useApiSWR<PaginatedTaskItemsResponse>(endpoint, {
     ...options,
+    // Cross-user updates: when another teammate edits tasks, this view should update without refresh
+    refreshInterval: options.refreshInterval ?? DEFAULT_TASK_ITEMS_POLLING_INTERVAL,
+    revalidateOnFocus: options.revalidateOnFocus ?? true,
     // Keep previous data visible while loading new page
     keepPreviousData: true,
   });
@@ -229,7 +235,11 @@ export function useTaskItemsStats(
       ? `/v1/task-management/stats?entityId=${entityId}&entityType=${entityType}`
       : null;
 
-  return useApiSWR<TaskItemsStats>(endpoint, options);
+  return useApiSWR<TaskItemsStats>(endpoint, {
+    ...options,
+    refreshInterval: options.refreshInterval ?? DEFAULT_TASK_ITEMS_POLLING_INTERVAL,
+    revalidateOnFocus: options.revalidateOnFocus ?? true,
+  });
 }
 
 /**

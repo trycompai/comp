@@ -3,6 +3,7 @@
 import { useComments } from '@/hooks/use-comments-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { CommentEntityType } from '@db';
+import { useParams } from 'next/navigation';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 
@@ -29,6 +30,11 @@ export type CommentWithAuthor = {
 interface CommentsProps {
   entityId: string;
   entityType: CommentEntityType;
+  /**
+   * Optional organization ID override.
+   * Best practice: omit this and let the component use `orgId` from URL params.
+   */
+  organizationId?: string;
   /** Optional custom title for the comments section */
   title?: string;
   /** Optional custom description */
@@ -57,17 +63,30 @@ interface CommentsProps {
 export const Comments = ({
   entityId,
   entityType,
+  organizationId,
   title = 'Comments',
   description,
   variant = 'card',
 }: CommentsProps) => {
+  const params = useParams();
+  const orgIdFromParams =
+    typeof params?.orgId === 'string'
+      ? params.orgId
+      : Array.isArray(params?.orgId)
+        ? params.orgId[0]
+        : undefined;
+  const resolvedOrgId = organizationId ?? orgIdFromParams;
+
   // Use SWR hooks for real-time comment fetching
   const {
     data: commentsData,
     error: commentsError,
     isLoading: commentsLoading,
     mutate: refreshComments,
-  } = useComments(entityId, entityType);
+  } = useComments(entityId, entityType, {
+    organizationId: resolvedOrgId,
+    enabled: Boolean(resolvedOrgId),
+  });
 
   // Extract comments from SWR response
   const comments = commentsData?.data || [];
@@ -77,7 +96,7 @@ export const Comments = ({
 
   const content = (
     <div className="space-y-4">
-      <CommentForm entityId={entityId} entityType={entityType} />
+      <CommentForm entityId={entityId} entityType={entityType} organizationId={resolvedOrgId} />
 
       {commentsLoading && (
         <div className="space-y-3">

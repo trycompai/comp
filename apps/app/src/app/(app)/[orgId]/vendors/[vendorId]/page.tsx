@@ -1,21 +1,13 @@
-'use server';
-
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { extractDomain } from '@/utils/normalize-website';
-import { CommentEntityType, db } from '@db';
+import { db } from '@db';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
-import { Comments } from '../../../../../components/comments/Comments';
-import { TaskItems } from '../../../../../components/task-items/TaskItems';
 import { VendorActions } from './components/VendorActions';
-import { VendorInherentRiskChart } from './components/VendorInherentRiskChart';
-import { VendorResidualRiskChart } from './components/VendorResidualRiskChart';
-import { VendorTabs } from './components/VendorTabs';
-import { VendorHeader } from './components/VendorHeader';
-import { SecondaryFields } from './components/secondary-fields/secondary-fields';
+import { VendorPageClient } from './components/VendorPageClient';
 
 interface PageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;
@@ -24,17 +16,22 @@ interface PageProps {
   }>;
 }
 
+/**
+ * Vendor detail page - server component
+ * Fetches initial data server-side for fast first render
+ * Passes data to VendorPageClient which uses SWR for real-time updates
+ */
 export default async function VendorPage({ params, searchParams }: PageProps) {
   const { vendorId, orgId } = await params;
   const { taskItemId } = (await searchParams) ?? {};
   
   // Fetch data in parallel for faster loading
-  const [vendor, assignees] = await Promise.all([
+  const [vendorData, assignees] = await Promise.all([
     getVendor({ vendorId, organizationId: orgId }),
     getAssignees(orgId),
   ]);
 
-  if (!vendor || !vendor.vendor) {
+  if (!vendorData || !vendorData.vendor) {
     redirect('/');
   }
 
@@ -46,38 +43,21 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
       breadcrumbs={[
         { label: 'Vendors', href: `/${orgId}/vendors` },
         {
-          label: vendor.vendor?.name ?? '',
+          label: vendorData.vendor?.name ?? '',
           // Make vendor name clickable when viewing a task to navigate back to vendor overview
           href: isViewingTask ? `/${orgId}/vendors/${vendorId}` : undefined,
           current: !isViewingTask,
         },
       ]}
-      headerRight={<VendorActions vendorId={vendorId} />}
+      headerRight={<VendorActions vendorId={vendorId} orgId={orgId} />}
     >
-      {!isViewingTask && <VendorHeader vendor={vendor.vendor} />}
-      {!isViewingTask && <VendorTabs vendorId={vendorId} orgId={orgId} />}
-      <div className="flex flex-col gap-4">
-        {!isViewingTask && (
-          <>
-            <SecondaryFields
-              vendor={vendor.vendor}
-              assignees={assignees}
-            />
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <VendorInherentRiskChart vendor={vendor.vendor} />
-              <VendorResidualRiskChart vendor={vendor.vendor} />
-            </div>
-          </>
-        )}
-        <TaskItems
-          entityId={vendorId}
-          entityType="vendor"
-          organizationId={orgId}
-        />
-        {!isViewingTask && (
-          <Comments entityId={vendorId} entityType={CommentEntityType.vendor} />
-        )}
-      </div>
+      <VendorPageClient
+        vendorId={vendorId}
+        orgId={orgId}
+        initialVendor={vendorData.vendor}
+        assignees={assignees}
+        isViewingTask={isViewingTask}
+      />
     </PageWithBreadcrumb>
   );
 }

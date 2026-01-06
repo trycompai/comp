@@ -49,7 +49,7 @@ export default async function ReviewPage({ params, searchParams }: ReviewPagePro
           current: !isViewingTask,
         },
       ]}
-      headerRight={<VendorActions vendorId={vendorId} />}
+      headerRight={<VendorActions vendorId={vendorId} orgId={orgId} />}
     >
       {!isViewingTask && <VendorHeader vendor={vendor} />}
       {!isViewingTask && <VendorTabs vendorId={vendorId} orgId={orgId} />}

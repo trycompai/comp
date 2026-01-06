@@ -1,3 +1,18 @@
+# [1.73.0](https://github.com/trycompai/comp/compare/v1.72.2...v1.73.0) (2026-01-06)
+
+
+### Bug Fixes
+
+* **app:** cloud test results are not showing ([#1982](https://github.com/trycompai/comp/issues/1982)) ([0b6cf11](https://github.com/trycompai/comp/commit/0b6cf118df696d55cf9f509ecaaed9016096d362))
+
+
+### Features
+
+* **comments:** add organization ID support for comment components ([#1980](https://github.com/trycompai/comp/issues/1980)) ([f63164e](https://github.com/trycompai/comp/commit/f63164ed9b4a1a613de8aa072a5f3494c5bc52f0))
+* **editor:** include onSelect and onKeyDownRef for mention component ([#1976](https://github.com/trycompai/comp/issues/1976)) ([921c442](https://github.com/trycompai/comp/commit/921c44273eae06cb3425a541fe88f8d52492c448))
+* **hooks:** add default polling interval for task items updates ([#1981](https://github.com/trycompai/comp/issues/1981)) ([47b8787](https://github.com/trycompai/comp/commit/47b8787e8912b652dfe7be0cd96433fe0a948c63))
+* **risk, vendor:** enhance real-time updates with SWR polling intervals ([#1979](https://github.com/trycompai/comp/issues/1979)) ([002bb3e](https://github.com/trycompai/comp/commit/002bb3e73a31ef5c100c93511abdd41f17f54828))
+
 ## [1.72.2](https://github.com/trycompai/comp/compare/v1.72.1...v1.72.2) (2026-01-05)
 
 
