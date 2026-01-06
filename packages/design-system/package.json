@@ -1,6 +1,6 @@
 {
   "name": "@trycompai/design-system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Design system for Comp AI - shadcn-style components with Tailwind CSS",
   "type": "module",
   "main": "./src/index.ts",
