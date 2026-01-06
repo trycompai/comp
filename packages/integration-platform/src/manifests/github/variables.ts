@@ -47,3 +47,19 @@ export const protectedBranchVariable: CheckVariable = {
   placeholder: 'main',
   helpText: 'Branch name to check for protection - e.g., main, master, develop',
 };
+
+/**
+ * Variable controlling how far back we look for "recent" pull requests.
+ * Used by checks that validate recent code change activity.
+ */
+export const recentPullRequestDaysVariable: CheckVariable = {
+  id: 'recent_pr_days',
+  label: 'Recent PR window (days)',
+  type: 'number',
+  required: false,
+  // ~6 months
+  default: 180,
+  placeholder: '180',
+  helpText:
+    'How many days back to look when determining whether pull requests are "recent". Confirm the right value with your security/compliance owner.',
+};

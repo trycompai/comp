@@ -23,6 +23,21 @@ export interface GitHubRepo {
   };
 }
 
+export interface GitHubPullRequest {
+  id: number;
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  html_url: string;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  merged_at: string | null;
+  user: { login: string } | null;
+  base: { ref: string };
+  head: { ref: string };
+}
+
 export interface GitHubBranchProtection {
   required_pull_request_reviews?: {
     required_approving_review_count: number;

@@ -61,6 +61,7 @@
     "@types/canvas-confetti": "^1.9.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/three": "^0.180.0",
+    "@uiw/react-json-view": "^2.0.0-alpha.40",
     "@uploadthing/react": "^7.3.0",
     "@upstash/ratelimit": "^2.0.5",
     "@vercel/analytics": "^1.5.0",
