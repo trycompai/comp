@@ -55,8 +55,8 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
         { params: { page: String(page), per_page: String(PER_PAGE) } },
       );
 
-      // Handle both array response (legacy) and wrapped response formats
-      const pageRepos = Array.isArray(response) ? response : (response.repositories ?? []);
+      // Handle both array response (legacy), wrapped response formats, and error/null cases
+      const pageRepos = Array.isArray(response) ? response : (response?.repositories ?? []);
 
       if (pageRepos.length === 0) {
         break;
