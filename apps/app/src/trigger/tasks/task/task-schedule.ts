@@ -2,6 +2,8 @@ import { db } from '@db';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
 
+import { getTargetStatus } from './task-schedule-helpers';
+
 export const taskSchedule = schedules.task({
   id: 'task-schedule',
   machine: 'large-1x',
@@ -56,6 +58,31 @@ export const taskSchedule = schedules.task({
             },
           },
         },
+        // Include Custom Automations (EvidenceAutomation with isEnabled)
+        evidenceAutomations: {
+          where: {
+            isEnabled: true,
+          },
+          select: {
+            id: true,
+            runs: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                evaluationStatus: true,
+              },
+            },
+          },
+        },
+        // Include App Automations (IntegrationCheckRun) - get all runs to group by checkId
+        integrationCheckRuns: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            checkId: true,
+            status: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -106,29 +133,60 @@ export const taskSchedule = schedules.task({
 
     logger.info(`Found ${overdueTasks.length} tasks past their computed review deadline`);
 
-    if (overdueTasks.length === 0) {
+    // Categorize tasks by their target status using the extracted helper
+    const tasksKeptDone = overdueTasks.filter((task) => getTargetStatus(task) === 'done');
+    const tasksToTodo = overdueTasks.filter((task) => getTargetStatus(task) === 'todo');
+    const tasksToFailed = overdueTasks.filter((task) => getTargetStatus(task) === 'failed');
+
+    logger.info(
+      `${tasksToTodo.length} tasks → "todo", ${tasksToFailed.length} tasks → "failed", ${tasksKeptDone.length} tasks kept as "done"`,
+    );
+
+    // Log tasks kept as done due to passing automations
+    tasksKeptDone.forEach((task) => {
+      logger.info(`Task "${task.title}" (${task.id}) kept as "done" - all automations passing`);
+    });
+
+    if (tasksToTodo.length === 0 && tasksToFailed.length === 0) {
       return {
         success: true,
-        totalTasksChecked: 0,
-        updatedTasks: 0,
-        message: 'No tasks found past their computed review deadline',
+        totalTasksChecked: overdueTasks.length,
+        updatedToTodo: 0,
+        updatedToFailed: 0,
+        tasksKeptDone: tasksKeptDone.length,
+        message:
+          overdueTasks.length === 0
+            ? 'No tasks found past their computed review deadline'
+            : 'All overdue tasks have passing automations, no status changes needed',
       };
     }
 
     try {
-      // Update all overdue tasks to "todo" status
-      const taskIds = overdueTasks.map((task) => task.id);
+      // Update tasks to "todo" status (no automations configured)
+      const todoTaskIds = tasksToTodo.map((task) => task.id);
+      let todoUpdateCount = 0;
+      if (todoTaskIds.length > 0) {
+        const todoResult = await db.task.updateMany({
+          where: { id: { in: todoTaskIds } },
+          data: { status: 'todo' },
+        });
+        todoUpdateCount = todoResult.count;
+      }
 
-      const updateResult = await db.task.updateMany({
-        where: {
-          id: {
-            in: taskIds,
-          },
-        },
-        data: {
-          status: 'todo',
-        },
-      });
+      // Update tasks to "failed" status (automations failing)
+      const failedTaskIds = tasksToFailed.map((task) => task.id);
+      let failedUpdateCount = 0;
+      if (failedTaskIds.length > 0) {
+        const failedResult = await db.task.updateMany({
+          where: { id: { in: failedTaskIds } },
+          data: { status: 'failed' },
+        });
+        failedUpdateCount = failedResult.count;
+      }
+
+      // Combine all updated tasks for notifications
+      const allUpdatedTasks = [...tasksToTodo, ...tasksToFailed];
+      const taskIds = allUpdatedTasks.map((task) => task.id);
 
       const recipientsMap = new Map<
         string,
@@ -136,12 +194,12 @@ export const taskSchedule = schedules.task({
           email: string;
           userId: string;
           name: string;
-          task: (typeof overdueTasks)[number];
+          task: (typeof allUpdatedTasks)[number];
         }
       >();
       const addRecipients = (
         users: Array<{ user: { id: string; email: string; name?: string } }>,
-        task: (typeof overdueTasks)[number],
+        task: (typeof allUpdatedTasks)[number],
       ) => {
         for (const entry of users) {
           const user = entry.user;
@@ -160,7 +218,7 @@ export const taskSchedule = schedules.task({
       };
 
       // Find recipients (org owner and assignee) for each task and add to recipientsMap
-      for (const task of overdueTasks) {
+      for (const task of allUpdatedTasks) {
         // Org owners
         if (task.organization && Array.isArray(task.organization.members)) {
           addRecipients(task.organization.members, task);
@@ -194,20 +252,29 @@ export const taskSchedule = schedules.task({
       });
 
       // Log details about updated tasks
-      overdueTasks.forEach((task) => {
+      tasksToTodo.forEach((task) => {
         logger.info(
-          `Updated task "${task.title}" (${task.id}) from org "${task.organization.name}" - frequency ${task.frequency} - last reviewed ${task.reviewDate?.toISOString()}`,
+          `Updated task "${task.title}" (${task.id}) to "todo" - no automations - org "${task.organization.name}" - frequency ${task.frequency}`,
+        );
+      });
+      tasksToFailed.forEach((task) => {
+        logger.info(
+          `Updated task "${task.title}" (${task.id}) to "failed" - automations failing - org "${task.organization.name}" - frequency ${task.frequency}`,
         );
       });
 
-      logger.info(`Successfully updated ${updateResult.count} tasks to "todo" status`);
+      logger.info(
+        `Successfully updated ${todoUpdateCount} tasks to "todo" and ${failedUpdateCount} tasks to "failed"`,
+      );
 
       return {
         success: true,
         totalTasksChecked: overdueTasks.length,
-        updatedTasks: updateResult.count,
+        updatedToTodo: todoUpdateCount,
+        updatedToFailed: failedUpdateCount,
         updatedTaskIds: taskIds,
-        message: `Updated ${updateResult.count} tasks past their review deadline`,
+        tasksKeptDone: tasksKeptDone.length,
+        message: `Updated ${todoUpdateCount} to "todo", ${failedUpdateCount} to "failed" (${tasksKeptDone.length} kept as done)`,
       };
     } catch (error) {
       logger.error(`Failed to update overdue tasks: ${error}`);
@@ -215,7 +282,9 @@ export const taskSchedule = schedules.task({
       return {
         success: false,
         totalTasksChecked: overdueTasks.length,
-        updatedTasks: 0,
+        updatedToTodo: 0,
+        updatedToFailed: 0,
+        tasksKeptDone: 0,
         error: error instanceof Error ? error.message : String(error),
         message: 'Failed to update tasks past their review deadline',
       };
