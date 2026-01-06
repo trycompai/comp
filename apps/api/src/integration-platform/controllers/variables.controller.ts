@@ -263,9 +263,6 @@ export class VariablesController {
         }
 
         const data = await response.json();
-        this.logger.log(
-          `[fetchOptions] Response data: ${JSON.stringify(data).slice(0, 500)}...`,
-        );
         return data as T;
       },
 
@@ -284,8 +281,24 @@ export class VariablesController {
           });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-          const items: T[] = await response.json();
-          if (!Array.isArray(items) || items.length === 0) break;
+          const data = await response.json();
+
+          // Handle both direct array responses and wrapped responses
+          // e.g., Aikido returns { repositories: [...] } instead of [...]
+          let items: T[];
+          if (Array.isArray(data)) {
+            items = data;
+          } else if (data && typeof data === 'object') {
+            // Find the first array property in the response (e.g., 'repositories', 'items', etc.)
+            const arrayValue = Object.values(data).find((v) =>
+              Array.isArray(v),
+            ) as T[] | undefined;
+            items = arrayValue ?? [];
+          } else {
+            items = [];
+          }
+
+          if (items.length === 0) break;
 
           allItems.push(...items);
           if (items.length < perPage) break;

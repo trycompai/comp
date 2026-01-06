@@ -309,6 +309,8 @@ export class CredentialVaultService {
           `${config.clientId}:${config.clientSecret}`,
         ).toString('base64');
         headers['Authorization'] = `Basic ${credentials}`;
+        // Some providers still need client_id in body even with header auth
+        body.set('client_id', config.clientId);
       } else {
         // Default: send in body
         body.set('client_id', config.clientId);
