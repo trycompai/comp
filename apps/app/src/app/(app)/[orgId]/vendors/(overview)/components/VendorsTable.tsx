@@ -109,10 +109,11 @@ export function VendorsTable({
     return await callGetVendorsAction({ orgId, searchParams: currentSearchParams });
   }, [orgId, currentSearchParams]);
 
-  // Use SWR to fetch vendors with polling when onboarding is active
+  // Use SWR to fetch vendors with polling for real-time updates
+  // Poll faster during onboarding, slower otherwise
   const { data: vendorsData } = useSWR(swrKey, fetcher, {
     fallbackData: { data: initialVendors, pageCount: initialPageCount },
-    refreshInterval: isActive ? 1000 : 0, // Poll every 1 second when onboarding is active
+    refreshInterval: isActive ? 1000 : 5000, // 1s during onboarding, 5s otherwise
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     keepPreviousData: true,

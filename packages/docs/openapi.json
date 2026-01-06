@@ -14872,6 +14872,12 @@
             ],
             "example": "task"
           },
+          "contextUrl": {
+            "type": "string",
+            "description": "Optional URL of the page where the comment was created, used for deep-linking in notifications",
+            "example": "https://app.trycomp.ai/org_abc123/vendors/vnd_abc123?taskItemId=tki_abc123#task-items",
+            "maxLength": 2048
+          },
           "attachments": {
             "description": "Optional attachments to include with the comment",
             "type": "array",
@@ -14899,6 +14905,12 @@
             "description": "Updated content of the comment",
             "example": "This task needs to be completed by end of week (updated)",
             "maxLength": 2000
+          },
+          "contextUrl": {
+            "type": "string",
+            "description": "Optional URL of the page where the comment was updated, used for deep-linking in notifications",
+            "example": "https://app.trycomp.ai/org_abc123/risk/rsk_abc123?taskItemId=tki_abc123#task-items",
+            "maxLength": 2048
           },
           "userId": {
             "type": "string",

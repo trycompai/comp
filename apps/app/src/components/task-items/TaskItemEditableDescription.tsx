@@ -73,14 +73,21 @@ export function TaskItemEditableDescription({
   const isSelectingFileRef = useRef(false);
 
   const { members } = useOrganizationMembers();
+  // Only show admin/owner users in mention suggestions
   const mentionMembers: MentionUser[] = useMemo(() => {
     if (!members) return [];
-    return members.map((member) => ({
-      id: member.user.id,
-      name: member.user.name || member.user.email || 'Unknown',
-      email: member.user.email || '',
-      image: member.user.image,
-    }));
+    return members
+      .filter((member) => {
+        if (!member.role) return false;
+        const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
+        return roles.includes('owner') || roles.includes('admin');
+      })
+      .map((member) => ({
+        id: member.user.id,
+        name: member.user.name || member.user.email || 'Unknown',
+        email: member.user.email || '',
+        image: member.user.image,
+      }));
   }, [members]);
 
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);

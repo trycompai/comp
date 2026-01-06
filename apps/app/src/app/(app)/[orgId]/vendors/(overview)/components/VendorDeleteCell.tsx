@@ -12,6 +12,7 @@ import { Button } from '@comp/ui/button';
 import { Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { deleteVendor } from '../actions/deleteVendor';
 import type { GetVendorsResult } from '../data/queries';
 
@@ -22,6 +23,7 @@ interface VendorDeleteCellProps {
 }
 
 export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) => {
+  const { mutate } = useSWRConfig();
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -34,6 +36,12 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
     if (response?.data?.success) {
       toast.success(`Vendor "${vendor.name}" has been deleted.`);
       setIsRemoveAlertOpen(false);
+      // Invalidate all vendors SWR caches (any key starting with 'vendors')
+      mutate(
+        (key) => Array.isArray(key) && key[0] === 'vendors',
+        undefined,
+        { revalidate: true },
+      );
     } else {
       toast.error(String(response?.data?.error) || 'Failed to delete vendor.');
     }

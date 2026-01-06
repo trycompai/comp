@@ -19,14 +19,16 @@ import type { JSONContent } from '@tiptap/react';
 import { CommentRichTextField } from './CommentRichTextField';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { useMemo } from 'react';
-import { usePathname } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 
 interface CommentFormProps {
   entityId: string;
   entityType: CommentEntityType;
+  /** Optional org override; otherwise uses `orgId` from URL params */
+  organizationId?: string;
 }
 
-export function CommentForm({ entityId, entityType }: CommentFormProps) {
+export function CommentForm({ entityId, entityType, organizationId }: CommentFormProps) {
   const [newComment, setNewComment] = useState<JSONContent | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,21 +37,39 @@ export function CommentForm({ entityId, entityType }: CommentFormProps) {
   const [filesToAdd, setFilesToAdd] = useState<File[]>([]);
   const [isSelectingMention, setIsSelectingMention] = useState(false);
   const pathname = usePathname();
+  const params = useParams();
+  const orgIdFromParams =
+    typeof params?.orgId === 'string'
+      ? params.orgId
+      : Array.isArray(params?.orgId)
+        ? params.orgId[0]
+        : undefined;
+  const resolvedOrgId = organizationId ?? orgIdFromParams;
 
   // Use SWR hooks for generic comments
-  const { mutate: refreshComments } = useComments(entityId, entityType);
+  // Pass organizationId explicitly to ensure correct org context
+  const { mutate: refreshComments } = useComments(entityId, entityType, {
+    organizationId: resolvedOrgId,
+    enabled: Boolean(resolvedOrgId),
+  });
   const { createCommentWithFiles } = useCommentWithAttachments();
   const { members } = useOrganizationMembers();
 
-  // Convert members to MentionUser format
+  // Convert members to MentionUser format - only show admin/owner users
   const mentionMembers = useMemo(() => {
     if (!members) return [];
-    return members.map((member) => ({
-      id: member.user.id,
-      name: member.user.name || member.user.email || 'Unknown',
-      email: member.user.email || '',
-      image: member.user.image,
-    }));
+    return members
+      .filter((member) => {
+        if (!member.role) return false;
+        const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
+        return roles.includes('owner') || roles.includes('admin');
+      })
+      .map((member) => ({
+        id: member.user.id,
+        name: member.user.name || member.user.email || 'Unknown',
+        email: member.user.email || '',
+        image: member.user.image,
+      }));
   }, [members]);
 
   const triggerFileInput = () => {
