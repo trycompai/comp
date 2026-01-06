@@ -403,6 +403,8 @@ export class OAuthController {
     };
 
     // Add client credentials based on auth method
+    // Per OAuth 2.0 RFC 6749 Section 2.3.1, when using HTTP Basic auth (header),
+    // client credentials should NOT be included in the request body
     if (config.clientAuthMethod === 'header') {
       const creds = Buffer.from(
         `${credentials.clientId}:${credentials.clientSecret}`,
@@ -422,8 +424,10 @@ export class OAuthController {
     });
 
     if (!response.ok) {
-      await response.text(); // consume body
-      this.logger.error(`Token exchange failed: ${response.status}`);
+      const errorBody = await response.text();
+      this.logger.error(
+        `Token exchange failed: ${response.status} - ${errorBody}`,
+      );
       throw new Error(`Token exchange failed: ${response.status}`);
     }
 
