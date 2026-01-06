@@ -248,17 +248,13 @@ export class VariablesController {
 
       fetch: async <T = unknown>(path: string): Promise<T> => {
         const url = new URL(path, baseUrl);
-        this.logger.log(`[fetchOptions] Fetching: ${url.toString()}`);
 
         const response = await fetch(url.toString(), {
           headers: buildHeaders(),
         });
 
-        this.logger.log(`[fetchOptions] Response status: ${response.status}`);
-
         if (!response.ok) {
           const errorText = await response.text();
-          this.logger.error(`[fetchOptions] Error response: ${errorText}`);
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
@@ -279,17 +275,21 @@ export class VariablesController {
           const response = await fetch(url.toString(), {
             headers: buildHeaders(),
           });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
 
           const data = await response.json();
 
           // Handle both direct array responses and wrapped responses
-          // e.g., Aikido returns { repositories: [...] } instead of [...]
+          // e.g., some APIs return { items: [...] } instead of [...]
           let items: T[];
           if (Array.isArray(data)) {
             items = data;
           } else if (data && typeof data === 'object') {
-            // Find the first array property in the response (e.g., 'repositories', 'items', etc.)
+            // Find the first array property in the response
             const arrayValue = Object.values(data).find((v) =>
               Array.isArray(v),
             ) as T[] | undefined;

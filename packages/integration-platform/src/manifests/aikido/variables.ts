@@ -51,8 +51,9 @@ export const targetRepositoriesVariable: CheckVariable = {
   helpText: 'Leave empty to check all repositories',
   fetchOptions: async (ctx) => {
     // Aikido API: https://apidocs.aikido.dev/reference/listcoderepos
-    // Use fetchAllPages to handle pagination automatically
-    const repositories = await ctx.fetchAllPages<AikidoCodeRepository>('repositories/code');
+    // Note: The API returns a direct array, NOT a wrapped object
+    // Note: Adding page/per_page params causes empty response - don't use fetchAllPages
+    const repositories = await ctx.fetch<AikidoCodeRepository[]>('repositories/code');
 
     return repositories.map((repo) => ({
       value: String(repo.id),

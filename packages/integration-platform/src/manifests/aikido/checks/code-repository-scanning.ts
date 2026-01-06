@@ -10,9 +10,6 @@ import type { IntegrationCheck } from '../../../types';
 import type { AikidoCodeRepositoriesResponse, AikidoCodeRepository } from '../types';
 import { targetRepositoriesVariable } from '../variables';
 
-const PER_PAGE = 100;
-const MAX_PAGES = 50; // Safety limit to prevent infinite loops
-
 const SCAN_STALE_DAYS = 7; // Consider a scan stale after 7 days
 
 /**
@@ -44,31 +41,14 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
     ctx.log('Fetching code repositories from Aikido');
 
     // Aikido API: https://apidocs.aikido.dev/reference/listcoderepos
-    // Fetch all pages of repositories to ensure organizations with >100 repos are fully covered
-    const allRepos: AikidoCodeRepository[] = [];
+    // Note: The API returns a direct array without pagination support
+    // Adding page/per_page params causes empty response
+    const response = await ctx.fetch<AikidoCodeRepositoriesResponse | AikidoCodeRepository[]>(
+      'repositories/code',
+    );
 
-    for (let page = 1; page <= MAX_PAGES; page++) {
-      ctx.log(`Fetching page ${page} of repositories`);
-
-      const response = await ctx.fetch<AikidoCodeRepositoriesResponse | AikidoCodeRepository[]>(
-        'repositories/code',
-        { params: { page: String(page), per_page: String(PER_PAGE) } },
-      );
-
-      // Handle both array response (legacy), wrapped response formats, and error/null cases
-      const pageRepos = Array.isArray(response) ? response : (response?.repositories ?? []);
-
-      if (pageRepos.length === 0) {
-        break;
-      }
-
-      allRepos.push(...pageRepos);
-
-      // Stop if we received fewer items than requested (last page)
-      if (pageRepos.length < PER_PAGE) {
-        break;
-      }
-    }
+    // Handle both array response and wrapped response formats
+    const allRepos = Array.isArray(response) ? response : (response?.repositories ?? []);
 
     ctx.log(`Found ${allRepos.length} code repositories`);
 
