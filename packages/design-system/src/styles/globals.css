@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Include design system components in Tailwind's content scan */
+@source "../components/**/*.tsx";
+
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
