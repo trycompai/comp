@@ -7,8 +7,11 @@
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
-import type { AikidoCodeRepository } from '../types';
+import type { AikidoCodeRepository, AikidoCodeRepositoriesResponse } from '../types';
 import { targetRepositoriesVariable } from '../variables';
+
+const PER_PAGE = 100;
+const MAX_PAGES = 50; // Safety limit to prevent infinite loops
 
 const SCAN_STALE_DAYS = 7; // Consider a scan stale after 7 days
 
@@ -41,8 +44,32 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
     ctx.log('Fetching code repositories from Aikido');
 
     // Aikido API: https://apidocs.aikido.dev/reference/listcoderepos
-    // Endpoint: GET /repositories/code - returns array directly
-    const allRepos = await ctx.fetch<AikidoCodeRepository[]>('repositories/code');
+    // Fetch all pages of repositories to ensure organizations with >100 repos are fully covered
+    const allRepos: AikidoCodeRepository[] = [];
+
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      ctx.log(`Fetching page ${page} of repositories`);
+
+      const response = await ctx.fetch<AikidoCodeRepositoriesResponse | AikidoCodeRepository[]>(
+        'repositories/code',
+        { params: { page: String(page), per_page: String(PER_PAGE) } },
+      );
+
+      // Handle both array response (legacy) and wrapped response formats
+      const pageRepos = Array.isArray(response) ? response : response.repositories ?? [];
+
+      if (pageRepos.length === 0) {
+        break;
+      }
+
+      allRepos.push(...pageRepos);
+
+      // Stop if we received fewer items than requested (last page)
+      if (pageRepos.length < PER_PAGE) {
+        break;
+      }
+    }
+
     ctx.log(`Found ${allRepos.length} code repositories`);
 
     // Filter to target repos if specified
@@ -53,22 +80,46 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
     }
 
     if (repos.length === 0) {
-      ctx.fail({
-        title: 'No code repositories connected',
-        description:
-          'No code repositories are connected to Aikido. Connect your repositories to enable security scanning.',
-        resourceType: 'workspace',
-        resourceId: 'aikido-repos',
-        severity: 'high',
-        remediation: `1. Go to Aikido > Repositories
+      // Differentiate between no repos connected vs filter mismatch
+      if (targetRepoIds && targetRepoIds.length > 0 && allRepos.length > 0) {
+        // Repositories exist but none match the target_repositories filter
+        ctx.fail({
+          title: 'No matching repositories found',
+          description: `None of the ${targetRepoIds.length} specified target repository IDs match the ${allRepos.length} connected repositories. This may be due to typos, disconnected repositories, or incorrect IDs in the target_repositories configuration.`,
+          resourceType: 'workspace',
+          resourceId: 'aikido-repos',
+          severity: 'high',
+          remediation: `1. Verify the repository IDs in your target_repositories configuration
+2. Go to Aikido > Repositories to find correct repository IDs
+3. Check if the target repositories are still connected
+4. Update the target_repositories variable with valid IDs
+5. Or remove target_repositories to scan all connected repositories`,
+          evidence: {
+            target_repository_ids: targetRepoIds,
+            connected_repository_count: allRepos.length,
+            connected_repository_ids: allRepos.map((r) => String(r.id)),
+            checked_at: new Date().toISOString(),
+          },
+        });
+      } else {
+        // No repositories connected at all
+        ctx.fail({
+          title: 'No code repositories connected',
+          description:
+            'No code repositories are connected to Aikido. Connect your repositories to enable security scanning.',
+          resourceType: 'workspace',
+          resourceId: 'aikido-repos',
+          severity: 'high',
+          remediation: `1. Go to Aikido > Repositories
 2. Click "Add Repository" or connect your source control provider
 3. Select the repositories you want to scan
 4. Enable scanning for each repository`,
-        evidence: {
-          total_repos: 0,
-          checked_at: new Date().toISOString(),
-        },
-      });
+          evidence: {
+            total_repos: 0,
+            checked_at: new Date().toISOString(),
+          },
+        });
+      }
       return;
     }
 

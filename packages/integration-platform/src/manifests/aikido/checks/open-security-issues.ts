@@ -45,6 +45,31 @@ const countAtOrAboveSeverity = (counts: SeverityCounts, threshold: AikidoSeverit
   }
 };
 
+/**
+ * Extract severity counts from API response, handling different formats
+ */
+const extractCounts = (response: IssueCountsResponse): SeverityCounts => {
+  return (
+    response.issue_groups ??
+    response.issues ?? {
+      critical: response.critical ?? 0,
+      high: response.high ?? 0,
+      medium: response.medium ?? 0,
+      low: response.low ?? 0,
+    }
+  );
+};
+
+/**
+ * Combine two severity count objects by summing each level
+ */
+const combineCounts = (a: SeverityCounts, b: SeverityCounts): SeverityCounts => ({
+  critical: a.critical + b.critical,
+  high: a.high + b.high,
+  medium: a.medium + b.medium,
+  low: a.low + b.low,
+});
+
 export const openSecurityIssuesCheck: IntegrationCheck = {
   id: 'open_security_issues',
   name: 'No Open Security Issues',
@@ -57,23 +82,43 @@ export const openSecurityIssuesCheck: IntegrationCheck = {
 
   run: async (ctx) => {
     const severityThreshold = (ctx.variables.severity_threshold as AikidoSeverity) || 'high';
+    const includeSnoozed = ctx.variables.include_snoozed === true;
 
-    ctx.log(`Fetching issue counts from Aikido (threshold: ${severityThreshold})`);
+    ctx.log(
+      `Fetching issue counts from Aikido (threshold: ${severityThreshold}, include_snoozed: ${includeSnoozed})`,
+    );
 
     // Aikido API: https://apidocs.aikido.dev/
     // Use issues/counts endpoint which returns counts by severity
-    const response = await ctx.fetch<IssueCountsResponse>('issues/counts');
+    // Pass status parameter to filter by issue status
+    const openResponse = await ctx.fetch<IssueCountsResponse>('issues/counts', {
+      params: { status: 'open' },
+    });
 
-    ctx.log(`Response: ${JSON.stringify(response)}`);
+    ctx.log(`Open issues response: ${JSON.stringify(openResponse)}`);
 
-    // Extract counts - handle different response formats
-    const counts: SeverityCounts = response.issue_groups ??
-      response.issues ?? {
-        critical: response.critical ?? 0,
-        high: response.high ?? 0,
-        medium: response.medium ?? 0,
-        low: response.low ?? 0,
-      };
+    let counts = extractCounts(openResponse);
+
+    // If include_snoozed is enabled, also fetch snoozed issues and combine
+    if (includeSnoozed) {
+      ctx.log('Fetching snoozed issues (include_snoozed is enabled)');
+      try {
+        const snoozedResponse = await ctx.fetch<IssueCountsResponse>('issues/counts', {
+          params: { status: 'snoozed' },
+        });
+        ctx.log(`Snoozed issues response: ${JSON.stringify(snoozedResponse)}`);
+
+        const snoozedCounts = extractCounts(snoozedResponse);
+        counts = combineCounts(counts, snoozedCounts);
+
+        ctx.log(
+          `Combined counts (open + snoozed): critical=${counts.critical}, high=${counts.high}, medium=${counts.medium}, low=${counts.low}`,
+        );
+      } catch (error) {
+        ctx.warn(`Failed to fetch snoozed issues: ${error}`);
+        // Continue with just open issues if snoozed fetch fails
+      }
+    }
 
     ctx.log(
       `Issue counts: critical=${counts.critical}, high=${counts.high}, medium=${counts.medium}, low=${counts.low}`,
@@ -86,14 +131,17 @@ export const openSecurityIssuesCheck: IntegrationCheck = {
 
     ctx.log(`Found ${issueCount} issues at ${severityLabel}`);
 
+    const statusLabel = includeSnoozed ? 'open or snoozed' : 'open';
+
     if (issueCount === 0) {
       ctx.pass({
         title: 'No open security issues found',
-        description: `No open issues at ${severityLabel} were detected by Aikido.`,
+        description: `No ${statusLabel} issues at ${severityLabel} were detected by Aikido.`,
         resourceType: 'workspace',
         resourceId: 'aikido-workspace',
         evidence: {
           severity_threshold: severityThreshold,
+          include_snoozed: includeSnoozed,
           issues_above_threshold: 0,
           counts: {
             critical: counts.critical,
@@ -108,20 +156,29 @@ export const openSecurityIssuesCheck: IntegrationCheck = {
     }
 
     // There are open issues - report as failure
-    const checkSeverity = counts.critical > 0 ? 'critical' : 'high';
+    // Determine severity based on highest actual issue severity present
+    const checkSeverity: AikidoSeverity =
+      counts.critical > 0
+        ? 'critical'
+        : counts.high > 0
+          ? 'high'
+          : counts.medium > 0
+            ? 'medium'
+            : 'low';
 
     ctx.fail({
       title: `${issueCount} security issues require attention`,
-      description: `Found ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium, ${counts.low} low severity issues. Issues at ${severityLabel}: ${issueCount}`,
+      description: `Found ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium, ${counts.low} low severity ${statusLabel} issues. Issues at ${severityLabel}: ${issueCount}`,
       resourceType: 'workspace',
       resourceId: 'aikido-issues',
       severity: checkSeverity,
       remediation: `1. Log into Aikido Security dashboard at https://app.aikido.dev
-2. Review and prioritize the ${issueCount} open issues
+2. Review and prioritize the ${issueCount} ${statusLabel} issues
 3. Address critical and high severity issues first
 4. Apply recommended fixes and re-scan affected repositories`,
       evidence: {
         severity_threshold: severityThreshold,
+        include_snoozed: includeSnoozed,
         issues_above_threshold: issueCount,
         counts: {
           critical: counts.critical,
