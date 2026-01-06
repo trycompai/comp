@@ -403,13 +403,13 @@ export class OAuthController {
     };
 
     // Add client credentials based on auth method
+    // Per OAuth 2.0 RFC 6749 Section 2.3.1, when using HTTP Basic auth (header),
+    // client credentials should NOT be included in the request body
     if (config.clientAuthMethod === 'header') {
       const creds = Buffer.from(
         `${credentials.clientId}:${credentials.clientSecret}`,
       ).toString('base64');
       headers['Authorization'] = `Basic ${creds}`;
-      // Some providers still need client_id in body even with header auth
-      body.set('client_id', credentials.clientId);
     } else {
       // Default: send in body
       body.set('client_id', credentials.clientId);

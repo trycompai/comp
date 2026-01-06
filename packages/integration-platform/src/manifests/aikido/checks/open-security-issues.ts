@@ -91,9 +91,26 @@ export const openSecurityIssuesCheck: IntegrationCheck = {
     // Aikido API: https://apidocs.aikido.dev/
     // Use issues/counts endpoint which returns counts by severity
     // Pass status parameter to filter by issue status
-    const openResponse = await ctx.fetch<IssueCountsResponse>('issues/counts', {
-      params: { status: 'open' },
-    });
+    let openResponse: IssueCountsResponse;
+    try {
+      openResponse = await ctx.fetch<IssueCountsResponse>('issues/counts', {
+        params: { status: 'open' },
+      });
+    } catch (error) {
+      ctx.warn(`Failed to fetch issue counts from Aikido API: ${error}`);
+      ctx.pass({
+        title: 'Unable to verify security issues',
+        description:
+          'Could not fetch issue counts from Aikido API. The API may be temporarily unavailable.',
+        resourceType: 'workspace',
+        resourceId: 'aikido-workspace',
+        evidence: {
+          error: error instanceof Error ? error.message : String(error),
+          checked_at: new Date().toISOString(),
+        },
+      });
+      return;
+    }
 
     ctx.log(`Open issues response: ${JSON.stringify(openResponse)}`);
 
