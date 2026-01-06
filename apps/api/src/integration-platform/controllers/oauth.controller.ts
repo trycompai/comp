@@ -408,6 +408,8 @@ export class OAuthController {
         `${credentials.clientId}:${credentials.clientSecret}`,
       ).toString('base64');
       headers['Authorization'] = `Basic ${creds}`;
+      // Some providers still need client_id in body even with header auth
+      body.set('client_id', credentials.clientId);
     } else {
       // Default: send in body
       body.set('client_id', credentials.clientId);
@@ -422,8 +424,10 @@ export class OAuthController {
     });
 
     if (!response.ok) {
-      await response.text(); // consume body
-      this.logger.error(`Token exchange failed: ${response.status}`);
+      const errorBody = await response.text();
+      this.logger.error(
+        `Token exchange failed: ${response.status} - ${errorBody}`,
+      );
       throw new Error(`Token exchange failed: ${response.status}`);
     }
 

@@ -49,18 +49,14 @@ export const manifest: IntegrationManifest = {
 5. Paste them here and click Connect
 
 Note: You'll need admin access to your Aikido workspace to create OAuth credentials.`,
-      createAppUrl: 'https://app.aikido.dev/settings/integrations/api',
+      createAppUrl: 'https://app.aikido.dev/settings/integrations/api/aikido/rest',
     },
   },
 
   capabilities: ['checks'],
 
   // Compliance checks that run daily
-  checks: [
-    openSecurityIssuesCheck,
-    codeRepositoryScanningCheck,
-    issueCountThresholdCheck,
-  ],
+  checks: [openSecurityIssuesCheck, codeRepositoryScanningCheck, issueCountThresholdCheck],
 
   isActive: true,
 };

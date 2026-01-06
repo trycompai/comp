@@ -92,19 +92,32 @@ export interface AikidoIssueCounts {
 // ============================================================================
 
 export interface AikidoCodeRepository {
-  id: string;
+  /** Numeric ID from Aikido API */
+  id: number;
+  /** Repository name (e.g., "comp-new") */
   name: string;
-  full_name: string;
+  /** External repository ID from provider */
+  external_repo_id?: string;
+  /** Source control provider */
   provider: 'github' | 'gitlab' | 'bitbucket' | 'azure_devops';
-  url: string;
-  is_active: boolean;
+  /** API URL to the repository */
+  url?: string;
+  /** Default branch name */
+  branch?: string;
+  /** Whether the repository is active in Aikido */
+  active?: boolean;
+  /** Unix timestamp of last scan */
+  last_scanned_at?: number;
+  /** Legacy fields for backwards compatibility */
+  full_name?: string;
+  is_active?: boolean;
   last_scan_at?: string;
   scan_status?: 'pending' | 'scanning' | 'completed' | 'failed';
-  issues_count: number;
+  issues_count?: number;
   sensitivity?: 'low' | 'medium' | 'high';
   default_branch?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AikidoCodeRepositoriesResponse {

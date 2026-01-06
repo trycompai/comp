@@ -50,15 +50,16 @@ export const targetRepositoriesVariable: CheckVariable = {
   required: false,
   helpText: 'Leave empty to check all repositories',
   fetchOptions: async (ctx) => {
-    const response = await ctx.fetch<{ repositories: AikidoCodeRepository[] }>(
-      'repositories/code',
-    );
+    // Aikido API: https://apidocs.aikido.dev/reference/listcoderepos
+    // Endpoint: GET /repositories/code - returns array directly
+    const response = await ctx.fetch<AikidoCodeRepository[]>('repositories/code');
 
-    const repositories = response.repositories ?? [];
+    // API returns array directly with 'name' field (not 'full_name')
+    const repositories = Array.isArray(response) ? response : [];
 
     return repositories.map((repo) => ({
-      value: repo.id,
-      label: `${repo.full_name} (${repo.provider})`,
+      value: String(repo.id),
+      label: `${repo.name} (${repo.provider})`,
     }));
   },
 };

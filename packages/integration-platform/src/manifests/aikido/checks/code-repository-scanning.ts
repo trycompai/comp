@@ -7,18 +7,22 @@
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
-import type { AikidoCodeRepositoriesResponse, AikidoCodeRepository } from '../types';
+import type { AikidoCodeRepository } from '../types';
 import { targetRepositoriesVariable } from '../variables';
 
 const SCAN_STALE_DAYS = 7; // Consider a scan stale after 7 days
 
-const isStale = (lastScanAt: string | undefined): boolean => {
-  if (!lastScanAt) return true;
+/**
+ * Check if a scan is stale based on unix timestamp or ISO string
+ */
+const isStale = (lastScannedAt: number | string | undefined): boolean => {
+  if (!lastScannedAt) return true;
 
-  const lastScan = new Date(lastScanAt);
-  const now = new Date();
-  const diffDays = (now.getTime() - lastScan.getTime()) / (1000 * 60 * 60 * 24);
+  // Handle both unix timestamp (number) and ISO string
+  const lastScanMs =
+    typeof lastScannedAt === 'number' ? lastScannedAt * 1000 : new Date(lastScannedAt).getTime();
 
+  const diffDays = (Date.now() - lastScanMs) / (1000 * 60 * 60 * 24);
   return diffDays > SCAN_STALE_DAYS;
 };
 
@@ -36,16 +40,15 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
 
     ctx.log('Fetching code repositories from Aikido');
 
-    const response = await ctx.fetch<AikidoCodeRepositoriesResponse>('repositories/code', {
-      params: { per_page: '100' },
-    });
-
-    let repos: AikidoCodeRepository[] = response.repositories || [];
-    ctx.log(`Found ${repos.length} code repositories`);
+    // Aikido API: https://apidocs.aikido.dev/reference/listcoderepos
+    // Endpoint: GET /repositories/code - returns array directly
+    const allRepos = await ctx.fetch<AikidoCodeRepository[]>('repositories/code');
+    ctx.log(`Found ${allRepos.length} code repositories`);
 
     // Filter to target repos if specified
+    let repos = allRepos;
     if (targetRepoIds && targetRepoIds.length > 0) {
-      repos = repos.filter((repo) => targetRepoIds.includes(repo.id));
+      repos = allRepos.filter((repo) => targetRepoIds.includes(String(repo.id)));
       ctx.log(`Filtered to ${repos.length} target repositories`);
     }
 
@@ -70,83 +73,87 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
     }
 
     for (const repo of repos) {
-      const stale = isStale(repo.last_scan_at);
-      const inactive = !repo.is_active;
+      // Use actual API field names: 'active', 'last_scanned_at', 'name'
+      const stale = isStale(repo.last_scanned_at ?? repo.last_scan_at);
+      const inactive = !(repo.active ?? repo.is_active);
       const failed = repo.scan_status === 'failed';
+      const repoName = repo.name || repo.full_name || String(repo.id);
 
       if (inactive) {
         ctx.fail({
-          title: `Repository not active: ${repo.full_name}`,
-          description: `The repository ${repo.full_name} is not activated for scanning in Aikido.`,
+          title: `Repository not active: ${repoName}`,
+          description: `The repository ${repoName} is not activated for scanning in Aikido.`,
           resourceType: 'repository',
-          resourceId: repo.id,
+          resourceId: String(repo.id),
           severity: 'medium',
           remediation: `1. Go to Aikido > Repositories
-2. Find ${repo.full_name}
+2. Find ${repoName}
 3. Click "Activate" to enable scanning`,
           evidence: {
             repo_id: repo.id,
-            name: repo.full_name,
+            name: repoName,
             provider: repo.provider,
-            is_active: repo.is_active,
-            created_at: repo.created_at,
+            active: repo.active ?? repo.is_active,
           },
         });
       } else if (failed) {
         ctx.fail({
-          title: `Scan failed: ${repo.full_name}`,
-          description: `The last scan for ${repo.full_name} failed.`,
+          title: `Scan failed: ${repoName}`,
+          description: `The last scan for ${repoName} failed.`,
           resourceType: 'repository',
-          resourceId: repo.id,
+          resourceId: String(repo.id),
           severity: 'high',
-          remediation: `1. Go to Aikido > Repositories > ${repo.full_name}
+          remediation: `1. Go to Aikido > Repositories > ${repoName}
 2. Check scan logs for error details
 3. Verify repository access and permissions
 4. Retry the scan`,
           evidence: {
             repo_id: repo.id,
-            name: repo.full_name,
+            name: repoName,
             provider: repo.provider,
             scan_status: repo.scan_status,
-            last_scan_at: repo.last_scan_at,
+            last_scanned_at: repo.last_scanned_at,
           },
         });
       } else if (stale) {
+        const lastScanMs = repo.last_scanned_at
+          ? repo.last_scanned_at * 1000
+          : repo.last_scan_at
+            ? new Date(repo.last_scan_at).getTime()
+            : null;
+        const daysSinceScan = lastScanMs
+          ? Math.floor((Date.now() - lastScanMs) / (1000 * 60 * 60 * 24))
+          : 'never';
+
         ctx.fail({
-          title: `Stale scan: ${repo.full_name}`,
-          description: `Repository ${repo.full_name} hasn't been scanned in over ${SCAN_STALE_DAYS} days.`,
+          title: `Stale scan: ${repoName}`,
+          description: `Repository ${repoName} hasn't been scanned in over ${SCAN_STALE_DAYS} days.`,
           resourceType: 'repository',
-          resourceId: repo.id,
+          resourceId: String(repo.id),
           severity: 'low',
-          remediation: `1. Go to Aikido > Repositories > ${repo.full_name}
+          remediation: `1. Go to Aikido > Repositories > ${repoName}
 2. Click "Scan now" to trigger a new scan
 3. Verify webhook integration for automatic scanning`,
           evidence: {
             repo_id: repo.id,
-            name: repo.full_name,
+            name: repoName,
             provider: repo.provider,
-            last_scan_at: repo.last_scan_at,
-            days_since_scan: repo.last_scan_at
-              ? Math.floor(
-                  (Date.now() - new Date(repo.last_scan_at).getTime()) / (1000 * 60 * 60 * 24),
-                )
-              : 'never',
+            last_scanned_at: repo.last_scanned_at,
+            days_since_scan: daysSinceScan,
           },
         });
       } else {
         ctx.pass({
-          title: `Repository actively scanned: ${repo.full_name}`,
-          description: `Repository ${repo.full_name} is active and has been scanned recently.`,
+          title: `Repository actively scanned: ${repoName}`,
+          description: `Repository ${repoName} is active and has been scanned recently.`,
           resourceType: 'repository',
-          resourceId: repo.id,
+          resourceId: String(repo.id),
           evidence: {
             repo_id: repo.id,
-            name: repo.full_name,
+            name: repoName,
             provider: repo.provider,
-            is_active: repo.is_active,
-            scan_status: repo.scan_status,
-            last_scan_at: repo.last_scan_at,
-            issues_count: repo.issues_count,
+            active: repo.active ?? repo.is_active,
+            last_scanned_at: repo.last_scanned_at,
             checked_at: new Date().toISOString(),
           },
         });

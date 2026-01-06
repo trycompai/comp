@@ -50,9 +50,11 @@ export const issueCountThresholdCheck: IntegrationCheck = {
 
     let counts: AikidoIssueCounts;
     try {
+      // Aikido API: https://apidocs.aikido.dev/reference/getissuecounts
       counts = await ctx.fetch<AikidoIssueCounts>('issues/counts');
+      ctx.log(`Issue counts response: ${JSON.stringify(counts)}`);
     } catch (error) {
-      ctx.warn('Issue counts endpoint not accessible');
+      ctx.warn(`Issue counts endpoint error: ${error}`);
       ctx.pass({
         title: 'Issue count check skipped',
         description: 'Could not fetch issue counts from Aikido.',
@@ -60,6 +62,7 @@ export const issueCountThresholdCheck: IntegrationCheck = {
         resourceId: 'issue-counts',
         evidence: {
           reason: 'API endpoint not accessible',
+          error: String(error),
           checked_at: new Date().toISOString(),
         },
       });
@@ -91,9 +94,7 @@ export const issueCountThresholdCheck: IntegrationCheck = {
 
     // Build severity breakdown showing what's being counted
     const severityLabel =
-      severityThreshold === 'low'
-        ? 'all severities'
-        : `${severityThreshold} severity or above`;
+      severityThreshold === 'low' ? 'all severities' : `${severityThreshold} severity or above`;
 
     const severityBreakdown = `Critical: ${issueGroups.critical}, High: ${issueGroups.high}, Medium: ${issueGroups.medium}, Low: ${issueGroups.low}`;
 

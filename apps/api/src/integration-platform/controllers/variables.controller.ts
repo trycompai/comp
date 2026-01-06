@@ -248,11 +248,25 @@ export class VariablesController {
 
       fetch: async <T = unknown>(path: string): Promise<T> => {
         const url = new URL(path, baseUrl);
+        this.logger.log(`[fetchOptions] Fetching: ${url.toString()}`);
+
         const response = await fetch(url.toString(), {
           headers: buildHeaders(),
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
+
+        this.logger.log(`[fetchOptions] Response status: ${response.status}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          this.logger.error(`[fetchOptions] Error response: ${errorText}`);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        this.logger.log(
+          `[fetchOptions] Response data: ${JSON.stringify(data).slice(0, 500)}...`,
+        );
+        return data as T;
       },
 
       fetchAllPages: async <T = unknown>(path: string): Promise<T[]> => {
