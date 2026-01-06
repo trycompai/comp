@@ -12,27 +12,82 @@ interface EvidenceJsonViewProps {
 
 /**
  * Sanitizes a value for safe JSON serialization.
- * Handles edge cases: functions, symbols, circular refs, undefined, etc.
+ * Handles edge cases: functions, symbols, circular refs, undefined, NaN, Infinity,
+ * Map, Set, RegExp, Error objects, and getters that throw.
  */
 const sanitizeForJson = (obj: unknown, seen = new WeakSet()): unknown => {
-  // Handle primitives
-  if (obj === null) return null;
-  if (obj === undefined) return null;
+  // Handle null/undefined
+  if (obj === null || obj === undefined) return null;
+
+  // Handle functions
   if (typeof obj === 'function') return '[Function]';
+
+  // Handle symbols
   if (typeof obj === 'symbol') return obj.toString();
+
+  // Handle bigint
   if (typeof obj === 'bigint') return obj.toString();
+
+  // Handle numbers - NaN and Infinity are not valid JSON
+  if (typeof obj === 'number') {
+    if (Number.isNaN(obj)) return null;
+    if (!Number.isFinite(obj)) return null;
+    return obj;
+  }
+
+  // Handle strings and booleans - pass through
+  if (typeof obj === 'string' || typeof obj === 'boolean') {
+    return obj;
+  }
 
   // Handle Date objects
   if (obj instanceof Date) {
-    return isNaN(obj.getTime()) ? null : obj.toISOString();
+    return Number.isNaN(obj.getTime()) ? null : obj.toISOString();
   }
 
-  // Handle arrays
+  // Handle RegExp
+  if (obj instanceof RegExp) {
+    return obj.toString();
+  }
+
+  // Handle Error objects - extract useful info
+  if (obj instanceof Error) {
+    return {
+      name: obj.name,
+      message: obj.message,
+      stack: obj.stack,
+    };
+  }
+
+  // Handle Map - convert to object
+  if (obj instanceof Map) {
+    if (seen.has(obj)) return '[Circular Reference]';
+    seen.add(obj);
+    const result: Record<string, unknown> = {};
+    obj.forEach((value, key) => {
+      const keyStr = typeof key === 'string' ? key : String(key);
+      result[keyStr] = sanitizeForJson(value, seen);
+    });
+    return result;
+  }
+
+  // Handle Set - convert to array
+  if (obj instanceof Set) {
+    if (seen.has(obj)) return '[Circular Reference]';
+    seen.add(obj);
+    return Array.from(obj).map((item) => sanitizeForJson(item, seen));
+  }
+
+  // Handle arrays - check for circular reference first
   if (Array.isArray(obj)) {
+    if (seen.has(obj)) {
+      return '[Circular Reference]';
+    }
+    seen.add(obj);
     return obj.map((item) => sanitizeForJson(item, seen));
   }
 
-  // Handle objects
+  // Handle plain objects
   if (typeof obj === 'object') {
     // Detect circular reference
     if (seen.has(obj)) {
@@ -41,13 +96,27 @@ const sanitizeForJson = (obj: unknown, seen = new WeakSet()): unknown => {
     seen.add(obj);
 
     const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj)) {
-      result[key] = sanitizeForJson(value, seen);
+
+    // Use try/catch to handle getters that might throw
+    let entries: [string, unknown][];
+    try {
+      entries = Object.entries(obj);
+    } catch {
+      return '[Object with inaccessible properties]';
+    }
+
+    for (const [key, value] of entries) {
+      try {
+        result[key] = sanitizeForJson(value, seen);
+      } catch {
+        result[key] = '[Error accessing property]';
+      }
     }
     return result;
   }
 
-  return obj;
+  // Fallback for any unknown types
+  return String(obj);
 };
 
 /**
