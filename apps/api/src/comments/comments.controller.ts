@@ -163,6 +163,7 @@ export class CommentsController {
       commentId,
       userId,
       updateCommentDto.content,
+      updateCommentDto.contextUrl,
     );
   }
 

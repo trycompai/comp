@@ -29,6 +29,7 @@ export default async function PolicyDetails({
       <PolicyPage
         policy={policy}
         policyId={policyId}
+        organizationId={orgId}
         assignees={assignees}
         mappedControls={mappedControls}
         allControls={allControls}

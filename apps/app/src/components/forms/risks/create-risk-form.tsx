@@ -17,31 +17,11 @@ import { useAction } from 'next-safe-action/hooks';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
 export function CreateRisk({ assignees }: { assignees: (Member & { user: User })[] }) {
-  // Get the same query parameters as the table
-  const [search] = useQueryState('search');
-  const [page] = useQueryState('page', {
-    defaultValue: 1,
-    parse: Number.parseInt,
-  });
-  const [pageSize] = useQueryState('pageSize', {
-    defaultValue: 10,
-    parse: Number,
-  });
-  const [status] = useQueryState<RiskStatus | null>('status', {
-    defaultValue: null,
-    parse: (value) => value as RiskStatus | null,
-  });
-  const [department] = useQueryState<Departments | null>('department', {
-    defaultValue: null,
-    parse: (value) => value as Departments | null,
-  });
-  const [assigneeId] = useQueryState<string | null>('assigneeId', {
-    defaultValue: null,
-    parse: (value) => value,
-  });
+  const { mutate } = useSWRConfig();
 
   const [_, setCreateRiskSheet] = useQueryState('create-risk-sheet');
 
@@ -49,6 +29,12 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
     onSuccess: async () => {
       toast.success('Risk created successfully');
       setCreateRiskSheet(null);
+      // Invalidate all risks SWR caches (any key starting with 'risks')
+      mutate(
+        (key) => Array.isArray(key) && key[0] === 'risks',
+        undefined,
+        { revalidate: true },
+      );
     },
     onError: () => {
       toast.error('Failed to create risk');

@@ -13,6 +13,7 @@ export default function PolicyPage({
   allControls,
   isPendingApproval,
   policyId,
+  organizationId,
   logs,
 }: {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
@@ -21,6 +22,8 @@ export default function PolicyPage({
   allControls: Control[];
   isPendingApproval: boolean;
   policyId: string;
+  /** Organization ID - required for correct org context in comments */
+  organizationId: string;
   logs: AuditLogWithRelations[];
 }) {
   return (
@@ -42,7 +45,7 @@ export default function PolicyPage({
 
       <RecentAuditLogs logs={logs} />
 
-      <Comments entityId={policyId} entityType="policy" />
+      <Comments entityId={policyId} entityType="policy" organizationId={organizationId} />
     </>
   );
 }

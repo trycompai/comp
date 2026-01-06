@@ -11,16 +11,19 @@ interface OnboardingPageProps {
 export default async function OnboardingPage({ params }: OnboardingPageProps) {
   const { orgId } = await params;
 
+  // Get headers once to avoid multiple async calls
+  const requestHeaders = await headers();
+
   // Get current user
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
 
   if (!session?.user?.id) {
     redirect('/auth');
   }
 
-  // Get organization with subscription info
+  // Verify membership BEFORE syncing activeOrganizationId
   const organization = await db.organization.findFirst({
     where: {
       id: orgId,
@@ -43,6 +46,21 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
 
   if (!organization) {
     notFound();
+  }
+
+  // Sync activeOrganizationId only after membership is verified
+  const currentActiveOrgId = session.session.activeOrganizationId;
+  if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
+    try {
+      await auth.api.setActiveOrganization({
+        headers: requestHeaders,
+        body: {
+          organizationId: orgId,
+        },
+      });
+    } catch (error) {
+      console.error('[OnboardingPage] Failed to sync activeOrganizationId:', error);
+    }
   }
 
   // Check if already completed onboarding

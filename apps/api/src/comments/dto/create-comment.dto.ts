@@ -40,6 +40,19 @@ export class CreateCommentDto {
   entityType: CommentEntityType;
 
   @ApiProperty({
+    description:
+      'Optional URL of the page where the comment was created, used for deep-linking in notifications',
+    example:
+      'https://app.trycomp.ai/org_abc123/vendors/vnd_abc123?taskItemId=tki_abc123#task-items',
+    required: false,
+    maxLength: 2048,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  contextUrl?: string;
+
+  @ApiProperty({
     description: 'Optional attachments to include with the comment',
     type: [UploadAttachmentDto],
     required: false,

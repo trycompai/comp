@@ -215,6 +215,7 @@ export function SingleTask({
             <Comments
               entityId={task.id}
               entityType={CommentEntityType.task}
+              organizationId={orgId}
               variant="inline"
               title=""
             />

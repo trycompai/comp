@@ -18,6 +18,7 @@ import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 import { createVendorAction } from '../actions/create-vendor-action';
 import { searchGlobalVendorsAction } from '../actions/search-global-vendors-action';
@@ -42,6 +43,7 @@ export function CreateVendorForm({
   assignees: (Member & { user: User })[];
   organizationId: string;
 }) {
+  const { mutate } = useSWRConfig();
   const [_, setCreateVendorSheet] = useQueryState('createVendorSheet');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +55,12 @@ export function CreateVendorForm({
     onSuccess: async () => {
       toast.success('Vendor created successfully');
       setCreateVendorSheet(null);
+      // Invalidate all vendors SWR caches (any key starting with 'vendors')
+      mutate(
+        (key) => Array.isArray(key) && key[0] === 'vendors',
+        undefined,
+        { revalidate: true },
+      );
     },
     onError: () => {
       toast.error('Failed to create vendor');
