@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { Button } from '@trycompai/ui-shadcn';
+import { Button } from '@trycompai/design-system';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';

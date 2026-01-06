@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui-shadcn';
+import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/design-system';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';

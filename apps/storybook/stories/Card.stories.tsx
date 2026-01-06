@@ -13,10 +13,10 @@ import {
   Label,
   Stack,
   Text,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
-  title: 'Atoms/Card',
+  title: 'Molecules/Card',
   component: Card,
   parameters: {
     layout: 'centered',

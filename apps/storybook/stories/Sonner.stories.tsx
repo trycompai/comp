@@ -1,20 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Stack } from '@trycompai/ui-shadcn';
-import { toast, Toaster } from 'sonner';
+import { Button, Stack, Toaster } from '@trycompai/design-system';
+import { toast } from 'sonner';
 
 const meta = {
   title: 'Organisms/Sonner',
   component: Toaster,
   parameters: {
-    layout: 'centered',
+    layout: 'fullscreen',
   },
   tags: ['autodocs'],
   decorators: [
     (Story) => (
-      <>
+      <div className="flex items-center justify-center min-h-screen">
         <Toaster position="bottom-right" />
         <Story />
-      </>
+      </div>
     ),
   ],
 } satisfies Meta<typeof Toaster>;

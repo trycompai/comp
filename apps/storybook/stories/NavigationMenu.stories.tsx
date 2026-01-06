@@ -6,7 +6,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Organisms/NavigationMenu',

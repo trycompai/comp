@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input, Label } from '@trycompai/ui-shadcn';
+import { Button, Input, Label } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';

@@ -6,7 +6,7 @@ import {
   FieldLabel,
   Input,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Molecules/Field',

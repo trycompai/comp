@@ -1,7 +1,7 @@
 'use client';
 
 import type { Member, Policy } from '@db';
-import { Button } from '@trycompai/ui-shadcn';
+import { Button } from '@trycompai/design-system';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyCarousel } from './PolicyCarousel';

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Checkbox, Input, Label, Stack } from '@trycompai/ui-shadcn';
+import { Checkbox, Input, Label, Stack } from '@trycompai/design-system';
 
 const meta = {
   title: 'Atoms/Label',

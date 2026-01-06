@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Heading, Stack, Text } from '@trycompai/ui-shadcn';
+import { Heading, Stack, Text } from '@trycompai/design-system';
 
 const meta = {
-  title: 'Typography/Heading',
+  title: 'Atoms/Typography',
   component: Heading,
   parameters: {
     layout: 'padded',

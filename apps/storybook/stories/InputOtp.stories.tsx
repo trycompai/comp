@@ -6,7 +6,7 @@ import {
   InputOTPSlot,
   Stack,
   Text,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 // Using a wrapper component to avoid complex args type requirements from input-otp
 const InputOTPDemo = () => (

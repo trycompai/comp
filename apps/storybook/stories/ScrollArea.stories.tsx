@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ScrollArea, Separator, Stack } from '@trycompai/ui-shadcn';
+import { ScrollArea, Separator, Stack } from '@trycompai/design-system';
 
 const meta = {
   title: 'Molecules/ScrollArea',
@@ -81,9 +81,9 @@ export const Horizontal: Story = {
 
 export const LongContent: Story = {
   render: () => (
-    <div className="h-[200px] w-[350px] rounded-md border p-4">
+    <div className="h-[200px] w-[350px] rounded-md border">
       <ScrollArea>
-        <div className="pr-4">
+        <div className="p-4 pr-6">
           <h4 className="mb-4 text-lg font-semibold">Terms of Service</h4>
           <p className="text-sm text-muted-foreground mb-4">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pulvinar risus non risus

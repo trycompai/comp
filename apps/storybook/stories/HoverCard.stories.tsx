@@ -9,11 +9,11 @@ import {
   HoverCardTrigger,
   Stack,
   Text,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { CalendarDays } from 'lucide-react';
 
 const meta = {
-  title: 'Organisms/HoverCard',
+  title: 'Molecules/HoverCard',
   component: HoverCard,
   parameters: {
     layout: 'centered',

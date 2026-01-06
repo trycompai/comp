@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { AccordionContent, AccordionItem, AccordionTrigger, Button } from '@trycompai/ui-shadcn';
+import { AccordionContent, AccordionItem, AccordionTrigger, Button } from '@trycompai/design-system';
 import { CheckCircle2, Circle, FileText } from 'lucide-react';
 import NextLink from 'next/link';
 import { useState } from 'react';

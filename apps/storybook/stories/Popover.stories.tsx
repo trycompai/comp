@@ -7,11 +7,11 @@ import {
   PopoverContent,
   PopoverTrigger,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { Settings } from 'lucide-react';
 
 const meta = {
-  title: 'Organisms/Popover',
+  title: 'Molecules/Popover',
   component: Popover,
   parameters: {
     layout: 'centered',

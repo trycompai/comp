@@ -4,7 +4,7 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config = {
-  transpilePackages: ['@trycompai/db', '@trycompai/ui-shadcn'],
+  transpilePackages: ['@trycompai/db', '@trycompai/design-system'],
   images: {
     remotePatterns: [
       {

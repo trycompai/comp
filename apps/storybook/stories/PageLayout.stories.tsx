@@ -8,10 +8,10 @@ import {
   PageLayout,
   Stack,
   Text,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
-  title: 'Layout/PageLayout',
+  title: 'Organisms/PageLayout',
   component: PageLayout,
   parameters: {
     layout: 'fullscreen',

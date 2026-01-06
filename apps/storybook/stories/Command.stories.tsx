@@ -9,7 +9,7 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { Calculator, Calendar, CreditCard, Settings, Smile, User } from 'lucide-react';
 
 const meta = {

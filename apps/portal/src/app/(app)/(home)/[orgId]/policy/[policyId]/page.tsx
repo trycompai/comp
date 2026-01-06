@@ -1,6 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { serverApi } from '@/lib/server-api-client';
-import { Card, CardContent, CardFooter, CardHeader } from '@trycompai/ui-shadcn';
+import { Card, CardContent, CardFooter, CardHeader } from '@trycompai/design-system';
 import { ArrowLeft, Check } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';

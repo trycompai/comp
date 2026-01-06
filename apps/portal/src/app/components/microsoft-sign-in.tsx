@@ -1,7 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@trycompai/ui-shadcn';
+import { Button } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
 

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { AspectRatio, Stack, Text } from '@trycompai/ui-shadcn';
+import { AspectRatio, Stack, Text } from '@trycompai/design-system';
 
 const meta = {
-  title: 'Layout/AspectRatio',
+  title: 'Atoms/AspectRatio',
   component: AspectRatio,
   parameters: {
     layout: 'centered',

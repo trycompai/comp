@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button } from '@trycompai/ui-shadcn';
+import { expect, fn, userEvent, within } from 'storybook/test';
+import { Button } from '@trycompai/design-system';
 import { ArrowRight, Mail, Plus } from 'lucide-react';
 
 const meta = {
@@ -9,6 +10,9 @@ const meta = {
     layout: 'centered',
   },
   tags: ['autodocs'],
+  args: {
+    onClick: fn(),
+  },
   argTypes: {
     variant: {
       control: 'select',
@@ -35,6 +39,18 @@ export const Default: Story = {
     children: 'Button',
     variant: 'default',
     size: 'default',
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Find the button
+    const button = canvas.getByRole('button', { name: 'Button' });
+    await expect(button).toBeInTheDocument();
+    await expect(button).toBeEnabled();
+
+    // Click the button and verify onClick was called
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -77,6 +93,20 @@ export const Loading: Story = {
   args: {
     children: 'Loading...',
     loading: true,
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Verify button is disabled when loading
+    const button = canvas.getByRole('button');
+    await expect(button).toBeDisabled();
+
+    // Verify spinner is shown
+    await expect(canvas.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
+
+    // Verify onClick is not called when clicking disabled button
+    await userEvent.click(button);
+    await expect(args.onClick).not.toHaveBeenCalled();
   },
 };
 

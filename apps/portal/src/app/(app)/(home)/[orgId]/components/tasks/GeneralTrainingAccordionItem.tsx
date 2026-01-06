@@ -1,7 +1,7 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui-shadcn';
+import { AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/design-system';
 import { CheckCircle2, Circle } from 'lucide-react';
 import type { EmployeePortalDashboard } from '../../types/employee-portal';
 import { VideoCarousel } from '../video/VideoCarousel';

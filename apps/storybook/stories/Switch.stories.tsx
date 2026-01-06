@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Label, Stack, Switch } from '@trycompai/ui-shadcn';
+import { Label, Stack, Switch } from '@trycompai/design-system';
 
 const meta = {
   title: 'Atoms/Switch',

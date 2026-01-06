@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Label, Slider, Stack, Text } from '@trycompai/ui-shadcn';
+import { Label, Slider, Stack, Text } from '@trycompai/design-system';
 
 const meta = {
   title: 'Atoms/Slider',

@@ -2,7 +2,7 @@
 
 ## Design System
 
-**All UI must use `@trycompai/ui-shadcn` components. No custom styling.**
+**All UI must use `@trycompai/design-system` components. No custom styling.**
 
 **`className` is NOT a valid prop on design system components.**
 
@@ -21,7 +21,7 @@ import {
   PageLayout,
   Container,
   // ... etc
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 ```
 
 ### ❌ NEVER Do This
@@ -126,5 +126,5 @@ For layout concerns (width, grid positioning), use wrapper elements:
 ## When Something Is Missing
 
 1. Check if a variant exists in the component
-2. Add a variant to `@trycompai/ui-shadcn` if needed
+2. Add a variant to `@trycompai/design-system` if needed
 3. **Never** work around with wrapper divs for styling that should be a variant

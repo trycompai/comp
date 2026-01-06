@@ -13,7 +13,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Molecules/Tabs',

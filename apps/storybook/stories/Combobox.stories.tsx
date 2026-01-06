@@ -11,10 +11,10 @@ import {
   ComboboxSeparator,
   Label,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
-  title: 'Molecules/Combobox',
+  title: 'Organisms/Combobox',
   component: Combobox,
   parameters: {
     layout: 'centered',

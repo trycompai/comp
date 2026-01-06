@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Spinner, Stack, Text } from '@trycompai/ui-shadcn';
+import { Spinner, Stack, Text } from '@trycompai/design-system';
 
 const meta = {
   title: 'Atoms/Spinner',

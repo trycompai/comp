@@ -7,10 +7,10 @@ import {
   AvatarImage,
   Stack,
   Text,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
-  title: 'Molecules/Avatar',
+  title: 'Atoms/Avatar',
   component: Avatar,
   parameters: {
     layout: 'centered',

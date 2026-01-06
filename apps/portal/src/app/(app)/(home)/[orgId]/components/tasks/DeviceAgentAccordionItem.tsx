@@ -6,7 +6,7 @@ import {
   WINDOWS_FILENAME,
 } from '@/app/api/download-agent/constants';
 import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui-shadcn';
+import { AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/design-system';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';

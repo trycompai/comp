@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui-shadcn';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/design-system';
 
 const meta = {
-  title: 'Organisms/Accordion',
+  title: 'Molecules/Accordion',
   component: Accordion,
   parameters: {
     layout: 'centered',

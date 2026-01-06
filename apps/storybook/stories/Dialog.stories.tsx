@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, within, userEvent } from 'storybook/test';
 import {
   Button,
   Dialog,
@@ -12,7 +13,7 @@ import {
   Input,
   Label,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Organisms/Dialog',
@@ -43,6 +44,28 @@ export const Default: Story = {
       </DialogContent>
     </Dialog>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Find and click the trigger button
+    const triggerButton = canvas.getByRole('button', { name: 'Open Dialog' });
+    await expect(triggerButton).toBeInTheDocument();
+    await userEvent.click(triggerButton);
+
+    // Wait for dialog to open and verify content
+    const dialog = await within(document.body).findByRole('dialog');
+    await expect(dialog).toBeInTheDocument();
+
+    // Verify dialog title and description
+    await expect(within(dialog).getByText('Dialog Title')).toBeInTheDocument();
+    await expect(
+      within(dialog).getByText(/This is the dialog description/)
+    ).toBeInTheDocument();
+
+    // Close the dialog using the close button
+    const closeButton = within(dialog).getByRole('button', { name: /close/i });
+    await userEvent.click(closeButton);
+  },
 };
 
 export const WithForm: Story = {

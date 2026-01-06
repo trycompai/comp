@@ -1,7 +1,7 @@
 'use client';
 
 import type { Member, Policy } from '@db';
-import { Button } from '@trycompai/ui-shadcn';
+import { Button } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useRef, useState } from 'react';

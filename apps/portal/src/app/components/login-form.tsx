@@ -1,6 +1,6 @@
 'use client';
 
-import { Separator } from '@trycompai/ui-shadcn';
+import { Separator } from '@trycompai/design-system';
 import { useSearchParams } from 'next/navigation';
 import { GoogleSignIn } from './google-sign-in';
 import { MicrosoftSignIn } from './microsoft-sign-in';

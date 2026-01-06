@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Label, Stack, Textarea } from '@trycompai/ui-shadcn';
+import { Stack, Textarea } from '@trycompai/design-system';
 
 const meta = {
   title: 'Atoms/Textarea',
@@ -13,17 +13,14 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    placeholder: 'Type your message here...',
-  },
-};
-
-export const WithValue: Story = {
-  args: {
-    defaultValue:
-      'This is some pre-filled text content that demonstrates how the textarea looks with content.',
-  },
+export const Sizes: Story = {
+  render: () => (
+    <Stack gap="4">
+      <Textarea size="sm" placeholder="Small" />
+      <Textarea placeholder="Default" />
+      <Textarea size="lg" placeholder="Large" />
+    </Stack>
+  ),
 };
 
 export const Disabled: Story = {
@@ -31,27 +28,4 @@ export const Disabled: Story = {
     disabled: true,
     placeholder: 'Disabled textarea',
   },
-};
-
-export const WithLabel: Story = {
-  render: () => (
-    <div className="w-[400px]">
-      <Stack gap="2">
-        <Label htmlFor="message">Your message</Label>
-        <Textarea id="message" placeholder="Type your message here..." />
-      </Stack>
-    </div>
-  ),
-};
-
-export const WithCharacterCount: Story = {
-  render: () => (
-    <div className="w-[400px]">
-      <Stack gap="2">
-        <Label htmlFor="bio">Bio</Label>
-        <Textarea id="bio" placeholder="Tell us about yourself..." />
-        <span className="text-xs text-muted-foreground text-right">0/280</span>
-      </Stack>
-    </div>
-  ),
 };

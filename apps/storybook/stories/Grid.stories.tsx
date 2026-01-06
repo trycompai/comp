@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Card, CardContent, Grid, Stack, Text } from '@trycompai/ui-shadcn';
+import { Card, CardContent, Grid, Stack, Text } from '@trycompai/design-system';
 
 const meta = {
-  title: 'Layout/Grid',
+  title: 'Molecules/Grid',
   component: Grid,
   parameters: {
     layout: 'padded',

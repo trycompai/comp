@@ -1,10 +1,10 @@
 import '@/styles/globals.css';
-import '@trycompai/ui-shadcn/globals.css';
+import '@trycompai/design-system/globals.css';
 
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
 import { initializeServer } from '@comp/analytics/server';
-import { cn } from '@trycompai/ui-shadcn';
+import { cn } from '@trycompai/design-system';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata } from 'next';

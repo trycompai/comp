@@ -6,7 +6,7 @@ import {
   AlertTitle,
   Button,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { Rocket, X } from 'lucide-react';
 
 const meta = {

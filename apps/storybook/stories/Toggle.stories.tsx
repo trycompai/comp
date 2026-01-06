@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Toggle, Stack } from '@trycompai/ui-shadcn';
+import { Toggle, Stack } from '@trycompai/design-system';
 import { Bold, Italic, Underline } from 'lucide-react';
 
 const meta = {

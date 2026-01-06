@@ -9,7 +9,7 @@ import {
   TableRow,
   TableFooter,
   Badge,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Molecules/Table',
@@ -116,6 +116,31 @@ export const WithBadges: Story = {
                 {invoice.status}
               </Badge>
             </TableCell>
+            <TableCell>{invoice.method}</TableCell>
+            <TableCell>{invoice.amount}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  ),
+};
+
+export const Bordered: Story = {
+  render: () => (
+    <Table variant="bordered">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Invoice</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Method</TableHead>
+          <TableHead>Amount</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invoices.map((invoice) => (
+          <TableRow key={invoice.invoice}>
+            <TableCell>{invoice.invoice}</TableCell>
+            <TableCell>{invoice.status}</TableCell>
             <TableCell>{invoice.method}</TableCell>
             <TableCell>{invoice.amount}</TableCell>
           </TableRow>

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { RadioGroup, RadioGroupItem, Label, Stack } from '@trycompai/ui-shadcn';
+import { RadioGroup, RadioGroupItem, Label, Stack } from '@trycompai/design-system';
 
 const meta = {
-  title: 'Atoms/RadioGroup',
+  title: 'Molecules/RadioGroup',
   component: RadioGroup,
   parameters: {
     layout: 'centered',

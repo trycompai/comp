@@ -2,7 +2,7 @@
 
 import { authClient } from '@/app/lib/auth-client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input, Label } from '@trycompai/ui-shadcn';
+import { Button, Input, Label } from '@trycompai/design-system';
 import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

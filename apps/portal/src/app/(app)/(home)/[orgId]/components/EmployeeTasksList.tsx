@@ -1,7 +1,7 @@
 'use client';
 
 import { trainingVideos } from '@/lib/data/training-videos';
-import { Accordion, Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
+import { Accordion, Card, CardContent, CardHeader } from '@trycompai/design-system';
 import type { EmployeePortalDashboard } from '../types/employee-portal';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';

@@ -7,7 +7,7 @@ import {
   EmptyMedia,
   EmptyTitle,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { FileX, Inbox, Search, Users } from 'lucide-react';
 
 const meta = {

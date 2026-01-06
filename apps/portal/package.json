@@ -13,7 +13,7 @@
     "@trycompai/db": "1.3.20",
     "@trycompai/email": "workspace:*",
     "@trycompai/kv": "workspace:*",
-    "@trycompai/ui-shadcn": "workspace:*",
+    "@trycompai/design-system": "workspace:*",
     "@types/jszip": "^3.4.1",
     "@upstash/ratelimit": "^2.0.5",
     "archiver": "^7.0.1",

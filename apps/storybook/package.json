@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@trycompai/ui-shadcn": "workspace:*",
+    "@trycompai/design-system": "workspace:*",
     "lucide-react": "^0.469.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -12,9 +12,18 @@
     "dev": "storybook dev -p 6006",
     "build": "storybook build",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:storybook": "vitest --project storybook",
+    "test:unit": "vitest --project unit",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitest/ui": "^4.0.16",
     "@chromatic-com/storybook": "^4.1.3",
     "@storybook/addon-a11y": "^10.1.11",
     "@storybook/addon-docs": "^10.1.11",

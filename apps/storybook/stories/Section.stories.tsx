@@ -13,7 +13,7 @@ import {
   Stack,
   Input,
   Label,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Molecules/Section',

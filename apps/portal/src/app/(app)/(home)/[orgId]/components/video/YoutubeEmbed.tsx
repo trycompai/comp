@@ -1,7 +1,7 @@
 'use client';
 
 import type { EmployeeTrainingVideoCompletion } from '@db';
-import { Button } from '@trycompai/ui-shadcn';
+import { Button } from '@trycompai/design-system';
 import { ArrowRight, Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 

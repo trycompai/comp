@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Badge, Stack } from '@trycompai/ui-shadcn';
+import { Badge, Stack } from '@trycompai/design-system';
 
 const meta = {
   title: 'Atoms/Badge',

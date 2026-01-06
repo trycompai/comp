@@ -13,7 +13,7 @@ import {
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Organisms/Menubar',

@@ -1,7 +1,7 @@
 'use client';
 
 import type { Member, Policy } from '@db';
-import { Card, CardContent, CardHeader } from '@trycompai/ui-shadcn';
+import { Card, CardContent, CardHeader } from '@trycompai/design-system';
 import { Check } from 'lucide-react';
 
 interface PolicyGridProps {

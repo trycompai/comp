@@ -9,7 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { Download, Loader2 } from 'lucide-react';
 
 interface DeviceAgentInstructionsProps {

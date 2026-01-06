@@ -6,7 +6,7 @@ import {
   InputGroupInput,
   Label,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { Copy, DollarSign, Mail, Search } from 'lucide-react';
 
 const meta = {

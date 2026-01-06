@@ -7,7 +7,7 @@ import {
   CarouselPrevious,
   Card,
   CardContent,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Organisms/Carousel',

@@ -1,6 +1,6 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui-shadcn';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/design-system';
 
 export function DeviceAgentInfoAccordion() {
   return (

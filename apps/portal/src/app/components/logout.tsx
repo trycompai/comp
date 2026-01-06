@@ -1,7 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { DropdownMenuItem } from '@trycompai/ui-shadcn';
+import { DropdownMenuItem } from '@trycompai/design-system';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

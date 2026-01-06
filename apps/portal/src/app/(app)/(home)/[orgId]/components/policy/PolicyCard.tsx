@@ -2,7 +2,7 @@
 
 import type { Member, Policy } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { Button, Card, CardContent, CardFooter, CardHeader } from '@trycompai/ui-shadcn';
+import { Button, Card, CardContent, CardFooter, CardHeader } from '@trycompai/design-system';
 import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyEditor } from './PolicyEditor';

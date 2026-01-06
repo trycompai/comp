@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Molecules/Select',
@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <div className="w-[180px]">
-      <Select>
+      <Select items={{ apple: 'Apple', banana: 'Banana', orange: 'Orange', grape: 'Grape', mango: 'Mango' }}>
         <SelectTrigger>
           <SelectValue placeholder="Select a fruit" />
         </SelectTrigger>
@@ -47,7 +47,7 @@ export const WithLabel: Story = {
     <div className="w-[180px]">
       <Stack gap="2">
         <Label htmlFor="fruit">Favorite Fruit</Label>
-        <Select>
+        <Select items={{ apple: 'Apple', banana: 'Banana', orange: 'Orange' }}>
           <SelectTrigger id="fruit">
             <SelectValue placeholder="Select a fruit" />
           </SelectTrigger>
@@ -65,7 +65,17 @@ export const WithLabel: Story = {
 export const WithGroups: Story = {
   render: () => (
     <div className="w-[200px]">
-      <Select>
+      <Select
+        items={{
+          est: 'Eastern Standard Time (EST)',
+          cst: 'Central Standard Time (CST)',
+          mst: 'Mountain Standard Time (MST)',
+          pst: 'Pacific Standard Time (PST)',
+          gmt: 'Greenwich Mean Time (GMT)',
+          cet: 'Central European Time (CET)',
+          eet: 'Eastern European Time (EET)',
+        }}
+      >
         <SelectTrigger>
           <SelectValue placeholder="Select a timezone" />
         </SelectTrigger>
@@ -92,7 +102,7 @@ export const WithGroups: Story = {
 export const Disabled: Story = {
   render: () => (
     <div className="w-[180px]">
-      <Select disabled>
+      <Select disabled items={{ '1': 'Option 1', '2': 'Option 2' }}>
         <SelectTrigger>
           <SelectValue placeholder="Select an option" />
         </SelectTrigger>
@@ -108,7 +118,7 @@ export const Disabled: Story = {
 export const WithDisabledItems: Story = {
   render: () => (
     <div className="w-[180px]">
-      <Select>
+      <Select items={{ free: 'Free', pro: 'Pro', enterprise: 'Enterprise (Coming Soon)' }}>
         <SelectTrigger>
           <SelectValue placeholder="Select a plan" />
         </SelectTrigger>

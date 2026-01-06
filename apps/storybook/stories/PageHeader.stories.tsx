@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Badge, Button, Heading, PageHeader, Stack } from '@trycompai/ui-shadcn';
+import { Badge, Button, Heading, PageHeader, Stack } from '@trycompai/design-system';
 import { Download, Plus, Settings } from 'lucide-react';
 
 const meta = {

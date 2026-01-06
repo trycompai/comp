@@ -15,7 +15,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import {
   Cloud,
   CreditCard,

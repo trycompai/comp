@@ -6,7 +6,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 import { HelpCircle, Plus, Settings } from 'lucide-react';
 
 const meta = {

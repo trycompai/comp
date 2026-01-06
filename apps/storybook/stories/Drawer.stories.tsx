@@ -12,7 +12,7 @@ import {
   Input,
   Label,
   Stack,
-} from '@trycompai/ui-shadcn';
+} from '@trycompai/design-system';
 
 const meta = {
   title: 'Organisms/Drawer',

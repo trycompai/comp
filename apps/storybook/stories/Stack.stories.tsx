@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Stack } from '@trycompai/ui-shadcn';
+import { Stack } from '@trycompai/design-system';
 
 const meta = {
-  title: 'Layout/Stack',
+  title: 'Molecules/Stack',
   component: Stack,
   parameters: {
     layout: 'padded',

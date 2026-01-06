@@ -1,7 +1,7 @@
 'use client';
 
 import { useApiSWR } from '@/hooks/use-api-swr';
-import { Card, CardContent } from '@trycompai/ui-shadcn';
+import { Card, CardContent } from '@trycompai/design-system';
 import { FileText, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@trycompai/ui-shadcn';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@trycompai/design-system';
 
 const meta = {
   title: 'Molecules/Resizable',
