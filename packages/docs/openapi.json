@@ -8106,6 +8106,45 @@
         ]
       }
     },
+    "/v1/trust-access/admin/grants/{id}/resend-access-email": {
+      "post": {
+        "description": "Resend the access granted email to user with active grant",
+        "operationId": "TrustAccessController_resendAccessEmail_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access email resent"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Resend access granted email",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/trust-access/nda/{token}": {
       "get": {
         "description": "Fetch NDA agreement details for signing",

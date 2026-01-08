@@ -3,12 +3,16 @@ import type { Metadata } from 'next';
 import { auth } from '@/utils/auth';
 import { env } from '@/env.mjs';
 import { db } from '@db';
+import { Prisma } from '@prisma/client';
 import { headers } from 'next/headers';
 import { TrustPortalSwitch } from './components/TrustPortalSwitch';
-import { TrustPortalDomain } from './components/TrustPortalDomain';
 
 export default async function PortalSettingsPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
+
+  // Ensure friendlyUrl exists for enabled portals
+  await ensureFriendlyUrlIfEnabled(orgId);
+
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
   const primaryColor = await fetchOrganizationPrimaryColor(orgId); // can be null
@@ -53,8 +57,9 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
             pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
             nen7510Status={trustPortal?.nen7510Status ?? 'started'}
             iso9001Status={trustPortal?.iso9001Status ?? 'started'}
-            friendlyUrl={trustPortal?.friendlyUrl ?? null}
             faqs={faqs}
+            isVercelDomain={trustPortal?.isVercelDomain ?? false}
+            vercelVerification={trustPortal?.vercelVerification ?? null}
             iso27001FileName={certificateFiles.iso27001FileName}
             iso42001FileName={certificateFiles.iso42001FileName}
             gdprFileName={certificateFiles.gdprFileName}
@@ -71,13 +76,6 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
               createdAt: doc.createdAt.toISOString(),
               updatedAt: doc.updatedAt.toISOString(),
             }))}
-          />
-          <TrustPortalDomain
-            domain={trustPortal?.domain ?? ''}
-            domainVerified={trustPortal?.domainVerified ?? false}
-            orgId={orgId}
-            isVercelDomain={trustPortal?.isVercelDomain ?? false}
-            vercelVerification={trustPortal?.vercelVerification ?? null}
           />
         </div>
       </div>
@@ -130,6 +128,73 @@ const getTrustPortal = async (orgId: string) => {
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,
   };
+};
+
+/**
+ * Create a URL-friendly slug from organization name
+ */
+const slugifyOrganizationName = (name: string): string => {
+  const cleaned = name
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return cleaned.slice(0, 60);
+};
+
+/**
+ * Ensure friendlyUrl exists for enabled trust portals
+ * This auto-heals cases where portal was enabled before friendlyUrl was required
+ */
+const ensureFriendlyUrlIfEnabled = async (organizationId: string): Promise<void> => {
+  const trust = await db.trust.findUnique({
+    where: { organizationId },
+    select: { status: true, friendlyUrl: true },
+  });
+
+  // Only sync if portal is enabled and friendlyUrl is missing
+  if (!trust || trust.status !== 'published' || trust.friendlyUrl) {
+    return;
+  }
+
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { name: true },
+  });
+
+  if (!org) return;
+
+  const baseCandidate = slugifyOrganizationName(org.name) || `org-${organizationId.slice(-8)}`;
+
+  for (let i = 0; i < 25; i += 1) {
+    const candidate = i === 0 ? baseCandidate : `${baseCandidate}-${i + 1}`;
+
+    const taken = await db.trust.findUnique({
+      where: { friendlyUrl: candidate },
+      select: { organizationId: true },
+    });
+
+    if (taken && taken.organizationId !== organizationId) continue;
+
+    try {
+      await db.trust.update({
+        where: { organizationId },
+        data: { friendlyUrl: candidate },
+      });
+      return;
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
 };
 
 type CertificateFiles = {

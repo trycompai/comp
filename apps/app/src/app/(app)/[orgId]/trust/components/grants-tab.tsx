@@ -1,16 +1,26 @@
-import { useAccessGrants } from '@/hooks/use-access-requests';
+import { useAccessGrants, useResendAccessEmail } from '@/hooks/use-access-requests';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { GrantDataTable } from './grant-data-table';
 import { RevokeDialog } from './revoke-dialog';
 
 export function GrantsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessGrants(orgId);
+  const { mutateAsync: resendAccessEmail } = useResendAccessEmail(orgId);
   const [revokeId, setRevokeId] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string | 'all'>('all');
+
+  const handleResendAccess = (grantId: string) => {
+    toast.promise(resendAccessEmail(grantId), {
+      loading: 'Resending...',
+      success: 'Access email resent',
+      error: 'Failed to resend access email',
+    });
+  };
 
   const filtered = (data ?? []).filter((grant) => {
     const matchesSearch =
@@ -46,6 +56,7 @@ export function GrantsTab({ orgId }: { orgId: string }) {
         data={filtered}
         isLoading={isLoading}
         onRevoke={(row) => setRevokeId(row.id)}
+        onResendAccess={(row) => handleResendAccess(row.id)}
       />
 
       {revokeId && (

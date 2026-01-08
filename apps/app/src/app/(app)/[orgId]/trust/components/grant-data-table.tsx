@@ -8,10 +8,16 @@ interface GrantDataTableProps {
   data: AccessGrant[];
   isLoading?: boolean;
   onRevoke: (row: AccessGrant) => void;
+  onResendAccess: (row: AccessGrant) => void;
 }
 
-export function GrantDataTable({ data, isLoading, onRevoke }: GrantDataTableProps) {
-  const columns = buildGrantColumns({ onRevoke });
+export function GrantDataTable({
+  data,
+  isLoading,
+  onRevoke,
+  onResendAccess,
+}: GrantDataTableProps) {
+  const columns = buildGrantColumns({ onRevoke, onResendAccess });
 
   return (
     <DataTable

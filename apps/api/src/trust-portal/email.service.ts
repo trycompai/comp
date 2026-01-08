@@ -36,7 +36,7 @@ export class TrustEmailService {
     toName: string;
     organizationName: string;
     expiresAt: Date;
-    portalUrl?: string | null;
+    portalUrl: string;
   }): Promise<void> {
     const { toEmail, toName, organizationName, expiresAt, portalUrl } = params;
 
