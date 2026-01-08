@@ -4,17 +4,18 @@ import type { AccessGrant } from '@/hooks/use-access-requests';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
+import { Mail } from 'lucide-react';
 
 export type GrantTableRow = AccessGrant;
 
 interface GrantColumnHandlers {
   onRevoke: (row: AccessGrant) => void;
+  onResendAccess: (row: AccessGrant) => void;
 }
 
 export function buildGrantColumns({
   onRevoke,
+  onResendAccess,
 }: GrantColumnHandlers): ColumnDef<GrantTableRow>[] {
   return [
     {
@@ -91,20 +92,30 @@ export function buildGrantColumns({
       header: 'Actions',
       cell: ({ row }) => {
         const grant = row.original;
-        
+
         if (grant.status === 'active') {
           return (
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => onRevoke(grant)}
-              className="h-8 px-2"
-            >
-              Revoke
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onResendAccess(grant)}
+                className="h-8 px-2"
+              >
+                Resend Access
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onRevoke(grant)}
+                className="h-8 px-2"
+              >
+                Revoke
+              </Button>
+            </div>
           );
         }
-        
+
         return null;
       },
     },
