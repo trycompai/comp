@@ -253,6 +253,33 @@ export class TrustAccessController {
     );
   }
 
+  @Post('admin/grants/:id/resend-access-email')
+  @UseGuards(HybridAuthGuard)
+  @ApiSecurity('apikey')
+  @ApiHeader({
+    name: 'X-Organization-Id',
+    description: 'Organization ID',
+    required: true,
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend access granted email',
+    description: 'Resend the access granted email to user with active grant',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Access email resent',
+  })
+  async resendAccessEmail(
+    @OrganizationId() organizationId: string,
+    @Param('id') grantId: string,
+  ) {
+    return this.trustAccessService.resendAccessGrantEmail(
+      organizationId,
+      grantId,
+    );
+  }
+
   @Get('nda/:token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

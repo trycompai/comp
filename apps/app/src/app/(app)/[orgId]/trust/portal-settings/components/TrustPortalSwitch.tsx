@@ -17,7 +17,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
 import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
@@ -25,6 +24,7 @@ import {
   TrustPortalAdditionalDocumentsSection,
   type TrustPortalDocument,
 } from './TrustPortalAdditionalDocumentsSection';
+import { TrustPortalDomain } from './TrustPortalDomain';
 import {
   GDPR,
   HIPAA,
@@ -42,7 +42,6 @@ const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
   contactEmail: z.string().email().or(z.literal('')).optional(),
   primaryColor: z.string().optional(),
-  friendlyUrl: z.string().optional(),
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
   iso27001: z.boolean(),
@@ -68,7 +67,6 @@ type TrustPortalSwitchActionInput = {
   enabled: boolean;
   contactEmail?: string | '';
   primaryColor?: string;
-  friendlyUrl?: string;
 };
 
 const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
@@ -122,8 +120,9 @@ export function TrustPortalSwitch({
   nen7510Status,
   iso9001,
   iso9001Status,
-  friendlyUrl,
   faqs,
+  isVercelDomain,
+  vercelVerification,
   // File props - will be passed from page.tsx later
   iso27001FileName,
   iso42001FileName,
@@ -161,8 +160,9 @@ export function TrustPortalSwitch({
   nen7510Status: 'started' | 'in_progress' | 'compliant';
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
-  friendlyUrl: string | null;
   faqs: any[] | null;
+  isVercelDomain?: boolean;
+  vercelVerification?: string | null;
   iso27001FileName?: string | null;
   iso42001FileName?: string | null;
   gdprFileName?: string | null;
@@ -297,8 +297,6 @@ export function TrustPortalSwitch({
   const trustPortalSwitchRef = useRef(trustPortalSwitch);
   trustPortalSwitchRef.current = trustPortalSwitch;
 
-  const checkFriendlyUrl = useAction(isFriendlyAvailable);
-
   const form = useForm<z.infer<typeof trustPortalSwitchSchema>>({
     resolver: zodResolver(trustPortalSwitchSchema),
     defaultValues: {
@@ -323,7 +321,6 @@ export function TrustPortalSwitch({
       pcidssStatus: pcidssStatus ?? 'started',
       nen7510Status: nen7510Status ?? 'started',
       iso9001Status: iso9001Status ?? 'started',
-      friendlyUrl: friendlyUrl ?? undefined,
     },
   });
 
@@ -338,20 +335,18 @@ export function TrustPortalSwitch({
 
   const lastSaved = useRef<{ [key: string]: string | boolean | null }>({
     contactEmail: contactEmail ?? '',
-    friendlyUrl: friendlyUrl ?? '',
     enabled: enabled,
     primaryColor: primaryColor ?? null,
   });
 
   const savingRef = useRef<{ [key: string]: boolean }>({
     contactEmail: false,
-    friendlyUrl: false,
     enabled: false,
     primaryColor: false,
   });
 
   const autoSave = useCallback(
-    async (field: string, value: any) => {
+    async (field: string, value: unknown) => {
       // Prevent concurrent saves for the same field
       if (savingRef.current[field]) {
         return;
@@ -362,15 +357,14 @@ export function TrustPortalSwitch({
         savingRef.current[field] = true;
         try {
           // Only send fields that trustPortalSwitchAction accepts
-          // Server schema accepts: enabled, contactEmail, friendlyUrl, primaryColor
+          // Server schema accepts: enabled, contactEmail, primaryColor
           const data: TrustPortalSwitchActionInput = {
-            enabled: field === 'enabled' ? value : current.enabled,
-            contactEmail: field === 'contactEmail' ? value : current.contactEmail ?? '',
-            friendlyUrl: field === 'friendlyUrl' ? value : current.friendlyUrl ?? undefined,
-            primaryColor: field === 'primaryColor' ? value : current.primaryColor ?? undefined,
+            enabled: field === 'enabled' ? (value as boolean) : current.enabled,
+            contactEmail: field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
+            primaryColor: field === 'primaryColor' ? (value as string) : (current.primaryColor ?? undefined),
           };
           await onSubmit(data);
-          lastSaved.current[field] = value;
+          lastSaved.current[field] = value as string | boolean | null;
         } finally {
           savingRef.current[field] = false;
         }
@@ -427,77 +421,6 @@ export function TrustPortalSwitch({
     [form, autoSave],
   );
 
-  const [friendlyUrlValue, setFriendlyUrlValue] = useState(form.getValues('friendlyUrl') || '');
-  const debouncedFriendlyUrl = useDebounce(friendlyUrlValue, 700);
-  const [friendlyUrlStatus, setFriendlyUrlStatus] = useState<
-    'idle' | 'checking' | 'available' | 'unavailable'
-  >('idle');
-  const lastCheckedUrlRef = useRef<string>('');
-  const processingResultRef = useRef<string>('');
-
-  useEffect(() => {
-    if (!debouncedFriendlyUrl || debouncedFriendlyUrl === (friendlyUrl ?? '')) {
-      setFriendlyUrlStatus('idle');
-      lastCheckedUrlRef.current = '';
-      processingResultRef.current = '';
-      return;
-    }
-    
-    // Only check if we haven't already checked this exact value
-    if (lastCheckedUrlRef.current === debouncedFriendlyUrl) {
-      return;
-    }
-    
-    lastCheckedUrlRef.current = debouncedFriendlyUrl;
-    processingResultRef.current = '';
-    setFriendlyUrlStatus('checking');
-    checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId });
-  }, [debouncedFriendlyUrl, orgId, friendlyUrl]);
-  
-  useEffect(() => {
-    if (checkFriendlyUrl.status === 'executing') return;
-    
-    const result = checkFriendlyUrl.result?.data;
-    const checkedUrl = lastCheckedUrlRef.current;
-    
-    // Only process if this result matches the currently checked URL
-    if (checkedUrl !== debouncedFriendlyUrl || !checkedUrl) {
-      return;
-    }
-    
-    // Prevent processing the same result multiple times
-    if (processingResultRef.current === checkedUrl) {
-      return;
-    }
-    
-    if (result?.isAvailable === true) {
-      setFriendlyUrlStatus('available');
-      processingResultRef.current = checkedUrl;
-
-      if (
-        debouncedFriendlyUrl !== lastSaved.current.friendlyUrl &&
-        !savingRef.current.friendlyUrl
-      ) {
-        form.setValue('friendlyUrl', debouncedFriendlyUrl);
-        void autoSave('friendlyUrl', debouncedFriendlyUrl);
-      }
-    } else if (result?.isAvailable === false) {
-      setFriendlyUrlStatus('unavailable');
-      processingResultRef.current = checkedUrl;
-    }
-  }, [checkFriendlyUrl.status, checkFriendlyUrl.result, debouncedFriendlyUrl, form, autoSave]);
-
-  const handleFriendlyUrlBlur = useCallback(
-    (e: React.FocusEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (friendlyUrlStatus === 'available' && value !== lastSaved.current.friendlyUrl) {
-        form.setValue('friendlyUrl', value);
-        autoSave('friendlyUrl', value);
-      }
-    },
-    [form, autoSave, friendlyUrlStatus],
-  );
-
   const handleEnabledChange = useCallback(
     (val: boolean) => {
       form.setValue('enabled', val);
@@ -547,76 +470,6 @@ export function TrustPortalSwitch({
               <div className="pt-2">
                 <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-4 lg:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="friendlyUrl"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Custom URL</FormLabel>
-                        <FormControl>
-                          <div>
-                            <div className="relative flex w-full items-center">
-                              <Input
-                                {...field}
-                                value={friendlyUrlValue}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  setFriendlyUrlValue(e.target.value);
-                                }}
-                                onBlur={handleFriendlyUrlBlur}
-                                placeholder="my-org"
-                                autoComplete="off"
-                                autoCapitalize="none"
-                                autoCorrect="off"
-                                spellCheck="false"
-                                prefix="trust.inc/"
-                              />
-                            </div>
-                            {friendlyUrlValue && (
-                              <div className="mt-1 min-h-[18px] text-xs">
-                                {friendlyUrlStatus === 'checking' && 'Checking availability...'}
-                                {friendlyUrlStatus === 'available' && (
-                                  <span className="text-green-600">{'This URL is available!'}</span>
-                                )}
-                                {friendlyUrlStatus === 'unavailable' && (
-                                  <span className="text-red-600">
-                                    {'This URL is already taken.'}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contactEmail"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Contact Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={contactEmailValue}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              setContactEmailValue(e.target.value);
-                            }}
-                            onBlur={handleContactEmailBlur}
-                            placeholder="contact@example.com"
-                            className="w-auto"
-                            autoComplete="off"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            spellCheck="false"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
                     <FormField
                       control={form.control}
                       name="primaryColor"
@@ -642,7 +495,7 @@ export function TrustPortalSwitch({
                                   />
                                   <label
                                     htmlFor="color-picker"
-                                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
+                                    className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
                                     style={{ backgroundColor: primaryColorValue || '#000000' }}
                                   >
                                     <span className="sr-only">Pick a color</span>
@@ -662,7 +515,7 @@ export function TrustPortalSwitch({
                                     }}
                                     onBlur={handlePrimaryColorBlur}
                                     placeholder="#000000"
-                                    className="font-mono text-sm"
+                                    className="font-mono"
                                     maxLength={7}
                                   />
                                 </div>
@@ -672,6 +525,31 @@ export function TrustPortalSwitch({
                         </FormItem>
                       )}
                     />
+                  <FormField
+                    control={form.control}
+                    name="contactEmail"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Contact Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={contactEmailValue}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              setContactEmailValue(e.target.value);
+                            }}
+                            onBlur={handleContactEmailBlur}
+                            placeholder="contact@example.com"
+                            autoComplete="off"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck="false"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 <div className="w-full lg:col-span-2 mt-1.5">
                   <p className="text-xs text-muted-foreground mb-4">
@@ -1017,6 +895,17 @@ export function TrustPortalSwitch({
           </div>
         </div>
       </form>
+      {form.watch('enabled') && (
+        <div className="pt-6">
+          <TrustPortalDomain
+            domain={domain}
+            domainVerified={domainVerified}
+            orgId={orgId}
+            isVercelDomain={isVercelDomain ?? false}
+            vercelVerification={vercelVerification ?? null}
+          />
+        </div>
+      )}
     </Form>
   );
 }

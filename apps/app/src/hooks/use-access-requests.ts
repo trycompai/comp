@@ -175,6 +175,26 @@ export function useRevokeAccessGrant(orgId: string) {
   });
 }
 
+export function useResendAccessEmail(orgId: string) {
+  const api = useApi();
+
+  return useMutation({
+    mutationFn: async (grantId: string) => {
+      const response = await api.post(
+        `/v1/trust-access/admin/grants/${grantId}/resend-access-email`,
+        {},
+        orgId,
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      return response.data;
+    },
+  });
+}
+
 export function useResendNda(orgId: string) {
   const api = useApi();
 

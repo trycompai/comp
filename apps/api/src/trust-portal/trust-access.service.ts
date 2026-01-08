@@ -20,7 +20,7 @@ import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
-import { TrustFramework } from '@prisma/client';
+import { Prisma, TrustFramework } from '@prisma/client';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
 
@@ -33,6 +33,130 @@ export class TrustAccessService {
 
   private generateToken(length: number): string {
     return randomBytes(length).toString('base64url').slice(0, length);
+  }
+
+  /**
+   * Normalize URL by removing trailing slash
+   */
+  private normalizeUrl(input: string): string {
+    return input.endsWith('/') ? input.slice(0, -1) : input;
+  }
+
+  /**
+   * Normalize domain by removing protocol and path
+   */
+  private normalizeDomain(input: string): string {
+    const trimmed = input.trim();
+    const withoutProtocol = trimmed.replace(/^https?:\/\//i, '');
+    const withoutPath = withoutProtocol.split('/')[0] ?? withoutProtocol;
+    return withoutPath.trim().toLowerCase();
+  }
+
+  /**
+   * Create a URL-friendly slug from organization name
+   */
+  private slugifyOrganizationName(name: string): string {
+    const cleaned = name
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    return cleaned.slice(0, 60);
+  }
+
+  /**
+   * Ensure organization has a friendlyUrl, create one if missing
+   */
+  private async ensureFriendlyUrl(params: {
+    organizationId: string;
+    organizationName: string;
+  }): Promise<string> {
+    const { organizationId, organizationName } = params;
+
+    const current = await db.trust.findUnique({
+      where: { organizationId },
+      select: { friendlyUrl: true },
+    });
+
+    if (current?.friendlyUrl) return current.friendlyUrl;
+
+    const baseCandidate =
+      this.slugifyOrganizationName(organizationName) ||
+      `org-${organizationId.slice(-8)}`;
+
+    for (let i = 0; i < 25; i += 1) {
+      const candidate = i === 0 ? baseCandidate : `${baseCandidate}-${i + 1}`;
+
+      const taken = await db.trust.findUnique({
+        where: { friendlyUrl: candidate },
+        select: { organizationId: true },
+      });
+
+      if (taken && taken.organizationId !== organizationId) continue;
+
+      try {
+        await db.trust.upsert({
+          where: { organizationId },
+          update: { friendlyUrl: candidate },
+          create: { organizationId, friendlyUrl: candidate },
+        });
+        return candidate;
+      } catch (error: unknown) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    return organizationId;
+  }
+
+  /**
+   * Build portal base URL, checking custom domain first
+   */
+  private async buildPortalBaseUrl(params: {
+    organizationId: string;
+    organizationName: string;
+  }): Promise<string> {
+    const { organizationId, organizationName } = params;
+
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { domain: true, domainVerified: true, friendlyUrl: true },
+    });
+
+    if (trust?.domain && trust.domainVerified) {
+      return `https://${this.normalizeDomain(trust.domain)}`;
+    }
+
+    const urlId =
+      trust?.friendlyUrl ||
+      (await this.ensureFriendlyUrl({ organizationId, organizationName }));
+
+    return `${this.normalizeUrl(this.TRUST_APP_URL)}/${urlId}`;
+  }
+
+  /**
+   * Build portal access URL with access token
+   */
+  private async buildPortalAccessUrl(params: {
+    organizationId: string;
+    organizationName: string;
+    accessToken: string;
+  }): Promise<string> {
+    const { organizationId, organizationName, accessToken } = params;
+    const base = await this.buildPortalBaseUrl({
+      organizationId,
+      organizationName,
+    });
+    return `${base}/access/${accessToken}`;
   }
 
   private async findPublishedTrustByRouteId(id: string) {
@@ -453,6 +577,24 @@ export class TrustAccessService {
   }
 
   async listGrants(organizationId: string) {
+    const now = new Date();
+
+    // Update expired grants that are still marked as active
+    await db.trustAccessGrant.updateMany({
+      where: {
+        accessRequest: {
+          organizationId,
+        },
+        status: 'active',
+        expiresAt: {
+          lt: now,
+        },
+      },
+      data: {
+        status: 'expired',
+      },
+    });
+
     const grants = await db.trustAccessGrant.findMany({
       where: {
         accessRequest: {
@@ -560,6 +702,72 @@ export class TrustAccessService {
     return updatedGrant;
   }
 
+  async resendAccessGrantEmail(organizationId: string, grantId: string) {
+    const grant = await db.trustAccessGrant.findFirst({
+      where: {
+        id: grantId,
+        accessRequest: {
+          organizationId,
+        },
+      },
+      include: {
+        accessRequest: {
+          include: {
+            organization: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Grant not found');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException(
+        `Cannot resend access email for ${grant.status} grant`,
+      );
+    }
+
+    const now = new Date();
+
+    // Check if grant has expired
+    if (grant.expiresAt < now) {
+      throw new BadRequestException('Cannot resend access email for expired grant');
+    }
+
+    // Generate a new access token if expired or missing
+    let accessToken = grant.accessToken;
+
+    if (!accessToken || (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)) {
+      accessToken = this.generateToken(32);
+      const accessTokenExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+      await db.trustAccessGrant.update({
+        where: { id: grantId },
+        data: { accessToken, accessTokenExpiresAt },
+      });
+    }
+
+    const portalUrl = await this.buildPortalAccessUrl({
+      organizationId,
+      organizationName: grant.accessRequest.organization.name,
+      accessToken,
+    });
+
+    await this.emailService.sendAccessGrantedEmail({
+      toEmail: grant.subjectEmail,
+      toName: grant.accessRequest.name,
+      organizationName: grant.accessRequest.organization.name,
+      expiresAt: grant.expiresAt,
+      portalUrl,
+    });
+
+    return { message: 'Access email resent successfully' };
+  }
+
   async getNdaByToken(token: string) {
     const nda = await db.trustNDAAgreement.findUnique({
       where: { signToken: token },
@@ -577,14 +785,10 @@ export class TrustAccessService {
       throw new NotFoundException('NDA agreement not found');
     }
 
-    const trust = await db.trust.findUnique({
-      where: { organizationId: nda.organizationId },
-      select: { friendlyUrl: true },
+    const portalUrl = await this.buildPortalBaseUrl({
+      organizationId: nda.organizationId,
+      organizationName: nda.accessRequest.organization.name,
     });
-
-    const portalUrl = trust?.friendlyUrl
-      ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}`
-      : null;
 
     const baseResponse = {
       id: nda.id,
@@ -612,11 +816,13 @@ export class TrustAccessService {
     }
 
     if (nda.status === 'signed') {
-      let accessUrl = portalUrl;
+      let accessUrl: string | null = portalUrl;
       if (nda.grant?.accessToken && nda.grant.status === 'active') {
-        if (trust?.friendlyUrl) {
-          accessUrl = `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${nda.grant.accessToken}`;
-        }
+        accessUrl = await this.buildPortalAccessUrl({
+          organizationId: nda.organizationId,
+          organizationName: nda.accessRequest.organization.name,
+          accessToken: nda.grant.accessToken,
+        });
       }
 
       return {
@@ -683,14 +889,11 @@ export class TrustAccessService {
         });
       }
 
-      const trust = await db.trust.findUnique({
-        where: { organizationId: nda.organizationId },
-        select: { friendlyUrl: true },
+      const portalUrl = await this.buildPortalAccessUrl({
+        organizationId: nda.organizationId,
+        organizationName: nda.accessRequest.organization.name,
+        accessToken,
       });
-
-      const portalUrl = trust?.friendlyUrl
-        ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${accessToken}`
-        : null;
 
       return {
         message: 'NDA already signed',
@@ -754,14 +957,11 @@ export class TrustAccessService {
       return { grant, updatedNda };
     });
 
-    const trust = await db.trust.findUnique({
-      where: { organizationId: nda.organizationId },
-      select: { friendlyUrl: true },
+    const portalUrl = await this.buildPortalAccessUrl({
+      organizationId: nda.organizationId,
+      organizationName: nda.accessRequest.organization.name,
+      accessToken,
     });
-
-    const portalUrl = trust?.friendlyUrl
-      ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${accessToken}`
-      : null;
 
     await this.emailService.sendAccessGrantedEmail({
       toEmail: signerEmail,
@@ -975,8 +1175,11 @@ export class TrustAccessService {
       });
     }
 
-    const urlId = trust.friendlyUrl || trust.organizationId;
-    let accessLink = `${this.TRUST_APP_URL}/${urlId}/access/${accessToken}`;
+    let accessLink = await this.buildPortalAccessUrl({
+      organizationId: trust.organizationId,
+      organizationName: grant.accessRequest.organization.name,
+      accessToken,
+    });
 
     // Append query parameter if provided
     if (query) {
