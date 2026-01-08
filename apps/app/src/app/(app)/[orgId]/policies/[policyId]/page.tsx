@@ -1,5 +1,8 @@
+import { getFeatureFlags } from '@/app/posthog';
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { auth } from '@/utils/auth';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { PolicyHeaderActions } from './components/PolicyHeaderActions';
 import PolicyPage from './components/PolicyPage';
 import { getAssignees, getLogsForPolicy, getPolicy, getPolicyControlMappingInfo } from './data';
@@ -18,6 +21,15 @@ export default async function PolicyDetails({
 
   const isPendingApproval = !!policy?.approverId;
 
+  // Check feature flag for AI policy editor
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const flags = session?.user?.id ? await getFeatureFlags(session.user.id) : {};
+  const isAiPolicyEditorEnabled =
+    flags['is-ai-policy-assistant-enabled'] === true ||
+    flags['is-ai-policy-assistant-enabled'] === 'true';
+
   return (
     <PageWithBreadcrumb
       breadcrumbs={[
@@ -35,6 +47,7 @@ export default async function PolicyDetails({
         allControls={allControls}
         isPendingApproval={isPendingApproval}
         logs={logs}
+        showAiAssistant={isAiPolicyEditorEnabled}
       />
     </PageWithBreadcrumb>
   );

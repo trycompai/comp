@@ -22,11 +22,13 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
+import { useActiveOrganization } from '@/utils/auth-client';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { EvidenceJsonView } from './EvidenceJsonView';
 
 interface TaskIntegrationCheck {
   integrationId: string;
@@ -89,6 +91,8 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
   const params = useParams();
   const searchParams = useSearchParams();
   const orgId = params.orgId as string;
+  const activeOrg = useActiveOrganization();
+  const organizationName = activeOrg.data?.name || orgId;
 
   const [checks, setChecks] = useState<TaskIntegrationCheck[]>([]);
   const [storedRuns, setStoredRuns] = useState<StoredCheckRun[]>([]);
@@ -613,7 +617,11 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                     >
                       <div className="overflow-hidden">
                         <div className="px-4 pb-4 pt-2 border-t border-border/50 space-y-4">
-                          <GroupedCheckRuns runs={checkRuns} maxRuns={5} />
+                          <GroupedCheckRuns
+                            runs={checkRuns}
+                            maxRuns={5}
+                            organizationName={organizationName}
+                          />
                         </div>
                       </div>
                     </div>
@@ -694,7 +702,15 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
 }
 
 // Group runs by date for display
-function GroupedCheckRuns({ runs, maxRuns = 5 }: { runs: StoredCheckRun[]; maxRuns?: number }) {
+function GroupedCheckRuns({
+  runs,
+  maxRuns = 5,
+  organizationName,
+}: {
+  runs: StoredCheckRun[];
+  maxRuns?: number;
+  organizationName: string;
+}) {
   const [showAll, setShowAll] = useState(false);
 
   // Group runs by date
@@ -756,7 +772,14 @@ function GroupedCheckRuns({ runs, maxRuns = 5 }: { runs: StoredCheckRun[]; maxRu
             {dateRuns.map((run: StoredCheckRun) => {
               const isLatest = runIndex === 0;
               runIndex++;
-              return <CheckRunItem key={run.id} run={run} isLatest={isLatest} />;
+              return (
+                <CheckRunItem
+                  key={run.id}
+                  run={run}
+                  isLatest={isLatest}
+                  organizationName={organizationName}
+                />
+              );
             })}
           </div>
         </div>
@@ -775,7 +798,15 @@ function GroupedCheckRuns({ runs, maxRuns = 5 }: { runs: StoredCheckRun[]; maxRu
 }
 
 // Individual check run item with expandable details
-function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolean }) {
+function CheckRunItem({
+  run,
+  isLatest,
+  organizationName,
+}: {
+  run: StoredCheckRun;
+  isLatest: boolean;
+  organizationName: string;
+}) {
   const [expanded, setExpanded] = useState(isLatest);
 
   const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
@@ -897,9 +928,11 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
                         <summary className="text-muted-foreground cursor-pointer">
                           View Evidence
                         </summary>
-                        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-                          {JSON.stringify(result.evidence, null, 2)}
-                        </pre>
+                        <EvidenceJsonView
+                          evidence={result.evidence}
+                          organizationName={organizationName}
+                          automationName={run.checkName}
+                        />
                       </details>
                     )}
                   </div>

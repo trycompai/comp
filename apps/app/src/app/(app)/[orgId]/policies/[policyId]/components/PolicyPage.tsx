@@ -15,6 +15,7 @@ export default function PolicyPage({
   policyId,
   organizationId,
   logs,
+  showAiAssistant,
 }: {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   assignees: (Member & { user: User })[];
@@ -25,6 +26,8 @@ export default function PolicyPage({
   /** Organization ID - required for correct org context in comments */
   organizationId: string;
   logs: AuditLogWithRelations[];
+  /** Whether the AI assistant feature is enabled */
+  showAiAssistant: boolean;
 }) {
   return (
     <>
@@ -41,6 +44,7 @@ export default function PolicyPage({
         policyContent={policy?.content ? (policy.content as JSONContent[]) : []}
         displayFormat={policy?.displayFormat}
         pdfUrl={policy?.pdfUrl}
+        aiAssistantEnabled={showAiAssistant}
       />
 
       <RecentAuditLogs logs={logs} />

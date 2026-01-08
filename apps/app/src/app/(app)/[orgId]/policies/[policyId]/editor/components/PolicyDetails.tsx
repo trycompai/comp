@@ -81,6 +81,8 @@ interface PolicyContentManagerProps {
   isPendingApproval: boolean;
   displayFormat?: PolicyDisplayFormat;
   pdfUrl?: string | null;
+  /** Whether the AI assistant feature is enabled (behind feature flag) */
+  aiAssistantEnabled?: boolean;
 }
 
 export function PolicyContentManager({
@@ -89,8 +91,9 @@ export function PolicyContentManager({
   isPendingApproval,
   displayFormat = 'EDITOR',
   pdfUrl,
+  aiAssistantEnabled = false,
 }: PolicyContentManagerProps) {
-  const [showAiAssistant, setShowAiAssistant] = useState(true);
+  const [showAiAssistant, setShowAiAssistant] = useState(aiAssistantEnabled);
   const [editorKey, setEditorKey] = useState(0);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
     const formattedContent = Array.isArray(policyContent)
@@ -205,7 +208,7 @@ export function PolicyContentManager({
                       PDF View
                     </TabsTrigger>
                   </TabsList>
-                  {!isPendingApproval && (
+                  {!isPendingApproval && aiAssistantEnabled && (
                     <Button
                       variant={showAiAssistant ? 'default' : 'outline'}
                       size="sm"
@@ -236,7 +239,7 @@ export function PolicyContentManager({
               </Tabs>
             </div>
 
-            {showAiAssistant && (
+            {aiAssistantEnabled && showAiAssistant && (
               <div className="w-80 shrink-0 self-stretch flex flex-col overflow-hidden">
                 <PolicyAiAssistant
                   messages={messages}

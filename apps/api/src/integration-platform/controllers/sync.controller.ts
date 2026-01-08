@@ -186,7 +186,7 @@ export class SyncController {
           }
           const errorText = await response.text();
           this.logger.error(
-            `Google API error: ${response.status} ${response.statusText}`,
+            `Google API error: ${response.status} ${response.statusText} - ${errorText}`,
           );
           throw new HttpException(
             'Failed to fetch users from Google Workspace',

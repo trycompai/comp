@@ -1,6 +1,8 @@
 /**
  * Branch Protection Check
- * Verifies that default branches have protection rules configured
+ * Verifies that default branches have protection rules configured.
+ * Also fetches recent pull request history for the protected branch
+ * and includes it in the evidence for auditors.
  */
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
@@ -9,10 +11,49 @@ import type {
   GitHubBranchProtection,
   GitHubBranchRule,
   GitHubOrg,
+  GitHubPullRequest,
   GitHubRepo,
   GitHubRuleset,
 } from '../types';
-import { protectedBranchVariable, targetReposVariable } from '../variables';
+import {
+  protectedBranchVariable,
+  recentPullRequestDaysVariable,
+  targetReposVariable,
+} from '../variables';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PR History Config
+// ─────────────────────────────────────────────────────────────────────────────
+const MAX_RECENT_PRS = 50;
+const DEFAULT_RECENT_WINDOW_DAYS = 180; // ~6 months
+
+interface PullRequestEvidenceSummary {
+  id: number;
+  number: number;
+  url: string;
+  state: 'open' | 'closed';
+  title: string;
+  author: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const summarizePullRequest = (pr: GitHubPullRequest): PullRequestEvidenceSummary => ({
+  id: pr.id,
+  number: pr.number,
+  url: pr.html_url,
+  state: pr.state,
+  title: pr.title,
+  author: pr.user?.login ?? null,
+  created_at: pr.created_at,
+  updated_at: pr.updated_at,
+});
+
+const toSafeNumber = (value: unknown): number | null => {
+  if (typeof value !== 'number') return null;
+  if (!Number.isFinite(value)) return null;
+  return value;
+};
 
 export const branchProtectionCheck: IntegrationCheck = {
   id: 'branch_protection',
@@ -21,11 +62,45 @@ export const branchProtectionCheck: IntegrationCheck = {
   taskMapping: TASK_TEMPLATES.codeChanges,
   defaultSeverity: 'high',
 
-  variables: [targetReposVariable, protectedBranchVariable],
+  variables: [targetReposVariable, protectedBranchVariable, recentPullRequestDaysVariable],
 
   run: async (ctx) => {
     const targetRepos = ctx.variables.target_repos as string[] | undefined;
     const protectedBranch = ctx.variables.protected_branch as string | undefined;
+    const recentDaysRaw = toSafeNumber(ctx.variables.recent_pr_days);
+    const recentWindowDays =
+      recentDaysRaw && recentDaysRaw > 0 ? recentDaysRaw : DEFAULT_RECENT_WINDOW_DAYS;
+    const cutoff = new Date(Date.now() - recentWindowDays * 24 * 60 * 60 * 1000);
+
+    ctx.log(
+      `Config: branch="${protectedBranch}", recentWindowDays=${recentWindowDays}, cutoff=${cutoff.toISOString()}`,
+    );
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Helper: fetch recent PRs targeting the protected branch
+    // ───────────────────────────────────────────────────────────────────────
+    const fetchRecentPullRequests = async ({
+      repoFullName,
+      baseBranch,
+    }: {
+      repoFullName: string;
+      baseBranch: string;
+    }): Promise<PullRequestEvidenceSummary[] | null> => {
+      const base = encodeURIComponent(baseBranch);
+      try {
+        ctx.log(`[PRs] Fetching PRs for ${repoFullName} with base="${baseBranch}"`);
+        const pulls = await ctx.fetchAllPages<GitHubPullRequest>(
+          `/repos/${repoFullName}/pulls?state=all&base=${base}&sort=updated&direction=desc`,
+          { maxPages: 5 },
+        );
+        const recent = pulls.filter((pr) => new Date(pr.created_at).getTime() >= cutoff.getTime());
+        return recent.slice(0, MAX_RECENT_PRS).map(summarizePullRequest);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        ctx.warn(`[PRs] Could not fetch pull requests for ${repoFullName}: ${errorMsg}`);
+        return null;
+      }
+    };
 
     ctx.log('Fetching repositories...');
 
@@ -57,6 +132,12 @@ export const branchProtectionCheck: IntegrationCheck = {
       if (!branchToCheck) continue;
 
       ctx.log(`Checking branch "${branchToCheck}" on ${repo.full_name}`);
+
+      // Fetch recent PRs in parallel while we check protection
+      const pullRequestsPromise = fetchRecentPullRequests({
+        repoFullName: repo.full_name,
+        baseBranch: branchToCheck,
+      });
 
       // Helper to check if a branch matches ruleset conditions
       const branchMatchesRuleset = (ruleset: GitHubRuleset, branch: string): boolean => {
@@ -201,6 +282,9 @@ export const branchProtectionCheck: IntegrationCheck = {
         }
       }
 
+      // Wait for PR fetch to complete
+      const pullRequests = await pullRequestsPromise;
+
       // Record result
       if (isProtected) {
         ctx.pass({
@@ -210,6 +294,8 @@ export const branchProtectionCheck: IntegrationCheck = {
           resourceId: repo.full_name,
           evidence: {
             ...protectionEvidence,
+            pull_requests: pullRequests,
+            pull_requests_window_days: recentWindowDays,
             checked_at: new Date().toISOString(),
           },
         });
@@ -221,6 +307,11 @@ export const branchProtectionCheck: IntegrationCheck = {
           resourceId: repo.full_name,
           severity: 'high',
           remediation: `1. Go to ${repo.html_url}/settings/rules\n2. Create a new ruleset targeting branch "${branchToCheck}"\n3. Enable "Require a pull request before merging"\n4. Set required approvals to at least 1`,
+          evidence: {
+            pull_requests: pullRequests,
+            pull_requests_window_days: recentWindowDays,
+            checked_at: new Date().toISOString(),
+          },
         });
       }
     }

@@ -26,15 +26,15 @@ function MentionList({ items, command, onSelect, onKeyDownRef }: MentionListProp
   const [selectedIndex, setSelectedIndex] = useState(0);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // Store current state in refs for the keydown handler
   const selectedIndexRef = useRef(selectedIndex);
   const safeItemsRef = useRef(safeItems);
-  
+
   useEffect(() => {
     selectedIndexRef.current = selectedIndex;
   }, [selectedIndex]);
-  
+
   useEffect(() => {
     safeItemsRef.current = safeItems;
   }, [safeItems]);
@@ -65,7 +65,7 @@ function MentionList({ items, command, onSelect, onKeyDownRef }: MentionListProp
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (safeItems.length === 0) return;
-    
+
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setSelectedIndex((prev) => (prev + 1) % safeItems.length);
@@ -87,9 +87,9 @@ function MentionList({ items, command, onSelect, onKeyDownRef }: MentionListProp
         const { event } = props;
         const currentItems = safeItemsRef.current;
         const currentIndex = selectedIndexRef.current;
-        
+
         if (currentItems.length === 0) return false;
-        
+
         if (event.key === 'ArrowDown') {
           event.preventDefault();
           setSelectedIndex((prev) => (prev + 1) % currentItems.length);
@@ -108,7 +108,7 @@ function MentionList({ items, command, onSelect, onKeyDownRef }: MentionListProp
         return false;
       };
     }
-    
+
     return () => {
       if (onKeyDownRef) {
         onKeyDownRef.current = null;
@@ -211,7 +211,9 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
         let component: ReactRenderer;
         let popup: TippyInstance | null = null;
         // Mutable ref to store the keydown handler from the component
-        const keyDownHandlerRef: { current: ((props: { event: KeyboardEvent }) => boolean) | null } = { current: null };
+        const keyDownHandlerRef: {
+          current: ((props: { event: KeyboardEvent }) => boolean) | null;
+        } = { current: null };
 
         return {
           onStart: (props) => {

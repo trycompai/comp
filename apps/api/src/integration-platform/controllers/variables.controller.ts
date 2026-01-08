@@ -248,11 +248,18 @@ export class VariablesController {
 
       fetch: async <T = unknown>(path: string): Promise<T> => {
         const url = new URL(path, baseUrl);
+
         const response = await fetch(url.toString(), {
           headers: buildHeaders(),
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        return data as T;
       },
 
       fetchAllPages: async <T = unknown>(path: string): Promise<T[]> => {
@@ -268,10 +275,30 @@ export class VariablesController {
           const response = await fetch(url.toString(), {
             headers: buildHeaders(),
           });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-          const items: T[] = await response.json();
-          if (!Array.isArray(items) || items.length === 0) break;
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+
+          const data = await response.json();
+
+          // Handle both direct array responses and wrapped responses
+          // e.g., some APIs return { items: [...] } instead of [...]
+          let items: T[];
+          if (Array.isArray(data)) {
+            items = data;
+          } else if (data && typeof data === 'object') {
+            // Find the first array property in the response
+            const arrayValue = Object.values(data).find((v) =>
+              Array.isArray(v),
+            ) as T[] | undefined;
+            items = arrayValue ?? [];
+          } else {
+            items = [];
+          }
+
+          if (items.length === 0) break;
 
           allItems.push(...items);
           if (items.length < perPage) break;

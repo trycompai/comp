@@ -6,7 +6,9 @@
  */
 
 import type { IntegrationManifest } from '../../types';
-import { branchProtectionCheck, dependabotCheck, sanitizedInputsCheck } from './checks';
+import { branchProtectionCheck } from './checks/branch-protection';
+import { dependabotCheck } from './checks/dependabot';
+import { sanitizedInputsCheck } from './checks/sanitized-inputs';
 
 export const manifest: IntegrationManifest = {
   id: 'github',
