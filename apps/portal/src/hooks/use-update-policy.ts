@@ -1,7 +1,7 @@
 'use client';
 
-import type { JSONContent } from '@tiptap/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { JSONContent } from '@tiptap/react';
 
 interface UpdatePolicyContentInput {
   policyId: string;

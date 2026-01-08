@@ -1,7 +1,7 @@
 'use client';
 
-import { acceptPolicy } from '@/actions/accept-policies';
-import { Button } from '@comp/ui/button';
+import { apiClient } from '@/lib/api-client';
+import { Button } from '@trycompai/design-system';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -9,17 +9,11 @@ import { toast } from 'sonner';
 
 interface PolicyAcceptButtonProps {
   policyId: string;
-  memberId: string;
   isAccepted: boolean;
   orgId: string;
 }
 
-export function PolicyAcceptButton({
-  policyId,
-  memberId,
-  isAccepted,
-  orgId,
-}: PolicyAcceptButtonProps) {
+export function PolicyAcceptButton({ policyId, isAccepted, orgId }: PolicyAcceptButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [accepted, setAccepted] = useState(isAccepted);
@@ -27,8 +21,13 @@ export function PolicyAcceptButton({
   const handleAccept = async () => {
     startTransition(async () => {
       try {
-        const result = await acceptPolicy(policyId, memberId);
-        if (result.success) {
+        const result = await apiClient.post<{ success: boolean; error?: string }>(
+          `/v1/policies/${policyId}/acknowledge`,
+          undefined,
+          orgId,
+        );
+
+        if (!result.error) {
           setAccepted(true);
           toast.success('Policy accepted successfully');
           router.refresh();
@@ -49,8 +48,10 @@ export function PolicyAcceptButton({
   if (accepted) {
     return (
       <Button disabled className="w-full">
-        <Check className="mr-2 h-4 w-4" />
-        Policy Accepted
+        <span className="inline-flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          Policy Accepted
+        </span>
       </Button>
     );
   }

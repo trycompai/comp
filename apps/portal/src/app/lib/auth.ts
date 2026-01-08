@@ -4,13 +4,15 @@ import { db } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, multiSession, organization } from 'better-auth/plugins';
+import { bearer, emailOTP, jwt, multiSession, organization } from 'better-auth/plugins';
 import { ac, admin, auditor, contractor, employee, owner } from './permissions';
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
+  // IMPORTANT: Keep this aligned with apps/api's BETTER_AUTH_URL so JWT issuer/audience matches.
+  baseURL: env.NEXT_PUBLIC_BETTER_AUTH_URL,
   advanced: {
     database: {
       // This will enable us to fall back to DB for ID generation.
@@ -18,20 +20,15 @@ export const auth = betterAuth({
       generateId: false,
     },
   },
-  trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
-  secret: env.AUTH_SECRET!,
+  trustedOrigins: ['http://localhost:3000', 'http://localhost:3002', 'https://*.trycomp.ai'],
+  secret: env.AUTH_SECRET,
   plugins: [
     organization({
       membershipLimit: 100000000000,
       async sendInvitationEmail(data) {
-        console.log(
-          'process.env.NEXT_PUBLIC_BETTER_AUTH_URL',
-          process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-        );
-
         const isLocalhost = process.env.NODE_ENV === 'development';
         const protocol = isLocalhost ? 'http' : 'https';
-        const domain = isLocalhost ? 'localhost:3000' : process.env.NEXT_PUBLIC_BETTER_AUTH_URL!;
+        const domain = isLocalhost ? 'localhost:3000' : env.NEXT_PUBLIC_BETTER_AUTH_URL;
         const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
 
         const url = `${protocol}://${domain}/auth`;
@@ -69,19 +66,37 @@ export const auth = betterAuth({
         });
       },
     }),
+    jwt({
+      jwt: {
+        definePayload: ({ user }) => {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            emailVerified: user.emailVerified,
+          };
+        },
+        expirationTime: '1h',
+      },
+    }),
+    bearer(),
     nextCookies(),
     multiSession(),
   ],
   socialProviders: {
-    google: {
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-    },
-    ...(process.env.AUTH_MICROSOFT_CLIENT_ID && process.env.AUTH_MICROSOFT_CLIENT_SECRET
+    ...(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET
+      ? {
+          google: {
+            clientId: env.AUTH_GOOGLE_ID,
+            clientSecret: env.AUTH_GOOGLE_SECRET,
+          },
+        }
+      : {}),
+    ...(env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET
       ? {
           microsoft: {
-            clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
-            clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
+            clientId: env.AUTH_MICROSOFT_CLIENT_ID,
+            clientSecret: env.AUTH_MICROSOFT_CLIENT_SECRET,
             tenantId: 'common',
             prompt: 'select_account',
           },

@@ -1,8 +1,9 @@
 'use client';
 
+import { Separator } from '@trycompai/design-system';
+import { useSearchParams } from 'next/navigation';
 import { GoogleSignIn } from './google-sign-in';
 import { MicrosoftSignIn } from './microsoft-sign-in';
-import { useSearchParams } from 'next/navigation';
 
 interface LoginFormProps {
   inviteCode?: string;
@@ -14,22 +15,24 @@ export function LoginForm({ inviteCode, showGoogle, showMicrosoft }: LoginFormPr
   const searchParams = useSearchParams();
 
   if (!showGoogle && !showMicrosoft) {
-    return;
+    return null;
   }
 
   return (
-    <div className="mt-4">
-      <div className="relative flex items-center justify-center py-2">
-        <div className="absolute inset-x-0 top-1/2 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <span className="relative z-10 bg-background px-3 text-xs text-muted-foreground font-medium">
-          OR
-        </span>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs font-medium text-muted-foreground">OR</span>
+        <Separator className="flex-1" />
       </div>
-      <div className="space-y-4 pt-4">
-        {showGoogle && <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />}
-        {showMicrosoft && <MicrosoftSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />}
+
+      <div className="flex flex-col gap-4">
+        {showGoogle ? (
+          <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+        ) : null}
+        {showMicrosoft ? (
+          <MicrosoftSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+        ) : null}
       </div>
     </div>
   );

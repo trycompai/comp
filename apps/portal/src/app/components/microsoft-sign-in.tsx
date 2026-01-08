@@ -1,9 +1,7 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Button } from '@comp/ui/button';
-import { Icons } from '@comp/ui/icons';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -82,19 +80,12 @@ export function MicrosoftSignIn({
   return (
     <Button
       onClick={handleSignIn}
-      className="w-full h-11 font-medium"
       variant="outline"
+      size="lg"
       disabled={isLoading}
+      className="w-full"
     >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <>
-          <Icons.Microsoft className="h-4 w-4" />
-          Continue with Microsoft
-        </>
-      )}
+      {isLoading ? 'Redirecting…' : 'Continue with Microsoft'}
     </Button>
   );
 }
-
