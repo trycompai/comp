@@ -92,6 +92,7 @@ export function buildGrantColumns({
       header: 'Actions',
       cell: ({ row }) => {
         const grant = row.original;
+        const isExpired = new Date(grant.expiresAt) < new Date();
 
         if (grant.status === 'active') {
           return (
@@ -101,6 +102,8 @@ export function buildGrantColumns({
                 variant="outline"
                 onClick={() => onResendAccess(grant)}
                 className="h-8 px-2"
+                disabled={isExpired}
+                title={isExpired ? 'Grant has expired' : undefined}
               >
                 Resend Access
               </Button>

@@ -713,9 +713,15 @@ export class TrustAccessService {
       );
     }
 
+    const now = new Date();
+
+    // Check if grant has expired
+    if (grant.expiresAt < now) {
+      throw new BadRequestException('Cannot resend access email for expired grant');
+    }
+
     // Generate a new access token if expired or missing
     let accessToken = grant.accessToken;
-    const now = new Date();
 
     if (!accessToken || (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)) {
       accessToken = this.generateToken(32);
