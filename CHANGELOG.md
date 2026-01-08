@@ -1,3 +1,10 @@
+# [1.74.0](https://github.com/trycompai/comp/compare/v1.73.0...v1.74.0) (2026-01-08)
+
+
+### Features
+
+* **task:** add task automation helpers and tests for status calculation ([#1984](https://github.com/trycompai/comp/issues/1984)) ([6389517](https://github.com/trycompai/comp/commit/63895179bd83f2218ec551ef78cfbece804ea6d6))
+
 # [1.73.0](https://github.com/trycompai/comp/compare/v1.72.2...v1.73.0) (2026-01-06)
 
 
