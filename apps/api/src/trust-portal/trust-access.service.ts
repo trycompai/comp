@@ -577,6 +577,24 @@ export class TrustAccessService {
   }
 
   async listGrants(organizationId: string) {
+    const now = new Date();
+
+    // Update expired grants that are still marked as active
+    await db.trustAccessGrant.updateMany({
+      where: {
+        accessRequest: {
+          organizationId,
+        },
+        status: 'active',
+        expiresAt: {
+          lt: now,
+        },
+      },
+      data: {
+        status: 'expired',
+      },
+    });
+
     const grants = await db.trustAccessGrant.findMany({
       where: {
         accessRequest: {
