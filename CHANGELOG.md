@@ -1,3 +1,12 @@
+# [1.75.0](https://github.com/trycompai/comp/compare/v1.74.0...v1.75.0) (2026-01-08)
+
+
+### Features
+
+* **trust-access:** add expiration check for access grants and disable resend button ([#1991](https://github.com/trycompai/comp/issues/1991)) ([5425fb3](https://github.com/trycompai/comp/commit/5425fb39f0625e92618b54f50f910510c25dfb0c))
+* **trust-access:** fix trustportal grand access logic and add endpoint to resend access granted email ([#1988](https://github.com/trycompai/comp/issues/1988)) ([96262d1](https://github.com/trycompai/comp/commit/96262d145153bca4654accf0ed0321aa145bfdb2))
+* **trust-access:** update expired grants to inactive status in listGrants ([#1992](https://github.com/trycompai/comp/issues/1992)) ([0654f5d](https://github.com/trycompai/comp/commit/0654f5dc509cd04b0e2789088af697100553bdf5))
+
 # [1.74.0](https://github.com/trycompai/comp/compare/v1.73.0...v1.74.0) (2026-01-08)
 
 
