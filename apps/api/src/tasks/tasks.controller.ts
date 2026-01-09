@@ -211,6 +211,9 @@ export class TasksController {
 
     let parsedReviewDate: Date | undefined;
     if (reviewDate !== undefined) {
+      if (reviewDate === null || typeof reviewDate !== 'string') {
+        throw new BadRequestException('reviewDate is invalid');
+      }
       parsedReviewDate = new Date(reviewDate);
       if (Number.isNaN(parsedReviewDate.getTime())) {
         throw new BadRequestException('reviewDate is invalid');
