@@ -44,8 +44,16 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
     }
   }, [selectable]);
 
-  const allSelected = selectedTaskIds.length === tasks.length && tasks.length > 0;
-  const noneSelected = selectedTaskIds.length === 0;
+  // Remove stale selections when the visible task list changes
+  useEffect(() => {
+    const visibleIds = new Set(tasks.map((task) => task.id));
+    setSelectedTaskIds((prev) => prev.filter((id) => visibleIds.has(id)));
+  }, [tasks]);
+
+  const visibleIds = useMemo(() => new Set(tasks.map((task) => task.id)), [tasks]);
+  const visibleSelectedCount = selectedTaskIds.filter((id) => visibleIds.has(id)).length;
+  const allSelected = tasks.length > 0 && visibleSelectedCount === tasks.length;
+  const noneSelected = visibleSelectedCount === 0;
   const someSelected = !noneSelected && !allSelected;
 
   const selectAllChecked = useMemo(() => {
