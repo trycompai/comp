@@ -4,6 +4,11 @@
  * Ensures repositories use a modern validation/sanitization library
  * (Zod or Pydantic) and have automated static analysis (CodeQL) enabled.
  * Supports monorepos by scanning all package.json/requirements.txt files.
+ *
+ * Code scanning detection supports:
+ * - GitHub CodeQL default setup
+ * - Custom CodeQL workflow files (.github/workflows/*.yml with codeql-action)
+ * - Third-party SARIF uploaders
  */
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
@@ -21,6 +26,17 @@ const PY_VALIDATION_PACKAGES = ['pydantic'];
 
 const TARGET_FILES = ['package.json', 'requirements.txt', 'pyproject.toml'];
 
+// Patterns that indicate code scanning is configured in a workflow
+const CODE_SCANNING_PATTERNS = [
+  'github/codeql-action/init',
+  'github/codeql-action/analyze',
+  'github/codeql-action/upload-sarif',
+  'codeql-action/init',
+  'codeql-action/analyze',
+  'codeql-action/upload-sarif',
+  'upload-sarif', // Generic SARIF upload
+];
+
 interface GitHubFileResponse {
   content: string;
   encoding: 'base64' | 'utf-8';
@@ -31,6 +47,17 @@ interface ValidationMatch {
   library: string;
   file: string;
 }
+
+type CodeScanningStatus =
+  | {
+      status: 'enabled';
+      method: 'default-setup' | 'workflow';
+      languages?: string[];
+      workflow?: string;
+    }
+  | { status: 'not-configured' }
+  | { status: 'permission-denied'; isPrivate: boolean }
+  | { status: 'ghas-required' };
 
 const decodeFile = (file: GitHubFileResponse): string => {
   if (!file?.content) return '';
@@ -160,18 +187,105 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       return matches;
     };
 
-    const isCodeScanningEnabled = async (repoName: string) => {
+    /**
+     * Check if a workflow file contains code scanning configuration
+     */
+    const hasCodeScanningInWorkflow = (content: string): boolean => {
+      const lower = content.toLowerCase();
+      return CODE_SCANNING_PATTERNS.some((pattern) => lower.includes(pattern.toLowerCase()));
+    };
+
+    /**
+     * Find workflow files that configure code scanning
+     */
+    const findCodeScanningWorkflows = async (
+      repoName: string,
+      tree: GitHubTreeEntry[],
+    ): Promise<string[]> => {
+      const workflowFiles = tree.filter(
+        (entry) =>
+          entry.type === 'blob' &&
+          entry.path.startsWith('.github/workflows/') &&
+          (entry.path.endsWith('.yml') || entry.path.endsWith('.yaml')),
+      );
+
+      const codeScanningWorkflows: string[] = [];
+
+      for (const entry of workflowFiles) {
+        const content = await fetchFile(repoName, entry.path);
+        if (content && hasCodeScanningInWorkflow(content)) {
+          codeScanningWorkflows.push(entry.path);
+        }
+      }
+
+      return codeScanningWorkflows;
+    };
+
+    /**
+     * Check code scanning status using multiple detection methods
+     */
+    const getCodeScanningStatus = async ({
+      repoName,
+      tree,
+      isPrivate,
+      isGhasEnabled,
+    }: {
+      repoName: string;
+      tree: GitHubTreeEntry[];
+      isPrivate: boolean;
+      isGhasEnabled: boolean;
+    }): Promise<CodeScanningStatus> => {
+      // First, try the default setup API
       try {
         const setup = await ctx.fetch<GitHubCodeScanningDefaultSetup>(
           `/repos/${repoName}/code-scanning/default-setup`,
         );
-        return setup.state === 'configured'
-          ? { enabled: true, languages: setup.languages || [] }
-          : { enabled: false, languages: setup.languages || [] };
+        if (setup.state === 'configured') {
+          return {
+            status: 'enabled',
+            method: 'default-setup',
+            languages: setup.languages || [],
+          };
+        }
       } catch (error) {
-        ctx.log(`Code scanning not configured for ${repoName}: ${String(error)}`);
-        return { enabled: false };
+        const errorStr = String(error);
+
+        // Check for 403 Forbidden - indicates permission issues or GHAS not enabled
+        // Return early without checking workflows since we can't verify they're actually running
+        if (errorStr.includes('403') || errorStr.includes('Forbidden')) {
+          ctx.log(
+            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${isGhasEnabled})`,
+          );
+
+          // For private repos, distinguish between GHAS not enabled vs permission issue
+          if (isPrivate) {
+            if (isGhasEnabled) {
+              // GHAS is enabled but we still got 403 - it's a permission issue
+              return { status: 'permission-denied', isPrivate };
+            }
+            // GHAS is not enabled - that's why we got 403
+            return { status: 'ghas-required' };
+          }
+
+          return { status: 'permission-denied', isPrivate };
+        }
+
+        // Other errors - API might not be available, continue to check workflows
+        ctx.log(`Code scanning default setup not available for ${repoName}: ${errorStr}`);
       }
+
+      // Fall back to checking for workflow files with code scanning
+      // Only reached if API didn't return 403 (meaning we have access but default setup isn't on)
+      const codeScanningWorkflows = await findCodeScanningWorkflows(repoName, tree);
+      if (codeScanningWorkflows.length > 0) {
+        return {
+          status: 'enabled',
+          method: 'workflow',
+          workflow: codeScanningWorkflows[0],
+        };
+      }
+
+      return { status: 'not-configured' };
     };
 
     for (const repoName of targetRepos) {
@@ -181,8 +295,18 @@ export const sanitizedInputsCheck: IntegrationCheck = {
       // Fetch the full tree to find all package.json/requirements.txt files
       const tree = await fetchRepoTree(repo.full_name, repo.default_branch);
       const validationMatches = await findValidationLibraries(repo.full_name, tree);
-      const codeScanning = await isCodeScanningEnabled(repo.full_name);
 
+      // Check if GHAS is enabled (for private repos, this helps distinguish permission issues)
+      const isGhasEnabled = repo.security_and_analysis?.advanced_security?.status === 'enabled';
+
+      const codeScanningStatus = await getCodeScanningStatus({
+        repoName: repo.full_name,
+        tree,
+        isPrivate: repo.private,
+        isGhasEnabled,
+      });
+
+      // Report input validation results
       if (validationMatches.length > 0) {
         ctx.pass({
           title: `Input validation enabled in ${repo.name}`,
@@ -216,30 +340,69 @@ export const sanitizedInputsCheck: IntegrationCheck = {
         });
       }
 
-      if (codeScanning.enabled) {
-        ctx.pass({
-          title: `CodeQL scanning configured for ${repo.name}`,
-          description: 'GitHub CodeQL default setup is enabled.',
-          resourceType: 'repository',
-          resourceId: repo.full_name,
-          evidence: {
-            repository: repo.full_name,
-            codeScanning: 'CodeQL default setup',
-            languages: codeScanning.languages,
-            checkedAt: new Date().toISOString(),
-          },
-        });
-      } else {
-        ctx.fail({
-          title: `Code scanning not enabled for ${repo.name}`,
-          description:
-            'GitHub CodeQL (or an equivalent static analysis tool) is not configured. Enable it to automatically detect insecure patterns.',
-          resourceType: 'repository',
-          resourceId: repo.full_name,
-          severity: 'medium',
-          remediation:
-            'In the repository Security tab, enable CodeQL default setup (or add a custom workflow) to run on every push.',
-        });
+      // Report code scanning results based on status
+      switch (codeScanningStatus.status) {
+        case 'enabled': {
+          const methodDescription =
+            codeScanningStatus.method === 'default-setup'
+              ? 'GitHub CodeQL default setup is enabled.'
+              : `Code scanning configured via workflow: ${codeScanningStatus.workflow}`;
+
+          ctx.pass({
+            title: `CodeQL scanning configured for ${repo.name}`,
+            description: methodDescription,
+            resourceType: 'repository',
+            resourceId: repo.full_name,
+            evidence: {
+              repository: repo.full_name,
+              codeScanning: codeScanningStatus.method,
+              ...(codeScanningStatus.languages && { languages: codeScanningStatus.languages }),
+              ...(codeScanningStatus.workflow && { workflow: codeScanningStatus.workflow }),
+              checkedAt: new Date().toISOString(),
+            },
+          });
+          break;
+        }
+
+        case 'ghas-required':
+          ctx.fail({
+            title: `Code scanning requires GitHub Advanced Security for ${repo.name}`,
+            description:
+              'This is a private repository. GitHub Advanced Security (GHAS) must be enabled before CodeQL can be configured. GHAS is a paid feature for private repositories.',
+            resourceType: 'repository',
+            resourceId: repo.full_name,
+            severity: 'medium',
+            remediation:
+              'Enable GitHub Advanced Security in the repository settings (Settings → Code security and analysis → GitHub Advanced Security), then enable CodeQL.',
+          });
+          break;
+
+        case 'permission-denied':
+          ctx.fail({
+            title: `Cannot access code scanning configuration for ${repo.name}`,
+            description:
+              'The GitHub integration does not have permission to read code scanning configuration. This may be due to missing permissions or organization policies.',
+            resourceType: 'repository',
+            resourceId: repo.full_name,
+            severity: 'medium',
+            remediation:
+              'Ensure the GitHub App has "Code scanning alerts: Read" permission. If this is an organization repository, check that organization policies allow access.',
+          });
+          break;
+
+        case 'not-configured':
+        default:
+          ctx.fail({
+            title: `Code scanning not enabled for ${repo.name}`,
+            description:
+              'GitHub CodeQL (or an equivalent static analysis tool) is not configured. Enable it to automatically detect insecure patterns.',
+            resourceType: 'repository',
+            resourceId: repo.full_name,
+            severity: 'medium',
+            remediation:
+              'In the repository Security tab, enable CodeQL default setup (or add a custom workflow) to run on every push.',
+          });
+          break;
       }
     }
   },
