@@ -41,6 +41,8 @@ export function BulkTaskStatusChangeModal({
 
   const [status, setStatus] = useState<TaskStatus>(defaultStatus);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedCount = selectedTaskIds.length;
+  const isSingular = selectedCount === 1;
 
   useEffect(() => {
     if (open) {
@@ -91,7 +93,9 @@ export function BulkTaskStatusChangeModal({
         <DialogHeader>
           <DialogTitle>Bulk Update</DialogTitle>
           <DialogDescription>
-            {`${selectedTaskIds.length} items are selected. Are you sure you want to move them?`}
+            {`${selectedCount} item${isSingular ? '' : 's'} ${
+              isSingular ? 'is' : 'are'
+            } selected. Are you sure you want to move ${isSingular ? 'it' : 'them'}?`}
           </DialogDescription>
         </DialogHeader>
 
