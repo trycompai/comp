@@ -3,14 +3,18 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@comp/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@comp/ui';
-import { ChevronDown, Pencil, RefreshCw, X } from 'lucide-react';
+import { ChevronDown, Move, Pencil, X } from 'lucide-react';
+import { BulkTaskStatusChangeModal } from './BulkTaskStatusChangeModal';
 
 interface TaskBulkActionsProps {
+  selectedTaskIds: string[];
   onEdit: (isEditing: boolean) => void;
+  onClearSelection: () => void;
 }
 
-export function TaskBulkActions({ onEdit }: TaskBulkActionsProps) {
+export function TaskBulkActions({ selectedTaskIds, onEdit, onClearSelection }: TaskBulkActionsProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [openBulk, setOpenBulk] = useState(false);
 
   useEffect(() => {
     onEdit(isEditing);
@@ -20,6 +24,7 @@ export function TaskBulkActions({ onEdit }: TaskBulkActionsProps) {
     <div className="ml-auto flex items-center gap-2">
       {isEditing ? (
         <>
+          <span className="text-xs text-slate-500">{`${selectedTaskIds.length} item${selectedTaskIds.length > 1 ? 's' : ''} selected`}</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost">
@@ -28,9 +33,9 @@ export function TaskBulkActions({ onEdit }: TaskBulkActionsProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <RefreshCw className="mr-2 h-4 w-4 text-slate-500" />
-                Update Status
+              <DropdownMenuItem onClick={() => setOpenBulk(true)} disabled={selectedTaskIds.length === 0}>
+                <Move className="mr-2 h-4 w-4 text-slate-500" />
+                Move
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -43,6 +48,15 @@ export function TaskBulkActions({ onEdit }: TaskBulkActionsProps) {
           <Pencil className="h-4 w-4 text-slate-500" />
         </Button>
       )}
+      <BulkTaskStatusChangeModal
+        selectedTaskIds={selectedTaskIds}
+        open={openBulk}
+        onOpenChange={setOpenBulk}
+        onSuccess={() => {
+          onClearSelection();
+          setIsEditing(false);
+        }}
+      />
     </div>
   );
 }

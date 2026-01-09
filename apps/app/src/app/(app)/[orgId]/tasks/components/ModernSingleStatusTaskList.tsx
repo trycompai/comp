@@ -77,7 +77,14 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
           {config.label}
         </h3>
         <span className="text-slate-400 text-xs font-medium">({tasks.length})</span>
-        <TaskBulkActions onEdit={setSelectable} />
+        <TaskBulkActions
+          selectedTaskIds={selectedTaskIds}
+          onEdit={setSelectable}
+          onClearSelection={() => {
+            setSelectedTaskIds([]);
+            setSelectable(false);
+          }}
+        />
       </div>
       <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200/60 bg-white">
         {selectable ? (
