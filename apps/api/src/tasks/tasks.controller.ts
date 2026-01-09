@@ -6,11 +6,13 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiExtraModels,
+  ApiBody,
   ApiHeader,
   ApiOperation,
   ApiParam,
@@ -18,6 +20,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { TaskStatus } from '@db';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
@@ -142,6 +145,79 @@ export class TasksController {
     @Param('taskId') taskId: string,
   ): Promise<TaskResponseDto> {
     return await this.tasksService.getTask(organizationId, taskId);
+  }
+
+  @Patch('bulk')
+  @ApiOperation({
+    summary: 'Update status for multiple tasks',
+    description: 'Bulk update the status of multiple tasks',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        taskIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['tsk_abc123', 'tsk_def456'],
+        },
+        status: {
+          type: 'string',
+          enum: Object.values(TaskStatus),
+          example: TaskStatus.in_progress,
+        },
+        reviewDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-01-01T00:00:00.000Z',
+          description: 'Optional review date to set on all tasks',
+        },
+      },
+      required: ['taskIds', 'status'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tasks updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        updatedCount: { type: 'number', example: 2 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request body',
+  })
+  async updateTasksStatus(
+    @OrganizationId() organizationId: string,
+    @Body()
+    body: {
+      taskIds: string[];
+      status: TaskStatus;
+      reviewDate?: string;
+    },
+  ): Promise<{ updatedCount: number }> {
+    const { taskIds, status, reviewDate } = body;
+
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new BadRequestException('taskIds must be a non-empty array');
+    }
+
+    if (!Object.values(TaskStatus).includes(status)) {
+      throw new BadRequestException('status is invalid');
+    }
+
+    let parsedReviewDate: Date | undefined;
+    if (reviewDate !== undefined) {
+      parsedReviewDate = new Date(reviewDate);
+      if (Number.isNaN(parsedReviewDate.getTime())) {
+        throw new BadRequestException('reviewDate is invalid');
+      }
+    }
+
+    return await this.tasksService.updateTasksStatus(organizationId, taskIds, status, parsedReviewDate);
   }
 
   // ==================== TASK ATTACHMENTS ====================
