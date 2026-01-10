@@ -115,7 +115,8 @@ export function VendorNameAutocompleteField({ form, isSheetOpen }: Props) {
   }, [searchResults]);
 
   const handleSelectVendor = (vendor: GlobalVendors) => {
-    const name = vendor.company_name ?? vendor.legal_name ?? '';
+    // Use same fallback logic as getVendorDisplayName for consistency
+    const name = getVendorDisplayName(vendor);
 
     form.setValue('name', name, { shouldDirty: true, shouldValidate: true });
     form.setValue('website', vendor.website ?? '', { shouldDirty: true, shouldValidate: true });
@@ -170,7 +171,7 @@ export function VendorNameAutocompleteField({ form, isSheetOpen }: Props) {
                 <div className="bg-background absolute top-full z-10 mt-1 w-full rounded-md border shadow-lg">
                   <div className="max-h-[300px] overflow-y-auto p-1">
                     {isSearching && (
-                      <div className="text-muted-foreground p-2 text-sm">{'Loading...'}...</div>
+                      <div className="text-muted-foreground p-2 text-sm">Loading...</div>
                     )}
 
                     {!isSearching && deduplicatedSearchResults.length > 0 && (
