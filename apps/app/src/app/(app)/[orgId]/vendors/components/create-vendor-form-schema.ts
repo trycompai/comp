@@ -2,7 +2,7 @@ import { VendorCategory, VendorStatus } from '@db';
 import { z } from 'zod';
 
 export const createVendorSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().trim().min(1, 'Name is required'),
   // Allow empty string in the input and treat it as "not provided"
   website: z
     .union([z.string().url('URL must be valid and start with https://'), z.literal('')])
