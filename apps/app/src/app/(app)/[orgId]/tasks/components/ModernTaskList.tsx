@@ -1,12 +1,10 @@
 'use client';
 
-import type { Control, EvidenceAutomation, EvidenceAutomationRun, Member, Task, User } from '@db';
+import type { Member, Task, User } from '@db';
 import { Check, Circle, Loader2, XCircle } from 'lucide-react';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
-import { AutomationIndicator } from './AutomationIndicator';
-import { TaskStatusSelector } from './TaskStatusSelector';
+import { ModernSingleStatusTaskList } from './ModernSingleStatusTaskList';
 
 interface ModernTaskListProps {
   tasks: (Task & {
@@ -65,11 +63,6 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
     return grouped;
   }, [tasks]);
 
-  const assignedMember = (task: Task) => {
-    if (!task.assigneeId) return null;
-    return members.find((m) => m.id === task.assigneeId);
-  };
-
   const handleTaskClick = (taskId: string) => {
     router.push(`${pathname}/${taskId}`);
   };
@@ -99,86 +92,9 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
         if (statusTasks.length === 0) return null;
 
         const config = statusConfig[status];
-        const StatusIcon = config.icon;
 
         return (
-          <div key={status} className="space-y-2">
-            <div className="flex items-center gap-2 border-b border-slate-200/50 pb-2">
-              <StatusIcon className={`h-4 w-4 ${config.color}`} />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                {config.label}
-              </h3>
-              <span className="text-slate-400 text-xs font-medium">({statusTasks.length})</span>
-            </div>
-            <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200/60 bg-white">
-              {statusTasks.map((task, index) => {
-                const member = assignedMember(task);
-                const isNotRelevant = task.status === 'not_relevant';
-                return (
-                  <div
-                    key={task.id}
-                    className={`group relative flex items-center gap-4 p-4 transition-colors cursor-pointer ${
-                      isNotRelevant
-                        ? 'opacity-50 bg-slate-100/50 backdrop-blur-md hover:bg-slate-100/60'
-                        : 'hover:bg-slate-50/50'
-                    }`}
-                    onClick={() => handleTaskClick(task.id)}
-                  >
-                    {isNotRelevant && (
-                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                        <span className="text-sm font-bold uppercase tracking-[0.15em] text-slate-600">
-                          NOT RELEVANT
-                        </span>
-                      </div>
-                    )}
-                    <div
-                      className="flex shrink-0 items-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <TaskStatusSelector task={task} />
-                    </div>
-                    <div className="flex min-w-0 flex-1 items-center gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className={`text-sm font-semibold ${isNotRelevant ? 'text-slate-500' : 'text-slate-900'}`}>
-                            {task.title}
-                          </div>
-                          <AutomationIndicator
-                            automations={task.evidenceAutomations}
-                            variant="inline"
-                          />
-                        </div>
-                        {task.description && (
-                          <div className={`mt-0.5 line-clamp-1 text-xs ${isNotRelevant ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {task.description}
-                          </div>
-                        )}
-                      </div>
-                      {member && (
-                        <div className="flex shrink-0 items-center">
-                          <div className="bg-slate-100 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-slate-200">
-                            {member.user?.image ? (
-                              <Image
-                                src={member.user.image}
-                                alt={member.user.name ?? 'Assignee'}
-                                width={32}
-                                height={32}
-                                className="object-cover"
-                              />
-                            ) : (
-                              <span className="text-slate-600 text-xs font-medium">
-                                {member.user?.name?.charAt(0) ?? '?'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <ModernSingleStatusTaskList key={status} config={config} tasks={statusTasks} members={members} handleTaskClick={handleTaskClick} />
         );
       })}
     </div>

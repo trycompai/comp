@@ -6075,6 +6075,96 @@
         ]
       }
     },
+    "/v1/tasks/bulk": {
+      "patch": {
+        "description": "Bulk update the status of multiple tasks",
+        "operationId": "TasksController_updateTasksStatus_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "tsk_abc123",
+                      "tsk_def456"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "todo",
+                      "in_progress",
+                      "done",
+                      "not_relevant",
+                      "failed"
+                    ],
+                    "example": "in_progress"
+                  },
+                  "reviewDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-01-01T00:00:00.000Z",
+                    "description": "Optional review date to set on all tasks"
+                  }
+                },
+                "required": [
+                  "taskIds",
+                  "status"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "updatedCount": {
+                      "type": "number",
+                      "example": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update status for multiple tasks",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}/attachments": {
       "get": {
         "description": "Retrieve all attachments for a specific task",
