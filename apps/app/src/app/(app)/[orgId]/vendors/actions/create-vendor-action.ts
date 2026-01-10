@@ -95,7 +95,10 @@ const triggerRiskAssessmentIfMissing = async (params: {
 
 const schema = z.object({
   organizationId: z.string().min(1, 'Organization ID is required'),
-  name: z.string().min(1, 'Name is required'),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Name is required'),
   // Treat empty string as "not provided" so the form default doesn't block submission
   website: z
     .union([z.string().url('Must be a valid URL (include https://)'), z.literal('')])
@@ -116,7 +119,10 @@ export const createVendorAction = createSafeActionClient()
       });
 
       if (!session?.user?.id) {
-        throw new Error('Unauthorized');
+        return {
+          success: false,
+          error: 'Unauthorized',
+        };
       }
 
       // Security: verify the current user is a member of the target organization.
@@ -131,7 +137,29 @@ export const createVendorAction = createSafeActionClient()
       });
 
       if (!member) {
-        throw new Error('Unauthorized');
+        return {
+          success: false,
+          error: 'Unauthorized',
+        };
+      }
+
+      // Check if vendor with same name already exists for this organization
+      const existingVendor = await db.vendor.findFirst({
+        where: {
+          organizationId: input.parsedInput.organizationId,
+          name: {
+            equals: input.parsedInput.name,
+            mode: 'insensitive',
+          },
+        },
+        select: { id: true, name: true },
+      });
+
+      if (existingVendor) {
+        return {
+          success: false,
+          error: `A vendor named "${existingVendor.name}" already exists in this organization.`,
+        };
       }
 
       const vendor = await db.vendor.create({
@@ -145,6 +173,51 @@ export const createVendorAction = createSafeActionClient()
           organizationId: input.parsedInput.organizationId,
         },
       });
+
+      // Create or update GlobalVendors entry immediately so vendor is searchable
+      // This ensures the vendor appears in global vendor search suggestions right away
+      const normalizedWebsite = normalizeWebsite(vendor.website ?? null);
+      if (normalizedWebsite) {
+        try {
+          // Check if GlobalVendors entry already exists
+          const existingGlobalVendor = await db.globalVendors.findUnique({
+            where: { website: normalizedWebsite },
+            select: { company_description: true },
+          });
+
+          const updateData: {
+            company_name: string;
+            company_description?: string | null;
+          } = {
+            company_name: vendor.name,
+          };
+
+          // Only update description if GlobalVendors doesn't have one yet
+          if (!existingGlobalVendor?.company_description) {
+            updateData.company_description = vendor.description || null;
+          }
+
+          await db.globalVendors.upsert({
+            where: { website: normalizedWebsite },
+            create: {
+              website: normalizedWebsite,
+              company_name: vendor.name,
+              company_description: vendor.description || null,
+              approved: false,
+            },
+            update: updateData,
+          });
+        } catch (error) {
+          // Non-blocking: vendor creation succeeded, GlobalVendors upsert is optional
+          console.warn('[createVendorAction] Failed to upsert GlobalVendors (non-blocking)', {
+            organizationId: input.parsedInput.organizationId,
+            vendorId: vendor.id,
+            vendorName: vendor.name,
+            normalizedWebsite,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
 
       // If we don't already have GlobalVendors risk assessment data for this website, trigger research.
       // Best-effort: vendor creation should succeed even if the trigger fails.

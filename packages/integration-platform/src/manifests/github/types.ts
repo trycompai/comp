@@ -17,6 +17,7 @@ export interface GitHubRepo {
   default_branch: string;
   owner: { login: string };
   security_and_analysis?: {
+    advanced_security?: { status: 'enabled' | 'disabled' };
     dependabot_security_updates?: { status: 'enabled' | 'disabled' };
     secret_scanning?: { status: 'enabled' | 'disabled' };
     secret_scanning_push_protection?: { status: 'enabled' | 'disabled' };
