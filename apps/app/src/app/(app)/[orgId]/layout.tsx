@@ -151,6 +151,13 @@ export default async function Layout({
   const hasAuditorRole = roles.includes(Role.auditor);
   const isOnlyAuditor = hasAuditorRole && roles.length === 1;
 
+  // User data for navbar
+  const user = {
+    name: session.user.name,
+    email: session.user.email,
+    image: session.user.image,
+  };
+
   return (
     <TriggerTokenProvider
       triggerJobId={onboarding?.triggerJobId || undefined}
@@ -166,6 +173,7 @@ export default async function Layout({
         isTrustNdaEnabled={isTrustNdaEnabled}
         hasAuditorRole={hasAuditorRole}
         isOnlyAuditor={isOnlyAuditor}
+        user={user}
       >
         {children}
       </AppShellWrapper>

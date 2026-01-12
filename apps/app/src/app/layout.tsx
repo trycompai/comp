@@ -1,4 +1,3 @@
-import '@/styles/globals.css';
 import '@trycompai/design-system/globals.css';
 
 import { LinkedInInsight } from '@/components/tracking/LinkedInInsight';
