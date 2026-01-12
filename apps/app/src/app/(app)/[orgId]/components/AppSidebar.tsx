@@ -9,19 +9,13 @@ import {
   ListChecked,
   Policy,
   Security,
-  Settings,
   ShoppingBag,
   Task,
   TaskComplete,
   Warning,
 } from '@carbon/icons-react';
 import type { Organization } from '@db';
-import {
-  AppShellNav,
-  AppShellNavFooter,
-  AppShellNavItem,
-  useAppShell,
-} from '@trycompai/design-system';
+import { AppShellNav, AppShellNavItem } from '@trycompai/design-system';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -49,7 +43,6 @@ export function AppSidebar({
   isOnlyAuditor,
 }: AppSidebarProps) {
   const pathname = usePathname();
-  const { toggleSidebar } = useAppShell();
 
   const navItems: NavItem[] = [
     {
@@ -151,29 +144,14 @@ export function AppSidebar({
   const visibleItems = navItems.filter((item) => !item.hidden);
 
   return (
-    <>
-      <AppShellNav>
-        {visibleItems.map((item) => (
-          <Link key={item.id} href={item.path}>
-            <AppShellNavItem isActive={isPathActive(item.path)} icon={item.icon}>
-              {item.name}
-            </AppShellNavItem>
-          </Link>
-        ))}
-      </AppShellNav>
-
-      <AppShellNavFooter>
-        {!isOnlyAuditor && (
-          <Link href={`/${organization.id}/settings`}>
-            <AppShellNavItem
-              isActive={isPathActive(`/${organization.id}/settings`)}
-              icon={<Settings className="size-4" />}
-            >
-              Settings
-            </AppShellNavItem>
-          </Link>
-        )}
-      </AppShellNavFooter>
-    </>
+    <AppShellNav>
+      {visibleItems.map((item) => (
+        <Link key={item.id} href={item.path}>
+          <AppShellNavItem isActive={isPathActive(item.path)} icon={item.icon}>
+            {item.name}
+          </AppShellNavItem>
+        </Link>
+      ))}
+    </AppShellNav>
   );
 }

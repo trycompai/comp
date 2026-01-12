@@ -5,16 +5,14 @@ import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-d
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
-import { SidebarLogo } from '@/components/sidebar-logo';
-import { SignOut } from '@/components/sign-out';
 import { SidebarProvider } from '@/context/sidebar-context';
-import { CertificateCheck } from '@carbon/icons-react';
-import { Avatar, AvatarFallback, AvatarImageNext } from '@comp/ui/avatar';
+import { signOut } from '@/utils/auth-client';
+import { CertificateCheck, Logout, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
@@ -30,10 +28,16 @@ import {
   AppShellSidebar,
   AppShellSidebarHeader,
   AppShellUserMenu,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  LogoIcon,
+  Text,
   ThemeToggle,
 } from '@trycompai/design-system';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
@@ -70,6 +74,8 @@ export function AppShellWrapper({
   user,
 }: AppShellWrapperProps) {
   const { theme, setTheme } = useTheme();
+  const pathname = usePathname();
+  const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
 
   return (
     <SidebarProvider initialIsCollapsed={isCollapsed}>
@@ -77,13 +83,10 @@ export function AppShellWrapper({
         <AppShellNavbar
           startContent={
             <>
-              <SidebarLogo isCollapsed={false} />
-              <OrganizationSwitcher
-                organizations={organizations}
-                organization={organization}
-                isCollapsed={false}
-                logoUrls={logoUrls}
-              />
+              <Link href="/">
+                <LogoIcon width={32} height={32} variant={theme === 'dark' ? 'light' : 'dark'} />
+              </Link>
+              <OrganizationSwitcher organizations={organizations} organization={organization} />
             </>
           }
           centerContent={<AssistantButton />}
@@ -91,52 +94,46 @@ export function AppShellWrapper({
             <AppShellUserMenu>
               <NotificationBell />
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="h-8 w-8 cursor-pointer rounded-full">
-                    {user.image && (
-                      <AvatarImageNext
-                        src={user.image}
-                        alt={user.name ?? user.email}
-                        width={32}
-                        height={32}
-                      />
-                    )}
+                <DropdownMenuTrigger className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted">
+                  <Avatar>
+                    {user.image && <AvatarImage src={user.image} />}
                     <AvatarFallback>
-                      <span className="text-xs">
-                        {user.name?.charAt(0)?.toUpperCase() ||
-                          user.email?.charAt(0)?.toUpperCase()}
-                      </span>
+                      {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[240px]" sideOffset={10} align="end">
-                  <DropdownMenuLabel>
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="line-clamp-1 block max-w-[155px] truncate">
-                          {user.name}
-                        </span>
-                        <span className="truncate text-xs font-normal text-[#606060]">
-                          {user.email}
-                        </span>
-                      </div>
-                    </div>
-                  </DropdownMenuLabel>
+                <DropdownMenuContent align="end" style={{ minWidth: '200px' }}>
+                  <div className="px-2 py-1.5">
+                    <Text size="sm" weight="medium">
+                      {user.name}
+                    </Text>
+                    <Text size="xs" variant="muted">
+                      {user.email}
+                    </Text>
+                  </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={`/${organization.id}/settings/user`}>User Settings</Link>
-                  </DropdownMenuItem>
+                  <DropdownMenuGroup>
+                    <Link href={`/${organization.id}/settings`}>
+                      <DropdownMenuItem>
+                        <Settings size={16} />
+                        Settings
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <div className="flex items-center justify-between px-2 py-1.5">
-                    <span className="text-sm">Theme</span>
+                    <Text size="sm">Theme</Text>
                     <ThemeToggle
+                      size="sm"
                       isDark={theme === 'dark'}
                       onChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
-                      size="sm"
                     />
                   </div>
                   <DropdownMenuSeparator />
-                  <SignOut />
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <Logout size={16} />
+                    Log out
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </AppShellUserMenu>
@@ -145,10 +142,19 @@ export function AppShellWrapper({
         <AppShellBody>
           <AppShellRail>
             <AppShellRailItem
-              isActive
+              isActive={!isSettingsActive}
               icon={<CertificateCheck className="size-5" />}
               label="Compliance"
             />
+            {!isOnlyAuditor && (
+              <Link href={`/${organization.id}/settings`}>
+                <AppShellRailItem
+                  isActive={isSettingsActive}
+                  icon={<Settings className="size-5" />}
+                  label="Settings"
+                />
+              </Link>
+            )}
           </AppShellRail>
           <AppShellMain>
             <AppShellSidebar collapsible>
