@@ -1,3 +1,11 @@
+# [1.76.0](https://github.com/trycompai/comp/compare/v1.75.0...v1.76.0) (2026-01-12)
+
+
+### Features
+
+* **github:** add advanced security status and enhance code scanning detection ([#1995](https://github.com/trycompai/comp/issues/1995)) ([e54177a](https://github.com/trycompai/comp/commit/e54177ae032cd40e55caee31c76df00499455c81))
+* **github:** add Dependabot alert interface and enhance alert counting ([#1997](https://github.com/trycompai/comp/issues/1997)) ([4d554a4](https://github.com/trycompai/comp/commit/4d554a42c4e24b63845978d8b16573a6059d33cd))
+
 # [1.75.0](https://github.com/trycompai/comp/compare/v1.74.0...v1.75.0) (2026-01-08)
 
 
