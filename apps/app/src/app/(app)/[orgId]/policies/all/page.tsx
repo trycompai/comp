@@ -1,42 +1,24 @@
-import { Stack } from '@trycompai/design-system';
-import { getValidFilters } from '@/lib/data-table';
-import type { SearchParams } from '@/types';
 import { db } from '@db';
 import type { Metadata } from 'next';
-import { FullPolicyHeaderActions } from './components/FullPolicyHeaderActions';
-import { PoliciesTable } from './components/policies-table';
-import { getPolicies } from './data/queries';
-import { searchParamsCache } from './data/validations';
+import { PoliciesTableDS } from './components/PoliciesTableDS';
+import { PolicyTailoringProvider } from './components/policy-tailoring-context';
 
 interface PolicyTableProps {
   params: Promise<{ orgId: string }>;
-  searchParams: Promise<SearchParams>;
 }
 
-export default async function PoliciesPage({ params, searchParams }: PolicyTableProps) {
-  const [{ orgId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
-  const search = searchParamsCache.parse(resolvedSearchParams);
-  const validFilters = getValidFilters(search.filters);
+export default async function PoliciesPage({ params }: PolicyTableProps) {
+  const { orgId } = await params;
 
-  const promises = Promise.all([
-    getPolicies({
-      ...search,
-      filters: validFilters,
-    }),
-  ]);
-
-  const onboarding = await db.onboarding.findFirst({
-    where: { organizationId: orgId },
-    select: { triggerJobId: true },
+  const policies = await db.policy.findMany({
+    where: { organizationId: orgId, isArchived: false },
+    orderBy: { updatedAt: 'desc' },
   });
 
   return (
-    <Stack gap="4">
-      <div className="flex justify-end">
-        <FullPolicyHeaderActions />
-      </div>
-      <PoliciesTable promises={promises} onboardingRunId={onboarding?.triggerJobId ?? null} />
-    </Stack>
+    <PolicyTailoringProvider statuses={{}}>
+      <PoliciesTableDS policies={policies} />
+    </PolicyTailoringProvider>
   );
 }
 

@@ -6,16 +6,29 @@ import { useMediaQuery } from '@comp/ui/hooks';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CreateNewPolicyForm } from '../forms/policies/create-new-policy';
 
 export function CreatePolicySheet() {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('create-policy-sheet');
-  const isOpen = Boolean(open);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isOpen = searchParams.get('create-policy-sheet') === 'true';
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
+    const params = new URLSearchParams(searchParams.toString());
+    if (open) {
+      params.set('create-policy-sheet', 'true');
+    } else {
+      params.delete('create-policy-sheet');
+    }
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
+
+  const handleClose = () => {
+    handleOpenChange(false);
   };
 
   if (isDesktop) {
@@ -28,7 +41,7 @@ export function CreatePolicySheet() {
               size="icon"
               variant="ghost"
               className="m-0 size-auto p-0 hover:bg-transparent"
-              onClick={() => setOpen(null)}
+              onClick={handleClose}
             >
               <X className="h-5 w-5" />
             </Button>

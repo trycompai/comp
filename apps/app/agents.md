@@ -2,10 +2,65 @@
 
 ## Core Principle
 
+**ONLY use components from `@trycompai/design-system`.** Do not use shadcn/ui, Radix primitives, or custom components when a design system component exists.
+
 **Components do NOT accept `className`. Use variants and props only.**
 
 This design system enforces strict styling through `class-variance-authority` (cva).
 The `className` prop has been removed from all components to prevent style overrides.
+
+## Component Priority
+
+1. **First choice:** `@trycompai/design-system`
+2. **Never:** Custom implementations when DS has the component
+
+```tsx
+// ✅ ALWAYS - Use design system
+import { Button, Table, Badge, Tabs } from '@trycompai/design-system';
+
+// ❌ NEVER - Don't use @comp/ui when DS has the component
+import { Button } from '@comp/ui/button';
+import { Table } from '@comp/ui/table';
+```
+
+## Server vs Client Components
+
+**Layouts should be server-side rendered.** Any client-side logic (hooks, state, event handlers) must be wrapped in its own `'use client'` component.
+
+```tsx
+// ✅ Server layout with client component for interactivity
+// layout.tsx (server)
+import { ClientTabs } from './components/ClientTabs';
+
+export default function Layout({ children }) {
+  return (
+    <PageLayout>
+      <PageHeader title="Title" />
+      <ClientTabs /> {/* Client component for interactive tabs */}
+      {children}
+    </PageLayout>
+  );
+}
+
+// components/ClientTabs.tsx (client)
+'use client';
+export function ClientTabs() {
+  const router = useRouter();
+  // ... client logic
+}
+
+// ❌ NEVER - Don't make entire layout a client component
+'use client';
+export default function Layout({ children }) { ... }
+```
+
+## Avoid nuqs
+
+Don't use `nuqs` for query state. Use standard Next.js patterns:
+
+- `useRouter().push()` for navigation
+- `useSearchParams()` for reading query params
+- Server-side `searchParams` prop for initial state
 
 ## ❌ These Will NOT Compile
 
@@ -158,4 +213,3 @@ import {
   // ... etc
 } from '@trycompai/design-system';
 ```
-
