@@ -1,5 +1,4 @@
-import '@/styles/globals.css';
-import '@comp/ui/globals.css';
+import '@trycompai/design-system/globals.css';
 
 import { LinkedInInsight } from '@/components/tracking/LinkedInInsight';
 import { env } from '@/env.mjs';
