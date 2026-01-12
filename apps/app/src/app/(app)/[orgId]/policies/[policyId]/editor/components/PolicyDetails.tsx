@@ -198,62 +198,64 @@ export function PolicyContentManager({
           switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' })
         }
       >
-        <HStack justify="between" align="center">
-          <TabsList>
-            <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
-              Editor View
-            </TabsTrigger>
-            <TabsTrigger value="PDF" disabled={isPendingApproval}>
-              PDF View
-            </TabsTrigger>
-          </TabsList>
-          {!isPendingApproval && aiAssistantEnabled && (
-            <Button
-              variant={showAiAssistant ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setShowAiAssistant((prev) => !prev)}
-              iconLeft={<MagicWand size={16} />}
-            >
-              AI Assistant
-            </Button>
-          )}
-        </HStack>
+        <Stack gap="md">
+          <HStack justify="between" align="center">
+            <TabsList>
+              <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
+                Editor View
+              </TabsTrigger>
+              <TabsTrigger value="PDF" disabled={isPendingApproval}>
+                PDF View
+              </TabsTrigger>
+            </TabsList>
+            {!isPendingApproval && aiAssistantEnabled && (
+              <Button
+                variant={showAiAssistant ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowAiAssistant((prev) => !prev)}
+                iconLeft={<MagicWand size={16} />}
+              >
+                AI Assistant
+              </Button>
+            )}
+          </HStack>
 
-        <Grid
-          cols={showAiAssistant && aiAssistantEnabled ? { base: '1', lg: '2' } : '1'}
-          gap="6"
-          align="start"
-        >
-          <Stack gap="sm">
-            <TabsContent value="EDITOR">
-              <PolicyEditorWrapper
-                key={editorKey}
-                policyId={policyId}
-                policyContent={currentContent}
-                isPendingApproval={isPendingApproval}
-                onContentChange={setCurrentContent}
-              />
-            </TabsContent>
-            <TabsContent value="PDF">
-              <PdfViewer
-                policyId={policyId}
-                pdfUrl={pdfUrl}
-                isPendingApproval={isPendingApproval}
-              />
-            </TabsContent>
-          </Stack>
+          <Grid
+            cols={showAiAssistant && aiAssistantEnabled ? { base: '1', lg: '2' } : '1'}
+            gap="6"
+            align="start"
+          >
+            <Stack gap="sm">
+              <TabsContent value="EDITOR">
+                <PolicyEditorWrapper
+                  key={editorKey}
+                  policyId={policyId}
+                  policyContent={currentContent}
+                  isPendingApproval={isPendingApproval}
+                  onContentChange={setCurrentContent}
+                />
+              </TabsContent>
+              <TabsContent value="PDF">
+                <PdfViewer
+                  policyId={policyId}
+                  pdfUrl={pdfUrl}
+                  isPendingApproval={isPendingApproval}
+                />
+              </TabsContent>
+            </Stack>
 
-          {aiAssistantEnabled && showAiAssistant && (
-            <PolicyAiAssistant
-              messages={messages}
-              status={status}
-              errorMessage={chatErrorMessage}
-              sendMessage={sendMessage}
-              close={() => setShowAiAssistant(false)}
-              hasActiveProposal={!!activeProposal && !hasPendingProposal}
-            />
-          )}
-        </Grid>
+            {aiAssistantEnabled && showAiAssistant && (
+              <PolicyAiAssistant
+                messages={messages}
+                status={status}
+                errorMessage={chatErrorMessage}
+                sendMessage={sendMessage}
+                close={() => setShowAiAssistant(false)}
+                hasActiveProposal={!!activeProposal && !hasPendingProposal}
+              />
+            )}
+          </Grid>
+        </Stack>
       </Tabs>
 
       {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
