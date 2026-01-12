@@ -1,15 +1,34 @@
 'use client';
 
+import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
-import { ExternalLink, FileText, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@comp/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@comp/ui/dropdown-menu';
+import { ExternalLink, FileText, Loader2, MoreVertical, Trash2, Upload } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Dropzone from 'react-dropzone';
 import { toast } from 'sonner';
 import { getPolicyPdfUrlAction } from '../actions/get-policy-pdf-url';
 import { uploadPolicyPdfAction } from '../actions/upload-policy-pdf';
+import { deletePolicyPdfAction } from '../actions/delete-policy-pdf';
 
 interface PdfViewerProps {
   policyId: string;
@@ -22,6 +41,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
   const [files, setFiles] = useState<File[]>([]);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isUrlLoading, setUrlLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { execute: getUrl } = useAction(getPolicyPdfUrlAction, {
     onSuccess: (result) => {
@@ -53,6 +73,35 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to upload PDF.'),
   });
+
+  const { execute: deletePdf, status: deleteStatus } = useAction(deletePolicyPdfAction, {
+    onSuccess: () => {
+      toast.success('PDF deleted successfully.');
+      setSignedUrl(null);
+      router.refresh();
+    },
+    onError: (error) => toast.error(error.error.serverError || 'Failed to delete PDF.'),
+  });
+
+  const handleReplaceClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (selectedFiles && selectedFiles.length > 0) {
+      const file = selectedFiles[0];
+      if (file.size > 100 * 1024 * 1024) {
+        toast.error('File size must be less than 100MB');
+        return;
+      }
+      handleUpload([file]);
+    }
+    // Reset input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Handle file upload from FileUploader component
   const handleUpload = async (uploadFiles: File[]) => {
@@ -95,25 +144,113 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
   };
 
   const isUploading = uploadStatus === 'executing';
+  const isDeleting = deleteStatus === 'executing';
+
+  const fileName = pdfUrl?.split('/').pop() || '';
+  const MAX_FILENAME_LENGTH = 50;
+  const truncatedFileName =
+    fileName.length > MAX_FILENAME_LENGTH
+      ? `${fileName.substring(0, MAX_FILENAME_LENGTH)}...`
+      : fileName;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {signedUrl ? (
-            <a
-              href={signedUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline cursor-pointer flex items-center gap-2"
-            >
-              {pdfUrl?.split('/').pop()}
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          ) : (
-            pdfUrl?.split('/').pop()
+        <div className="flex items-center justify-between">
+          <CardTitle className="min-w-0 flex-1">
+            {signedUrl ? (
+              <a
+                href={signedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline cursor-pointer flex items-center gap-2 min-w-0"
+                title={fileName}
+              >
+                <span className="truncate">{truncatedFileName}</span>
+                <ExternalLink className="h-4 w-4 shrink-0" />
+              </a>
+            ) : (
+              <span className="truncate" title={fileName}>
+                {truncatedFileName}
+              </span>
+            )}
+          </CardTitle>
+          {pdfUrl && !isPendingApproval && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileInputChange}
+                className="hidden"
+                disabled={isUploading || isDeleting}
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={isUploading || isDeleting}
+                    className="h-8 w-8"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <MoreVertical className="h-4 w-4" />
+                    )}
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={handleReplaceClick}
+                    disabled={isUploading || isDeleting}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Replace
+                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        disabled={isUploading || isDeleting}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete PDF?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this PDF? This action cannot be undone.
+                          The policy will switch back to Editor View.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deletePdf({ policyId })}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Deleting...
+                            </>
+                          ) : (
+                            'Delete'
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {pdfUrl ? (
@@ -150,7 +287,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                 maxSize={100 * 1024 * 1024}
                 maxFiles={1}
                 multiple={false}
-                disabled={isUploading}
+                disabled={isUploading || isDeleting}
               >
                 {({ getRootProps, getInputProps, isDragActive }) => (
                   <div
@@ -160,16 +297,18 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                       isDragActive
                         ? 'border-primary bg-primary/10 dark:border-primary dark:bg-primary/10'
                         : 'border-primary/30 hover:border-primary/50 dark:border-primary/30 dark:hover:border-primary/50',
-                      isUploading && 'pointer-events-none opacity-60',
+                      (isUploading || isDeleting) && 'pointer-events-none opacity-60',
                     )}
                   >
                     <input {...getInputProps()} />
                     <p className="text-sm text-muted-foreground">
                       {isUploading
                         ? 'Uploading new PDF...'
-                        : isDragActive
-                          ? 'Drop your new PDF here to replace the current one'
-                          : 'Drag and drop a new PDF here to replace the current one, or click to browse (up to 100MB)'}
+                        : isDeleting
+                          ? 'Deleting PDF...'
+                          : isDragActive
+                            ? 'Drop your new PDF here to replace the current one'
+                            : 'Drag and drop a new PDF here to replace the current one, or click to browse (up to 100MB)'}
                     </p>
                   </div>
                 )}
@@ -183,7 +322,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
             maxSize={100 * 1024 * 1024}
             maxFiles={1}
             multiple={false}
-            disabled={isUploading}
+            disabled={isUploading || isDeleting}
           >
             {({ getRootProps, getInputProps, isDragActive }) => (
               <div
@@ -193,7 +332,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                   isDragActive
                     ? 'border-primary bg-primary/10 dark:border-primary dark:bg-primary/10'
                     : 'border-primary/30 hover:border-primary/50 dark:border-primary/30 dark:hover:border-primary/50',
-                  isUploading && 'pointer-events-none opacity-60',
+                  (isUploading || isDeleting) && 'pointer-events-none opacity-60',
                 )}
               >
                 <input {...getInputProps()} />

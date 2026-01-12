@@ -23,6 +23,7 @@ import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
 import { Prisma, TrustFramework } from '@prisma/client';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
+import { PDFDocument } from 'pdf-lib';
 
 @Injectable()
 export class TrustAccessService {
@@ -1758,6 +1759,7 @@ export class TrustAccessService {
         id: true,
         name: true,
         content: true,
+        pdfUrl: true,
       },
       orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
@@ -1766,13 +1768,85 @@ export class TrustAccessService {
       throw new NotFoundException('No published policies available');
     }
 
-    const pdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-      policies.map((p) => ({
-        name: p.name,
-        content: p.content,
-      })),
-      grant.accessRequest.organization.name,
-    );
+    // Create merged PDF document
+    const mergedPdf = await PDFDocument.create();
+
+    const organizationName =
+      grant.accessRequest.organization.name || 'Organization';
+
+    // Process policies in their original date-based order
+    let isFirst = true;
+    for (const policy of policies) {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+
+      if (hasUploadedPdf) {
+        // Try to use uploaded PDF first
+        try {
+          const pdfBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          const uploadedPdf = await PDFDocument.load(pdfBuffer, {
+            ignoreEncryption: true,
+          });
+          const copiedPages = await mergedPdf.copyPages(
+            uploadedPdf,
+            uploadedPdf.getPageIndices(),
+          );
+
+          if (isFirst && copiedPages.length > 0) {
+            const firstPage = copiedPages[0];
+            const { height } = firstPage.getSize();
+            // Prepend title header to the first page of the bundle
+            firstPage.drawText(`${organizationName} - All Policies`, {
+              x: 50,
+              y: height - 40,
+              size: 18,
+            });
+            isFirst = false;
+          }
+
+          for (const page of copiedPages) {
+            mergedPdf.addPage(page);
+          }
+        } catch (error) {
+          // If fetching uploaded PDF fails, fall back to rendering from content
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+          const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+            [{ name: policy.name, content: policy.content }],
+            isFirst ? organizationName : undefined,
+          );
+          const renderedPdf = await PDFDocument.load(renderedBuffer);
+          const copiedPages = await mergedPdf.copyPages(
+            renderedPdf,
+            renderedPdf.getPageIndices(),
+          );
+          for (const page of copiedPages) {
+            mergedPdf.addPage(page);
+          }
+          isFirst = false;
+        }
+      } else {
+        // Render from content
+        const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          [{ name: policy.name, content: policy.content }],
+          isFirst ? organizationName : undefined,
+        );
+        const renderedPdf = await PDFDocument.load(renderedBuffer);
+        const copiedPages = await mergedPdf.copyPages(
+          renderedPdf,
+          renderedPdf.getPageIndices(),
+        );
+        for (const page of copiedPages) {
+          mergedPdf.addPage(page);
+        }
+        isFirst = false;
+      }
+    }
+
+    const pdfBuffer = Buffer.from(await mergedPdf.save());
 
     const bundleDocId = `bundle-${grant.id}-${Date.now()}`;
     const watermarked = await this.ndaPdfService.watermarkExistingPdf(
