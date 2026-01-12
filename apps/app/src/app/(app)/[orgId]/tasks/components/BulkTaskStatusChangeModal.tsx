@@ -91,11 +91,11 @@ export function BulkTaskStatusChangeModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Bulk Update</DialogTitle>
+          <DialogTitle>Bulk Status Update</DialogTitle>
           <DialogDescription>
             {`${selectedCount} item${isSingular ? '' : 's'} ${
               isSingular ? 'is' : 'are'
-            } selected. Are you sure you want to move ${isSingular ? 'it' : 'them'}?`}
+            } selected. Are you sure you want to change the status?`}
           </DialogDescription>
         </DialogHeader>
 
@@ -123,7 +123,7 @@ export function BulkTaskStatusChangeModal({
             Cancel
           </Button>
           <Button onClick={handleMove} disabled={isSubmitting}>
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Move'}
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Change Status'}
           </Button>
         </DialogFooter>
       </DialogContent>

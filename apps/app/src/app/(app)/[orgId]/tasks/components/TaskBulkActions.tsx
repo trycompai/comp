@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@comp/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@comp/ui';
-import { ChevronDown, Move, Pencil, X } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Pencil, X } from 'lucide-react';
 import { BulkTaskStatusChangeModal } from './BulkTaskStatusChangeModal';
 
 interface TaskBulkActionsProps {
@@ -34,8 +34,8 @@ export function TaskBulkActions({ selectedTaskIds, onEdit, onClearSelection }: T
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setOpenBulk(true)} disabled={selectedTaskIds.length === 0}>
-                <Move className="mr-2 h-4 w-4 text-slate-500" />
-                Move
+                <ArrowUpDown className="mr-2 h-4 w-4 text-slate-500" />
+                Change Status
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
