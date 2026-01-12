@@ -1,4 +1,4 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { Stack } from '@trycompai/design-system';
 import { getValidFilters } from '@/lib/data-table';
 import type { SearchParams } from '@/types';
 import { db } from '@db';
@@ -31,12 +31,12 @@ export default async function PoliciesPage({ params, searchParams }: PolicyTable
   });
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[{ label: 'Policies', current: true }]}
-      headerRight={<FullPolicyHeaderActions />}
-    >
+    <Stack gap="4">
+      <div className="flex justify-end">
+        <FullPolicyHeaderActions />
+      </div>
       <PoliciesTable promises={promises} onboardingRunId={onboarding?.triggerJobId ?? null} />
-    </PageWithBreadcrumb>
+    </Stack>
   );
 }
 

@@ -211,7 +211,7 @@
         "@trigger.dev/react-hooks": "4.0.6",
         "@trigger.dev/sdk": "4.0.6",
         "@trycompai/db": "^1.3.20",
-        "@trycompai/design-system": "^1.0.3",
+        "@trycompai/design-system": "^1.0.4",
         "@trycompai/email": "workspace:*",
         "@types/canvas-confetti": "^1.9.0",
         "@types/react-syntax-highlighter": "^15.5.13",
@@ -2182,7 +2182,7 @@
 
     "@trycompai/db": ["@trycompai/db@workspace:packages/db"],
 
-    "@trycompai/design-system": ["@trycompai/design-system@1.0.3", "", { "dependencies": { "@base-ui/react": "^1.0.0", "@carbon/icons-react": "^11.72.0", "@fontsource-variable/plus-jakarta-sans": "^5.2.8", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "next-themes": "^0.4.6", "react-day-picker": "^9.13.0", "react-resizable-panels": "^4.2.0", "recharts": "2.15.4", "shadcn": "^3.6.2", "sonner": "^2.0.7", "tailwind-merge": "^3.4.0", "tw-animate-css": "^1.4.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0", "tailwindcss": "^4.0.0" } }, "sha512-QRVm/bIiQIq2GKqQ5TnNYeoKwgAvQCvwbSu6nqAL4OjsFqA3fTqUh+kb+168cWSn23irqemukTp5XjXVcw6dVQ=="],
+    "@trycompai/design-system": ["@trycompai/design-system@1.0.4", "", { "dependencies": { "@base-ui/react": "^1.0.0", "@carbon/icons-react": "^11.72.0", "@fontsource-variable/plus-jakarta-sans": "^5.2.8", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "next-themes": "^0.4.6", "react-day-picker": "^9.13.0", "react-resizable-panels": "^4.2.0", "recharts": "2.15.4", "shadcn": "^3.6.2", "sonner": "^2.0.7", "tailwind-merge": "^3.4.0", "tw-animate-css": "^1.4.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0", "tailwindcss": "^4.0.0" } }, "sha512-ImzhZI9UR9S54Q+mm8bJIPWmLG/Br+GB0n/dtu6peQJN3ebk03+hPps16uf0Um5ePuqDXnbwGgaqnmKjMMjlTg=="],
 
     "@trycompai/email": ["@trycompai/email@workspace:packages/email"],
 

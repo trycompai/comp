@@ -1,13 +1,28 @@
 'use client';
 
-import { AssistantButton } from '@/components/ai/chat-button';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { AssistantSheet } from '@/components/sheets/assistant-sheet';
 import { SidebarProvider } from '@/context/sidebar-context';
 import { signOut } from '@/utils/auth-client';
-import { CertificateCheck, Logout, Settings } from '@carbon/icons-react';
+import {
+  CertificateCheck,
+  Chemistry,
+  Dashboard,
+  Document,
+  Group,
+  Integration,
+  ListChecked,
+  Logout,
+  Policy,
+  Security,
+  Settings,
+  ShoppingBag,
+  Task,
+  TaskComplete,
+  Warning,
+} from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Onboarding, Organization } from '@db';
+import type { CommandSearchGroup } from '@trycompai/design-system';
 import {
   AppShell,
   AppShellBody,
@@ -31,13 +47,14 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
+  CommandSearch,
   LogoIcon,
   Text,
   ThemeToggle,
 } from '@trycompai/design-system';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
@@ -75,11 +92,142 @@ export function AppShellWrapper({
 }: AppShellWrapperProps) {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
+
+  const searchGroups: CommandSearchGroup[] = [
+    {
+      id: 'navigation',
+      label: 'Navigation',
+      items: [
+        {
+          id: 'overview',
+          label: 'Overview',
+          icon: <Dashboard size={16} />,
+          onSelect: () => router.push(`/${organization.id}/frameworks`),
+          keywords: ['dashboard', 'home', 'frameworks'],
+        },
+        ...(hasAuditorRole
+          ? [
+              {
+                id: 'auditor',
+                label: 'Auditor View',
+                icon: <TaskComplete size={16} />,
+                onSelect: () => router.push(`/${organization.id}/auditor`),
+                keywords: ['audit', 'review'],
+              },
+            ]
+          : []),
+        ...(organization.advancedModeEnabled
+          ? [
+              {
+                id: 'controls',
+                label: 'Controls',
+                icon: <Security size={16} />,
+                onSelect: () => router.push(`/${organization.id}/controls`),
+                keywords: ['security', 'compliance'],
+              },
+            ]
+          : []),
+        {
+          id: 'policies',
+          label: 'Policies',
+          icon: <Policy size={16} />,
+          onSelect: () => router.push(`/${organization.id}/policies`),
+          keywords: ['policy', 'documents'],
+        },
+        {
+          id: 'evidence',
+          label: 'Evidence',
+          icon: <ListChecked size={16} />,
+          onSelect: () => router.push(`/${organization.id}/tasks`),
+          keywords: ['tasks', 'evidence', 'artifacts'],
+        },
+        ...(isTrustNdaEnabled
+          ? [
+              {
+                id: 'trust',
+                label: 'Trust',
+                icon: <Task size={16} />,
+                onSelect: () => router.push(`/${organization.id}/trust`),
+                keywords: ['trust center', 'portal'],
+              },
+            ]
+          : []),
+        {
+          id: 'people',
+          label: 'People',
+          icon: <Group size={16} />,
+          onSelect: () => router.push(`/${organization.id}/people/all`),
+          keywords: ['users', 'team', 'members', 'employees'],
+        },
+        {
+          id: 'risks',
+          label: 'Risks',
+          icon: <Warning size={16} />,
+          onSelect: () => router.push(`/${organization.id}/risk`),
+          keywords: ['risk management', 'assessment'],
+        },
+        {
+          id: 'vendors',
+          label: 'Vendors',
+          icon: <ShoppingBag size={16} />,
+          onSelect: () => router.push(`/${organization.id}/vendors`),
+          keywords: ['suppliers', 'third party'],
+        },
+        ...(isQuestionnaireEnabled
+          ? [
+              {
+                id: 'questionnaire',
+                label: 'Questionnaire',
+                icon: <Document size={16} />,
+                onSelect: () => router.push(`/${organization.id}/questionnaire`),
+                keywords: ['survey', 'questions'],
+              },
+            ]
+          : []),
+        ...(!isOnlyAuditor
+          ? [
+              {
+                id: 'integrations',
+                label: 'Integrations',
+                icon: <Integration size={16} />,
+                onSelect: () => router.push(`/${organization.id}/integrations`),
+                keywords: ['connect', 'apps', 'services'],
+              },
+            ]
+          : []),
+        {
+          id: 'cloud-tests',
+          label: 'Cloud Tests',
+          icon: <Chemistry size={16} />,
+          onSelect: () => router.push(`/${organization.id}/cloud-tests`),
+          keywords: ['testing', 'cloud', 'infrastructure'],
+        },
+      ],
+    },
+    ...(!isOnlyAuditor
+      ? [
+          {
+            id: 'settings',
+            label: 'Settings',
+            items: [
+              {
+                id: 'settings-general',
+                label: 'General Settings',
+                icon: <Settings size={16} />,
+                onSelect: () => router.push(`/${organization.id}/settings`),
+                keywords: ['preferences', 'configuration'],
+              },
+            ],
+          },
+        ]
+      : []),
+  ];
 
   return (
     <SidebarProvider initialIsCollapsed={isCollapsed}>
-      <AppShell defaultSidebarOpen={!isCollapsed}>
+      <AppShell showAIChat defaultSidebarOpen={!isCollapsed}>
         <AppShellNavbar
           startContent={
             <>
@@ -89,7 +237,7 @@ export function AppShellWrapper({
               <OrganizationSwitcher organizations={organizations} organization={organization} />
             </>
           }
-          centerContent={<AssistantButton />}
+          centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
           endContent={
             <AppShellUserMenu>
               <NotificationBell />

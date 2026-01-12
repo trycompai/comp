@@ -1,3 +1,4 @@
+import { Grid } from '@trycompai/design-system';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import type { Metadata } from 'next';
@@ -12,12 +13,10 @@ export default async function PoliciesOverview() {
 
   return (
     <Suspense fallback={<Loading />}>
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <PolicyStatusChart data={overview} />
-          <PolicyAssigneeChart data={overview?.assigneeData} />
-        </div>
-      </div>
+      <Grid cols="2" gap="4">
+        <PolicyStatusChart data={overview} />
+        <PolicyAssigneeChart data={overview?.assigneeData} />
+      </Grid>
     </Suspense>
   );
 }
