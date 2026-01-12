@@ -25,11 +25,12 @@ interface PolicyStatusChartProps {
   data?: PolicyOverviewData | null;
 }
 
+// Using oklch values from DS globals.css
 const CHART_COLORS = {
-  published: 'hsl(var(--chart-positive))', // green
-  draft: 'hsl(var(--chart-neutral))', // yellow
-  archived: 'hsl(var(--chart-warning))', // gray
-  needs_review: 'hsl(var(--chart-destructive))', // red
+  published: 'oklch(0.6 0.16 145)', // --success (green)
+  draft: 'oklch(0.75 0.15 85)', // --warning (yellow)
+  archived: 'oklch(0.556 0 0)', // --muted-foreground (gray)
+  needs_review: 'oklch(0.58 0.22 27)', // --destructive (red)
 };
 
 // Custom tooltip component for the pie chart

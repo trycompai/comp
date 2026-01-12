@@ -1,7 +1,10 @@
 import { db } from '@db';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
+import { PolicyTabs } from '../components/PolicyTabs';
 import { PoliciesTableDS } from './components/PoliciesTableDS';
 import { PolicyTailoringProvider } from './components/policy-tailoring-context';
+import { PolicyPageActions } from './components/PolicyPageActions';
 
 interface PolicyTableProps {
   params: Promise<{ orgId: string }>;
@@ -16,9 +19,13 @@ export default async function PoliciesPage({ params }: PolicyTableProps) {
   });
 
   return (
-    <PolicyTailoringProvider statuses={{}}>
-      <PoliciesTableDS policies={policies} />
-    </PolicyTailoringProvider>
+    <PageLayout container={false} padding="none">
+      <PageHeader title="Policies" actions={<PolicyPageActions policies={policies} />} />
+      <PolicyTabs />
+      <PolicyTailoringProvider statuses={{}}>
+        <PoliciesTableDS policies={policies} />
+      </PolicyTailoringProvider>
+    </PageLayout>
   );
 }
 
