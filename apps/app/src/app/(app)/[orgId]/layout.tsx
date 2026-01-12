@@ -1,19 +1,15 @@
-import { AnimatedLayout } from '@/components/animated-layout';
-import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
-import { Header } from '@/components/header';
-import { AssistantSheet } from '@/components/sheets/assistant-sheet';
-import { Sidebar } from '@/components/sidebar';
+import { getFeatureFlags } from '@/app/posthog';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
-import { SidebarProvider } from '@/context/sidebar-context';
+import { getOrganizations } from '@/data/getOrganizations';
 import { auth } from '@/utils/auth';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db, Role } from '@db';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
-import { ConditionalOnboardingTracker } from './components/ConditionalOnboardingTracker';
-import { ConditionalPaddingWrapper } from './components/ConditionalPaddingWrapper';
-import { DynamicMinHeight } from './components/DynamicMinHeight';
+import { AppShellWrapper } from './components/AppShellWrapper';
 
 // Helper to safely parse comma-separated roles string
 function parseRolesString(rolesStr: string | null | undefined): Role[] {
@@ -39,7 +35,7 @@ export default async function Layout({
 
   const cookieStore = await cookies();
   const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
-  let publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
+  const publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
   // Get headers once to avoid multiple async calls
   const requestHeaders = await headers();
@@ -118,25 +114,62 @@ export default async function Layout({
     },
   });
 
+  // Fetch organizations and feature flags for sidebar
+  const { organizations } = await getOrganizations();
+
+  // Generate logo URLs for all organizations
+  const logoUrls: Record<string, string> = {};
+  if (s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
+    await Promise.all(
+      organizations.map(async (org) => {
+        if (org.logo) {
+          try {
+            const command = new GetObjectCommand({
+              Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+              Key: org.logo,
+            });
+            logoUrls[org.id] = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+          } catch {
+            // Logo not available
+          }
+        }
+      }),
+    );
+  }
+
+  // Check feature flags for menu items
+  let isQuestionnaireEnabled = false;
+  let isTrustNdaEnabled = false;
+  if (session?.user?.id) {
+    const flags = await getFeatureFlags(session.user.id);
+    isQuestionnaireEnabled = flags['ai-vendor-questionnaire'] === true;
+    isTrustNdaEnabled =
+      flags['is-trust-nda-enabled'] === true || flags['is-trust-nda-enabled'] === 'true';
+  }
+
+  // Check auditor role
+  const hasAuditorRole = roles.includes(Role.auditor);
+  const isOnlyAuditor = hasAuditorRole && roles.length === 1;
+
   return (
     <TriggerTokenProvider
       triggerJobId={onboarding?.triggerJobId || undefined}
       initialToken={publicAccessToken || undefined}
     >
-      <SidebarProvider initialIsCollapsed={isCollapsed}>
-        <AnimatedLayout sidebar={<Sidebar organization={organization} />} isCollapsed={isCollapsed}>
-          {onboarding?.triggerJobId && <ConditionalOnboardingTracker onboarding={onboarding} />}
-          <Header organizationId={organization.id} />
-          <ConditionalPaddingWrapper>
-            <DynamicMinHeight>{children}</DynamicMinHeight>
-          </ConditionalPaddingWrapper>
-          <AssistantSheet />
-          <Suspense fallback={null}>
-            <CheckoutCompleteDialog orgId={organization.id} />
-          </Suspense>
-        </AnimatedLayout>
-        <HotKeys />
-      </SidebarProvider>
+      <AppShellWrapper
+        organization={organization}
+        organizations={organizations}
+        logoUrls={logoUrls}
+        onboarding={onboarding}
+        isCollapsed={isCollapsed}
+        isQuestionnaireEnabled={isQuestionnaireEnabled}
+        isTrustNdaEnabled={isTrustNdaEnabled}
+        hasAuditorRole={hasAuditorRole}
+        isOnlyAuditor={isOnlyAuditor}
+      >
+        {children}
+      </AppShellWrapper>
+      <HotKeys />
     </TriggerTokenProvider>
   );
 }
