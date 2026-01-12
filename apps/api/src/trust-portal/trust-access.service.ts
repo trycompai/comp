@@ -1768,58 +1768,71 @@ export class TrustAccessService {
       throw new NotFoundException('No published policies available');
     }
 
-    // Separate policies with uploaded PDFs from those that need rendering
-    const policiesWithUploadedPdf = policies.filter(
-      (p) => p.pdfUrl && p.pdfUrl.trim() !== '',
-    );
-    const policiesWithoutPdf = policies.filter(
-      (p) => !p.pdfUrl || p.pdfUrl.trim() === '',
-    );
-
     // Create merged PDF document
     const mergedPdf = await PDFDocument.create();
 
-    // Add title page
-    const titlePage = mergedPdf.addPage();
-    const { height } = titlePage.getSize();
     const organizationName =
       grant.accessRequest.organization.name || 'Organization';
-    titlePage.drawText(`${organizationName} - All Policies`, {
-      x: 50,
-      y: height - 100,
-      size: 24,
-    });
-    titlePage.drawText(`Total Policies: ${policies.length}`, {
-      x: 50,
-      y: height - 140,
-      size: 14,
-    });
 
-    // Process policies with uploaded PDFs first (fetch from S3)
-    for (const policy of policiesWithUploadedPdf) {
-      try {
-        const pdfBuffer = await this.attachmentsService.getObjectBuffer(
-          policy.pdfUrl!,
-        );
-        const uploadedPdf = await PDFDocument.load(pdfBuffer, {
-          ignoreEncryption: true,
-        });
-        const copiedPages = await mergedPdf.copyPages(
-          uploadedPdf,
-          uploadedPdf.getPageIndices(),
-        );
-        for (const page of copiedPages) {
-          mergedPdf.addPage(page);
+    // Process policies in their original date-based order
+    let isFirst = true;
+    for (const policy of policies) {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+
+      if (hasUploadedPdf) {
+        // Try to use uploaded PDF first
+        try {
+          const pdfBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          const uploadedPdf = await PDFDocument.load(pdfBuffer, {
+            ignoreEncryption: true,
+          });
+          const copiedPages = await mergedPdf.copyPages(
+            uploadedPdf,
+            uploadedPdf.getPageIndices(),
+          );
+
+          if (isFirst && copiedPages.length > 0) {
+            const firstPage = copiedPages[0];
+            const { height } = firstPage.getSize();
+            // Prepend title header to the first page of the bundle
+            firstPage.drawText(`${organizationName} - All Policies`, {
+              x: 50,
+              y: height - 40,
+              size: 18,
+            });
+            isFirst = false;
+          }
+
+          for (const page of copiedPages) {
+            mergedPdf.addPage(page);
+          }
+        } catch (error) {
+          // If fetching uploaded PDF fails, fall back to rendering from content
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+          const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+            [{ name: policy.name, content: policy.content }],
+            isFirst ? organizationName : undefined,
+          );
+          const renderedPdf = await PDFDocument.load(renderedBuffer);
+          const copiedPages = await mergedPdf.copyPages(
+            renderedPdf,
+            renderedPdf.getPageIndices(),
+          );
+          for (const page of copiedPages) {
+            mergedPdf.addPage(page);
+          }
+          isFirst = false;
         }
-      } catch (error) {
-        // If fetching uploaded PDF fails, fall back to rendering from content
-        console.warn(
-          `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
-          error,
-        );
+      } else {
+        // Render from content
         const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
           [{ name: policy.name, content: policy.content }],
-          undefined,
+          isFirst ? organizationName : undefined,
         );
         const renderedPdf = await PDFDocument.load(renderedBuffer);
         const copiedPages = await mergedPdf.copyPages(
@@ -1829,25 +1842,7 @@ export class TrustAccessService {
         for (const page of copiedPages) {
           mergedPdf.addPage(page);
         }
-      }
-    }
-
-    // Process policies without uploaded PDFs (render from content)
-    if (policiesWithoutPdf.length > 0) {
-      const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-        policiesWithoutPdf.map((p) => ({
-          name: p.name,
-          content: p.content,
-        })),
-        undefined,
-      );
-      const renderedPdf = await PDFDocument.load(renderedBuffer);
-      const copiedPages = await mergedPdf.copyPages(
-        renderedPdf,
-        renderedPdf.getPageIndices(),
-      );
-      for (const page of copiedPages) {
-        mergedPdf.addPage(page);
+        isFirst = false;
       }
     }
 
