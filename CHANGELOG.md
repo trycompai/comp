@@ -1,3 +1,10 @@
+## [1.76.1](https://github.com/trycompai/comp/compare/v1.76.0...v1.76.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* **github:** improve Dependabot alert counting with state filtering ([#1998](https://github.com/trycompai/comp/issues/1998)) ([f1dc9f0](https://github.com/trycompai/comp/commit/f1dc9f0c0dfcb9e59b5df2b582f7dc1875d84446))
+
 # [1.76.0](https://github.com/trycompai/comp/compare/v1.75.0...v1.76.0) (2026-01-12)
 
 
