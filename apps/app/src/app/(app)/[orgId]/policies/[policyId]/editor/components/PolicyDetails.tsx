@@ -96,6 +96,7 @@ export function PolicyContentManager({
   const [showAiAssistant, setShowAiAssistant] = useState(aiAssistantEnabled);
   const [editorKey, setEditorKey] = useState(0);
   const [activeTab, setActiveTab] = useState<string>(displayFormat);
+  const previousTabRef = useRef<string>(displayFormat);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
     const formattedContent = Array.isArray(policyContent)
       ? policyContent
@@ -153,7 +154,19 @@ export function PolicyContentManager({
   );
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onError: () => toast.error('Failed to switch view.'),
+    onSuccess: () => {
+      // Server action succeeded, update ref for next operation
+      previousTabRef.current = activeTab;
+    },
+    onError: () => {
+      toast.error('Failed to switch view.');
+      // Roll back to the previous tab state on error
+      setActiveTab(previousTabRef.current);
+      // Also restore AI assistant visibility if we were switching from EDITOR
+      if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
+        setShowAiAssistant(true);
+      }
+    },
   });
 
   const currentPolicyMarkdown = useMemo(
@@ -197,12 +210,16 @@ export function PolicyContentManager({
                 defaultValue={displayFormat}
                 value={activeTab}
                 onValueChange={(format) => {
+                  // Store current tab as previous before changing (using ref to avoid stale closure)
+                  previousTabRef.current = activeTab;
+                  // Optimistically update UI
                   setActiveTab(format);
-                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
                   // Hide AI assistant when switching to PDF view
                   if (format === 'PDF') {
                     setShowAiAssistant(false);
                   }
+                  // Execute server action - onError will roll back if it fails
+                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
                 }}
                 className="w-full"
               >
