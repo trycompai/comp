@@ -111,3 +111,35 @@ export interface GitHubTreeEntry {
   size?: number;
   url: string;
 }
+
+/**
+ * Dependabot alert response
+ * Returned by /repos/{owner}/{repo}/dependabot/alerts
+ */
+export interface GitHubDependabotAlert {
+  number: number;
+  state: 'open' | 'dismissed' | 'fixed';
+  dependency: {
+    package: {
+      ecosystem: string;
+      name: string;
+    };
+    manifest_path: string;
+  };
+  security_advisory: {
+    ghsa_id: string;
+    cve_id: string | null;
+    summary: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  };
+  security_vulnerability: {
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  };
+  created_at: string;
+  updated_at: string;
+  dismissed_at: string | null;
+  dismissed_by: { login: string } | null;
+  dismissed_reason: string | null;
+  fixed_at: string | null;
+  html_url: string;
+}
