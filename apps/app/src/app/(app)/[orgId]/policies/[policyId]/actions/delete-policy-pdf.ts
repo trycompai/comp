@@ -41,21 +41,9 @@ export const deletePolicyPdfAction = authActionClient
         return { success: false, error: 'Policy not found' };
       }
 
-      // Delete from S3 if pdfUrl exists
-      if (policy.pdfUrl && s3Client && BUCKET_NAME) {
-        try {
-          const deleteCommand = new DeleteObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: policy.pdfUrl,
-          });
-          await s3Client.send(deleteCommand);
-        } catch (error) {
-          // Log error but continue with database update
-          console.error('Error deleting PDF from S3:', error);
-        }
-      }
+      const oldPdfUrl = policy.pdfUrl;
 
-      // Update policy to remove pdfUrl and switch back to EDITOR format
+      // Update policy first to remove pdfUrl and switch back to EDITOR format
       await db.policy.update({
         where: { id: policyId, organizationId },
         data: {
@@ -63,6 +51,20 @@ export const deletePolicyPdfAction = authActionClient
           displayFormat: PolicyDisplayFormat.EDITOR,
         },
       });
+
+      // Delete from S3 after database is updated
+      if (oldPdfUrl && s3Client && BUCKET_NAME) {
+        try {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: oldPdfUrl,
+          });
+          await s3Client.send(deleteCommand);
+        } catch (error) {
+          // Log error but we've already updated the database successfully
+          console.error('Error deleting PDF from S3 (orphaned file):', error);
+        }
+      }
 
       const headersList = await headers();
       let path = headersList.get('x-pathname') || headersList.get('referer') || '';
