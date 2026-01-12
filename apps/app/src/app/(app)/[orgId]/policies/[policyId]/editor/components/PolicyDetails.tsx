@@ -95,6 +95,7 @@ export function PolicyContentManager({
 }: PolicyContentManagerProps) {
   const [showAiAssistant, setShowAiAssistant] = useState(aiAssistantEnabled);
   const [editorKey, setEditorKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>(displayFormat);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
     const formattedContent = Array.isArray(policyContent)
       ? policyContent
@@ -194,9 +195,15 @@ export function PolicyContentManager({
             <div className="flex-1 min-w-0 h-full overflow-hidden">
               <Tabs
                 defaultValue={displayFormat}
-                onValueChange={(format) =>
-                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' })
-                }
+                value={activeTab}
+                onValueChange={(format) => {
+                  setActiveTab(format);
+                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
+                  // Hide AI assistant when switching to PDF view
+                  if (format === 'PDF') {
+                    setShowAiAssistant(false);
+                  }
+                }}
                 className="w-full"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -208,7 +215,7 @@ export function PolicyContentManager({
                       PDF View
                     </TabsTrigger>
                   </TabsList>
-                  {!isPendingApproval && aiAssistantEnabled && (
+                  {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
                     <Button
                       variant={showAiAssistant ? 'default' : 'outline'}
                       size="sm"
@@ -239,7 +246,7 @@ export function PolicyContentManager({
               </Tabs>
             </div>
 
-            {aiAssistantEnabled && showAiAssistant && (
+            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
               <div className="w-80 shrink-0 self-stretch flex flex-col overflow-hidden">
                 <PolicyAiAssistant
                   messages={messages}
