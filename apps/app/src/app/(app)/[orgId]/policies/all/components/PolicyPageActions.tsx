@@ -3,9 +3,8 @@
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { downloadAllPolicies } from '@/lib/pdf-generator';
 import { Add, Download } from '@carbon/icons-react';
-import { Button } from '@trycompai/design-system';
 import type { Policy } from '@db';
-import { Loader2 } from 'lucide-react';
+import { Button, HStack } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { getLogsForPolicy } from '../../[policyId]/data';
@@ -44,27 +43,21 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <HStack gap="sm" align="center">
         {policies.length > 0 && (
-          <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={isDownloadingAll}>
-            {isDownloadingAll ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Downloading...
-              </span>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Download All
-              </>
-            )}
+          <Button
+            variant="outline"
+            iconLeft={<Download />}
+            loading={isDownloadingAll}
+            onClick={handleDownloadAll}
+          >
+            Download All
           </Button>
         )}
-        <Button size="sm" onClick={handleCreatePolicy}>
-          <Add className="h-4 w-4" />
+        <Button iconLeft={<Add />} onClick={handleCreatePolicy}>
           Create Policy
         </Button>
-      </div>
+      </HStack>
       <CreatePolicySheet />
     </>
   );

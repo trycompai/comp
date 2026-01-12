@@ -49,10 +49,7 @@ export default async function RiskRegisterPage(props: {
   if (isEmpty && isDefaultView && !isOnboardingActive) {
     return (
       <PageLayout padding="sm" container={false}>
-        <PageHeader
-          title="Risks"
-          description="Identify, assess, and mitigate organizational risks"
-        />
+        <PageHeader title="Risks" />
         <AppOnboarding
           title={'Risk Management'}
           description={

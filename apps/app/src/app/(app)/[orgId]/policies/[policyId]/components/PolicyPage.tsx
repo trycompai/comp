@@ -1,10 +1,6 @@
-import { Control, Member, Policy, User } from '@db';
-import type { JSONContent } from '@tiptap/react';
-import { Comments } from '../../../../../../components/comments/Comments';
-import { AuditLogWithRelations } from '../data';
-import { PolicyContentManager } from '../editor/components/PolicyDetails';
-import { PolicyOverview } from './PolicyOverview';
-import { RecentAuditLogs } from './RecentAuditLogs';
+import type { Control, Member, Policy, User } from '@db';
+import type { AuditLogWithRelations } from '../data';
+import { PolicyPageTabs } from './PolicyPageTabs';
 
 export default function PolicyPage({
   policy,
@@ -23,33 +19,21 @@ export default function PolicyPage({
   allControls: Control[];
   isPendingApproval: boolean;
   policyId: string;
-  /** Organization ID - required for correct org context in comments */
   organizationId: string;
   logs: AuditLogWithRelations[];
-  /** Whether the AI assistant feature is enabled */
   showAiAssistant: boolean;
 }) {
   return (
-    <>
-      <PolicyOverview
-        policy={policy ?? null}
-        assignees={assignees}
-        mappedControls={mappedControls}
-        allControls={allControls}
-        isPendingApproval={isPendingApproval}
-      />
-      <PolicyContentManager
-        isPendingApproval={isPendingApproval}
-        policyId={policyId}
-        policyContent={policy?.content ? (policy.content as JSONContent[]) : []}
-        displayFormat={policy?.displayFormat}
-        pdfUrl={policy?.pdfUrl}
-        aiAssistantEnabled={showAiAssistant}
-      />
-
-      <RecentAuditLogs logs={logs} />
-
-      <Comments entityId={policyId} entityType="policy" organizationId={organizationId} />
-    </>
+    <PolicyPageTabs
+      policy={policy}
+      policyId={policyId}
+      organizationId={organizationId}
+      assignees={assignees}
+      mappedControls={mappedControls}
+      allControls={allControls}
+      isPendingApproval={isPendingApproval}
+      logs={logs}
+      showAiAssistant={showAiAssistant}
+    />
   );
 }

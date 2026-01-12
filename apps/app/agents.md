@@ -213,3 +213,35 @@ import {
   // ... etc
 } from '@trycompai/design-system';
 ```
+
+## Icons
+
+Import icons from `@trycompai/design-system/icons` (re-exports `@carbon/icons-react`):
+
+```tsx
+// ✅ ALWAYS - Use design system icons
+import { Add, Download, Settings, ChevronDown } from '@trycompai/design-system/icons';
+
+// Carbon icons use size prop, not className
+<Add size={16} />
+<Download size={20} />
+
+// ❌ NEVER - Don't use lucide-react
+import { Plus, Download } from 'lucide-react';
+<Plus className="h-4 w-4" />
+```
+
+Common icon mappings from lucide-react to Carbon:
+
+| lucide-react | @carbon/icons-react |
+|--------------|---------------------|
+| Plus | Add |
+| X | Close |
+| Check | Checkmark |
+| ChevronDown | ChevronDown |
+| ChevronRight | ChevronRight |
+| Settings | Settings |
+| Trash | TrashCan |
+| Edit | Edit |
+| Search | Search |
+| Loader2 | (use Button loading prop) |

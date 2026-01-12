@@ -41,7 +41,12 @@ const config: NextConfig = {
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
   reactStrictMode: false,
-  transpilePackages: ['@trycompai/db', '@prisma/client', '@trycompai/design-system'],
+  transpilePackages: [
+    '@trycompai/db',
+    '@prisma/client',
+    '@trycompai/design-system',
+    '@carbon/icons-react',
+  ],
   images: {
     remotePatterns: [
       {
