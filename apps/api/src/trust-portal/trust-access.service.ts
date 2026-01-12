@@ -55,12 +55,15 @@ export class TrustAccessService {
       return defaultColor;
     }
     
-    try {
-      return this.hexToRgb(primaryColor);
-    } catch (error) {
-      console.warn('Invalid primary color format, using default:', error);
+    const color = this.hexToRgb(primaryColor);
+    
+    // Check for NaN values (parseInt returns NaN for invalid hex)
+    if (Number.isNaN(color.r) || Number.isNaN(color.g) || Number.isNaN(color.b)) {
+      console.warn('Invalid primary color format, using default:', primaryColor);
       return defaultColor;
     }
+    
+    return color;
   }
 
   private readonly TRUST_APP_URL =
