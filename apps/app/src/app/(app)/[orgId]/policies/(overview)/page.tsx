@@ -1,6 +1,6 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { Grid, PageHeader, PageLayout } from '@trycompai/design-system';
+import { Grid, PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
@@ -14,14 +14,16 @@ export default async function PoliciesOverview() {
 
   return (
     <PageLayout container={false} padding="none">
-      <PageHeader title="Policies" />
-      <PolicyTabs />
-      <Suspense fallback={<Loading />}>
-        <Grid cols="2" gap="4">
-          <PolicyStatusChart data={overview} />
-          <PolicyAssigneeChart data={overview?.assigneeData} />
-        </Grid>
-      </Suspense>
+      <Stack gap="md">
+        <PageHeader title="Policies" />
+        <PolicyTabs />
+        <Suspense fallback={<Loading />}>
+          <Grid cols={{ base: '1', lg: '2' }} gap="4">
+            <PolicyStatusChart data={overview} />
+            <PolicyAssigneeChart data={overview?.assigneeData} />
+          </Grid>
+        </Suspense>
+      </Stack>
     </PageLayout>
   );
 }

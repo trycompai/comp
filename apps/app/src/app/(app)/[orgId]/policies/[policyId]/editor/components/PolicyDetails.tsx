@@ -18,6 +18,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  Text,
 } from '@trycompai/design-system';
 import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
@@ -259,28 +260,34 @@ export function PolicyContentManager({
       </Tabs>
 
       {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
-        <Stack gap="sm">
-          <HStack justify="end" gap="sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDismissedProposalKey(activeProposal.key)}
-              iconLeft={<Close size={12} />}
-            >
-              Dismiss
-            </Button>
-            <Button
-              size="sm"
-              onClick={applyProposedChanges}
-              disabled={isApplying}
-              loading={isApplying}
-              iconLeft={!isApplying ? <Checkmark size={12} /> : undefined}
-            >
-              Apply Changes
-            </Button>
-          </HStack>
-          <DiffViewer patch={diffPatch} />
-        </Stack>
+        <Card title="Proposed Changes" width="full">
+          <Stack gap="md">
+            <DiffViewer patch={diffPatch} />
+            <Text size="sm" variant="muted">
+              The AI has proposed updates to this policy. Review the changes above and click "Apply
+              Changes" to accept them.
+            </Text>
+            <HStack justify="end" gap="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDismissedProposalKey(activeProposal.key)}
+                iconLeft={<Close size={12} />}
+              >
+                Dismiss
+              </Button>
+              <Button
+                size="sm"
+                onClick={applyProposedChanges}
+                disabled={isApplying}
+                loading={isApplying}
+                iconLeft={!isApplying ? <Checkmark size={12} /> : undefined}
+              >
+                Apply Changes
+              </Button>
+            </HStack>
+          </Stack>
+        </Card>
       )}
     </Stack>
   );

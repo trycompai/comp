@@ -5,6 +5,7 @@ import { formatDate } from '@/lib/format';
 import type { Policy } from '@db';
 import {
   Badge,
+  HStack,
   Table,
   TableBody,
   TableCell,
@@ -13,18 +14,47 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowsVertical, Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { usePolicyTailoringStatus, type PolicyTailoringStatus } from './policy-tailoring-context';
 
+type SortColumn = 'name' | 'status' | 'updatedAt';
+
 interface PoliciesTableDSProps {
   policies: Policy[];
+  sortColumn?: SortColumn;
+  sortDirection?: 'asc' | 'desc';
+  onSort?: (column: SortColumn) => void;
 }
 
 const ACTIVE_STATUSES: PolicyTailoringStatus[] = ['queued', 'pending', 'processing'];
 
-export function PoliciesTableDS({ policies }: PoliciesTableDSProps) {
+function SortIcon({
+  column,
+  sortColumn,
+  sortDirection,
+}: {
+  column: SortColumn;
+  sortColumn?: SortColumn;
+  sortDirection?: 'asc' | 'desc';
+}) {
+  if (sortColumn !== column) {
+    return <ArrowsVertical size={14} className="text-muted-foreground opacity-50" />;
+  }
+  return sortDirection === 'asc' ? (
+    <ArrowUp size={14} className="text-foreground" />
+  ) : (
+    <ArrowDown size={14} className="text-foreground" />
+  );
+}
+
+export function PoliciesTableDS({
+  policies,
+  sortColumn,
+  sortDirection,
+  onSort,
+}: PoliciesTableDSProps) {
   const params = useParams<{ orgId: string }>();
   const router = useRouter();
   const orgId = params.orgId;
@@ -45,10 +75,50 @@ export function PoliciesTableDS({ policies }: PoliciesTableDSProps) {
     <Table variant="bordered">
       <TableHeader>
         <TableRow>
-          <TableHead>Policy Name</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead>
+            <HStack
+              gap="xs"
+              align="center"
+              style={{ cursor: onSort ? 'pointer' : 'default' }}
+              onClick={() => onSort?.('name')}
+            >
+              <span>Policy Name</span>
+              {onSort && (
+                <SortIcon column="name" sortColumn={sortColumn} sortDirection={sortDirection} />
+              )}
+            </HStack>
+          </TableHead>
+          <TableHead>
+            <HStack
+              gap="xs"
+              align="center"
+              style={{ cursor: onSort ? 'pointer' : 'default' }}
+              onClick={() => onSort?.('status')}
+            >
+              <span>Status</span>
+              {onSort && (
+                <SortIcon column="status" sortColumn={sortColumn} sortDirection={sortDirection} />
+              )}
+            </HStack>
+          </TableHead>
           <TableHead>Department</TableHead>
-          <TableHead>Last Updated</TableHead>
+          <TableHead>
+            <HStack
+              gap="xs"
+              align="center"
+              style={{ cursor: onSort ? 'pointer' : 'default' }}
+              onClick={() => onSort?.('updatedAt')}
+            >
+              <span>Last Updated</span>
+              {onSort && (
+                <SortIcon
+                  column="updatedAt"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                />
+              )}
+            </HStack>
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -104,12 +174,12 @@ function PolicyNameCell({ policy, orgId, isTailoring }: PolicyNameCellProps) {
 
   if (isTailoring) {
     return (
-      <div className="flex items-center gap-2">
-        <Loader2 className="size-3 animate-spin text-primary" />
+      <HStack gap="xs" align="center">
+        <div className="size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <Text size="sm" variant="muted">
           {policy.name}
         </Text>
-      </div>
+      </HStack>
     );
   }
 
@@ -122,7 +192,10 @@ function PolicyNameCell({ policy, orgId, isTailoring }: PolicyNameCellProps) {
       <Text size="sm" weight="medium">
         {policy.name}
       </Text>
-      <ExternalLink className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      <Launch
+        size={16}
+        className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+      />
     </Link>
   );
 }
@@ -139,10 +212,12 @@ function PolicyStatusCell({ policy, status, isTailoring }: PolicyStatusCellProps
       status === 'processing' ? 'Tailoring' : status === 'queued' ? 'Queued' : 'Preparing';
 
     return (
-      <div className="flex items-center gap-2 text-sm text-primary">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        {label}
-      </div>
+      <HStack gap="xs" align="center">
+        <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Text size="sm" variant="primary">
+          {label}
+        </Text>
+      </HStack>
     );
   }
 

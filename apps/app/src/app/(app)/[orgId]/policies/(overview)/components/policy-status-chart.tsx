@@ -3,15 +3,14 @@
 import * as React from 'react';
 import { Label, Pie, PieChart } from 'recharts';
 
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
-import { Info } from 'lucide-react';
+import { Badge, Card, CardContent, CardFooter, HStack, Stack, Text } from '@trycompai/design-system';
+import { Information } from '@trycompai/design-system/icons';
 
 interface PolicyOverviewData {
   totalPolicies: number;
@@ -85,26 +84,13 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
 
   if (!data) {
     return (
-      <Card className="flex flex-col overflow-hidden border">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
-            <Badge variant="outline" className="text-xs">
-              Overview
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-1 items-center justify-center py-10">
-          <div className="space-y-2 text-center">
-            <div className="text-muted-foreground flex justify-center">
-              <Info className="h-10 w-10 opacity-30" />
-            </div>
-            <p className="text-muted-foreground text-center text-sm">No policy data available</p>
-          </div>
-        </CardContent>
-        <CardFooter className="bg-muted/30 border-t py-3">
-          <div className="flex w-full flex-wrap justify-center gap-4 py-1" />
-        </CardFooter>
+      <Card title="Policy by Status" width="full">
+        <Stack gap="md" align="center">
+          <Information size={40} className="text-muted-foreground opacity-30" />
+          <Text size="sm" variant="muted">
+            No policy data available
+          </Text>
+        </Stack>
       </Card>
     );
   }
@@ -116,22 +102,8 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
   } satisfies ChartConfig;
 
   return (
-    <Card className="flex flex-col overflow-hidden border">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">{'Policy by Status'}</CardTitle>
-        </div>
-
-        <div className="bg-secondary relative mt-2 h-1 w-full overflow-hidden rounded-full">
-          <div
-            className="bg-primary h-full transition-all"
-            style={{
-              width: `${(data.publishedPolicies / Math.max(data.totalPolicies, 1)) * 100}%`,
-            }}
-          />
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-1 items-center justify-center">
+    <Card title="Policy by Status" width="full">
+      <Stack gap="md">
         <ChartContainer config={chartConfig} className="mx-auto h-[300px] max-w-[250px]">
           <PieChart
             width={250}
@@ -201,20 +173,21 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
             </Pie>
           </PieChart>
         </ChartContainer>
-      </CardContent>
-      <CardFooter className="bg-muted/30 border-t py-3">
-        <div className="flex w-full flex-wrap justify-center gap-4 py-1">
+        <HStack justify="center" gap="md">
           {chartData.map((entry) => (
-            <div key={entry.name} className="flex items-center gap-2">
+            <HStack key={entry.name} gap="xs" align="center">
               <div className="h-3 w-3" style={{ backgroundColor: entry.fill }} />
-              <span className="text-xs font-medium whitespace-nowrap">
+              <Text size="xs" weight="medium">
                 {entry.name}
-                <span className="text-muted-foreground ml-1">({entry.value})</span>
-              </span>
-            </div>
+                <Text as="span" size="xs" variant="muted">
+                  {' '}
+                  ({entry.value})
+                </Text>
+              </Text>
+            </HStack>
           ))}
-        </div>
-      </CardFooter>
+        </HStack>
+      </Stack>
     </Card>
   );
 }

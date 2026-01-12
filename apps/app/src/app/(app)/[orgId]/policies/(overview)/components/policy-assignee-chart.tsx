@@ -2,15 +2,14 @@
 
 import * as React from 'react';
 
-import { Badge } from '@comp/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@comp/ui/chart';
-import { Users } from 'lucide-react';
+import { Card, HStack, Stack, Text } from '@trycompai/design-system';
+import { UserMultiple } from '@trycompai/design-system/icons';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 interface AssigneeData {
@@ -58,29 +57,13 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="flex flex-col overflow-hidden border">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">{'Policies by Assignee'}</CardTitle>
-
-            <Badge variant="outline" className="text-xs">
-              Distribution
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-1 items-center justify-center py-10">
-          <div className="space-y-2 text-center">
-            <div className="text-muted-foreground flex justify-center">
-              <Users className="h-10 w-10 opacity-30" />
-            </div>
-            <p className="text-muted-foreground text-center text-sm">
-              No policies assigned to users
-            </p>
-          </div>
-        </CardContent>
-        <CardFooter className="bg-muted/30 border-t py-3">
-          <div className="flex w-full flex-wrap justify-center gap-4 py-1" />
-        </CardFooter>
+      <Card title="Policies by Assignee" width="full">
+        <Stack gap="md" align="center">
+          <UserMultiple size={40} className="text-muted-foreground opacity-30" />
+          <Text size="sm" variant="muted">
+            No policies assigned to users
+          </Text>
+        </Stack>
       </Card>
     );
   }
@@ -113,101 +96,89 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
   } satisfies ChartConfig;
 
   return (
-    <Card className="flex flex-col overflow-hidden border">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">{'Policies by Assignee'}</CardTitle>
-        </div>
-
-        <div className="bg-secondary relative mt-2 h-1 w-full overflow-hidden rounded-full">
-          <div
-            className="bg-primary h-full transition-all"
-            style={{
-              width: `${totalPolicies > 0 ? 100 : 0}%`,
-            }}
-          />
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1">
-        <div className="flex h-full flex-col">
-          <div className="text-muted-foreground mb-1 flex items-center justify-between px-1 text-xs">
-            <span>Assignee</span>
-            <span>Policy Count</span>
-          </div>
-          <ChartContainer config={chartConfig}>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart
-                accessibilityLayer
-                data={chartData}
-                layout="vertical"
-                barSize={24}
-                barGap={4}
-                margin={{
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  left: 0,
-                }}
-              >
-                <XAxis type="number" hide />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  tickFormatter={(value) => value.split(' ')[0]}
-                  fontSize={12}
-                  stroke="hsl(var(--muted-foreground))"
-                />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="published"
-                  stackId="a"
-                  fill={CHART_COLORS.published}
-                  radius={[0, 2, 2, 0]}
-                  animationDuration={800}
-                  animationBegin={100}
-                />
-                <Bar
-                  dataKey="draft"
-                  stackId="a"
-                  fill={CHART_COLORS.draft}
-                  radius={[0, 0, 0, 0]}
-                  animationDuration={800}
-                  animationBegin={200}
-                />
-                <Bar
-                  dataKey="archived"
-                  stackId="a"
-                  fill={CHART_COLORS.archived}
-                  radius={[0, 0, 0, 0]}
-                  animationDuration={800}
-                  animationBegin={300}
-                />
-                <Bar
-                  dataKey="needs_review"
-                  stackId="a"
-                  fill={CHART_COLORS.needs_review}
-                  radius={[0, 0, 0, 0]}
-                  animationDuration={800}
-                  animationBegin={400}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </div>
-      </CardContent>
-      <CardFooter className="bg-muted/30 border-t py-3">
-        <div className="flex w-full flex-wrap justify-center gap-4 py-1">
+    <Card title="Policies by Assignee" width="full">
+      <Stack gap="md">
+        <HStack justify="between">
+          <Text size="xs" variant="muted">
+            Assignee
+          </Text>
+          <Text size="xs" variant="muted">
+            Policy Count
+          </Text>
+        </HStack>
+        <ChartContainer config={chartConfig}>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart
+              accessibilityLayer
+              data={chartData}
+              layout="vertical"
+              barSize={24}
+              barGap={4}
+              margin={{
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+              }}
+            >
+              <XAxis type="number" hide />
+              <YAxis
+                dataKey="name"
+                type="category"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) => value.split(' ')[0]}
+                fontSize={12}
+                stroke="hsl(var(--muted-foreground))"
+              />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <Bar
+                dataKey="published"
+                stackId="a"
+                fill={CHART_COLORS.published}
+                radius={[0, 2, 2, 0]}
+                animationDuration={800}
+                animationBegin={100}
+              />
+              <Bar
+                dataKey="draft"
+                stackId="a"
+                fill={CHART_COLORS.draft}
+                radius={[0, 0, 0, 0]}
+                animationDuration={800}
+                animationBegin={200}
+              />
+              <Bar
+                dataKey="archived"
+                stackId="a"
+                fill={CHART_COLORS.archived}
+                radius={[0, 0, 0, 0]}
+                animationDuration={800}
+                animationBegin={300}
+              />
+              <Bar
+                dataKey="needs_review"
+                stackId="a"
+                fill={CHART_COLORS.needs_review}
+                radius={[0, 0, 0, 0]}
+                animationDuration={800}
+                animationBegin={400}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+        <HStack justify="center" gap="md">
           {Object.entries(chartConfig).map(([key, config]) => (
-            <div key={key} className="flex items-center gap-2">
+            <HStack key={key} gap="xs" align="center">
               <div className="h-3 w-3" style={{ backgroundColor: config.color }} />
-              <span className="text-xs font-medium">{config.label}</span>
-            </div>
+              <Text size="xs" weight="medium">
+                {config.label}
+              </Text>
+            </HStack>
           ))}
-        </div>
-      </CardFooter>
+        </HStack>
+      </Stack>
     </Card>
   );
 }
