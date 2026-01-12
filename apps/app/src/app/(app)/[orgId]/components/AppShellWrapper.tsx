@@ -48,7 +48,8 @@ import {
   AvatarFallback,
   AvatarImage,
   CommandSearch,
-  LogoIcon,
+  HStack,
+  Logo,
   Text,
   ThemeToggle,
 } from '@trycompai/design-system';
@@ -230,12 +231,16 @@ export function AppShellWrapper({
       <AppShell showAIChat defaultSidebarOpen={!isCollapsed}>
         <AppShellNavbar
           startContent={
-            <>
+            <HStack gap="xs" align="center">
               <Link href="/">
-                <LogoIcon width={32} height={32} variant={theme === 'dark' ? 'light' : 'dark'} />
+                <Logo
+                  style={{ height: 22, width: 'auto' }}
+                  variant={theme === 'dark' ? 'light' : 'dark'}
+                />
               </Link>
+              <span className="pl-3 pr-1 text-muted-foreground">/</span>
               <OrganizationSwitcher organizations={organizations} organization={organization} />
-            </>
+            </HStack>
           }
           centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
           endContent={

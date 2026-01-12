@@ -4,6 +4,7 @@ import { Grid, PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
+import { PolicyTabs } from '../components/PolicyTabs';
 import { PolicyAssigneeChart } from './components/policy-assignee-chart';
 import { PolicyStatusChart } from './components/policy-status-chart';
 import Loading from './loading';
@@ -12,8 +13,9 @@ export default async function PoliciesOverview() {
   const overview = await getPoliciesOverview();
 
   return (
-    <PageLayout>
+    <PageLayout container={false} padding="none">
       <PageHeader title="Policies" />
+      <PolicyTabs />
       <Suspense fallback={<Loading />}>
         <Grid cols="2" gap="4">
           <PolicyStatusChart data={overview} />
