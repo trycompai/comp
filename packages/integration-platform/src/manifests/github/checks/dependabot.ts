@@ -62,29 +62,37 @@ export const dependabotCheck: IntegrationCheck = {
      */
     const fetchAlertCounts = async (repoFullName: string): Promise<AlertCounts | null> => {
       try {
-        const alerts = await ctx.fetchAllPages<GitHubDependabotAlert>(
-          `/repos/${repoFullName}/dependabot/alerts`,
-        );
+        // GitHub supports filtering by state: open, fixed, dismissed (no "all")
+        const [openAlerts, fixedAlerts, dismissedAlerts] = await Promise.all([
+          ctx.fetchWithLinkHeader<GitHubDependabotAlert>(
+            `/repos/${repoFullName}/dependabot/alerts`,
+            {
+              params: { state: 'open', per_page: '100' },
+            },
+          ),
+          ctx.fetchWithLinkHeader<GitHubDependabotAlert>(
+            `/repos/${repoFullName}/dependabot/alerts`,
+            {
+              params: { state: 'fixed', per_page: '100' },
+            },
+          ),
+          ctx.fetchWithLinkHeader<GitHubDependabotAlert>(
+            `/repos/${repoFullName}/dependabot/alerts`,
+            { params: { state: 'dismissed', per_page: '100' } },
+          ),
+        ]);
 
         const counts: AlertCounts = {
-          open: 0,
-          dismissed: 0,
-          fixed: 0,
-          total: alerts.length,
+          open: openAlerts.length,
+          dismissed: dismissedAlerts.length,
+          fixed: fixedAlerts.length,
+          total: openAlerts.length + fixedAlerts.length + dismissedAlerts.length,
           bySeverity: { critical: 0, high: 0, medium: 0, low: 0 },
         };
 
-        for (const alert of alerts) {
-          // Count by state
-          if (alert.state === 'open') counts.open++;
-          else if (alert.state === 'dismissed') counts.dismissed++;
-          else if (alert.state === 'fixed') counts.fixed++;
-
-          // Count open alerts by severity
-          if (alert.state === 'open') {
-            const severity = alert.security_vulnerability?.severity ?? 'low';
-            counts.bySeverity[severity]++;
-          }
+        for (const alert of openAlerts) {
+          const severity = alert.security_vulnerability?.severity ?? 'low';
+          counts.bySeverity[severity]++;
         }
 
         return counts;
@@ -93,6 +101,13 @@ export const dependabotCheck: IntegrationCheck = {
         // 403 usually means Dependabot alerts are not enabled or no permission
         if (errorStr.includes('403') || errorStr.includes('Forbidden')) {
           ctx.log(`Cannot access Dependabot alerts for ${repoFullName} (permission denied)`);
+          return null;
+        }
+        // 400 can mean Dependabot alerts endpoint isn't available for the repo/app
+        if (errorStr.includes('400') || errorStr.includes('Bad Request')) {
+          ctx.log(
+            `Dependabot alerts not available for ${repoFullName} (feature may not be enabled)`,
+          );
           return null;
         }
         ctx.warn(`Failed to fetch Dependabot alerts for ${repoFullName}: ${errorStr}`);
