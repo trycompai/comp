@@ -145,34 +145,70 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
     agreementId: string,
     customWatermarkText?: string,
   ) {
-    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const pages = pdfDoc.getPages();
 
-    const timestamp = new Date().toISOString();
-    const watermarkText =
-      customWatermarkText ||
-      `For: ${name} <${email}> | ${timestamp} | ID: ${agreementId}`;
+    const watermarkText = 'CompAI';
+    const requestedByText = `Requested by: ${email}`;
+    const fontSize = 48;
+    const subTextSize = 12;
 
     for (const page of pages) {
       const { width, height } = page.getSize();
-      const textWidth = font.widthOfTextAtSize(watermarkText, 10);
+      const pageNumber = pages.indexOf(page) + 1;
 
-      page.drawText(watermarkText, {
-        x: width / 2 - textWidth / 2,
-        y: height / 2,
-        size: 10,
-        font,
-        color: rgb(0.8, 0.8, 0.8),
-        opacity: 0.3,
-        rotate: degrees(-45),
-      });
+      // Create a repeating diagonal watermark pattern with alternating angles
+      const horizontalSpacing = 250; // Space between watermarks horizontally
+      const verticalSpacing = 180; // Space between watermarks vertically
+      
+      // Calculate how many watermarks we need to cover the page
+      const numRows = Math.ceil(height / verticalSpacing) + 2;
+      const numCols = Math.ceil(width / horizontalSpacing) + 2;
 
-      page.drawText(`Document ID: ${agreementId}`, {
-        x: 50,
-        y: 20,
+      for (let row = -1; row < numRows; row++) {
+        for (let col = -1; col < numCols; col++) {
+          // Create a checkerboard-like offset pattern
+          const offsetX = (row % 2) * (horizontalSpacing / 2);
+          const x = col * horizontalSpacing + offsetX;
+          const y = row * verticalSpacing;
+          
+          // Alternate between -45 and -35 degrees for visual interest
+          const angle = (row + col) % 2 === 0 ? -45 : -35;
+
+          // Main "CompAI" watermark
+          page.drawText(watermarkText, {
+            x,
+            y,
+            size: fontSize,
+            font: fontBold,
+            color: rgb(0.85, 0.85, 0.85), // Darker gray
+            opacity: 0.10, // Increased opacity for better visibility
+            rotate: degrees(angle),
+          });
+
+          // "Requested by: [email]" text below CompAI
+          page.drawText(requestedByText, {
+            x: x - 10,
+            y: y - 18,
+            size: subTextSize,
+            font: fontRegular,
+            color: rgb(0.85, 0.85, 0.85), // Darker gray
+            opacity: 0.10, // Slightly darker and more visible
+            rotate: degrees(angle),
+          });
+        }
+      }
+
+      // Add small footer with page number and document ID
+      const footerText = `Page ${pageNumber} of ${pages.length}  •  Document ID: ${agreementId.split('-').pop()?.slice(0, 8)}`;
+      
+      page.drawText(footerText, {
+        x: width / 2 - fontRegular.widthOfTextAtSize(footerText, 8) / 2,
+        y: 15,
         size: 8,
-        font,
-        color: rgb(0.5, 0.5, 0.5),
+        font: fontRegular,
+        color: rgb(0.6, 0.6, 0.6),
       });
     }
   }

@@ -8519,6 +8519,31 @@
         ]
       }
     },
+    "/v1/trust-access/access/{token}/policies/download-all-zip": {
+      "get": {
+        "description": "Generate ZIP archive containing individual watermarked PDFs for each policy",
+        "operationId": "TrustAccessController_downloadAllPoliciesAsZip_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download URL for ZIP archive returned"
+          }
+        },
+        "summary": "Download all policies as ZIP with individual PDFs",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/trust-access/access/{token}/compliance-resources": {
       "get": {
         "description": "Get list of uploaded compliance certificates for the organization",
