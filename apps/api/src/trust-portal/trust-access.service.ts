@@ -1883,117 +1883,130 @@ export class TrustAccessService {
     const preparedPolicies = await Promise.all(policies.map(preparePolicy));
 
     // Step 2: Merge PDFs sequentially (must be sequential for PDFDocument operations)
+    // Helper to add content-rendered policy to merged PDF
+    const addContentRenderedPolicy = async (
+      policy: (typeof policies)[0],
+      addOrgHeader: boolean,
+    ) => {
+      const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: policy.content }],
+        addOrgHeader ? organizationName : undefined,
+        grant.accessRequest.organization.primaryColor,
+        policies.length,
+      );
+      const renderedPdf = await PDFDocument.load(renderedBuffer);
+      const copiedPages = await mergedPdf.copyPages(
+        renderedPdf,
+        renderedPdf.getPageIndices(),
+      );
+      for (const page of copiedPages) {
+        mergedPdf.addPage(page);
+      }
+    };
+
     let isFirst = true;
     for (const { policy, pdfBuffer, isUploaded } of preparedPolicies) {
       if (isUploaded) {
-        const uploadedPdf = await PDFDocument.load(pdfBuffer, {
-          ignoreEncryption: true,
-        });
+        try {
+          const uploadedPdf = await PDFDocument.load(pdfBuffer, {
+            ignoreEncryption: true,
+          });
 
-        // Rebuild the FIRST page: embed original page into a taller page
-        const originalFirstPage = uploadedPdf.getPage(0);
-        const { width, height } = originalFirstPage.getSize();
+          // Rebuild the FIRST page: embed original page into a taller page
+          const originalFirstPage = uploadedPdf.getPage(0);
+          const { width, height } = originalFirstPage.getSize();
 
-        const headerHeight = isFirst ? 120 : 60;
-        const embeddedFirstPage = await mergedPdf.embedPage(originalFirstPage);
-        const rebuiltFirstPage = mergedPdf.addPage([
-          width,
-          height + headerHeight,
-        ]);
+          const headerHeight = isFirst ? 120 : 60;
+          const embeddedFirstPage = await mergedPdf.embedPage(originalFirstPage);
+          const rebuiltFirstPage = mergedPdf.addPage([
+            width,
+            height + headerHeight,
+          ]);
 
-        rebuiltFirstPage.drawPage(embeddedFirstPage, {
-          x: 0,
-          y: 0,
-          width,
-          height,
-        });
+          rebuiltFirstPage.drawPage(embeddedFirstPage, {
+            x: 0,
+            y: 0,
+            width,
+            height,
+          });
 
-        let yPos = height + headerHeight - 25;
+          let yPos = height + headerHeight - 25;
 
-        if (isFirst) {
-          rebuiltFirstPage.drawLine({
-            start: { x: 20, y: yPos + 8 },
-            end: { x: width - 20, y: yPos + 8 },
-            thickness: 2,
+          if (isFirst) {
+            rebuiltFirstPage.drawLine({
+              start: { x: 20, y: yPos + 8 },
+              end: { x: width - 20, y: yPos + 8 },
+              thickness: 2,
+              color: rgb(accentColor.r, accentColor.g, accentColor.b),
+            });
+
+            rebuiltFirstPage.drawText(`${organizationName} - All Policies`, {
+              x: 20,
+              y: yPos - 14,
+              size: 14,
+              font: helveticaBold,
+              color: rgb(0, 0, 0),
+            });
+
+            const generatedDate = new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            });
+
+            rebuiltFirstPage.drawText(
+              `Generated: ${generatedDate} | Total: ${policies.length} policies`,
+              {
+                x: width - 180,
+                y: yPos - 14,
+                size: 8,
+                font: helvetica,
+                color: rgb(0.5, 0.5, 0.5),
+              },
+            );
+
+            yPos -= 34;
+            isFirst = false;
+          }
+
+          rebuiltFirstPage.drawRectangle({
+            x: 55,
+            y: yPos - 40,
+            width: 10,
+            height: 26,
             color: rgb(accentColor.r, accentColor.g, accentColor.b),
           });
 
-          rebuiltFirstPage.drawText(`${organizationName} - All Policies`, {
-            x: 20,
-            y: yPos - 14,
-            size: 14,
+          rebuiltFirstPage.drawText(`POLICY: ${policy.name}`, {
+            x: 75,
+            y: yPos - 34,
+            size: 16,
             font: helveticaBold,
-            color: rgb(0, 0, 0),
+            color: rgb(0.12, 0.16, 0.23),
           });
 
-          const generatedDate = new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          });
-
-          rebuiltFirstPage.drawText(
-            `Generated: ${generatedDate} | Total: ${policies.length} policies`,
-            {
-              x: width - 180,
-              y: yPos - 14,
-              size: 8,
-              font: helvetica,
-              color: rgb(0.5, 0.5, 0.5),
-            },
+          // Remaining pages unchanged (page 2..n)
+          if (uploadedPdf.getPageCount() > 1) {
+            const copiedRemainingPages = await mergedPdf.copyPages(
+              uploadedPdf,
+              uploadedPdf.getPageIndices().slice(1),
+            );
+            for (const page of copiedRemainingPages) {
+              mergedPdf.addPage(page);
+            }
+          }
+        } catch (error) {
+          // PDF is corrupted/malformed, fall back to content rendering
+          console.warn(
+            `Failed to parse uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
           );
-
-          yPos -= 34;
+          await addContentRenderedPolicy(policy, isFirst);
           isFirst = false;
         }
-
-        rebuiltFirstPage.drawRectangle({
-          x: 55,
-          y: yPos - 40,
-          width: 10,
-          height: 26,
-          color: rgb(accentColor.r, accentColor.g, accentColor.b),
-        });
-
-        rebuiltFirstPage.drawText(`POLICY: ${policy.name}`, {
-          x: 75,
-          y: yPos - 34,
-          size: 16,
-          font: helveticaBold,
-          color: rgb(0.12, 0.16, 0.23),
-        });
-
-        // Remaining pages unchanged (page 2..n)
-        if (uploadedPdf.getPageCount() > 1) {
-          const copiedRemainingPages = await mergedPdf.copyPages(
-            uploadedPdf,
-            uploadedPdf.getPageIndices().slice(1),
-          );
-          for (const page of copiedRemainingPages) {
-            mergedPdf.addPage(page);
-          }
-        }
       } else {
-        // Content was already rendered, just need to add org header for first
-        let finalBuffer = pdfBuffer;
-        if (isFirst) {
-          // Re-render with org header for first policy
-          finalBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-            [{ name: policy.name, content: policy.content }],
-            organizationName,
-            grant.accessRequest.organization.primaryColor,
-            policies.length,
-          );
-        }
-
-        const renderedPdf = await PDFDocument.load(finalBuffer);
-        const copiedPages = await mergedPdf.copyPages(
-          renderedPdf,
-          renderedPdf.getPageIndices(),
-        );
-        for (const page of copiedPages) {
-          mergedPdf.addPage(page);
-        }
+        // Content was already rendered, but re-render if first (needs org header)
+        await addContentRenderedPolicy(policy, isFirst);
         isFirst = false;
       }
     }
