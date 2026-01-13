@@ -2012,4 +2012,147 @@ export class TrustAccessService {
 
     return { name: 'All Policies', downloadUrl };
   }
+
+  /**
+   * Convert a policy name to a safe filename
+   * "Security Updates" -> "security_updates"
+   */
+  private toSafeFilename(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/-+/g, '_') // Replace hyphens with underscores
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+  }
+
+  async downloadAllPoliciesAsZipByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
+
+    const policies = await db.policy.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+        status: 'published',
+        isArchived: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        content: true,
+        pdfUrl: true,
+      },
+      orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
+    });
+
+    if (policies.length === 0) {
+      throw new NotFoundException('No published policies available');
+    }
+
+    const organizationName =
+      grant.accessRequest.organization.name || 'Organization';
+
+    // Create ZIP archive
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    const passThrough = new PassThrough();
+    archive.pipe(passThrough);
+
+    // Track filenames to avoid duplicates
+    const usedFilenames = new Set<string>();
+
+    const getUniqueFilename = (baseName: string): string => {
+      let filename = this.toSafeFilename(baseName);
+      let counter = 1;
+      let finalName = filename;
+      
+      while (usedFilenames.has(finalName)) {
+        finalName = `${filename}_${counter}`;
+        counter++;
+      }
+      
+      usedFilenames.add(finalName);
+      return `${finalName}.pdf`;
+    };
+
+    // Process each policy individually
+    for (const policy of policies) {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+      let policyPdfBuffer: Buffer;
+
+      if (hasUploadedPdf) {
+        try {
+          // Use uploaded PDF
+          const rawBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          policyPdfBuffer = Buffer.from(rawBuffer);
+        } catch (error) {
+          // Fall back to rendering from content
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+          const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+            [{ name: policy.name, content: policy.content }],
+            undefined,
+            grant.accessRequest.organization.primaryColor,
+          );
+          policyPdfBuffer = renderedBuffer;
+        }
+      } else {
+        // Render from content
+        const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          [{ name: policy.name, content: policy.content }],
+          undefined,
+          grant.accessRequest.organization.primaryColor,
+        );
+        policyPdfBuffer = renderedBuffer;
+      }
+
+      // Watermark the PDF
+      const docId = `policy-${policy.id}-${Date.now()}`;
+      const watermarkedPdf = await this.ndaPdfService.watermarkExistingPdf(
+        policyPdfBuffer,
+        {
+          name: grant.accessRequest.name,
+          email: grant.subjectEmail,
+          docId,
+        },
+      );
+
+      // Add to ZIP with safe filename
+      const filename = getUniqueFilename(policy.name);
+      archive.append(watermarkedPdf, { name: filename });
+    }
+
+    // Finalize the archive
+    await archive.finalize();
+
+    // Collect ZIP buffer
+    const chunks: Buffer[] = [];
+    for await (const chunk of passThrough) {
+      chunks.push(Buffer.from(chunk));
+    }
+    const zipBuffer = Buffer.concat(chunks);
+
+    // Upload ZIP to S3
+    const timestamp = Date.now();
+    const zipKey = await this.attachmentsService.uploadToS3(
+      zipBuffer,
+      `policies-${organizationName.replace(/[^a-z0-9]/gi, '_')}-${timestamp}.zip`,
+      'application/zip',
+      grant.accessRequest.organizationId,
+      'trust_policy_downloads',
+      `${grant.id}`,
+    );
+
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(zipKey);
+
+    return {
+      name: `${organizationName} - All Policies (ZIP)`,
+      downloadUrl,
+      policyCount: policies.length,
+    };
+  }
 }
