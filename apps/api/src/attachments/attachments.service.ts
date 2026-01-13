@@ -14,6 +14,7 @@ import {
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
+import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
@@ -26,6 +27,11 @@ export class AttachmentsService {
     // AWS configuration is validated at startup via ConfigModule
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
+
+    if (s3Client) {
+      this.s3Client = s3Client;
+      return;
+    }
 
     if (
       !process.env.APP_AWS_ACCESS_KEY_ID ||
