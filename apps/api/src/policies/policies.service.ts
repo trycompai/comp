@@ -32,6 +32,16 @@ export class PoliciesService {
           assigneeId: true,
           approverId: true,
           policyTemplateId: true,
+          assignee: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       });

@@ -77,6 +77,7 @@ export class PoliciesController {
     };
   }
 
+
   @Get(':id')
   @ApiOperation(POLICY_OPERATIONS.getPolicyById)
   @ApiParam(POLICY_PARAMS.policyId)
