@@ -30,7 +30,7 @@ export const s3Client = new S3Client({
     accessKeyId: APP_AWS_ACCESS_KEY_ID!,
     secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
   },
-  forcePathStyle: true,
+  forcePathStyle: !!APP_AWS_ENDPOINT,
 });
 
 // Ensure BUCKET_NAME is exported and non-null checked if needed elsewhere explicitly

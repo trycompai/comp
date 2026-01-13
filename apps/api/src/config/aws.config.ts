@@ -6,7 +6,7 @@ const awsConfigSchema = z.object({
   accessKeyId: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
   secretAccessKey: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
   bucketName: z.string().min(1, 'AWS_BUCKET_NAME is required'),
-  endpoint: z.string().min(1, 'AWS_ENDPOINT is required'),
+  endpoint: z.string().optional(),
 });
 
 export type AwsConfig = z.infer<typeof awsConfigSchema>;
