@@ -24,7 +24,7 @@ if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP
 // Create a single S3 client instance
 // Add null checks or assertions if the checks above don't guarantee non-null values
 export const s3Client = new S3Client({
-  endpoint: APP_AWS_ENDPOINT,
+  endpoint: APP_AWS_ENDPOINT || undefined,
   region: APP_AWS_REGION!,
   credentials: {
     accessKeyId: APP_AWS_ACCESS_KEY_ID!,

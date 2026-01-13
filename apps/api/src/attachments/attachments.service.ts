@@ -28,25 +28,14 @@ export class AttachmentsService {
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
 
-    if (s3Client) {
-      this.s3Client = s3Client;
-      return;
+    if (!s3Client) {
+      console.error('S3 Client is not initialized. Check AWS S3 configuration.');
+      throw new Error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
     }
 
-    if (
-      !process.env.APP_AWS_ACCESS_KEY_ID ||
-      !process.env.APP_AWS_SECRET_ACCESS_KEY
-    ) {
-      console.warn('AWS credentials are missing, S3 client may fail');
-    }
-
-    this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+    this.s3Client = s3Client;
   }
 
   /**

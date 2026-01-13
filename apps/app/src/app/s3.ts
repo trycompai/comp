@@ -19,7 +19,7 @@ try {
   }
 
   s3ClientInstance = new S3Client({
-    endpoint: APP_AWS_ENDPOINT,
+    endpoint: APP_AWS_ENDPOINT || undefined,
     region: APP_AWS_REGION,
     credentials: {
       accessKeyId: APP_AWS_ACCESS_KEY_ID,
