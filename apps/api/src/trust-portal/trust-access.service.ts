@@ -2018,13 +2018,16 @@ export class TrustAccessService {
    * "Security Updates" -> "security_updates"
    */
   private toSafeFilename(name: string): string {
-    return name
+    const safeName = name
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
       .replace(/\s+/g, '_') // Replace spaces with underscores
       .replace(/-+/g, '_') // Replace hyphens with underscores
       .replace(/_+/g, '_') // Collapse multiple underscores
       .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+    
+    // Fallback for non-ASCII only names
+    return safeName || 'policy';
   }
 
   async downloadAllPoliciesAsZipByAccessToken(token: string) {
