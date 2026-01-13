@@ -2058,6 +2058,12 @@ export class TrustAccessService {
     // Create ZIP archive
     const archive = archiver('zip', { zlib: { level: 9 } });
     const passThrough = new PassThrough();
+
+    // Handle archive errors to prevent unhandled exceptions
+    archive.on('error', (err) => {
+      passThrough.destroy(err);
+    });
+
     archive.pipe(passThrough);
 
     // Track filenames to avoid duplicates
