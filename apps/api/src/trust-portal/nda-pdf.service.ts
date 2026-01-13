@@ -201,14 +201,13 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
       }
 
       // Add small footer with page number and document ID
-      const footerFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const footerText = `Page ${pageNumber} of ${pages.length}  •  Document ID: ${agreementId.split('-').pop()?.slice(0, 8)}`;
       
       page.drawText(footerText, {
-        x: width / 2 - footerFont.widthOfTextAtSize(footerText, 8) / 2,
+        x: width / 2 - fontRegular.widthOfTextAtSize(footerText, 8) / 2,
         y: 15,
         size: 8,
-        font: footerFont,
+        font: fontRegular,
         color: rgb(0.6, 0.6, 0.6),
       });
     }
