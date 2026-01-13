@@ -97,8 +97,9 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
 
   return (
     <Stack gap="md">
-      <HStack gap="sm" align="end">
-        <div style={{ flex: 1, maxWidth: 300 }}>
+      <div className="flex flex-col gap-3 md:flex-row md:items-end">
+        {/* Search - full width on mobile, constrained on desktop */}
+        <div className="w-full md:max-w-[300px]">
           <InputGroup>
             <InputGroupAddon>
               <Search size={16} />
@@ -110,39 +111,42 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
             />
           </InputGroup>
         </div>
-        <div style={{ width: 160 }}>
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter((v ?? 'all') as PolicyStatus | 'all')}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Status">{statusLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Filters - side by side on mobile, inline with search on desktop */}
+        <div className="flex gap-2">
+          <div className="flex-1 md:w-[160px] md:flex-none">
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter((v ?? 'all') as PolicyStatus | 'all')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status">{statusLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 md:w-[160px] md:flex-none">
+            <Select value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v ?? 'all')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Department">{departmentLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept} value={dept}>
+                    {capitalize(dept)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div style={{ width: 160 }}>
-          <Select value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v ?? 'all')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Department">{departmentLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept} value={dept}>
-                  {capitalize(dept)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </HStack>
+      </div>
       <PoliciesTableDS
         policies={filteredPolicies}
         sortColumn={sortColumn}
