@@ -161,7 +161,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
       // Create a repeating diagonal watermark pattern with alternating angles
       const horizontalSpacing = 250; // Space between watermarks horizontally
       const verticalSpacing = 180; // Space between watermarks vertically
-      
+
       // Calculate how many watermarks we need to cover the page
       const numRows = Math.ceil(height / verticalSpacing) + 2;
       const numCols = Math.ceil(width / horizontalSpacing) + 2;
@@ -172,7 +172,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
           const offsetX = (row % 2) * (horizontalSpacing / 2);
           const x = col * horizontalSpacing + offsetX;
           const y = row * verticalSpacing;
-          
+
           // Alternate between -45 and -35 degrees for visual interest
           const angle = (row + col) % 2 === 0 ? -45 : -35;
 
@@ -183,7 +183,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
             size: fontSize,
             font: fontBold,
             color: rgb(0.85, 0.85, 0.85), // Darker gray
-            opacity: 0.10, // Increased opacity for better visibility
+            opacity: 0.1, // Increased opacity for better visibility
             rotate: degrees(angle),
           });
 
@@ -194,7 +194,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
             size: subTextSize,
             font: fontRegular,
             color: rgb(0.85, 0.85, 0.85), // Darker gray
-            opacity: 0.10, // Slightly darker and more visible
+            opacity: 0.1, // Slightly darker and more visible
             rotate: degrees(angle),
           });
         }
@@ -202,7 +202,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
 
       // Add small footer with page number and document ID
       const footerText = `Page ${pageNumber} of ${pages.length}  •  Document ID: ${agreementId.split('-').pop()?.slice(0, 8)}`;
-      
+
       page.drawText(footerText, {
         x: width / 2 - fontRegular.widthOfTextAtSize(footerText, 8) / 2,
         y: 15,

@@ -18,18 +18,22 @@ export class InternalVendorAutomationController {
   @Post('risk-assessment/trigger-batch')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Trigger vendor risk assessment tasks for a batch of vendors (internal)',
+    summary:
+      'Trigger vendor risk assessment tasks for a batch of vendors (internal)',
   })
   @ApiResponse({ status: 200, description: 'Tasks triggered' })
   async triggerVendorRiskAssessmentBatch(
     @Body() body: TriggerVendorRiskAssessmentBatchDto,
   ) {
     // Log incoming request for debugging
-    console.log('[InternalVendorAutomationController] Received batch trigger request', {
-      organizationId: body.organizationId,
-      vendorCount: body.vendors.length,
-      withResearch: body.withResearch,
-    });
+    console.log(
+      '[InternalVendorAutomationController] Received batch trigger request',
+      {
+        organizationId: body.organizationId,
+        vendorCount: body.vendors.length,
+        withResearch: body.withResearch,
+      },
+    );
 
     const result = await this.vendorsService.triggerVendorRiskAssessments({
       organizationId: body.organizationId,
@@ -38,7 +42,10 @@ export class InternalVendorAutomationController {
       vendors: body.vendors,
     });
 
-    console.log('[InternalVendorAutomationController] Batch trigger completed', result);
+    console.log(
+      '[InternalVendorAutomationController] Batch trigger completed',
+      result,
+    );
 
     return {
       success: true,
@@ -46,5 +53,3 @@ export class InternalVendorAutomationController {
     };
   }
 }
-
-

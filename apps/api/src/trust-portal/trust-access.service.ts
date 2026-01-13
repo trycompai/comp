@@ -35,34 +35,45 @@ export class TrustAccessService {
   private hexToRgb(hex: string): { r: number; g: number; b: number } {
     // Remove # if present
     const cleanHex = hex.replace('#', '');
-    
+
     // Parse hex values
     const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
     const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
     const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
-    
+
     return { r, g, b };
   }
 
   /**
    * Get accent color from organization or use default
    */
-  private getAccentColor(primaryColor: string | null | undefined): { r: number; g: number; b: number } {
+  private getAccentColor(primaryColor: string | null | undefined): {
+    r: number;
+    g: number;
+    b: number;
+  } {
     // Default project primary color: dark teal/green (hsl(165, 100%, 15%) = #004D3D)
     const defaultColor = { r: 0, g: 0.302, b: 0.239 };
-    
+
     if (!primaryColor) {
       return defaultColor;
     }
-    
+
     const color = this.hexToRgb(primaryColor);
-    
+
     // Check for NaN values (parseInt returns NaN for invalid hex)
-    if (Number.isNaN(color.r) || Number.isNaN(color.g) || Number.isNaN(color.b)) {
-      console.warn('Invalid primary color format, using default:', primaryColor);
+    if (
+      Number.isNaN(color.r) ||
+      Number.isNaN(color.g) ||
+      Number.isNaN(color.b)
+    ) {
+      console.warn(
+        'Invalid primary color format, using default:',
+        primaryColor,
+      );
       return defaultColor;
     }
-    
+
     return color;
   }
 
@@ -775,15 +786,22 @@ export class TrustAccessService {
 
     // Check if grant has expired
     if (grant.expiresAt < now) {
-      throw new BadRequestException('Cannot resend access email for expired grant');
+      throw new BadRequestException(
+        'Cannot resend access email for expired grant',
+      );
     }
 
     // Generate a new access token if expired or missing
     let accessToken = grant.accessToken;
 
-    if (!accessToken || (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)) {
+    if (
+      !accessToken ||
+      (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)
+    ) {
       accessToken = this.generateToken(32);
-      const accessTokenExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const accessTokenExpiresAt = new Date(
+        now.getTime() + 24 * 60 * 60 * 1000,
+      );
 
       await db.trustAccessGrant.update({
         where: { id: grantId },
@@ -1532,9 +1550,7 @@ export class TrustAccessService {
 
     const archive = archiver('zip', { zlib: { level: 9 } });
     const zipStream = new PassThrough();
-    let putPromise:
-      | Promise<unknown>
-      | undefined;
+    let putPromise: Promise<unknown> | undefined;
 
     try {
       putPromise = s3Client.send(
@@ -1812,169 +1828,165 @@ export class TrustAccessService {
 
     const organizationName =
       grant.accessRequest.organization.name || 'Organization';
-    
+
     // Get organization primary color or use default
     const accentColor = this.getAccentColor(
       grant.accessRequest.organization.primaryColor,
     );
 
-    // Process policies in their original date-based order
-    let isFirst = true;
-    for (const policy of policies) {
+    // Embed fonts once before the loop (expensive operation)
+    const helveticaBold = await mergedPdf.embedFont(
+      StandardFonts.HelveticaBold,
+    );
+    const helvetica = await mergedPdf.embedFont(StandardFonts.Helvetica);
+
+    // Step 1: Fetch/render all PDFs in parallel (expensive I/O operations)
+    type PreparedPolicy = {
+      policy: (typeof policies)[0];
+      pdfBuffer: Buffer;
+      isUploaded: boolean;
+    };
+
+    const preparePolicy = async (
+      policy: (typeof policies)[0],
+    ): Promise<PreparedPolicy> => {
       const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
 
       if (hasUploadedPdf) {
-        // Try to use uploaded PDF first
         try {
           const pdfBuffer = await this.attachmentsService.getObjectBuffer(
             policy.pdfUrl!,
           );
-          const uploadedPdf = await PDFDocument.load(pdfBuffer, {
-            ignoreEncryption: true,
-          });
-
-          // Add a separator page with policy header before uploaded PDF
-          const separatorPage = mergedPdf.addPage();
-          const { width, height } = separatorPage.getSize();
-          const helveticaBold = await mergedPdf.embedFont(
-            StandardFonts.HelveticaBold,
-          );
-          const helvetica = await mergedPdf.embedFont(StandardFonts.Helvetica);
-
-          let yPos = height - 40;
-
-          // Add organization header on first policy only
-          if (isFirst) {
-            // Draw colored accent line at the top
-            separatorPage.drawLine({
-              start: { x: 50, y: yPos },
-              end: { x: width - 50, y: yPos },
-              thickness: 3,
-              color: rgb(accentColor.r, accentColor.g, accentColor.b),
-            });
-
-            yPos -= 30;
-
-            // Organization name - large and bold
-            separatorPage.drawText(organizationName, {
-              x: 50,
-              y: yPos,
-              size: 24,
-              font: helveticaBold,
-              color: rgb(0, 0, 0),
-            });
-
-            yPos -= 20;
-
-            // "All Policies" subtitle - simple and clean
-            separatorPage.drawText('All Policies', {
-              x: 50,
-              y: yPos,
-              size: 14,
-              font: helvetica,
-              color: rgb(0.39, 0.39, 0.39), // Light gray
-            });
-
-            yPos -= 20;
-
-            // Metadata - minimal styling
-            const generatedDate = new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            });
-
-            separatorPage.drawText(`Generated: ${generatedDate}`, {
-              x: 50,
-              y: yPos,
-              size: 9,
-              font: helvetica,
-              color: rgb(0.55, 0.55, 0.55), // Lighter gray
-            });
-
-            yPos -= 12;
-
-            separatorPage.drawText(`Total Policies: ${policies.length}`, {
-              x: 50,
-              y: yPos,
-              size: 9,
-              font: helvetica,
-              color: rgb(0.55, 0.55, 0.55),
-            });
-
-            yPos -= 35;
-            isFirst = false;
-          }
-
-          // Draw accent bar with organization's primary color
-          separatorPage.drawRectangle({
-            x: 50,
-            y: yPos - 8,
-            width: 5,
-            height: 18,
-            color: rgb(accentColor.r, accentColor.g, accentColor.b),
-          });
-
-          // Draw policy label and title
-          separatorPage.drawText(`POLICY: ${policy.name}`, {
-            x: 62,
-            y: yPos,
-            size: 16,
-            font: helveticaBold,
-            color: rgb(0.12, 0.16, 0.23), // Dark slate
-          });
-
-          yPos -= 25;
-
-          // Add note about attached PDF
-          separatorPage.drawText('(See attached PDF document below)', {
-            x: 50,
-            y: yPos,
-            size: 10,
-            font: helvetica,
-            color: rgb(0.5, 0.5, 0.5),
-          });
-
-          // Copy and add the uploaded PDF pages
-          const copiedPages = await mergedPdf.copyPages(
-            uploadedPdf,
-            uploadedPdf.getPageIndices(),
-          );
-
-          for (const page of copiedPages) {
-            mergedPdf.addPage(page);
-          }
+          return {
+            policy,
+            pdfBuffer: Buffer.from(pdfBuffer),
+            isUploaded: true,
+          };
         } catch (error) {
-          // If fetching uploaded PDF fails, fall back to rendering from content
           console.warn(
             `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
             error,
           );
-          const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        }
+      }
+
+      // Render from content (either no pdfUrl or fetch failed)
+      const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: policy.content }],
+        undefined, // We'll add org header during merge
+        grant.accessRequest.organization.primaryColor,
+        policies.length,
+      );
+      return { policy, pdfBuffer: renderedBuffer, isUploaded: false };
+    };
+
+    const preparedPolicies = await Promise.all(policies.map(preparePolicy));
+
+    // Step 2: Merge PDFs sequentially (must be sequential for PDFDocument operations)
+    let isFirst = true;
+    for (const { policy, pdfBuffer, isUploaded } of preparedPolicies) {
+      if (isUploaded) {
+        const uploadedPdf = await PDFDocument.load(pdfBuffer, {
+          ignoreEncryption: true,
+        });
+
+        // Rebuild the FIRST page: embed original page into a taller page
+        const originalFirstPage = uploadedPdf.getPage(0);
+        const { width, height } = originalFirstPage.getSize();
+
+        const headerHeight = isFirst ? 120 : 60;
+        const embeddedFirstPage = await mergedPdf.embedPage(originalFirstPage);
+        const rebuiltFirstPage = mergedPdf.addPage([
+          width,
+          height + headerHeight,
+        ]);
+
+        rebuiltFirstPage.drawPage(embeddedFirstPage, {
+          x: 0,
+          y: 0,
+          width,
+          height,
+        });
+
+        let yPos = height + headerHeight - 25;
+
+        if (isFirst) {
+          rebuiltFirstPage.drawLine({
+            start: { x: 20, y: yPos + 8 },
+            end: { x: width - 20, y: yPos + 8 },
+            thickness: 2,
+            color: rgb(accentColor.r, accentColor.g, accentColor.b),
+          });
+
+          rebuiltFirstPage.drawText(`${organizationName} - All Policies`, {
+            x: 20,
+            y: yPos - 14,
+            size: 14,
+            font: helveticaBold,
+            color: rgb(0, 0, 0),
+          });
+
+          const generatedDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+
+          rebuiltFirstPage.drawText(
+            `Generated: ${generatedDate} | Total: ${policies.length} policies`,
+            {
+              x: width - 180,
+              y: yPos - 14,
+              size: 8,
+              font: helvetica,
+              color: rgb(0.5, 0.5, 0.5),
+            },
+          );
+
+          yPos -= 34;
+          isFirst = false;
+        }
+
+        rebuiltFirstPage.drawRectangle({
+          x: 55,
+          y: yPos - 40,
+          width: 10,
+          height: 26,
+          color: rgb(accentColor.r, accentColor.g, accentColor.b),
+        });
+
+        rebuiltFirstPage.drawText(`POLICY: ${policy.name}`, {
+          x: 75,
+          y: yPos - 34,
+          size: 16,
+          font: helveticaBold,
+          color: rgb(0.12, 0.16, 0.23),
+        });
+
+        // Remaining pages unchanged (page 2..n)
+        if (uploadedPdf.getPageCount() > 1) {
+          const copiedRemainingPages = await mergedPdf.copyPages(
+            uploadedPdf,
+            uploadedPdf.getPageIndices().slice(1),
+          );
+          for (const page of copiedRemainingPages) {
+            mergedPdf.addPage(page);
+          }
+        }
+      } else {
+        // Content was already rendered, just need to add org header for first
+        let finalBuffer = pdfBuffer;
+        if (isFirst) {
+          // Re-render with org header for first policy
+          finalBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
             [{ name: policy.name, content: policy.content }],
-            isFirst ? organizationName : undefined,
+            organizationName,
             grant.accessRequest.organization.primaryColor,
             policies.length,
           );
-          const renderedPdf = await PDFDocument.load(renderedBuffer);
-          const copiedPages = await mergedPdf.copyPages(
-            renderedPdf,
-            renderedPdf.getPageIndices(),
-          );
-          for (const page of copiedPages) {
-            mergedPdf.addPage(page);
-          }
-          isFirst = false;
         }
-      } else {
-        // Render from content
-        const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-          [{ name: policy.name, content: policy.content }],
-          isFirst ? organizationName : undefined,
-          grant.accessRequest.organization.primaryColor,
-          policies.length,
-        );
-        const renderedPdf = await PDFDocument.load(renderedBuffer);
+
+        const renderedPdf = await PDFDocument.load(finalBuffer);
         const copiedPages = await mergedPdf.copyPages(
           renderedPdf,
           renderedPdf.getPageIndices(),
@@ -1984,6 +1996,25 @@ export class TrustAccessService {
         }
         isFirst = false;
       }
+    }
+
+    // Add page numbers to all pages in the merged PDF
+    const pages = mergedPdf.getPages();
+    const totalPages = pages.length;
+    // helvetica font already embedded above
+
+    for (let i = 0; i < totalPages; i++) {
+      const page = pages[i];
+      const { width } = page.getSize();
+      const pageNumber = i + 1;
+
+      page.drawText(`Page ${pageNumber} of ${totalPages}`, {
+        x: width / 2 - 30,
+        y: 15,
+        size: 8,
+        font: helvetica,
+        color: rgb(0.5, 0.5, 0.5),
+      });
     }
 
     const pdfBuffer = Buffer.from(await mergedPdf.save());
@@ -2025,7 +2056,7 @@ export class TrustAccessService {
       .replace(/-+/g, '_') // Replace hyphens with underscores
       .replace(/_+/g, '_') // Collapse multiple underscores
       .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
-    
+
     // Fallback for non-ASCII only names
     return safeName || 'policy';
   }
@@ -2055,8 +2086,8 @@ export class TrustAccessService {
     const organizationName =
       grant.accessRequest.organization.name || 'Organization';
 
-    // Create ZIP archive
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    // Create ZIP archive (level 6 is a good balance of speed/compression)
+    const archive = archiver('zip', { zlib: { level: 6 } });
     const passThrough = new PassThrough();
 
     // Handle archive errors to prevent unhandled exceptions
@@ -2070,52 +2101,47 @@ export class TrustAccessService {
     const usedFilenames = new Set<string>();
 
     const getUniqueFilename = (baseName: string): string => {
-      let filename = this.toSafeFilename(baseName);
+      const filename = this.toSafeFilename(baseName);
       let counter = 1;
       let finalName = filename;
-      
+
       while (usedFilenames.has(finalName)) {
         finalName = `${filename}_${counter}`;
         counter++;
       }
-      
+
       usedFilenames.add(finalName);
       return `${finalName}.pdf`;
     };
 
-    // Process each policy individually
-    for (const policy of policies) {
+    // Process policies in parallel for better performance
+    const processPolicyForZip = async (policy: (typeof policies)[0]) => {
       const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
       let policyPdfBuffer: Buffer;
 
       if (hasUploadedPdf) {
         try {
-          // Use uploaded PDF
           const rawBuffer = await this.attachmentsService.getObjectBuffer(
             policy.pdfUrl!,
           );
           policyPdfBuffer = Buffer.from(rawBuffer);
         } catch (error) {
-          // Fall back to rendering from content
           console.warn(
             `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
             error,
           );
-          const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
             [{ name: policy.name, content: policy.content }],
             undefined,
             grant.accessRequest.organization.primaryColor,
           );
-          policyPdfBuffer = renderedBuffer;
         }
       } else {
-        // Render from content
-        const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
           [{ name: policy.name, content: policy.content }],
           undefined,
           grant.accessRequest.organization.primaryColor,
         );
-        policyPdfBuffer = renderedBuffer;
       }
 
       // Watermark the PDF
@@ -2129,9 +2155,18 @@ export class TrustAccessService {
         },
       );
 
-      // Add to ZIP with safe filename
-      const filename = getUniqueFilename(policy.name);
-      archive.append(watermarkedPdf, { name: filename });
+      return { name: policy.name, buffer: watermarkedPdf };
+    };
+
+    // Process all policies in parallel
+    const processedPolicies = await Promise.all(
+      policies.map(processPolicyForZip),
+    );
+
+    // Add to archive sequentially (archive.append must be sequential)
+    for (const { name, buffer } of processedPolicies) {
+      const filename = getUniqueFilename(name);
+      archive.append(buffer, { name: filename });
     }
 
     // Finalize the archive
@@ -2145,18 +2180,24 @@ export class TrustAccessService {
     const zipBuffer = Buffer.concat(chunks);
 
     // Upload ZIP to S3
-    const timestamp = Date.now();
+    const safeOrgName = this.toSafeFilename(organizationName);
+    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const downloadFilename = `${safeOrgName}_policies_${dateStr}.zip`;
     const zipKey = await this.attachmentsService.uploadToS3(
       zipBuffer,
-      `policies-${organizationName.replace(/[^a-z0-9]/gi, '_')}-${timestamp}.zip`,
+      downloadFilename,
       'application/zip',
       grant.accessRequest.organizationId,
       'trust_policy_downloads',
       `${grant.id}`,
     );
 
+    // Use the method that sets Content-Disposition for a clean download filename
     const downloadUrl =
-      await this.attachmentsService.getPresignedDownloadUrl(zipKey);
+      await this.attachmentsService.getPresignedDownloadUrlWithFilename(
+        zipKey,
+        downloadFilename,
+      );
 
     return {
       name: `${organizationName} - All Policies (ZIP)`,

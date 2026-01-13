@@ -17,23 +17,33 @@ type FrameworkRule = {
 const FRAMEWORK_RULES: FrameworkRule[] = [
   {
     match: /\bsoc\s*2\b/i,
-    checks: ['Review their SOC 2 report (Type I / Type II) and note any exceptions.'],
+    checks: [
+      'Review their SOC 2 report (Type I / Type II) and note any exceptions.',
+    ],
   },
   {
     match: /\biso\s*27001\b/i,
-    checks: ['Review their ISO 27001 certificate and scope/SoA (if available).'],
+    checks: [
+      'Review their ISO 27001 certificate and scope/SoA (if available).',
+    ],
   },
   {
     match: /\bgdpr\b/i,
-    checks: ['Check for a DPA (Data Processing Agreement) and confirm GDPR commitments.'],
+    checks: [
+      'Check for a DPA (Data Processing Agreement) and confirm GDPR commitments.',
+    ],
   },
   {
     match: /\bhipaa\b/i,
-    checks: ['If PHI is involved, confirm whether they offer a BAA and required safeguards.'],
+    checks: [
+      'If PHI is involved, confirm whether they offer a BAA and required safeguards.',
+    ],
   },
   {
     match: /\bpci\b|\bpci\s*dss\b/i,
-    checks: ['If payment data is involved, confirm PCI DSS compliance / attestation.'],
+    checks: [
+      'If payment data is involved, confirm PCI DSS compliance / attestation.',
+    ],
   },
 ];
 
@@ -75,7 +85,9 @@ export function buildFrameworkChecklist(frameworks: OrgFramework[]): string[] {
       .filter(Boolean)
       .join(', ');
     if (frameworkList) {
-      return [`Review vendor documentation relevant to your frameworks: ${frameworkList}.`];
+      return [
+        `Review vendor documentation relevant to your frameworks: ${frameworkList}.`,
+      ];
     }
   }
 

@@ -42,5 +42,3 @@ export class InternalTokenGuard implements CanActivate {
     return true;
   }
 }
-
-

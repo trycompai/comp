@@ -19,7 +19,11 @@ class InMemoryRedis {
     return record.value as T;
   }
 
-  async set(key: string, value: unknown, options?: { ex?: number }): Promise<'OK'> {
+  async set(
+    key: string,
+    value: unknown,
+    options?: { ex?: number },
+  ): Promise<'OK'> {
     const expiresAt = options?.ex ? Date.now() + options.ex * 1000 : undefined;
     this.storage.set(key, { value, expiresAt });
     return 'OK';
@@ -32,7 +36,8 @@ class InMemoryRedis {
 }
 
 const hasUpstashConfig =
-  !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+  !!process.env.UPSTASH_REDIS_REST_URL &&
+  !!process.env.UPSTASH_REDIS_REST_TOKEN;
 
 export const assistantChatRedisClient: Pick<Redis, 'get' | 'set' | 'del'> =
   hasUpstashConfig
@@ -41,5 +46,3 @@ export const assistantChatRedisClient: Pick<Redis, 'get' | 'set' | 'del'> =
         token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       })
     : (new InMemoryRedis() as unknown as Pick<Redis, 'get' | 'set' | 'del'>);
-
-

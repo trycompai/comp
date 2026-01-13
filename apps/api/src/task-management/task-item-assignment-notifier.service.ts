@@ -183,9 +183,9 @@ export class TaskItemAssignmentNotifierService {
           },
         });
 
-      this.logger.log(
-        `[NOVU] Assignment in-app notification sent to ${assigneeUser.id} for task "${taskTitle}"`,
-      );
+        this.logger.log(
+          `[NOVU] Assignment in-app notification sent to ${assigneeUser.id} for task "${taskTitle}"`,
+        );
       } catch (error) {
         this.logger.error(
           `[NOVU] Failed to send assignment in-app notification to ${assigneeUser.id}:`,

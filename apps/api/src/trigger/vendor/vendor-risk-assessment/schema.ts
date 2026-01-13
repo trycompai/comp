@@ -2,11 +2,26 @@ import { z } from 'zod';
 
 export const firecrawlVendorDataSchema = z.object({
   company_description: z.string().optional().nullable(),
-  privacy_policy_url: z.union([z.string().url(), z.literal('')]).optional().nullable(),
-  terms_of_service_url: z.union([z.string().url(), z.literal('')]).optional().nullable(),
-  security_overview_url: z.union([z.string().url(), z.literal('')]).optional().nullable(),
-  trust_portal_url: z.union([z.string().url(), z.literal('')]).optional().nullable(),
-  soc2_report_url: z.union([z.string().url(), z.literal('')]).optional().nullable(),
+  privacy_policy_url: z
+    .union([z.string().url(), z.literal('')])
+    .optional()
+    .nullable(),
+  terms_of_service_url: z
+    .union([z.string().url(), z.literal('')])
+    .optional()
+    .nullable(),
+  security_overview_url: z
+    .union([z.string().url(), z.literal('')])
+    .optional()
+    .nullable(),
+  trust_portal_url: z
+    .union([z.string().url(), z.literal('')])
+    .optional()
+    .nullable(),
+  soc2_report_url: z
+    .union([z.string().url(), z.literal('')])
+    .optional()
+    .nullable(),
   certified_security_frameworks: z.array(z.string()).optional().nullable(),
 });
 
@@ -28,5 +43,3 @@ export const vendorRiskAssessmentPayloadSchema = z.object({
 export type VendorRiskAssessmentPayload = z.infer<
   typeof vendorRiskAssessmentPayloadSchema
 >;
-
-
