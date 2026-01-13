@@ -9,5 +9,3 @@ import { AssistantChatService } from './assistant-chat.service';
   providers: [AssistantChatService],
 })
 export class AssistantChatModule {}
-
-

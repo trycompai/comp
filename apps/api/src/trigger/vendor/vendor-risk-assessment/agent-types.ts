@@ -17,7 +17,10 @@ export type VendorRiskAssessmentLink = {
   url: string;
 };
 
-export type VendorRiskAssessmentNewsSentiment = 'positive' | 'negative' | 'neutral';
+export type VendorRiskAssessmentNewsSentiment =
+  | 'positive'
+  | 'negative'
+  | 'neutral';
 
 export type VendorRiskAssessmentNewsItem = {
   date: string;
@@ -39,5 +42,3 @@ export type VendorRiskAssessmentDataV1 = {
   links?: VendorRiskAssessmentLink[] | null;
   news?: VendorRiskAssessmentNewsItem[] | null;
 };
-
-

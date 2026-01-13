@@ -35,7 +35,9 @@ export async function resolveTaskCreatorAndAssignee(params: {
 
   const creatorMemberId = creatorMember?.id ?? adminMember?.id ?? anyMember?.id;
   if (!creatorMemberId) {
-    throw new Error(`No active members found for organization ${organizationId}`);
+    throw new Error(
+      `No active members found for organization ${organizationId}`,
+    );
   }
 
   return {
@@ -43,5 +45,3 @@ export async function resolveTaskCreatorAndAssignee(params: {
     assigneeMemberId: creatorMember?.id ?? adminMember?.id ?? null,
   };
 }
-
-

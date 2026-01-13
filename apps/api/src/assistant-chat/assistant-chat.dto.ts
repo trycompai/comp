@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsIn, IsNumber, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AssistantChatMessageDto {
@@ -27,5 +33,3 @@ export class SaveAssistantChatHistoryDto {
   @Type(() => AssistantChatMessageDto)
   messages!: AssistantChatMessageDto[];
 }
-
-

@@ -34,7 +34,8 @@ export class TriggerVendorRiskAssessmentBatchDto {
   organizationId: string;
 
   @ApiProperty({
-    description: 'If false, skips Firecrawl research (cheaper). Defaults to true.',
+    description:
+      'If false, skips Firecrawl research (cheaper). Defaults to true.',
     required: false,
     default: true,
   })
@@ -51,5 +52,3 @@ export class TriggerVendorRiskAssessmentBatchDto {
   @Type(() => TriggerVendorRiskAssessmentVendorDto)
   vendors: TriggerVendorRiskAssessmentVendorDto[];
 }
-
-

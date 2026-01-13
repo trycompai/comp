@@ -41,22 +41,33 @@ export class PolicyPdfRendererService {
   /**
    * Get accent color from organization or use default
    */
-  private getAccentColor(primaryColor: string | null | undefined): { r: number; g: number; b: number } {
+  private getAccentColor(primaryColor: string | null | undefined): {
+    r: number;
+    g: number;
+    b: number;
+  } {
     // Default project primary color: dark teal/green (hsl(165, 100%, 15%) = #004D3D)
     const defaultColor = { r: 0, g: 77, b: 61 };
-    
+
     if (!primaryColor) {
       return defaultColor;
     }
-    
+
     const color = this.hexToRgb(primaryColor);
-    
+
     // Check for NaN values (parseInt returns NaN for invalid hex)
-    if (Number.isNaN(color.r) || Number.isNaN(color.g) || Number.isNaN(color.b)) {
-      console.warn('Invalid primary color format, using default:', primaryColor);
+    if (
+      Number.isNaN(color.r) ||
+      Number.isNaN(color.g) ||
+      Number.isNaN(color.b)
+    ) {
+      console.warn(
+        'Invalid primary color format, using default:',
+        primaryColor,
+      );
       return defaultColor;
     }
-    
+
     return color;
   }
 
@@ -417,7 +428,7 @@ export class PolicyPdfRendererService {
     // Add organization header if provided
     if (organizationName) {
       const cleanOrgName = this.cleanTextForPDF(organizationName);
-      
+
       // Draw colored accent line at the top
       config.doc.setLineWidth(3);
       config.doc.setDrawColor(accentColor.r, accentColor.g, accentColor.b);
@@ -427,7 +438,7 @@ export class PolicyPdfRendererService {
         config.pageWidth - config.margin,
         config.yPosition,
       );
-      
+
       config.yPosition += config.lineHeight * 2.5;
 
       // Organization name - large and bold
@@ -435,7 +446,7 @@ export class PolicyPdfRendererService {
       config.doc.setFont('helvetica', 'bold');
       config.doc.setTextColor(0, 0, 0);
       config.doc.text(cleanOrgName, config.margin, config.yPosition);
-      
+
       config.yPosition += config.lineHeight * 2;
 
       // "All Policies" subtitle - simple and clean
@@ -443,25 +454,21 @@ export class PolicyPdfRendererService {
       config.doc.setFont('helvetica', 'normal');
       config.doc.setTextColor(100, 100, 100); // Light gray
       config.doc.text('All Policies', config.margin, config.yPosition);
-      
+
       config.yPosition += config.lineHeight * 2;
 
       // Metadata - minimal styling
       config.doc.setFontSize(9);
       config.doc.setFont('helvetica', 'normal');
       config.doc.setTextColor(140, 140, 140); // Lighter gray
-      
+
       const generatedDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
-      
-      config.doc.text(
-        `${generatedDate}`,
-        config.margin,
-        config.yPosition,
-      );
+
+      config.doc.text(`${generatedDate}`, config.margin, config.yPosition);
 
       config.yPosition += config.lineHeight * 1.2;
 
@@ -487,13 +494,7 @@ export class PolicyPdfRendererService {
       if (policy.name) {
         // Draw accent bar with organization's primary color
         config.doc.setFillColor(accentColor.r, accentColor.g, accentColor.b);
-        config.doc.rect(
-          config.margin,
-          config.yPosition,
-          4,
-          12,
-          'F',
-        );
+        config.doc.rect(config.margin, config.yPosition, 4, 12, 'F');
 
         // Add "POLICY:" label and title
         config.doc.setFontSize(14);

@@ -89,5 +89,3 @@ export class DeleteTrustDocumentDto {
   @IsString()
   organizationId!: string;
 }
-
-

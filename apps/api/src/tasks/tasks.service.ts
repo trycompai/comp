@@ -139,7 +139,9 @@ export class TasksService {
       });
 
       if (result.count === 0) {
-        throw new BadRequestException('No tasks were updated. Check task IDs or organization access.');
+        throw new BadRequestException(
+          'No tasks were updated. Check task IDs or organization access.',
+        );
       }
 
       return { updatedCount: result.count };

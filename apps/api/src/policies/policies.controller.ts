@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -67,6 +68,40 @@ export class PoliciesController {
 
     return {
       data: policies,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get('download-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download all published policies as a single PDF',
+    description:
+      'Generates a PDF bundle containing all published policies with organization branding and returns a signed download URL',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Signed URL for PDF bundle returned',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No published policies found',
+  })
+  async downloadAllPolicies(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result =
+      await this.policiesService.downloadAllPoliciesPdf(organizationId);
+
+    return {
+      ...result,
       authType: authContext.authType,
       ...(authContext.userId && {
         authenticatedUser: {

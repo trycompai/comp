@@ -385,6 +385,25 @@ export class AttachmentsService {
     return this.generateSignedUrl(s3Key);
   }
 
+  /**
+   * Generate presigned download URL with a custom download filename
+   */
+  async getPresignedDownloadUrlWithFilename(
+    s3Key: string,
+    downloadFilename: string,
+  ): Promise<string> {
+    const sanitizedFilename = this.sanitizeHeaderValue(downloadFilename);
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      ResponseContentDisposition: `attachment; filename="${sanitizedFilename}"`,
+    });
+
+    return getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: this.SIGNED_URL_EXPIRY,
+    });
+  }
+
   async getObjectBuffer(s3Key: string): Promise<Buffer> {
     const getCommand = new GetObjectCommand({
       Bucket: this.bucketName,
