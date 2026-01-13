@@ -57,7 +57,7 @@ export function PolicyPageTabs({
       <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} />
 
       <Tabs defaultValue="overview">
-        <Stack gap="md">
+        <Stack gap="lg">
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>

@@ -3,7 +3,9 @@
 import type { Policy, PolicyStatus } from '@db';
 import {
   HStack,
-  Input,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
   Select,
   SelectContent,
   SelectItem,
@@ -87,24 +89,34 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
     }
   };
 
+  const statusLabel = STATUS_OPTIONS.find((opt) => opt.value === statusFilter)?.label ?? 'Status';
+
+  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  const departmentLabel =
+    departmentFilter === 'all' ? 'All Departments' : capitalize(departmentFilter);
+
   return (
     <Stack gap="md">
       <HStack gap="sm" align="end">
         <div style={{ flex: 1, maxWidth: 300 }}>
-          <div className="relative">
-            <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
               placeholder="Search policies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: 32 }}
             />
-          </div>
+          </InputGroup>
         </div>
         <div style={{ width: 160 }}>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter((v ?? 'all') as PolicyStatus | 'all')}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter((v ?? 'all') as PolicyStatus | 'all')}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Status">{statusLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((opt) => (
@@ -118,13 +130,13 @@ export function PolicyFilters({ policies }: PolicyFiltersProps) {
         <div style={{ width: 160 }}>
           <Select value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v ?? 'all')}>
             <SelectTrigger>
-              <SelectValue placeholder="Department" />
+              <SelectValue placeholder="Department">{departmentLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Departments</SelectItem>
               {departments.map((dept) => (
                 <SelectItem key={dept} value={dept}>
-                  {dept}
+                  {capitalize(dept)}
                 </SelectItem>
               ))}
             </SelectContent>

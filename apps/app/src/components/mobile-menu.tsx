@@ -50,7 +50,7 @@ export function MobileMenu({
           <OrganizationSwitcher
             organizations={organizations}
             organization={currentOrganization}
-            isCollapsed={false}
+            modal={false}
           />
           <MainMenu
             organizationId={organizationId}

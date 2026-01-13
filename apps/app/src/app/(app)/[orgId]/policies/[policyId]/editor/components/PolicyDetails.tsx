@@ -9,16 +9,14 @@ import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import {
   Button,
-  Card,
-  CardContent,
   Grid,
   HStack,
+  Section,
   Stack,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  Text,
 } from '@trycompai/design-system';
 import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
@@ -260,14 +258,11 @@ export function PolicyContentManager({
       </Tabs>
 
       {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
-        <Card title="Proposed Changes" width="full">
-          <Stack gap="md">
-            <DiffViewer patch={diffPatch} />
-            <Text size="sm" variant="muted">
-              The AI has proposed updates to this policy. Review the changes above and click "Apply
-              Changes" to accept them.
-            </Text>
-            <HStack justify="end" gap="sm">
+        <Section
+          title="Proposed Changes"
+          description="The AI has proposed updates to this policy. Review the changes above and click 'Apply Changes' to accept them."
+          actions={
+            <HStack gap="sm">
               <Button
                 variant="ghost"
                 size="sm"
@@ -286,8 +281,10 @@ export function PolicyContentManager({
                 Apply Changes
               </Button>
             </HStack>
-          </Stack>
-        </Card>
+          }
+        >
+          <DiffViewer patch={diffPatch} />
+        </Section>
       )}
     </Stack>
   );
@@ -380,14 +377,12 @@ function PolicyEditorWrapper({
   }
 
   return (
-    <Card width="full">
-      <CardContent>
-        <PolicyEditor
-          content={normalizedContent}
-          onSave={savePolicy}
-          readOnly={isPendingApproval}
-        />
-      </CardContent>
-    </Card>
+    <Section>
+      <PolicyEditor
+        content={normalizedContent}
+        onSave={savePolicy}
+        readOnly={isPendingApproval}
+      />
+    </Section>
   );
 }

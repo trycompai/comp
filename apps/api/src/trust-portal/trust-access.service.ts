@@ -1331,7 +1331,7 @@ export class TrustAccessService {
         lastPublishedAt: true,
         updatedAt: true,
       },
-      orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
+      orderBy: { name: 'desc' },
     });
 
     return policies;

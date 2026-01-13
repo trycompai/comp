@@ -32,13 +32,13 @@ export default async function PolicyDetails({
     flags['is-ai-policy-assistant-enabled'] === 'true';
 
   return (
-    <PageLayout container={false} padding="none">
+    <PageLayout>
       <Breadcrumb
         items={[
           {
             label: 'Policies',
-            href: `/${orgId}/policies/all`,
-            props: { render: <Link href={`/${orgId}/policies/all`} /> },
+            href: `/${orgId}/policies`,
+            props: { render: <Link href={`/${orgId}/policies`} /> },
           },
           { label: policy?.name ?? 'Policy', isCurrent: true },
         ]}

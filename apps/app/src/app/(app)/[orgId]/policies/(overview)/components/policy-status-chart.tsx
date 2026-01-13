@@ -49,9 +49,10 @@ const StatusTooltip = ({ active, payload }: any) => {
 };
 
 export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
-  const chartData = React.useMemo(() => {
+  // All statuses for the legend (always show all)
+  const allStatuses = React.useMemo(() => {
     if (!data) return [];
-    const items = [
+    return [
       {
         name: 'Published',
         value: data.publishedPolicies,
@@ -73,8 +74,12 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
         fill: CHART_COLORS.archived,
       },
     ];
-    return items.filter((item) => item.value > 0);
   }, [data]);
+
+  // Only non-zero values for the pie chart
+  const chartData = React.useMemo(() => {
+    return allStatuses.filter((item) => item.value > 0);
+  }, [allStatuses]);
 
   // Calculate most common status
   const mostCommonStatus = React.useMemo(() => {
@@ -104,15 +109,15 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
   return (
     <Card title="Policy by Status" width="full">
       <Stack gap="md">
-        <ChartContainer config={chartConfig} className="mx-auto h-[300px] max-w-[250px]">
+        <ChartContainer config={chartConfig} className="mx-auto h-[200px] max-w-[175px]">
           <PieChart
-            width={250}
-            height={300}
+            width={175}
+            height={200}
             margin={{
-              top: 16,
-              right: 16,
-              bottom: 16,
-              left: 16,
+              top: 12,
+              right: 12,
+              bottom: 12,
+              left: 12,
             }}
           >
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
@@ -120,8 +125,8 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
               data={chartData}
               dataKey="value"
               nameKey="name"
-              innerRadius={60}
-              outerRadius={80}
+              innerRadius={42}
+              outerRadius={56}
               paddingAngle={2}
               strokeWidth={3}
               stroke="hsl(var(--background))"
@@ -143,14 +148,14 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
                           <tspan
                             x={viewBox.cx}
                             y={viewBox.cy}
-                            className="fill-foreground text-3xl font-bold"
+                            className="fill-foreground text-xl font-bold"
                           >
                             {data.totalPolicies}
                           </tspan>
                           <tspan
                             x={viewBox.cx}
-                            y={(viewBox.cy || 0) + 26}
-                            className="fill-muted-foreground text-xs"
+                            y={(viewBox.cy || 0) + 18}
+                            className="fill-muted-foreground text-[10px]"
                           >
                             Policies
                           </tspan>
@@ -158,7 +163,7 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
                         <circle
                           cx={viewBox.cx}
                           cy={viewBox.cy}
-                          r={54}
+                          r={38}
                           fill="none"
                           stroke="hsl(var(--border))"
                           strokeWidth={1}
@@ -174,7 +179,7 @@ export function PolicyStatusChart({ data }: PolicyStatusChartProps) {
           </PieChart>
         </ChartContainer>
         <HStack justify="center" gap="md">
-          {chartData.map((entry) => (
+          {allStatuses.map((entry) => (
             <HStack key={entry.name} gap="xs" align="center">
               <div className="h-3 w-3" style={{ backgroundColor: entry.fill }} />
               <Text size="xs" weight="medium">

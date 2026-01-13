@@ -58,12 +58,12 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
   if (!data || data.length === 0) {
     return (
       <Card title="Policies by Assignee" width="full">
-        <Stack gap="md" align="center">
+        <div className="flex h-[175px] flex-col items-center justify-center gap-3">
           <UserMultiple size={40} className="text-muted-foreground opacity-30" />
           <Text size="sm" variant="muted">
             No policies assigned to users
           </Text>
-        </Stack>
+        </div>
       </Card>
     );
   }
@@ -107,13 +107,13 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
           </Text>
         </HStack>
         <ChartContainer config={chartConfig}>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={175}>
             <BarChart
               accessibilityLayer
               data={chartData}
               layout="vertical"
-              barSize={24}
-              barGap={4}
+              barSize={17}
+              barGap={3}
               margin={{
                 top: 0,
                 right: 0,

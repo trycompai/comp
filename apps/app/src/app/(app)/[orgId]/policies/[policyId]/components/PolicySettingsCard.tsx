@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Member, Policy, User } from '@db';
+import { Section } from '@trycompai/design-system';
 import { UpdatePolicyOverview } from './UpdatePolicyOverview';
 
 interface PolicySettingsCardProps {
@@ -20,17 +20,12 @@ export function PolicySettingsCard({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Policy Settings</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <UpdatePolicyOverview
-          isPendingApproval={isPendingApproval}
-          policy={policy}
-          assignees={assignees}
-        />
-      </CardContent>
-    </Card>
+    <Section title="Policy Settings">
+      <UpdatePolicyOverview
+        isPendingApproval={isPendingApproval}
+        policy={policy}
+        assignees={assignees}
+      />
+    </Section>
   );
 }

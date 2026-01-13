@@ -1,7 +1,7 @@
 'use client';
 
 import { useComments } from '@/hooks/use-comments-api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { CommentEntityType } from '@db';
 import { useParams } from 'next/navigation';
 import { CommentForm } from './CommentForm';
@@ -150,7 +150,6 @@ export const Comments = ({
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>{defaultDescription}</CardDescription>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

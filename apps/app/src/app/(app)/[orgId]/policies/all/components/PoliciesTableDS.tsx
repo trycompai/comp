@@ -21,6 +21,8 @@ import { usePolicyTailoringStatus, type PolicyTailoringStatus } from './policy-t
 
 type SortColumn = 'name' | 'status' | 'updatedAt';
 
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
 interface PoliciesTableDSProps {
   policies: Policy[];
   sortColumn?: SortColumn;
@@ -152,7 +154,7 @@ function PolicyRow({ policy, orgId, onRowClick }: PolicyRowProps) {
         <PolicyStatusCell policy={policy} status={status} isTailoring={isTailoring} />
       </TableCell>
       <TableCell>
-        <Badge variant="secondary">{policy.department}</Badge>
+        <Badge variant="secondary">{policy.department ? capitalize(policy.department) : '—'}</Badge>
       </TableCell>
       <TableCell>
         <Text size="sm" variant="muted">

@@ -1,44 +1,48 @@
-import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { Grid, PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { Suspense } from 'react';
-import { PolicyTabs } from '../components/PolicyTabs';
+import { PolicyTailoringProvider } from '../all/components/policy-tailoring-context';
+import { PolicyFilters } from '../all/components/PolicyFilters';
+import { PolicyPageActions } from '../all/components/PolicyPageActions';
 import { PolicyAssigneeChart } from './components/policy-assignee-chart';
 import { PolicyStatusChart } from './components/policy-status-chart';
 import Loading from './loading';
 
-export default async function PoliciesOverview() {
-  const overview = await getPoliciesOverview();
+interface PoliciesPageProps {
+  params: Promise<{ orgId: string }>;
+}
+
+export default async function PoliciesPage({ params }: PoliciesPageProps) {
+  const { orgId } = await params;
+
+  const [overview, policies] = await Promise.all([
+    getPoliciesOverview(orgId),
+    db.policy.findMany({
+      where: { organizationId: orgId, isArchived: false },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
 
   return (
-    <PageLayout container={false} padding="none">
+    <PageLayout>
       <Stack gap="md">
-        <PageHeader title="Policies" />
-        <PolicyTabs />
+        <PageHeader title="Policies" actions={<PolicyPageActions policies={policies} />} />
         <Suspense fallback={<Loading />}>
           <Grid cols={{ base: '1', lg: '2' }} gap="4">
             <PolicyStatusChart data={overview} />
             <PolicyAssigneeChart data={overview?.assigneeData} />
           </Grid>
         </Suspense>
+        <PolicyTailoringProvider statuses={{}}>
+          <PolicyFilters policies={policies} />
+        </PolicyTailoringProvider>
       </Stack>
     </PageLayout>
   );
 }
 
-const getPoliciesOverview = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.session?.activeOrganizationId) {
-    return null;
-  }
-
-  const organizationId = session.session.activeOrganizationId;
-
+const getPoliciesOverview = async (organizationId: string) => {
   return await db.$transaction(async (tx) => {
     const [
       totalPolicies,

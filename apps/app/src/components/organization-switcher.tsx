@@ -1,45 +1,36 @@
 'use client';
 
 import { changeOrganizationAction } from '@/actions/change-organization';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
 import type { Organization } from '@db';
-import { Add, Checkmark, ChevronDown } from '@carbon/icons-react';
+import { OrganizationSelector } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 interface OrganizationSwitcherProps {
   organizations: Organization[];
   organization: Organization | null;
   isCollapsed?: boolean;
   logoUrls?: Record<string, string>;
+  modal?: boolean;
 }
 
 const DOT_COLORS = [
-  'bg-sky-500',
-  'bg-blue-500',
-  'bg-indigo-500',
-  'bg-purple-500',
-  'bg-fuchsia-500',
-  'bg-pink-500',
-  'bg-rose-500',
-  'bg-red-500',
-  'bg-orange-500',
-  'bg-amber-500',
-  'bg-yellow-500',
-  'bg-lime-500',
-  'bg-green-500',
-  'bg-emerald-500',
-  'bg-teal-500',
-  'bg-cyan-500',
+  '#0ea5e9', // sky-500
+  '#3b82f6', // blue-500
+  '#6366f1', // indigo-500
+  '#a855f7', // purple-500
+  '#d946ef', // fuchsia-500
+  '#ec4899', // pink-500
+  '#f43f5e', // rose-500
+  '#ef4444', // red-500
+  '#f97316', // orange-500
+  '#f59e0b', // amber-500
+  '#eab308', // yellow-500
+  '#84cc16', // lime-500
+  '#22c55e', // green-500
+  '#10b981', // emerald-500
+  '#14b8a6', // teal-500
+  '#06b6d4', // cyan-500
 ];
 
 function getOrgColor(name: string | null | undefined): string {
@@ -51,11 +42,9 @@ function getOrgColor(name: string | null | undefined): string {
 export function OrganizationSwitcher({
   organizations,
   organization,
+  modal = true,
 }: OrganizationSwitcherProps) {
   const router = useRouter();
-  const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);
-
-  const sortedOrganizations = [...organizations].sort((a, b) => a.name.localeCompare(b.name));
 
   const { execute, status } = useAction(changeOrganizationAction, {
     onSuccess: (result) => {
@@ -63,77 +52,33 @@ export function OrganizationSwitcher({
       if (orgId) {
         router.push(`/${orgId}/`);
       }
-      setPendingOrgId(null);
-    },
-    onExecute: (args) => {
-      setPendingOrgId(args.input.organizationId);
-    },
-    onError: () => {
-      setPendingOrgId(null);
     },
   });
 
-  const orgNameCounts = organizations.reduce(
-    (acc, org) => {
-      if (org.name) {
-        acc[org.name] = (acc[org.name] || 0) + 1;
-      }
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  const getDisplayName = (org: Organization) => {
-    if (!org.name) return `Org (${org.id.substring(0, 4)})`;
-    if (orgNameCounts[org.name] > 1) {
-      return `${org.name} (${org.id.substring(0, 4)})`;
-    }
-    return org.name;
-  };
-
-  const handleOrgChange = (org: Organization) => {
-    if (org.id !== organization?.id) {
-      execute({ organizationId: org.id });
+  const handleOrgChange = (orgId: string) => {
+    if (orgId !== organization?.id) {
+      execute({ organizationId: orgId });
     }
   };
+
+  // Transform organizations to DS OrganizationSelector format
+  const selectorOrgs = organizations.map((org) => ({
+    id: org.id,
+    name: org.name,
+    color: getOrgColor(org.name),
+  }));
 
   const isExecuting = status === 'executing';
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-background/50"
-        disabled={isExecuting}
-      >
-        {organization?.name || 'Select Organization'}
-        <ChevronDown size={12} className="text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" style={{ minWidth: '220px' }}>
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-          {sortedOrganizations.map((org) => (
-            <DropdownMenuItem
-              key={org.id}
-              onClick={() => handleOrgChange(org)}
-              disabled={isExecuting && pendingOrgId === org.id}
-            >
-              <div className={`size-2 rounded-full ${getOrgColor(org.name)}`} />
-              <span className="flex-1">{getDisplayName(org)}</span>
-              {organization?.id === org.id && (
-                <Checkmark size={16} className="text-primary" />
-              )}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => router.push('/setup?intent=create-additional')}
-          disabled={isExecuting}
-        >
-          <Add size={16} />
-          Create new organization
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <OrganizationSelector
+      organizations={selectorOrgs}
+      value={organization?.id}
+      onValueChange={handleOrgChange}
+      loading={isExecuting}
+      modal={modal}
+      placeholder="Select organization"
+      hotkey="o"
+    />
   );
 }

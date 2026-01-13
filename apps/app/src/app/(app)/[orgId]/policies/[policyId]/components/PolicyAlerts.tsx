@@ -3,16 +3,22 @@
 import { acceptRequestedPolicyChangesAction } from '@/actions/policies/accept-requested-policy-changes';
 import { denyRequestedPolicyChangesAction } from '@/actions/policies/deny-requested-policy-changes';
 import { authClient } from '@/utils/auth-client';
-import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
-import { Button } from '@comp/ui/button';
 import type { Member, Policy, User } from '@db';
-import { Archive, CheckmarkFilled, CloseFilled, Renew } from '@trycompai/design-system/icons';
+import {
+  ApprovalBanner,
+  Button,
+  HStack,
+  Label,
+  Stack,
+  Text,
+  Textarea,
+} from '@trycompai/design-system';
+import { Archive, Renew, Time } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useRef } from 'react';
 import { toast } from 'sonner';
-import { PolicyActionDialog } from './PolicyActionDialog';
 
 interface PolicyAlertsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
@@ -25,8 +31,8 @@ export function PolicyAlerts({ policy, isPendingApproval }: PolicyAlertsProps) {
   const searchParams = useSearchParams();
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
 
-  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
-  const [denyDialogOpen, setDenyDialogOpen] = useState(false);
+  const approveCommentRef = useRef<HTMLTextAreaElement>(null);
+  const rejectCommentRef = useRef<HTMLTextAreaElement>(null);
 
   const denyPolicyChanges = useAction(denyRequestedPolicyChangesAction, {
     onSuccess: () => {
@@ -48,8 +54,9 @@ export function PolicyAlerts({ policy, isPendingApproval }: PolicyAlertsProps) {
     },
   });
 
-  const handleApprove = (comment?: string) => {
+  const handleApprove = () => {
     if (policy?.id && policy.approverId) {
+      const comment = approveCommentRef.current?.value?.trim() || undefined;
       acceptPolicyChanges.execute({
         id: policy.id,
         approverId: policy.approverId,
@@ -59,8 +66,9 @@ export function PolicyAlerts({ policy, isPendingApproval }: PolicyAlertsProps) {
     }
   };
 
-  const handleDeny = (comment?: string) => {
+  const handleDeny = () => {
     if (policy?.id && policy.approverId) {
+      const comment = rejectCommentRef.current?.value?.trim() || undefined;
       denyPolicyChanges.execute({
         id: policy.id,
         approverId: policy.approverId,
@@ -87,84 +95,101 @@ export function PolicyAlerts({ policy, isPendingApproval }: PolicyAlertsProps) {
     return null;
   }
 
+  const approverName = `${policy?.approver?.user?.name} (${policy?.approver?.user?.email})`;
+
   return (
-    <>
-      {showPendingAlert && (
-        <Alert variant="default">
-          <CloseFilled size={16} />
-          <AlertTitle>
-            {canCurrentUserApprove ? 'Action Required by You' : 'Pending Approval'}
-          </AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <div>
-              This policy is awaiting approval from{' '}
-              <span className="font-semibold">
-                {policy.approverId === activeMember?.id
-                  ? 'you'
-                  : `${policy?.approver?.user?.name} (${policy?.approver?.user?.email})`}
-              </span>
-              .
-            </div>
-            {canCurrentUserApprove &&
-              ' Please review the details and either approve or reject the changes.'}
-            {!canCurrentUserApprove && ' All fields are disabled until the policy is actioned.'}
-            {isPendingApproval && policy.approverId && canCurrentUserApprove && (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => setDenyDialogOpen(true)}>
-                  <CloseFilled size={16} />
-                  Reject Changes
-                </Button>
-                <Button onClick={() => setApproveDialogOpen(true)}>
-                  <CheckmarkFilled size={16} />
-                  Approve
-                </Button>
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
+    <Stack gap="md">
+      {showPendingAlert && canCurrentUserApprove && (
+        <ApprovalBanner
+          variant="warning"
+          title="Your approval is required"
+          description="Review this policy and approve or reject the pending changes."
+          onApprove={handleApprove}
+          onReject={handleDeny}
+          approveLoading={acceptPolicyChanges.isPending}
+          rejectLoading={denyPolicyChanges.isPending}
+          approveConfirmation={{
+            title: 'Approve Policy Changes',
+            description: 'Are you sure you want to approve these policy changes?',
+            content: (
+              <Stack gap="2">
+                <Label htmlFor="approve-comment">Reason (optional)</Label>
+                <Textarea
+                  ref={approveCommentRef}
+                  id="approve-comment"
+                  size="full"
+                  placeholder="Add an optional comment explaining your decision..."
+                />
+              </Stack>
+            ),
+            confirmText: 'Approve',
+            cancelText: 'Cancel',
+          }}
+          rejectConfirmation={{
+            title: 'Deny Policy Changes',
+            description: 'Are you sure you want to deny these policy changes?',
+            content: (
+              <Stack gap="2">
+                <Label htmlFor="reject-comment">Reason (optional)</Label>
+                <Textarea
+                  ref={rejectCommentRef}
+                  id="reject-comment"
+                  size="full"
+                  placeholder="Add an optional comment explaining your decision..."
+                />
+              </Stack>
+            ),
+            confirmText: 'Deny',
+            cancelText: 'Cancel',
+          }}
+        />
+      )}
+
+      {showPendingAlert && !canCurrentUserApprove && (
+        <div className="rounded-lg border border-l-4 border-border border-l-muted-foreground/50 bg-background p-4">
+          <HStack gap="3" align="start">
+            <Text as="span" variant="muted">
+              <Time size={20} />
+            </Text>
+            <Stack gap="1">
+              <Text size="sm" weight="medium" leading="tight">
+                Pending approval
+              </Text>
+              <Text size="sm" variant="muted">
+                Waiting for {approverName} to review and approve this policy.
+              </Text>
+            </Stack>
+          </HStack>
+        </div>
       )}
 
       {showArchivedAlert && (
-        <Alert className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-2">
-            <Archive size={16} />
-            <div className="space-y-1">
-              <div className="font-medium">This policy is archived</div>
-              <AlertDescription>
-                Archived on {format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}
-              </AlertDescription>
-            </div>
-          </div>
-          <div className="shrink-0">
-            <Button size="sm" variant="outline" onClick={handleOpenArchiveSheet} className="gap-1">
-              <Renew size={12} /> Restore
+        <div className="rounded-lg border border-l-4 border-border border-l-muted-foreground/50 bg-background p-4">
+          <HStack gap="3" align="center" justify="between">
+            <HStack gap="3" align="start">
+              <Text as="span" variant="muted">
+                <Archive size={20} />
+              </Text>
+              <Stack gap="1">
+                <Text size="sm" weight="medium" leading="tight">
+                  This policy is archived
+                </Text>
+                <Text size="sm" variant="muted">
+                  Archived on {format(new Date(policy?.updatedAt ?? new Date()), 'PPP')}
+                </Text>
+              </Stack>
+            </HStack>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleOpenArchiveSheet}
+              iconLeft={<Renew size={12} />}
+            >
+              Restore
             </Button>
-          </div>
-        </Alert>
+          </HStack>
+        </div>
       )}
-
-      {/* Approval Dialog */}
-      <PolicyActionDialog
-        isOpen={approveDialogOpen}
-        onClose={() => setApproveDialogOpen(false)}
-        onConfirm={handleApprove}
-        title="Approve Policy Changes"
-        description="Are you sure you want to approve these policy changes? You can optionally add a comment that will be visible in the policy history."
-        confirmText="Approve"
-        confirmIcon={<CheckmarkFilled size={16} />}
-      />
-
-      {/* Denial Dialog */}
-      <PolicyActionDialog
-        isOpen={denyDialogOpen}
-        onClose={() => setDenyDialogOpen(false)}
-        onConfirm={handleDeny}
-        title="Deny Policy Changes"
-        description="Are you sure you want to deny these policy changes? You can optionally add a comment explaining your decision that will be visible in the policy history."
-        confirmText="Deny"
-        confirmIcon={<CloseFilled size={16} />}
-        confirmVariant="destructive"
-      />
-    </>
+    </Stack>
   );
 }
