@@ -3,8 +3,9 @@ model Task {
   id          String         @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
   title       String
   description String
-  status      TaskStatus     @default(todo)
-  frequency   TaskFrequency?
+  status           TaskStatus           @default(todo)
+  automationStatus TaskAutomationStatus @default(AUTOMATED)
+  frequency        TaskFrequency?
   department  Departments?   @default(none)
   order       Int            @default(0)
 
@@ -45,4 +46,9 @@ enum TaskFrequency {
   monthly
   quarterly
   yearly
+}
+
+enum TaskAutomationStatus {
+  AUTOMATED
+  MANUAL
 }
