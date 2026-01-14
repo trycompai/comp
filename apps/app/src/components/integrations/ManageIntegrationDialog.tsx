@@ -767,13 +767,15 @@ function ConfigurationContent({
 
 /**
  * Parse a stored value like "owner/repo:branch" into parts.
- * Handles trailing colons and empty branches.
+ * Handles trailing colons, empty branches, and non-string values.
  */
-const parseRepoBranch = (value: string): { repo: string; branch: string } => {
+const parseRepoBranch = (value: unknown): { repo: string; branch: string } => {
+  // Safely convert to string to handle corrupted/migrated data
+  const stringValue = String(value ?? '');
   // Remove trailing colon if present
-  const cleanValue = value.endsWith(':') ? value.slice(0, -1) : value;
+  const cleanValue = stringValue.endsWith(':') ? stringValue.slice(0, -1) : stringValue;
   const colonIndex = cleanValue.lastIndexOf(':');
-  
+
   if (colonIndex > 0 && colonIndex < cleanValue.length - 1) {
     return {
       repo: cleanValue.substring(0, colonIndex),

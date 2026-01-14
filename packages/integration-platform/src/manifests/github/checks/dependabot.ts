@@ -46,6 +46,21 @@ export const dependabotCheck: IntegrationCheck = {
           repos.push(repo);
         } catch {
           ctx.warn(`Could not fetch repo ${repoName}`);
+          // Emit a fail result so the user knows this repo wasn't checked
+          ctx.fail({
+            title: `Repository not found: ${repoName}`,
+            description: `Could not access repository "${repoName}". It may not exist or the integration lacks permission.`,
+            resourceType: 'repository',
+            resourceId: repoName,
+            severity: 'medium',
+            remediation: `Verify the repository name is correct (format: owner/repo) and that the GitHub integration has access to it.`,
+            evidence: {
+              [repoName]: {
+                error: 'Repository not accessible',
+                checked_at: new Date().toISOString(),
+              },
+            },
+          });
         }
       }
     } else {

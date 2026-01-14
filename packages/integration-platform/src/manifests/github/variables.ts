@@ -47,19 +47,23 @@ export const targetReposVariable: CheckVariable = {
  * Helper to parse a target_repos value into repo and branches.
  * Format: "owner/repo:branch1,branch2" or "owner/repo" (defaults to main)
  * Supports multiple comma-separated branches.
+ * Handles trailing colons and edge cases.
  */
 export const parseRepoBranches = (value: string): { repo: string; branches: string[] } => {
-  const colonIndex = value.lastIndexOf(':');
-  if (colonIndex > 0 && colonIndex < value.length - 1) {
-    const repo = value.substring(0, colonIndex);
-    const branchesStr = value.substring(colonIndex + 1);
+  // Remove trailing colon if present (handles "owner/repo:" edge case)
+  const cleanValue = value.endsWith(':') ? value.slice(0, -1) : value;
+  const colonIndex = cleanValue.lastIndexOf(':');
+
+  if (colonIndex > 0 && colonIndex < cleanValue.length - 1) {
+    const repo = cleanValue.substring(0, colonIndex);
+    const branchesStr = cleanValue.substring(colonIndex + 1);
     const branches = branchesStr
       .split(',')
       .map((b) => b.trim())
       .filter(Boolean);
     return { repo, branches: branches.length > 0 ? branches : ['main'] };
   }
-  return { repo: value, branches: ['main'] };
+  return { repo: cleanValue, branches: ['main'] };
 };
 
 /**
