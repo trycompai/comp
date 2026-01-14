@@ -61,6 +61,10 @@ export function OrganizationSwitcher({
     }
   };
 
+  const handleCreateOrganization = () => {
+    router.push('/setup?intent=create-additional');
+  };
+
   // Transform organizations to DS OrganizationSelector format
   const selectorOrgs = organizations.map((org) => ({
     id: org.id,
@@ -75,6 +79,8 @@ export function OrganizationSwitcher({
       organizations={selectorOrgs}
       value={organization?.id}
       onValueChange={handleOrgChange}
+      createLabel="Create organization"
+      onCreate={handleCreateOrganization}
       loading={isExecuting}
       modal={modal}
       placeholder="Select organization"

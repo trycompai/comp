@@ -167,8 +167,6 @@ function ChatContent({
             </div>
 
             <EmptyState
-              status={status}
-              onSubmit={() => validateAndSubmitMessage(textInput.value)}
               onExampleClick={handleExampleClick}
               suggestions={suggestions}
               isLoadingSuggestions={isLoadingSuggestions}
@@ -257,8 +255,10 @@ export function Chat({
 
   return (
     <div
-      className={cn(className, 'selection:bg-primary selection:text-white relative')}
-      style={{ height: 'calc(100vh - 6em)' }}
+      className={cn(
+        className,
+        'selection:bg-primary selection:text-white relative flex h-full min-h-0 flex-col',
+      )}
     >
       <Image
         src="/automation-bg.svg"
@@ -282,19 +282,21 @@ export function Chat({
       </PanelHeader>
 
       {/* Messages Area */}
-      <ChatContent
-        hasMessages={hasMessages}
-        scriptUrl={scriptUrl}
-        messages={messages}
-        orgId={orgId}
-        handleSecretAdded={handleSecretAdded}
-        handleInfoProvided={handleInfoProvided}
-        validateAndSubmitMessage={validateAndSubmitMessage}
-        status={status}
-        suggestions={suggestions}
-        isLoadingSuggestions={isLoadingSuggestions}
-        textInput={textInput}
-      />
+      <div className="flex-1 min-h-0">
+        <ChatContent
+          hasMessages={hasMessages}
+          scriptUrl={scriptUrl}
+          messages={messages}
+          orgId={orgId}
+          handleSecretAdded={handleSecretAdded}
+          handleInfoProvided={handleInfoProvided}
+          validateAndSubmitMessage={validateAndSubmitMessage}
+          status={status}
+          suggestions={suggestions}
+          isLoadingSuggestions={isLoadingSuggestions}
+          textInput={textInput}
+        />
+      </div>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 'use client';
 
+import Chat from '@/components/ai/chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
-import { AssistantSheet } from '@/components/sheets/assistant-sheet';
 import { SidebarProvider } from '@/context/sidebar-context';
 import { signOut } from '@/utils/auth-client';
 import {
@@ -35,6 +35,7 @@ import type { Onboarding, Organization } from '@db';
 import type { CommandSearchGroup } from '@trycompai/design-system';
 import {
   AppShell,
+  AppShellAIChatTrigger,
   AppShellBody,
   AppShellContent,
   AppShellMain,
@@ -228,7 +229,7 @@ export function AppShellWrapper({
 
   return (
     <SidebarProvider initialIsCollapsed={isCollapsed}>
-      <AppShell showAIChat defaultSidebarOpen={!isCollapsed}>
+      <AppShell showAIChat aiChatContent={<Chat />} defaultSidebarOpen={!isCollapsed}>
         <AppShellNavbar
           startContent={
             <HStack gap="xs" align="center">
@@ -245,6 +246,7 @@ export function AppShellWrapper({
           centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
           endContent={
             <AppShellUserMenu>
+              <AppShellAIChatTrigger />
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted">
@@ -294,11 +296,13 @@ export function AppShellWrapper({
         />
         <AppShellBody>
           <AppShellRail>
-            <AppShellRailItem
-              isActive={!isSettingsActive}
-              icon={<CertificateCheck className="size-5" />}
-              label="Compliance"
-            />
+            <Link href={`/${organization.id}/frameworks`}>
+              <AppShellRailItem
+                isActive={!isSettingsActive}
+                icon={<CertificateCheck className="size-5" />}
+                label="Compliance"
+              />
+            </Link>
             {!isOnlyAuditor && (
               <Link href={`/${organization.id}/settings`}>
                 <AppShellRailItem
@@ -327,7 +331,6 @@ export function AppShellWrapper({
             </AppShellContent>
           </AppShellMain>
 
-          <AssistantSheet />
           <Suspense fallback={null}>
             <CheckoutCompleteDialog orgId={organization.id} />
           </Suspense>
