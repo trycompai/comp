@@ -7,7 +7,7 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
 import type { GitHubDependabotAlert, GitHubOrg, GitHubRepo } from '../types';
-import { targetReposVariable } from '../variables';
+import { parseRepoBranch, targetReposVariable } from '../variables';
 
 interface AlertCounts {
   open: number;
@@ -32,11 +32,13 @@ export const dependabotCheck: IntegrationCheck = {
   variables: [targetReposVariable],
 
   run: async (ctx) => {
-    const targetRepos = ctx.variables.target_repos as string[] | undefined;
+    const targetReposRaw = ctx.variables.target_repos as string[] | undefined;
+    // Extract just the repo names (values may be in "owner/repo:branch" format)
+    const targetRepos = (targetReposRaw || []).map((v) => parseRepoBranch(v).repo);
 
     let repos: GitHubRepo[];
 
-    if (targetRepos && targetRepos.length > 0) {
+    if (targetRepos.length > 0) {
       repos = [];
       for (const repoName of targetRepos) {
         try {
@@ -147,6 +149,21 @@ export const dependabotCheck: IntegrationCheck = {
       // Fetch alert counts regardless of Dependabot status
       const alertCounts = await fetchAlertCounts(repo.full_name);
 
+      // Build hierarchical evidence: { "owner/repo": { data } }
+      const repoEvidence: Record<string, unknown> = {
+        security_and_analysis: repo.security_and_analysis,
+        ...(alertCounts && {
+          alerts: {
+            open: alertCounts.open,
+            fixed: alertCounts.fixed,
+            dismissed: alertCounts.dismissed,
+            total: alertCounts.total,
+            open_by_severity: alertCounts.bySeverity,
+          },
+        }),
+        checked_at: new Date().toISOString(),
+      };
+
       if (dependabotStatus === 'enabled') {
         const alertSummary = alertCounts
           ? `\n\nAlert Summary: ${formatAlertSummary(alertCounts)}`
@@ -158,17 +175,7 @@ export const dependabotCheck: IntegrationCheck = {
           resourceType: 'repository',
           resourceId: repo.full_name,
           evidence: {
-            security_and_analysis: repo.security_and_analysis,
-            ...(alertCounts && {
-              alerts: {
-                open: alertCounts.open,
-                fixed: alertCounts.fixed,
-                dismissed: alertCounts.dismissed,
-                total: alertCounts.total,
-                open_by_severity: alertCounts.bySeverity,
-              },
-            }),
-            checked_at: new Date().toISOString(),
+            [repo.full_name]: repoEvidence,
           },
         });
       } else {
@@ -183,17 +190,9 @@ export const dependabotCheck: IntegrationCheck = {
           resourceId: repo.full_name,
           severity: 'medium',
           remediation: `1. Go to ${repo.html_url}/settings/security_analysis\n2. Enable "Dependabot security updates"\n3. Optionally enable "Dependabot version updates" for proactive updates`,
-          evidence: alertCounts
-            ? {
-                alerts: {
-                  open: alertCounts.open,
-                  fixed: alertCounts.fixed,
-                  dismissed: alertCounts.dismissed,
-                  total: alertCounts.total,
-                  open_by_severity: alertCounts.bySeverity,
-                },
-              }
-            : undefined,
+          evidence: {
+            [repo.full_name]: repoEvidence,
+          },
         });
       }
     }

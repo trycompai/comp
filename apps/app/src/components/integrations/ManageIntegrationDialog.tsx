@@ -20,7 +20,7 @@ import { Label } from '@comp/ui/label';
 import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Key, Loader2, Settings, Trash2, Unplug } from 'lucide-react';
+import { Key, Loader2, Settings, Trash2, Unplug, X } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -462,6 +462,29 @@ function ConfigurationContent({
   const hasCredentials = authStrategy === 'custom' && credentialFields.length > 0;
   const showTabs = hasVariables && hasCredentials;
 
+  // Validate target_repos - each repo must have at least one branch
+  const validateTargetRepos = (): boolean => {
+    const targetReposValue = variableValues.target_repos;
+    if (!Array.isArray(targetReposValue) || targetReposValue.length === 0) {
+      return true; // No repos selected is OK (will be caught by required check)
+    }
+    // Check that each repo has a branch specified
+    for (const value of targetReposValue) {
+      const colonIndex = String(value).lastIndexOf(':');
+      if (colonIndex <= 0) {
+        // No colon means no branch specified
+        return false;
+      }
+      const branch = String(value).substring(colonIndex + 1).trim();
+      if (!branch) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const isTargetReposValid = validateTargetRepos();
+
   // If neither available, show empty state
   if (!hasVariables && !hasCredentials) {
     return (
@@ -495,7 +518,7 @@ function ConfigurationContent({
             )}
 
             {variable.type === 'multi-select' ? (
-              <MultiSelectVariable
+              <MultiSelectWithBranches
                 variable={variable}
                 options={options}
                 isLoadingOptions={isLoadingOptions}
@@ -579,7 +602,11 @@ function ConfigurationContent({
         );
       })}
 
-      <Button onClick={handleSaveVariables} disabled={savingVariables} className="w-full">
+      <Button
+        onClick={handleSaveVariables}
+        disabled={savingVariables || !isTargetReposValid}
+        className="w-full"
+      >
         {savingVariables ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -641,10 +668,10 @@ function ConfigurationContent({
               const currentValue = credentialValues[field.id];
               // Find existing item or create synthetic one for custom values
               const selectedItem = currentValue
-                ? items.find((item) => item.id === currentValue) ?? {
+                ? (items.find((item) => item.id === currentValue) ?? {
                     id: currentValue,
                     label: currentValue,
-                  }
+                  })
                 : undefined;
               return (
                 <ComboboxDropdown
@@ -738,8 +765,42 @@ function ConfigurationContent({
   return <div className="space-y-4">{variablesContent || credentialsContent}</div>;
 }
 
-// Helper component for multi-select variables with lazy loading
-function MultiSelectVariable({
+/**
+ * Parse a stored value like "owner/repo:branch" into parts.
+ * Handles trailing colons and empty branches.
+ */
+const parseRepoBranch = (value: string): { repo: string; branch: string } => {
+  // Remove trailing colon if present
+  const cleanValue = value.endsWith(':') ? value.slice(0, -1) : value;
+  const colonIndex = cleanValue.lastIndexOf(':');
+  
+  if (colonIndex > 0 && colonIndex < cleanValue.length - 1) {
+    return {
+      repo: cleanValue.substring(0, colonIndex),
+      branch: cleanValue.substring(colonIndex + 1),
+    };
+  }
+  // No branch specified - return empty string so user can type
+  return { repo: cleanValue, branch: '' };
+};
+
+/**
+ * Format repo and branch into stored format.
+ * If branch is empty, just store the repo (will default to main on parse).
+ */
+const formatRepoBranch = (repo: string, branch: string): string => {
+  const trimmedBranch = branch.trim();
+  if (!trimmedBranch) {
+    return repo; // No colon when branch is empty
+  }
+  return `${repo}:${trimmedBranch}`;
+};
+
+/**
+ * Multi-select with optional branch inputs for GitHub repos.
+ * When variable.id is 'target_repos', shows branch input for each selected repo.
+ */
+function MultiSelectWithBranches({
   variable,
   options,
   isLoadingOptions,
@@ -757,6 +818,10 @@ function MultiSelectVariable({
   const selectedValues = Array.isArray(value) ? value : [];
   const hasLoadedRef = useRef(false);
 
+  // For target_repos, parse values to extract repos and branches
+  const isGitHubRepos = variable.id === 'target_repos';
+  const parsedConfigs = isGitHubRepos ? selectedValues.map(parseRepoBranch) : [];
+
   useEffect(() => {
     if (
       variable.hasDynamicOptions &&
@@ -767,28 +832,109 @@ function MultiSelectVariable({
       hasLoadedRef.current = true;
       onLoadOptions();
     }
-  }, []);
+  }, [variable.hasDynamicOptions, options.length, isLoadingOptions, onLoadOptions]);
+
+  // Handle repo selection change
+  const handleRepoSelectionChange = (selectedRepos: string[]) => {
+    if (!isGitHubRepos) {
+      onChange(selectedRepos);
+      return;
+    }
+
+    // For GitHub repos, preserve existing branches when repos are reselected
+    const newValues = selectedRepos.map((repo) => {
+      // Check if this repo already exists in current values
+      const existing = parsedConfigs.find((c) => c.repo === repo);
+      // Use existing branch, or empty string for new repos (user will type it)
+      return formatRepoBranch(repo, existing?.branch || '');
+    });
+    onChange(newValues);
+  };
+
+  // Handle branch change for a specific repo
+  const handleBranchChange = (repo: string, branch: string) => {
+    const newValues = selectedValues.map((v) => {
+      const parsed = parseRepoBranch(v);
+      if (parsed.repo === repo) {
+        // Allow empty string during editing - will default to main on save if empty
+        return formatRepoBranch(repo, branch);
+      }
+      return v;
+    });
+    onChange(newValues);
+  };
+
+  // Handle removing a repo
+  const handleRemoveRepo = (repo: string) => {
+    const newValues = selectedValues.filter((v) => parseRepoBranch(v).repo !== repo);
+    onChange(newValues);
+  };
+
+  // Get repos from values for display in multi-select
+  const reposForSelector = isGitHubRepos ? parsedConfigs.map((c) => c.repo) : selectedValues;
 
   return (
-    <MultipleSelector
-      value={selectedValues.map((v) => ({
-        value: v,
-        label: options.find((o) => o.value === v)?.label || v,
-      }))}
-      onChange={(selected) => onChange(selected.map((s) => s.value))}
-      defaultOptions={options.map((o) => ({ value: o.value, label: o.label }))}
-      options={options.map((o) => ({ value: o.value, label: o.label }))}
-      placeholder={`Select ${variable.label.toLowerCase()}...`}
-      emptyIndicator={
-        isLoadingOptions ? (
-          <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Loading options...
-          </div>
-        ) : (
-          <p className="text-center text-sm text-muted-foreground">No options available</p>
-        )
-      }
-    />
+    <div className="space-y-3">
+      <MultipleSelector
+        value={reposForSelector.map((v) => ({
+          value: v,
+          label: options.find((o) => o.value === v)?.label || v,
+        }))}
+        onChange={(selected) => handleRepoSelectionChange(selected.map((s) => s.value))}
+        defaultOptions={options.map((o) => ({ value: o.value, label: o.label }))}
+        options={options.map((o) => ({ value: o.value, label: o.label }))}
+        placeholder={`Select ${variable.label.toLowerCase()}...`}
+        emptyIndicator={
+          isLoadingOptions ? (
+            <div className="flex items-center gap-2 py-2 px-3 text-sm text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Loading options...
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">No options available</p>
+          )
+        }
+      />
+
+      {/* Branch inputs for GitHub repos */}
+      {isGitHubRepos && parsedConfigs.length > 0 && (
+        <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+          <p className="text-xs font-medium text-muted-foreground">
+            Specify branches for each repository (comma-separated for multiple):
+          </p>
+          {parsedConfigs.map((config) => {
+            const isEmpty = !config.branch.trim();
+            return (
+              <div key={config.repo} className="flex items-center gap-2">
+                <span className="shrink-0 rounded bg-secondary px-2 py-1 font-mono text-xs">
+                  {config.repo}
+                </span>
+                <span className="text-muted-foreground">:</span>
+                <Input
+                  value={config.branch}
+                  onChange={(e) => handleBranchChange(config.repo, e.target.value)}
+                  placeholder="main, develop"
+                  className={`h-8 flex-1 font-mono text-sm ${
+                    isEmpty ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveRepo(config.repo)}
+                  className="shrink-0 rounded p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            );
+          })}
+          {parsedConfigs.some((c) => !c.branch.trim()) && (
+            <p className="text-xs text-destructive">
+              Each repository must have at least one branch specified.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
