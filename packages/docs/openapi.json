@@ -5353,6 +5353,40 @@
         ]
       }
     },
+    "/v1/policies/download-all": {
+      "get": {
+        "description": "Generates a PDF bundle containing all published policies with organization branding and returns a signed download URL",
+        "operationId": "PoliciesController_downloadAllPolicies_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL for PDF bundle returned"
+          },
+          "404": {
+            "description": "No published policies found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Download all published policies as a single PDF",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/policies/{id}": {
       "get": {
         "description": "Returns a specific policy by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -5764,6 +5798,66 @@
         ]
       }
     },
+    "/v1/attachments/{attachmentId}/download": {
+      "get": {
+        "description": "Generate a fresh signed URL for downloading any attachment",
+        "operationId": "AttachmentsController_getAttachmentDownloadUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "description": "Unique attachment identifier",
+            "schema": {
+              "example": "att_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download URL generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "downloadUrl": {
+                      "type": "string",
+                      "description": "Signed URL for downloading the file",
+                      "example": "https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=..."
+                    },
+                    "expiresIn": {
+                      "type": "number",
+                      "description": "URL expiration time in seconds",
+                      "example": 900
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get attachment download URL",
+        "tags": [
+          "Attachments"
+        ]
+      }
+    },
     "/v1/device-agent/mac": {
       "get": {
         "description": "Downloads the Comp AI Device Agent installer for macOS as a DMG file. The agent helps monitor device compliance and security policies. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -5873,66 +5967,6 @@
         "summary": "Download Windows Device Agent ZIP",
         "tags": [
           "Device Agent"
-        ]
-      }
-    },
-    "/v1/attachments/{attachmentId}/download": {
-      "get": {
-        "description": "Generate a fresh signed URL for downloading any attachment",
-        "operationId": "AttachmentsController_getAttachmentDownloadUrl_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "attachmentId",
-            "required": true,
-            "in": "path",
-            "description": "Unique attachment identifier",
-            "schema": {
-              "example": "att_abc123def456",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Download URL generated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "downloadUrl": {
-                      "type": "string",
-                      "description": "Signed URL for downloading the file",
-                      "example": "https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=..."
-                    },
-                    "expiresIn": {
-                      "type": "number",
-                      "description": "URL expiration time in seconds",
-                      "example": 900
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get attachment download URL",
-        "tags": [
-          "Attachments"
         ]
       }
     },
@@ -8514,6 +8548,31 @@
           }
         },
         "summary": "Download all policies as watermarked PDF",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/policies/download-all-zip": {
+      "get": {
+        "description": "Generate ZIP archive containing individual watermarked PDFs for each policy",
+        "operationId": "TrustAccessController_downloadAllPoliciesAsZip_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download URL for ZIP archive returned"
+          }
+        },
+        "summary": "Download all policies as ZIP with individual PDFs",
         "tags": [
           "Trust Access"
         ]

@@ -110,7 +110,11 @@ export class TaskItemMentionNotifierService {
         }
 
         // Check if user is unsubscribed from task mention notifications
-        const isUnsubscribed = await isUserUnsubscribed(db, user.email, 'taskMentions');
+        const isUnsubscribed = await isUserUnsubscribed(
+          db,
+          user.email,
+          'taskMentions',
+        );
         if (isUnsubscribed) {
           this.logger.log(
             `Skipping mention notification: user ${user.email} is unsubscribed from task mentions`,

@@ -220,7 +220,12 @@ export class TasksController {
       }
     }
 
-    return await this.tasksService.updateTasksStatus(organizationId, taskIds, status, parsedReviewDate);
+    return await this.tasksService.updateTasksStatus(
+      organizationId,
+      taskIds,
+      status,
+      parsedReviewDate,
+    );
   }
 
   // ==================== TASK ATTACHMENTS ====================

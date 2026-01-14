@@ -34,7 +34,10 @@ import type { AssistantChatMessage } from './assistant-chat.types';
 export class AssistantChatController {
   constructor(private readonly assistantChatService: AssistantChatService) {}
 
-  private getUserScopedContext(auth: AuthContextType): { organizationId: string; userId: string } {
+  private getUserScopedContext(auth: AuthContextType): {
+    organizationId: string;
+    userId: string;
+  } {
     // Defensive checks (should already be guaranteed by HybridAuthGuard + AuthContext decorator)
     if (!auth.organizationId) {
       throw new BadRequestException('Organization ID is required');
@@ -69,7 +72,9 @@ export class AssistantChatController {
       },
     },
   })
-  async getHistory(@AuthContext() auth: AuthContextType): Promise<{ messages: AssistantChatMessage[] }> {
+  async getHistory(
+    @AuthContext() auth: AuthContextType,
+  ): Promise<{ messages: AssistantChatMessage[] }> {
     const { organizationId, userId } = this.getUserScopedContext(auth);
 
     const messages = await this.assistantChatService.getHistory({
@@ -105,7 +110,9 @@ export class AssistantChatController {
     summary: 'Clear assistant chat history',
     description: 'Deletes the current user-scoped assistant chat history.',
   })
-  async clearHistory(@AuthContext() auth: AuthContextType): Promise<{ success: true }> {
+  async clearHistory(
+    @AuthContext() auth: AuthContextType,
+  ): Promise<{ success: true }> {
     const { organizationId, userId } = this.getUserScopedContext(auth);
 
     await this.assistantChatService.clearHistory({
@@ -116,5 +123,3 @@ export class AssistantChatController {
     return { success: true };
   }
 }
-
-

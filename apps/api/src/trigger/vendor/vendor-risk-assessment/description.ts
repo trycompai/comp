@@ -32,8 +32,7 @@ export function buildRiskAssessmentDescription(params: {
     ...base,
     vendorName: base.vendorName ?? vendorName,
     vendorWebsite: base.vendorWebsite ?? vendorWebsite,
-    securityAssessment: (base.securityAssessment ?? '') + checklistSuffix || null,
+    securityAssessment:
+      (base.securityAssessment ?? '') + checklistSuffix || null,
   } satisfies VendorRiskAssessmentDataV1);
 }
-
-

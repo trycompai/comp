@@ -95,6 +95,8 @@ export function PolicyContentManager({
 }: PolicyContentManagerProps) {
   const [showAiAssistant, setShowAiAssistant] = useState(aiAssistantEnabled);
   const [editorKey, setEditorKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>(displayFormat);
+  const previousTabRef = useRef<string>(displayFormat);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
     const formattedContent = Array.isArray(policyContent)
       ? policyContent
@@ -152,7 +154,19 @@ export function PolicyContentManager({
   );
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onError: () => toast.error('Failed to switch view.'),
+    onSuccess: () => {
+      // Server action succeeded, update ref for next operation
+      previousTabRef.current = activeTab;
+    },
+    onError: () => {
+      toast.error('Failed to switch view.');
+      // Roll back to the previous tab state on error
+      setActiveTab(previousTabRef.current);
+      // Also restore AI assistant visibility if we were switching from EDITOR
+      if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
+        setShowAiAssistant(true);
+      }
+    },
   });
 
   const currentPolicyMarkdown = useMemo(
@@ -194,9 +208,19 @@ export function PolicyContentManager({
             <div className="flex-1 min-w-0 h-full overflow-hidden">
               <Tabs
                 defaultValue={displayFormat}
-                onValueChange={(format) =>
-                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' })
-                }
+                value={activeTab}
+                onValueChange={(format) => {
+                  // Store current tab as previous before changing (using ref to avoid stale closure)
+                  previousTabRef.current = activeTab;
+                  // Optimistically update UI
+                  setActiveTab(format);
+                  // Hide AI assistant when switching to PDF view
+                  if (format === 'PDF') {
+                    setShowAiAssistant(false);
+                  }
+                  // Execute server action - onError will roll back if it fails
+                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
+                }}
                 className="w-full"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -208,7 +232,7 @@ export function PolicyContentManager({
                       PDF View
                     </TabsTrigger>
                   </TabsList>
-                  {!isPendingApproval && aiAssistantEnabled && (
+                  {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
                     <Button
                       variant={showAiAssistant ? 'default' : 'outline'}
                       size="sm"
@@ -239,7 +263,7 @@ export function PolicyContentManager({
               </Tabs>
             </div>
 
-            {aiAssistantEnabled && showAiAssistant && (
+            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
               <div className="w-80 shrink-0 self-stretch flex flex-col overflow-hidden">
                 <PolicyAiAssistant
                   messages={messages}

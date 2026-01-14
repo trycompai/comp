@@ -87,7 +87,9 @@ export class TaskManagementService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to fetch task items stats');
+      throw new InternalServerErrorException(
+        'Failed to fetch task items stats',
+      );
     }
   }
 

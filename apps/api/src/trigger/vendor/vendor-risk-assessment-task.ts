@@ -33,7 +33,9 @@ type VendorRiskAssessmentResult = {
   verifyTaskItemId?: string;
 };
 
-type VendorRiskAssessmentTaskInput = z.input<typeof vendorRiskAssessmentPayloadSchema>;
+type VendorRiskAssessmentTaskInput = z.input<
+  typeof vendorRiskAssessmentPayloadSchema
+>;
 
 function parseVersionNumber(version: string | null | undefined): number {
   if (!version || !version.startsWith('v')) return 0;
@@ -102,7 +104,10 @@ function incrementVersion(currentVersion: string | null | undefined): string {
  * Otherwise, check if data exists - if not, do research.
  */
 function shouldDoResearch(
-  globalVendor: { riskAssessmentData: unknown; riskAssessmentVersion: string | null } | null,
+  globalVendor: {
+    riskAssessmentData: unknown;
+    riskAssessmentVersion: string | null;
+  } | null,
   withResearch: boolean,
 ): boolean {
   // If withResearch is true, task was triggered because research is needed (we filter before triggering)
@@ -135,7 +140,9 @@ function isJsonInputValue(value: unknown): value is Prisma.InputJsonValue {
   }
 
   if (typeof value === 'object') {
-    return Object.values(value as Record<string, unknown>).every(isJsonInputValue);
+    return Object.values(value as Record<string, unknown>).every(
+      isJsonInputValue,
+    );
   }
 
   return false;
@@ -170,7 +177,9 @@ function extractDomain(website: string | null | undefined): string | null {
 
   try {
     // Add protocol if missing to make URL parsing work
-    const urlString = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const urlString = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
     const url = new URL(urlString);
     // Remove www. prefix and return just the domain
     return url.hostname.toLowerCase().replace(/^www\./, '');
@@ -216,7 +225,6 @@ export const vendorRiskAssessmentTask: Task<
   },
   maxDuration: 1000 * 60 * 10,
   run: async (payload) => {
-
     const vendor = await db.vendor.findFirst({
       where: {
         id: payload.vendorId,
@@ -255,7 +263,10 @@ export const vendorRiskAssessmentTask: Task<
 
     const normalizedWebsite = normalizeWebsite(vendor.website);
     if (!normalizedWebsite) {
-      logger.info('⏭️ SKIP (invalid website)', { vendor: payload.vendorName, website: vendor.website });
+      logger.info('⏭️ SKIP (invalid website)', {
+        vendor: payload.vendorName,
+        website: vendor.website,
+      });
       await db.vendor.update({
         where: { id: vendor.id },
         data: { status: VendorStatus.assessed },
@@ -287,19 +298,19 @@ export const vendorRiskAssessmentTask: Task<
             riskAssessmentUpdatedAt: true,
             riskAssessmentData: true,
           },
-          orderBy: [
-            { riskAssessmentUpdatedAt: 'desc' },
-            { createdAt: 'desc' },
-          ],
+          orderBy: [{ riskAssessmentUpdatedAt: 'desc' }, { createdAt: 'desc' }],
         })
       : [];
-    
+
     // Use the most recent one for reading/checking, but we'll update all duplicates
     const globalVendor = globalVendors[0] ?? null;
 
     // Determine if research is needed
     // If withResearch is true, task was triggered because research is needed (we filter before triggering)
-    const needsResearch = shouldDoResearch(globalVendor, payload.withResearch ?? false);
+    const needsResearch = shouldDoResearch(
+      globalVendor,
+      payload.withResearch ?? false,
+    );
 
     if (needsResearch) {
       logger.info('🔍 DOING RESEARCH', {
@@ -316,10 +327,11 @@ export const vendorRiskAssessmentTask: Task<
 
       // Still ensure a "Verify risk assessment" task exists so humans can confirm accuracy,
       // even when we are reusing cached GlobalVendors data (no research performed).
-      const { creatorMemberId, assigneeMemberId } = await resolveTaskCreatorAndAssignee({
-        organizationId: payload.organizationId,
-        createdByUserId: payload.createdByUserId ?? null,
-      });
+      const { creatorMemberId, assigneeMemberId } =
+        await resolveTaskCreatorAndAssignee({
+          organizationId: payload.organizationId,
+          createdByUserId: payload.createdByUserId ?? null,
+        });
 
       const creatorMember = await db.member.findUnique({
         where: { id: creatorMemberId },
@@ -344,7 +356,8 @@ export const vendorRiskAssessmentTask: Task<
           await db.taskItem.create({
             data: {
               title: VERIFY_RISK_ASSESSMENT_TASK_TITLE,
-              description: 'Review the latest Risk Assessment and confirm it is accurate.',
+              description:
+                'Review the latest Risk Assessment and confirm it is accurate.',
               status: TaskItemStatus.todo,
               priority: TaskItemPriority.high,
               entityId: payload.vendorId,
@@ -365,7 +378,8 @@ export const vendorRiskAssessmentTask: Task<
         },
         data: {
           status: TaskItemStatus.todo,
-          description: 'Review the latest Risk Assessment and confirm it is accurate.',
+          description:
+            'Review the latest Risk Assessment and confirm it is accurate.',
           assigneeId: assigneeMemberId,
           updatedById: creatorMemberId,
         },
@@ -418,10 +432,11 @@ export const vendorRiskAssessmentTask: Task<
       },
     });
 
-    const { creatorMemberId, assigneeMemberId } = await resolveTaskCreatorAndAssignee({
-      organizationId: payload.organizationId,
-      createdByUserId: payload.createdByUserId ?? null,
-    });
+    const { creatorMemberId, assigneeMemberId } =
+      await resolveTaskCreatorAndAssignee({
+        organizationId: payload.organizationId,
+        createdByUserId: payload.createdByUserId ?? null,
+      });
 
     // Get creator member with userId for activity log
     const creatorMember = await db.member.findUnique({
@@ -430,10 +445,13 @@ export const vendorRiskAssessmentTask: Task<
     });
 
     if (!creatorMember?.userId) {
-      logger.warn('Creator member has no userId, skipping activity log creation', {
-        creatorMemberId,
-        organizationId: payload.organizationId,
-      });
+      logger.warn(
+        'Creator member has no userId, skipping activity log creation',
+        {
+          creatorMemberId,
+          organizationId: payload.organizationId,
+        },
+      );
     }
 
     // Ensure a "Verify risk assessment" task exists immediately, but keep it blocked while generation runs.
@@ -474,9 +492,9 @@ export const vendorRiskAssessmentTask: Task<
       try {
         await db.auditLog.create({
           data: {
-        organizationId: payload.organizationId,
+            organizationId: payload.organizationId,
             userId: creatorMember.userId,
-        memberId: creatorMemberId,
+            memberId: creatorMemberId,
             entityType: 'task',
             entityId: verifyTaskItemId,
             description: 'created this task',
@@ -488,7 +506,7 @@ export const vendorRiskAssessmentTask: Task<
               parentEntityId: payload.vendorId,
             },
           },
-      });
+        });
       } catch (error) {
         logger.error('Failed to log task item creation:', error);
         // Don't throw - audit log failures should not block operations
@@ -500,7 +518,8 @@ export const vendorRiskAssessmentTask: Task<
     const frameworkChecklist = buildFrameworkChecklist(organizationFrameworks);
 
     // Do research if needed (vendor doesn't exist, no data, or explicitly requested)
-    const research = needsResearch && payload.vendorWebsite
+    const research =
+      needsResearch && payload.vendorWebsite
         ? await firecrawlAgentVendorRiskAssessment({
             vendorName: payload.vendorName,
             vendorWebsite: payload.vendorWebsite,
@@ -532,7 +551,10 @@ export const vendorRiskAssessmentTask: Task<
                 riskAssessmentVersion: true,
                 riskAssessmentUpdatedAt: true,
               },
-              orderBy: [{ riskAssessmentUpdatedAt: 'desc' }, { createdAt: 'desc' }],
+              orderBy: [
+                { riskAssessmentUpdatedAt: 'desc' },
+                { createdAt: 'desc' },
+              ],
             })
           : [];
 
@@ -575,7 +597,10 @@ export const vendorRiskAssessmentTask: Task<
           },
         });
 
-        return { nextVersion: computedNext, updatedWebsites: [normalizedWebsite] };
+        return {
+          nextVersion: computedNext,
+          updatedWebsites: [normalizedWebsite],
+        };
       },
     });
 
@@ -603,7 +628,8 @@ export const vendorRiskAssessmentTask: Task<
       },
       data: {
         status: TaskItemStatus.todo,
-        description: 'Review the latest Risk Assessment and confirm it is accurate.',
+        description:
+          'Review the latest Risk Assessment and confirm it is accurate.',
         // Keep stable assignee/creator
         assigneeId: assigneeMemberId,
         updatedById: creatorMemberId,
@@ -626,5 +652,3 @@ export const vendorRiskAssessmentTask: Task<
     };
   },
 });
-
-

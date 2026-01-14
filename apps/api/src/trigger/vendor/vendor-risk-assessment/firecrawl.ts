@@ -21,7 +21,10 @@ function normalizeUrl(url: string | null | undefined): string | null {
   if (!trimmed || trimmed === '') return null;
 
   // If it looks like a domain but missing scheme, assume https
-  if (!/^https?:\/\//i.test(trimmed) && /^[a-z0-9.-]+\.[a-z]{2,}([/].*)?$/i.test(trimmed)) {
+  if (
+    !/^https?:\/\//i.test(trimmed) &&
+    /^[a-z0-9.-]+\.[a-z]{2,}([/].*)?$/i.test(trimmed)
+  ) {
     trimmed = `https://${trimmed}`;
   }
 
@@ -47,7 +50,9 @@ export async function firecrawlExtractVendorData(
 ): Promise<FirecrawlVendorData | null> {
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
-    logger.warn('FIRECRAWL_API_KEY is not configured; skipping vendor research');
+    logger.warn(
+      'FIRECRAWL_API_KEY is not configured; skipping vendor research',
+    );
     return null;
   }
 
@@ -66,9 +71,9 @@ export async function firecrawlExtractVendorData(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-      body: JSON.stringify({
-        urls: [`${origin}/*`],
-        prompt: `You are a security analyst collecting SOC 2 + ISO 27001 evidence links for a third-party risk assessment.
+    body: JSON.stringify({
+      urls: [`${origin}/*`],
+      prompt: `You are a security analyst collecting SOC 2 + ISO 27001 evidence links for a third-party risk assessment.
 
 Goal: return the MOST SPECIFIC, DIRECT URL for each document type below. Do not return general category pages.
 
@@ -102,7 +107,8 @@ When multiple candidates exist, choose the most direct URL that best matches the
         properties: {
           company_description: {
             type: 'string',
-            description: 'Brief 1-2 sentence description of what the company does and their main services/products',
+            description:
+              'Brief 1-2 sentence description of what the company does and their main services/products',
           },
           privacy_policy_url: {
             type: 'string',
@@ -137,19 +143,22 @@ When multiple candidates exist, choose the most direct URL that best matches the
           },
         },
       },
-        enableWebSearch: true,
-        includeSubdomains: true,
-        showSources: true,
-        scrapeOptions: {
-          onlyMainContent: false,
-          removeBase64Images: true,
-        },
-      }),
-    });
+      enableWebSearch: true,
+      includeSubdomains: true,
+      showSources: true,
+      scrapeOptions: {
+        onlyMainContent: false,
+        removeBase64Images: true,
+      },
+    }),
+  });
 
   const initialData = (await initialResponse.json()) as FirecrawlStartResponse;
   if (!initialData.success || !initialData.id) {
-    logger.warn('Firecrawl failed to start extraction', { website, initialData });
+    logger.warn('Firecrawl failed to start extraction', {
+      website,
+      initialData,
+    });
     return null;
   }
 
@@ -209,7 +218,11 @@ When multiple candidates exist, choose the most direct URL that best matches the
     }
 
     if (statusData.status === 'failed' || statusData.status === 'cancelled') {
-      logger.warn('Firecrawl extraction did not complete', { website, jobId, statusData });
+      logger.warn('Firecrawl extraction did not complete', {
+        website,
+        jobId,
+        statusData,
+      });
       return null;
     }
   }
@@ -217,5 +230,3 @@ When multiple candidates exist, choose the most direct URL that best matches the
   logger.warn('Firecrawl extraction timed out', { website, jobId });
   return null;
 }
-
-
