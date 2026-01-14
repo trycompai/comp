@@ -167,6 +167,8 @@ function ChatContent({
             </div>
 
             <EmptyState
+              status={status}
+              onSubmit={() => validateAndSubmitMessage(textInput.value)}
               onExampleClick={handleExampleClick}
               suggestions={suggestions}
               isLoadingSuggestions={isLoadingSuggestions}
