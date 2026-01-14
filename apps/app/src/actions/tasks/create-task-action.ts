@@ -42,6 +42,18 @@ export const createTaskAction = authActionClient
     }
 
     try {
+      // Get automation status from template if one is selected
+      let automationStatus: 'AUTOMATED' | 'MANUAL' = 'AUTOMATED';
+      if (taskTemplateId) {
+        const template = await db.frameworkEditorTaskTemplate.findUnique({
+          where: { id: taskTemplateId },
+          select: { automationStatus: true },
+        });
+        if (template) {
+          automationStatus = template.automationStatus;
+        }
+      }
+
       const task = await db.task.create({
         data: {
           title,
@@ -52,6 +64,7 @@ export const createTaskAction = authActionClient
           order: 0,
           frequency: frequency || null,
           department: department || null,
+          automationStatus,
           taskTemplateId: taskTemplateId || null,
           ...(controlIds &&
             controlIds.length > 0 && {

@@ -2098,153 +2098,114 @@ export class TrustAccessService {
 
     const organizationName =
       grant.accessRequest.organization.name || 'Organization';
-    const organizationId = grant.accessRequest.organizationId;
 
-    // Prepare ZIP filename and S3 key
-    const safeOrgName = this.toSafeFilename(organizationName);
-    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const downloadFilename = `${safeOrgName}_policies_${dateStr}.zip`;
-    const timestamp = Date.now();
-    const zipKey = `${organizationId}/trust_policy_downloads/${grant.id}/${timestamp}-${downloadFilename}`;
-
-    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
-      throw new InternalServerErrorException(
-        'Organization assets bucket is not configured',
-      );
-    }
-
-    // Create ZIP archive (level 6 is a good balance of speed/compression)
+    // Create ZIP archive
     const archive = archiver('zip', { zlib: { level: 6 } });
-    const zipStream = new PassThrough();
-    let putPromise: Promise<unknown> | undefined;
+    const passThrough = new PassThrough();
 
-    try {
-      // Start S3 upload BEFORE finalize - streams directly to S3 (no buffering)
-      putPromise = s3Client.send(
-        new PutObjectCommand({
-          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-          Key: zipKey,
-          Body: zipStream,
-          ContentType: 'application/zip',
-          Metadata: {
-            organizationId,
-            grantId: grant.id,
-            kind: 'trust_policies_bundle',
-          },
-        }),
-      );
+    archive.on('error', (err) => {
+      passThrough.destroy(err);
+    });
 
-      archive.on('error', (err) => {
-        zipStream.destroy(err);
-      });
+    archive.pipe(passThrough);
 
-      archive.pipe(zipStream);
+    // Track filenames to avoid duplicates (case-insensitive)
+    const usedNamesLower = new Set<string>();
 
-      // Track filenames to avoid duplicates (case-insensitive)
-      const usedNamesLower = new Set<string>();
+    const getUniqueFilename = (baseName: string): string => {
+      const filename = this.toSafeFilename(baseName);
+      let counter = 1;
+      let finalName = filename;
 
-      const getUniqueFilename = (baseName: string): string => {
-        const filename = this.toSafeFilename(baseName);
-        let counter = 1;
-        let finalName = filename;
+      while (usedNamesLower.has(finalName.toLowerCase())) {
+        finalName = `${filename}_${counter}`;
+        counter++;
+      }
 
-        while (usedNamesLower.has(finalName.toLowerCase())) {
-          finalName = `${filename}_${counter}`;
-          counter++;
-        }
+      usedNamesLower.add(finalName.toLowerCase());
+      return `${finalName}.pdf`;
+    };
 
-        usedNamesLower.add(finalName.toLowerCase());
-        return `${finalName}.pdf`;
-      };
+    // Process policies sequentially
+    for (const policy of policies) {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+      let policyPdfBuffer: Buffer;
 
-      // Process policies in parallel for better performance
-      const processPolicyForZip = async (policy: (typeof policies)[0]) => {
-        const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
-        let policyPdfBuffer: Buffer;
-
-        if (hasUploadedPdf) {
-          try {
-            const rawBuffer = await this.attachmentsService.getObjectBuffer(
-              policy.pdfUrl!,
-            );
-            policyPdfBuffer = Buffer.from(rawBuffer);
-          } catch (error) {
-            console.warn(
-              `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
-              error,
-            );
-            policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-              [{ name: policy.name, content: policy.content }],
-              undefined,
-              grant.accessRequest.organization.primaryColor,
-            );
-          }
-        } else {
+      if (hasUploadedPdf) {
+        try {
+          const rawBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          policyPdfBuffer = Buffer.from(rawBuffer);
+        } catch (error) {
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
           policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
             [{ name: policy.name, content: policy.content }],
             undefined,
             grant.accessRequest.organization.primaryColor,
           );
         }
-
-        // Watermark the PDF
-        const docId = `policy-${policy.id}-${Date.now()}`;
-        const watermarkedPdf = await this.ndaPdfService.watermarkExistingPdf(
-          policyPdfBuffer,
-          {
-            name: grant.accessRequest.name,
-            email: grant.subjectEmail,
-            docId,
-          },
+      } else {
+        policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          [{ name: policy.name, content: policy.content }],
+          undefined,
+          grant.accessRequest.organization.primaryColor,
         );
+      }
 
-        return { name: policy.name, buffer: watermarkedPdf };
-      };
-
-      // Process all policies in parallel
-      const processedPolicies = await Promise.all(
-        policies.map(processPolicyForZip),
+      // Watermark the PDF
+      const docId = `policy-${policy.id}-${Date.now()}`;
+      const watermarkedPdf = await this.ndaPdfService.watermarkExistingPdf(
+        policyPdfBuffer,
+        {
+          name: grant.accessRequest.name,
+          email: grant.subjectEmail,
+          docId,
+        },
       );
 
-      // Add to archive sequentially (archive.append must be sequential)
-      for (const { name, buffer } of processedPolicies) {
-        const filename = getUniqueFilename(name);
-        archive.append(buffer, { name: filename });
-      }
-
-      // Finalize and wait for S3 upload to complete
-      await archive.finalize();
-      await putPromise;
-    } catch (error) {
-      // Ensure the upload stream is closed properly
-      try {
-        archive.abort();
-      } catch {
-        // ignore
-      }
-
-      if (!zipStream.destroyed) {
-        zipStream.destroy(
-          error instanceof Error ? error : new Error('ZIP generation failed'),
-        );
-      }
-
-      // Avoid unhandled rejections from an in-flight S3 put
-      await putPromise?.catch(() => undefined);
-
-      throw error;
+      // Add to archive
+      const filename = getUniqueFilename(policy.name);
+      archive.append(watermarkedPdf, { name: filename });
     }
 
-    // Generate signed download URL with proper filename
-    const downloadUrl = await getSignedUrl(
-      s3Client,
-      new GetObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: zipKey,
-        ResponseContentDisposition: `attachment; filename="${downloadFilename}"`,
-      }),
-      { expiresIn: 900 },
+    // Collect ZIP buffer - set up listeners BEFORE finalize to avoid deadlock
+    const zipBufferPromise = new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      passThrough.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      passThrough.on('end', () => resolve(Buffer.concat(chunks)));
+      passThrough.on('error', reject);
+    });
+
+    // Finalize the archive
+    await archive.finalize();
+
+    // Wait for buffer to be collected
+    const zipBuffer = await zipBufferPromise;
+
+    // Upload to S3 using attachmentsService (avoids streaming issues)
+    const safeOrgName = this.toSafeFilename(organizationName);
+    const dateStr = new Date().toISOString().split('T')[0];
+    const downloadFilename = `${safeOrgName}_policies_${dateStr}.zip`;
+
+    const zipKey = await this.attachmentsService.uploadToS3(
+      zipBuffer,
+      downloadFilename,
+      'application/zip',
+      grant.accessRequest.organizationId,
+      'trust_policy_downloads',
+      `${grant.id}`,
     );
+
+    // Generate download URL with proper filename
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrlWithFilename(
+        zipKey,
+        downloadFilename,
+      );
 
     return {
       name: `${organizationName} - All Policies (ZIP)`,

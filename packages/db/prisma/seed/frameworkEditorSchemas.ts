@@ -121,6 +121,7 @@ export const FrameworkEditorTaskTemplateSchema = z.object({
   description: z.string(),
   frequency: z.string(), // Placeholder for Frequency enum
   department: z.string(), // Placeholder for Departments enum
+  automationStatus: z.enum(['AUTOMATED', 'MANUAL']).optional(), // @default(AUTOMATED)
   // controlTemplates: FrameworkEditorControlTemplate[] - relational, omitted
   createdAt: z
     .preprocess(
