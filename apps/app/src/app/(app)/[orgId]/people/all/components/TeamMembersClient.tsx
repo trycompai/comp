@@ -10,10 +10,10 @@ import { toast } from 'sonner';
 import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Separator } from '@comp/ui/separator';
 import type { Invitation, Role } from '@db';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
 
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
@@ -250,12 +250,16 @@ export function TeamMembersClient({
 
       <div className="mb-4 flex items-center justify-between gap-4">
         <div className="relative flex-1">
-          <Input
-            placeholder={'Search people...'}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value || null)}
-            leftIcon={<Search size={14} />}
-          />
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search people..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value || null)}
+            />
+          </InputGroup>
           {searchQuery && (
             <Button
               variant="ghost"

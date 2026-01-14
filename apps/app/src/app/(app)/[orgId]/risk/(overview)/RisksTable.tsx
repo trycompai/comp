@@ -1,14 +1,28 @@
 'use client';
 
-import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
+import { useRiskActions } from '@/hooks/use-risks';
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Add, OverflowMenuHorizontal } from '@carbon/icons-react';
 import type { Member, Risk, User } from '@db';
 import { Risk as RiskType } from '@db';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Badge,
-  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   HStack,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
   Spinner,
   Stack,
   Table,
@@ -19,7 +33,8 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Loader2 } from 'lucide-react';
+import { OverflowMenuVertical, Search, TrashCan, View } from '@trycompai/design-system/icons';
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   parseAsArrayOf,
@@ -28,7 +43,8 @@ import {
   parseAsStringEnum,
   useQueryState,
 } from 'nuqs';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import useSWR from 'swr';
 import * as z from 'zod/v3';
 import { getRisksAction } from './actions/get-risks-action';
@@ -110,7 +126,10 @@ export const RisksTable = ({
   orgId: string;
 }) => {
   const router = useRouter();
-  const [, setOpenSheet] = useQueryState('create-risk-sheet');
+  const { deleteRisk } = useRiskActions();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [riskToDelete, setRiskToDelete] = useState<RiskRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
     onboardingRunId,
@@ -120,10 +139,10 @@ export const RisksTable = ({
   // Read current search params from URL
   const [page] = useQueryState('page', parseAsInteger.withDefault(1));
   const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(50));
-  const [title] = useQueryState('title', parseAsString.withDefault(''));
-  const [sort] = useQueryState(
+  const [title, setTitle] = useQueryState('title', parseAsString.withDefault(''));
+  const [sort, setSort] = useQueryState(
     'sort',
-    getSortingStateParser<RiskType>().withDefault([{ id: 'title', desc: true }]),
+    getSortingStateParser<RiskType>().withDefault([{ id: 'title', desc: false }]),
   );
   const [filters] = useQueryState('filters', getFiltersStateParser().withDefault([]));
   const [joinOperator] = useQueryState(
@@ -311,6 +330,50 @@ export const RisksTable = ({
     router.push(`/${orgId}/risk/${riskId}`);
   };
 
+  const handleSort = (columnId: 'title' | 'updatedAt') => {
+    const currentSort = sort[0];
+    if (currentSort?.id === columnId) {
+      // Toggle direction
+      setSort([{ id: columnId, desc: !currentSort.desc }]);
+    } else {
+      // New column, default to ascending
+      setSort([{ id: columnId, desc: false }]);
+    }
+  };
+
+  const getSortIcon = (columnId: 'title' | 'updatedAt') => {
+    const currentSort = sort[0];
+    if (currentSort?.id !== columnId) {
+      return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
+    }
+    return currentSort.desc ? (
+      <ArrowDown className="ml-1 h-3 w-3" />
+    ) : (
+      <ArrowUp className="ml-1 h-3 w-3" />
+    );
+  };
+
+  const handleDeleteClick = (risk: RiskRow) => {
+    setRiskToDelete(risk);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!riskToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteRisk(riskToDelete.id);
+      toast.success('Risk deleted successfully');
+      setDeleteDialogOpen(false);
+      setRiskToDelete(null);
+    } catch {
+      toast.error('Failed to delete risk');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const isEmpty = mergedRisks.length === 0;
   const showEmptyState = isEmpty && onboardingRunId && isActive;
 
@@ -319,116 +382,169 @@ export const RisksTable = ({
   }
 
   if (showEmptyState) {
-    return (
-      <>
-        <RisksLoadingAnimation />
-        <CreateRiskSheet assignees={assignees} />
-      </>
-    );
+    return <RisksLoadingAnimation />;
   }
 
   return (
-    <>
-      <RiskOnboardingProvider statuses={itemStatuses}>
-        <Stack gap="4">
-          {/* Toolbar */}
-          <HStack justify="end">
-            <Button iconLeft={<Add size={16} />} onClick={() => setOpenSheet('true')}>
-              Create Risk
-            </Button>
-          </HStack>
+    <RiskOnboardingProvider statuses={itemStatuses}>
+      <Stack gap="4">
+        {/* Search Bar */}
+        <div className="w-full md:max-w-[300px]">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search risks..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value || null)}
+            />
+          </InputGroup>
+        </div>
 
-          {/* Onboarding Progress Banner */}
-          {isActive && !allRisksDoneAssessing && (
-            <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-primary">
-                  {assessmentProgress
-                    ? assessmentProgress.completed === 0
+        {/* Onboarding Progress Banner */}
+        {isActive && !allRisksDoneAssessing && (
+          <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-primary">
+                {assessmentProgress
+                  ? assessmentProgress.completed === 0
+                    ? 'Researching and creating risks'
+                    : 'Assessing risks and generating mitigation plans'
+                  : progress
+                    ? progress.completed === 0
                       ? 'Researching and creating risks'
                       : 'Assessing risks and generating mitigation plans'
-                    : progress
-                      ? progress.completed === 0
-                        ? 'Researching and creating risks'
-                        : 'Assessing risks and generating mitigation plans'
-                      : 'Researching and creating risks'}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {assessmentProgress
-                    ? assessmentProgress.completed === 0
+                    : 'Researching and creating risks'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {assessmentProgress
+                  ? assessmentProgress.completed === 0
+                    ? 'AI is analyzing your organization...'
+                    : `${assessmentProgress.completed}/${assessmentProgress.total} risks assessed`
+                  : progress
+                    ? progress.completed === 0
                       ? 'AI is analyzing your organization...'
-                      : `${assessmentProgress.completed}/${assessmentProgress.total} risks assessed`
-                    : progress
-                      ? progress.completed === 0
-                        ? 'AI is analyzing your organization...'
-                        : `${progress.completed}/${progress.total} risks created`
-                      : 'AI is analyzing your organization...'}
-                </span>
-              </div>
+                      : `${progress.completed}/${progress.total} risks created`
+                    : 'AI is analyzing your organization...'}
+              </span>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Table */}
-          <Table variant="bordered">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Risk</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mergedRisks.map((risk) => {
-                const blocked = isRowBlocked(risk);
-                return (
-                  <TableRow
-                    key={risk.id}
-                    onClick={() => !blocked && handleRowClick(risk.id)}
-                    style={{ cursor: blocked ? 'default' : 'pointer' }}
-                    data-state={blocked ? 'disabled' : undefined}
-                  >
-                    <TableCell>
-                      <HStack gap="2" align="center">
-                        {blocked && <Spinner />}
-                        <Text>{risk.title}</Text>
-                      </HStack>
-                    </TableCell>
-                    <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
-                    <TableCell>{getStatusBadge(risk.status)}</TableCell>
-                    <TableCell>
-                      <Text>{risk.assignee?.name || 'Unassigned'}</Text>
-                    </TableCell>
-                    <TableCell>
-                      <Text>{formatDate(risk.updatedAt)}</Text>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="More actions"
+        {/* Table */}
+        <Table variant="bordered">
+          <TableHeader>
+            <TableRow>
+              <TableHead>
+                <button
+                  type="button"
+                  onClick={() => handleSort('title')}
+                  className="flex items-center hover:text-foreground"
+                >
+                  RISK
+                  {getSortIcon('title')}
+                </button>
+              </TableHead>
+              <TableHead>SEVERITY</TableHead>
+              <TableHead>STATUS</TableHead>
+              <TableHead>OWNER</TableHead>
+              <TableHead>
+                <button
+                  type="button"
+                  onClick={() => handleSort('updatedAt')}
+                  className="flex items-center hover:text-foreground"
+                >
+                  UPDATED
+                  {getSortIcon('updatedAt')}
+                </button>
+              </TableHead>
+              <TableHead>ACTIONS</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mergedRisks.map((risk) => {
+              const blocked = isRowBlocked(risk);
+              return (
+                <TableRow
+                  key={risk.id}
+                  onClick={() => !blocked && handleRowClick(risk.id)}
+                  style={{ cursor: blocked ? 'default' : 'pointer' }}
+                  data-state={blocked ? 'disabled' : undefined}
+                >
+                  <TableCell>
+                    <HStack gap="2" align="center">
+                      {blocked && <Spinner />}
+                      <Text>{risk.title}</Text>
+                    </HStack>
+                  </TableCell>
+                  <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
+                  <TableCell>{getStatusBadge(risk.status)}</TableCell>
+                  <TableCell>
+                    <Text>{risk.assignee?.name || 'Unassigned'}</Text>
+                  </TableCell>
+                  <TableCell>
+                    <Text>{formatDate(risk.updatedAt)}</Text>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          variant="ellipsis"
+                          disabled={blocked}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <OverflowMenuHorizontal size={16} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Stack>
-      </RiskOnboardingProvider>
-      <CreateRiskSheet assignees={assignees} />
-    </>
+                          <OverflowMenuVertical />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleRowClick(risk.id)}>
+                            <View size={16} />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => handleDeleteClick(risk)}
+                          >
+                            <TrashCan size={16} />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Risk</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{riskToDelete?.title}"? This action cannot be
+                undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </Stack>
+    </RiskOnboardingProvider>
   );
 };

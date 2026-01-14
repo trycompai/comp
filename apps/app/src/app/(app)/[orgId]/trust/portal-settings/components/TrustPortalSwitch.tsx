@@ -1,16 +1,16 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { useDebounce } from '@/hooks/useDebounce';
+import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Switch } from '@comp/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ExternalLink, FileText, Upload, Download, Eye, FileCheck2 } from 'lucide-react';
+import { Switch } from '@trycompai/design-system';
+import { Download, ExternalLink, Eye, FileCheck2, Upload } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,12 +19,12 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
-import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
 import {
   TrustPortalAdditionalDocumentsSection,
   type TrustPortalDocument,
 } from './TrustPortalAdditionalDocumentsSection';
 import { TrustPortalDomain } from './TrustPortalDomain';
+import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
 import {
   GDPR,
   HIPAA,
@@ -360,8 +360,10 @@ export function TrustPortalSwitch({
           // Server schema accepts: enabled, contactEmail, primaryColor
           const data: TrustPortalSwitchActionInput = {
             enabled: field === 'enabled' ? (value as boolean) : current.enabled,
-            contactEmail: field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
-            primaryColor: field === 'primaryColor' ? (value as string) : (current.primaryColor ?? undefined),
+            contactEmail:
+              field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
+            primaryColor:
+              field === 'primaryColor' ? (value as string) : (current.primaryColor ?? undefined),
           };
           await onSubmit(data);
           lastSaved.current[field] = value as string | boolean | null;
@@ -470,61 +472,61 @@ export function TrustPortalSwitch({
               <div className="pt-2">
                 <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-4 lg:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="primaryColor"
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Brand Color</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <div className="flex items-center gap-2">
-                                {/* Color Swatch */}
-                                <div className="relative">
-                                  <input
-                                    {...field}
-                                    value={primaryColorValue ?? '#000000'}
-                                    onChange={(e) => {
-                                      field.onChange(e);
-                                      setPrimaryColorValue(e.target.value);
-                                    }}
-                                    onBlur={handlePrimaryColorBlur}
-                                    type="color"
-                                    className="sr-only"
-                                    id="color-picker"
-                                  />
-                                  <label
-                                    htmlFor="color-picker"
-                                    className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
-                                    style={{ backgroundColor: primaryColorValue || '#000000' }}
-                                  >
-                                    <span className="sr-only">Pick a color</span>
-                                  </label>
-                                </div>
-                                {/* Hex Input */}
-                                <div className="flex-1">
-                                  <Input
-                                    value={primaryColorValue?.toUpperCase() || '#000000'}
-                                    onChange={(e) => {
-                                      let value = e.target.value;
-                                      if (!value.startsWith('#')) {
-                                        value = '#' + value;
-                                      }
-                                      field.onChange(value);
-                                      setPrimaryColorValue(value);
-                                    }}
-                                    onBlur={handlePrimaryColorBlur}
-                                    placeholder="#000000"
-                                    className="font-mono"
-                                    maxLength={7}
-                                  />
-                                </div>
+                  <FormField
+                    control={form.control}
+                    name="primaryColor"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Brand Color</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <div className="flex items-center gap-2">
+                              {/* Color Swatch */}
+                              <div className="relative">
+                                <input
+                                  {...field}
+                                  value={primaryColorValue ?? '#000000'}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    setPrimaryColorValue(e.target.value);
+                                  }}
+                                  onBlur={handlePrimaryColorBlur}
+                                  type="color"
+                                  className="sr-only"
+                                  id="color-picker"
+                                />
+                                <label
+                                  htmlFor="color-picker"
+                                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
+                                  style={{ backgroundColor: primaryColorValue || '#000000' }}
+                                >
+                                  <span className="sr-only">Pick a color</span>
+                                </label>
+                              </div>
+                              {/* Hex Input */}
+                              <div className="flex-1">
+                                <Input
+                                  value={primaryColorValue?.toUpperCase() || '#000000'}
+                                  onChange={(e) => {
+                                    let value = e.target.value;
+                                    if (!value.startsWith('#')) {
+                                      value = '#' + value;
+                                    }
+                                    field.onChange(value);
+                                    setPrimaryColorValue(value);
+                                  }}
+                                  onBlur={handlePrimaryColorBlur}
+                                  placeholder="#000000"
+                                  className="font-mono"
+                                  maxLength={7}
+                                />
                               </div>
                             </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="contactEmail"
@@ -1099,7 +1101,7 @@ function ComplianceFramework({
               <Switch checked={isEnabled} onCheckedChange={onToggle} />
             </div>
           </div>
-          
+
           {/* File Upload Section - Only show when status is "compliant" */}
           {isEnabled && status === 'compliant' && (
             <div className="mt-4 border-t pt-4">
@@ -1116,11 +1118,9 @@ function ComplianceFramework({
                 }}
                 disabled={isUploading}
               />
-              
+
               {/* Section Header */}
-              <h4 className="text-sm font-semibold text-foreground mb-3">
-                Compliance Certificate
-              </h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Compliance Certificate</h4>
 
               {/* Certificate Content */}
               {fileName ? (
@@ -1131,12 +1131,8 @@ function ComplianceFramework({
                       <FileCheck2 className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {fileName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Certificate uploaded
-                      </p>
+                      <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
+                      <p className="text-xs text-muted-foreground">Certificate uploaded</p>
                     </div>
                     {onFilePreview && (
                       <TooltipProvider delayDuration={100}>
@@ -1149,7 +1145,9 @@ function ComplianceFramework({
                                   await onFilePreview(frameworkKey);
                                 } catch (error) {
                                   const message =
-                                    error instanceof Error ? error.message : 'Failed to preview certificate';
+                                    error instanceof Error
+                                      ? error.message
+                                      : 'Failed to preview certificate';
                                   toast.error(message);
                                 }
                               }}
@@ -1199,7 +1197,9 @@ function ComplianceFramework({
                                   await onFilePreview(frameworkKey);
                                 } catch (error) {
                                   const message =
-                                    error instanceof Error ? error.message : 'Failed to download certificate';
+                                    error instanceof Error
+                                      ? error.message
+                                      : 'Failed to download certificate';
                                   toast.error(message);
                                 }
                               }}
@@ -1232,21 +1232,27 @@ function ComplianceFramework({
                   `}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`
+                    <div
+                      className={`
                       flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
                       transition-all duration-200
                       ${isDragging ? 'bg-primary/10' : 'bg-background'}
-                    `}>
-                      <Upload className={`
+                    `}
+                    >
+                      <Upload
+                        className={`
                         h-5 w-5 transition-all duration-200
                         ${isDragging ? 'text-primary scale-110' : 'text-muted-foreground'}
-                      `} />
+                      `}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`
+                      <p
+                        className={`
                         text-sm font-medium transition-colors duration-200
                         ${isDragging ? 'text-primary' : 'text-foreground'}
-                      `}>
+                      `}
+                      >
                         {isDragging ? 'Drop your certificate here' : 'Drag & drop certificate'}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -1272,5 +1278,3 @@ function ComplianceFramework({
     </>
   );
 }
-
-

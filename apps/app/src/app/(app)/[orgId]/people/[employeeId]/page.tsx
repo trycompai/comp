@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
 
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import {
   type TrainingVideo,
   trainingVideos as trainingVideosData,
@@ -8,6 +7,7 @@ import {
 import { getFleetInstance } from '@/lib/fleet';
 import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
@@ -50,11 +50,16 @@ export default async function EmployeeDetailsPage({
   const { fleetPolicies, device } = await getFleetPolicies(employee);
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'People', href: `/${orgId}/people/all` },
-        { label: employee.user.name, current: true },
-      ]}
+    <PageLayout
+      header={
+        <PageHeader
+          title={employee.user.name ?? 'Employee'}
+          breadcrumbs={[
+            { label: 'People', href: `/${orgId}/people` },
+            { label: employee.user.name ?? 'Employee', isCurrent: true },
+          ]}
+        />
+      }
     >
       <Employee
         employee={employee}
@@ -64,7 +69,7 @@ export default async function EmployeeDetailsPage({
         host={device}
         canEdit={canEditMembers}
       />
-    </PageWithBreadcrumb>
+    </PageLayout>
   );
 }
 

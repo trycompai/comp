@@ -11,7 +11,6 @@ import { SecondaryFields } from './secondary-fields/secondary-fields';
 import { VendorHeader } from './VendorHeader';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
-import { VendorTabs } from './VendorTabs';
 
 // Vendor with risk assessment data merged from GlobalVendors
 type VendorWithRiskAssessment = Vendor & {
@@ -83,7 +82,6 @@ export function VendorPageClient({
   return (
     <>
       {!isViewingTask && <VendorHeader vendor={vendor} />}
-      {!isViewingTask && <VendorTabs vendorId={vendorId} orgId={orgId} />}
       <div className="flex flex-col gap-4">
         {!isViewingTask && (
           <>

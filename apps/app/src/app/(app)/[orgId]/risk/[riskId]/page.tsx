@@ -1,6 +1,6 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -38,18 +38,26 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
   const shortTaskId = (id: string) => id.slice(-6).toUpperCase();
   const isViewingTask = Boolean(taskItemId);
 
-  return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
+  const breadcrumbs = taskItemId
+    ? [
         { label: 'Risks', href: `/${orgId}/risk` },
-        ...(taskItemId
-          ? [
-              { label: risk.title, href: `/${orgId}/risk/${riskId}` },
-              { label: shortTaskId(taskItemId), current: true },
-            ]
-          : [{ label: risk.title, current: true }]),
-      ]}
-      headerRight={<RiskActions riskId={riskId} orgId={orgId} />}
+        { label: risk.title, href: `/${orgId}/risk/${riskId}` },
+        { label: shortTaskId(taskItemId), isCurrent: true },
+      ]
+    : [
+        { label: 'Risks', href: `/${orgId}/risk` },
+        { label: risk.title, isCurrent: true },
+      ];
+
+  return (
+    <PageLayout
+      header={
+        <PageHeader
+          title={taskItemId ? shortTaskId(taskItemId) : risk.title}
+          breadcrumbs={breadcrumbs}
+          actions={<RiskActions riskId={riskId} orgId={orgId} />}
+        />
+      }
     >
       <RiskPageClient
         riskId={riskId}
@@ -58,7 +66,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
         assignees={assignees}
         isViewingTask={isViewingTask}
       />
-    </PageWithBreadcrumb>
+    </PageLayout>
   );
 }
 

@@ -5,9 +5,9 @@ import { db } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { cache } from 'react';
-import { RisksTable } from './RisksTable';
 import { getRisks } from './data/getRisks';
 import { searchParamsCache } from './data/validations';
+import { RisksTable } from './RisksTable';
 
 export default async function RiskRegisterPage(props: {
   params: Promise<{ orgId: string }>;
@@ -49,7 +49,7 @@ export default async function RiskRegisterPage(props: {
   if (isEmpty && isDefaultView && !isOnboardingActive) {
     return (
       <PageLayout padding="sm" container={false}>
-        <PageHeader title="Risks" />
+        <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees} />} />
         <AppOnboarding
           title={'Risk Management'}
           description={
@@ -78,14 +78,13 @@ export default async function RiskRegisterPage(props: {
             },
           ]}
         />
-        <CreateRiskSheet assignees={assignees} />
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout padding="sm" container={false}>
-      <PageHeader title="Risks" />
+    <PageLayout>
+      <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees} />} />
       <RisksTable
         risks={risksResult?.data || []}
         pageCount={risksResult.pageCount}
