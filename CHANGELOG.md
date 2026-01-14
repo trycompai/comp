@@ -1,3 +1,10 @@
+# [1.77.0](https://github.com/trycompai/comp/compare/v1.76.1...v1.77.0) (2026-01-14)
+
+
+### Features
+
+* **api:** add functionality to download policies as ZIP with watermarking ([#2005](https://github.com/trycompai/comp/issues/2005)) ([338db04](https://github.com/trycompai/comp/commit/338db04792cff555663b1c9b412404bfa9756c62))
+
 ## [1.76.1](https://github.com/trycompai/comp/compare/v1.76.0...v1.76.1) (2026-01-12)
 
 
