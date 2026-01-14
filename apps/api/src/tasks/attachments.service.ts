@@ -15,6 +15,7 @@ import { db } from '@trycompai/db';
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from './dto/task-responses.dto';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';
+import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
@@ -27,13 +28,15 @@ export class AttachmentsService {
     // AWS configuration is validated at startup via ConfigModule
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
-    this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+  
+    if (!s3Client) {
+      console.error('S3 Client is not initialized. Check AWS S3 configuration.');
+      throw new Error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
+    }
+
+    this.s3Client = s3Client;
   }
 
   /**
