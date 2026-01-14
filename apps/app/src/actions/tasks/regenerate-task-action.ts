@@ -46,14 +46,28 @@ export const regenerateTaskAction = authActionClient
       throw new Error('Task has no associated template to regenerate from');
     }
 
-    // Update the task with the template's current title and description
-    await db.task.update({
+    // Log current state
+    console.log('[regenerateTask] Task ID:', taskId);
+    console.log('[regenerateTask] Task current automationStatus:', task.automationStatus);
+    console.log('[regenerateTask] Template ID:', task.taskTemplate.id);
+    console.log('[regenerateTask] Template automationStatus:', task.taskTemplate.automationStatus);
+    console.log('[regenerateTask] Updating task with:', {
+      title: task.taskTemplate.name,
+      description: task.taskTemplate.description?.substring(0, 50) + '...',
+      automationStatus: task.taskTemplate.automationStatus,
+    });
+
+    // Update the task with the template's current title, description, and automationStatus
+    const updatedTask = await db.task.update({
       where: { id: taskId },
       data: {
         title: task.taskTemplate.name,
         description: task.taskTemplate.description,
+        automationStatus: task.taskTemplate.automationStatus,
       },
     });
+
+    console.log('[regenerateTask] Updated task automationStatus:', updatedTask.automationStatus);
 
     // Revalidate the path based on the header
     const headersList = await headers();
