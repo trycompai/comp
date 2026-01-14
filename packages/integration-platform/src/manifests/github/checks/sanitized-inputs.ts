@@ -19,7 +19,7 @@ import type {
   GitHubTreeEntry,
   GitHubTreeResponse,
 } from '../types';
-import { targetReposVariable } from '../variables';
+import { parseRepoBranch, targetReposVariable } from '../variables';
 
 const JS_VALIDATION_PACKAGES = ['zod'];
 const PY_VALIDATION_PACKAGES = ['pydantic'];
@@ -82,7 +82,9 @@ export const sanitizedInputsCheck: IntegrationCheck = {
   variables: [targetReposVariable],
 
   run: async (ctx) => {
-    const targetRepos = (ctx.variables.target_repos as string[] | undefined) ?? [];
+    const targetReposRaw = (ctx.variables.target_repos as string[] | undefined) ?? [];
+    // Extract just the repo names (values may be in "owner/repo:branch" format)
+    const targetRepos = targetReposRaw.map((v) => parseRepoBranch(v).repo);
 
     if (targetRepos.length === 0) {
       ctx.fail({
@@ -314,9 +316,13 @@ export const sanitizedInputsCheck: IntegrationCheck = {
           resourceType: 'repository',
           resourceId: repo.full_name,
           evidence: {
-            repository: repo.full_name,
-            matches: validationMatches,
-            checkedAt: new Date().toISOString(),
+            [repo.full_name]: {
+              validation: {
+                status: 'enabled',
+                matches: validationMatches,
+                checked_at: new Date().toISOString(),
+              },
+            },
           },
         });
       } else {
@@ -334,8 +340,14 @@ export const sanitizedInputsCheck: IntegrationCheck = {
           remediation:
             'Add Zod (JavaScript/TypeScript) or Pydantic (Python) to enforce schema validation on inbound data.',
           evidence: {
-            repository: repo.full_name,
-            checkedFiles: checkedFiles.length > 0 ? checkedFiles : ['No dependency files found'],
+            [repo.full_name]: {
+              validation: {
+                status: 'not_found',
+                checked_files:
+                  checkedFiles.length > 0 ? checkedFiles : ['No dependency files found'],
+                checked_at: new Date().toISOString(),
+              },
+            },
           },
         });
       }
@@ -354,11 +366,15 @@ export const sanitizedInputsCheck: IntegrationCheck = {
             resourceType: 'repository',
             resourceId: repo.full_name,
             evidence: {
-              repository: repo.full_name,
-              codeScanning: codeScanningStatus.method,
-              ...(codeScanningStatus.languages && { languages: codeScanningStatus.languages }),
-              ...(codeScanningStatus.workflow && { workflow: codeScanningStatus.workflow }),
-              checkedAt: new Date().toISOString(),
+              [repo.full_name]: {
+                code_scanning: {
+                  status: 'enabled',
+                  method: codeScanningStatus.method,
+                  ...(codeScanningStatus.languages && { languages: codeScanningStatus.languages }),
+                  ...(codeScanningStatus.workflow && { workflow: codeScanningStatus.workflow }),
+                  checked_at: new Date().toISOString(),
+                },
+              },
             },
           });
           break;
@@ -374,6 +390,14 @@ export const sanitizedInputsCheck: IntegrationCheck = {
             severity: 'medium',
             remediation:
               'Enable GitHub Advanced Security in the repository settings (Settings → Code security and analysis → GitHub Advanced Security), then enable CodeQL.',
+            evidence: {
+              [repo.full_name]: {
+                code_scanning: {
+                  status: 'ghas_required',
+                  checked_at: new Date().toISOString(),
+                },
+              },
+            },
           });
           break;
 
@@ -387,6 +411,14 @@ export const sanitizedInputsCheck: IntegrationCheck = {
             severity: 'medium',
             remediation:
               'Ensure the GitHub App has "Code scanning alerts: Read" permission. If this is an organization repository, check that organization policies allow access.',
+            evidence: {
+              [repo.full_name]: {
+                code_scanning: {
+                  status: 'permission_denied',
+                  checked_at: new Date().toISOString(),
+                },
+              },
+            },
           });
           break;
 
@@ -401,6 +433,14 @@ export const sanitizedInputsCheck: IntegrationCheck = {
             severity: 'medium',
             remediation:
               'In the repository Security tab, enable CodeQL default setup (or add a custom workflow) to run on every push.',
+            evidence: {
+              [repo.full_name]: {
+                code_scanning: {
+                  status: 'not_configured',
+                  checked_at: new Date().toISOString(),
+                },
+              },
+            },
           });
           break;
       }
