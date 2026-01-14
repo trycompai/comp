@@ -89,4 +89,3 @@ export const vendorRiskAssessmentMonthlySchedule = schedules.task({
     }
   },
 });
-

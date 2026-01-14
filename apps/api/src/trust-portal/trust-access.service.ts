@@ -735,15 +735,22 @@ export class TrustAccessService {
 
     // Check if grant has expired
     if (grant.expiresAt < now) {
-      throw new BadRequestException('Cannot resend access email for expired grant');
+      throw new BadRequestException(
+        'Cannot resend access email for expired grant',
+      );
     }
 
     // Generate a new access token if expired or missing
     let accessToken = grant.accessToken;
 
-    if (!accessToken || (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)) {
+    if (
+      !accessToken ||
+      (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)
+    ) {
       accessToken = this.generateToken(32);
-      const accessTokenExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const accessTokenExpiresAt = new Date(
+        now.getTime() + 24 * 60 * 60 * 1000,
+      );
 
       await db.trustAccessGrant.update({
         where: { id: grantId },
@@ -1492,9 +1499,7 @@ export class TrustAccessService {
 
     const archive = archiver('zip', { zlib: { level: 9 } });
     const zipStream = new PassThrough();
-    let putPromise:
-      | Promise<unknown>
-      | undefined;
+    let putPromise: Promise<unknown> | undefined;
 
     try {
       putPromise = s3Client.send(

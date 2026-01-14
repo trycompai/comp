@@ -102,7 +102,8 @@ async function buildFallbackCommentContext(params: {
     });
 
     if (taskItem) {
-      const parentRoutePath = taskItem.entityType === 'vendor' ? 'vendors' : 'risk';
+      const parentRoutePath =
+        taskItem.entityType === 'vendor' ? 'vendors' : 'risk';
       const url = new URL(
         `${appUrl}/${organizationId}/${parentRoutePath}/${taskItem.entityId}`,
       );
@@ -291,7 +292,11 @@ export class CommentMentionNotifierService {
 
         // Check if user is unsubscribed from comment mention notifications
         // Note: We'll use 'taskMentions' preference for now, or create a new 'commentMentions' preference
-        const isUnsubscribed = await isUserUnsubscribed(db, user.email, 'taskMentions');
+        const isUnsubscribed = await isUserUnsubscribed(
+          db,
+          user.email,
+          'taskMentions',
+        );
         if (isUnsubscribed) {
           this.logger.log(
             `Skipping mention notification: user ${user.email} is unsubscribed from mentions`,
@@ -375,4 +380,3 @@ export class CommentMentionNotifierService {
     }
   }
 }
-

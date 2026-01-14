@@ -10,7 +10,8 @@ function normalizeUrl(url: string | null | undefined): string | null {
   if (trimmed === '') return null;
 
   const looksLikeDomain =
-    !/^https?:\/\//i.test(trimmed) && /^[a-z0-9.-]+\.[a-z]{2,}([/].*)?$/i.test(trimmed);
+    !/^https?:\/\//i.test(trimmed) &&
+    /^[a-z0-9.-]+\.[a-z]{2,}([/].*)?$/i.test(trimmed);
   const candidate = looksLikeDomain ? `https://${trimmed}` : trimmed;
 
   try {
@@ -37,7 +38,9 @@ export async function firecrawlAgentVendorRiskAssessment(params: {
 }): Promise<VendorRiskAssessmentDataV1 | null> {
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
-    logger.warn('FIRECRAWL_API_KEY is not configured; skipping vendor research');
+    logger.warn(
+      'FIRECRAWL_API_KEY is not configured; skipping vendor research',
+    );
     return null;
   }
 
@@ -47,7 +50,9 @@ export async function firecrawlAgentVendorRiskAssessment(params: {
   try {
     origin = new URL(vendorWebsite).origin;
   } catch {
-    logger.warn('Invalid website URL provided to Firecrawl Agent', { vendorWebsite });
+    logger.warn('Invalid website URL provided to Firecrawl Agent', {
+      vendorWebsite,
+    });
     return null;
   }
 
@@ -126,7 +131,10 @@ Focus on their official website (especially trust/security/compliance pages), pr
               summary: { type: 'string' },
               source: { type: 'string' },
               url: { type: 'string' },
-              sentiment: { type: 'string', enum: ['positive', 'negative', 'neutral'] },
+              sentiment: {
+                type: 'string',
+                enum: ['positive', 'negative', 'neutral'],
+              },
             },
             required: ['date', 'title'],
           },
@@ -147,11 +155,22 @@ Focus on their official website (especially trust/security/compliance pages), pr
 
   const links = parsed.data.links ?? null;
   const linkPairs: Array<{ label: string; url: string }> = [];
-  if (links?.trust_center_url) linkPairs.push({ label: 'Trust & Security', url: links.trust_center_url });
-  if (links?.security_page_url) linkPairs.push({ label: 'Security Overview', url: links.security_page_url });
-  if (links?.soc2_report_url) linkPairs.push({ label: 'SOC 2 Report', url: links.soc2_report_url });
-  if (links?.privacy_policy_url) linkPairs.push({ label: 'Privacy Policy', url: links.privacy_policy_url });
-  if (links?.terms_of_service_url) linkPairs.push({ label: 'Terms of Service', url: links.terms_of_service_url });
+  if (links?.trust_center_url)
+    linkPairs.push({ label: 'Trust & Security', url: links.trust_center_url });
+  if (links?.security_page_url)
+    linkPairs.push({
+      label: 'Security Overview',
+      url: links.security_page_url,
+    });
+  if (links?.soc2_report_url)
+    linkPairs.push({ label: 'SOC 2 Report', url: links.soc2_report_url });
+  if (links?.privacy_policy_url)
+    linkPairs.push({ label: 'Privacy Policy', url: links.privacy_policy_url });
+  if (links?.terms_of_service_url)
+    linkPairs.push({
+      label: 'Terms of Service',
+      url: links.terms_of_service_url,
+    });
 
   const normalizedLinks = linkPairs
     .map((l) => ({ ...l, url: normalizeUrl(l.url) }))
@@ -199,7 +218,9 @@ Focus on their official website (especially trust/security/compliance pages), pr
     kind: 'vendorRiskAssessmentV1',
     vendorName,
     vendorWebsite,
-    lastResearchedAt: normalizeIso(parsed.data.last_researched_at ?? null) ?? new Date().toISOString(),
+    lastResearchedAt:
+      normalizeIso(parsed.data.last_researched_at ?? null) ??
+      new Date().toISOString(),
     riskLevel: parsed.data.risk_level ?? null,
     securityAssessment: parsed.data.security_assessment ?? null,
     certifications: certifications.length > 0 ? certifications : null,
@@ -218,5 +239,3 @@ Focus on their official website (especially trust/security/compliance pages), pr
 
   return result;
 }
-
-

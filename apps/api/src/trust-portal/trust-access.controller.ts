@@ -509,7 +509,9 @@ export class TrustAccessController {
     description: 'Signed URL for ZIP archive returned',
   })
   async downloadAllTrustDocuments(@Param('token') token: string) {
-    return this.trustAccessService.downloadAllTrustDocumentsByAccessToken(token);
+    return this.trustAccessService.downloadAllTrustDocumentsByAccessToken(
+      token,
+    );
   }
 
   @Get('access/:token/documents/:documentId')

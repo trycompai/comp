@@ -7,7 +7,9 @@ import { Prisma } from '@prisma/client';
 import type { TriggerVendorRiskAssessmentVendorDto } from './dto/trigger-vendor-risk-assessment.dto';
 import { resolveTaskCreatorAndAssignee } from '../trigger/vendor/vendor-risk-assessment/assignee';
 
-const normalizeWebsite = (website: string | null | undefined): string | null => {
+const normalizeWebsite = (
+  website: string | null | undefined,
+): string | null => {
   if (!website) return null;
   const trimmed = website.trim();
   if (!trimmed) return null;
@@ -40,7 +42,9 @@ const extractDomain = (website: string | null | undefined): string | null => {
 
   try {
     // Add protocol if missing to make URL parsing work
-    const urlString = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const urlString = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
     const url = new URL(urlString);
     // Remove www. prefix and return just the domain
     return url.hostname.toLowerCase().replace(/^www\./, '');
@@ -126,10 +130,7 @@ export class VendorsService {
             riskAssessmentVersion: true,
             riskAssessmentUpdatedAt: true,
           },
-          orderBy: [
-            { riskAssessmentUpdatedAt: 'desc' },
-            { createdAt: 'desc' },
-          ],
+          orderBy: [{ riskAssessmentUpdatedAt: 'desc' }, { createdAt: 'desc' }],
         });
 
         // Prefer record WITH risk assessment data (most recent)
@@ -144,7 +145,8 @@ export class VendorsService {
         ...vendor,
         riskAssessmentData: globalVendorData?.riskAssessmentData ?? null,
         riskAssessmentVersion: globalVendorData?.riskAssessmentVersion ?? null,
-        riskAssessmentUpdatedAt: globalVendorData?.riskAssessmentUpdatedAt ?? null,
+        riskAssessmentUpdatedAt:
+          globalVendorData?.riskAssessmentUpdatedAt ?? null,
       };
 
       this.logger.log(`Retrieved vendor: ${vendor.name} (${id})`);
@@ -233,12 +235,21 @@ export class VendorsService {
           vendor: v,
           domain: extractDomain(v.vendorWebsite ?? null),
         }))
-        .filter((vd): vd is { vendor: TriggerVendorRiskAssessmentVendorDto; domain: string } => vd.domain !== null);
+        .filter(
+          (
+            vd,
+          ): vd is {
+            vendor: TriggerVendorRiskAssessmentVendorDto;
+            domain: string;
+          } => vd.domain !== null,
+        );
 
       // Check which domains already have risk assessment data using contains filter
       const existingDomains = new Set<string>();
       if (vendorDomains.length > 0) {
-        const uniqueDomains = Array.from(new Set(vendorDomains.map((vd) => vd.domain)));
+        const uniqueDomains = Array.from(
+          new Set(vendorDomains.map((vd) => vd.domain)),
+        );
         const existing = await db.globalVendors.findMany({
           where: {
             OR: uniqueDomains.map((domain) => ({
@@ -278,10 +289,11 @@ export class VendorsService {
       if (skippedVendors.length > 0) {
         const settled = await Promise.allSettled(
           skippedVendors.map(async (v) => {
-            const { creatorMemberId, assigneeMemberId } = await resolveTaskCreatorAndAssignee({
-              organizationId,
-              createdByUserId: null,
-            });
+            const { creatorMemberId, assigneeMemberId } =
+              await resolveTaskCreatorAndAssignee({
+                organizationId,
+                createdByUserId: null,
+              });
 
             const creatorMember = await db.member.findUnique({
               where: { id: creatorMemberId },
@@ -303,7 +315,8 @@ export class VendorsService {
               const created = await db.taskItem.create({
                 data: {
                   title: VERIFY_RISK_ASSESSMENT_TASK_TITLE,
-                  description: 'Review the latest Risk Assessment and confirm it is accurate.',
+                  description:
+                    'Review the latest Risk Assessment and confirm it is accurate.',
                   status: TaskItemStatus.todo,
                   priority: TaskItemPriority.high,
                   entityId: v.vendorId,
@@ -351,7 +364,8 @@ export class VendorsService {
                 where: { id: existingVerifyTask.id },
                 data: {
                   status: TaskItemStatus.todo,
-                  description: 'Review the latest Risk Assessment and confirm it is accurate.',
+                  description:
+                    'Review the latest Risk Assessment and confirm it is accurate.',
                   assigneeId: assigneeMemberId,
                   updatedById: creatorMemberId,
                 },
@@ -363,33 +377,46 @@ export class VendorsService {
 
         const failures = settled.filter((r) => r.status === 'rejected');
         if (failures.length > 0) {
-          this.logger.warn('Some verify tasks could not be ensured for skipped vendors', {
-            organizationId,
-            failures: failures.length,
-            skippedCount: skippedVendors.length,
-          });
+          this.logger.warn(
+            'Some verify tasks could not be ensured for skipped vendors',
+            {
+              organizationId,
+              failures: failures.length,
+              skippedCount: skippedVendors.length,
+            },
+          );
         }
       }
     }
 
     // Simplified logging: clear lists of what needs research vs what doesn't
     if (!withResearch && skippedVendors.length > 0) {
-      this.logger.log('✅ Vendors that DO NOT need research (already have data)', {
-        count: skippedVendors.length,
-        vendors: skippedVendors.map((v) => `${v.vendorName} (${v.vendorWebsite ?? 'no website'})`),
-      });
+      this.logger.log(
+        '✅ Vendors that DO NOT need research (already have data)',
+        {
+          count: skippedVendors.length,
+          vendors: skippedVendors.map(
+            (v) => `${v.vendorName} (${v.vendorWebsite ?? 'no website'})`,
+          ),
+        },
+      );
     }
 
     if (vendorsToTrigger.length > 0) {
       this.logger.log('🔍 Vendors that NEED research (missing data)', {
         count: vendorsToTrigger.length,
         withResearch,
-        vendors: vendorsToTrigger.map((v) => `${v.vendorName} (${v.vendorWebsite ?? 'no website'})`),
+        vendors: vendorsToTrigger.map(
+          (v) => `${v.vendorName} (${v.vendorWebsite ?? 'no website'})`,
+        ),
       });
     } else {
-      this.logger.log('✅ All vendors already have risk assessment data - no research needed', {
-        totalVendors: vendors.length,
-      });
+      this.logger.log(
+        '✅ All vendors already have risk assessment data - no research needed',
+        {
+          totalVendors: vendors.length,
+        },
+      );
     }
 
     // Use batchTrigger for efficiency (less overhead than N individual triggers)
@@ -412,7 +439,10 @@ export class VendorsService {
         return { triggered: 0, batchId: null };
       }
 
-      const batchHandle = await tasks.batchTrigger('vendor-risk-assessment-task', batch);
+      const batchHandle = await tasks.batchTrigger(
+        'vendor-risk-assessment-task',
+        batch,
+      );
 
       this.logger.log('✅ Triggered risk assessment tasks', {
         count: vendorsToTrigger.length,
@@ -424,12 +454,15 @@ export class VendorsService {
         batchId: batchHandle.batchId,
       };
     } catch (error) {
-      this.logger.error('Failed to batch trigger vendor risk assessment tasks', {
-        organizationId,
-        vendorCount: vendorsToTrigger.length,
-        error: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-      });
+      this.logger.error(
+        'Failed to batch trigger vendor risk assessment tasks',
+        {
+          organizationId,
+          vendorCount: vendorsToTrigger.length,
+          error: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+      );
       throw error;
     }
   }

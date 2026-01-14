@@ -17,7 +17,10 @@ type GetAssistantChatKeyParams = {
   userId: string;
 };
 
-const getAssistantChatKey = ({ organizationId, userId }: GetAssistantChatKeyParams): string => {
+const getAssistantChatKey = ({
+  organizationId,
+  userId,
+}: GetAssistantChatKeyParams): string => {
   return `assistant-chat:v1:${organizationId}:${userId}`;
 };
 
@@ -27,9 +30,13 @@ export class AssistantChatService {
    * Default TTL is 7 days. This is intended to behave like "session context"
    * rather than a long-term, searchable archive.
    */
-  private readonly ttlSeconds = Number(process.env.ASSISTANT_CHAT_TTL_SECONDS ?? 60 * 60 * 24 * 7);
+  private readonly ttlSeconds = Number(
+    process.env.ASSISTANT_CHAT_TTL_SECONDS ?? 60 * 60 * 24 * 7,
+  );
 
-  async getHistory(params: GetAssistantChatKeyParams): Promise<AssistantChatMessage[]> {
+  async getHistory(
+    params: GetAssistantChatKeyParams,
+  ): Promise<AssistantChatMessage[]> {
     const key = getAssistantChatKey(params);
     const raw = await assistantChatRedisClient.get<unknown>(key);
     const parsed = StoredMessagesSchema.safeParse(raw);
@@ -37,7 +44,10 @@ export class AssistantChatService {
     return parsed.data;
   }
 
-  async saveHistory(params: GetAssistantChatKeyParams, messages: AssistantChatMessage[]): Promise<void> {
+  async saveHistory(
+    params: GetAssistantChatKeyParams,
+    messages: AssistantChatMessage[],
+  ): Promise<void> {
     const key = getAssistantChatKey(params);
     // Always validate before writing to keep the cache shape stable.
     const validated = StoredMessagesSchema.parse(messages);
@@ -49,5 +59,3 @@ export class AssistantChatService {
     await assistantChatRedisClient.del(key);
   }
 }
-
-

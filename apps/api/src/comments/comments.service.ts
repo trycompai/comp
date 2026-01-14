@@ -270,7 +270,9 @@ export class CommentsService {
 
       // Notify mentioned users
       if (createCommentDto.content && userId) {
-        const mentionedUserIds = extractMentionedUserIds(createCommentDto.content);
+        const mentionedUserIds = extractMentionedUserIds(
+          createCommentDto.content,
+        );
         if (mentionedUserIds.length > 0) {
           // Fire-and-forget: notification failures should not block comment creation
           void this.mentionNotifier.notifyMentionedUsers({

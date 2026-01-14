@@ -4,5 +4,3 @@ export type AssistantChatMessage = {
   text: string;
   createdAt: number;
 };
-
-
