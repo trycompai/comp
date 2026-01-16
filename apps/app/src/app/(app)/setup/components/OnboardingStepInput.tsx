@@ -746,8 +746,19 @@ function SoftwareVendorInput({
     }
   };
 
+  // Deduplicate search results by display name (case-insensitive)
+  const uniqueSearchResults = Array.from(
+    searchResults.reduce((map, vendor) => {
+      const name = getVendorDisplayName(vendor).toLowerCase();
+      if (!map.has(name)) {
+        map.set(name, vendor);
+      }
+      return map;
+    }, new Map<string, GlobalVendors>()),
+  ).map(([, vendor]) => vendor);
+
   // Filter out already selected vendors from search results
-  const filteredSearchResults = searchResults.filter((vendor) => {
+  const filteredSearchResults = uniqueSearchResults.filter((vendor) => {
     const name = getVendorDisplayName(vendor).toLowerCase();
     return (
       !selectedPredefined.some((v) => v.toLowerCase() === name) &&
