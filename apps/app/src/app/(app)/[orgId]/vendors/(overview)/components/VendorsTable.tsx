@@ -244,10 +244,65 @@ export function VendorsTable({
     return [...vendorsWithStatus, ...pendingVendors, ...tempVendors];
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
+  const dedupedVendors = useMemo<VendorRow[]>(() => {
+    // Normalize vendor name for deduplication - strips parenthetical suffixes
+    // e.g., "Fanta (cool)" and "Fanta" are treated as the same vendor
+    const normalizeVendorName = (name: string): string => {
+      return name
+        .toLowerCase()
+        .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parenthetical suffixes
+        .trim();
+    };
+
+    // Rank vendors for deduplication - higher rank wins
+    // Rank 3: assessed (completed)
+    // Rank 2: actively being assessed (via isAssessing flag OR metadata status)
+    // Rank 1: pending placeholder
+    // Rank 0: not assessed and not processing
+    const getRank = (vendor: VendorRow) => {
+      if (vendor.status === 'assessed') return 3;
+      // Check both isAssessing flag and metadata status for active assessment
+      const metadataStatus = itemStatuses[vendor.id];
+      if (vendor.isAssessing || metadataStatus === 'assessing' || metadataStatus === 'processing') {
+        return 2;
+      }
+      if (vendor.isPending) return 1;
+      return 0;
+    };
+
+    const map = new Map<string, VendorRow>();
+    mergedVendors.forEach((vendor) => {
+      const nameKey = normalizeVendorName(vendor.name);
+      const existing = map.get(nameKey);
+      if (!existing) {
+        map.set(nameKey, vendor);
+        return;
+      }
+
+      const currentRank = getRank(vendor);
+      const existingRank = getRank(existing);
+
+      if (currentRank > existingRank) {
+        map.set(nameKey, vendor);
+        return;
+      }
+
+      if (currentRank === existingRank) {
+        const existingUpdatedAt = new Date(existing.updatedAt).getTime();
+        const currentUpdatedAt = new Date(vendor.updatedAt).getTime();
+        if (currentUpdatedAt > existingUpdatedAt) {
+          map.set(nameKey, vendor);
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [mergedVendors, itemStatuses]);
+
   const columns = useMemo<ColumnDef<VendorRow>[]>(() => getColumns(orgId), [orgId]);
 
   const { table } = useDataTable({
-    data: mergedVendors,
+    data: dedupedVendors,
     columns,
     pageCount,
     getRowId: (row) => row.id,
@@ -285,33 +340,55 @@ export function VendorsTable({
     [itemStatuses],
   );
 
-  // Calculate actual assessment progress
+  // Calculate actual assessment progress (using deduplicated counts to match the table)
   const assessmentProgress = useMemo(() => {
     if (!progress || !itemsInfo.length) {
       return null;
     }
 
-    // Count vendors that are completed (either 'completed' in metadata or 'assessed' in DB)
-    const completedCount = vendors.filter((vendor) => {
+    // Normalize vendor name for deduplication (same as dedupedVendors)
+    const normalizeVendorName = (name: string): string => {
+      return name
+        .toLowerCase()
+        .replace(/\s*\([^)]*\)\s*$/, '')
+        .trim();
+    };
+
+    // Build a map of unique vendor names with their best status
+    // This mirrors the deduplication logic used for the table
+    const uniqueVendorStatuses = new Map<string, { isCompleted: boolean }>();
+
+    // First, add all vendors from metadata
+    itemsInfo.forEach((item) => {
+      const nameKey = normalizeVendorName(item.name);
+      const metadataStatus = itemStatuses[item.id];
+      const isCompleted = metadataStatus === 'completed';
+      
+      const existing = uniqueVendorStatuses.get(nameKey);
+      if (!existing || (isCompleted && !existing.isCompleted)) {
+        uniqueVendorStatuses.set(nameKey, { isCompleted });
+      }
+    });
+
+    // Then, update with DB vendor statuses (which may be more accurate)
+    vendors.forEach((vendor) => {
+      const nameKey = normalizeVendorName(vendor.name);
       const metadataStatus = itemStatuses[vendor.id];
-      return metadataStatus === 'completed' || vendor.status === 'assessed';
-    }).length;
+      const isCompleted = metadataStatus === 'completed' || vendor.status === 'assessed';
+      
+      const existing = uniqueVendorStatuses.get(nameKey);
+      if (!existing || (isCompleted && !existing.isCompleted)) {
+        uniqueVendorStatuses.set(nameKey, { isCompleted });
+      }
+    });
 
-    // Also count vendors in metadata that are completed but not yet in DB
-    const completedInMetadata = Object.values(itemStatuses).filter(
-      (status) => status === 'completed',
-    ).length;
-
-    // Total is the max of progress.total, itemsInfo.length, or actual vendors created
-    const total = Math.max(progress.total, itemsInfo.length, vendors.length);
-
-    // Completed is the max of DB assessed vendors or metadata completed
-    const completed = Math.max(completedCount, completedInMetadata);
+    const total = uniqueVendorStatuses.size;
+    const completed = Array.from(uniqueVendorStatuses.values()).filter((v) => v.isCompleted).length;
 
     return { total, completed };
   }, [progress, itemsInfo, vendors, itemStatuses]);
 
-  const isEmpty = mergedVendors.length === 0;
+  const isEmpty = dedupedVendors.length === 0;
   // Show empty state if onboarding is active (even if progress metadata isn't set yet)
   const showEmptyState = isEmpty && onboardingRunId && isActive;
 

@@ -525,6 +525,15 @@ const getVendorDisplayName = (vendor: GlobalVendors): string => {
   return vendor.company_name ?? vendor.legal_name ?? vendor.website ?? '';
 };
 
+// Helper to normalize vendor name for deduplication
+// Strips parenthetical suffixes like "(cool)", trims whitespace, and lowercases
+const normalizeVendorName = (name: string): string => {
+  return name
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parenthetical suffixes
+    .trim();
+};
+
 // Helper to validate domain/URL format
 const isValidDomain = (domain: string): boolean => {
   if (!domain || domain.trim() === '') return true; // Empty is valid (optional field)
@@ -640,12 +649,16 @@ function SoftwareVendorInput({
 
   const handleSelectGlobalVendor = (vendor: GlobalVendors) => {
     const name = getVendorDisplayName(vendor);
+    const normalizedName = normalizeVendorName(name);
 
-    // Check if already selected
+    // Check if already selected (using normalized names)
     const alreadyInPredefined = selectedPredefined.some(
-      (v) => v.toLowerCase() === name.toLowerCase(),
+      (v) => normalizeVendorName(v) === normalizedName,
     );
-    if (alreadyInPredefined) {
+    const alreadyInCustom = customVendors.some(
+      (v) => normalizeVendorName(v.name) === normalizedName,
+    );
+    if (alreadyInPredefined || alreadyInCustom) {
       setCustomValue('');
       setShowSuggestions(false);
       setSearchResults([]);
@@ -665,29 +678,31 @@ function SoftwareVendorInput({
     const trimmedValue = customValue.trim();
     if (!trimmedValue) return;
 
-    // Check if already exists in selected predefined or custom
+    const normalizedInput = normalizeVendorName(trimmedValue);
+
+    // Check if already exists in selected predefined or custom (using normalized names)
     const alreadyInPredefined = selectedPredefined.some(
-      (v) => v.toLowerCase() === trimmedValue.toLowerCase(),
+      (v) => normalizeVendorName(v) === normalizedInput,
     );
     if (alreadyInPredefined) {
       setCustomValue('');
       setShowSuggestions(false);
       return;
     }
-    if (customVendors.some((v) => v.name.toLowerCase() === trimmedValue.toLowerCase())) {
+    if (customVendors.some((v) => normalizeVendorName(v.name) === normalizedInput)) {
       setCustomValue('');
       setShowSuggestions(false);
       return;
     }
 
-    // Check if the typed value matches a predefined option (case-insensitive)
+    // Check if the typed value matches a predefined option (using normalized names)
     const matchedPredefined = predefinedOptions.find(
-      (option) => option.toLowerCase() === trimmedValue.toLowerCase(),
+      (option) => normalizeVendorName(option) === normalizedInput,
     );
 
-    // Check if there's a matching GlobalVendor in search results
+    // Check if there's a matching GlobalVendor in search results (using normalized names)
     const matchedGlobal = searchResults.find(
-      (v) => getVendorDisplayName(v).toLowerCase() === trimmedValue.toLowerCase(),
+      (v) => normalizeVendorName(getVendorDisplayName(v)) === normalizedInput,
     );
 
     if (matchedPredefined) {
@@ -746,23 +761,24 @@ function SoftwareVendorInput({
     }
   };
 
-  // Deduplicate search results by display name (case-insensitive)
+  // Deduplicate search results by normalized name (strips parenthetical suffixes)
+  // e.g., "Fanta (cool)" and "Fanta" are treated as the same vendor
   const uniqueSearchResults = Array.from(
     searchResults.reduce((map, vendor) => {
-      const name = getVendorDisplayName(vendor).toLowerCase();
-      if (!map.has(name)) {
-        map.set(name, vendor);
+      const normalizedName = normalizeVendorName(getVendorDisplayName(vendor));
+      if (!map.has(normalizedName)) {
+        map.set(normalizedName, vendor);
       }
       return map;
     }, new Map<string, GlobalVendors>()),
   ).map(([, vendor]) => vendor);
 
-  // Filter out already selected vendors from search results
+  // Filter out already selected vendors from search results (using normalized names)
   const filteredSearchResults = uniqueSearchResults.filter((vendor) => {
-    const name = getVendorDisplayName(vendor).toLowerCase();
+    const normalizedName = normalizeVendorName(getVendorDisplayName(vendor));
     return (
-      !selectedPredefined.some((v) => v.toLowerCase() === name) &&
-      !customVendors.some((v) => v.name.toLowerCase() === name)
+      !selectedPredefined.some((v) => normalizeVendorName(v) === normalizedName) &&
+      !customVendors.some((v) => normalizeVendorName(v.name) === normalizedName)
     );
   });
 
