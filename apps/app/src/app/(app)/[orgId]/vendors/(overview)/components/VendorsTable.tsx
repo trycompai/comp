@@ -340,28 +340,50 @@ export function VendorsTable({
     [itemStatuses],
   );
 
-  // Calculate actual assessment progress
+  // Calculate actual assessment progress (using deduplicated counts to match the table)
   const assessmentProgress = useMemo(() => {
     if (!progress || !itemsInfo.length) {
       return null;
     }
 
-    // Count vendors that are completed (either 'completed' in metadata or 'assessed' in DB)
-    const completedCount = vendors.filter((vendor) => {
+    // Normalize vendor name for deduplication (same as dedupedVendors)
+    const normalizeVendorName = (name: string): string => {
+      return name
+        .toLowerCase()
+        .replace(/\s*\([^)]*\)\s*$/, '')
+        .trim();
+    };
+
+    // Build a map of unique vendor names with their best status
+    // This mirrors the deduplication logic used for the table
+    const uniqueVendorStatuses = new Map<string, { isCompleted: boolean }>();
+
+    // First, add all vendors from metadata
+    itemsInfo.forEach((item) => {
+      const nameKey = normalizeVendorName(item.name);
+      const metadataStatus = itemStatuses[item.id];
+      const isCompleted = metadataStatus === 'completed';
+      
+      const existing = uniqueVendorStatuses.get(nameKey);
+      if (!existing || (isCompleted && !existing.isCompleted)) {
+        uniqueVendorStatuses.set(nameKey, { isCompleted });
+      }
+    });
+
+    // Then, update with DB vendor statuses (which may be more accurate)
+    vendors.forEach((vendor) => {
+      const nameKey = normalizeVendorName(vendor.name);
       const metadataStatus = itemStatuses[vendor.id];
-      return metadataStatus === 'completed' || vendor.status === 'assessed';
-    }).length;
+      const isCompleted = metadataStatus === 'completed' || vendor.status === 'assessed';
+      
+      const existing = uniqueVendorStatuses.get(nameKey);
+      if (!existing || (isCompleted && !existing.isCompleted)) {
+        uniqueVendorStatuses.set(nameKey, { isCompleted });
+      }
+    });
 
-    // Also count vendors in metadata that are completed but not yet in DB
-    const completedInMetadata = Object.values(itemStatuses).filter(
-      (status) => status === 'completed',
-    ).length;
-
-    // Total is the max of progress.total, itemsInfo.length, or actual vendors created
-    const total = Math.max(progress.total, itemsInfo.length, vendors.length);
-
-    // Completed is the max of DB assessed vendors or metadata completed
-    const completed = Math.max(completedCount, completedInMetadata);
+    const total = uniqueVendorStatuses.size;
+    const completed = Array.from(uniqueVendorStatuses.values()).filter((v) => v.isCompleted).length;
 
     return { total, completed };
   }, [progress, itemsInfo, vendors, itemStatuses]);
