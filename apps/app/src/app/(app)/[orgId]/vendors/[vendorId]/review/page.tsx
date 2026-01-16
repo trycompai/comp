@@ -1,7 +1,5 @@
-'use server';
-
 import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
+import type { VendorResponse } from '@/hooks/use-vendors';
 import { auth } from '@/utils/auth';
 import { extractDomain } from '@/utils/normalize-website';
 import { db } from '@db';
@@ -12,6 +10,7 @@ import { cache } from 'react';
 import { VendorActions } from '../components/VendorActions';
 import { VendorHeader } from '../components/VendorHeader';
 import { VendorTabs } from '../components/VendorTabs';
+import { VendorReviewClient } from './components/VendorReviewClient';
 
 interface ReviewPageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;
@@ -26,16 +25,13 @@ export default async function ReviewPage({ params, searchParams }: ReviewPagePro
   
   const vendorResult = await getVendor({ vendorId, organizationId: orgId });
 
-  if (!vendorResult || !vendorResult.vendor) {
+  if (!vendorResult || !vendorResult.vendor || !vendorResult.vendorForClient) {
     redirect('/');
   }
 
   // Hide tabs when viewing a task in focus mode
   const isViewingTask = Boolean(taskItemId);
-  const vendor = vendorResult.vendor;
-
-  const riskAssessmentData = vendor.riskAssessmentData;
-  const riskAssessmentUpdatedAt = vendor.riskAssessmentUpdatedAt ?? null;
+  const { vendor, vendorForClient } = vendorResult;
 
   return (
     <PageWithBreadcrumb
@@ -54,26 +50,11 @@ export default async function ReviewPage({ params, searchParams }: ReviewPagePro
       {!isViewingTask && <VendorHeader vendor={vendor} />}
       {!isViewingTask && <VendorTabs vendorId={vendorId} orgId={orgId} />}
       <div className="flex flex-col gap-4">
-        {riskAssessmentData ? (
-          <VendorRiskAssessmentView
-            source={{
-              title: 'Risk Assessment',
-              description: JSON.stringify(riskAssessmentData),
-              createdAt: (riskAssessmentUpdatedAt ?? vendor.updatedAt).toISOString(),
-              entityType: 'vendor',
-              createdByName: null,
-              createdByEmail: null,
-            }}
-          />
-        ) : (
-          <div className="rounded-lg border border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              {vendor.status === 'in_progress'
-                ? 'Risk assessment is being generated. Please check back soon.'
-                : 'No risk assessment found yet.'}
-            </p>
-          </div>
-        )}
+        <VendorReviewClient
+          vendorId={vendorId}
+          orgId={orgId}
+          initialVendor={vendorForClient}
+        />
       </div>
     </PageWithBreadcrumb>
   );
@@ -143,14 +124,28 @@ const getVendor = cache(async (params: { vendorId: string; organizationId: strin
     globalVendor = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
   }
 
+  // Return vendor with Date objects for VendorHeader (server component compatible)
+  const vendorWithRiskAssessment = {
+    ...vendor,
+    riskAssessmentData: globalVendor?.riskAssessmentData ?? null,
+    riskAssessmentVersion: globalVendor?.riskAssessmentVersion ?? null,
+    riskAssessmentUpdatedAt: globalVendor?.riskAssessmentUpdatedAt ?? null,
+  };
+
+  // Serialize dates to strings for VendorReviewClient (client component)
+  const vendorForClient: VendorResponse = {
+    ...vendor,
+    description: vendor.description ?? '',
+    createdAt: vendor.createdAt.toISOString(),
+    updatedAt: vendor.updatedAt.toISOString(),
+    riskAssessmentData: globalVendor?.riskAssessmentData ?? null,
+    riskAssessmentVersion: globalVendor?.riskAssessmentVersion ?? null,
+    riskAssessmentUpdatedAt: globalVendor?.riskAssessmentUpdatedAt?.toISOString() ?? null,
+  };
+
   return {
-    vendor: {
-      ...vendor,
-      // Use GlobalVendors risk assessment data if available, fallback to Vendor (for migration)
-      riskAssessmentData: globalVendor?.riskAssessmentData ?? null,
-      riskAssessmentVersion: globalVendor?.riskAssessmentVersion ?? null,
-      riskAssessmentUpdatedAt: globalVendor?.riskAssessmentUpdatedAt ?? null,
-    },
+    vendor: vendorWithRiskAssessment,
+    vendorForClient,
   };
 });
 
