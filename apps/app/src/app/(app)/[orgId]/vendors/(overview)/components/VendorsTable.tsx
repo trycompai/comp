@@ -244,10 +244,47 @@ export function VendorsTable({
     return [...vendorsWithStatus, ...pendingVendors, ...tempVendors];
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
+  const dedupedVendors = useMemo<VendorRow[]>(() => {
+    const getRank = (vendor: VendorRow) => {
+      if (vendor.status === 'assessed') return 3;
+      if (vendor.isAssessing) return 2;
+      if (vendor.isPending) return 1;
+      return 0;
+    };
+
+    const map = new Map<string, VendorRow>();
+    mergedVendors.forEach((vendor) => {
+      const nameKey = vendor.name.toLowerCase();
+      const existing = map.get(nameKey);
+      if (!existing) {
+        map.set(nameKey, vendor);
+        return;
+      }
+
+      const currentRank = getRank(vendor);
+      const existingRank = getRank(existing);
+
+      if (currentRank > existingRank) {
+        map.set(nameKey, vendor);
+        return;
+      }
+
+      if (currentRank === existingRank) {
+        const existingUpdatedAt = new Date(existing.updatedAt).getTime();
+        const currentUpdatedAt = new Date(vendor.updatedAt).getTime();
+        if (currentUpdatedAt > existingUpdatedAt) {
+          map.set(nameKey, vendor);
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [mergedVendors]);
+
   const columns = useMemo<ColumnDef<VendorRow>[]>(() => getColumns(orgId), [orgId]);
 
   const { table } = useDataTable({
-    data: mergedVendors,
+    data: dedupedVendors,
     columns,
     pageCount,
     getRowId: (row) => row.id,
@@ -311,7 +348,7 @@ export function VendorsTable({
     return { total, completed };
   }, [progress, itemsInfo, vendors, itemStatuses]);
 
-  const isEmpty = mergedVendors.length === 0;
+  const isEmpty = dedupedVendors.length === 0;
   // Show empty state if onboarding is active (even if progress metadata isn't set yet)
   const showEmptyState = isEmpty && onboardingRunId && isActive;
 

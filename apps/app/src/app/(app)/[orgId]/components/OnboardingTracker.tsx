@@ -218,6 +218,39 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return 'Initializing...';
   }, [stepStatus.currentStep, stepStatus.policiesTotal, stepStatus.policiesCompleted, currentStep]);
 
+  const uniqueVendorsInfo = useMemo(() => {
+    const statusRank = (status: 'pending' | 'processing' | 'assessing' | 'completed') => {
+      switch (status) {
+        case 'completed':
+          return 3;
+        case 'assessing':
+        case 'processing':
+          return 2;
+        case 'pending':
+        default:
+          return 1;
+      }
+    };
+
+    const map = new Map<
+      string,
+      { vendor: { id: string; name: string }; rank: number }
+    >();
+
+    stepStatus.vendorsInfo.forEach((vendor) => {
+      const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
+      const nameKey = vendor.name.toLowerCase();
+      const rank = statusRank(status);
+      const existing = map.get(nameKey);
+
+      if (!existing || rank > existing.rank) {
+        map.set(nameKey, { vendor, rank });
+      }
+    });
+
+    return Array.from(map.values()).map(({ vendor }) => vendor);
+  }, [stepStatus.vendorsInfo, stepStatus.vendorsStatus]);
+
   if (!triggerJobId || !mounted) {
     return null;
   }
@@ -449,7 +482,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                       </button>
 
                       {/* Expanded vendor list */}
-                      {isVendorsExpanded && stepStatus.vendorsInfo.length > 0 && (
+                      {isVendorsExpanded && uniqueVendorsInfo.length > 0 && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
@@ -458,7 +491,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           className="overflow-hidden"
                         >
                           <div className="flex flex-col gap-1.5 pl-7">
-                            {stepStatus.vendorsInfo.map((vendor) => {
+                            {uniqueVendorsInfo.map((vendor) => {
                               const vendorStatus = stepStatus.vendorsStatus[vendor.id] || 'pending';
                               const isVendorCompleted = vendorStatus === 'completed';
                               const isVendorProcessing = vendorStatus === 'processing';
