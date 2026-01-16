@@ -7,8 +7,8 @@ import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import type { Organization } from '@db';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Balancer from 'react-wrap-balancer';
 import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';
 
@@ -55,12 +55,55 @@ export function PostPaymentOnboarding({
     return userEmail.endsWith('@trycomp.ai');
   }, [userEmail]);
 
+  // Track if there are any invalid URLs (from OnboardingStepInput callback)
+  const [hasInvalidUrl, setHasInvalidUrl] = useState(false);
+  // Track if user has attempted to submit with invalid URLs
+  const [showUrlError, setShowUrlError] = useState(false);
+  
+  const handleTouchedInvalidUrlChange = useCallback((hasInvalid: boolean) => {
+    setHasInvalidUrl(hasInvalid);
+    // Clear error if URLs are now valid
+    if (!hasInvalid) {
+      setShowUrlError(false);
+    }
+  }, []);
+
+  // Handle Continue button click - show error if there are invalid URLs
+  const handleContinueClick = useCallback(() => {
+    if (step?.key === 'software' && hasInvalidUrl) {
+      setShowUrlError(true);
+    }
+  }, [step?.key, hasInvalidUrl]);
+
+  // Reset error state when step changes
+  useEffect(() => {
+    setShowUrlError(false);
+  }, [stepIndex]);
+
+  // Auto-hide error after 2 seconds
+  useEffect(() => {
+    if (showUrlError) {
+      const timer = setTimeout(() => {
+        setShowUrlError(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showUrlError]);
+
   // Check if current step has valid input
   const currentStepValue = form.watch(step?.key);
+  const customVendorsValue = form.watch('customVendors');
+
   const isCurrentStepValid = (() => {
     if (!step) return false;
     if (step.key === 'frameworkIds') {
       return Array.isArray(currentStepValue) && currentStepValue.length > 0;
+    }
+    // For software step, check if there's a value in software OR customVendors
+    if (step.key === 'software') {
+      const hasSoftwareValue = Boolean(currentStepValue) && String(currentStepValue).trim().length > 0;
+      const hasCustomVendors = Array.isArray(customVendorsValue) && customVendorsValue.length > 0;
+      return hasSoftwareValue || hasCustomVendors;
     }
     // For other fields, check if they have a value
     return Boolean(currentStepValue) && String(currentStepValue).trim().length > 0;
@@ -143,6 +186,7 @@ export function PostPaymentOnboarding({
                       currentStep={step}
                       form={form}
                       savedAnswers={savedAnswers}
+                      onTouchedInvalidUrlChange={handleTouchedInvalidUrlChange}
                     />
                   ) : (
                     <FormField
@@ -154,6 +198,7 @@ export function PostPaymentOnboarding({
                               currentStep={step}
                               form={form}
                               savedAnswers={savedAnswers}
+                              onTouchedInvalidUrlChange={handleTouchedInvalidUrlChange}
                             />
                           </FormControl>
                           <div className="min-h-[20px]">
@@ -170,6 +215,29 @@ export function PostPaymentOnboarding({
         </div>
 
         {/* Action Buttons - Fixed at bottom */}
+        <div className="flex flex-col items-end gap-2">
+          <AnimatePresence>
+            {step?.key === 'software' && showUrlError && (
+              <motion.div
+                key="url-error"
+                initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                className="flex items-center gap-2 px-3 py-2 rounded-md bg-destructive/10 border border-destructive/20"
+              >
+                <motion.div
+                  animate={{ rotate: [0, -10, 10, -10, 0] }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                </motion.div>
+                <p className="text-sm text-destructive">
+                  Please fix the invalid URL format
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         <div className="flex items-center gap-2 justify-end">
           <AnimatePresence>
             {stepIndex > 0 && (
@@ -261,11 +329,12 @@ export function PostPaymentOnboarding({
               </Button>
             ) : (
               <Button
-                type="submit"
-                form="onboarding-form"
+                type={step?.key === 'software' && hasInvalidUrl ? 'button' : 'submit'}
+                form={step?.key === 'software' && hasInvalidUrl ? undefined : 'onboarding-form'}
                 className="flex items-center gap-2"
                 disabled={!isCurrentStepValid || isOnboarding || isFinalizing || isLoading}
                 data-testid="onboarding-next-button"
+                onClick={handleContinueClick}
               >
                 <motion.span
                   key="next-label"
@@ -280,6 +349,7 @@ export function PostPaymentOnboarding({
               </Button>
             )}
           </motion.div>
+        </div>
         </div>
       </div>
     </div>
