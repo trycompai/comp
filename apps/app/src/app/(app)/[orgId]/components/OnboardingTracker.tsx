@@ -218,6 +218,15 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return 'Initializing...';
   }, [stepStatus.currentStep, stepStatus.policiesTotal, stepStatus.policiesCompleted, currentStep]);
 
+  // Normalize vendor name for deduplication - strips parenthetical suffixes
+  // e.g., "Fanta (cool)" and "Fanta" are treated as the same vendor
+  const normalizeVendorName = useCallback((name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parenthetical suffixes
+      .trim();
+  }, []);
+
   const uniqueVendorsInfo = useMemo(() => {
     const statusRank = (status: 'pending' | 'processing' | 'assessing' | 'completed') => {
       switch (status) {
@@ -234,22 +243,60 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
     const map = new Map<
       string,
-      { vendor: { id: string; name: string }; rank: number }
+      { vendor: { id: string; name: string }; rank: number; status: 'pending' | 'processing' | 'assessing' | 'completed' }
     >();
 
     stepStatus.vendorsInfo.forEach((vendor) => {
       const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
-      const nameKey = vendor.name.toLowerCase();
+      const nameKey = normalizeVendorName(vendor.name);
       const rank = statusRank(status);
       const existing = map.get(nameKey);
 
       if (!existing || rank > existing.rank) {
-        map.set(nameKey, { vendor, rank });
+        map.set(nameKey, { vendor, rank, status });
       }
     });
 
     return Array.from(map.values()).map(({ vendor }) => vendor);
-  }, [stepStatus.vendorsInfo, stepStatus.vendorsStatus]);
+  }, [stepStatus.vendorsInfo, stepStatus.vendorsStatus, normalizeVendorName]);
+
+  // Calculate unique completed count for the counter (to match deduplicated list)
+  const uniqueVendorsCounts = useMemo(() => {
+    const statusRank = (status: 'pending' | 'processing' | 'assessing' | 'completed') => {
+      switch (status) {
+        case 'completed':
+          return 3;
+        case 'assessing':
+        case 'processing':
+          return 2;
+        case 'pending':
+        default:
+          return 1;
+      }
+    };
+
+    const map = new Map<
+      string,
+      { status: 'pending' | 'processing' | 'assessing' | 'completed'; rank: number }
+    >();
+
+    stepStatus.vendorsInfo.forEach((vendor) => {
+      const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
+      const nameKey = normalizeVendorName(vendor.name);
+      const rank = statusRank(status);
+      const existing = map.get(nameKey);
+
+      if (!existing || rank > existing.rank) {
+        map.set(nameKey, { status, rank });
+      }
+    });
+
+    const entries = Array.from(map.values());
+    return {
+      total: entries.length,
+      completed: entries.filter((e) => e.status === 'completed').length,
+    };
+  }, [stepStatus.vendorsInfo, stepStatus.vendorsStatus, normalizeVendorName]);
 
   if (!triggerJobId || !mounted) {
     return null;
@@ -394,10 +441,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 const isRisksStep = step.key === 'risk';
                 const isPoliciesStep = step.key === 'policies';
 
-                // Determine completion based on actual counts, not boolean flags
+                // Determine completion based on unique counts, not raw metadata totals
                 const vendorsCompleted =
-                  stepStatus.vendorsTotal > 0 &&
-                  stepStatus.vendorsCompleted >= stepStatus.vendorsTotal;
+                  uniqueVendorsCounts.total > 0 &&
+                  uniqueVendorsCounts.completed >= uniqueVendorsCounts.total;
                 const risksCompleted =
                   stepStatus.risksTotal > 0 && stepStatus.risksCompleted >= stepStatus.risksTotal;
                 const policiesCompleted =
@@ -470,7 +517,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-muted-foreground text-sm">
-                              {stepStatus.vendorsCompleted}/{stepStatus.vendorsTotal}
+                              {uniqueVendorsCounts.completed}/{uniqueVendorsCounts.total}
                             </span>
                             {isVendorsExpanded ? (
                               <ChevronUp className="h-4 w-4 text-muted-foreground" />

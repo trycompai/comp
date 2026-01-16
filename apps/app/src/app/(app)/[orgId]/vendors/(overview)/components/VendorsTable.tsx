@@ -245,16 +245,34 @@ export function VendorsTable({
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
   const dedupedVendors = useMemo<VendorRow[]>(() => {
+    // Normalize vendor name for deduplication - strips parenthetical suffixes
+    // e.g., "Fanta (cool)" and "Fanta" are treated as the same vendor
+    const normalizeVendorName = (name: string): string => {
+      return name
+        .toLowerCase()
+        .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parenthetical suffixes
+        .trim();
+    };
+
+    // Rank vendors for deduplication - higher rank wins
+    // Rank 3: assessed (completed)
+    // Rank 2: actively being assessed (via isAssessing flag OR metadata status)
+    // Rank 1: pending placeholder
+    // Rank 0: not assessed and not processing
     const getRank = (vendor: VendorRow) => {
       if (vendor.status === 'assessed') return 3;
-      if (vendor.isAssessing) return 2;
+      // Check both isAssessing flag and metadata status for active assessment
+      const metadataStatus = itemStatuses[vendor.id];
+      if (vendor.isAssessing || metadataStatus === 'assessing' || metadataStatus === 'processing') {
+        return 2;
+      }
       if (vendor.isPending) return 1;
       return 0;
     };
 
     const map = new Map<string, VendorRow>();
     mergedVendors.forEach((vendor) => {
-      const nameKey = vendor.name.toLowerCase();
+      const nameKey = normalizeVendorName(vendor.name);
       const existing = map.get(nameKey);
       if (!existing) {
         map.set(nameKey, vendor);
@@ -279,7 +297,7 @@ export function VendorsTable({
     });
 
     return Array.from(map.values());
-  }, [mergedVendors]);
+  }, [mergedVendors, itemStatuses]);
 
   const columns = useMemo<ColumnDef<VendorRow>[]>(() => getColumns(orgId), [orgId]);
 
