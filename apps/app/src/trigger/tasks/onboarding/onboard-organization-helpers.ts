@@ -225,6 +225,11 @@ function parseAllSelectedVendors(
 
       for (const vendor of parsed) {
         customVendors.push(vendor);
+        // Also add custom vendor names to allVendorNames so they're included in the fallback loop
+        // This ensures custom vendors are created even if AI fails to extract them
+        if (!allVendorNames.some((n) => n.toLowerCase() === vendor.name.toLowerCase())) {
+          allVendorNames.push(vendor.name);
+        }
         if (vendor.website && vendor.website.trim()) {
           // Store lowercase name for case-insensitive matching
           urlMap.set(vendor.name.toLowerCase(), vendor.website.trim());

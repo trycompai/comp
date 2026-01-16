@@ -251,9 +251,24 @@ export function usePostPaymentOnboarding({
     if (stepIndex > 0) {
       // Save current form values before going back
       const currentValues = form.getValues();
+      
+      // Build updated answers, preserving customVendors when on software step
+      let updatedAnswers = { ...savedAnswers, organizationName };
+      
       if (currentValues[step.key]) {
-        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key], organizationName });
+        updatedAnswers = { ...updatedAnswers, [step.key]: currentValues[step.key] };
       }
+      
+      // Also save customVendors when on software step (same as onSubmit)
+      if (step.key === 'software') {
+        const customVendors = form.getValues('customVendors');
+        updatedAnswers = { 
+          ...updatedAnswers, 
+          customVendors: Array.isArray(customVendors) ? customVendors : [] 
+        };
+      }
+      
+      setSavedAnswers(updatedAnswers);
 
       // Clear form errors
       form.clearErrors();
