@@ -163,7 +163,8 @@ export function useOnboardingForm({
         key !== 'frameworkIds' &&
         key !== 'shipping' &&
         key !== 'cSuite' &&
-        key !== 'reportSignatory'
+        key !== 'reportSignatory' &&
+        key !== 'customVendors'
       ) {
         const customValue = newAnswers[`${key}Other`] || '';
         const rawValue = newAnswers[key];

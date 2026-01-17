@@ -849,6 +849,12 @@ function CheckRunItem({
                 <span className="text-destructive">{run.failedCount} failed</span>
               </>
             )}
+            {run.passedCount > 0 && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-primary">{run.passedCount} passed</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -909,38 +915,45 @@ function CheckRunItem({
               </div>
             )}
 
-            {/* Passing Results */}
-            {passing.length > 0 && findings.length === 0 && (
-              <div className="space-y-2">
-                {passing.slice(0, 2).map((result) => (
-                  <div key={result.id} className="space-y-2">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{result.title}</p>
-                      {result.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
+            {/* Passing Results - always show when there are passing results */}
+            {passing.length > 0 && (
+              <details className="text-xs" open={findings.length === 0}>
+                <summary className="text-sm font-medium text-primary cursor-pointer flex items-center gap-2">
+                  <span>✓ {passing.length} passed</span>
+                </summary>
+                <div className="mt-2 space-y-2 pl-4 border-l-2 border-primary/20">
+                  {passing.slice(0, 3).map((result) => (
+                    <div key={result.id} className="space-y-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{result.title}</p>
+                        {result.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
+                        )}
+                        <Badge variant="secondary" className="mt-2 font-mono text-xs">
+                          {result.resourceId}
+                        </Badge>
+                      </div>
+                      {result.evidence && Object.keys(result.evidence).length > 0 && (
+                        <details className="text-xs">
+                          <summary className="text-muted-foreground cursor-pointer">
+                            View Evidence
+                          </summary>
+                          <EvidenceJsonView
+                            evidence={result.evidence}
+                            organizationName={organizationName}
+                            automationName={run.checkName}
+                          />
+                        </details>
                       )}
-                      <Badge variant="secondary" className="mt-2 font-mono text-xs">
-                        {result.resourceId}
-                      </Badge>
                     </div>
-                    {result.evidence && Object.keys(result.evidence).length > 0 && (
-                      <details className="text-xs">
-                        <summary className="text-muted-foreground cursor-pointer">
-                          View Evidence
-                        </summary>
-                        <EvidenceJsonView
-                          evidence={result.evidence}
-                          organizationName={organizationName}
-                          automationName={run.checkName}
-                        />
-                      </details>
-                    )}
-                  </div>
-                ))}
-                {passing.length > 2 && (
-                  <p className="text-sm text-muted-foreground">+{passing.length - 2} more passed</p>
-                )}
-              </div>
+                  ))}
+                  {passing.length > 3 && (
+                    <p className="text-sm text-muted-foreground">
+                      +{passing.length - 3} more passed
+                    </p>
+                  )}
+                </div>
+              </details>
             )}
 
             {/* Logs */}

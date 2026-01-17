@@ -31,6 +31,14 @@ const onboardingCompletionSchema = z.object({
   devices: z.string().min(1),
   authentication: z.string().min(1),
   software: z.string().optional(),
+  customVendors: z
+    .array(
+      z.object({
+        name: z.string(),
+        website: z.string().optional(),
+      }),
+    )
+    .optional(),
   workLocation: z.string().min(1),
   infrastructure: z.string().min(1),
   dataTypes: z.string().min(1),
@@ -97,6 +105,50 @@ export const completeOnboarding = authActionClientWithoutOrg
           tags: ['onboarding'],
           organizationId: parsedInput.organizationId,
         }));
+
+      // Add customVendors to context if present (for vendor risk assessment with URLs)
+      if (parsedInput.customVendors && parsedInput.customVendors.length > 0) {
+        contextData.push({
+          question: 'What are your custom vendors and their websites?',
+          answer: JSON.stringify(parsedInput.customVendors),
+          tags: ['onboarding'],
+          organizationId: parsedInput.organizationId,
+        });
+
+        // Add custom vendors to GlobalVendors immediately (if they have URLs and don't exist)
+        // This allows other organizations to benefit from user-contributed vendor data
+        for (const vendor of parsedInput.customVendors) {
+          if (vendor.website && vendor.website.trim()) {
+            try {
+              // Check if vendor with same name already exists in GlobalVendors
+              const existingGlobalVendor = await db.globalVendors.findFirst({
+                where: {
+                  company_name: {
+                    equals: vendor.name,
+                    mode: 'insensitive',
+                  },
+                },
+              });
+
+              if (!existingGlobalVendor) {
+                // Create new GlobalVendor entry (approved: false for review)
+                await db.globalVendors.create({
+                  data: {
+                    website: vendor.website,
+                    company_name: vendor.name,
+                    approved: false,
+                  },
+                });
+                console.log(`Added custom vendor to GlobalVendors: ${vendor.name}`);
+              }
+            } catch (error) {
+              // Log but don't fail - GlobalVendors is a nice-to-have
+              console.warn(`Failed to add vendor ${vendor.name} to GlobalVendors:`, error);
+            }
+          }
+        }
+      }
+
       await db.context.createMany({ data: contextData });
 
       // Update organization to mark onboarding as complete

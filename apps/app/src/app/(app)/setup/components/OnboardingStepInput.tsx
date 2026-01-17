@@ -1,15 +1,19 @@
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { SelectablePill } from '@/components/selectable-pill';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { Button } from '@comp/ui/button';
-import { FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
-import { ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import type { GlobalVendors } from '@db';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { AlertCircle, ChevronDown, ChevronUp, HelpCircle, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useFieldArray } from 'react-hook-form';
-import type { CompanyDetails, CSuiteEntry, Step } from '../lib/types';
+import { searchGlobalVendorsAction } from '../../[orgId]/vendors/actions/search-global-vendors-action';
+import type { CompanyDetails, CSuiteEntry, CustomVendor, Step } from '../lib/types';
 import { FrameworkSelection } from './FrameworkSelection';
 import { WebsiteInput } from './WebsiteInput';
 
@@ -22,6 +26,7 @@ interface OnboardingStepInputProps {
   form: UseFormReturn<OnboardingFormFields>;
   savedAnswers: Partial<CompanyDetails>;
   onLoadingChange?: (loading: boolean) => void;
+  onTouchedInvalidUrlChange?: (hasTouchedInvalidUrl: boolean) => void;
 }
 
 export function OnboardingStepInput({
@@ -29,6 +34,7 @@ export function OnboardingStepInput({
   form,
   savedAnswers,
   onLoadingChange,
+  onTouchedInvalidUrlChange,
 }: OnboardingStepInputProps) {
   // Hooks must be called at the top level
   const [customValue, setCustomValue] = useState('');
@@ -219,6 +225,21 @@ export function OnboardingStepInput({
     );
   }
 
+  // Special handling for software step with custom vendor URL support
+  if (currentStep.key === 'software' && currentStep.options) {
+    return (
+      <SoftwareVendorInput
+        form={form}
+        currentStep={currentStep}
+        customValue={customValue}
+        setCustomValue={setCustomValue}
+        inputRef={inputRef}
+        containerRef={containerRef}
+        onTouchedInvalidUrlChange={onTouchedInvalidUrlChange}
+      />
+    );
+  }
+
   if (currentStep.options) {
     // Single-select fields
     if (currentStep.key === 'industry' || currentStep.key === 'workLocation') {
@@ -290,7 +311,7 @@ export function OnboardingStepInput({
           <div
             ref={containerRef}
             onClick={() => inputRef.current?.focus()}
-            className="flex flex-wrap items-center gap-2 p-3 border border-input rounded-md min-h-[3.25rem] bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text transition-all duration-200 ease-in-out"
+            className="flex flex-wrap items-center gap-2 p-3 border border-input rounded-md min-h-[3.25rem] bg-background focus-within:border-ring/50 focus-within:ring-1 focus-within:ring-ring/20 cursor-text transition-all duration-200 ease-in-out"
           >
             {selectedValues.map((value) => (
               <span
@@ -496,5 +517,506 @@ function NumberInput({
         </button>
       </div>
     </div>
+  );
+}
+
+// Helper to get display name from GlobalVendor
+const getVendorDisplayName = (vendor: GlobalVendors): string => {
+  return vendor.company_name ?? vendor.legal_name ?? vendor.website ?? '';
+};
+
+// Helper to normalize vendor name for deduplication
+// Strips parenthetical suffixes like "(cool)", trims whitespace, and lowercases
+const normalizeVendorName = (name: string): string => {
+  return name
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parenthetical suffixes
+    .trim();
+};
+
+// Helper to validate domain/URL format
+const isValidDomain = (domain: string): boolean => {
+  if (!domain || domain.trim() === '') return true; // Empty is valid (optional field)
+
+  // Clean the input
+  const cleaned = domain.trim().toLowerCase();
+
+  // Domain regex: allows subdomains, requires at least one dot and valid TLD
+  const domainRegex = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
+
+  return domainRegex.test(cleaned);
+};
+
+// Software vendor input with custom vendor URL support and GlobalVendors autocomplete
+function SoftwareVendorInput({
+  form,
+  currentStep,
+  customValue,
+  setCustomValue,
+  inputRef,
+  containerRef,
+  onTouchedInvalidUrlChange,
+}: {
+  form: UseFormReturn<OnboardingFormFields>;
+  currentStep: Step;
+  customValue: string;
+  setCustomValue: (value: string) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  onTouchedInvalidUrlChange?: (hasTouchedInvalidUrl: boolean) => void;
+}) {
+  const predefinedOptions = currentStep.options || [];
+
+  // Search state
+  const [searchResults, setSearchResults] = useState<GlobalVendors[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // URL validation state - track which fields have been touched/blurred
+  const [touchedUrls, setTouchedUrls] = useState<Set<string>>(new Set());
+  // Timers for debounced validation (3 seconds)
+  const validationTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      validationTimersRef.current.forEach((timer) => clearTimeout(timer));
+      validationTimersRef.current.clear();
+    };
+  }, []);
+
+  // Get custom vendors from form
+  const customVendorsForCallback = (form.watch('customVendors') as CustomVendor[] | undefined) || [];
+
+  // Notify parent about touched invalid URLs
+  useEffect(() => {
+    if (onTouchedInvalidUrlChange) {
+      const hasTouchedInvalid = customVendorsForCallback.some((vendor) => {
+        if (!touchedUrls.has(vendor.name)) return false;
+        const url = (vendor.website || '').replace(/^https?:\/\//, '').replace(/^www\./, '');
+        return url.length > 0 && !isValidDomain(url);
+      });
+      onTouchedInvalidUrlChange(hasTouchedInvalid);
+    }
+  }, [touchedUrls, customVendorsForCallback, onTouchedInvalidUrlChange]);
+
+  // Get predefined vendors from software field (comma-separated)
+  const rawSoftware = form.watch('software') as string | undefined;
+  const selectedPredefined = (rawSoftware || '').split(',').filter(Boolean);
+
+  // Get custom vendors from customVendors field
+  const customVendors = (form.watch('customVendors') as CustomVendor[] | undefined) || [];
+
+  // Search GlobalVendors action
+  const searchVendors = useAction(searchGlobalVendorsAction, {
+    onExecute: () => setIsSearching(true),
+    onSuccess: (result) => {
+      if (result.data?.success && result.data.data?.vendors) {
+        setSearchResults(result.data.data.vendors);
+      } else {
+        setSearchResults([]);
+      }
+      setIsSearching(false);
+    },
+    onError: () => {
+      setSearchResults([]);
+      setIsSearching(false);
+    },
+  });
+
+  const debouncedSearch = useDebouncedCallback((query: string) => {
+    if (query.trim().length >= 1) {
+      searchVendors.execute({ name: query });
+      setShowSuggestions(true);
+    } else {
+      setSearchResults([]);
+      setShowSuggestions(false);
+    }
+  }, 300);
+
+  const handlePredefinedToggle = (option: string) => {
+    const isSelected = selectedPredefined.includes(option);
+    let newValues: string[];
+
+    if (isSelected) {
+      newValues = selectedPredefined.filter((v) => v !== option);
+    } else {
+      newValues = [...selectedPredefined, option];
+    }
+
+    form.setValue('software', newValues.join(','));
+  };
+
+  const handleSelectGlobalVendor = (vendor: GlobalVendors) => {
+    const name = getVendorDisplayName(vendor);
+    const normalizedName = normalizeVendorName(name);
+
+    // Check if already selected (using normalized names)
+    const alreadyInPredefined = selectedPredefined.some(
+      (v) => normalizeVendorName(v) === normalizedName,
+    );
+    const alreadyInCustom = customVendors.some(
+      (v) => normalizeVendorName(v.name) === normalizedName,
+    );
+    if (alreadyInPredefined || alreadyInCustom) {
+      setCustomValue('');
+      setShowSuggestions(false);
+      setSearchResults([]);
+      return;
+    }
+
+    // Add as known vendor (to software field)
+    const newValues = [...selectedPredefined, name];
+    form.setValue('software', newValues.join(','));
+
+    setCustomValue('');
+    setShowSuggestions(false);
+    setSearchResults([]);
+  };
+
+  const handleAddCustomVendor = () => {
+    const trimmedValue = customValue.trim();
+    if (!trimmedValue) return;
+
+    const normalizedInput = normalizeVendorName(trimmedValue);
+
+    // Check if already exists in selected predefined or custom (using normalized names)
+    const alreadyInPredefined = selectedPredefined.some(
+      (v) => normalizeVendorName(v) === normalizedInput,
+    );
+    if (alreadyInPredefined) {
+      setCustomValue('');
+      setShowSuggestions(false);
+      return;
+    }
+    if (customVendors.some((v) => normalizeVendorName(v.name) === normalizedInput)) {
+      setCustomValue('');
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Check if the typed value matches a predefined option (using normalized names)
+    const matchedPredefined = predefinedOptions.find(
+      (option) => normalizeVendorName(option) === normalizedInput,
+    );
+
+    // Check if there's a matching GlobalVendor in search results (using normalized names)
+    const matchedGlobal = searchResults.find(
+      (v) => normalizeVendorName(getVendorDisplayName(v)) === normalizedInput,
+    );
+
+    if (matchedPredefined) {
+      // Add as predefined vendor (use the correct casing from predefinedOptions)
+      const newValues = [...selectedPredefined, matchedPredefined];
+      form.setValue('software', newValues.join(','));
+    } else if (matchedGlobal) {
+      // Add as known vendor from GlobalVendors
+      const newValues = [...selectedPredefined, getVendorDisplayName(matchedGlobal)];
+      form.setValue('software', newValues.join(','));
+    } else {
+      // Add to custom vendors
+      const newCustomVendors: CustomVendor[] = [...customVendors, { name: trimmedValue }];
+      form.setValue('customVendors', newCustomVendors);
+    }
+
+    setCustomValue('');
+    setShowSuggestions(false);
+    setSearchResults([]);
+  };
+
+  const handleRemoveCustomVendor = (vendorName: string) => {
+    const newCustomVendors = customVendors.filter((v) => v.name !== vendorName);
+    form.setValue('customVendors', newCustomVendors);
+  };
+
+  const handleCustomVendorWebsiteChange = (vendorName: string, website: string) => {
+    const newCustomVendors = customVendors.map((v) =>
+      v.name === vendorName ? { ...v, website } : v,
+    );
+    form.setValue('customVendors', newCustomVendors);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomValue(value);
+    debouncedSearch(value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCustomVendor();
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    } else if (e.key === 'Backspace' && customValue === '') {
+      e.preventDefault();
+      // Remove last custom vendor first, then predefined
+      if (customVendors.length > 0) {
+        const newCustomVendors = customVendors.slice(0, -1);
+        form.setValue('customVendors', newCustomVendors);
+      } else if (selectedPredefined.length > 0) {
+        const newValues = selectedPredefined.slice(0, -1);
+        form.setValue('software', newValues.join(','));
+      }
+    }
+  };
+
+  // Deduplicate search results by normalized name (strips parenthetical suffixes)
+  // e.g., "Fanta (cool)" and "Fanta" are treated as the same vendor
+  const uniqueSearchResults = Array.from(
+    searchResults.reduce((map, vendor) => {
+      const normalizedName = normalizeVendorName(getVendorDisplayName(vendor));
+      if (!map.has(normalizedName)) {
+        map.set(normalizedName, vendor);
+      }
+      return map;
+    }, new Map<string, GlobalVendors>()),
+  ).map(([, vendor]) => vendor);
+
+  // Filter out already selected vendors from search results (using normalized names)
+  const filteredSearchResults = uniqueSearchResults.filter((vendor) => {
+    const normalizedName = normalizeVendorName(getVendorDisplayName(vendor));
+    return (
+      !selectedPredefined.some((v) => normalizeVendorName(v) === normalizedName) &&
+      !customVendors.some((v) => normalizeVendorName(v.name) === normalizedName)
+    );
+  });
+
+  // All selected values for display in the tag input
+  const allSelectedValues = [
+    ...selectedPredefined.map((name) => ({ name, isCustom: false })),
+    ...customVendors.map((v) => ({ name: v.name, isCustom: true })),
+  ];
+
+  return (
+    <AnimatedWrapper delay={100} animationKey={`pills-${currentStep.key}`}>
+      <div className="space-y-3" data-testid={`onboarding-input-${currentStep.key}`}>
+        {/* Tag input container with autocomplete */}
+        <div className="relative">
+          <div
+            ref={containerRef}
+            onClick={() => inputRef.current?.focus()}
+            className="flex flex-wrap items-center gap-2 p-3 border border-input rounded-md min-h-[3.25rem] bg-background focus-within:border-ring/50 focus-within:ring-1 focus-within:ring-ring/20 cursor-text transition-all duration-200 ease-in-out"
+          >
+            <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            {allSelectedValues.map(({ name, isCustom }) => (
+              <span
+                key={name}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+                  isCustom
+                    ? 'bg-muted text-foreground border border-border'
+                    : 'bg-primary/10 text-primary'
+                }`}
+              >
+                {name}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isCustom) {
+                      handleRemoveCustomVendor(name);
+                    } else {
+                      handlePredefinedToggle(name);
+                    }
+                  }}
+                  className={`rounded-full p-0.5 transition-colors ${
+                    isCustom ? 'hover:bg-foreground/10' : 'hover:bg-primary/20'
+                  }`}
+                  aria-label={`Remove ${name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            <input
+              ref={inputRef}
+              type="text"
+              value={customValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              placeholder={
+                allSelectedValues.length === 0 ? 'Search or add custom (press Enter)' : ''
+              }
+              className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+              autoFocus
+            />
+          </div>
+
+          {/* Autocomplete suggestions dropdown */}
+          {showSuggestions && customValue.trim().length >= 1 && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border border-border bg-background shadow-lg animate-in fade-in-0 slide-in-from-top-1 duration-150">
+              <div className="max-h-[200px] overflow-y-auto p-1">
+                {/* Always show "Add as custom" option first for consistent height */}
+                <div
+                  className="hover:bg-accent cursor-pointer rounded-sm px-2 py-1.5 text-sm text-muted-foreground transition-colors duration-100"
+                  onMouseDown={() => handleAddCustomVendor()}
+                >
+                  {isSearching ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Searching for "{customValue.trim()}"...
+                    </span>
+                  ) : (
+                    <>Add "{customValue.trim()}" as custom vendor</>
+                  )}
+                </div>
+
+                {/* Animated results section using CSS Grid for smooth height transition */}
+                <div
+                  className="grid transition-[grid-template-rows] duration-200 ease-out"
+                  style={{
+                    gridTemplateRows: !isSearching && filteredSearchResults.length > 0 ? '1fr' : '0fr',
+                  }}
+                >
+                  <div className="overflow-hidden">
+                    <div className="my-1 border-t border-border" />
+                    <p className="text-muted-foreground px-2 py-1 text-xs font-medium">
+                      Suggestions
+                    </p>
+                    {filteredSearchResults.map((vendor) => (
+                      <div
+                        key={vendor.website}
+                        className="hover:bg-accent cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors duration-100"
+                        onMouseDown={() => handleSelectGlobalVendor(vendor)}
+                      >
+                        {getVendorDisplayName(vendor)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Custom vendor URL inputs */}
+        {customVendors.length > 0 && (
+          <div className="space-y-2.5 pt-1">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Vendor websites</Label>
+            </div>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+              {customVendors.map((vendor) => {
+                // Strip protocol for display, we'll add it back on save
+                const displayValue = (vendor.website || '')
+                  .replace(/^https?:\/\//, '')
+                  .replace(/^www\./, '');
+
+                const isTouched = touchedUrls.has(vendor.name);
+                const isValid = isValidDomain(displayValue);
+                const showError = isTouched && !isValid && displayValue.length > 0;
+
+                return (
+                  <div key={vendor.name} className="flex flex-col gap-1.5">
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-foreground">
+                        {vendor.name}
+                      </span>
+                    </div>
+                    <div
+                      className={`flex items-center rounded-md border bg-background overflow-hidden transition-colors duration-150 ${
+                        showError
+                          ? 'border-red-500 focus-within:ring-1 focus-within:ring-red-500/20'
+                          : 'border-input focus-within:border-ring/50 focus-within:ring-1 focus-within:ring-ring/20'
+                      }`}
+                    >
+                      <span className="px-3 py-2 text-xs font-mono text-muted-foreground/70 select-none border-r border-input/30 bg-muted/30 flex items-center">
+                        https://
+                      </span>
+                      <input
+                        type="text"
+                        value={displayValue}
+                        onChange={(e) => {
+                          // Clean input: remove any protocol, www, and trim
+                          let value = e.target.value
+                            .replace(/^(https?:\/\/)+/gi, '') // Remove one or more https://
+                            .replace(/^(www\.)+/gi, '')       // Remove one or more www.
+                            .trim();
+                          const fullUrl = value ? `https://${value}` : '';
+                          handleCustomVendorWebsiteChange(vendor.name, fullUrl);
+                          
+                          // Clear touched state when user starts typing again
+                          if (touchedUrls.has(vendor.name)) {
+                            setTouchedUrls((prev) => {
+                              const next = new Set(prev);
+                              next.delete(vendor.name);
+                              return next;
+                            });
+                          }
+                          
+                          // Clear existing timer for this field
+                          const existingTimer = validationTimersRef.current.get(vendor.name);
+                          if (existingTimer) {
+                            clearTimeout(existingTimer);
+                            validationTimersRef.current.delete(vendor.name);
+                          }
+                          
+                          // Set new timer for 3 seconds - validate if value is invalid
+                          if (value.length > 0) {
+                            const timer = setTimeout(() => {
+                              // Get current value from form state
+                              const currentVendors = (form.watch('customVendors') as CustomVendor[] | undefined) || [];
+                              const currentVendor = currentVendors.find((v) => v.name === vendor.name);
+                              const currentValue = (currentVendor?.website || '')
+                                .replace(/^https?:\/\//, '')
+                                .replace(/^www\./, '');
+                              const isValid = isValidDomain(currentValue);
+                              // Only mark as touched if invalid (to show error)
+                              if (!isValid && currentValue.length > 0) {
+                                setTouchedUrls((prev) => new Set(prev).add(vendor.name));
+                              }
+                              validationTimersRef.current.delete(vendor.name);
+                            }, 3000);
+                            validationTimersRef.current.set(vendor.name, timer);
+                          }
+                        }}
+                        onBlur={() => {
+                          // Clear any pending timer
+                          const existingTimer = validationTimersRef.current.get(vendor.name);
+                          if (existingTimer) {
+                            clearTimeout(existingTimer);
+                            validationTimersRef.current.delete(vendor.name);
+                          }
+                          
+                          // Check validity immediately on blur
+                          const isValid = isValidDomain(displayValue);
+                          // Only mark as touched if invalid (to show error)
+                          if (!isValid && displayValue.length > 0) {
+                            setTouchedUrls((prev) => new Set(prev).add(vendor.name));
+                          }
+                        }}
+                        placeholder="example.com"
+                        className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+                      />
+                      {showError ? (
+                        <div className="pr-2 flex items-center">
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        </div>
+                      ) : !displayValue ? (
+                        <div className="pr-2 flex items-center">
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-all duration-300 ease-in-out p-1 hover:scale-110">
+                                  <HelpCircle className="h-3.5 w-3.5 transition-all duration-300 ease-in-out" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[220px]">
+                                <p>Without a URL, we can't perform automatic risk assessment for this vendor.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </AnimatedWrapper>
   );
 }

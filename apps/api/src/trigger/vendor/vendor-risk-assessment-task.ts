@@ -243,6 +243,15 @@ export const vendorRiskAssessmentTask: Task<
       );
     }
 
+    // Mark vendor as in-progress immediately so UI can show "generating" state
+    // This happens at the start before any processing, so the UI updates right away
+    if (vendor.status !== VendorStatus.in_progress) {
+      await db.vendor.update({
+        where: { id: vendor.id },
+        data: { status: VendorStatus.in_progress },
+      });
+    }
+
     if (!vendor.website) {
       logger.info('⏭️ SKIP (no website)', { vendor: payload.vendorName });
       // Mark vendor as assessed even without website (no risk assessment possible)
@@ -424,13 +433,7 @@ export const vendorRiskAssessmentTask: Task<
       };
     }
 
-    // Mark vendor as in-progress immediately so UI can show "generating"
-    await db.vendor.update({
-      where: { id: vendor.id },
-      data: {
-        status: VendorStatus.in_progress,
-      },
-    });
+    // Note: status is already set to in_progress at the start of the task
 
     const { creatorMemberId, assigneeMemberId } =
       await resolveTaskCreatorAndAssignee({

@@ -10,13 +10,12 @@ import type { IntegrationCheck } from '../../../types';
 import type {
   GitHubBranchProtection,
   GitHubBranchRule,
-  GitHubOrg,
   GitHubPullRequest,
   GitHubRepo,
   GitHubRuleset,
 } from '../types';
 import {
-  protectedBranchVariable,
+  parseRepoBranches,
   recentPullRequestDaysVariable,
   targetReposVariable,
 } from '../variables';
@@ -62,19 +61,43 @@ export const branchProtectionCheck: IntegrationCheck = {
   taskMapping: TASK_TEMPLATES.codeChanges,
   defaultSeverity: 'high',
 
-  variables: [targetReposVariable, protectedBranchVariable, recentPullRequestDaysVariable],
+  variables: [targetReposVariable, recentPullRequestDaysVariable],
 
   run: async (ctx) => {
     const targetRepos = ctx.variables.target_repos as string[] | undefined;
-    const protectedBranch = ctx.variables.protected_branch as string | undefined;
     const recentDaysRaw = toSafeNumber(ctx.variables.recent_pr_days);
     const recentWindowDays =
       recentDaysRaw && recentDaysRaw > 0 ? recentDaysRaw : DEFAULT_RECENT_WINDOW_DAYS;
     const cutoff = new Date(Date.now() - recentWindowDays * 24 * 60 * 60 * 1000);
 
+    // Parse repo:branches from each selected value, then flatten to individual repo+branch pairs
+    const parsedConfigs = (targetRepos || []).map(parseRepoBranches);
+    const repoBranchConfigs: { repo: string; branch: string }[] = [];
+    for (const config of parsedConfigs) {
+      for (const branch of config.branches) {
+        repoBranchConfigs.push({ repo: config.repo, branch });
+      }
+    }
+
     ctx.log(
-      `Config: branch="${protectedBranch}", recentWindowDays=${recentWindowDays}, cutoff=${cutoff.toISOString()}`,
+      `Config: ${repoBranchConfigs.length} repo/branch pairs from ${parsedConfigs.length} repos, recentWindowDays=${recentWindowDays}, cutoff=${cutoff.toISOString()}`,
     );
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Validate configuration
+    // ───────────────────────────────────────────────────────────────────────
+    if (repoBranchConfigs.length === 0) {
+      ctx.fail({
+        title: 'No repositories configured',
+        description:
+          'No repositories are configured for branch protection checking. Please select at least one repository.',
+        resourceType: 'integration',
+        resourceId: 'github',
+        severity: 'low',
+        remediation: 'Open the integration settings and select repositories to monitor.',
+      });
+      return;
+    }
 
     // ───────────────────────────────────────────────────────────────────────
     // Helper: fetch recent PRs targeting the protected branch
@@ -102,36 +125,52 @@ export const branchProtectionCheck: IntegrationCheck = {
       }
     };
 
-    ctx.log('Fetching repositories...');
+    ctx.log(`Checking ${repoBranchConfigs.length} repository/branch configurations...`);
 
-    let repos: GitHubRepo[];
-
-    if (targetRepos && targetRepos.length > 0) {
-      repos = [];
-      for (const repoName of targetRepos) {
-        try {
-          const repo = await ctx.fetch<GitHubRepo>(`/repos/${repoName}`);
-          repos.push(repo);
-        } catch {
-          ctx.warn(`Could not fetch repo ${repoName}`);
-        }
-      }
-    } else {
-      const orgs = await ctx.fetch<GitHubOrg[]>('/user/orgs');
-      repos = [];
-      for (const org of orgs) {
-        const orgRepos = await ctx.fetchAllPages<GitHubRepo>(`/orgs/${org.login}/repos`);
-        repos.push(...orgRepos);
-      }
+    // Group configs by repo for combined evidence
+    const repoGroups = new Map<string, string[]>();
+    for (const config of repoBranchConfigs) {
+      const branches = repoGroups.get(config.repo) || [];
+      branches.push(config.branch);
+      repoGroups.set(config.repo, branches);
     }
 
-    ctx.log(`Checking ${repos.length} repositories`);
+    // ───────────────────────────────────────────────────────────────────────
+    // Check each repository (with all its branches)
+    // ───────────────────────────────────────────────────────────────────────
+    for (const [repoName, branchesToCheck] of repoGroups) {
+      // Fetch repository info
+      let repo: GitHubRepo;
+      try {
+        repo = await ctx.fetch<GitHubRepo>(`/repos/${repoName}`);
+      } catch {
+        ctx.warn(`Could not fetch repo ${repoName}`);
+        ctx.fail({
+          title: `Repository not found: ${repoName}`,
+          description: `Could not access repository "${repoName}". It may not exist or the integration lacks permission.`,
+          resourceType: 'repository',
+          resourceId: repoName,
+          severity: 'medium',
+          remediation: `Verify the repository name is correct (format: owner/repo) and that the GitHub integration has access to it.`,
+        });
+        continue;
+      }
 
-    for (const repo of repos) {
-      const branchToCheck = protectedBranch || repo.default_branch;
-      if (!branchToCheck) continue;
+      ctx.log(`Checking ${branchesToCheck.length} branches on ${repo.full_name}: ${branchesToCheck.join(', ')}`);
 
-      ctx.log(`Checking branch "${branchToCheck}" on ${repo.full_name}`);
+      // Collect results for all branches in this repo
+      const branchResults: Record<
+        string,
+        {
+          protected: boolean;
+          evidence: Record<string, unknown>;
+          description: string;
+        }
+      > = {};
+
+      // Check each branch
+      for (const branchToCheck of branchesToCheck) {
+        ctx.log(`Checking branch "${branchToCheck}" on ${repo.full_name}`);
 
       // Fetch recent PRs in parallel while we check protection
       const pullRequestsPromise = fetchRecentPullRequests({
@@ -282,35 +321,76 @@ export const branchProtectionCheck: IntegrationCheck = {
         }
       }
 
-      // Wait for PR fetch to complete
-      const pullRequests = await pullRequestsPromise;
+        // Wait for PR fetch to complete
+        const pullRequests = await pullRequestsPromise;
 
-      // Record result
-      if (isProtected) {
+        // Build evidence for this branch
+        const branchEvidence: Record<string, unknown> = {
+          protected: isProtected,
+          ...protectionEvidence,
+          pull_requests: pullRequests,
+          pull_requests_window_days: recentWindowDays,
+          checked_at: new Date().toISOString(),
+        };
+
+        branchResults[branchToCheck] = {
+          protected: isProtected,
+          evidence: branchEvidence,
+          description: isProtected
+            ? protectionDescription
+            : `Branch "${branchToCheck}" has no protection rules configured.`,
+        };
+      } // End of branch loop
+
+      // Emit combined result for this repo
+      const protectedBranches = Object.entries(branchResults)
+        .filter(([, r]) => r.protected)
+        .map(([b]) => b);
+      const unprotectedBranches = Object.entries(branchResults)
+        .filter(([, r]) => !r.protected)
+        .map(([b]) => b);
+
+      // Build combined evidence: { "owner/repo": { "branch1": {...}, "branch2": {...} } }
+      const combinedEvidence: Record<string, Record<string, unknown>> = {};
+      for (const [branch, result] of Object.entries(branchResults)) {
+        combinedEvidence[branch] = result.evidence;
+      }
+
+      if (unprotectedBranches.length === 0) {
+        // All branches protected
         ctx.pass({
-          title: `Branch protection enabled on ${repo.name}`,
-          description: protectionDescription,
+          title: `All branches protected on ${repo.name}`,
+          description: `${protectedBranches.length} branch(es) have protection enabled: ${protectedBranches.join(', ')}`,
           resourceType: 'repository',
           resourceId: repo.full_name,
           evidence: {
-            ...protectionEvidence,
-            pull_requests: pullRequests,
-            pull_requests_window_days: recentWindowDays,
-            checked_at: new Date().toISOString(),
+            [repo.full_name]: combinedEvidence,
           },
         });
-      } else {
+      } else if (protectedBranches.length === 0) {
+        // No branches protected
         ctx.fail({
           title: `No branch protection on ${repo.name}`,
-          description: `Branch "${branchToCheck}" has no protection rules configured, allowing direct pushes without review.`,
+          description: `${unprotectedBranches.length} branch(es) have no protection: ${unprotectedBranches.join(', ')}`,
           resourceType: 'repository',
           resourceId: repo.full_name,
           severity: 'high',
-          remediation: `1. Go to ${repo.html_url}/settings/rules\n2. Create a new ruleset targeting branch "${branchToCheck}"\n3. Enable "Require a pull request before merging"\n4. Set required approvals to at least 1`,
+          remediation: `1. Go to ${repo.html_url}/settings/rules\n2. Create rulesets for branches: ${unprotectedBranches.join(', ')}\n3. Enable "Require a pull request before merging"\n4. Set required approvals to at least 1`,
           evidence: {
-            pull_requests: pullRequests,
-            pull_requests_window_days: recentWindowDays,
-            checked_at: new Date().toISOString(),
+            [repo.full_name]: combinedEvidence,
+          },
+        });
+      } else {
+        // Mixed: some protected, some not
+        ctx.fail({
+          title: `Partial branch protection on ${repo.name}`,
+          description: `Protected: ${protectedBranches.join(', ')}. Unprotected: ${unprotectedBranches.join(', ')}`,
+          resourceType: 'repository',
+          resourceId: repo.full_name,
+          severity: 'high',
+          remediation: `1. Go to ${repo.html_url}/settings/rules\n2. Create rulesets for unprotected branches: ${unprotectedBranches.join(', ')}\n3. Enable "Require a pull request before merging"`,
+          evidence: {
+            [repo.full_name]: combinedEvidence,
           },
         });
       }

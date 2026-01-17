@@ -27,6 +27,14 @@ export const companyDetailsSchema = z.object({
     email: z.string().email('Please enter a valid email'),
   }),
   software: z.string().optional(),
+  customVendors: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Vendor name is required'),
+        website: z.string().optional(),
+      }),
+    )
+    .optional(),
   infrastructure: z.string().min(1, 'Please select your infrastructure'),
   dataTypes: z.string().min(1, 'Please select types of data you handle'),
   devices: z.string().min(1, 'Please select device types'),
@@ -112,23 +120,7 @@ export const steps: Step[] = [
     question: 'What software do you use?',
     placeholder: 'e.g., Rippling',
     skippable: true,
-    options: [
-      'Rippling',
-      'Gusto',
-      'Salesforce',
-      'HubSpot',
-      'Slack',
-      'Zoom',
-      'Notion',
-      'Linear',
-      'Jira',
-      'Confluence',
-      'GitHub',
-      'GitLab',
-      'Figma',
-      'Stripe',
-      'Other',
-    ],
+    options: [],
   },
   {
     key: 'workLocation',
