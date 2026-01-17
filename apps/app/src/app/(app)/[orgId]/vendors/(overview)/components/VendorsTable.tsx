@@ -245,8 +245,12 @@ export function VendorsTable({
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
   const dedupedVendors = useMemo<VendorRow[]>(() => {
+    // SAFE deduplication strategy:
+    // 1. Show ALL real DB vendors (no deduplication) - user data must not be hidden
+    // 2. Hide placeholders if a real vendor with same normalized name exists
+    // 3. Deduplicate placeholders against each other (show only one per name)
+
     // Normalize vendor name for deduplication - strips parenthetical suffixes
-    // e.g., "Fanta (cool)" and "Fanta" are treated as the same vendor
     const normalizeVendorName = (name: string): string => {
       return name
         .toLowerCase()
@@ -254,50 +258,34 @@ export function VendorsTable({
         .trim();
     };
 
-    // Rank vendors for deduplication - higher rank wins
-    // Rank 3: assessed (completed)
-    // Rank 2: actively being assessed (via isAssessing flag OR metadata status)
-    // Rank 1: pending placeholder
-    // Rank 0: not assessed and not processing
-    const getRank = (vendor: VendorRow) => {
-      if (vendor.status === 'assessed') return 3;
-      // Check both isAssessing flag and metadata status for active assessment
-      const metadataStatus = itemStatuses[vendor.id];
-      if (vendor.isAssessing || metadataStatus === 'assessing' || metadataStatus === 'processing') {
-        return 2;
-      }
-      if (vendor.isPending) return 1;
-      return 0;
-    };
+    // Separate real DB vendors from placeholders
+    const realVendors = mergedVendors.filter((v) => !v.isPending);
+    const placeholders = mergedVendors.filter((v) => v.isPending);
 
-    const map = new Map<string, VendorRow>();
-    mergedVendors.forEach((vendor) => {
-      const nameKey = normalizeVendorName(vendor.name);
-      const existing = map.get(nameKey);
+    // Build a set of normalized names from real vendors
+    const realVendorNames = new Set(realVendors.map((v) => normalizeVendorName(v.name)));
+
+    // Deduplicate placeholders: keep only one per name, and only if no real vendor exists
+    const placeholderMap = new Map<string, VendorRow>();
+    placeholders.forEach((placeholder) => {
+      const nameKey = normalizeVendorName(placeholder.name);
+
+      // Skip if a real vendor with this name already exists
+      if (realVendorNames.has(nameKey)) {
+        return;
+      }
+
+      // Keep the first placeholder for each name (or replace if needed)
+      const existing = placeholderMap.get(nameKey);
       if (!existing) {
-        map.set(nameKey, vendor);
-        return;
+        placeholderMap.set(nameKey, placeholder);
       }
-
-      const currentRank = getRank(vendor);
-      const existingRank = getRank(existing);
-
-      if (currentRank > existingRank) {
-        map.set(nameKey, vendor);
-        return;
-      }
-
-      if (currentRank === existingRank) {
-        const existingUpdatedAt = new Date(existing.updatedAt).getTime();
-        const currentUpdatedAt = new Date(vendor.updatedAt).getTime();
-        if (currentUpdatedAt > existingUpdatedAt) {
-          map.set(nameKey, vendor);
-        }
-      }
+      // If multiple placeholders with same name, keep the first one (no ranking needed)
     });
 
-    return Array.from(map.values());
-  }, [mergedVendors, itemStatuses]);
+    // Return all real vendors + deduplicated placeholders
+    return [...realVendors, ...Array.from(placeholderMap.values())];
+  }, [mergedVendors]);
 
   const columns = useMemo<ColumnDef<VendorRow>[]>(() => getColumns(orgId), [orgId]);
 
