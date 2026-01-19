@@ -11,11 +11,12 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Member } from '@db';
-import { CheckCircle2, Circle, Download, HelpCircle, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Download, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { FleetPolicyItem } from './FleetPolicyItem';
+import { MDMPolicyItem } from './MDMPolicyItem';
 import type { FleetPolicy, Host } from '../../types';
 
 interface DeviceAgentAccordionItemProps {
@@ -246,80 +247,9 @@ export function DeviceAgentAccordionItem({
                 {fleetPolicies.length > 0 ? (
                   <>
                     {fleetPolicies.map((policy) => (
-                      <div
-                        key={policy.id}
-                        className={cn(
-                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
-                        )}
-                      >
-                        <p className="text-sm font-medium">{policy.name}</p>
-                        {policy.response === 'pass' ? (
-                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                            <CheckCircle2 size={16} />
-                            <span className="text-sm">Pass</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                            <XCircle size={16} />
-                            <span className="text-sm">Fail</span>
-                          </div>
-                        )}
-                      </div>
+                      <FleetPolicyItem key={policy.id} policy={policy} />
                     ))}
-                    {isMacOS && (
-                      <div
-                        className={cn(
-                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                          mdmEnabledStatus.response === 'pass'
-                            ? 'border-l-green-500'
-                            : 'border-l-red-500',
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
-                          {mdmEnabledStatus.response === 'fail' && host?.id && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    className="text-muted-foreground hover:text-foreground transition-colors"
-                                  >
-                                    <HelpCircle size={14} />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p>
-                                    There are additional steps required to enable MDM. Please check{' '}
-                                    <a
-                                      href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 dark:text-blue-400 hover:underline"
-                                    >
-                                      this documentation
-                                    </a>
-                                    .
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </div>
-                        {mdmEnabledStatus.response === 'pass' ? (
-                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                            <CheckCircle2 size={16} />
-                            <span className="text-sm">Pass</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                            <XCircle size={16} />
-                            <span className="text-sm">Fail</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {isMacOS && <MDMPolicyItem host={host} />}
                   </>
                 ) : (
                   <p className="text-muted-foreground text-sm">
