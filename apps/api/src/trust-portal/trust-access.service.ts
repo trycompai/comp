@@ -703,7 +703,7 @@ export class TrustAccessService {
     return {
       request: result.request,
       grant: result.grant,
-      message: 'Access granted (NDA bypassed for allowed domain)',
+      message: 'Access granted', // NDA bypassed for allowed domain
     };
   }
 
