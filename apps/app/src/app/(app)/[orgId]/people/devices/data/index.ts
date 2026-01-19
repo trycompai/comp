@@ -30,21 +30,29 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   const labelIdsResponses = await Promise.all(
     employees
       .filter((employee) => employee.fleetDmLabelId)
-      .map((employee) => fleet.get(`/labels/${employee.fleetDmLabelId}/hosts`)),
+      .map(async (employee) => ({
+        userId: employee.userId,
+        response: await fleet.get(`/labels/${employee.fleetDmLabelId}/hosts`),
+      })),
   );
-  const allIds = labelIdsResponses.flatMap((response) =>
-    response.data.hosts.map((host: { id: number }) => host.id),
+
+  const hostRequests = labelIdsResponses.flatMap((entry) =>
+    entry.response.data.hosts.map((host: { id: number }) => ({
+      userId: entry.userId,
+      hostId: host.id,
+    })),
   );
 
   // Get all devices by id. in parallel
-  const devices = await Promise.all(allIds.map((id: number) => fleet.get(`/hosts/${id}`)));
+  const devices = await Promise.all(hostRequests.map(({ hostId }) => fleet.get(`/hosts/${hostId}`)));
+  const userIds = hostRequests.map(({ userId }) => userId);
 
   const results = await db.fleetPolicyResult.findMany({
-    where: { organizationId, userId: session.user.id },
+    where: { organizationId },
     orderBy: { createdAt: 'desc' },
   });
 
-  return devices.map((device: { data: { host: Host } }) => {
+  return devices.map((device: { data: { host: Host } }, index: number) => {
     const host = device.data.host;
     const isMacOS = host.cpu_type && (host.cpu_type.includes('arm64') || host.cpu_type.includes('intel'));
     return {
@@ -53,7 +61,7 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
         ...host.policies,
         ...(isMacOS ? [{ id: 9999, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
       ].map((policy) => {
-        const policyResult = results.find((result) => result.fleetPolicyId === policy.id);
+        const policyResult = results.find((result) => result.fleetPolicyId === policy.id && result.userId === userIds[index]);
         return {
           ...policy,
           response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',

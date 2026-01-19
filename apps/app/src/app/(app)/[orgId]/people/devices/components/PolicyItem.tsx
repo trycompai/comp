@@ -24,7 +24,7 @@ export const PolicyItem = ({ policy }: PolicyItemProps) => {
     >
       <p className="font-medium">{policy.name}</p>
       <div className="flex items-center gap-3">
-      {(policy?.attachments || []).length > 0 && (
+        {(policy?.attachments || []).length > 0 && policy.response === 'pass' && (
           <Button
             type="button"
             variant="ghost"
