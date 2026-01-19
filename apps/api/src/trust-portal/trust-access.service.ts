@@ -465,6 +465,35 @@ export class TrustAccessService {
     return request;
   }
 
+  /**
+   * Extract domain from email address
+   */
+  private extractEmailDomain(email: string): string {
+    const parts = email.split('@');
+    return (parts[1] ?? '').toLowerCase().trim();
+  }
+
+  /**
+   * Check if email domain is in the allow list (bypasses NDA requirement)
+   */
+  private isDomainInAllowList(
+    email: string,
+    allowedDomains: string[],
+  ): boolean {
+    if (!allowedDomains || allowedDomains.length === 0) {
+      return false;
+    }
+
+    const emailDomain = this.extractEmailDomain(email);
+    if (!emailDomain) {
+      return false;
+    }
+
+    return allowedDomains.some(
+      (allowed) => allowed.toLowerCase().trim() === emailDomain,
+    );
+  }
+
   async approveRequest(
     organizationId: string,
     requestId: string,
@@ -505,6 +534,29 @@ export class TrustAccessService {
       throw new BadRequestException('Invalid member ID');
     }
 
+    // Check if email domain is in the allow list
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { allowedDomains: true },
+    });
+
+    const isAllowedDomain = this.isDomainInAllowList(
+      request.email,
+      trust?.allowedDomains ?? [],
+    );
+
+    // If domain is in allow list, skip NDA and grant access directly
+    if (isAllowedDomain) {
+      return this.approveWithoutNda({
+        organizationId,
+        requestId,
+        request,
+        member,
+        durationDays,
+      });
+    }
+
+    // Standard flow: require NDA signing
     const signToken = this.generateToken(32);
     const signTokenExpiresAt = new Date();
     signTokenExpiresAt.setDate(signTokenExpiresAt.getDate() + 7);
@@ -562,6 +614,96 @@ export class TrustAccessService {
       request: result.request,
       ndaAgreement: result.ndaAgreement,
       message: 'NDA signing email sent',
+    };
+  }
+
+  /**
+   * Approve request without NDA for allowed domains - grants immediate access
+   */
+  private async approveWithoutNda({
+    organizationId,
+    requestId,
+    request,
+    member,
+    durationDays,
+  }: {
+    organizationId: string;
+    requestId: string;
+    request: {
+      email: string;
+      name: string;
+      organization: { name: string };
+    };
+    member: { id: string; userId: string };
+    durationDays: number;
+  }) {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+    const accessToken = this.generateToken(32);
+    const accessTokenExpiresAt = new Date();
+    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+
+    const result = await db.$transaction(async (tx) => {
+      const updatedRequest = await tx.trustAccessRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'approved',
+          reviewerMemberId: member.id,
+          reviewedAt: new Date(),
+          requestedDurationDays: durationDays,
+        },
+      });
+
+      const grant = await tx.trustAccessGrant.create({
+        data: {
+          accessRequestId: requestId,
+          subjectEmail: request.email,
+          expiresAt,
+          accessToken,
+          accessTokenExpiresAt,
+          issuedByMemberId: member.id,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId,
+          userId: member.userId,
+          memberId: member.id,
+          entityType: 'trust',
+          entityId: requestId,
+          description: `Access request approved for ${request.email} (allowed domain - NDA bypassed)`,
+          data: {
+            requestId,
+            grantId: grant.id,
+            durationDays,
+            ndaBypassed: true,
+          },
+        },
+      });
+
+      return { request: updatedRequest, grant };
+    });
+
+    const portalUrl = await this.buildPortalAccessUrl({
+      organizationId,
+      organizationName: request.organization.name,
+      accessToken,
+    });
+
+    await this.emailService.sendAccessGrantedEmail({
+      toEmail: request.email,
+      toName: request.name,
+      organizationName: request.organization.name,
+      expiresAt: result.grant.expiresAt,
+      portalUrl,
+    });
+
+    return {
+      request: result.request,
+      grant: result.grant,
+      message: 'Access granted (NDA bypassed for allowed domain)',
     };
   }
 
