@@ -57,7 +57,7 @@ export const uploadPolicyImagesAction = authActionClient
 
       const timestamp = Date.now();
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const key = `${organizationId}/policies/${policyId}/${timestamp}-${sanitizedFileName}`;
+      const key = `${organizationId}/fleet-policies/${policyId}/${timestamp}-${sanitizedFileName}`;
 
       const putCommand = new PutObjectCommand({
         Bucket: APP_AWS_ORG_ASSETS_BUCKET,
