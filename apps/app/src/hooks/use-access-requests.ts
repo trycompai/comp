@@ -37,6 +37,13 @@ export type AccessGrant = {
   createdAt: string;
 };
 
+export type ApproveAccessRequestResponse = {
+  message: string;
+  request?: AccessRequest;
+  grant?: AccessGrant;
+  ndaAgreement?: unknown;
+};
+
 export function useAccessRequests(orgId: string) {
   const api = useApi();
 
@@ -63,7 +70,7 @@ export function useApproveAccessRequest(orgId: string) {
 
   return useMutation({
     mutationFn: async ({ requestId, durationDays }: { requestId: string; durationDays: number }) => {
-      const response = await api.post(
+      const response = await api.post<ApproveAccessRequestResponse>(
         `/v1/trust-access/admin/requests/${requestId}/approve`,
         { durationDays },
         orgId,

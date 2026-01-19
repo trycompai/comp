@@ -37,9 +37,9 @@ export function ApproveDialog({
         }),
         {
           loading: 'Approving...',
-          success: () => {
+          success: (response) => {
             onClose();
-            return 'Request approved. NDA email sent.';
+            return response?.message ?? 'Request approved';
           },
           error: 'Failed to approve request',
         },

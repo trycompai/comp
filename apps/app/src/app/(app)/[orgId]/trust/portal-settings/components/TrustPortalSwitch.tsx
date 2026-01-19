@@ -25,6 +25,7 @@ import {
   type TrustPortalDocument,
 } from './TrustPortalAdditionalDocumentsSection';
 import { TrustPortalDomain } from './TrustPortalDomain';
+import { AllowedDomainsManager } from './AllowedDomainsManager';
 import {
   GDPR,
   HIPAA,
@@ -134,6 +135,7 @@ export function TrustPortalSwitch({
   nen7510FileName,
   iso9001FileName,
   additionalDocuments,
+  allowedDomains,
 }: {
   enabled: boolean;
   slug: string;
@@ -173,6 +175,7 @@ export function TrustPortalSwitch({
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
   additionalDocuments: TrustPortalDocument[];
+  allowedDomains: string[];
 }) {
   const [certificateFiles, setCertificateFiles] = useState<Record<string, string | null>>({
     iso27001: iso27001FileName ?? null,
@@ -562,6 +565,15 @@ export function TrustPortalSwitch({
               <div className="pt-6">
                 {/* FAQ Section */}
                 <TrustPortalFaqBuilder initialFaqs={faqs} orgId={orgId} />
+              </div>
+            )}
+            {form.watch('enabled') && (
+              <div className="pt-6">
+                {/* NDA Bypass - Allowed Domains Section */}
+                <AllowedDomainsManager
+                  initialDomains={allowedDomains}
+                  orgId={orgId}
+                />
               </div>
             )}
             {form.watch('enabled') && (

@@ -76,6 +76,7 @@ export default async function PortalSettingsPage({ params }: { params: Promise<{
               createdAt: doc.createdAt.toISOString(),
               updatedAt: doc.updatedAt.toISOString(),
             }))}
+            allowedDomains={trustPortal?.allowedDomains ?? []}
           />
         </div>
       </div>
@@ -127,6 +128,7 @@ const getTrustPortal = async (orgId: string) => {
     isVercelDomain: trustPortal?.isVercelDomain,
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,
+    allowedDomains: trustPortal?.allowedDomains ?? [],
   };
 };
 
