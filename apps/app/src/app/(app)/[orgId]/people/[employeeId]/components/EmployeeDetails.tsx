@@ -102,7 +102,7 @@ export const EmployeeDetails = ({
   };
 
   return (
-    <Section title="Employee Details">
+    <Section>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Stack gap="lg">

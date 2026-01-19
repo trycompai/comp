@@ -20,6 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
   HStack,
   InputGroup,
   InputGroupAddon,
@@ -411,10 +415,10 @@ export function VendorsTable({
 
   const isEmpty = mergedVendors.length === 0;
   const showEmptyState = isEmpty && onboardingRunId && isActive;
-
-  if (onboardingRunId && isLoading) {
-    return null;
-  }
+  const emptyTitle = searchQuery ? 'No vendors found' : 'No vendors yet';
+  const emptyDescription = searchQuery
+    ? 'Try adjusting your search.'
+    : 'Create your first vendor to get started.';
 
   if (showEmptyState) {
     return (
@@ -477,107 +481,116 @@ export function VendorsTable({
         )}
 
         {/* Table */}
-        <Table variant="bordered">
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <button
-                  type="button"
-                  onClick={() => handleSort('name')}
-                  className="flex items-center hover:text-foreground"
-                >
-                  NAME
-                  {getSortIcon('name')}
-                </button>
-              </TableHead>
-              <TableHead>STATUS</TableHead>
-              <TableHead>CATEGORY</TableHead>
-              <TableHead>OWNER</TableHead>
-              <TableHead>ACTIONS</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredAndSortedVendors.map((vendor) => {
-              const blocked = isRowBlocked(vendor);
-              return (
-                <TableRow
-                  key={vendor.id}
-                  onClick={() => !blocked && handleRowClick(vendor.id)}
-                  style={{ cursor: blocked ? 'default' : 'pointer' }}
-                  data-state={blocked ? 'disabled' : undefined}
-                >
-                  <TableCell>
-                    <VendorNameCell vendor={vendor} orgId={orgId} />
-                  </TableCell>
-                  <TableCell>
-                    <VendorStatusCell vendor={vendor} />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {CATEGORY_MAP[vendor.category] || vendor.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {vendor.assignee ? (
-                      <HStack gap="2" align="center">
-                        <Avatar size="sm">
-                          <AvatarImage
-                            src={vendor.assignee.user?.image || undefined}
-                            alt={vendor.assignee.user?.name || ''}
-                          />
-                          <AvatarFallback>
-                            {vendor.assignee.user?.name?.charAt(0) ||
-                              vendor.assignee.user?.email?.charAt(0).toUpperCase() ||
-                              '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <Text size="sm">
-                          {vendor.assignee.user?.name || vendor.assignee.user?.email || 'Unknown'}
-                        </Text>
-                      </HStack>
-                    ) : (
-                      <HStack gap="2" align="center">
-                        <div className="bg-muted flex h-6 w-6 items-center justify-center rounded-full">
-                          <UserIcon className="text-muted-foreground h-3 w-3" />
-                        </div>
-                        <Text size="sm" variant="muted">
-                          None
-                        </Text>
-                      </HStack>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          variant="ellipsis"
-                          disabled={blocked}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <OverflowMenuVertical />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleRowClick(vendor.id)}>
-                            <View size={16} />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => handleDeleteClick(vendor)}
+        {isEmpty ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>{emptyTitle}</EmptyTitle>
+              <EmptyDescription>{emptyDescription}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <Table variant="bordered">
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('name')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    NAME
+                    {getSortIcon('name')}
+                  </button>
+                </TableHead>
+                <TableHead>STATUS</TableHead>
+                <TableHead>CATEGORY</TableHead>
+                <TableHead>OWNER</TableHead>
+                <TableHead>ACTIONS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAndSortedVendors.map((vendor) => {
+                const blocked = isRowBlocked(vendor);
+                return (
+                  <TableRow
+                    key={vendor.id}
+                    onClick={() => !blocked && handleRowClick(vendor.id)}
+                    style={{ cursor: blocked ? 'default' : 'pointer' }}
+                    data-state={blocked ? 'disabled' : undefined}
+                  >
+                    <TableCell>
+                      <VendorNameCell vendor={vendor} orgId={orgId} />
+                    </TableCell>
+                    <TableCell>
+                      <VendorStatusCell vendor={vendor} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {CATEGORY_MAP[vendor.category] || vendor.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {vendor.assignee ? (
+                        <HStack gap="2" align="center">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={vendor.assignee.user?.image || undefined}
+                              alt={vendor.assignee.user?.name || ''}
+                            />
+                            <AvatarFallback>
+                              {vendor.assignee.user?.name?.charAt(0) ||
+                                vendor.assignee.user?.email?.charAt(0).toUpperCase() ||
+                                '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <Text size="sm">
+                            {vendor.assignee.user?.name || vendor.assignee.user?.email || 'Unknown'}
+                          </Text>
+                        </HStack>
+                      ) : (
+                        <HStack gap="2" align="center">
+                          <div className="bg-muted flex h-6 w-6 items-center justify-center rounded-full">
+                            <UserIcon className="text-muted-foreground h-3 w-3" />
+                          </div>
+                          <Text size="sm" variant="muted">
+                            None
+                          </Text>
+                        </HStack>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            variant="ellipsis"
+                            disabled={blocked}
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <TrashCan size={16} />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                            <OverflowMenuVertical />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRowClick(vendor.id)}>
+                              <View size={16} />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(vendor)}
+                            >
+                              <TrashCan size={16} />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

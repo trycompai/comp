@@ -19,6 +19,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
   HStack,
   InputGroup,
   InputGroupAddon,
@@ -376,10 +380,10 @@ export const RisksTable = ({
 
   const isEmpty = mergedRisks.length === 0;
   const showEmptyState = isEmpty && onboardingRunId && isActive;
-
-  if (onboardingRunId && isLoading) {
-    return null;
-  }
+  const emptyTitle = title ? 'No risks found' : 'No risks yet';
+  const emptyDescription = title
+    ? 'Try adjusting your search.'
+    : 'Create your first risk to get started.';
 
   if (showEmptyState) {
     return <RisksLoadingAnimation />;
@@ -436,91 +440,100 @@ export const RisksTable = ({
         )}
 
         {/* Table */}
-        <Table variant="bordered">
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <button
-                  type="button"
-                  onClick={() => handleSort('title')}
-                  className="flex items-center hover:text-foreground"
-                >
-                  RISK
-                  {getSortIcon('title')}
-                </button>
-              </TableHead>
-              <TableHead>SEVERITY</TableHead>
-              <TableHead>STATUS</TableHead>
-              <TableHead>OWNER</TableHead>
-              <TableHead>
-                <button
-                  type="button"
-                  onClick={() => handleSort('updatedAt')}
-                  className="flex items-center hover:text-foreground"
-                >
-                  UPDATED
-                  {getSortIcon('updatedAt')}
-                </button>
-              </TableHead>
-              <TableHead>ACTIONS</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mergedRisks.map((risk) => {
-              const blocked = isRowBlocked(risk);
-              return (
-                <TableRow
-                  key={risk.id}
-                  onClick={() => !blocked && handleRowClick(risk.id)}
-                  style={{ cursor: blocked ? 'default' : 'pointer' }}
-                  data-state={blocked ? 'disabled' : undefined}
-                >
-                  <TableCell>
-                    <HStack gap="2" align="center">
-                      {blocked && <Spinner />}
-                      <Text>{risk.title}</Text>
-                    </HStack>
-                  </TableCell>
-                  <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
-                  <TableCell>{getStatusBadge(risk.status)}</TableCell>
-                  <TableCell>
-                    <Text>{risk.assignee?.name || 'Unassigned'}</Text>
-                  </TableCell>
-                  <TableCell>
-                    <Text>{formatDate(risk.updatedAt)}</Text>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          variant="ellipsis"
-                          disabled={blocked}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <OverflowMenuVertical />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleRowClick(risk.id)}>
-                            <View size={16} />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => handleDeleteClick(risk)}
+        {isEmpty ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>{emptyTitle}</EmptyTitle>
+              <EmptyDescription>{emptyDescription}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <Table variant="bordered">
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('title')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    RISK
+                    {getSortIcon('title')}
+                  </button>
+                </TableHead>
+                <TableHead>SEVERITY</TableHead>
+                <TableHead>STATUS</TableHead>
+                <TableHead>OWNER</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('updatedAt')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    UPDATED
+                    {getSortIcon('updatedAt')}
+                  </button>
+                </TableHead>
+                <TableHead>ACTIONS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mergedRisks.map((risk) => {
+                const blocked = isRowBlocked(risk);
+                return (
+                  <TableRow
+                    key={risk.id}
+                    onClick={() => !blocked && handleRowClick(risk.id)}
+                    style={{ cursor: blocked ? 'default' : 'pointer' }}
+                    data-state={blocked ? 'disabled' : undefined}
+                  >
+                    <TableCell>
+                      <HStack gap="2" align="center">
+                        {blocked && <Spinner />}
+                        <Text>{risk.title}</Text>
+                      </HStack>
+                    </TableCell>
+                    <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
+                    <TableCell>{getStatusBadge(risk.status)}</TableCell>
+                    <TableCell>
+                      <Text>{risk.assignee?.name || 'Unassigned'}</Text>
+                    </TableCell>
+                    <TableCell>
+                      <Text>{formatDate(risk.updatedAt)}</Text>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            variant="ellipsis"
+                            disabled={blocked}
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <TrashCan size={16} />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                            <OverflowMenuVertical />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRowClick(risk.id)}>
+                              <View size={16} />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(risk)}
+                            >
+                              <TrashCan size={16} />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

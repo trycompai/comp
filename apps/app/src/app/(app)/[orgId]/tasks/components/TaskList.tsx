@@ -517,7 +517,7 @@ export function TaskList({
       {/* Unified Control Module */}
       <Tabs value={currentTab} onValueChange={handleTabChange}>
         <Stack gap="lg">
-          <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center">
+          <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             {/* Filters */}
             <div className="flex w-full flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-2 lg:flex-1">
               <div className="w-full sm:flex-1 lg:max-w-[200px]">
@@ -641,16 +641,18 @@ export function TaskList({
             </div>
 
             {/* Tabs - visible on all screens */}
-            <TabsList>
-              <TabsTrigger value="categories">
-                <FolderTree className="h-2.5 w-2.5" />
-                Categories
-              </TabsTrigger>
-              <TabsTrigger value="list">
-                <List className="h-2.5 w-2.5" />
-                List
-              </TabsTrigger>
-            </TabsList>
+            <div className="flex w-full justify-start lg:w-auto lg:shrink-0">
+              <TabsList>
+                <TabsTrigger value="categories">
+                  <FolderTree className="h-2.5 w-2.5" />
+                  Categories
+                </TabsTrigger>
+                <TabsTrigger value="list">
+                  <List className="h-2.5 w-2.5" />
+                  List
+                </TabsTrigger>
+              </TabsList>
+            </div>
           </div>
           <div>
             <TabsContent value="categories">
