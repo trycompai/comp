@@ -12,28 +12,19 @@ import {
 } from '@comp/ui/dialog';
 import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useAction } from 'next-safe-action/hooks';
-import { uploadPolicyImagesAction } from '../../../actions/uploadPolicyImages';
 import { toast } from 'sonner';
+import { FleetPolicy } from '../../types';
 
 interface PolicyImageUploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  policyId: string;
+  policy: FleetPolicy;
 }
 
-export function PolicyImageUploadModal({ open, onOpenChange, policyId }: PolicyImageUploadModalProps) {
+export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyImageUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<Array<{ file: File; previewUrl: string }>>([]);
-
-  const uploadPolicyImages = useAction(uploadPolicyImagesAction, {
-    onSuccess: (result) => {
-      toast.success('Policy images uploaded successfully');
-    },
-    onError: (error) => {
-      toast.error(error.error.serverError || 'Failed to upload policy images');
-    },
-  });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
@@ -63,43 +54,40 @@ export function PolicyImageUploadModal({ open, onOpenChange, policyId }: PolicyI
     onOpenChange(nextOpen);
   };
 
-  const fileToBase64 = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
   const handleSubmit = async () => {
-    if (files.length === 0 || uploadPolicyImages.status === 'executing') return;
+    if (files.length === 0 || isLoading) return;
 
     try {
-      const images = await Promise.all(
-        files.map(async ({ file }) => ({
-          fileName: file.name,
-          fileType: file.type,
-          fileData: await fileToBase64(file),
-        })),
-      );
+      setIsLoading(true);
 
-      await uploadPolicyImages.execute({
-        policyId,
-        images,
+      const formData = new FormData();
+      formData.append('policyId', String(policy.id));
+      formData.append('policyName', policy.name);
+
+      files.forEach(({ file }) => {
+        formData.append('files', file, file.name);
       });
 
+      const response = await fetch('/api/confirm-fleet-policy', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to upload policy images');
+      }
+
+      toast.success('Policy images uploaded successfully');
       handleClose(false);
     } catch (error) {
       console.error('Failed to upload policy images', error);
-      toast.error('Failed to upload policy images');
+      const message = error instanceof Error ? error.message : 'Failed to upload policy images';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const isLoading = uploadPolicyImages.status === 'executing';
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

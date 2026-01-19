@@ -2,7 +2,7 @@
 
 import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
-import type { Member } from '@db';
+import type { FleetPolicyResult, Member } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -51,6 +51,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
 
   // Fleet policies - already has graceful error handling in getFleetPolicies
   const fleetData = await getFleetPolicies(member);
+  const fleetPolicyResults = await getFleetPolicyResults(member);
 
   return (
     <OrganizationDashboard
@@ -58,6 +59,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
       organizationId={orgId}
       member={member}
       fleetPolicies={fleetData.fleetPolicies}
+      fleetPolicyResults={fleetPolicyResults}
       host={fleetData.device}
     />
   );
@@ -95,5 +97,32 @@ const getFleetPolicies = async (
       console.error('Error fetching fleet policies:', error.message || error);
     }
     return { fleetPolicies: [], device: null };
+  }
+};
+
+const getFleetPolicyResults = async (member: Member): Promise<FleetPolicyResult[]> => {
+  if (!member || !member.organizationId) {
+    return [];
+  }
+  try {
+    const portalBase = process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, '');
+    const url = `${portalBase}/api/fleet-policy`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: await headers(),
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      console.error('Failed to fetch fleet policy results', res.status, await res.text());
+      return [];
+    }
+
+    const json = (await res.json()) as { success?: boolean; data?: FleetPolicyResult[] };
+    return json.data ?? [];
+  } catch (error) {
+    console.error('Error fetching fleet policy results', error);
+    return [];
   }
 };

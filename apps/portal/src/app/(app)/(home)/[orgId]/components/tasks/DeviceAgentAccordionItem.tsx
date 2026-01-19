@@ -11,7 +11,7 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import type { Member } from '@db';
+import type { FleetPolicyResult, Member } from '@db';
 import { CheckCircle2, Circle, Download, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -23,12 +23,14 @@ interface DeviceAgentAccordionItemProps {
   member: Member;
   host: Host | null;
   fleetPolicies?: FleetPolicy[];
+  fleetPolicyResults: FleetPolicyResult[];
 }
 
 export function DeviceAgentAccordionItem({
   member,
   host,
   fleetPolicies = [],
+  fleetPolicyResults = [],
 }: DeviceAgentAccordionItemProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
@@ -46,13 +48,20 @@ export function DeviceAgentAccordionItem({
     };
   }, [host]);
 
+  const fleetPolicyResultsMap = useMemo(() => {
+    return fleetPolicyResults.reduce((acc, result) => {
+      acc[result.fleetPolicyId] = result;
+      return acc;
+    }, {} as Record<string, FleetPolicyResult>);
+  }, [fleetPolicyResults]);
+
   const hasInstalledAgent = host !== null;
   const failedPoliciesCount = useMemo(() => {
     return (
-      fleetPolicies.filter((policy) => policy.response !== 'pass').length +
+      fleetPolicies.filter((policy) => policy.response !== 'pass' && fleetPolicyResultsMap[policy.id]?.fleetPolicyResponse !== 'pass').length +
       (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1)
     );
-  }, [fleetPolicies, mdmEnabledStatus, isMacOS]);
+  }, [fleetPolicies, mdmEnabledStatus, isMacOS, fleetPolicyResultsMap]);
 
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
@@ -247,7 +256,7 @@ export function DeviceAgentAccordionItem({
                 {fleetPolicies.length > 0 ? (
                   <>
                     {fleetPolicies.map((policy) => (
-                      <FleetPolicyItem key={policy.id} policy={policy} />
+                      <FleetPolicyItem key={policy.id} policy={policy} policyResult={fleetPolicyResultsMap[policy.id]} />
                     ))}
                     {isMacOS && <MDMPolicyItem host={host} />}
                   </>

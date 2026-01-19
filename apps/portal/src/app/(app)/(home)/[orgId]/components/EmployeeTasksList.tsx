@@ -3,7 +3,7 @@
 import { trainingVideos } from '@/lib/data/training-videos';
 import { Accordion } from '@comp/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@db';
+import type { EmployeeTrainingVideoCompletion, FleetPolicyResult, Member, Policy } from '@db';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
@@ -14,6 +14,7 @@ interface EmployeeTasksListProps {
   trainingVideos: EmployeeTrainingVideoCompletion[];
   member: Member;
   fleetPolicies: FleetPolicy[];
+  fleetPolicyResults: FleetPolicyResult[];
   host: Host | null;
 }
 
@@ -22,6 +23,7 @@ export const EmployeeTasksList = ({
   trainingVideos: trainingVideoCompletions,
   member,
   fleetPolicies,
+  fleetPolicyResults,
   host,
 }: EmployeeTasksListProps) => {
   // Check completion status
@@ -59,7 +61,7 @@ export const EmployeeTasksList = ({
     {
       title: 'Download and install Comp AI Device Agent',
       content: (
-        <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
+        <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} fleetPolicyResults={fleetPolicyResults} />
       ),
     },
     {

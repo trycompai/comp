@@ -7,13 +7,17 @@ import { cn } from '@comp/ui/cn';
 import { CheckCircle2, Image, Upload, XCircle } from 'lucide-react';
 import type { FleetPolicy } from '../../types';
 import { PolicyImageUploadModal } from './PolicyImageUploadModal';
+import { FleetPolicyResult } from '@db';
+import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
+  policyResult?: FleetPolicyResult;
 }
 
-export function FleetPolicyItem({ policy }: FleetPolicyItemProps) {
+export function FleetPolicyItem({ policy, policyResult }: FleetPolicyItemProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
     <>
@@ -25,35 +29,52 @@ export function FleetPolicyItem({ policy }: FleetPolicyItemProps) {
       >
         <p className="text-sm font-medium">{policy.name}</p>
         <div className="flex items-center gap-3">
-          <Button type="button" variant="ghost" size="icon" className="text-slate-500 hover:text-slate-700">
-            <Image className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-slate-500 hover:text-slate-700"
-            onClick={() => setIsUploadOpen(true)}
-          >
-            <Upload className="h-4 w-4" />
-          </Button>
-          {policy.response !== 'pass' ? (
-            <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-              <CheckCircle2 size={16} />
-              <span className="text-sm">Pass</span>
-            </div>
+          {policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? (
+            <>
+              {(policyResult?.attachments || []).length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-slate-500 hover:text-slate-700"
+                  onClick={() => setIsPreviewOpen(true)}
+                >
+                  <Image className="h-4 w-4" />
+                </Button>
+              )}
+              <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                <CheckCircle2 size={16} />
+                <span className="text-sm">Pass</span>
+              </div>
+            </>
           ) : (
-            <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-              <XCircle size={16} />
-              <span className="text-sm">Fail</span>
-            </div>
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-slate-500 hover:text-slate-700"
+                onClick={() => setIsUploadOpen(true)}
+              >
+                <Upload className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                <XCircle size={16} />
+                <span className="text-sm">Fail</span>
+              </div>
+            </>
           )}
         </div>
       </div>
       <PolicyImageUploadModal
+        policy={policy}
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
-        policyId={String(policy.id)}
+      />
+      <PolicyImagePreviewModal
+        images={policyResult?.attachments || []}
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
       />
     </>
   );

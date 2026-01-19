@@ -1,4 +1,4 @@
-import type { Member, Organization, User } from '@db';
+import type { FleetPolicyResult, Member, Organization, User } from '@db';
 import { db } from '@db';
 import { NoAccessMessage } from '../../components/NoAccessMessage';
 import type { FleetPolicy, Host } from '../types';
@@ -14,6 +14,7 @@ interface OrganizationDashboardProps {
   organizationId: string;
   member: MemberWithUserOrg; // Pass the full member object for user info etc.
   fleetPolicies: FleetPolicy[];
+  fleetPolicyResults: FleetPolicyResult[];
   host: Host | null;
 }
 
@@ -21,6 +22,7 @@ export async function OrganizationDashboard({
   organizationId,
   member,
   fleetPolicies,
+  fleetPolicyResults,
   host,
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
@@ -72,6 +74,7 @@ export async function OrganizationDashboard({
       trainingVideos={trainingVideos}
       member={member} // Pass the member object down
       fleetPolicies={fleetPolicies}
+      fleetPolicyResults={fleetPolicyResults}
       host={host}
     />
   );
