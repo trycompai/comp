@@ -40,9 +40,9 @@ export function DeviceAgentAccordionItem({
     [detectedOS],
   );
 
-  const mdmEnabledStatus = useMemo(() => {
+  const mdmEnabledStatus = useMemo<FleetPolicy>(() => {
     return {
-      id: 'mdm',
+      id: 9999,
       response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
       name: 'MDM Enabled',
     };
@@ -258,7 +258,7 @@ export function DeviceAgentAccordionItem({
                     {fleetPolicies.map((policy) => (
                       <FleetPolicyItem key={policy.id} policy={policy} policyResult={fleetPolicyResultsMap[policy.id]} />
                     ))}
-                    {isMacOS && <MDMPolicyItem host={host} />}
+                    {isMacOS && <MDMPolicyItem policy={mdmEnabledStatus} policyResult={fleetPolicyResultsMap[mdmEnabledStatus.id]} />}
                   </>
                 ) : (
                   <p className="text-muted-foreground text-sm">
