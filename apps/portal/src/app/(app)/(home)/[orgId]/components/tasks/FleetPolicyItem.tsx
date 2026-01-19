@@ -24,7 +24,7 @@ export function FleetPolicyItem({ policy, policyResult }: FleetPolicyItemProps) 
       <div
         className={cn(
           'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+          policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
         )}
       >
         <p className="text-sm font-medium">{policy.name}</p>
