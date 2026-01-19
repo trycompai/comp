@@ -45,9 +45,14 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   });
 
   return devices.map((device: { data: { host: Host } }) => {
+    const host = device.data.host;
+    const isMacOS = host.cpu_type && (host.cpu_type.includes('arm64') || host.cpu_type.includes('intel'));
     return {
-      ...device.data.host,
-      policies: device.data.host.policies.map((policy) => {
+      ...host,
+      policies: [
+        ...host.policies,
+        ...(isMacOS ? [{ id: 9999, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
+      ].map((policy) => {
         const policyResult = results.find((result) => result.fleetPolicyId === policy.id);
         return {
           ...policy,
