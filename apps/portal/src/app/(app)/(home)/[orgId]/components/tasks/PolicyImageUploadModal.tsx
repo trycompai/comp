@@ -12,6 +12,7 @@ import {
 } from '@comp/ui/dialog';
 import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { FleetPolicy } from '../../types';
 
@@ -25,6 +26,7 @@ export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyIma
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<Array<{ file: File; previewUrl: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
@@ -80,6 +82,7 @@ export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyIma
 
       toast.success('Policy images uploaded successfully');
       handleClose(false);
+      router.refresh();
     } catch (error) {
       console.error('Failed to upload policy images', error);
       const message = error instanceof Error ? error.message : 'Failed to upload policy images';
