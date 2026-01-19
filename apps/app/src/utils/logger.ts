@@ -135,21 +135,24 @@ export const logger = {
     if (loggerValidator.shouldSkip(params)) {
       return;
     }
-    console.log(`[INFO] ${message}`, formatParams(params));
+    // Pass message as separate argument to avoid format string injection
+    console.log('[INFO]', message, formatParams(params));
   },
   warn: (message: string, params?: unknown) => {
     // Skip logging if it matches any skip rule
     if (loggerValidator.shouldSkip(params)) {
       return;
     }
-    console.warn(`[WARN] ${message}`, formatParams(params));
+    // Pass message as separate argument to avoid format string injection
+    console.warn('[WARN]', message, formatParams(params));
   },
   error: (message: string, params?: unknown) => {
     // Skip logging if it matches any skip rule
     if (loggerValidator.shouldSkip(params)) {
       return;
     }
-    console.error(`[ERROR] ${message}`, formatParams(params));
+    // Pass message as separate argument to avoid format string injection
+    console.error('[ERROR]', message, formatParams(params));
   },
 };
 
