@@ -39,5 +39,22 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   // Get all devices by id. in parallel
   const devices = await Promise.all(allIds.map((id: number) => fleet.get(`/hosts/${id}`)));
 
-  return devices.map((device: { data: { host: Host } }) => device.data.host);
+  const results = await db.fleetPolicyResult.findMany({
+    where: { organizationId, userId: session.user.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return devices.map((device: { data: { host: Host } }) => {
+    return {
+      ...device.data.host,
+      policies: device.data.host.policies.map((policy) => {
+        const policyResult = results.find((result) => result.fleetPolicyId === policy.id);
+        return {
+          ...policy,
+          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
+          attachments: policyResult?.attachments || [],
+        };
+      }),
+    };
+  });
 };

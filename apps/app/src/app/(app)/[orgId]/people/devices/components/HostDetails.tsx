@@ -1,18 +1,18 @@
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { cn } from '@comp/ui/cn';
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useMemo } from 'react';
-import type { Host } from '../types';
+import type { FleetPolicy, Host } from '../types';
+import { PolicyItem } from './PolicyItem';
 
 export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void }) => {
   const isMacOS = useMemo(() => {
     return host.cpu_type && (host.cpu_type.includes('arm64') || host.cpu_type.includes('intel'));
   }, [host]);
 
-  const mdmEnabledStatus = useMemo(() => {
+  const mdmEnabledStatus = useMemo<FleetPolicy>(() => {
     return {
-      id: 'mdm',
+      id: 9999,
       response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
       name: 'MDM Enabled',
     };
@@ -32,49 +32,9 @@ export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void
           {host.policies.length > 0 ? (
             <>
               {host.policies.map((policy) => (
-                <div
-                  key={policy.id}
-                  className={cn(
-                    'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                    policy.response === 'pass' ? 'border-l-primary' : 'border-l-red-500',
-                  )}
-                >
-                  <p className="font-medium">{policy.name}</p>
-                  {policy.response === 'pass' ? (
-                    <div className="flex items-center gap-1 text-primary">
-                      <CheckCircle2 size={16} />
-                      <span>Pass</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-red-600">
-                      <XCircle size={16} />
-                      <span>Fail</span>
-                    </div>
-                  )}
-                </div>
+                <PolicyItem key={policy.id} policy={policy} />
               ))}
-              {isMacOS && (
-                <div
-                  key={mdmEnabledStatus.id}
-                  className={cn(
-                    'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                    mdmEnabledStatus.response === 'pass' ? 'border-l-primary' : 'border-l-red-500',
-                  )}
-                >
-                  <p className="font-medium">{mdmEnabledStatus.name}</p>
-                  {mdmEnabledStatus.response === 'pass' ? (
-                    <div className="flex items-center gap-1 text-primary">
-                      <CheckCircle2 size={16} />
-                      <span>Pass</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-red-600">
-                      <XCircle size={16} />
-                      <span>Fail</span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {isMacOS && <PolicyItem policy={mdmEnabledStatus} />}
             </>
           ) : (
             <p className="text-muted-foreground">No policies found for this device.</p>
