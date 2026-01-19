@@ -1,11 +1,18 @@
 'use server';
 
+import { auth } from '@/utils/auth';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
+  const session = await auth.api.getSession({ headers: req.headers });
+
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const key = req.nextUrl.searchParams.get('key');
 
   if (!key) {
