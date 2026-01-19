@@ -44,18 +44,24 @@ export function AllowedDomainsManager({
   orgId,
 }: AllowedDomainsManagerProps) {
   const [domains, setDomains] = useState<string[]>(initialDomains);
+  const [lastSavedDomains, setLastSavedDomains] =
+    useState<string[]>(initialDomains);
   const [newDomain, setNewDomain] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [domainToDelete, setDomainToDelete] = useState<string | null>(null);
 
   const updateDomains = useAction(updateAllowedDomainsAction, {
-    onSuccess: () => {
+    onSuccess: ({ data }) => {
       toast.success('Allowed domains updated');
+      // Update last saved state from server response
+      if (data?.allowedDomains) {
+        setLastSavedDomains(data.allowedDomains);
+      }
     },
     onError: ({ error }) => {
       toast.error(error.serverError ?? 'Failed to update allowed domains');
-      // Revert on error
-      setDomains(initialDomains);
+      // Revert to last successfully saved state
+      setDomains(lastSavedDomains);
     },
   });
 
