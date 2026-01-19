@@ -1,3 +1,10 @@
+# [1.78.0](https://github.com/trycompai/comp/compare/v1.77.0...v1.78.0) (2026-01-19)
+
+
+### Features
+
+* **onboarding:** deduplicate search results in vendor input component ([#2012](https://github.com/trycompai/comp/issues/2012)) ([a7e6543](https://github.com/trycompai/comp/commit/a7e65430d7b4daa73585d58411909653ec1585c1))
+
 # [1.77.0](https://github.com/trycompai/comp/compare/v1.76.1...v1.77.0) (2026-01-14)
 
 
