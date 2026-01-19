@@ -69,12 +69,13 @@ export const authActionClient = actionClientWithMeta
     });
 
     const { fileData: _, ...inputForLog } = (clientInput || {}) as any;
-    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
-    logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    // Logger will automatically skip GCP logs to avoid credential exposure
+    logger.info('Input ->', inputForLog);
+    logger.info('Result ->', result.data);
 
     // Also log validation errors if they exist
     if (result.validationErrors) {
-      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+      logger.warn('Validation Errors ->', result.validationErrors);
     }
 
     return result;
@@ -280,12 +281,13 @@ export const authActionClientWithoutOrg = actionClientWithMeta
     });
 
     const { fileData: _, ...inputForLog } = (clientInput || {}) as any;
-    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
-    logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    // Logger will automatically skip GCP logs to avoid credential exposure
+    logger.info('Input ->', inputForLog);
+    logger.info('Result ->', result.data);
 
     // Also log validation errors if they exist
     if (result.validationErrors) {
-      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+      logger.warn('Validation Errors ->', result.validationErrors);
     }
 
     return result;

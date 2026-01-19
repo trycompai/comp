@@ -9,6 +9,9 @@ model Trust {
   status             TrustStatus  @default(draft)
   contactEmail       String?
 
+  /// Domains that bypass NDA signing when requesting trust portal access
+  allowedDomains String[] @default([])
+
   email         String?
   privacyPolicy String?
   soc2          Boolean @default(false)

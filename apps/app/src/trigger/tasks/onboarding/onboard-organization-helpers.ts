@@ -11,6 +11,7 @@ import {
   RiskStatus,
   RiskTreatmentType,
   VendorCategory,
+  VendorStatus,
 } from '@db';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText, jsonSchema } from 'ai';
@@ -182,12 +183,78 @@ export async function getOrganizationContext(
   return { organization, questionsAndAnswers, policies: typedPolicies };
 }
 
+type CustomVendorEntry = {
+  name: string;
+  website?: string;
+};
+
+/**
+ * Parses all selected vendors from context
+ * Returns the full list of all vendors (from software field) and custom vendor URL map
+ */
+function parseAllSelectedVendors(
+  questionsAndAnswers: ContextItem[],
+): { 
+  allVendorNames: string[]; 
+  customVendors: CustomVendorEntry[]; 
+  urlMap: Map<string, string>;
+} {
+  const allVendorNames: string[] = [];
+  const customVendors: CustomVendorEntry[] = [];
+  const urlMap = new Map<string, string>();
+
+  // Find the software answer (contains ALL selected vendor names as comma-separated)
+  const softwareEntry = questionsAndAnswers.find(
+    (qa) => qa.question === 'What software do you use?',
+  );
+
+  if (softwareEntry && softwareEntry.answer) {
+    // Parse comma-separated vendor names
+    const names = softwareEntry.answer.split(',').map((n) => n.trim()).filter(Boolean);
+    allVendorNames.push(...names);
+  }
+
+  // Find the custom vendors context entry (contains URLs for custom vendors)
+  const customVendorsEntry = questionsAndAnswers.find(
+    (qa) => qa.question === 'What are your custom vendors and their websites?',
+  );
+
+  if (customVendorsEntry) {
+    try {
+      const parsed = JSON.parse(customVendorsEntry.answer) as CustomVendorEntry[];
+
+      for (const vendor of parsed) {
+        customVendors.push(vendor);
+        // Also add custom vendor names to allVendorNames so they're included in the fallback loop
+        // This ensures custom vendors are created even if AI fails to extract them
+        if (!allVendorNames.some((n) => n.toLowerCase() === vendor.name.toLowerCase())) {
+          allVendorNames.push(vendor.name);
+        }
+        if (vendor.website && vendor.website.trim()) {
+          // Store lowercase name for case-insensitive matching
+          urlMap.set(vendor.name.toLowerCase(), vendor.website.trim());
+        }
+      }
+    } catch (e) {
+      logger.warn('Failed to parse custom vendors from context', { error: e });
+    }
+  }
+
+  return { allVendorNames, customVendors, urlMap };
+}
+
 /**
  * Extracts vendors from context using AI
  */
 export async function extractVendorsFromContext(
   questionsAndAnswers: ContextItem[],
 ): Promise<VendorData[]> {
+  // Parse all selected vendors from context
+  const { allVendorNames, customVendors, urlMap: customVendorUrls } = parseAllSelectedVendors(questionsAndAnswers);
+
+  // Create a set of custom vendor names for quick lookup
+  const customVendorNameSet = new Set(customVendors.map((v) => v.name.toLowerCase()));
+
   const { object } = await generateObject({
     model: openai('gpt-4.1-mini'),
     schema: jsonSchema({
@@ -227,7 +294,49 @@ export async function extractVendorsFromContext(
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 
-  return (object as { vendors: VendorData[] }).vendors;
+  const vendors = (object as { vendors: VendorData[] }).vendors;
+
+  // Merge custom vendor URLs - user-provided URLs take precedence
+  for (const vendor of vendors) {
+    const customUrl = customVendorUrls.get(vendor.vendor_name.toLowerCase());
+    if (customUrl) {
+      logger.info(`Using custom URL for vendor ${vendor.vendor_name}: ${customUrl}`);
+      vendor.vendor_website = customUrl;
+    }
+  }
+
+  // Track which vendors were extracted by AI
+  const extractedVendorNames = new Set(vendors.map((v) => v.vendor_name.toLowerCase()));
+
+  // Ensure ALL vendors from the software field are added (not just custom ones)
+  // This catches any vendors the AI failed to extract
+  for (const vendorName of allVendorNames) {
+    if (!extractedVendorNames.has(vendorName.toLowerCase())) {
+      const isCustom = customVendorNameSet.has(vendorName.toLowerCase());
+      const customUrl = customVendorUrls.get(vendorName.toLowerCase());
+      
+      logger.info(`Adding vendor not extracted by AI: ${vendorName} (custom: ${isCustom})`);
+      
+      // Create a vendor entry with default risk values
+      vendors.push({
+        vendor_name: vendorName,
+        vendor_website: customUrl || '',
+        vendor_description: isCustom 
+          ? `Custom vendor added during onboarding`
+          : `Vendor selected during onboarding`,
+        category: VendorCategory.other,
+        inherent_probability: Likelihood.possible,
+        inherent_impact: Impact.moderate,
+        residual_probability: Likelihood.possible,
+        residual_impact: Impact.moderate,
+      });
+      
+      // Add to extracted set to avoid duplicates
+      extractedVendorNames.add(vendorName.toLowerCase());
+    }
+  }
+
+  return vendors;
 }
 
 /**
@@ -320,10 +429,29 @@ export async function createVendorsFromData(
       return existing;
     }
 
+    // If vendor has no website, try to find it in GlobalVendors
+    let websiteToUse = vendor.vendor_website;
+    if (!websiteToUse || !websiteToUse.trim()) {
+      const globalVendor = await db.globalVendors.findFirst({
+        where: {
+          company_name: {
+            equals: vendor.vendor_name,
+            mode: 'insensitive',
+          },
+        },
+        select: { website: true },
+      });
+      
+      if (globalVendor?.website) {
+        logger.info(`Enriched vendor ${vendor.vendor_name} with website from GlobalVendors: ${globalVendor.website}`);
+        websiteToUse = globalVendor.website;
+      }
+    }
+
     const createdVendor = await db.vendor.create({
       data: {
         name: vendor.vendor_name,
-        website: vendor.vendor_website,
+        website: websiteToUse,
         description: vendor.vendor_description,
         category: vendor.category,
         inherentProbability: vendor.inherent_probability,
@@ -331,6 +459,8 @@ export async function createVendorsFromData(
         residualProbability: vendor.residual_probability,
         residualImpact: vendor.residual_impact,
         organizationId,
+        // Set to in_progress immediately so UI shows "generating" state
+        status: VendorStatus.in_progress,
       },
     });
 
@@ -465,10 +595,7 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
     }
 
     logger.error('Failed to trigger vendor risk assessments via API', errorDetails);
-    // Re-throw so we can see it in Trigger.dev dashboard
-    throw new Error(
-      `Failed to trigger vendor risk assessments: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    // Don't re-throw - vendor risk assessment failure should not block onboarding
   }
 }
 
