@@ -24,7 +24,7 @@ INPUT: "TypeError: Cannot read property 'data' of undefined"
 OUTPUT: "The API response was missing expected data. Please check that the API endpoint is correct and returning the expected format."
 
 INPUT: "Invalid regular expression: missing /"
-OUTPUT: "Invalid regular expression: missing /"
+OUTPUT: "Invalid regular expression: missing /. Please check that all regex patterns have matching opening and closing slashes."
 
 INPUT: "Internal Server Error"
 OUTPUT: "Something went wrong while running your automation. Please check your script for any syntax errors or incorrect API configurations."
