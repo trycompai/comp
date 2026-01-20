@@ -119,37 +119,7 @@ export const sanitizeErrorMessage = async (rawError: unknown): Promise<string> =
     return 'The automation encountered an unexpected error. Please check your script and try again.';
   }
 
-  // Quick check: if the error is very short and simple, it's likely safe
-  // Skip AI for simple, obviously safe errors
-  const isSimpleError =
-    errorString.length < 100 &&
-    !/[a-zA-Z0-9_-]{20,}/.test(errorString) && // No long alphanumeric strings
-    !/key[=:\s]/i.test(errorString) &&
-    !/token[=:\s]/i.test(errorString) &&
-    !/secret[=:\s]/i.test(errorString) &&
-    !/password[=:\s]/i.test(errorString) &&
-    !/bearer\s/i.test(errorString) &&
-    !/@.*:.*@/.test(errorString) && // No connection strings
-    !/:\/\/.*:.*@/.test(errorString); // No URLs with credentials
-
-  // For very simple errors without potential secrets, return as-is
-  if (isSimpleError) {
-    // But still improve generic error messages
-    const genericPatterns = [
-      { pattern: /internal server error/i, replacement: 'The automation encountered an error. Please check your script for issues.' },
-      { pattern: /task execution failed/i, replacement: 'The automation failed to execute. Please verify your script and API configurations.' },
-    ];
-
-    for (const { pattern, replacement } of genericPatterns) {
-      if (pattern.test(errorString)) {
-        return replacement;
-      }
-    }
-
-    return errorString;
-  }
-
-  // Use AI for complex errors or those with potential sensitive data
+  // Always use AI to make errors user-friendly and hide sensitive data
   try {
     const { text } = await generateText({
       model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),

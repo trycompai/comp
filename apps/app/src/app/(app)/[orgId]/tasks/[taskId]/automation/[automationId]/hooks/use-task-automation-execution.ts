@@ -63,8 +63,9 @@ export function useTaskAutomationExecution({
         if (data.status === 'COMPLETED' && data.output) {
           // Only sanitize if there's actually an error in the output
           // This makes errors user-friendly and removes any sensitive data
+          // Use .catch() to ensure we always get a message even if AI fails
           const sanitizedError = data.output.error
-            ? await sanitizeErrorMessage(data.output.error)
+            ? await sanitizeErrorMessage(data.output.error).catch(() => String(data.output.error))
             : undefined;
 
           const executionResult: TaskAutomationExecutionResult = {
@@ -85,11 +86,10 @@ export function useTaskAutomationExecution({
           // Log raw error for debugging (internal only)
           console.error('[Automation Execution] Raw error:', data.error);
 
-          // Use AI to sanitize error message:
-          // - Makes it user-friendly
-          // - Removes sensitive information (API keys, tokens, etc.)
-          // - Provides actionable guidance
-          const sanitizedMessage = await sanitizeErrorMessage(data.error);
+          // Use AI to sanitize error message with fallback if AI fails
+          const sanitizedMessage = await sanitizeErrorMessage(data.error).catch(
+            () => (typeof data.error === 'string' ? data.error : 'The automation failed to execute'),
+          );
           const error = new Error(sanitizedMessage);
 
           setError(error);
@@ -100,8 +100,10 @@ export function useTaskAutomationExecution({
           pollingIntervalRef.current = setTimeout(pollRunStatus, 1000);
         }
       } catch (err) {
-        // Sanitize any errors that occur during polling
-        const sanitizedMessage = await sanitizeErrorMessage(err);
+        // Sanitize with fallback to ensure state cleanup always happens
+        const sanitizedMessage = await sanitizeErrorMessage(err).catch(
+          () => (err instanceof Error ? err.message : 'An unexpected error occurred'),
+        );
         const error = new Error(sanitizedMessage);
         setError(error);
         setIsExecuting(false);
@@ -152,8 +154,10 @@ export function useTaskAutomationExecution({
         return response;
       }
     } catch (err) {
-      // Sanitize execution errors to remove sensitive information
-      const sanitizedMessage = await sanitizeErrorMessage(err);
+      // Sanitize with fallback to ensure state cleanup always happens
+      const sanitizedMessage = await sanitizeErrorMessage(err).catch(
+        () => (err instanceof Error ? err.message : 'An unexpected error occurred'),
+      );
       const error = new Error(sanitizedMessage);
       setError(error);
       setIsExecuting(false);
