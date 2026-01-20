@@ -337,11 +337,16 @@ async function syncManualAnswers(
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    if (itemsToUpsert.length > 0) {
-      await batchUpsertEmbeddings(itemsToUpsert);
-      // Track the last upserted embedding ID
-      lastUpsertedEmbeddingId =
-        itemsToUpsert[itemsToUpsert.length - 1]?.id ?? null;
+    // Filter out items with empty text (same filter as batchUpsertEmbeddings)
+    // This ensures we only track IDs that will actually be upserted
+    const validItems = itemsToUpsert.filter(
+      (item) => item.text && item.text.trim().length > 0,
+    );
+
+    if (validItems.length > 0) {
+      await batchUpsertEmbeddings(validItems);
+      // Track the last ACTUALLY upserted embedding ID
+      lastUpsertedEmbeddingId = validItems[validItems.length - 1]?.id ?? null;
     }
   }
 
