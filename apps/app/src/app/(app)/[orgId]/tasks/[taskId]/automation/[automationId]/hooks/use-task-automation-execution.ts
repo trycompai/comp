@@ -75,7 +75,7 @@ export function useTaskAutomationExecution({
             success: data.output.success,
             data: data.output.output,
             error: sanitizedError,
-            logs: data.output.logs,
+            logs: [], // Don't expose internal execution logs to users
             summary: data.output.summary,
             evaluationStatus: data.output.evaluationStatus,
             evaluationReason: data.output.evaluationReason,

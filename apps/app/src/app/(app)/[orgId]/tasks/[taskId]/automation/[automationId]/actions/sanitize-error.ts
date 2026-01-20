@@ -10,7 +10,7 @@ RULES:
 2. Explain what went wrong and HOW TO FIX it
 3. NEVER show: API keys, tokens, passwords, secrets, connection strings, internal paths, IPs
 4. Keep error types (TypeError, SyntaxError) - they help debugging
-5. If error is already clear and safe, return it unchanged
+5. If error is already clear and safe, return it unchanged and add some helpful tips to fix it (it should usefull for the user to fix the error)
 
 EXAMPLES:
 
@@ -24,7 +24,7 @@ INPUT: "TypeError: Cannot read property 'data' of undefined"
 OUTPUT: "The API response was missing expected data. Please check that the API endpoint is correct and returning the expected format."
 
 INPUT: "Invalid regular expression: missing /"
-OUTPUT: "Invalid regular expression: missing /"
+OUTPUT: "Invalid regular expression: missing /. Please check that all regex patterns have matching opening and closing slashes."
 
 INPUT: "Internal Server Error"
 OUTPUT: "Something went wrong while running your automation. Please check your script for any syntax errors or incorrect API configurations."
@@ -97,7 +97,10 @@ export const sanitizeErrorMessage = async (rawError: unknown): Promise<string> =
       maxRetries: 2,
     });
 
-    return text.trim() || 'The automation encountered an error. Please check your script and try again.';
+    const result = text.trim() || 'The automation encountered an error. Please check your script and try again.';
+    console.log('[sanitizeErrorMessage] SYSTEM AI response:', result);
+
+    return result;
   } catch (aiError) {
     // If AI fails, fall back to basic sanitization
     console.error('[sanitizeErrorMessage] AI sanitization failed:', aiError);
