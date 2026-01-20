@@ -44,6 +44,11 @@ export async function fetchPolicies(
   });
 }
 
+interface SyncSingleResult {
+  status: 'created' | 'updated' | 'skipped';
+  lastEmbeddingId: string | null;
+}
+
 /**
  * Sync a single policy's embeddings
  */
@@ -51,12 +56,12 @@ async function syncSinglePolicy(
   policy: PolicyData,
   existingEmbeddings: ExistingEmbedding[],
   organizationId: string,
-): Promise<'created' | 'updated' | 'skipped'> {
+): Promise<SyncSingleResult> {
   const policyUpdatedAt = policy.updatedAt.toISOString();
 
   // Check if policy needs update
   if (!needsUpdate(existingEmbeddings, policyUpdatedAt)) {
-    return 'skipped';
+    return { status: 'skipped', lastEmbeddingId: null };
   }
 
   // Delete old embeddings if they exist
@@ -68,7 +73,7 @@ async function syncSinglePolicy(
   );
 
   if (!policyText || policyText.trim().length === 0) {
-    return 'skipped';
+    return { status: 'skipped', lastEmbeddingId: null };
   }
 
   const chunkItems = createChunkItems(
@@ -82,12 +87,16 @@ async function syncSinglePolicy(
   );
 
   if (chunkItems.length === 0) {
-    return 'skipped';
+    return { status: 'skipped', lastEmbeddingId: null };
   }
 
   await upsertChunks(chunkItems);
 
-  return existingEmbeddings.length === 0 ? 'created' : 'updated';
+  // Return the last chunk's ID for verification
+  const lastEmbeddingId = chunkItems[chunkItems.length - 1]?.id ?? null;
+  const status = existingEmbeddings.length === 0 ? 'created' : 'updated';
+
+  return { status, lastEmbeddingId };
 }
 
 /**
@@ -120,9 +129,14 @@ export async function syncPolicies(
             organizationId,
           );
 
-          if (result === 'created') stats.created++;
-          else if (result === 'updated') stats.updated++;
+          if (result.status === 'created') stats.created++;
+          else if (result.status === 'updated') stats.updated++;
           else stats.skipped++;
+
+          // Track the last upserted embedding ID
+          if (result.lastEmbeddingId) {
+            stats.lastUpsertedEmbeddingId = result.lastEmbeddingId;
+          }
         } catch (error) {
           logger.error('Failed to sync policy', {
             policyId: policy.id,

@@ -100,13 +100,18 @@ async function deleteExistingDocumentEmbeddings(
   }
 }
 
+interface ProcessDocumentResult {
+  status: 'processed' | 'failed';
+  lastEmbeddingId: string | null;
+}
+
 /**
  * Process a single knowledge base document
  */
 async function processSingleDocument(
   document: KnowledgeBaseDocumentData,
   organizationId: string,
-): Promise<'processed' | 'failed'> {
+): Promise<ProcessDocumentResult> {
   const documentUpdatedAt = document.updatedAt.toISOString();
 
   logger.info('Processing Knowledge Base document', {
@@ -128,7 +133,7 @@ async function processSingleDocument(
       documentId: document.id,
     });
     await updateDocumentStatus(document.id, 'failed');
-    return 'failed';
+    return { status: 'failed', lastEmbeddingId: null };
   }
 
   // Delete existing embeddings
@@ -148,7 +153,7 @@ async function processSingleDocument(
   if (chunkItems.length === 0) {
     logger.warn('No chunks created from content', { documentId: document.id });
     await updateDocumentStatus(document.id, 'failed');
-    return 'failed';
+    return { status: 'failed', lastEmbeddingId: null };
   }
 
   await upsertChunks(chunkItems);
@@ -158,7 +163,9 @@ async function processSingleDocument(
   });
 
   await updateDocumentStatus(document.id, 'completed');
-  return 'processed';
+
+  const lastEmbeddingId = chunkItems[chunkItems.length - 1]?.id ?? null;
+  return { status: 'processed', lastEmbeddingId };
 }
 
 /**
@@ -211,8 +218,15 @@ export async function syncKnowledgeBaseDocuments(
         try {
           const result = await processSingleDocument(document, organizationId);
 
-          if (result === 'processed') stats.created++;
-          else stats.failed++;
+          if (result.status === 'processed') {
+            stats.created++;
+            // Track the last upserted embedding ID
+            if (result.lastEmbeddingId) {
+              stats.lastUpsertedEmbeddingId = result.lastEmbeddingId;
+            }
+          } else {
+            stats.failed++;
+          }
         } catch (error) {
           logger.error('Failed to process Knowledge Base document', {
             documentId: document.id,
