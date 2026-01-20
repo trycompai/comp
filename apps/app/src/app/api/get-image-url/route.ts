@@ -13,10 +13,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const organizationId = session.session?.activeOrganizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: 'No active organization' }, { status: 400 });
+  }
+
   const key = req.nextUrl.searchParams.get('key');
 
   if (!key) {
     return NextResponse.json({ error: 'Missing key' }, { status: 400 });
+  }
+
+  // Enforce that the requested key belongs to the caller's organization
+  const orgPrefix = `${organizationId}/`;
+  if (!key.startsWith(orgPrefix)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
