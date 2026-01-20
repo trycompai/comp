@@ -9,6 +9,8 @@ import { redirect } from 'next/navigation';
 import { OrganizationDashboard } from './components/OrganizationDashboard';
 import type { FleetPolicy, Host } from './types';
 
+const MDM_POLICY_ID = -9999;
+
 export default async function OrganizationPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
@@ -86,7 +88,7 @@ const getFleetPolicies = async (
 
     const isMacOS = device.cpu_type && (device.cpu_type.includes('arm64') || device.cpu_type.includes('intel'));
     const mdmEnabledStatus = {
-      id: 9999,
+      id: MDM_POLICY_ID,
       response: device.mdm.connected_to_fleet ? 'pass' : 'fail',
       name: 'MDM Enabled',
     };
