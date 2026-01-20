@@ -38,11 +38,7 @@ export function DeviceAgentAccordionItem({
   );
 
   const hasInstalledAgent = host !== null;
-  const failedPoliciesCount = useMemo(() => {
-    return (
-      fleetPolicies.filter((policy) => policy.response !== 'pass').length
-    );
-  }, [fleetPolicies, isMacOS]);
+  const failedPoliciesCount = useMemo(() => fleetPolicies.filter((policy) => policy.response !== 'pass').length, [fleetPolicies]);
 
   const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
