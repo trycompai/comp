@@ -18,6 +18,8 @@ export interface SyncStats {
   skipped: number;
   failed: number;
   total: number;
+  /** The last embedding ID that was upserted (for verification) */
+  lastUpsertedEmbeddingId: string | null;
 }
 
 export interface ChunkItem {
@@ -183,5 +185,6 @@ export function initSyncStats(total: number): SyncStats {
     skipped: 0,
     failed: 0,
     total,
+    lastUpsertedEmbeddingId: null,
   };
 }
