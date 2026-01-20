@@ -46,7 +46,7 @@ export function PolicyImagePreviewModal({ open, images, onOpenChange }: PolicyIm
         <div className="space-y-4">
           {!hasImages && <p className="text-sm text-muted-foreground">No images to display.</p>}
 
-          {hasImages && (
+          {hasImages && currentIndex >= 0 && currentIndex < images.length && (
             <>
               <div className="overflow-hidden w-full h-[500px]">
                 <Image
