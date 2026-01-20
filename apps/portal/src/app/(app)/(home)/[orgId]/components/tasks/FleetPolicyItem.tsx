@@ -4,18 +4,17 @@ import { useState } from 'react';
 
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import { CheckCircle2, Image, Upload, XCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { CheckCircle2, HelpCircle, Image, Upload, XCircle } from 'lucide-react';
 import type { FleetPolicy } from '../../types';
 import { PolicyImageUploadModal } from './PolicyImageUploadModal';
-import { FleetPolicyResult } from '@db';
 import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
-  policyResult?: FleetPolicyResult;
 }
 
-export function FleetPolicyItem({ policy, policyResult }: FleetPolicyItemProps) {
+export function FleetPolicyItem({ policy }: FleetPolicyItemProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -24,14 +23,41 @@ export function FleetPolicyItem({ policy, policyResult }: FleetPolicyItemProps) 
       <div
         className={cn(
           'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-          policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
         )}
       >
-        <p className="text-sm font-medium">{policy.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium">{policy.name}</p>
+          {policy.name === 'MDM Enabled' && policy.response === 'fail' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <HelpCircle size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>
+                    There are additional steps required to enable MDM. Please check{' '}
+                    <a
+                      href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      this documentation
+                    </a>
+                    .
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         <div className="flex items-center gap-3">
-          {policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? (
+          {policy.response === 'pass' ? (
             <>
-              {(policyResult?.attachments || []).length > 0 && (
+              {(policy?.attachments || []).length > 0 && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -72,7 +98,7 @@ export function FleetPolicyItem({ policy, policyResult }: FleetPolicyItemProps) 
         onOpenChange={setIsUploadOpen}
       />
       <PolicyImagePreviewModal
-        images={policyResult?.attachments || []}
+        images={policy?.attachments || []}
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
       />

@@ -51,7 +51,6 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
 
   // Fleet policies - already has graceful error handling in getFleetPolicies
   const fleetData = await getFleetPolicies(member);
-  const fleetPolicyResults = await getFleetPolicyResults(member);
 
   return (
     <OrganizationDashboard
@@ -59,7 +58,6 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
       organizationId={orgId}
       member={member}
       fleetPolicies={fleetData.fleetPolicies}
-      fleetPolicyResults={fleetPolicyResults}
       host={fleetData.device}
     />
   );
@@ -86,9 +84,31 @@ const getFleetPolicies = async (
       return { fleetPolicies: [], device: null };
     }
 
+    const isMacOS = device.cpu_type && (device.cpu_type.includes('arm64') || device.cpu_type.includes('intel'));
+    const mdmEnabledStatus = {
+      id: 9999,
+      response: device.mdm.connected_to_fleet ? 'pass' : 'fail',
+      name: 'MDM Enabled',
+    };
     const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
-    const fleetPolicies: FleetPolicy[] = deviceWithPolicies.data.host.policies || [];
-    return { fleetPolicies, device };
+    const fleetPolicies: FleetPolicy[] = [
+      ...(deviceWithPolicies.data.host.policies || []),
+      ...(isMacOS ? [mdmEnabledStatus] : []),
+    ];
+
+    // Get Policy Results from the database.
+    const fleetPolicyResults = await getFleetPolicyResults();
+    return {
+      device,
+      fleetPolicies: fleetPolicies.map((policy) => {
+        const policyResult = fleetPolicyResults.find((result) => result.fleetPolicyId === policy.id);
+        return {
+          ...policy,
+          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
+          attachments: policyResult?.attachments || [],
+        }
+      }),
+    };
   } catch (error: any) {
     // Log more details about the error
     if (error.response?.status === 404) {
@@ -100,10 +120,7 @@ const getFleetPolicies = async (
   }
 };
 
-const getFleetPolicyResults = async (member: Member): Promise<FleetPolicyResult[]> => {
-  if (!member || !member.organizationId) {
-    return [];
-  }
+const getFleetPolicyResults = async (): Promise<FleetPolicyResult[]> => {
   try {
     const portalBase = process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, '');
     const url = `${portalBase}/api/fleet-policy`;

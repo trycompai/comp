@@ -14,6 +14,7 @@ export interface FleetPolicy {
   created_at?: string; // ISO date-time string
   updated_at?: string; // ISO date-time string
   response: string;
+  attachments?: string[];
 }
 
 export interface Host {
