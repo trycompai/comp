@@ -60,7 +60,7 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
     return {
       ...host,
       policies: [
-        ...host.policies,
+        ...(host.policies || []),
         ...(isMacOS ? [{ id: MDM_POLICY_ID, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
       ].map((policy) => {
         const policyResult = results.find((result) => result.fleetPolicyId === policy.id && result.userId === userIds[index]);
