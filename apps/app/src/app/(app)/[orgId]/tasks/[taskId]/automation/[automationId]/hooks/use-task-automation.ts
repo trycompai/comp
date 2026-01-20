@@ -58,8 +58,6 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
         throw new Error('Failed to fetch automation');
       }
 
-      console.log('response.data.automation', response.data.automation);
-
       return response.data.automation;
     },
     {

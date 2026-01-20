@@ -10,7 +10,7 @@ RULES:
 2. Explain what went wrong and HOW TO FIX it
 3. NEVER show: API keys, tokens, passwords, secrets, connection strings, internal paths, IPs
 4. Keep error types (TypeError, SyntaxError) - they help debugging
-5. If error is already clear and safe, return it unchanged
+5. If error is already clear and safe, return it unchanged and add some helpful tips to fix it (it should usefull for the user to fix the error)
 
 EXAMPLES:
 
@@ -97,7 +97,10 @@ export const sanitizeErrorMessage = async (rawError: unknown): Promise<string> =
       maxRetries: 2,
     });
 
-    return text.trim() || 'The automation encountered an error. Please check your script and try again.';
+    const result = text.trim() || 'The automation encountered an error. Please check your script and try again.';
+    console.log('[sanitizeErrorMessage] SYSTEM AI response:', result);
+
+    return result;
   } catch (aiError) {
     // If AI fails, fall back to basic sanitization
     console.error('[sanitizeErrorMessage] AI sanitization failed:', aiError);
