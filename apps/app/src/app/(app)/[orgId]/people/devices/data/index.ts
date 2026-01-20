@@ -6,6 +6,8 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import type { Host } from '../types';
 
+const MDM_POLICY_ID = -9999;
+
 export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -59,7 +61,7 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
       ...host,
       policies: [
         ...host.policies,
-        ...(isMacOS ? [{ id: 9999, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
+        ...(isMacOS ? [{ id: MDM_POLICY_ID, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
       ].map((policy) => {
         const policyResult = results.find((result) => result.fleetPolicyId === policy.id && result.userId === userIds[index]);
         return {
