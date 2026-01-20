@@ -20,6 +20,7 @@
 
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sanitizeErrorMessage } from '../actions/sanitize-error';
 import { useSharedChatContext } from '../lib/chat-context';
 import { taskAutomationApi } from '../lib/task-automation-api';
 import type {
@@ -60,10 +61,16 @@ export function useTaskAutomationExecution({
         }
 
         if (data.status === 'COMPLETED' && data.output) {
+          // Only sanitize if there's actually an error in the output
+          // This makes errors user-friendly and removes any sensitive data
+          const sanitizedError = data.output.error
+            ? await sanitizeErrorMessage(data.output.error)
+            : undefined;
+
           const executionResult: TaskAutomationExecutionResult = {
             success: data.output.success,
             data: data.output.output,
-            error: data.output.error,
+            error: sanitizedError,
             logs: data.output.logs,
             summary: data.output.summary,
             evaluationStatus: data.output.evaluationStatus,
@@ -75,8 +82,16 @@ export function useTaskAutomationExecution({
           setIsExecuting(false);
           onSuccess?.(executionResult);
         } else if (data.status === 'FAILED') {
-          const error = new Error(data.error?.message || 'Task execution failed');
-          console.error('[Automation Execution] Client received error:', data.error);
+          // Log raw error for debugging (internal only)
+          console.error('[Automation Execution] Raw error:', data.error);
+
+          // Use AI to sanitize error message:
+          // - Makes it user-friendly
+          // - Removes sensitive information (API keys, tokens, etc.)
+          // - Provides actionable guidance
+          const sanitizedMessage = await sanitizeErrorMessage(data.error);
+          const error = new Error(sanitizedMessage);
+
           setError(error);
           setIsExecuting(false);
           onError?.(error);
@@ -85,7 +100,9 @@ export function useTaskAutomationExecution({
           pollingIntervalRef.current = setTimeout(pollRunStatus, 1000);
         }
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to poll run status');
+        // Sanitize any errors that occur during polling
+        const sanitizedMessage = await sanitizeErrorMessage(err);
+        const error = new Error(sanitizedMessage);
         setError(error);
         setIsExecuting(false);
         onError?.(error);
@@ -135,7 +152,9 @@ export function useTaskAutomationExecution({
         return response;
       }
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Unknown error');
+      // Sanitize execution errors to remove sensitive information
+      const sanitizedMessage = await sanitizeErrorMessage(err);
+      const error = new Error(sanitizedMessage);
       setError(error);
       setIsExecuting(false);
       onError?.(error);
