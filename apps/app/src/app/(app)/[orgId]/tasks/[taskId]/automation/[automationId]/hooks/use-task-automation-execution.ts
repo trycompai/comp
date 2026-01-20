@@ -61,11 +61,14 @@ export function useTaskAutomationExecution({
         }
 
         if (data.status === 'COMPLETED' && data.output) {
-          // Only sanitize if there's actually an error in the output
-          // This makes errors user-friendly and removes any sensitive data
-          // Use .catch() to ensure we always get a message even if AI fails
-          const sanitizedError = data.output.error
-            ? await sanitizeErrorMessage(data.output.error).catch(() => String(data.output.error))
+          // Check both possible error locations:
+          // - data.output.error (direct error)
+          // - data.output.output.error (nested error from user's script returning {ok: false, error: "..."})
+          const rawError = data.output.error || data.output.output?.error;
+
+          // Sanitize if there's an error - makes it user-friendly and removes sensitive data
+          const sanitizedError = rawError
+            ? await sanitizeErrorMessage(rawError).catch(() => String(rawError))
             : undefined;
 
           const executionResult: TaskAutomationExecutionResult = {
@@ -87,9 +90,12 @@ export function useTaskAutomationExecution({
           console.error('[Automation Execution] Raw error:', data.error);
 
           // Use AI to sanitize error message with fallback if AI fails
-          const sanitizedMessage = await sanitizeErrorMessage(data.error).catch(
-            () => (typeof data.error === 'string' ? data.error : 'The automation failed to execute'),
-          );
+          // Fallback extracts message from error object if available
+          const sanitizedMessage = await sanitizeErrorMessage(data.error).catch(() => {
+            if (typeof data.error === 'string') return data.error;
+            if (data.error?.message) return String(data.error.message);
+            return 'The automation failed to execute';
+          });
           const error = new Error(sanitizedMessage);
 
           setError(error);
