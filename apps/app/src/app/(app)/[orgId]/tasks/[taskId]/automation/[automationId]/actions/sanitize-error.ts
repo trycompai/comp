@@ -44,65 +44,33 @@ OUTPUT: "Could not reach the server. Please check your internet connection and v
 Return ONLY the friendly error message.`;
 
 /**
- * Extract the most detailed error message from various error formats.
- * Prioritizes detailed messages over generic ones.
+ * Convert any error format to a string for AI processing.
+ * Handles: strings, Error objects, plain objects, and edge cases.
  */
 const extractRawError = (err: unknown): string => {
   if (!err) return '';
 
-  // If it's a string, use it directly
+  // String - use directly
   if (typeof err === 'string') return err;
 
-  // If it's an Error object
-  if (err instanceof Error) return err.message;
+  // Error object - include name and message for context
+  if (err instanceof Error) {
+    const parts = [err.name !== 'Error' ? err.name : '', err.message].filter(Boolean);
+    return parts.join(': ') || '';
+  }
 
-  // If it's an object, try to extract the most detailed error
+  // Object - stringify and let AI parse the details
   if (typeof err === 'object') {
-    const errObj = err as Record<string, unknown>;
-
-    // Prioritize detailed error messages over generic ones
-    const genericMessages = [
-      'internal server error',
-      'task execution failed',
-      'an error occurred',
-      'something went wrong',
-      'unknown error',
-    ];
-
-    // Try various error properties, preferring detailed ones
-    const candidates: string[] = [];
-
-    if (typeof errObj.message === 'string') candidates.push(errObj.message);
-    if (typeof errObj.error === 'string') candidates.push(errObj.error);
-    if (typeof errObj.details === 'string') candidates.push(errObj.details);
-    if (typeof errObj.reason === 'string') candidates.push(errObj.reason);
-    if (typeof errObj.cause === 'string') candidates.push(errObj.cause);
-
-    // Find the first non-generic message
-    for (const candidate of candidates) {
-      const isGeneric = genericMessages.some((generic) =>
-        candidate.toLowerCase().includes(generic),
-      );
-      if (!isGeneric && candidate.length > 0) {
-        return candidate;
-      }
-    }
-
-    // If all are generic, return the first one that exists
-    for (const candidate of candidates) {
-      if (candidate.length > 0) return candidate;
-    }
-
-    // Last resort: try to stringify
     try {
-      const str = JSON.stringify(err);
-      if (str && str !== '{}') return str;
+      return JSON.stringify(err);
     } catch {
-      // Ignore stringify errors
+      // Circular reference or other stringify error
+      return String(err);
     }
   }
 
-  return '';
+  // Fallback for other types (number, boolean, etc.)
+  return String(err);
 };
 
 /**
@@ -126,7 +94,7 @@ export const sanitizeErrorMessage = async (rawError: unknown): Promise<string> =
       system: ERROR_SANITIZATION_SYSTEM_PROMPT,
       prompt: errorString,
       temperature: 0, // Deterministic output
-      maxRetries: 1,
+      maxRetries: 2,
     });
 
     return text.trim() || 'The automation encountered an error. Please check your script and try again.';
