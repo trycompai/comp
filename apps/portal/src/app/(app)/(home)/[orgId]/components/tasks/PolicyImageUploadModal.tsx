@@ -151,6 +151,7 @@ export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyIma
                         variant="ghost"
                         size="icon"
                         className="text-red-500 hover:text-red-600"
+                        disabled={isLoading}
                         onClick={() => onRemoveFile(item)}
                       >
                         <Trash2 className="h-4 w-4" />
