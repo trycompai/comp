@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       where: { id: existing.id },
       data: {
         attachments: uploads.map((upload) => upload.key),
-        fleetPolicyResponse: 'pass',
+        fleetPolicyResponse: uploads.length > 0 ? 'pass' : 'fail',
         fleetPolicyName: policyName,
       },
     });
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
         organizationId,
         fleetPolicyId: policyId,
         fleetPolicyName: policyName,
-        fleetPolicyResponse: 'pass',
+        fleetPolicyResponse: uploads.length > 0 ? 'pass' : 'fail',
         attachments: uploads.map((upload) => upload.key),
       },
     });
