@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Badge,
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -141,8 +142,8 @@ export const RisksTable = ({
   );
 
   // Read current search params from URL
-  const [page] = useQueryState('page', parseAsInteger.withDefault(1));
-  const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(50));
+  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1));
+  const [perPage, setPerPage] = useQueryState('perPage', parseAsInteger.withDefault(50));
   const [title, setTitle] = useQueryState('title', parseAsString.withDefault(''));
   const [sort, setSort] = useQueryState(
     'sort',
@@ -194,6 +195,7 @@ export const RisksTable = ({
   });
 
   const risks = risksData?.data || initialRisks;
+  const pageCount = risksData?.pageCount ?? initialPageCount;
 
   // Check if all risks are done assessing
   const allRisksDoneAssessing = useMemo(() => {
@@ -384,6 +386,9 @@ export const RisksTable = ({
   const emptyDescription = title
     ? 'Try adjusting your search.'
     : 'Create your first risk to get started.';
+  const pageSizeOptions = [10, 25, 50, 100];
+  const canGoPrev = page > 1;
+  const canGoNext = page < pageCount;
 
   if (showEmptyState) {
     return <RisksLoadingAnimation />;
@@ -448,91 +453,137 @@ export const RisksTable = ({
             </EmptyHeader>
           </Empty>
         ) : (
-          <Table variant="bordered">
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <button
-                    type="button"
-                    onClick={() => handleSort('title')}
-                    className="flex items-center hover:text-foreground"
-                  >
-                    RISK
-                    {getSortIcon('title')}
-                  </button>
-                </TableHead>
-                <TableHead>SEVERITY</TableHead>
-                <TableHead>STATUS</TableHead>
-                <TableHead>OWNER</TableHead>
-                <TableHead>
-                  <button
-                    type="button"
-                    onClick={() => handleSort('updatedAt')}
-                    className="flex items-center hover:text-foreground"
-                  >
-                    UPDATED
-                    {getSortIcon('updatedAt')}
-                  </button>
-                </TableHead>
-                <TableHead>ACTIONS</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mergedRisks.map((risk) => {
-                const blocked = isRowBlocked(risk);
-                return (
-                  <TableRow
-                    key={risk.id}
-                    onClick={() => !blocked && handleRowClick(risk.id)}
-                    style={{ cursor: blocked ? 'default' : 'pointer' }}
-                    data-state={blocked ? 'disabled' : undefined}
-                  >
-                    <TableCell>
-                      <HStack gap="2" align="center">
-                        {blocked && <Spinner />}
-                        <Text>{risk.title}</Text>
-                      </HStack>
-                    </TableCell>
-                    <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
-                    <TableCell>{getStatusBadge(risk.status)}</TableCell>
-                    <TableCell>
-                      <Text>{risk.assignee?.name || 'Unassigned'}</Text>
-                    </TableCell>
-                    <TableCell>
-                      <Text>{formatDate(risk.updatedAt)}</Text>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            variant="ellipsis"
-                            disabled={blocked}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <OverflowMenuVertical />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRowClick(risk.id)}>
-                              <View size={16} />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => handleDeleteClick(risk)}
+          <Stack gap="3">
+            <Table variant="bordered">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <button
+                      type="button"
+                      onClick={() => handleSort('title')}
+                      className="flex items-center hover:text-foreground"
+                    >
+                      RISK
+                      {getSortIcon('title')}
+                    </button>
+                  </TableHead>
+                  <TableHead>SEVERITY</TableHead>
+                  <TableHead>STATUS</TableHead>
+                  <TableHead>OWNER</TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      onClick={() => handleSort('updatedAt')}
+                      className="flex items-center hover:text-foreground"
+                    >
+                      UPDATED
+                      {getSortIcon('updatedAt')}
+                    </button>
+                  </TableHead>
+                  <TableHead>ACTIONS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mergedRisks.map((risk) => {
+                  const blocked = isRowBlocked(risk);
+                  return (
+                    <TableRow
+                      key={risk.id}
+                      onClick={() => !blocked && handleRowClick(risk.id)}
+                      style={{ cursor: blocked ? 'default' : 'pointer' }}
+                      data-state={blocked ? 'disabled' : undefined}
+                    >
+                      <TableCell>
+                        <HStack gap="2" align="center">
+                          {blocked && <Spinner />}
+                          <Text>{risk.title}</Text>
+                        </HStack>
+                      </TableCell>
+                      <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
+                      <TableCell>{getStatusBadge(risk.status)}</TableCell>
+                      <TableCell>
+                        <Text>{risk.assignee?.name || 'Unassigned'}</Text>
+                      </TableCell>
+                      <TableCell>
+                        <Text>{formatDate(risk.updatedAt)}</Text>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              variant="ellipsis"
+                              disabled={blocked}
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <TrashCan size={16} />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                              <OverflowMenuVertical />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleRowClick(risk.id)}>
+                                <View size={16} />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleDeleteClick(risk)}
+                              >
+                                <TrashCan size={16} />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            <HStack align="center" justify="between">
+              <HStack gap="2" align="center">
+                <Text size="sm" variant="muted">
+                  Page {page} of {Math.max(pageCount, 1)}
+                </Text>
+                <HStack gap="1" align="center">
+                  <Text size="sm" variant="muted">
+                    Rows per page
+                  </Text>
+                  {pageSizeOptions.map((size) => (
+                    <Button
+                      key={size}
+                      size="xs"
+                      variant={perPage === size ? 'default' : 'outline'}
+                      onClick={() => {
+                        if (perPage === size) return;
+                        setPerPage(size);
+                        setPage(1);
+                      }}
+                    >
+                      {size}
+                    </Button>
+                  ))}
+                </HStack>
+              </HStack>
+              <HStack gap="2" align="center">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage(page - 1)}
+                  disabled={!canGoPrev}
+                >
+                  Previous
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage(page + 1)}
+                  disabled={!canGoNext}
+                >
+                  Next
+                </Button>
+              </HStack>
+            </HStack>
+          </Stack>
         )}
 
         {/* Delete Confirmation Dialog */}

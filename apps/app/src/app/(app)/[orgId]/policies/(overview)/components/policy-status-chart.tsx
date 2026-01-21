@@ -24,12 +24,11 @@ interface PolicyStatusChartProps {
   data?: PolicyOverviewData | null;
 }
 
-// Using oklch values from DS globals.css
 const CHART_COLORS = {
-  published: 'oklch(0.6 0.16 145)', // --success (green)
-  draft: 'oklch(0.75 0.15 85)', // --warning (yellow)
-  needs_review: 'oklch(0.58 0.22 27)', // --destructive (red)
-  archived: 'oklch(0.556 0 0)', // --muted-foreground (gray)
+  published: 'var(--primary)',
+  draft: 'var(--warning)',
+  needs_review: 'var(--destructive)',
+  archived: 'var(--muted-foreground)',
 };
 
 const STATUS_LABELS: Record<string, string> = {

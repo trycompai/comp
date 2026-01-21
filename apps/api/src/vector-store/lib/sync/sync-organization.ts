@@ -218,35 +218,43 @@ async function verifyEmbeddingIsReady(
       // Now query using the embedding's own vector to verify it's INDEXED
       // If the embedding is indexed, querying with its own vector should return itself
       const queryResults = await vectorIndex.query({
-        vector: fetchedEmbedding.vector as number[],
+        vector: fetchedEmbedding.vector,
         topK: 1,
         filter: `organizationId = "${organizationId}"`,
         includeMetadata: true,
       });
 
       // Check if our embedding appears in the query results
-      const isIndexed = queryResults.some((result) => result.id === embeddingId);
+      const isIndexed = queryResults.some(
+        (result) => result.id === embeddingId,
+      );
 
       if (isIndexed) {
-        logger.info('Embedding verification succeeded - indexed and queryable', {
-          organizationId,
-          embeddingId,
-          attempt,
-          totalWaitMs,
-        });
+        logger.info(
+          'Embedding verification succeeded - indexed and queryable',
+          {
+            organizationId,
+            embeddingId,
+            attempt,
+            totalWaitMs,
+          },
+        );
         return { success: true, attempts: attempt, totalWaitMs };
       }
 
       // Embedding is stored but not yet indexed for search
       if (attempt < maxRetries) {
         const delay = initialDelay * Math.pow(2, attempt - 1); // 300ms, 600ms, 1200ms, 2400ms...
-        logger.info('Embedding stored but not yet indexed, waiting before retry', {
-          organizationId,
-          embeddingId,
-          attempt,
-          nextDelayMs: delay,
-          queryResultCount: queryResults.length,
-        });
+        logger.info(
+          'Embedding stored but not yet indexed, waiting before retry',
+          {
+            organizationId,
+            embeddingId,
+            attempt,
+            nextDelayMs: delay,
+            queryResultCount: queryResults.length,
+          },
+        );
         await new Promise((resolve) => setTimeout(resolve, delay));
         totalWaitMs += delay;
       }

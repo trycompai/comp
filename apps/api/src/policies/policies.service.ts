@@ -429,7 +429,8 @@ export class PoliciesService {
           const { width, height } = originalFirstPage.getSize();
 
           const headerHeight = isFirst ? 120 : 60;
-          const embeddedFirstPage = await mergedPdf.embedPage(originalFirstPage);
+          const embeddedFirstPage =
+            await mergedPdf.embedPage(originalFirstPage);
           const rebuiltFirstPage = mergedPdf.addPage([
             width,
             height + headerHeight,

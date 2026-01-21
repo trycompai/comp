@@ -26,15 +26,13 @@ interface PolicyAssigneeChartProps {
   data?: AssigneeData[] | null;
 }
 
-// Primary color for bars
-const BAR_COLOR = 'oklch(0.6 0.16 145)'; // success/green - matches "published" theme
+const BAR_COLOR = 'var(--success)';
 
-// Status colors for legend
 const STATUS_COLORS = {
-  published: 'oklch(0.6 0.16 145)',
-  draft: 'oklch(0.75 0.15 85)',
-  needs_review: 'oklch(0.58 0.22 27)',
-  archived: 'oklch(0.556 0 0)',
+  published: 'var(--success)',
+  draft: 'var(--warning)',
+  needs_review: 'var(--destructive)',
+  archived: 'var(--muted-foreground)',
 };
 
 export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {

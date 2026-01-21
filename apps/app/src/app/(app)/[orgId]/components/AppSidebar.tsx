@@ -42,7 +42,7 @@ export function AppSidebar({
   hasAuditorRole,
   isOnlyAuditor,
 }: AppSidebarProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
 
   const navItems: NavItem[] = [
     {
