@@ -38,6 +38,11 @@ export async function fetchContextEntries(
   });
 }
 
+interface SyncSingleResult {
+  status: 'created' | 'updated' | 'skipped';
+  lastEmbeddingId: string | null;
+}
+
 /**
  * Sync a single context entry's embeddings
  */
@@ -45,12 +50,12 @@ async function syncSingleContext(
   context: ContextData,
   existingEmbeddings: ExistingEmbedding[],
   organizationId: string,
-): Promise<'created' | 'updated' | 'skipped'> {
+): Promise<SyncSingleResult> {
   const contextUpdatedAt = context.updatedAt.toISOString();
 
   // Check if context needs update
   if (!needsUpdate(existingEmbeddings, contextUpdatedAt)) {
-    return 'skipped';
+    return { status: 'skipped', lastEmbeddingId: null };
   }
 
   // Delete old embeddings if they exist
@@ -60,7 +65,7 @@ async function syncSingleContext(
   const contextText = `Question: ${context.question}\n\nAnswer: ${context.answer}`;
 
   if (!contextText || contextText.trim().length === 0) {
-    return 'skipped';
+    return { status: 'skipped', lastEmbeddingId: null };
   }
 
   // Use larger chunk size for context entries
@@ -77,12 +82,15 @@ async function syncSingleContext(
   );
 
   if (chunkItems.length === 0) {
-    return 'skipped';
+    return { status: 'skipped', lastEmbeddingId: null };
   }
 
   await upsertChunks(chunkItems);
 
-  return existingEmbeddings.length === 0 ? 'created' : 'updated';
+  const lastEmbeddingId = chunkItems[chunkItems.length - 1]?.id ?? null;
+  const status = existingEmbeddings.length === 0 ? 'created' : 'updated';
+
+  return { status, lastEmbeddingId };
 }
 
 /**
@@ -115,9 +123,14 @@ export async function syncContextEntries(
             organizationId,
           );
 
-          if (result === 'created') stats.created++;
-          else if (result === 'updated') stats.updated++;
+          if (result.status === 'created') stats.created++;
+          else if (result.status === 'updated') stats.updated++;
           else stats.skipped++;
+
+          // Track the last upserted embedding ID
+          if (result.lastEmbeddingId) {
+            stats.lastUpsertedEmbeddingId = result.lastEmbeddingId;
+          }
         } catch (error) {
           logger.error('Failed to sync context', {
             contextId: context.id,
