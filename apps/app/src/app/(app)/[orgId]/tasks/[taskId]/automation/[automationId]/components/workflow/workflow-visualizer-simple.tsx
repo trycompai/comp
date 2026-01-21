@@ -150,6 +150,8 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     enabled: !!script?.content,
   });
 
+  console.log('steps', steps);
+
   const testResult = useMemo<TestResult | null>(() => {
     if (!executionResult && !executionError) return null;
     if (executionError) return { status: 'error', error: executionError.message };
@@ -179,11 +181,26 @@ export function WorkflowVisualizerSimple({ className }: Props) {
   }, [executionResult, executionError]);
 
   const handleTest = async () => {
-    if (!orgId || !taskId || automationIdRef.current === 'new') {
-      console.warn('Cannot test ephemeral automation');
+    const resolvedAutomationId =
+      automationIdRef.current !== 'new' ? automationIdRef.current : automationId;
+
+    if (!orgId || !taskId || !resolvedAutomationId || resolvedAutomationId === 'new') {
+      console.warn('Cannot test automation without a saved ID');
+      toast.error('Save the automation before testing.');
       return;
     }
-    await execute();
+
+    if (automationIdRef.current !== resolvedAutomationId) {
+      automationIdRef.current = resolvedAutomationId;
+    }
+
+    try {
+      toast.message('Running integration test...');
+      await execute();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to run test';
+      toast.error(message);
+    }
   };
 
   const handleLetAIFix = () => {
@@ -342,6 +359,7 @@ Please fix the automation script to resolve this error.`;
                       steps={steps}
                       title={title || 'Automation Workflow'}
                       onTest={handleTest}
+                      isTesting={isExecuting}
                       integrationsUsed={integrationsUsed || []}
                       evaluationCriteria={automation?.evaluationCriteria}
                       automationId={automation?.id}

@@ -10,6 +10,7 @@ import {
   DrawerTitle,
   ScrollArea,
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -47,13 +48,13 @@ export function CreateVendorSheet({
             <SheetHeader>
               <SheetTitle>Create Vendor</SheetTitle>
             </SheetHeader>
-            <ScrollArea>
+            <SheetBody>
               <CreateVendorForm
                 assignees={assignees}
                 organizationId={organizationId}
                 onSuccess={handleSuccess}
               />
-            </ScrollArea>
+            </SheetBody>
           </SheetContent>
         </Sheet>
       </>

@@ -5,6 +5,7 @@ import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { SearchParams } from 'nuqs';
+import { CreateControlSheet } from './components/CreateControlSheet';
 import { ControlsTable } from './components/controls-table';
 import { getControls } from './data/queries';
 import { searchParamsCache } from './data/validations';
@@ -38,12 +39,12 @@ export default async function ControlsPage({ ...props }: ControlTableProps) {
   return (
     <PageLayout>
       <Stack gap="md">
-        <PageHeader title="Controls" />
+        <PageHeader
+          title="Controls"
+          actions={<CreateControlSheet policies={policies} tasks={tasks} requirements={requirements} />}
+        />
         <ControlsTable
           promises={promises}
-          policies={policies}
-          tasks={tasks}
-          requirements={requirements}
         />
       </Stack>
     </PageLayout>
