@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -246,7 +247,9 @@ function CreateApiKeySheet({
                 : "Create a new API key for programmatic access to your organization's data."}
             </SheetDescription>
           </SheetHeader>
-          {createdApiKey ? renderCreatedKey() : renderForm()}
+          <SheetBody>
+            {createdApiKey ? renderCreatedKey() : renderForm()}
+          </SheetBody>
         </SheetContent>
       </Sheet>
     );
