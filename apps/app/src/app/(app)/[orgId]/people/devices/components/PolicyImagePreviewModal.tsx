@@ -27,6 +27,7 @@ export function PolicyImagePreviewModal({ open, images, onOpenChange }: PolicyIm
   }, [open, images.length]);
 
   const hasImages = images.length > 0;
+  const hasValidImage = hasImages && currentIndex >= 0 && currentIndex < images.length;
 
   const goPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -45,7 +46,7 @@ export function PolicyImagePreviewModal({ open, images, onOpenChange }: PolicyIm
         <div className="space-y-4">
           {!hasImages && <p className="text-sm text-muted-foreground">No images to display.</p>}
 
-          {hasImages && (
+          {hasValidImage && (
             <>
               <PolicyImagePreview image={images[currentIndex]} />
               <CarouselControls
