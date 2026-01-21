@@ -86,7 +86,13 @@ const getFleetPolicies = async (
       return { fleetPolicies: [], device: null };
     }
 
-    const isMacOS = device.cpu_type && (device.cpu_type.includes('arm64') || device.cpu_type.includes('intel'));
+    const platform = device.platform?.toLowerCase();
+    const osVersion = device.os_version?.toLowerCase();
+    const isMacOS =
+      platform === 'darwin' ||
+      platform === 'macos' ||
+      platform === 'osx' ||
+      osVersion?.includes('mac');
     const mdmEnabledStatus = {
       id: MDM_POLICY_ID,
       response: device.mdm.connected_to_fleet ? 'pass' : 'fail',
