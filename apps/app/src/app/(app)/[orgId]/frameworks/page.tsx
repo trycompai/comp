@@ -36,6 +36,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     redirect(`/onboarding/${organizationId}`);
   }
 
+  // Get onboarding status to check if it's still running
+  const onboarding = await db.onboarding.findUnique({
+    where: { organizationId },
+    select: { triggerJobId: true },
+  });
+
   const member = await db.member.findFirst({
     where: {
       userId: session.user.id,
@@ -72,6 +78,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
       doneTasksScore={scores.doneTasksScore}
       peopleScore={scores.peopleScore}
       currentMember={member}
+      onboardingTriggerJobId={onboarding?.triggerJobId ?? null}
     />
   );
 }

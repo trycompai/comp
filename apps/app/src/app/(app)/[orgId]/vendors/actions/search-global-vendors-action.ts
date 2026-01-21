@@ -5,7 +5,7 @@ import { db } from '@db';
 import { z } from 'zod';
 
 const schema = z.object({
-  name: z.string().min(1),
+  name: z.string(),
 });
 
 export const searchGlobalVendorsAction = authActionClientWithoutOrg
@@ -21,19 +21,25 @@ export const searchGlobalVendorsAction = authActionClientWithoutOrg
     const { name } = parsedInput;
 
     try {
-      const vendors = await db.globalVendors.findMany({
-        where: {
-          OR: [
-            {
-              company_name: {
-                contains: name,
-                mode: 'insensitive',
+      // If empty search, return popular/all vendors (limited to reasonable amount)
+      const whereClause = name.trim()
+        ? {
+            OR: [
+              {
+                company_name: {
+                  contains: name,
+                  mode: 'insensitive' as const,
+                },
               },
-            },
-            { legal_name: { contains: name, mode: 'insensitive' } },
-          ],
-        },
-        take: 5,
+              { legal_name: { contains: name, mode: 'insensitive' as const } },
+            ],
+          }
+        : {};
+
+      const vendors = await db.globalVendors.findMany({
+        where: whereClause,
+        take: 50,
+        orderBy: { company_name: 'asc' },
       });
 
       return { success: true, data: { vendors } };

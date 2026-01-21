@@ -34,9 +34,10 @@ interface PdfViewerProps {
   policyId: string;
   pdfUrl?: string | null; // This prop contains the S3 Key
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }
 
-export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProps) {
+export function PdfViewer({ policyId, pdfUrl, isPendingApproval, onMutate }: PdfViewerProps) {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
     onSuccess: () => {
       toast.success('PDF uploaded successfully.');
       setFiles([]);
-      router.refresh();
+      onMutate?.();
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to upload PDF.'),
   });
@@ -78,7 +79,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
     onSuccess: () => {
       toast.success('PDF deleted successfully.');
       setSignedUrl(null);
-      router.refresh();
+      onMutate?.();
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to delete PDF.'),
   });

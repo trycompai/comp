@@ -91,6 +91,7 @@ interface PolicyContentManagerProps {
   pdfUrl?: string | null;
   /** Whether the AI assistant feature is enabled (behind feature flag) */
   aiAssistantEnabled?: boolean;
+  onMutate?: () => void;
 }
 
 export function PolicyContentManager({
@@ -100,6 +101,7 @@ export function PolicyContentManager({
   displayFormat = 'EDITOR',
   pdfUrl,
   aiAssistantEnabled = false,
+  onMutate,
 }: PolicyContentManagerProps) {
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
@@ -259,6 +261,7 @@ export function PolicyContentManager({
                   policyId={policyId}
                   pdfUrl={pdfUrl}
                   isPendingApproval={isPendingApproval}
+                  onMutate={onMutate}
                 />
               </TabsContent>
             </Stack>

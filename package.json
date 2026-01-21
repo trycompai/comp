@@ -88,7 +88,7 @@
     "packages/*"
   ],
   "dependencies": {
-    "@trycompai/design-system": "^1.0.36",
+    "@trycompai/design-system": "^1.0.37",
     "@types/cheerio": "^1.0.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@upstash/vector": "^1.2.2",

@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { toast } from 'sonner';
 
-export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
+export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMutate?: () => void }) {
   const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useQueryState('archive-policy-sheet');
@@ -28,7 +28,7 @@ export function PolicyArchiveSheet({ policy }: { policy: Policy }) {
       } else {
         toast.success('Policy restored successfully');
         // Stay on the policy page after restore
-        router.refresh();
+        onMutate?.();
       }
       handleOpenChange(false);
     },
