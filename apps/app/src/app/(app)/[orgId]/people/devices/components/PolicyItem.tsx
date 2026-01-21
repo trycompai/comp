@@ -1,8 +1,14 @@
 'use client';
 
 import { cn } from '@comp/ui/cn';
-import { CheckCircle2, Image as ImageIcon,XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, Image as ImageIcon, MoreVertical, XCircle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@comp/ui/dropdown-menu';
 
 import { FleetPolicy } from "../types";
 import { Button } from '@comp/ui/button';
@@ -14,6 +20,21 @@ interface PolicyItemProps {
 
 export const PolicyItem = ({ policy }: PolicyItemProps) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const actions = useMemo(() => {
+    if ((policy?.attachments || []).length > 0 && policy.response === 'pass') {
+      return [
+        {
+          label: 'Preview images',
+          renderIcon: () => <ImageIcon className="h-4 w-4" />,
+          onClick: () => setIsPreviewOpen(true),
+        },
+      ];
+    }
+
+    return [];
+  }, [policy]);
 
   return (
     <div
@@ -24,17 +45,6 @@ export const PolicyItem = ({ policy }: PolicyItemProps) => {
     >
       <p className="font-medium">{policy.name}</p>
       <div className="flex items-center gap-3">
-        {(policy?.attachments || []).length > 0 && policy.response === 'pass' && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-slate-500 hover:text-slate-700"
-            onClick={() => setIsPreviewOpen(true)}
-          >
-            <ImageIcon className="h-4 w-4" />
-          </Button>
-        )}
         {policy.response === 'pass' ? (
           <div className="flex items-center gap-1 text-primary">
             <CheckCircle2 size={16} />
@@ -46,6 +56,33 @@ export const PolicyItem = ({ policy }: PolicyItemProps) => {
             <span>Fail</span>
           </div>
         )}
+        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              disabled={actions.length === 0}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {actions.map(({ label, renderIcon, onClick }) => (
+              <DropdownMenuItem
+                key={label}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onClick();
+                  setDropdownOpen(false);
+                }}
+              >
+                {renderIcon()}
+                <span>{label}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <PolicyImagePreviewModal
         images={policy?.attachments || []}

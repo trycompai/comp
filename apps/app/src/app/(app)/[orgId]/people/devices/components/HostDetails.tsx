@@ -11,7 +11,7 @@ export const HostDetails = ({ host, onClose }: { host: Host; onClose: () => void
         <ArrowLeft size={16} className="mr-2" />
         Back
       </Button>
-      <Card>
+      <Card style={{ marginBottom: 48 }}>
         <CardHeader>
           <CardTitle>{host.computer_name}'s Policies</CardTitle>
         </CardHeader>
