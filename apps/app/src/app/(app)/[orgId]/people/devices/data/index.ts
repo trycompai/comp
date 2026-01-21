@@ -56,7 +56,13 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
 
   return devices.map((device: { data: { host: Host } }, index: number) => {
     const host = device.data.host;
-    const isMacOS = host.cpu_type && (host.cpu_type.includes('arm64') || host.cpu_type.includes('intel'));
+    const platform = host.platform?.toLowerCase();
+    const osVersion = host.os_version?.toLowerCase();
+    const isMacOS =
+      platform === 'darwin' ||
+      platform === 'macos' ||
+      platform === 'osx' ||
+      osVersion?.includes('mac');
     return {
       ...host,
       policies: [
