@@ -43,7 +43,8 @@ export const manifest: IntegrationManifest = {
       type: 'password',
       required: true,
       placeholder: 'Your JumpCloud API key',
-      helpText: 'https://jumpcloud.com/university/resources/guided-simulations/generating-a-new-api-key',
+      helpText:
+        'https://jumpcloud.com/university/resources/guided-simulations/generating-a-new-api-key',
     },
   ],
 

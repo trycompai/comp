@@ -1,9 +1,10 @@
 import Loader from '@/components/ui/loader';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 
 export default function Loading() {
   return (
-    <div className="m-auto w-full max-w-[1200px] py-8">
+    <PageLayout loading header={<PageHeader title="Employee" />} padding="default">
       <Loader />
-    </div>
+    </PageLayout>
   );
 }

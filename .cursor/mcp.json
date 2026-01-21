@@ -2,11 +2,11 @@
   "mcpServers": {
     "trigger": {
       "command": "npx",
-      "args": [
-        "trigger.dev@latest",
-        "mcp",
-        "--dev-only"
-      ]
+      "args": ["trigger.dev@latest", "mcp", "--dev-only"]
+    },
+    "trycompai": {
+      "command": "npx",
+      "args": ["-y", "@trycompai/design-system-mcp@latest"]
     }
   }
 }

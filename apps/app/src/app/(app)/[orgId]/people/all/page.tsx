@@ -1,17 +1,6 @@
-import PageCore from '@/components/pages/PageCore.tsx';
-import type { Metadata } from 'next';
-import { TeamMembers } from './components/TeamMembers';
+import { redirect } from 'next/navigation';
 
-export default async function Members() {
-  return (
-    <PageCore>
-      <TeamMembers />
-    </PageCore>
-  );
-}
-
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'People',
-  };
+export default async function AllPeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params;
+  redirect(`/${orgId}/people`);
 }

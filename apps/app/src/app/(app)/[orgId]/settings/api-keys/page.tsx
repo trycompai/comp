@@ -2,7 +2,6 @@ import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { cache } from 'react';
 
-import PageCore from '@/components/pages/PageCore.tsx';
 import { db } from '@db';
 import type { Metadata } from 'next';
 import { ApiKeysTable } from './components/table/ApiKeysTable';
@@ -10,11 +9,7 @@ import { ApiKeysTable } from './components/table/ApiKeysTable';
 export default async function ApiKeysPage() {
   const apiKeys = await getApiKeys();
 
-  return (
-    <PageCore>
-      <ApiKeysTable apiKeys={apiKeys} />
-    </PageCore>
-  );
+  return <ApiKeysTable apiKeys={apiKeys} />;
 }
 
 export async function generateMetadata(): Promise<Metadata> {

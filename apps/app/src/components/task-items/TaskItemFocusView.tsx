@@ -192,9 +192,7 @@ export function TaskItemFocusView({
           <Comments 
             entityId={taskItem.id} 
             entityType={CommentEntityType.task}
-            title="Comments"
             description="Add comments, ask questions, or share updates about this task"
-            variant="inline"
           />
         </div>
 

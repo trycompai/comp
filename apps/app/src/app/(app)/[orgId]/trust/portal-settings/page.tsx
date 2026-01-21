@@ -1,10 +1,10 @@
-import PageCore from '@/components/pages/PageCore.tsx';
-import type { Metadata } from 'next';
 import { auth } from '@/utils/auth';
-import { env } from '@/env.mjs';
 import { db } from '@db';
 import { Prisma } from '@prisma/client';
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { env } from '@/env.mjs';
+import PageCore from '@/components/pages/PageCore.tsx';
 import { TrustPortalSwitch } from './components/TrustPortalSwitch';
 
 export default async function PortalSettingsPage({ params }: { params: Promise<{ orgId: string }> }) {
@@ -308,7 +308,7 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
   return result;
 }
 
-async function fetchOrganizationFaqs(orgId: string): Promise<any[] | null> {
+async function fetchOrganizationFaqs(orgId: string): Promise<unknown[] | null> {
   try {
     const organization = await db.organization.findUnique({
       where: { id: orgId },
@@ -357,4 +357,3 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Portal Settings',
   };
 }
-

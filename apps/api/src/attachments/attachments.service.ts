@@ -29,7 +29,9 @@ export class AttachmentsService {
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
 
     if (!s3Client) {
-      console.error('S3 Client is not initialized. Check AWS S3 configuration.');
+      console.error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
       throw new Error(
         'S3 Client is not initialized. Check AWS S3 configuration.',
       );
