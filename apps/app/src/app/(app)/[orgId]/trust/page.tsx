@@ -65,6 +65,7 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
           pcidssFileName={certificateFiles.pcidssFileName}
           nen7510FileName={certificateFiles.nen7510FileName}
           iso9001FileName={certificateFiles.iso9001FileName}
+          allowedDomains={trustPortal?.allowedDomains ?? []}
           additionalDocuments={additionalDocuments.map((doc) => ({
             id: doc.id,
             name: doc.name,
@@ -122,6 +123,11 @@ const getTrustPortal = async (orgId: string) => {
     isVercelDomain: trustPortal?.isVercelDomain,
     vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,
+    allowedDomains: trustPortal?.allowedDomains ?? [],
+    email: trustPortal?.email ?? '',
+    privacyPolicy: trustPortal?.privacyPolicy ?? '',
+    soc2: trustPortal?.soc2 ?? false,
+    pci_dss: trustPortal?.pci_dss ?? false,
   };
 };
 
