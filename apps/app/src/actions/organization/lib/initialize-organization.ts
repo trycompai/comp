@@ -233,6 +233,7 @@ export const _upsertOrgFrameworkStructureCore = async ({
       data: taskTemplatesForCreation.map((taskTemplate) => ({
         title: taskTemplate.name,
         description: taskTemplate.description,
+        automationStatus: taskTemplate.automationStatus,
         organizationId: organizationId,
         taskTemplateId: taskTemplate.id,
       })),

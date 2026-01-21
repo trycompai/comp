@@ -7,7 +7,7 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
 import type { GitHubDependabotAlert, GitHubOrg, GitHubRepo } from '../types';
-import { targetReposVariable } from '../variables';
+import { parseRepoBranch, targetReposVariable } from '../variables';
 
 interface AlertCounts {
   open: number;
@@ -32,11 +32,13 @@ export const dependabotCheck: IntegrationCheck = {
   variables: [targetReposVariable],
 
   run: async (ctx) => {
-    const targetRepos = ctx.variables.target_repos as string[] | undefined;
+    const targetReposRaw = ctx.variables.target_repos as string[] | undefined;
+    // Extract just the repo names (values may be in "owner/repo:branch" format)
+    const targetRepos = (targetReposRaw || []).map((v) => parseRepoBranch(v).repo);
 
     let repos: GitHubRepo[];
 
-    if (targetRepos && targetRepos.length > 0) {
+    if (targetRepos.length > 0) {
       repos = [];
       for (const repoName of targetRepos) {
         try {
@@ -44,6 +46,21 @@ export const dependabotCheck: IntegrationCheck = {
           repos.push(repo);
         } catch {
           ctx.warn(`Could not fetch repo ${repoName}`);
+          // Emit a fail result so the user knows this repo wasn't checked
+          ctx.fail({
+            title: `Repository not found: ${repoName}`,
+            description: `Could not access repository "${repoName}". It may not exist or the integration lacks permission.`,
+            resourceType: 'repository',
+            resourceId: repoName,
+            severity: 'medium',
+            remediation: `Verify the repository name is correct (format: owner/repo) and that the GitHub integration has access to it.`,
+            evidence: {
+              [repoName]: {
+                error: 'Repository not accessible',
+                checked_at: new Date().toISOString(),
+              },
+            },
+          });
         }
       }
     } else {
@@ -62,29 +79,37 @@ export const dependabotCheck: IntegrationCheck = {
      */
     const fetchAlertCounts = async (repoFullName: string): Promise<AlertCounts | null> => {
       try {
-        const alerts = await ctx.fetchAllPages<GitHubDependabotAlert>(
-          `/repos/${repoFullName}/dependabot/alerts`,
-        );
+        // GitHub supports filtering by state: open, fixed, dismissed (no "all")
+        const [openAlerts, fixedAlerts, dismissedAlerts] = await Promise.all([
+          ctx.fetchWithLinkHeader<GitHubDependabotAlert>(
+            `/repos/${repoFullName}/dependabot/alerts`,
+            {
+              params: { state: 'open', per_page: '100' },
+            },
+          ),
+          ctx.fetchWithLinkHeader<GitHubDependabotAlert>(
+            `/repos/${repoFullName}/dependabot/alerts`,
+            {
+              params: { state: 'fixed', per_page: '100' },
+            },
+          ),
+          ctx.fetchWithLinkHeader<GitHubDependabotAlert>(
+            `/repos/${repoFullName}/dependabot/alerts`,
+            { params: { state: 'dismissed', per_page: '100' } },
+          ),
+        ]);
 
         const counts: AlertCounts = {
-          open: 0,
-          dismissed: 0,
-          fixed: 0,
-          total: alerts.length,
+          open: openAlerts.length,
+          dismissed: dismissedAlerts.length,
+          fixed: fixedAlerts.length,
+          total: openAlerts.length + fixedAlerts.length + dismissedAlerts.length,
           bySeverity: { critical: 0, high: 0, medium: 0, low: 0 },
         };
 
-        for (const alert of alerts) {
-          // Count by state
-          if (alert.state === 'open') counts.open++;
-          else if (alert.state === 'dismissed') counts.dismissed++;
-          else if (alert.state === 'fixed') counts.fixed++;
-
-          // Count open alerts by severity
-          if (alert.state === 'open') {
-            const severity = alert.security_vulnerability?.severity ?? 'low';
-            counts.bySeverity[severity]++;
-          }
+        for (const alert of openAlerts) {
+          const severity = alert.security_vulnerability?.severity ?? 'low';
+          counts.bySeverity[severity]++;
         }
 
         return counts;
@@ -93,6 +118,13 @@ export const dependabotCheck: IntegrationCheck = {
         // 403 usually means Dependabot alerts are not enabled or no permission
         if (errorStr.includes('403') || errorStr.includes('Forbidden')) {
           ctx.log(`Cannot access Dependabot alerts for ${repoFullName} (permission denied)`);
+          return null;
+        }
+        // 400 can mean Dependabot alerts endpoint isn't available for the repo/app
+        if (errorStr.includes('400') || errorStr.includes('Bad Request')) {
+          ctx.log(
+            `Dependabot alerts not available for ${repoFullName} (feature may not be enabled)`,
+          );
           return null;
         }
         ctx.warn(`Failed to fetch Dependabot alerts for ${repoFullName}: ${errorStr}`);
@@ -132,6 +164,21 @@ export const dependabotCheck: IntegrationCheck = {
       // Fetch alert counts regardless of Dependabot status
       const alertCounts = await fetchAlertCounts(repo.full_name);
 
+      // Build hierarchical evidence: { "owner/repo": { data } }
+      const repoEvidence: Record<string, unknown> = {
+        security_and_analysis: repo.security_and_analysis,
+        ...(alertCounts && {
+          alerts: {
+            open: alertCounts.open,
+            fixed: alertCounts.fixed,
+            dismissed: alertCounts.dismissed,
+            total: alertCounts.total,
+            open_by_severity: alertCounts.bySeverity,
+          },
+        }),
+        checked_at: new Date().toISOString(),
+      };
+
       if (dependabotStatus === 'enabled') {
         const alertSummary = alertCounts
           ? `\n\nAlert Summary: ${formatAlertSummary(alertCounts)}`
@@ -143,17 +190,7 @@ export const dependabotCheck: IntegrationCheck = {
           resourceType: 'repository',
           resourceId: repo.full_name,
           evidence: {
-            security_and_analysis: repo.security_and_analysis,
-            ...(alertCounts && {
-              alerts: {
-                open: alertCounts.open,
-                fixed: alertCounts.fixed,
-                dismissed: alertCounts.dismissed,
-                total: alertCounts.total,
-                open_by_severity: alertCounts.bySeverity,
-              },
-            }),
-            checked_at: new Date().toISOString(),
+            [repo.full_name]: repoEvidence,
           },
         });
       } else {
@@ -168,17 +205,9 @@ export const dependabotCheck: IntegrationCheck = {
           resourceId: repo.full_name,
           severity: 'medium',
           remediation: `1. Go to ${repo.html_url}/settings/security_analysis\n2. Enable "Dependabot security updates"\n3. Optionally enable "Dependabot version updates" for proactive updates`,
-          evidence: alertCounts
-            ? {
-                alerts: {
-                  open: alertCounts.open,
-                  fixed: alertCounts.fixed,
-                  dismissed: alertCounts.dismissed,
-                  total: alertCounts.total,
-                  open_by_severity: alertCounts.bySeverity,
-                },
-              }
-            : undefined,
+          evidence: {
+            [repo.full_name]: repoEvidence,
+          },
         });
       }
     }

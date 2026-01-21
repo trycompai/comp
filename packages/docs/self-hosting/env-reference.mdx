@@ -75,6 +75,7 @@ These variables are required for a functional Docker deployment:
 | `APP_AWS_ORG_ASSETS_BUCKET` | app | runtime | conditional | Organization logos, compliance certs |
 | `APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET` | app | runtime | conditional | Security questionnaire uploads |
 | `APP_AWS_KNOWLEDGE_BASE_BUCKET` | app | runtime | conditional | Knowledge base documents |
+| `APP_AWS_ENDPOINT` | app, portal | runtime | optional | URL for alternative S3-compatible providers |
 
 <Note>
 AWS S3 variables are required for file upload features (attachments, logos, questionnaires). Without them, these features will fail.

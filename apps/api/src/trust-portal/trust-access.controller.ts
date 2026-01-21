@@ -467,6 +467,21 @@ export class TrustAccessController {
     return this.trustAccessService.downloadAllPoliciesByAccessToken(token);
   }
 
+  @Get('access/:token/policies/download-all-zip')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download all policies as ZIP with individual PDFs',
+    description:
+      'Generate ZIP archive containing individual watermarked PDFs for each policy',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download URL for ZIP archive returned',
+  })
+  async downloadAllPoliciesAsZip(@Param('token') token: string) {
+    return this.trustAccessService.downloadAllPoliciesAsZipByAccessToken(token);
+  }
+
   @Get('access/:token/compliance-resources')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

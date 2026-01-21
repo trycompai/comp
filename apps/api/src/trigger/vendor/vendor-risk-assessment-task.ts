@@ -6,7 +6,9 @@ import {
   type TaskItemEntityType,
 } from '@db';
 import type { Prisma } from '@prisma/client';
+import type { Task } from '@trigger.dev/sdk';
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
+import type { z } from 'zod';
 
 import { resolveTaskCreatorAndAssignee } from './vendor-risk-assessment/assignee';
 import { VENDOR_RISK_ASSESSMENT_TASK_ID } from './vendor-risk-assessment/constants';
@@ -19,6 +21,21 @@ import {
 import { vendorRiskAssessmentPayloadSchema } from './vendor-risk-assessment/schema';
 
 const VERIFY_RISK_ASSESSMENT_TASK_TITLE = 'Verify risk assessment' as const;
+
+type VendorRiskAssessmentResult = {
+  success: true;
+  vendorId: string;
+  deduped: boolean;
+  researched: boolean;
+  skipped?: boolean;
+  reason?: 'no_website' | 'invalid_website';
+  riskAssessmentVersion: string | null;
+  verifyTaskItemId?: string;
+};
+
+type VendorRiskAssessmentTaskInput = z.input<
+  typeof vendorRiskAssessmentPayloadSchema
+>;
 
 function parseVersionNumber(version: string | null | undefined): number {
   if (!version || !version.startsWith('v')) return 0;
@@ -192,7 +209,11 @@ function normalizeWebsite(website: string): string | null {
   }
 }
 
-export const vendorRiskAssessmentTask = schemaTask({
+export const vendorRiskAssessmentTask: Task<
+  typeof VENDOR_RISK_ASSESSMENT_TASK_ID,
+  VendorRiskAssessmentTaskInput,
+  VendorRiskAssessmentResult
+> = schemaTask({
   id: VENDOR_RISK_ASSESSMENT_TASK_ID,
   queue: queue({ name: 'vendor-risk-assessment', concurrencyLimit: 10 }),
   schema: vendorRiskAssessmentPayloadSchema,
@@ -220,6 +241,15 @@ export const vendorRiskAssessmentTask = schemaTask({
       throw new Error(
         `Vendor ${payload.vendorId} not found in org ${payload.organizationId}`,
       );
+    }
+
+    // Mark vendor as in-progress immediately so UI can show "generating" state
+    // This happens at the start before any processing, so the UI updates right away
+    if (vendor.status !== VendorStatus.in_progress) {
+      await db.vendor.update({
+        where: { id: vendor.id },
+        data: { status: VendorStatus.in_progress },
+      });
     }
 
     if (!vendor.website) {
@@ -403,13 +433,7 @@ export const vendorRiskAssessmentTask = schemaTask({
       };
     }
 
-    // Mark vendor as in-progress immediately so UI can show "generating"
-    await db.vendor.update({
-      where: { id: vendor.id },
-      data: {
-        status: VendorStatus.in_progress,
-      },
-    });
+    // Note: status is already set to in_progress at the start of the task
 
     const { creatorMemberId, assigneeMemberId } =
       await resolveTaskCreatorAndAssignee({

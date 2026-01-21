@@ -23,9 +23,60 @@ import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
 import { Prisma, TrustFramework } from '@prisma/client';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 @Injectable()
 export class TrustAccessService {
+  /**
+   * Convert hex color to RGB values (0-1 range for pdf-lib)
+   * @param hex - Hex color string (e.g., "#3B82F6" or "3B82F6")
+   * @returns RGB object with r, g, b values between 0 and 1
+   */
+  private hexToRgb(hex: string): { r: number; g: number; b: number } {
+    // Remove # if present
+    const cleanHex = hex.replace('#', '');
+
+    // Parse hex values
+    const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+    const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+    const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+
+    return { r, g, b };
+  }
+
+  /**
+   * Get accent color from organization or use default
+   */
+  private getAccentColor(primaryColor: string | null | undefined): {
+    r: number;
+    g: number;
+    b: number;
+  } {
+    // Default project primary color: dark teal/green (hsl(165, 100%, 15%) = #004D3D)
+    const defaultColor = { r: 0, g: 0.302, b: 0.239 };
+
+    if (!primaryColor) {
+      return defaultColor;
+    }
+
+    const color = this.hexToRgb(primaryColor);
+
+    // Check for NaN values (parseInt returns NaN for invalid hex)
+    if (
+      Number.isNaN(color.r) ||
+      Number.isNaN(color.g) ||
+      Number.isNaN(color.b)
+    ) {
+      console.warn(
+        'Invalid primary color format, using default:',
+        primaryColor,
+      );
+      return defaultColor;
+    }
+
+    return color;
+  }
+
   private readonly TRUST_APP_URL =
     process.env.TRUST_APP_URL ||
     process.env.BASE_URL ||
@@ -1763,6 +1814,7 @@ export class TrustAccessService {
         id: true,
         name: true,
         content: true,
+        pdfUrl: true,
       },
       orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
@@ -1771,13 +1823,214 @@ export class TrustAccessService {
       throw new NotFoundException('No published policies available');
     }
 
-    const pdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-      policies.map((p) => ({
-        name: p.name,
-        content: p.content,
-      })),
-      grant.accessRequest.organization.name,
+    // Create merged PDF document
+    const mergedPdf = await PDFDocument.create();
+
+    const organizationName =
+      grant.accessRequest.organization.name || 'Organization';
+
+    // Get organization primary color or use default
+    const accentColor = this.getAccentColor(
+      grant.accessRequest.organization.primaryColor,
     );
+
+    // Embed fonts once before the loop (expensive operation)
+    const helveticaBold = await mergedPdf.embedFont(
+      StandardFonts.HelveticaBold,
+    );
+    const helvetica = await mergedPdf.embedFont(StandardFonts.Helvetica);
+
+    // Step 1: Fetch/render all PDFs in parallel (expensive I/O operations)
+    type PreparedPolicy = {
+      policy: (typeof policies)[0];
+      pdfBuffer: Buffer;
+      isUploaded: boolean;
+    };
+
+    const preparePolicy = async (
+      policy: (typeof policies)[0],
+    ): Promise<PreparedPolicy> => {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+
+      if (hasUploadedPdf) {
+        try {
+          const pdfBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          return {
+            policy,
+            pdfBuffer: Buffer.from(pdfBuffer),
+            isUploaded: true,
+          };
+        } catch (error) {
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+        }
+      }
+
+      // Render from content (either no pdfUrl or fetch failed)
+      const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: policy.content }],
+        undefined, // We'll add org header during merge
+        grant.accessRequest.organization.primaryColor,
+        policies.length,
+      );
+      return { policy, pdfBuffer: renderedBuffer, isUploaded: false };
+    };
+
+    const preparedPolicies = await Promise.all(policies.map(preparePolicy));
+
+    // Step 2: Merge PDFs sequentially (must be sequential for PDFDocument operations)
+    // Helper to add content-rendered policy to merged PDF
+    const addContentRenderedPolicy = async (
+      policy: (typeof policies)[0],
+      addOrgHeader: boolean,
+    ) => {
+      const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: policy.content }],
+        addOrgHeader ? organizationName : undefined,
+        grant.accessRequest.organization.primaryColor,
+        policies.length,
+      );
+      const renderedPdf = await PDFDocument.load(renderedBuffer);
+      const copiedPages = await mergedPdf.copyPages(
+        renderedPdf,
+        renderedPdf.getPageIndices(),
+      );
+      for (const page of copiedPages) {
+        mergedPdf.addPage(page);
+      }
+    };
+
+    let isFirst = true;
+    for (const { policy, pdfBuffer, isUploaded } of preparedPolicies) {
+      if (isUploaded) {
+        try {
+          const uploadedPdf = await PDFDocument.load(pdfBuffer, {
+            ignoreEncryption: true,
+          });
+
+          // Rebuild the FIRST page: embed original page into a taller page
+          const originalFirstPage = uploadedPdf.getPage(0);
+          const { width, height } = originalFirstPage.getSize();
+
+          const headerHeight = isFirst ? 120 : 60;
+          const embeddedFirstPage = await mergedPdf.embedPage(originalFirstPage);
+          const rebuiltFirstPage = mergedPdf.addPage([
+            width,
+            height + headerHeight,
+          ]);
+
+          rebuiltFirstPage.drawPage(embeddedFirstPage, {
+            x: 0,
+            y: 0,
+            width,
+            height,
+          });
+
+          let yPos = height + headerHeight - 25;
+
+          if (isFirst) {
+            rebuiltFirstPage.drawLine({
+              start: { x: 20, y: yPos + 8 },
+              end: { x: width - 20, y: yPos + 8 },
+              thickness: 2,
+              color: rgb(accentColor.r, accentColor.g, accentColor.b),
+            });
+
+            rebuiltFirstPage.drawText(`${organizationName} - All Policies`, {
+              x: 20,
+              y: yPos - 14,
+              size: 14,
+              font: helveticaBold,
+              color: rgb(0, 0, 0),
+            });
+
+            const generatedDate = new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            });
+
+            rebuiltFirstPage.drawText(
+              `Generated: ${generatedDate} | Total: ${policies.length} policies`,
+              {
+                x: width - 180,
+                y: yPos - 14,
+                size: 8,
+                font: helvetica,
+                color: rgb(0.5, 0.5, 0.5),
+              },
+            );
+
+            yPos -= 34;
+            isFirst = false;
+          }
+
+          rebuiltFirstPage.drawRectangle({
+            x: 55,
+            y: yPos - 40,
+            width: 10,
+            height: 26,
+            color: rgb(accentColor.r, accentColor.g, accentColor.b),
+          });
+
+          rebuiltFirstPage.drawText(`POLICY: ${policy.name}`, {
+            x: 75,
+            y: yPos - 34,
+            size: 16,
+            font: helveticaBold,
+            color: rgb(0.12, 0.16, 0.23),
+          });
+
+          // Remaining pages unchanged (page 2..n)
+          if (uploadedPdf.getPageCount() > 1) {
+            const copiedRemainingPages = await mergedPdf.copyPages(
+              uploadedPdf,
+              uploadedPdf.getPageIndices().slice(1),
+            );
+            for (const page of copiedRemainingPages) {
+              mergedPdf.addPage(page);
+            }
+          }
+        } catch (error) {
+          // PDF is corrupted/malformed, fall back to content rendering
+          console.warn(
+            `Failed to parse uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+          await addContentRenderedPolicy(policy, isFirst);
+          isFirst = false;
+        }
+      } else {
+        // Content was already rendered, but re-render if first (needs org header)
+        await addContentRenderedPolicy(policy, isFirst);
+        isFirst = false;
+      }
+    }
+
+    // Add page numbers to all pages in the merged PDF
+    const pages = mergedPdf.getPages();
+    const totalPages = pages.length;
+    // helvetica font already embedded above
+
+    for (let i = 0; i < totalPages; i++) {
+      const page = pages[i];
+      const { width } = page.getSize();
+      const pageNumber = i + 1;
+
+      page.drawText(`Page ${pageNumber} of ${totalPages}`, {
+        x: width / 2 - 30,
+        y: 15,
+        size: 8,
+        font: helvetica,
+        color: rgb(0.5, 0.5, 0.5),
+      });
+    }
+
+    const pdfBuffer = Buffer.from(await mergedPdf.save());
 
     const bundleDocId = `bundle-${grant.id}-${Date.now()}`;
     const watermarked = await this.ndaPdfService.watermarkExistingPdf(
@@ -1802,5 +2055,162 @@ export class TrustAccessService {
       await this.attachmentsService.getPresignedDownloadUrl(key);
 
     return { name: 'All Policies', downloadUrl };
+  }
+
+  /**
+   * Convert a policy name to a safe filename
+   * "Security Updates" -> "security_updates"
+   */
+  private toSafeFilename(name: string): string {
+    const safeName = name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/-+/g, '_') // Replace hyphens with underscores
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+
+    // Fallback for non-ASCII only names
+    return safeName || 'policy';
+  }
+
+  async downloadAllPoliciesAsZipByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
+
+    const policies = await db.policy.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+        status: 'published',
+        isArchived: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        content: true,
+        pdfUrl: true,
+      },
+      orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
+    });
+
+    if (policies.length === 0) {
+      throw new NotFoundException('No published policies available');
+    }
+
+    const organizationName =
+      grant.accessRequest.organization.name || 'Organization';
+
+    // Create ZIP archive
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    const passThrough = new PassThrough();
+
+    archive.on('error', (err) => {
+      passThrough.destroy(err);
+    });
+
+    archive.pipe(passThrough);
+
+    // Track filenames to avoid duplicates (case-insensitive)
+    const usedNamesLower = new Set<string>();
+
+    const getUniqueFilename = (baseName: string): string => {
+      const filename = this.toSafeFilename(baseName);
+      let counter = 1;
+      let finalName = filename;
+
+      while (usedNamesLower.has(finalName.toLowerCase())) {
+        finalName = `${filename}_${counter}`;
+        counter++;
+      }
+
+      usedNamesLower.add(finalName.toLowerCase());
+      return `${finalName}.pdf`;
+    };
+
+    // Process policies sequentially
+    for (const policy of policies) {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+      let policyPdfBuffer: Buffer;
+
+      if (hasUploadedPdf) {
+        try {
+          const rawBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          policyPdfBuffer = Buffer.from(rawBuffer);
+        } catch (error) {
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+          policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+            [{ name: policy.name, content: policy.content }],
+            undefined,
+            grant.accessRequest.organization.primaryColor,
+          );
+        }
+      } else {
+        policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          [{ name: policy.name, content: policy.content }],
+          undefined,
+          grant.accessRequest.organization.primaryColor,
+        );
+      }
+
+      // Watermark the PDF
+      const docId = `policy-${policy.id}-${Date.now()}`;
+      const watermarkedPdf = await this.ndaPdfService.watermarkExistingPdf(
+        policyPdfBuffer,
+        {
+          name: grant.accessRequest.name,
+          email: grant.subjectEmail,
+          docId,
+        },
+      );
+
+      // Add to archive
+      const filename = getUniqueFilename(policy.name);
+      archive.append(watermarkedPdf, { name: filename });
+    }
+
+    // Collect ZIP buffer - set up listeners BEFORE finalize to avoid deadlock
+    const zipBufferPromise = new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      passThrough.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      passThrough.on('end', () => resolve(Buffer.concat(chunks)));
+      passThrough.on('error', reject);
+    });
+
+    // Finalize the archive
+    await archive.finalize();
+
+    // Wait for buffer to be collected
+    const zipBuffer = await zipBufferPromise;
+
+    // Upload to S3 using attachmentsService (avoids streaming issues)
+    const safeOrgName = this.toSafeFilename(organizationName);
+    const dateStr = new Date().toISOString().split('T')[0];
+    const downloadFilename = `${safeOrgName}_policies_${dateStr}.zip`;
+
+    const zipKey = await this.attachmentsService.uploadToS3(
+      zipBuffer,
+      downloadFilename,
+      'application/zip',
+      grant.accessRequest.organizationId,
+      'trust_policy_downloads',
+      `${grant.id}`,
+    );
+
+    // Generate download URL with proper filename
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrlWithFilename(
+        zipKey,
+        downloadFilename,
+      );
+
+    return {
+      name: `${organizationName} - All Policies (ZIP)`,
+      downloadUrl,
+      policyCount: policies.length,
+    };
   }
 }

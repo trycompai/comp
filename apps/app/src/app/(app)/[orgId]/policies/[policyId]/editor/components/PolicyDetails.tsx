@@ -22,7 +22,7 @@ import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
 import { structuredPatch } from 'diff';
 import { useAction } from 'next-safe-action/hooks';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
 import { PdfViewer } from '../../components/PdfViewer';
@@ -103,6 +103,8 @@ export function PolicyContentManager({
 }: PolicyContentManagerProps) {
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>(displayFormat);
+  const previousTabRef = useRef<string>(displayFormat);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
     const formattedContent = Array.isArray(policyContent)
       ? policyContent
@@ -155,7 +157,19 @@ export function PolicyContentManager({
   );
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onError: () => toast.error('Failed to switch view.'),
+    onSuccess: () => {
+      // Server action succeeded, update ref for next operation
+      previousTabRef.current = activeTab;
+    },
+    onError: () => {
+      toast.error('Failed to switch view.');
+      // Roll back to the previous tab state on error
+      setActiveTab(previousTabRef.current);
+      // Also restore AI assistant visibility if we were switching from EDITOR
+      if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
+        setShowAiAssistant(true);
+      }
+    },
   });
 
   const currentPolicyMarkdown = useMemo(
@@ -193,9 +207,15 @@ export function PolicyContentManager({
     <Stack gap="md">
       <Tabs
         defaultValue={displayFormat}
-        onValueChange={(format) =>
-          switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' })
-        }
+        value={activeTab}
+        onValueChange={(format) => {
+          previousTabRef.current = activeTab;
+          setActiveTab(format);
+          if (format === 'PDF') {
+            setShowAiAssistant(false);
+          }
+          switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
+        }}
       >
         <Stack gap="md">
           <HStack justify="between" align="center">
@@ -207,7 +227,7 @@ export function PolicyContentManager({
                 PDF View
               </TabsTrigger>
             </TabsList>
-            {!isPendingApproval && aiAssistantEnabled && (
+            {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
               <Button
                 variant={showAiAssistant ? 'default' : 'outline'}
                 size="sm"
@@ -243,15 +263,17 @@ export function PolicyContentManager({
               </TabsContent>
             </Stack>
 
-            {aiAssistantEnabled && showAiAssistant && (
-              <PolicyAiAssistant
-                messages={messages}
-                status={status}
-                errorMessage={chatErrorMessage}
-                sendMessage={sendMessage}
-                close={() => setShowAiAssistant(false)}
-                hasActiveProposal={!!activeProposal && !hasPendingProposal}
-              />
+            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
+              <div className="w-80 shrink-0 self-stretch">
+                <PolicyAiAssistant
+                  messages={messages}
+                  status={status}
+                  errorMessage={chatErrorMessage}
+                  sendMessage={sendMessage}
+                  close={() => setShowAiAssistant(false)}
+                  hasActiveProposal={!!activeProposal && !hasPendingProposal}
+                />
+              </div>
             )}
           </Grid>
         </Stack>
@@ -378,11 +400,7 @@ function PolicyEditorWrapper({
 
   return (
     <Section>
-      <PolicyEditor
-        content={normalizedContent}
-        onSave={savePolicy}
-        readOnly={isPendingApproval}
-      />
+      <PolicyEditor content={normalizedContent} onSave={savePolicy} readOnly={isPendingApproval} />
     </Section>
   );
 }

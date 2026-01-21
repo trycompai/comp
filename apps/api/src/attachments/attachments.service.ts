@@ -14,6 +14,7 @@ import {
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
+import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
@@ -27,20 +28,14 @@ export class AttachmentsService {
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
 
-    if (
-      !process.env.APP_AWS_ACCESS_KEY_ID ||
-      !process.env.APP_AWS_SECRET_ACCESS_KEY
-    ) {
-      console.warn('AWS credentials are missing, S3 client may fail');
+    if (!s3Client) {
+      console.error('S3 Client is not initialized. Check AWS S3 configuration.');
+      throw new Error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
     }
 
-    this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+    this.s3Client = s3Client;
   }
 
   /**
@@ -383,6 +378,25 @@ export class AttachmentsService {
 
   async getPresignedDownloadUrl(s3Key: string): Promise<string> {
     return this.generateSignedUrl(s3Key);
+  }
+
+  /**
+   * Generate presigned download URL with a custom download filename
+   */
+  async getPresignedDownloadUrlWithFilename(
+    s3Key: string,
+    downloadFilename: string,
+  ): Promise<string> {
+    const sanitizedFilename = this.sanitizeHeaderValue(downloadFilename);
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      ResponseContentDisposition: `attachment; filename="${sanitizedFilename}"`,
+    });
+
+    return getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: this.SIGNED_URL_EXPIRY,
+    });
   }
 
   async getObjectBuffer(s3Key: string): Promise<Buffer> {

@@ -241,8 +241,8 @@ export function SingleTask({
           <DialogHeader>
             <DialogTitle>Regenerate Task</DialogTitle>
             <DialogDescription>
-              This will update the task title and description with the latest content from the
-              framework template. The current content will be replaced. Continue?
+              This will update the task title, description, and automation status with the latest
+              content from the framework template. The current content will be replaced. Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
