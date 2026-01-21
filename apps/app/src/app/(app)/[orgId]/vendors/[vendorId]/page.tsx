@@ -1,4 +1,3 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
 import { extractDomain } from '@/utils/normalize-website';
 import { db } from '@db';
@@ -6,8 +5,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
-import { VendorActions } from './components/VendorActions';
-import { VendorPageClient } from './components/VendorPageClient';
+import { VendorDetailTabs } from './components/VendorDetailTabs';
 
 interface PageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;
@@ -19,12 +17,12 @@ interface PageProps {
 /**
  * Vendor detail page - server component
  * Fetches initial data server-side for fast first render
- * Passes data to VendorPageClient which uses SWR for real-time updates
+ * Passes data to VendorDetailTabs which handles both Overview and Risk Assessment tabs
  */
 export default async function VendorPage({ params, searchParams }: PageProps) {
   const { vendorId, orgId } = await params;
   const { taskItemId } = (await searchParams) ?? {};
-  
+
   // Fetch data in parallel for faster loading
   const [vendorData, assignees] = await Promise.all([
     getVendor({ vendorId, organizationId: orgId }),
@@ -39,26 +37,13 @@ export default async function VendorPage({ params, searchParams }: PageProps) {
   const isViewingTask = Boolean(taskItemId);
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Vendors', href: `/${orgId}/vendors` },
-        {
-          label: vendorData.vendor?.name ?? '',
-          // Make vendor name clickable when viewing a task to navigate back to vendor overview
-          href: isViewingTask ? `/${orgId}/vendors/${vendorId}` : undefined,
-          current: !isViewingTask,
-        },
-      ]}
-      headerRight={<VendorActions vendorId={vendorId} orgId={orgId} />}
-    >
-      <VendorPageClient
-        vendorId={vendorId}
-        orgId={orgId}
-        initialVendor={vendorData.vendor}
-        assignees={assignees}
-        isViewingTask={isViewingTask}
-      />
-    </PageWithBreadcrumb>
+    <VendorDetailTabs
+      vendorId={vendorId}
+      orgId={orgId}
+      vendor={vendorData.vendor}
+      assignees={assignees}
+      isViewingTask={isViewingTask}
+    />
   );
 }
 
@@ -103,12 +88,9 @@ const getVendor = cache(async (params: { vendorId: string; organizationId: strin
         riskAssessmentVersion: true,
         riskAssessmentUpdatedAt: true,
       },
-      orderBy: [
-        { riskAssessmentUpdatedAt: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ riskAssessmentUpdatedAt: 'desc' }, { createdAt: 'desc' }],
     });
-    
+
     // Prefer record WITH risk assessment data (most recent)
     globalVendor = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
   }

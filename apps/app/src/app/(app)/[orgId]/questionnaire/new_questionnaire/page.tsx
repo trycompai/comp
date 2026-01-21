@@ -46,7 +46,7 @@ export default async function NewQuestionnairePage() {
           ctaDisabled={true}
           cta={'Publish policies'}
           ctaTooltip="To use this feature you need to publish policies first"
-          href={`/${organizationId}/policies/all`}
+          href={`/${organizationId}/policies`}
           imageSrcLight="/questionaire/tmp-questionaire-empty-state.png"
           imageSrcDark="/questionaire/tmp-questionaire-empty-state.png"
           imageAlt="Security Questionnaire"

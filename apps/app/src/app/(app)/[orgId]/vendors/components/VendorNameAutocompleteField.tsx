@@ -5,7 +5,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/
 import { Input } from '@comp/ui/input';
 import type { GlobalVendors } from '@db';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { searchGlobalVendorsAction } from '../actions/search-global-vendors-action';
 import type { CreateVendorFormValues } from './create-vendor-form-schema';
@@ -29,17 +29,13 @@ const getVendorKey = (vendor: GlobalVendors): string => {
 
 type Props = {
   form: UseFormReturn<CreateVendorFormValues>;
-  isSheetOpen: boolean;
 };
 
-export function VendorNameAutocompleteField({ form, isSheetOpen }: Props) {
+export function VendorNameAutocompleteField({ form }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GlobalVendors[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
-
-  // Used to avoid resetting on initial mount.
-  const hasOpenedOnceRef = useRef(false);
 
   const searchVendors = useAction(searchGlobalVendorsAction, {
     onExecute: () => setIsSearching(true),
@@ -64,21 +60,6 @@ export function VendorNameAutocompleteField({ form, isSheetOpen }: Props) {
       setSearchResults([]);
     }
   }, 300);
-
-  // Reset autocomplete state when the sheet closes.
-  useEffect(() => {
-    if (isSheetOpen) {
-      hasOpenedOnceRef.current = true;
-      return;
-    }
-
-    if (!hasOpenedOnceRef.current) return;
-
-    setSearchQuery('');
-    setSearchResults([]);
-    setIsSearching(false);
-    setPopoverOpen(false);
-  }, [isSheetOpen]);
 
   const deduplicatedSearchResults = useMemo(() => {
     if (searchResults.length === 0) return [];

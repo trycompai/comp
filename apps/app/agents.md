@@ -1,0 +1,247 @@
+# UI Component Usage Rules (Design System)
+
+## Core Principle
+
+**ONLY use components from `@trycompai/design-system`.** Do not use shadcn/ui, Radix primitives, or custom components when a design system component exists.
+
+**Components do NOT accept `className`. Use variants and props only.**
+
+This design system enforces strict styling through `class-variance-authority` (cva).
+The `className` prop has been removed from all components to prevent style overrides.
+
+## Component Priority
+
+1. **First choice:** `@trycompai/design-system`
+2. **Never:** Custom implementations when DS has the component
+
+```tsx
+// ✅ ALWAYS - Use design system
+import { Button, Table, Badge, Tabs } from '@trycompai/design-system';
+
+// ❌ NEVER - Don't use @comp/ui when DS has the component
+import { Button } from '@comp/ui/button';
+import { Table } from '@comp/ui/table';
+```
+
+## Server vs Client Components
+
+**Layouts should be server-side rendered.** Any client-side logic (hooks, state, event handlers) must be wrapped in its own `'use client'` component.
+
+```tsx
+// ✅ Server layout with client component for interactivity
+// layout.tsx (server)
+import { ClientTabs } from './components/ClientTabs';
+
+export default function Layout({ children }) {
+  return (
+    <PageLayout>
+      <PageHeader title="Title" />
+      <ClientTabs /> {/* Client component for interactive tabs */}
+      {children}
+    </PageLayout>
+  );
+}
+
+// components/ClientTabs.tsx (client)
+'use client';
+export function ClientTabs() {
+  const router = useRouter();
+  // ... client logic
+}
+
+// ❌ NEVER - Don't make entire layout a client component
+'use client';
+export default function Layout({ children }) { ... }
+```
+
+## Avoid nuqs
+
+Don't use `nuqs` for query state. Use standard Next.js patterns:
+
+- `useRouter().push()` for navigation
+- `useSearchParams()` for reading query params
+- Server-side `searchParams` prop for initial state
+
+## ❌ These Will NOT Compile
+
+```tsx
+// className is not a valid prop - TypeScript will error
+<Button className="bg-red-500">Delete</Button>
+<Card className="shadow-xl">Content</Card>
+<Badge className="uppercase">Status</Badge>
+<Stack className="mt-4">Content</Stack>
+```
+
+## ✅ ALWAYS Do This
+
+```tsx
+// Use component variants
+<Button variant="destructive">Delete</Button>
+<Button variant="outline" size="lg">Large Outline</Button>
+<Badge variant="secondary">Status</Badge>
+
+// Use component props
+<Card maxWidth="lg">Content</Card>
+<Text size="lg" weight="bold" variant="primary">Title</Text>
+<Heading level={2}>Section Title</Heading>
+<Stack gap="4" align="center">Content</Stack>
+```
+
+## Layout & Positioning
+
+For layout concerns (width, grid positioning, margins), use wrapper elements:
+
+```tsx
+// ✅ Wrapper div for layout
+<div className="w-full">
+  <Button>Full Width</Button>
+</div>
+
+// ✅ Grid/flex positioning with wrapper
+<div className="col-span-2">
+  <Card>Spanning Card</Card>
+</div>
+
+// ✅ Use Stack/Grid for spacing
+<Stack gap="4">
+  <Button>First</Button>
+  <Button>Second</Button>
+</Stack>
+```
+
+## Available Components & Their APIs
+
+### Layout Primitives
+
+```tsx
+// Stack - flex layout
+<Stack direction="row" gap="4" align="center" justify="between">
+  {children}
+</Stack>
+
+// Grid - responsive grid
+<Grid cols={3} gap="4">
+  {children}
+</Grid>
+
+// Container - max-width wrapper
+<Container size="lg" padding="default">
+  {children}
+</Container>
+
+// PageLayout - full page structure
+<PageLayout variant="center" padding="default">
+  {children}
+</PageLayout>
+```
+
+### Typography
+
+```tsx
+// Heading - h1-h6 with consistent styles
+<Heading level={1}>Page Title</Heading>
+<Heading level={2} variant="muted">Subtitle</Heading>
+
+// Text - body text
+<Text size="sm" variant="muted">Description</Text>
+<Text weight="semibold">Important text</Text>
+```
+
+### Interactive
+
+```tsx
+// Button variants: default, outline, secondary, ghost, destructive, link
+// Button sizes: default, xs, sm, lg, icon, icon-xs, icon-sm, icon-lg
+<Button variant="outline" size="sm" loading={isLoading}>
+  Save
+</Button>
+<Button iconLeft={<PlusIcon />}>Add Item</Button>
+<Button iconRight={<ArrowRightIcon />}>Continue</Button>
+
+// Badge variants: default, secondary, destructive, outline
+<Badge variant="outline">Active</Badge>
+```
+
+### Layout Components
+
+```tsx
+// Card with maxWidth control
+<Card maxWidth="lg">Content</Card>
+
+// Section with title/description
+<Section>
+  <SectionHeader>
+    <SectionTitle>Settings</SectionTitle>
+    <SectionDescription>Manage your preferences</SectionDescription>
+  </SectionHeader>
+  <SectionContent>{children}</SectionContent>
+</Section>
+```
+
+## If a Variant Doesn't Exist
+
+1. **Check the component file** - it might exist and you missed it
+2. **Add a new variant** to the component's `cva` definition
+3. **Create a new component** if it's a genuinely new pattern
+
+```tsx
+// Example: Adding a variant to button.tsx
+const buttonVariants = cva('...base classes...', {
+  variants: {
+    variant: {
+      // existing variants...
+      newVariant: 'bg-teal-500 text-white hover:bg-teal-600', // ADD HERE
+    },
+  },
+});
+```
+
+**NEVER use wrapper divs to apply styles that should be component variants.**
+
+## Import Pattern
+
+```tsx
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardContent,
+  Stack,
+  Heading,
+  Text,
+  Badge,
+  // ... etc
+} from '@trycompai/design-system';
+```
+
+## Icons
+
+Import icons from `@trycompai/design-system/icons` (re-exports `@carbon/icons-react`):
+
+```tsx
+// ✅ ALWAYS - Use design system icons
+import { Add, Download, Settings, ChevronDown } from '@trycompai/design-system/icons';
+
+// Carbon icons use size prop, not className
+<Add size={16} />
+<Download size={20} />
+
+// ❌ NEVER - Don't use lucide-react
+import { Plus, Download } from 'lucide-react';
+<Plus className="h-4 w-4" />
+```
+
+Common icon mappings from lucide-react to Carbon:
+
+| lucide-react | @carbon/icons-react |
+|--------------|---------------------|
+| Plus | Add |
+| X | Close |
+| Check | Checkmark |
+| ChevronDown | ChevronDown |
+| ChevronRight | ChevronRight |
+| Settings | Settings |
+| Trash | TrashCan |
+| Edit | Edit |
+| Search | Search |
+| Loader2 | (use Button loading prop) |

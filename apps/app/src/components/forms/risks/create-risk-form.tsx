@@ -3,45 +3,57 @@
 import { createRiskAction } from '@/actions/risk/create-risk-action';
 import { createRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Textarea } from '@comp/ui/textarea';
-import type { Member, RiskStatus, User } from '@db';
+import type { Member, User } from '@db';
 import { Departments, RiskCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRightIcon } from 'lucide-react';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  HStack,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SheetFooter,
+  Textarea,
+} from '@trycompai/design-system';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
-export function CreateRisk({ assignees }: { assignees: (Member & { user: User })[] }) {
+interface CreateRiskProps {
+  assignees: (Member & { user: User })[];
+  onSuccess?: () => void;
+}
+
+export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
   const { mutate } = useSWRConfig();
 
-  const [_, setCreateRiskSheet] = useQueryState('create-risk-sheet');
-
   const createRisk = useAction(createRiskAction, {
-    onSuccess: async () => {
+    onSuccess: () => {
       toast.success('Risk created successfully');
-      setCreateRiskSheet(null);
-      // Invalidate all risks SWR caches (any key starting with 'risks')
-      mutate(
-        (key) => Array.isArray(key) && key[0] === 'risks',
-        undefined,
-        { revalidate: true },
-      );
+      onSuccess?.();
+      mutate((key) => Array.isArray(key) && key[0] === 'risks', undefined, { revalidate: true });
     },
     onError: () => {
       toast.error('Failed to create risk');
     },
   });
 
-  const form = useForm<z.infer<typeof createRiskSchema>>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<z.infer<typeof createRiskSchema>>({
     resolver: zodResolver(createRiskSchema),
     defaultValues: {
       title: '',
@@ -57,153 +69,110 @@ export function CreateRisk({ assignees }: { assignees: (Member & { user: User })
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto">
-          <div>
-            <Accordion type="multiple" defaultValue={['risk']}>
-              <AccordionItem value="risk">
-                <AccordionTrigger>{'Risk Details'}</AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{'Risk Title'}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              autoFocus
-                              className="mt-3"
-                              placeholder={'A short, descriptive title for the risk.'}
-                              autoCorrect="off"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{'Description'}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              className="mt-3 min-h-[80px]"
-                              placeholder={
-                                'A detailed description of the risk, its potential impact, and its causes.'
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{'Category'}</FormLabel>
-                          <FormControl>
-                            <div className="mt-3">
-                              <Select {...field} value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={'Select a category'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.values(RiskCategory).map((category) => {
-                                    const formattedCategory = category
-                                      .toLowerCase()
-                                      .split('_')
-                                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                      .join(' ');
-                                    return (
-                                      <SelectItem key={category} value={category}>
-                                        {formattedCategory}
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="department"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{'Department'}</FormLabel>
-                          <FormControl>
-                            <div className="mt-3">
-                              <Select {...field} value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={'Select a department'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.values(Departments).map((department) => {
-                                    const formattedDepartment = department.toUpperCase();
+    <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="title">Risk Title</FieldLabel>
+          <Input
+            id="title"
+            {...register('title')}
+            autoFocus
+            placeholder="A short, descriptive title for the risk."
+            autoCorrect="off"
+          />
+          <FieldError errors={[errors.title]} />
+        </Field>
 
-                                    return (
-                                      <SelectItem key={department} value={department}>
-                                        {formattedDepartment}
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="assigneeId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{'Assignee'}</FormLabel>
-                          <FormControl>
-                            <div className="mt-3">
-                              <SelectAssignee
-                                assigneeId={field.value ?? null}
-                                assignees={assignees}
-                                onAssigneeChange={field.onChange}
-                                disabled={createRisk.status === 'executing'}
-                                withTitle={false}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
+        <Field>
+          <FieldLabel htmlFor="description">Description</FieldLabel>
+          <Textarea
+            id="description"
+            {...register('description')}
+            placeholder="A detailed description of the risk, its potential impact, and its causes."
+          />
+          <FieldError errors={[errors.description]} />
+        </Field>
 
-          <div className="mt-4 flex justify-end">
-            <Button type="submit" variant="default" disabled={createRisk.status === 'executing'}>
-              <div className="flex items-center justify-center">
-                {'Create'}
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </div>
-            </Button>
-          </div>
-        </div>
-      </form>
-    </Form>
+        <Controller
+          name="category"
+          control={control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Category</FieldLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(RiskCategory).map((category) => {
+                    const formattedCategory = category
+                      .toLowerCase()
+                      .split('_')
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ');
+                    return (
+                      <SelectItem key={category} value={category}>
+                        {formattedCategory}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <FieldError errors={[errors.category]} />
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="department"
+          control={control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Department</FieldLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(Departments).map((department) => (
+                    <SelectItem key={department} value={department}>
+                      {department.toUpperCase()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError errors={[errors.department]} />
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="assigneeId"
+          control={control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Assignee</FieldLabel>
+              <SelectAssignee
+                assigneeId={field.value ?? null}
+                assignees={assignees}
+                onAssigneeChange={field.onChange}
+                disabled={createRisk.status === 'executing'}
+                withTitle={false}
+              />
+              <FieldError errors={[errors.assigneeId]} />
+            </Field>
+          )}
+        />
+      </FieldGroup>
+
+      <SheetFooter>
+        <HStack justify="end">
+          <Button type="submit" disabled={createRisk.status === 'executing'}>
+            {createRisk.status === 'executing' ? 'Creating...' : 'Create'}
+            {createRisk.status !== 'executing' && <ArrowRight size={16} className="ml-2" />}
+          </Button>
+        </HStack>
+      </SheetFooter>
+    </form>
   );
 }

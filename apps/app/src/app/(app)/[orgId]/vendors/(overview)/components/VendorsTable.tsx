@@ -1,23 +1,55 @@
 'use client';
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
-import { useDataTable } from '@/hooks/use-data-table';
-import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Departments, Vendor } from '@db';
-import { ColumnDef } from '@tanstack/react-table';
-import { Loader2 } from 'lucide-react';
-import { parseAsInteger, parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
-import { useCallback, useMemo } from 'react';
+import { VendorStatus } from '@/components/vendor-status';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+  HStack,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Spinner,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { OverflowMenuVertical, Search, TrashCan, View } from '@trycompai/design-system/icons';
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, UserIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import useSWR from 'swr';
-import { CreateVendorSheet } from '../../components/create-vendor-sheet';
+import { deleteVendor } from '../actions/deleteVendor';
 import { getVendorsAction, type GetVendorsActionInput } from '../actions/get-vendors-action';
 import type { GetAssigneesResult, GetVendorsResult } from '../data/queries';
 import type { GetVendorsSchema } from '../data/validations';
 import { useOnboardingStatus } from '../hooks/use-onboarding-status';
-import { VendorOnboardingProvider } from './vendor-onboarding-context';
-import { columns as getColumns } from './VendorColumns';
+import { VendorOnboardingProvider, useVendorOnboardingStatus } from './vendor-onboarding-context';
 
 export type VendorRow = GetVendorsResult['data'][number] & {
   isPending?: boolean;
@@ -35,6 +67,17 @@ const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'>
   'assessing',
 ];
 
+const CATEGORY_MAP: Record<string, string> = {
+  cloud: 'Cloud',
+  infrastructure: 'Infrastructure',
+  software_as_a_service: 'SaaS',
+  finance: 'Finance',
+  marketing: 'Marketing',
+  sales: 'Sales',
+  hr: 'HR',
+  other: 'Other',
+};
+
 interface VendorsTableProps {
   vendors: GetVendorsResult['data'];
   pageCount: number;
@@ -44,61 +87,99 @@ interface VendorsTableProps {
   orgId: string;
 }
 
+function VendorNameCell({ vendor, orgId }: { vendor: VendorRow; orgId: string }) {
+  const onboardingStatus = useVendorOnboardingStatus();
+  const status = onboardingStatus[vendor.id];
+  const isPending = vendor.isPending || status === 'pending' || status === 'processing';
+  const isAssessing = vendor.isAssessing || status === 'assessing';
+  const isResolved = vendor.status === 'assessed';
+
+  if ((isPending || isAssessing) && !isResolved) {
+    return (
+      <HStack gap="2" align="center">
+        <Spinner />
+        <Text variant="muted">{vendor.name}</Text>
+      </HStack>
+    );
+  }
+
+  return <Text>{vendor.name}</Text>;
+}
+
+function VendorStatusCell({ vendor }: { vendor: VendorRow }) {
+  const onboardingStatus = useVendorOnboardingStatus();
+  const status = onboardingStatus[vendor.id];
+  const isPending = vendor.isPending || status === 'pending' || status === 'processing';
+  const isAssessing = vendor.isAssessing || status === 'assessing';
+  const isResolved = vendor.status === 'assessed';
+
+  if (isPending && !isResolved) {
+    return (
+      <HStack gap="2" align="center">
+        <Spinner />
+        <Text variant="muted" size="sm">
+          Creating...
+        </Text>
+      </HStack>
+    );
+  }
+
+  if (isAssessing && !isResolved) {
+    return (
+      <HStack gap="2" align="center">
+        <Spinner />
+        <Text variant="muted" size="sm">
+          Assessing...
+        </Text>
+      </HStack>
+    );
+  }
+
+  return <VendorStatus status={vendor.status} />;
+}
+
 export function VendorsTable({
   vendors: initialVendors,
   pageCount: initialPageCount,
   assignees,
   onboardingRunId,
-  searchParams: initialSearchParams,
   orgId,
 }: VendorsTableProps) {
+  const router = useRouter();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [vendorToDelete, setVendorToDelete] = useState<VendorRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Local state for search and sorting
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sort, setSort] = useState<{ id: 'name' | 'updatedAt'; desc: boolean }>({
+    id: 'name',
+    desc: false,
+  });
+
   const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
     onboardingRunId,
     'vendors',
   );
 
-  // Read current search params from URL (synced with table state via useDataTable)
-  const [page] = useQueryState('page', parseAsInteger.withDefault(1));
-  const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(50));
-  const [name] = useQueryState('name', parseAsString.withDefault(''));
-  const [status] = useQueryState(
-    'status',
-    parseAsStringEnum(['not_assessed', 'assessed'] as const),
-  );
-  const [department] = useQueryState(
-    'department',
-    parseAsStringEnum<Departments>(Object.values(Departments)),
-  );
-  const [assigneeId] = useQueryState('assigneeId', parseAsString);
-  const [sort] = useQueryState(
-    'sort',
-    getSortingStateParser<Vendor>().withDefault([{ id: 'name', desc: false }]),
-  );
-  const [filters] = useQueryState('filters', getFiltersStateParser().withDefault([]));
-  const [joinOperator] = useQueryState(
-    'joinOperator',
-    parseAsStringEnum(['and', 'or']).withDefault('and'),
-  );
-
-  // Build current search params from URL state
+  // Build search params for API - only page, perPage for now
   const currentSearchParams = useMemo<GetVendorsSchema>(() => {
     return {
-      page,
-      perPage,
-      name,
-      status: status ?? null,
-      department: department ?? null,
-      assigneeId: assigneeId ?? null,
-      sort,
-      filters,
-      joinOperator,
+      page: 1,
+      perPage: 50,
+      name: '',
+      status: null,
+      department: null,
+      assigneeId: null,
+      sort: [{ id: sort.id, desc: sort.desc }],
+      filters: [],
+      joinOperator: 'and',
     };
-  }, [page, perPage, name, status, department, assigneeId, sort, filters, joinOperator]);
+  }, [sort]);
 
-  // Create stable SWR key from current search params
+  // Create stable SWR key
   const swrKey = useMemo(() => {
     if (!orgId) return null;
-    // Serialize search params to create a stable key
     const key = JSON.stringify(currentSearchParams);
     return ['vendors', orgId, key] as const;
   }, [orgId, currentSearchParams]);
@@ -110,58 +191,47 @@ export function VendorsTable({
   }, [orgId, currentSearchParams]);
 
   // Use SWR to fetch vendors with polling for real-time updates
-  // Poll faster during onboarding, slower otherwise
   const { data: vendorsData } = useSWR(swrKey, fetcher, {
     fallbackData: { data: initialVendors, pageCount: initialPageCount },
-    refreshInterval: isActive ? 1000 : 5000, // 1s during onboarding, 5s otherwise
+    refreshInterval: isActive ? 1000 : 5000,
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     keepPreviousData: true,
   });
 
   const vendors = vendorsData?.data || initialVendors;
-  const pageCount = vendorsData?.pageCount ?? initialPageCount;
 
   // Check if all vendors are done assessing
   const allVendorsDoneAssessing = useMemo(() => {
-    // If no vendors exist yet, we're not done
     if (vendors.length === 0) {
-      // But check if there are vendors in metadata that should exist
       if (itemsInfo.length > 0) return false;
       return false;
     }
 
-    // Check if we're still creating vendors by comparing DB count with expected total
-    // If progress.total exists and vendors.length < progress.total, we're still creating
     if (progress && vendors.length < progress.total) {
       return false;
     }
 
-    // If there are pending/processing vendors in metadata that aren't in DB yet, we're not done
     const hasPendingVendors = itemsInfo.some((item) => {
-      const status = itemStatuses[item.id];
+      const itemStatus = itemStatuses[item.id];
       return (
-        (status === 'pending' ||
-          status === 'processing' ||
-          status === 'created' ||
-          status === 'assessing') &&
+        (itemStatus === 'pending' ||
+          itemStatus === 'processing' ||
+          itemStatus === 'created' ||
+          itemStatus === 'assessing') &&
         !vendors.some((v) => v.id === item.id)
       );
     });
 
     if (hasPendingVendors) return false;
 
-    // Check if all vendors in DB are either:
-    // 1. Completed in metadata (status === 'completed')
-    // 2. Assessed in database (status === 'assessed')
     const allDbVendorsDone = vendors.every((vendor) => {
       const metadataStatus = itemStatuses[vendor.id];
       return metadataStatus === 'completed' || vendor.status === 'assessed';
     });
 
-    // Also check if there are any vendors in metadata that are still assessing
     const hasAssessingVendors = Object.values(itemStatuses).some(
-      (status) => status === 'assessing' || status === 'processing',
+      (s) => s === 'assessing' || s === 'processing',
     );
 
     return allDbVendorsDone && !hasAssessingVendors;
@@ -171,12 +241,8 @@ export function VendorsTable({
   const mergedVendors = useMemo<VendorRow[]>(() => {
     const dbVendorIds = new Set(vendors.map((v) => v.id));
 
-    // Mark vendors in DB as "assessing" if they're not_assessed and onboarding is active
-    // Don't mark as assessing if vendor is already assessed (resolved)
     const vendorsWithStatus = vendors.map((vendor) => {
       const metadataStatus = itemStatuses[vendor.id];
-      // If vendor exists in DB but status is not_assessed and onboarding is active, it's being assessed
-      // Only mark as assessing if status is not_assessed (not assessed)
       if (vendor.status === 'not_assessed' && isActive && onboardingRunId && !metadataStatus) {
         return { ...vendor, isAssessing: true };
       }
@@ -185,269 +251,370 @@ export function VendorsTable({
 
     const pendingVendors: VendorRow[] = itemsInfo
       .filter((item) => {
-        // Only show items that are pending/processing and not yet in DB
-        const status = itemStatuses[item.id];
+        const itemStatus = itemStatuses[item.id];
         return (
-          (status === 'pending' || status === 'processing') &&
+          (itemStatus === 'pending' || itemStatus === 'processing') &&
           !dbVendorIds.has(item.id) &&
           !item.id.startsWith('temp_')
         );
       })
-      .map((item) => {
-        // Create a placeholder vendor row for pending items
-        const status = itemStatuses[item.id];
-        return {
-          id: item.id,
-          name: item.name,
-          description: 'Being researched and created by AI...',
-          category: 'other' as const,
-          status: 'not_assessed' as const,
-          inherentProbability: 'very_unlikely' as const,
-          inherentImpact: 'insignificant' as const,
-          residualProbability: 'very_unlikely' as const,
-          residualImpact: 'insignificant' as const,
-          website: null,
-          organizationId: orgId,
-          assigneeId: null,
-          assignee: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isPending: true,
-        } as VendorRow;
-      });
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: 'Being researched and created by AI...',
+        category: 'other' as const,
+        status: 'not_assessed' as const,
+        inherentProbability: 'very_unlikely' as const,
+        inherentImpact: 'insignificant' as const,
+        residualProbability: 'very_unlikely' as const,
+        residualImpact: 'insignificant' as const,
+        website: null,
+        organizationId: orgId,
+        assigneeId: null,
+        assignee: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPending: true,
+      }));
 
-    // Also handle temp IDs (vendors being created)
     const tempVendors: VendorRow[] = itemsInfo
       .filter((item) => item.id.startsWith('temp_'))
-      .map((item) => {
-        const status = itemStatuses[item.id];
-        return {
-          id: item.id,
-          name: item.name,
-          description: 'Being researched and created by AI...',
-          category: 'other' as const,
-          status: 'not_assessed' as const,
-          inherentProbability: 'very_unlikely' as const,
-          inherentImpact: 'insignificant' as const,
-          residualProbability: 'very_unlikely' as const,
-          residualImpact: 'insignificant' as const,
-          website: null,
-          organizationId: orgId,
-          assigneeId: null,
-          assignee: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isPending: true,
-        } as VendorRow;
-      });
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: 'Being researched and created by AI...',
+        category: 'other' as const,
+        status: 'not_assessed' as const,
+        inherentProbability: 'very_unlikely' as const,
+        inherentImpact: 'insignificant' as const,
+        residualProbability: 'very_unlikely' as const,
+        residualImpact: 'insignificant' as const,
+        website: null,
+        organizationId: orgId,
+        assigneeId: null,
+        assignee: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPending: true,
+      }));
 
     return [...vendorsWithStatus, ...pendingVendors, ...tempVendors];
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
-  const dedupedVendors = useMemo<VendorRow[]>(() => {
-    // SAFE deduplication strategy:
-    // 1. Show ALL real DB vendors (no deduplication) - user data must not be hidden
-    // 2. Hide placeholders if a real vendor with same normalized name exists
-    // 3. Deduplicate placeholders against each other (show only one per name)
+  // Client-side filtering and sorting
+  const filteredAndSortedVendors = useMemo(() => {
+    let result = [...mergedVendors];
 
-    // Normalize vendor name for deduplication - strips parenthetical suffixes
-    const normalizeVendorName = (name: string): string => {
-      return name
-        .toLowerCase()
-        .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parenthetical suffixes
-        .trim();
-    };
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((vendor) => vendor.name.toLowerCase().includes(query));
+    }
 
-    // Separate real DB vendors from placeholders
-    const realVendors = mergedVendors.filter((v) => !v.isPending);
-    const placeholders = mergedVendors.filter((v) => v.isPending);
+    // Sort
+    result.sort((a, b) => {
+      const aValue = sort.id === 'name' ? a.name : a.updatedAt;
+      const bValue = sort.id === 'name' ? b.name : b.updatedAt;
 
-    // Build a set of normalized names from real vendors
-    const realVendorNames = new Set(realVendors.map((v) => normalizeVendorName(v.name)));
-
-    // Deduplicate placeholders: keep only one per name, and only if no real vendor exists
-    const placeholderMap = new Map<string, VendorRow>();
-    placeholders.forEach((placeholder) => {
-      const nameKey = normalizeVendorName(placeholder.name);
-
-      // Skip if a real vendor with this name already exists
-      if (realVendorNames.has(nameKey)) {
-        return;
+      if (sort.id === 'name') {
+        const comparison = (aValue as string).localeCompare(bValue as string);
+        return sort.desc ? -comparison : comparison;
       }
-
-      // Keep the first placeholder for each name (or replace if needed)
-      const existing = placeholderMap.get(nameKey);
-      if (!existing) {
-        placeholderMap.set(nameKey, placeholder);
-      }
-      // If multiple placeholders with same name, keep the first one (no ranking needed)
+      const comparison =
+        new Date(aValue as Date).getTime() - new Date(bValue as Date).getTime();
+      return sort.desc ? -comparison : comparison;
     });
 
-    // Return all real vendors + deduplicated placeholders
-    return [...realVendors, ...Array.from(placeholderMap.values())];
-  }, [mergedVendors]);
+    return result;
+  }, [mergedVendors, searchQuery, sort]);
 
-  const columns = useMemo<ColumnDef<VendorRow>[]>(() => getColumns(orgId), [orgId]);
-
-  const { table } = useDataTable({
-    data: dedupedVendors,
-    columns,
-    pageCount,
-    getRowId: (row) => row.id,
-    initialState: {
-      pagination: {
-        pageSize: 50,
-        pageIndex: 0,
-      },
-      sorting: [{ id: 'name', desc: false }],
-      columnPinning: { right: ['delete-vendor'] },
-    },
-    shallow: false,
-    clearOnDefault: true,
-  });
-
-  const getRowProps = useMemo(
-    () => (vendor: VendorRow) => {
-      const status = itemStatuses[vendor.id] || (vendor.isPending ? 'pending' : undefined);
-      const isAssessing = vendor.isAssessing || status === 'assessing';
-      const isBlocked =
-        (status &&
-          ACTIVE_STATUSES.includes(status as 'pending' | 'processing' | 'created' | 'assessing')) ||
-        isAssessing;
-
-      if (!isBlocked) {
-        return {};
-      }
-
-      return {
-        disabled: true,
-        className:
-          'relative bg-muted/40 opacity-70 pointer-events-none after:absolute after:inset-0 after:bg-background/40 after:content-[""] after:animate-pulse',
-      };
-    },
-    [itemStatuses],
-  );
-
-  // Calculate actual assessment progress (using deduplicated counts to match the table)
+  // Calculate assessment progress
   const assessmentProgress = useMemo(() => {
     if (!progress || !itemsInfo.length) {
       return null;
     }
 
-    // Normalize vendor name for deduplication (same as dedupedVendors)
-    const normalizeVendorName = (name: string): string => {
-      return name
-        .toLowerCase()
-        .replace(/\s*\([^)]*\)\s*$/, '')
-        .trim();
-    };
-
-    // Build a map of unique vendor names with their best status
-    // This mirrors the deduplication logic used for the table
-    const uniqueVendorStatuses = new Map<string, { isCompleted: boolean }>();
-
-    // First, add all vendors from metadata
-    itemsInfo.forEach((item) => {
-      const nameKey = normalizeVendorName(item.name);
-      const metadataStatus = itemStatuses[item.id];
-      const isCompleted = metadataStatus === 'completed';
-      
-      const existing = uniqueVendorStatuses.get(nameKey);
-      if (!existing || (isCompleted && !existing.isCompleted)) {
-        uniqueVendorStatuses.set(nameKey, { isCompleted });
-      }
-    });
-
-    // Then, update with DB vendor statuses (which may be more accurate)
-    vendors.forEach((vendor) => {
-      const nameKey = normalizeVendorName(vendor.name);
+    const completedCount = vendors.filter((vendor) => {
       const metadataStatus = itemStatuses[vendor.id];
-      const isCompleted = metadataStatus === 'completed' || vendor.status === 'assessed';
-      
-      const existing = uniqueVendorStatuses.get(nameKey);
-      if (!existing || (isCompleted && !existing.isCompleted)) {
-        uniqueVendorStatuses.set(nameKey, { isCompleted });
-      }
-    });
+      return metadataStatus === 'completed' || vendor.status === 'assessed';
+    }).length;
 
-    const total = uniqueVendorStatuses.size;
-    const completed = Array.from(uniqueVendorStatuses.values()).filter((v) => v.isCompleted).length;
+    const completedInMetadata = Object.values(itemStatuses).filter(
+      (s) => s === 'completed',
+    ).length;
+
+    const total = Math.max(progress.total, itemsInfo.length, vendors.length);
+    const completed = Math.max(completedCount, completedInMetadata);
 
     return { total, completed };
   }, [progress, itemsInfo, vendors, itemStatuses]);
 
-  const isEmpty = dedupedVendors.length === 0;
-  // Show empty state if onboarding is active (even if progress metadata isn't set yet)
+  const isRowBlocked = (vendor: VendorRow) => {
+    const vendorStatus = itemStatuses[vendor.id] || (vendor.isPending ? 'pending' : undefined);
+    const isAssessing = vendor.isAssessing || vendorStatus === 'assessing';
+    return (
+      (vendorStatus &&
+        ACTIVE_STATUSES.includes(
+          vendorStatus as 'pending' | 'processing' | 'created' | 'assessing',
+        )) ||
+      isAssessing
+    );
+  };
+
+  const handleRowClick = (vendorId: string) => {
+    router.push(`/${orgId}/vendors/${vendorId}`);
+  };
+
+  const handleSort = (columnId: 'name' | 'updatedAt') => {
+    if (sort.id === columnId) {
+      setSort({ id: columnId, desc: !sort.desc });
+    } else {
+      setSort({ id: columnId, desc: false });
+    }
+  };
+
+  const getSortIcon = (columnId: 'name' | 'updatedAt') => {
+    if (sort.id !== columnId) {
+      return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
+    }
+    return sort.desc ? (
+      <ArrowDown className="ml-1 h-3 w-3" />
+    ) : (
+      <ArrowUp className="ml-1 h-3 w-3" />
+    );
+  };
+
+  const handleDeleteClick = (vendor: VendorRow) => {
+    setVendorToDelete(vendor);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!vendorToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteVendor({ vendorId: vendorToDelete.id });
+      if (result?.data?.success) {
+        toast.success('Vendor deleted successfully');
+        setDeleteDialogOpen(false);
+        setVendorToDelete(null);
+      } else {
+        const errorMsg =
+          typeof result?.data?.error === 'string'
+            ? result.data.error
+            : 'Failed to delete vendor';
+        toast.error(errorMsg);
+      }
+    } catch {
+      toast.error('Failed to delete vendor');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isEmpty = mergedVendors.length === 0;
   const showEmptyState = isEmpty && onboardingRunId && isActive;
+  const emptyTitle = searchQuery ? 'No vendors found' : 'No vendors yet';
+  const emptyDescription = searchQuery
+    ? 'Try adjusting your search.'
+    : 'Create your first vendor to get started.';
 
-  // Prevent flicker: if we're loading onboarding status and have a runId, render null
-  // Once we know the status, show animation if empty and active, otherwise show table
-  if (onboardingRunId && isLoading) {
-    return null;
-  }
-
-  // Show loading animation instead of table when empty and onboarding is active
   if (showEmptyState) {
     return (
-      <>
-        <OnboardingLoadingAnimation
-          itemType="vendors"
-          title="AI is working on your vendors"
-          description="Our AI is analyzing your organization and creating vendor assessments. This may take a few moments."
-        />
-        <CreateVendorSheet assignees={assignees} organizationId={orgId} />
-      </>
+      <OnboardingLoadingAnimation
+        itemType="vendors"
+        title="AI is working on your vendors"
+        description="Our AI is analyzing your organization and creating vendor assessments. This may take a few moments."
+      />
     );
   }
 
   return (
-    <>
-      <VendorOnboardingProvider statuses={itemStatuses}>
-        <DataTable
-          table={table}
-          getRowId={(row) => row.id}
-          rowClickBasePath={`/${orgId}/vendors`}
-          getRowProps={getRowProps}
-        >
-          <>
-            <DataTableToolbar table={table} sheet="createVendorSheet" action="Add Vendor" />
-            {isActive && !allVendorsDoneAssessing && (
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-primary">
-                    {assessmentProgress
-                      ? assessmentProgress.completed === 0
-                        ? 'Researching and creating vendors'
-                        : assessmentProgress.completed < assessmentProgress.total
-                          ? 'Assessing vendors and generating risk assessments'
-                          : 'Assessing vendors and generating risk assessments'
-                      : progress
-                        ? progress.completed === 0
-                          ? 'Researching and creating vendors'
-                          : 'Assessing vendors and generating risk assessments'
-                        : 'Researching and creating vendors'}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {assessmentProgress
-                      ? assessmentProgress.completed === 0
-                        ? 'AI is analyzing your organization...'
-                        : `${assessmentProgress.completed}/${assessmentProgress.total} vendors assessed`
-                      : progress
-                        ? progress.completed === 0
-                          ? 'AI is analyzing your organization...'
-                          : `${progress.completed}/${progress.total} vendors created`
-                        : 'AI is analyzing your organization...'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </>
-        </DataTable>
-      </VendorOnboardingProvider>
-      <CreateVendorSheet assignees={assignees} organizationId={orgId} />
-    </>
+    <VendorOnboardingProvider statuses={itemStatuses}>
+      <Stack gap="4">
+        {/* Search Bar */}
+        <div className="w-full md:max-w-[300px]">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search vendors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </InputGroup>
+        </div>
+
+        {/* Onboarding Progress Banner */}
+        {isActive && !allVendorsDoneAssessing && (
+          <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-primary">
+                {assessmentProgress
+                  ? assessmentProgress.completed === 0
+                    ? 'Researching and creating vendors'
+                    : 'Assessing vendors and generating risk assessments'
+                  : progress
+                    ? progress.completed === 0
+                      ? 'Researching and creating vendors'
+                      : 'Assessing vendors and generating risk assessments'
+                    : 'Researching and creating vendors'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {assessmentProgress
+                  ? assessmentProgress.completed === 0
+                    ? 'AI is analyzing your organization...'
+                    : `${assessmentProgress.completed}/${assessmentProgress.total} vendors assessed`
+                  : progress
+                    ? progress.completed === 0
+                      ? 'AI is analyzing your organization...'
+                      : `${progress.completed}/${progress.total} vendors created`
+                    : 'AI is analyzing your organization...'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Table */}
+        {isEmpty ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>{emptyTitle}</EmptyTitle>
+              <EmptyDescription>{emptyDescription}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <Table variant="bordered">
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('name')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    NAME
+                    {getSortIcon('name')}
+                  </button>
+                </TableHead>
+                <TableHead>STATUS</TableHead>
+                <TableHead>CATEGORY</TableHead>
+                <TableHead>OWNER</TableHead>
+                <TableHead>ACTIONS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAndSortedVendors.map((vendor) => {
+                const blocked = isRowBlocked(vendor);
+                return (
+                  <TableRow
+                    key={vendor.id}
+                    onClick={() => !blocked && handleRowClick(vendor.id)}
+                    style={{ cursor: blocked ? 'default' : 'pointer' }}
+                    data-state={blocked ? 'disabled' : undefined}
+                  >
+                    <TableCell>
+                      <VendorNameCell vendor={vendor} orgId={orgId} />
+                    </TableCell>
+                    <TableCell>
+                      <VendorStatusCell vendor={vendor} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {CATEGORY_MAP[vendor.category] || vendor.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {vendor.assignee ? (
+                        <HStack gap="2" align="center">
+                          <Avatar size="sm">
+                            <AvatarImage
+                              src={vendor.assignee.user?.image || undefined}
+                              alt={vendor.assignee.user?.name || ''}
+                            />
+                            <AvatarFallback>
+                              {vendor.assignee.user?.name?.charAt(0) ||
+                                vendor.assignee.user?.email?.charAt(0).toUpperCase() ||
+                                '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <Text size="sm">
+                            {vendor.assignee.user?.name || vendor.assignee.user?.email || 'Unknown'}
+                          </Text>
+                        </HStack>
+                      ) : (
+                        <HStack gap="2" align="center">
+                          <div className="bg-muted flex h-6 w-6 items-center justify-center rounded-full">
+                            <UserIcon className="text-muted-foreground h-3 w-3" />
+                          </div>
+                          <Text size="sm" variant="muted">
+                            None
+                          </Text>
+                        </HStack>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            variant="ellipsis"
+                            disabled={blocked}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <OverflowMenuVertical />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRowClick(vendor.id)}>
+                              <View size={16} />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(vendor)}
+                            >
+                              <TrashCan size={16} />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{vendorToDelete?.name}"? This action cannot be
+                undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </Stack>
+    </VendorOnboardingProvider>
   );
 }

@@ -41,9 +41,7 @@ export default async function UserSettings() {
       taskAssignments: false,
     };
     return (
-      <div className="space-y-4">
-        <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
-      </div>
+      <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
     );
   }
 
@@ -53,9 +51,7 @@ export default async function UserSettings() {
       : DEFAULT_PREFERENCES;
 
   return (
-    <div className="space-y-4">
-      <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
-    </div>
+    <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
   );
 }
 

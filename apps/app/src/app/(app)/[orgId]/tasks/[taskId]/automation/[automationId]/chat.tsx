@@ -3,18 +3,23 @@
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputProvider,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  PromptInputTools,
-  usePromptInputController,
-} from '@comp/ui';
+  Heading,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupTextarea,
+} from '@trycompai/design-system';
+import { CornerDownLeft } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Conversation,
   ConversationContent,
@@ -41,37 +46,74 @@ interface Props {
   isLoadingSuggestions?: boolean;
 }
 
+// Simple text input context for sharing state
+interface TextInputContext {
+  value: string;
+  setInput: (v: string) => void;
+}
+
 function ChatInput({
   validateAndSubmitMessage,
   status,
+  textInput,
 }: {
   validateAndSubmitMessage: (text: string) => void;
   status: string;
+  textInput: TextInputContext;
 }) {
-  const { textInput } = usePromptInputController();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isDisabled = status === 'streaming' || status === 'submitted';
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!textInput.value.trim() || isDisabled) return;
+    validateAndSubmitMessage(textInput.value);
+    textInput.setInput('');
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      if (!textInput.value.trim() || isDisabled) return;
+      validateAndSubmitMessage(textInput.value);
+      textInput.setInput('');
+    }
+  };
+
+  const isMac =
+    typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
   return (
     <div className="py-6 px-4">
-      <PromptInput
-        onSubmit={async ({ text }) => {
-          validateAndSubmitMessage(text);
-        }}
-      >
-        <PromptInputBody>
-          <PromptInputTextarea
+      <form onSubmit={handleSubmit}>
+        <InputGroup>
+          <InputGroupTextarea
+            ref={textareaRef}
             placeholder="Ask me to create an automation..."
-            disabled={status === 'streaming' || status === 'submitted'}
-            className="min-h-[80px] max-h-[400px]"
+            disabled={isDisabled}
+            value={textInput.value}
+            onChange={(e) => textInput.setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={3}
           />
-        </PromptInputBody>
-        <PromptInputFooter>
-          <PromptInputTools />
-          <PromptInputSubmit
-            status={status === 'streaming' || status === 'submitted' ? 'submitted' : undefined}
-            disabled={!textInput.value.trim() || status === 'streaming' || status === 'submitted'}
-          />
-        </PromptInputFooter>
-      </PromptInput>
+          <InputGroupAddon align="block-end">
+            <div className="flex w-full items-center justify-end">
+              <InputGroupButton
+                type="submit"
+                variant="default"
+                size="sm"
+                disabled={!textInput.value.trim() || isDisabled}
+              >
+                <span className="flex items-center gap-1 text-xs">
+                  {isMac ? '⌘' : 'Ctrl'}
+                  <span className="text-[10px]">+</span>
+                  <CornerDownLeft className="size-3.5" />
+                </span>
+              </InputGroupButton>
+            </div>
+          </InputGroupAddon>
+        </InputGroup>
+      </form>
     </div>
   );
 }
@@ -87,6 +129,7 @@ function ChatContent({
   status,
   suggestions,
   isLoadingSuggestions,
+  textInput,
 }: {
   hasMessages: boolean;
   scriptUrl?: string;
@@ -98,9 +141,8 @@ function ChatContent({
   status: string;
   suggestions?: { title: string; prompt: string; vendorName?: string; vendorWebsite?: string }[];
   isLoadingSuggestions?: boolean;
+  textInput: TextInputContext;
 }) {
-  const { textInput } = usePromptInputController();
-
   const handleExampleClick = useCallback(
     (prompt: string) => {
       textInput.setInput(prompt);
@@ -110,14 +152,27 @@ function ChatContent({
 
   if (!hasMessages) {
     return (
-      <div className={cn('flex flex-col w-full h-full px-58 z-20', scriptUrl && 'px-8 pb-4')}>
-        <EmptyState
-          onExampleClick={handleExampleClick}
-          status={status}
-          onSubmit={() => validateAndSubmitMessage(textInput.value)}
-          suggestions={suggestions}
-          isLoadingSuggestions={isLoadingSuggestions}
-        />
+      <div className={cn('flex flex-col w-full h-full z-20', scriptUrl && 'px-8 pb-4')}>
+        <div className="flex-1 min-h-0 overflow-y-auto h-full z-20">
+          <div className="w-full h-full flex flex-col items-center py-48 px-4">
+            <div className="w-full max-w-3xl text-center space-y-8 mb-16">
+              <Heading as="h2" level="2">
+                What evidence do you want to collect?
+              </Heading>
+              <ChatInput
+                validateAndSubmitMessage={validateAndSubmitMessage}
+                status={status}
+                textInput={textInput}
+              />
+            </div>
+
+            <EmptyState
+              onExampleClick={handleExampleClick}
+              suggestions={suggestions}
+              isLoadingSuggestions={isLoadingSuggestions}
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -139,7 +194,11 @@ function ChatContent({
         <ConversationScrollButton />
       </Conversation>
 
-      <ChatInput validateAndSubmitMessage={validateAndSubmitMessage} status={status} />
+      <ChatInput
+        validateAndSubmitMessage={validateAndSubmitMessage}
+        status={status}
+        textInput={textInput}
+      />
     </div>
   );
 }
@@ -162,6 +221,13 @@ export function Chat({
   const { setChatStatus, scriptUrl } = useTaskAutomationStore();
   const { automation } = useTaskAutomation();
 
+  // Local text input state
+  const [inputValue, setInputValue] = useState(initialPrompt);
+  const textInput: TextInputContext = {
+    value: inputValue,
+    setInput: setInputValue,
+  };
+
   // Update shared ref when automation is loaded from hook
   if (automation?.id && automationIdRef.current === 'new') {
     automationIdRef.current = automation.id;
@@ -173,7 +239,7 @@ export function Chat({
 
   const { validateAndSubmitMessage, handleSecretAdded, handleInfoProvided } = useChatHandlers({
     sendMessage,
-    setInput: () => {}, // Not needed with PromptInputProvider
+    setInput: setInputValue,
     orgId,
     taskId,
     automationId: automationIdRef.current,
@@ -189,8 +255,10 @@ export function Chat({
 
   return (
     <div
-      className={cn(className, 'selection:bg-primary selection:text-white relative')}
-      style={{ height: 'calc(100vh - 6em)' }}
+      className={cn(
+        className,
+        'selection:bg-primary selection:text-white relative flex h-full min-h-0 flex-col',
+      )}
     >
       <Image
         src="/automation-bg.svg"
@@ -214,7 +282,7 @@ export function Chat({
       </PanelHeader>
 
       {/* Messages Area */}
-      <PromptInputProvider initialInput={initialPrompt}>
+      <div className="flex-1 min-h-0">
         <ChatContent
           hasMessages={hasMessages}
           scriptUrl={scriptUrl}
@@ -226,8 +294,9 @@ export function Chat({
           status={status}
           suggestions={suggestions}
           isLoadingSuggestions={isLoadingSuggestions}
+          textInput={textInput}
         />
-      </PromptInputProvider>
+      </div>
     </div>
   );
 }

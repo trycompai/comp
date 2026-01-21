@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { PlatformIntegrations } from './components/PlatformIntegrations';
 
 export default async function IntegrationsPage() {
@@ -15,20 +16,11 @@ export default async function IntegrationsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 py-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-baseline gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
-          <span className="text-2xl text-muted-foreground/40 font-light">∞</span>
-        </div>
-        <p className="text-muted-foreground text-base leading-relaxed">
-          Connect your tools to automate compliance checks and evidence collection.
-        </p>
-      </div>
-
-      {/* Unified Integrations List */}
-      <PlatformIntegrations taskTemplates={taskTemplates} />
-    </div>
+    <PageLayout>
+      <Stack gap="md">
+        <PageHeader title="Integrations" />
+        <PlatformIntegrations taskTemplates={taskTemplates} />
+      </Stack>
+    </PageLayout>
   );
 }

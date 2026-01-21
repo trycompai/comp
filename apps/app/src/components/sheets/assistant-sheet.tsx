@@ -4,7 +4,7 @@ import { useMediaQuery } from '@comp/ui/hooks';
 import { Sheet, SheetContent } from '@comp/ui/sheet';
 
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
-import '@comp/ui/editor.css';
+import '@/styles/editor.css';
 import { useQueryState } from 'nuqs';
 import Chat from '../ai/chat';
 

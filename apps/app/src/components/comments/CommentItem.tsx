@@ -2,32 +2,29 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { Button } from '@comp/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { CommentRichTextField } from './CommentRichTextField';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { JSONContent } from '@tiptap/react';
-import { useMemo } from 'react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@comp/ui/tooltip';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@trycompai/design-system';
 import {
   AlertTriangle,
   FileIcon,
@@ -38,11 +35,12 @@ import {
   Trash2,
 } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils';
-import type { CommentWithAuthor } from './Comments';
 import { CommentContentView } from './CommentContentView';
+import { CommentRichTextField } from './CommentRichTextField';
+import type { CommentWithAuthor } from './Comments';
 
 // Helper function to generate gravatar URL
 function getGravatarUrl(email: string | null | undefined, size = 64): string {
@@ -217,14 +215,12 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
     <>
       <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card hover:shadow-sm transition-all group">
         <div className="relative">
-          <Avatar className="h-8 w-8 border border-border">
+          <Avatar>
             <AvatarImage
               src={comment.author.image || getGravatarUrl(comment.author.email)}
               alt={comment.author.name ?? 'User'}
             />
-            <AvatarFallback className="text-xs bg-muted">
-              {comment.author.name?.charAt(0).toUpperCase() ?? '?'}
-            </AvatarFallback>
+            <AvatarFallback>{comment.author.name?.charAt(0).toUpperCase() ?? '?'}</AvatarFallback>
           </Avatar>
           {comment.author.deactivated && (
             <TooltipProvider>
@@ -352,24 +348,26 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
         </div>
       </div>
       {/* Delete confirmation dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Delete Comment</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete this comment? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteComment} disabled={isDeleting}>
-              {isDeleting ? 'Deleting…' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteComment}
+              loading={isDeleting}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

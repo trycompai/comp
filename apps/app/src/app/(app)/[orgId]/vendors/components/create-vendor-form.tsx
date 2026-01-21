@@ -12,8 +12,7 @@ import { type Member, type User, type Vendor, VendorCategory, VendorStatus } fro
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
@@ -24,14 +23,14 @@ import { createVendorSchema, type CreateVendorFormValues } from './create-vendor
 export function CreateVendorForm({
   assignees,
   organizationId,
+  onSuccess,
 }: {
   assignees: (Member & { user: User })[];
   organizationId: string;
+  onSuccess?: () => void;
 }) {
   const { mutate } = useSWRConfig();
-  const [createVendorSheet, setCreateVendorSheet] = useQueryState('createVendorSheet');
 
-  const isMountedRef = useRef(false);
   const pendingWebsiteRef = useRef<string | null>(null);
 
   const createVendor = useAction(createVendorAction, {
@@ -66,10 +65,8 @@ export function CreateVendorForm({
       // Show success toast
       toast.success('Vendor created successfully');
       
-      // Close sheet last - use setTimeout to ensure it happens after all state updates
-      setTimeout(() => {
-        setCreateVendorSheet(null);
-      }, 0);
+      // Close sheet
+      onSuccess?.();
     },
     onError: (error) => {
       // Handle thrown errors (shouldn't happen with our try-catch, but keep as fallback)
@@ -93,25 +90,6 @@ export function CreateVendorForm({
     mode: 'onChange',
   });
 
-  // Reset form state when sheet closes
-  useEffect(() => {
-    const isOpen = Boolean(createVendorSheet);
-    
-    if (!isOpen && isMountedRef.current) {
-      // Sheet was closed - reset all state
-      form.reset({
-        name: '',
-        website: '',
-        description: '',
-        category: VendorCategory.cloud,
-        status: VendorStatus.not_assessed,
-      });
-    } else if (isOpen) {
-      // Sheet opened - mark as mounted
-      isMountedRef.current = true;
-    }
-  }, [createVendorSheet, form]);
-
   const onSubmit = async (data: CreateVendorFormValues) => {
     // Prevent double-submits (also disabled via button state)
     if (createVendor.status === 'executing') return;
@@ -126,7 +104,7 @@ export function CreateVendorForm({
         {/* p-1 prevents focus ring (box-shadow) being clipped by overflow containers */}
         <div className="scrollbar-hide h-[calc(100vh-250px)] overflow-auto p-1">
           <div className="space-y-4">
-            <VendorNameAutocompleteField form={form} isSheetOpen={Boolean(createVendorSheet)} />
+            <VendorNameAutocompleteField form={form} />
             <FormField
               control={form.control}
               name="website"
