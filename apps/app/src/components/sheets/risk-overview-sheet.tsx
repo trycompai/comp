@@ -1,57 +1,61 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import type { Risk } from '@db';
-import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/design-system';
+import { useCallback } from 'react';
 
 import { UpdateRiskForm } from '../forms/risks/update-risk-form';
 
-export function RiskOverviewSheet({ risk }: { risk: Risk }) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('risk-overview-sheet');
-  const isOpen = Boolean(open);
+interface RiskOverviewSheetProps {
+  risk: Risk;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
-  const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
-  };
+export function RiskOverviewSheet({ risk, open, onOpenChange }: RiskOverviewSheetProps) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
+  const handleSuccess = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   if (isDesktop) {
     return (
-      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent stack>
-          <SheetHeader className="mb-8">
-            <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{'Update Risk'}</SheetTitle>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="m-0 size-auto p-0 hover:bg-transparent"
-                onClick={() => setOpen(null)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>{' '}
-            <SheetDescription>{'Update risk details and metadata'}</SheetDescription>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Update Risk</SheetTitle>
+            <SheetDescription>Update risk details and metadata</SheetDescription>
           </SheetHeader>
-
-          <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
-            <UpdateRiskForm risk={risk} />
-          </ScrollArea>
+          <SheetBody>
+            <UpdateRiskForm risk={risk} onSuccess={handleSuccess} />
+          </SheetBody>
         </SheetContent>
       </Sheet>
     );
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Update Risk'}</DrawerTitle>
-      <DrawerContent className="p-6">
-        <UpdateRiskForm risk={risk} />
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Update Risk</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">
+          <UpdateRiskForm risk={risk} onSuccess={handleSuccess} />
+        </div>
       </DrawerContent>
     </Drawer>
   );

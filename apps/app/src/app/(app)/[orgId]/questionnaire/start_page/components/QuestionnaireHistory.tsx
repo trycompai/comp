@@ -1,5 +1,9 @@
 'use client';
 
+import { Badge } from '@comp/ui/badge';
+import { Button } from '@comp/ui/button';
+import { Card } from '@comp/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,14 +13,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Card } from '@comp/ui';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@trycompai/design-system';
+import { Close, Search } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
-import { Building2, CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Filter, Globe2, Loader2, Search, Trash2, X } from 'lucide-react';
+import { Building2, CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Filter, Globe2, Loader2, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -91,21 +94,24 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
       <div ref={filterSectionRef} className="flex items-center justify-between gap-4 flex-wrap">
         {/* Search Input */}
         <div className="relative w-[280px] animate-in fade-in duration-500 ease-out">
-          <Input
-            placeholder="Search by filename..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-9"
-            leftIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-          />
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search by filename..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </InputGroup>
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm p-0.5 transition-all animate-in fade-in duration-300 ease-out"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               type="button"
               aria-label="Clear search"
             >
-              <X className="h-3.5 w-3.5" />
+              <Close size={14} />
             </button>
           )}
         </div>
@@ -408,7 +414,7 @@ function QuestionnaireHistoryItem({
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Questionnaire</AlertDialogTitle>
             <AlertDialogDescription>
@@ -421,16 +427,10 @@ function QuestionnaireHistoryItem({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
+              loading={isDeleting}
             >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete'
-              )}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

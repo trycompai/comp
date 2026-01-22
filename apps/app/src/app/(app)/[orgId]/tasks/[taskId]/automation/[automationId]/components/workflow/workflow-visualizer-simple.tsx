@@ -325,7 +325,7 @@ Please fix the automation script to resolve this error.`;
         </div>
       </PanelHeader>
 
-      <div className="flex-1 overflow-auto bg-secondary">
+      <div className="flex-1 overflow-auto bg-background">
         {/* Show Test Results Panel INSTEAD of regular content when testing/results available */}
         {isExecuting || testResult ? (
           <TestResultsPanel

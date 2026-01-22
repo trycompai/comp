@@ -32,7 +32,6 @@ import {
 import { Calendar } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { SubmitApprovalDialog } from './SubmitApprovalDialog';
@@ -43,12 +42,14 @@ interface UpdatePolicyOverviewProps {
   };
   assignees: (Member & { user: User })[];
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }
 
 export function UpdatePolicyOverview({
   policy,
   assignees,
   isPendingApproval,
+  onMutate,
 }: UpdatePolicyOverviewProps) {
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [isStatusChangeDialogOpen, setIsStatusChangeDialogOpen] = useState(false);
@@ -66,7 +67,6 @@ export function UpdatePolicyOverview({
     };
   } | null>(null);
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
-  const router = useRouter();
 
   const [selectedStatus, setSelectedStatus] = useState<PolicyStatus>(policy.status);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(policy.assigneeId);
@@ -86,7 +86,7 @@ export function UpdatePolicyOverview({
       toast.success('Policy updated successfully');
       setIsSubmitting(false);
       setFormInteracted(false);
-      router.refresh();
+      onMutate?.();
     },
     onError: () => {
       toast.error('Failed to update policy');
@@ -101,7 +101,7 @@ export function UpdatePolicyOverview({
       setIsApprovalDialogOpen(false);
       setFormInteracted(false);
       setSelectedStatus('needs_review');
-      router.refresh();
+      onMutate?.();
     },
     onError: () => {
       toast.error('Failed to submit policy for approval.');

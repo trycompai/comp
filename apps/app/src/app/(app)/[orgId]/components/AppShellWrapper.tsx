@@ -6,7 +6,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { updateSidebarState } from '@/actions/sidebar';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
-import { signOut } from '@/utils/auth-client';
+import { authClient } from '@/utils/auth-client';
 import {
   CertificateCheck,
   Logout,
@@ -83,6 +83,7 @@ function AppShellWrapperContent({
   children,
   organization,
   organizations,
+  logoUrls,
   onboarding,
   isQuestionnaireEnabled,
   isTrustNdaEnabled,
@@ -90,7 +91,7 @@ function AppShellWrapperContent({
   isOnlyAuditor,
   user,
 }: AppShellWrapperContentProps) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -136,11 +137,11 @@ function AppShellWrapperContent({
             <Link href="/">
               <Logo
                 style={{ height: 22, width: 'auto' }}
-                variant={theme === 'dark' ? 'light' : 'dark'}
+                variant={resolvedTheme === 'dark' ? 'light' : 'dark'}
               />
             </Link>
             <span className="pl-3 pr-1 text-muted-foreground">/</span>
-            <OrganizationSwitcher organizations={organizations} organization={organization} />
+            <OrganizationSwitcher organizations={organizations} organization={organization} logoUrls={logoUrls} />
           </HStack>
         }
         centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
@@ -180,12 +181,22 @@ function AppShellWrapperContent({
                   <Text size="sm">Theme</Text>
                   <ThemeToggle
                     size="sm"
-                    isDark={theme === 'dark'}
+                    isDark={resolvedTheme === 'dark'}
                     onChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
                   />
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await authClient.signOut({
+                      fetchOptions: {
+                        onSuccess: () => {
+                          router.push('/auth');
+                        },
+                      },
+                    });
+                  }}
+                >
                   <Logout size={16} />
                   Log out
                 </DropdownMenuItem>

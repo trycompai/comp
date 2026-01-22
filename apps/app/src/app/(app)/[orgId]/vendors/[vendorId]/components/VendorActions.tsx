@@ -2,31 +2,34 @@
 
 import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
 import { useVendor } from '@/hooks/use-vendors';
-import { Button } from '@comp/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Cog } from 'lucide-react';
+} from '@trycompai/design-system';
+import { Edit, OverflowMenuVertical, Renew } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 
-export function VendorActions({ vendorId, orgId }: { vendorId: string; orgId: string }) {
+interface VendorActionsProps {
+  vendorId: string;
+  orgId: string;
+  onOpenEditSheet: () => void;
+}
+
+export function VendorActions({ vendorId, orgId, onOpenEditSheet }: VendorActionsProps) {
   const { mutate: globalMutate } = useSWRConfig();
-  const [_, setOpen] = useQueryState('vendor-overview-sheet');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   // Get SWR mutate function to refresh vendor data after mutations
@@ -62,44 +65,43 @@ export function VendorActions({ vendorId, orgId }: { vendorId: string; orgId: st
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Vendor actions">
-            <Cog className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger variant="ellipsis">
+          <OverflowMenuVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setOpen('true')}>
-            Edit vendor name and description
+          <DropdownMenuItem onClick={onOpenEditSheet}>
+            <Edit size={16} />
+            Edit
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsConfirmOpen(true)}>
-            Regenerate Risk Mitigation
+            <Renew size={16} />
+            Regenerate
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isConfirmOpen} onOpenChange={(open) => !open && setIsConfirmOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Regenerate Mitigation</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate Mitigation</AlertDialogTitle>
+            <AlertDialogDescription>
               This will generate a fresh risk mitigation comment for this vendor and mark it
               assessed. Continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsConfirmOpen(false)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={regenerate.status === 'executing'}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
               disabled={regenerate.status === 'executing'}
             >
-              Cancel
-            </Button>
-            <Button onClick={handleConfirm} disabled={regenerate.status === 'executing'}>
               {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

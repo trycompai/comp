@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
   Empty,
   EmptyDescription,
@@ -38,10 +37,10 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { OverflowMenuVertical, Search, TrashCan, View } from '@trycompai/design-system/icons';
+import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { deleteVendor } from '../actions/deleteVendor';
@@ -150,23 +149,26 @@ export function VendorsTable({
   const [vendorToDelete, setVendorToDelete] = useState<VendorRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Local state for search and sorting
+  // Local state for search, sorting, and pagination
   const [searchQuery, setSearchQuery] = useState('');
   const [sort, setSort] = useState<{ id: 'name' | 'updatedAt'; desc: boolean }>({
     id: 'name',
     desc: false,
   });
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+  const pageSizeOptions = [10, 25, 50, 100];
 
   const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
     onboardingRunId,
     'vendors',
   );
 
-  // Build search params for API - only page, perPage for now
+  // Build search params for API
   const currentSearchParams = useMemo<GetVendorsSchema>(() => {
     return {
-      page: 1,
-      perPage: 50,
+      page,
+      perPage,
       name: '',
       status: null,
       department: null,
@@ -175,7 +177,7 @@ export function VendorsTable({
       filters: [],
       joinOperator: 'and',
     };
-  }, [sort]);
+  }, [page, perPage, sort]);
 
   // Create stable SWR key
   const swrKey = useMemo(() => {
@@ -301,6 +303,11 @@ export function VendorsTable({
     return [...vendorsWithStatus, ...pendingVendors, ...tempVendors];
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
   // Client-side filtering and sorting
   const filteredAndSortedVendors = useMemo(() => {
     let result = [...mergedVendors];
@@ -327,6 +334,18 @@ export function VendorsTable({
 
     return result;
   }, [mergedVendors, searchQuery, sort]);
+
+  // Calculate pageCount from filtered data and paginate
+  const filteredPageCount = Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage));
+  const startIndex = (page - 1) * perPage;
+  const paginatedVendors = filteredAndSortedVendors.slice(startIndex, startIndex + perPage);
+
+  // Keep page in bounds when pageCount changes
+  useEffect(() => {
+    if (page > filteredPageCount) {
+      setPage(filteredPageCount);
+    }
+  }, [page, filteredPageCount]);
 
   // Calculate assessment progress
   const assessmentProgress = useMemo(() => {
@@ -489,7 +508,20 @@ export function VendorsTable({
             </EmptyHeader>
           </Empty>
         ) : (
-          <Table variant="bordered">
+          <Table
+            variant="bordered"
+            pagination={{
+              page,
+              pageCount: filteredPageCount,
+              onPageChange: setPage,
+              pageSize: perPage,
+              pageSizeOptions: pageSizeOptions,
+              onPageSizeChange: (size) => {
+                setPerPage(size);
+                setPage(1);
+              },
+            }}
+          >
             <TableHeader>
               <TableRow>
                 <TableHead>
@@ -509,7 +541,7 @@ export function VendorsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedVendors.map((vendor) => {
+              {paginatedVendors.map((vendor) => {
                 const blocked = isRowBlocked(vendor);
                 return (
                   <TableRow
@@ -569,14 +601,12 @@ export function VendorsTable({
                             <OverflowMenuVertical />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRowClick(vendor.id)}>
-                              <View size={16} />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant="destructive"
-                              onClick={() => handleDeleteClick(vendor)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(vendor);
+                              }}
                             >
                               <TrashCan size={16} />
                               Delete
