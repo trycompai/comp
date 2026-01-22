@@ -29,7 +29,7 @@ interface PolicyAssigneeChartProps {
 const BAR_COLOR = 'var(--primary)';
 
 const STATUS_COLORS = {
-  published: 'var(--success)',
+  published: 'var(--primary)',
   draft: 'var(--warning)',
   needs_review: 'var(--destructive)',
   archived: 'var(--muted-foreground)',
