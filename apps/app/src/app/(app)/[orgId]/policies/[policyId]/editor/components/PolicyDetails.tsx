@@ -91,6 +91,7 @@ interface PolicyContentManagerProps {
   pdfUrl?: string | null;
   /** Whether the AI assistant feature is enabled (behind feature flag) */
   aiAssistantEnabled?: boolean;
+  onMutate?: () => void;
 }
 
 export function PolicyContentManager({
@@ -100,6 +101,7 @@ export function PolicyContentManager({
   displayFormat = 'EDITOR',
   pdfUrl,
   aiAssistantEnabled = false,
+  onMutate,
 }: PolicyContentManagerProps) {
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
@@ -219,14 +221,16 @@ export function PolicyContentManager({
       >
         <Stack gap="md">
           <HStack justify="between" align="center">
-            <TabsList>
-              <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
-                Editor View
-              </TabsTrigger>
-              <TabsTrigger value="PDF" disabled={isPendingApproval}>
-                PDF View
-              </TabsTrigger>
-            </TabsList>
+            <div className="max-w-md">
+              <TabsList>
+                <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
+                  Editor View
+                </TabsTrigger>
+                <TabsTrigger value="PDF" disabled={isPendingApproval}>
+                  PDF View
+                </TabsTrigger>
+              </TabsList>
+            </div>
             {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
               <Button
                 variant={showAiAssistant ? 'default' : 'outline'}
@@ -239,32 +243,37 @@ export function PolicyContentManager({
             )}
           </HStack>
 
-          <Grid
-            cols={showAiAssistant && aiAssistantEnabled ? { base: '1', lg: '2' } : '1'}
-            gap="6"
-            align="start"
+          <div
+            className={
+              showAiAssistant && aiAssistantEnabled
+                ? 'flex flex-col lg:flex-row gap-6'
+                : ''
+            }
           >
-            <Stack gap="sm">
-              <TabsContent value="EDITOR">
-                <PolicyEditorWrapper
-                  key={editorKey}
-                  policyId={policyId}
-                  policyContent={currentContent}
-                  isPendingApproval={isPendingApproval}
-                  onContentChange={setCurrentContent}
-                />
-              </TabsContent>
-              <TabsContent value="PDF">
-                <PdfViewer
-                  policyId={policyId}
-                  pdfUrl={pdfUrl}
-                  isPendingApproval={isPendingApproval}
-                />
-              </TabsContent>
-            </Stack>
+            <div className={showAiAssistant && aiAssistantEnabled ? 'flex-[7] min-w-0' : 'w-full'}>
+              <Stack gap="sm">
+                <TabsContent value="EDITOR">
+                  <PolicyEditorWrapper
+                    key={editorKey}
+                    policyId={policyId}
+                    policyContent={currentContent}
+                    isPendingApproval={isPendingApproval}
+                    onContentChange={setCurrentContent}
+                  />
+                </TabsContent>
+                <TabsContent value="PDF">
+                  <PdfViewer
+                    policyId={policyId}
+                    pdfUrl={pdfUrl}
+                    isPendingApproval={isPendingApproval}
+                    onMutate={onMutate}
+                  />
+                </TabsContent>
+              </Stack>
+            </div>
 
             {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
-              <div className="w-80 shrink-0 self-stretch">
+              <div className="flex-[3] min-w-0 self-stretch">
                 <PolicyAiAssistant
                   messages={messages}
                   status={status}
@@ -275,7 +284,7 @@ export function PolicyContentManager({
                 />
               </div>
             )}
-          </Grid>
+          </div>
         </Stack>
       </Tabs>
 

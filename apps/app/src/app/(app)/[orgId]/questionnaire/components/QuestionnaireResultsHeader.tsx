@@ -9,24 +9,25 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@comp/ui/alert-dialog';
-import { Button } from '@comp/ui/button';
+  Button,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@trycompai/design-system';
+import { Flash, Search } from '@trycompai/design-system/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Input } from '@comp/ui/input';
+import { Button as CompButton } from '@comp/ui/button';
 import {
   ChevronDown,
   Download,
   File,
   FileSpreadsheet,
   FileText as FileTextIcon,
-  Loader2,
-  Search,
-  Zap,
 } from 'lucide-react';
 import type { QuestionAnswer } from './types';
 
@@ -55,12 +56,9 @@ export function QuestionnaireResultsHeader({
   onExit,
   searchQuery,
   onSearchChange,
-  filteredResults,
   totalCount,
   answeredCount,
   progressPercentage,
-  hasClickedAutoAnswer,
-  results,
   isLoading,
   isAutoAnswering,
   isExporting,
@@ -71,7 +69,7 @@ export function QuestionnaireResultsHeader({
     <>
       <div className="flex flex-col gap-4">
         <AlertDialog open={showExitDialog} onOpenChange={onShowExitDialogChange}>
-          <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Exit questionnaire session?</AlertDialogTitle>
               <AlertDialogDescription>
@@ -81,10 +79,7 @@ export function QuestionnaireResultsHeader({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={onExit}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
+              <AlertDialogAction variant="destructive" onClick={onExit}>
                 Exit and Discard
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -124,14 +119,17 @@ export function QuestionnaireResultsHeader({
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <div className="relative max-w-md animate-in fade-in duration-500 ease-out">
-            <Input
-              placeholder="Search questions..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="text-sm w-80"
-              leftIcon={<Search className="h-4 w-4" />}
-            />
+          <div className="w-80">
+            <InputGroup>
+              <InputGroupAddon>
+                <Search size={16} />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search questions..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+            </InputGroup>
           </div>
 
           <div className="flex items-center gap-3">
@@ -141,44 +139,29 @@ export function QuestionnaireResultsHeader({
                 onAutoAnswer();
               }}
               disabled={isAutoAnswering || isLoading}
-              size="default"
+              loading={isAutoAnswering}
+              iconLeft={!isAutoAnswering ? <Flash size={16} /> : undefined}
             >
-              {isAutoAnswering ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <>
-                  <Zap className="size-4" />
-                  Auto-Fill All
-                </>
-              )}
+              Auto-Fill All
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="default" disabled={isExporting} suppressHydrationWarning>
+                <CompButton variant="outline" size="default" disabled={isExporting}>
                   <Download className="size-4" />
                   Export
                   <ChevronDown className="size-4" />
-                </Button>
+                </CompButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" suppressHydrationWarning>
-                <DropdownMenuItem
-                  onClick={() => onExport('xlsx')}
-                  disabled={isExporting}
-                >
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onExport('xlsx')} disabled={isExporting}>
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
                   Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onExport('csv')}
-                  disabled={isExporting}
-                >
+                <DropdownMenuItem onClick={() => onExport('csv')} disabled={isExporting}>
                   <FileTextIcon className="mr-2 h-4 w-4" />
                   CSV
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onExport('pdf')}
-                  disabled={isExporting}
-                >
+                <DropdownMenuItem onClick={() => onExport('pdf')} disabled={isExporting}>
                   <File className="mr-2 h-4 w-4" />
                   PDF
                 </DropdownMenuItem>

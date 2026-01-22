@@ -29,6 +29,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -449,7 +450,9 @@ function CreateContextSheetLocal({
               Provide extra context to Comp AI about your organization.
             </SheetDescription>
           </SheetHeader>
-          <ContextForm onSuccess={() => onOpenChange(false)} />
+          <SheetBody>
+            <ContextForm onSuccess={() => onOpenChange(false)} />
+          </SheetBody>
         </SheetContent>
       </Sheet>
     );

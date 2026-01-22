@@ -8,8 +8,8 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  ScrollArea,
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -41,9 +41,9 @@ export function CreateRiskSheet({ assignees }: { assignees: (Member & { user: Us
             <SheetHeader>
               <SheetTitle>Create New Risk</SheetTitle>
             </SheetHeader>
-            <ScrollArea>
+            <SheetBody>
               <CreateRisk assignees={assignees} onSuccess={handleSuccess} />
-            </ScrollArea>
+            </SheetBody>
           </SheetContent>
         </Sheet>
       </>

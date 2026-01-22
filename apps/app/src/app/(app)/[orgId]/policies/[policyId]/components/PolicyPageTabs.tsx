@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Comments } from '../../../../../../components/comments/Comments';
 import type { AuditLogWithRelations } from '../data';
 import { PolicyContentManager } from '../editor/components/PolicyDetails';
+import { usePolicy } from '../hooks/usePolicy';
 import { PolicyAlerts } from './PolicyAlerts';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
 import { PolicyControlMappings } from './PolicyControlMappings';
@@ -28,11 +29,11 @@ interface PolicyPageTabsProps {
 }
 
 export function PolicyPageTabs({
-  policy,
+  policy: initialPolicy,
   assignees,
   mappedControls,
   allControls,
-  isPendingApproval,
+  isPendingApproval: initialIsPendingApproval,
   policyId,
   organizationId,
   logs,
@@ -41,6 +42,16 @@ export function PolicyPageTabs({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Use SWR for policy data with initial data from server
+  const { policy, mutate } = usePolicy({
+    policyId,
+    organizationId,
+    initialData: initialPolicy,
+  });
+
+  // Derive isPendingApproval from current policy data
+  const isPendingApproval = policy ? !!policy.approverId : initialIsPendingApproval;
 
   const isDeleteDialogOpen = searchParams.get('delete-policy') === 'true';
 
@@ -54,7 +65,7 @@ export function PolicyPageTabs({
   return (
     <Stack gap="md">
       {/* Alerts always visible above tabs */}
-      <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} />
+      <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} onMutate={mutate} />
 
       <Tabs defaultValue="overview">
         <Stack gap="lg">
@@ -71,6 +82,7 @@ export function PolicyPageTabs({
                 policy={policy}
                 assignees={assignees}
                 isPendingApproval={isPendingApproval}
+                onMutate={mutate}
               />
               <PolicyControlMappings
                 mappedControls={mappedControls}
@@ -88,6 +100,7 @@ export function PolicyPageTabs({
               displayFormat={policy?.displayFormat}
               pdfUrl={policy?.pdfUrl}
               aiAssistantEnabled={showAiAssistant}
+              onMutate={mutate}
             />
           </TabsContent>
 
@@ -105,7 +118,7 @@ export function PolicyPageTabs({
       {policy && (
         <>
           <PolicyOverviewSheet policy={policy} />
-          <PolicyArchiveSheet policy={policy} />
+          <PolicyArchiveSheet policy={policy} onMutate={() => mutate()} />
           <PolicyDeleteDialog
             isOpen={isDeleteDialogOpen}
             onClose={handleCloseDeleteDialog}
