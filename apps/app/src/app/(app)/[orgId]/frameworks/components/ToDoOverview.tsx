@@ -78,7 +78,7 @@ export function ToDoOverview({
 
   const publishPolicies = useAction(publishAllPoliciesAction, {
     onSuccess: () => {
-      toast.info('Policies published! Redirecting to policies list...');
+      toast.success('All policies published!');
     },
     onError: () => {
       toast.error('Failed to publish policies.');

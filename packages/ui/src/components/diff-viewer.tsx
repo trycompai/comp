@@ -63,7 +63,7 @@ function DiffHeader() {
 
 function AddBadge() {
   return (
-    <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-[11px]/4 font-medium">
+    <span className="inline-flex items-center rounded-full bg-primary/20 text-primary px-2 py-0.5 text-[11px]/4 font-medium">
       + Add
     </span>
   );
@@ -71,7 +71,7 @@ function AddBadge() {
 
 function RemoveBadge() {
   return (
-    <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-[11px]/4 font-medium">
+    <span className="inline-flex items-center rounded-full bg-destructive/20 text-destructive px-2 py-0.5 text-[11px]/4 font-medium">
       − Remove
     </span>
   );
@@ -99,9 +99,9 @@ function DiffLine({ line }: { line: Line }) {
   const isAdd = line.type === 'insert';
 
   return (
-    <div className={cn('flex items-center gap-3 px-4 py-1.5', isAdd ? 'bg-green-50' : 'bg-red-50')}>
+    <div className={cn('flex items-center gap-3 px-4 py-1.5', isAdd ? 'bg-primary/10' : 'bg-destructive/10')}>
       <span className="shrink-0">{isAdd ? <AddBadge /> : <RemoveBadge />}</span>
-      <span className={cn(!isAdd && 'line-through decoration-red-500')}>{text}</span>
+      <span className={cn(!isAdd && 'line-through decoration-destructive')}>{text}</span>
     </div>
   );
 }
