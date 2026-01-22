@@ -1,4 +1,4 @@
-// Note: middleware must not call Prisma/BetterAuth APIs. Use cookie presence only.
+// Note: proxy must not call Prisma/BetterAuth APIs. Use cookie presence only.
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
@@ -8,7 +8,7 @@ export const config = {
   ],
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   try {
     // E2E Test Mode: Check for test auth header
     if (process.env.E2E_TEST_MODE === 'true') {
@@ -91,7 +91,7 @@ export async function middleware(request: NextRequest) {
 
     return response;
   } catch (err) {
-    console.error('[MW] error', err);
+    console.error('[Proxy] error', err);
     return NextResponse.next();
   }
 }
