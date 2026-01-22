@@ -1,19 +1,20 @@
 export interface FleetPolicy {
   id: number;
   name: string;
-  query: string;
-  critical: boolean;
-  description: string;
-  author_id: number;
-  author_name: string;
-  author_email: string;
-  team_id: number | null;
-  resolution: string;
-  platform: string;
-  calendar_events_enabled: boolean;
-  created_at: string; // ISO date-time string
-  updated_at: string; // ISO date-time string
+  query?: string;
+  critical?: boolean;
+  description?: string;
+  author_id?: number;
+  author_name?: string;
+  author_email?: string;
+  team_id?: number | null;
+  resolution?: string;
+  platform?: string;
+  calendar_events_enabled?: boolean;
+  created_at?: string; // ISO date-time string
+  updated_at?: string; // ISO date-time string
   response: string;
+  attachments?: string[];
 }
 
 export interface Host {

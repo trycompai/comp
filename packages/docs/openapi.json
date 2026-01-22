@@ -11360,6 +11360,20 @@
         ]
       }
     },
+    "/v1/integrations/sync/ramp/employees": {
+      "post": {
+        "operationId": "SyncController_syncRampEmployees_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
     "/v1/integrations/sync/jumpcloud/employees": {
       "post": {
         "operationId": "SyncController_syncJumpCloudEmployees_v1",
@@ -11377,6 +11391,29 @@
     "/v1/integrations/sync/jumpcloud/status": {
       "post": {
         "operationId": "SyncController_getJumpCloudStatus_v1",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/v1/integrations/sync/ramp/status": {
+      "post": {
+        "operationId": "SyncController_getRampStatus_v1",
         "parameters": [
           {
             "name": "organizationId",

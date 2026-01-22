@@ -1,0 +1,17 @@
+model FleetPolicyResult {
+  id                  String   @id @default(dbgenerated("generate_prefixed_cuid('fpr'::text)"))
+  userId              String
+  organizationId      String
+  fleetPolicyId       Int
+  fleetPolicyName     String
+  fleetPolicyResponse String
+  attachments         String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+}

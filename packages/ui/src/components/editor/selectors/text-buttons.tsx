@@ -17,7 +17,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         type="button"
         size="sm"
         variant="ghost"
-        onClick={() => editor.chain().focus().toggleBold().run()}
+        onClick={() => editor.chain().focus().toggleMark('bold').run()}
         className={cn('rounded-sm', {
           'bg-accent': editor.isActive('bold'),
         })}
@@ -28,7 +28,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         type="button"
         size="sm"
         variant="ghost"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
+        onClick={() => editor.chain().focus().toggleMark('italic').run()}
         className={cn('rounded-sm', {
           'bg-accent': editor.isActive('italic'),
         })}
@@ -39,7 +39,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         type="button"
         size="sm"
         variant="ghost"
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        onClick={() => editor.chain().focus().toggleMark('underline').run()}
         className={cn('rounded-sm', {
           'bg-accent': editor.isActive('underline'),
         })}
@@ -50,7 +50,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         type="button"
         size="sm"
         variant="ghost"
-        onClick={() => editor.chain().focus().toggleStrike().run()}
+        onClick={() => editor.chain().focus().toggleMark('strike').run()}
         className={cn('rounded-sm', {
           'bg-accent': editor.isActive('strike'),
         })}
@@ -61,7 +61,7 @@ export const TextButtons = ({ editor }: TextButtonsProps) => {
         type="button"
         size="sm"
         variant="ghost"
-        onClick={() => editor.chain().focus().toggleCode().run()}
+        onClick={() => editor.chain().focus().toggleMark('code').run()}
         className={cn('rounded-sm', {
           'bg-accent': editor.isActive('code'),
         })}

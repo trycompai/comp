@@ -47,13 +47,13 @@ model Organization {
   primaryColor                       String?
   trustPortalFaqs                    Json? // Array of { question: string, answer: string, order: number }
 
-
   // Integration Platform
   integrationConnections IntegrationConnection[]
   integrationOAuthApps   IntegrationOAuthApp[]
 
   // Browser Automation
   browserbaseContext BrowserbaseContext?
+  fleetPolicyResults FleetPolicyResult[]
 
   @@index([slug])
 }

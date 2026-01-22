@@ -1,19 +1,20 @@
 import { Extension } from '@tiptap/core';
-import CharacterCount from '@tiptap/extension-character-count';
+import '@tiptap/extension-blockquote';
+import '@tiptap/extension-bold';
+import '@tiptap/extension-code';
+import '@tiptap/extension-code-block';
+import '@tiptap/extension-heading';
 import Highlight from '@tiptap/extension-highlight';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import Image from '@tiptap/extension-image';
+import '@tiptap/extension-italic';
 import Link from '@tiptap/extension-link';
-import Placeholder from '@tiptap/extension-placeholder';
-import { Table } from '@tiptap/extension-table';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
-import TableRow from '@tiptap/extension-table-row';
-import TaskItem from '@tiptap/extension-task-item';
-import TaskList from '@tiptap/extension-task-list';
+import { TaskItem, TaskList } from '@tiptap/extension-list';
+import '@tiptap/extension-strike';
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
-import Underline from '@tiptap/extension-underline';
+import { CharacterCount, Placeholder } from '@tiptap/extensions';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 export * from './extensions/file-attachment';
@@ -135,9 +136,9 @@ export const defaultExtensions = ({
       width: 4,
     },
     gapcursor: false,
+    link: false,
   }),
   // Text styling
-  Underline,
   Highlight.configure({ multicolor: true }),
   // Functionality
   CharacterCount,

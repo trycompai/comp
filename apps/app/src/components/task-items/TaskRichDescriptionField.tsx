@@ -396,7 +396,7 @@ export function TaskRichDescriptionField({
       // Only update if content actually changed
       if (JSON.stringify(currentContent) !== JSON.stringify(value)) {
         // Use setContent with emitUpdate: false to prevent infinite loops
-        editor.commands.setContent(value, false);
+        editor.commands.setContent(value, { emitUpdate: false });
       }
     }
   }, [value, editor]);
