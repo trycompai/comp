@@ -124,9 +124,9 @@ export function CommentRichTextField({
 
     const currentContent = editor.getJSON();
     if (value && JSON.stringify(currentContent) !== JSON.stringify(value)) {
-      editor.commands.setContent(value, false);
+      editor.commands.setContent(value, { emitUpdate: false });
     } else if (!value && currentContent.content && currentContent.content.length > 0) {
-      editor.commands.setContent('', false);
+      editor.commands.setContent('', { emitUpdate: false });
     }
   }, [value, editor]);
 

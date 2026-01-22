@@ -1,8 +1,8 @@
+import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
 import Mention from '@tiptap/extension-mention';
 import { ReactRenderer } from '@tiptap/react';
 import type { SuggestionOptions } from '@tiptap/suggestion';
 import { useEffect, useRef, useState } from 'react';
-import tippy, { type Instance as TippyInstance } from 'tippy.js';
 
 export interface MentionUser {
   id: string;
@@ -209,7 +209,8 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
       },
       render: () => {
         let component: ReactRenderer;
-        let popup: TippyInstance | null = null;
+        let popup: HTMLDivElement | null = null;
+        let cleanup: (() => void) | null = null;
         // Mutable ref to store the keydown handler from the component
         const keyDownHandlerRef: {
           current: ((props: { event: KeyboardEvent }) => boolean) | null;
@@ -234,26 +235,32 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
               return;
             }
 
-            popup = tippy(document.body, {
-              getReferenceClientRect: () => props.clientRect?.() ?? new DOMRect(0, 0, 0, 0),
-              appendTo: () => document.body,
-              content: component.element,
-              showOnCreate: true,
-              interactive: true,
-              trigger: 'manual',
-              placement: 'bottom-start',
-              zIndex: 9999,
-              popperOptions: {
-                modifiers: [
-                  {
-                    name: 'preventOverflow',
-                    options: {
-                      boundary: 'viewport',
-                    },
-                  },
-                ],
-              },
-            });
+            popup = document.createElement('div');
+            popup.style.position = 'absolute';
+            popup.style.top = '0';
+            popup.style.left = '0';
+            popup.style.zIndex = '9999';
+            popup.style.pointerEvents = 'auto';
+            popup.appendChild(component.element);
+            document.body.appendChild(popup);
+
+            const virtualElement = {
+              getBoundingClientRect: () => props.clientRect?.() ?? new DOMRect(0, 0, 0, 0),
+            };
+
+            const updatePosition = () => {
+              if (!popup) return;
+              computePosition(virtualElement, popup, {
+                placement: 'bottom-start',
+                middleware: [offset(6), flip(), shift({ padding: 8 })],
+              }).then(({ x, y }) => {
+                if (!popup) return;
+                popup.style.transform = `translate(${x}px, ${y}px)`;
+              });
+            };
+
+            updatePosition();
+            cleanup = autoUpdate(virtualElement, popup, updatePosition);
           },
 
           onUpdate(props) {
@@ -268,18 +275,28 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
               onKeyDownRef: keyDownHandlerRef,
             });
 
-            if (!props.clientRect) {
+            if (!popup || !props.clientRect) {
               return;
             }
 
-            popup?.setProps({
-              getReferenceClientRect: () => props.clientRect?.() ?? new DOMRect(0, 0, 0, 0),
+            const virtualElement = {
+              getBoundingClientRect: () => props.clientRect?.() ?? new DOMRect(0, 0, 0, 0),
+            };
+
+            computePosition(virtualElement, popup, {
+              placement: 'bottom-start',
+              middleware: [offset(6), flip(), shift({ padding: 8 })],
+            }).then(({ x, y }) => {
+              if (!popup) return;
+              popup.style.transform = `translate(${x}px, ${y}px)`;
             });
           },
 
           onKeyDown(props) {
             if (props.event.key === 'Escape') {
-              popup?.hide();
+              if (popup) {
+                popup.style.display = 'none';
+              }
               return true;
             }
 
@@ -292,14 +309,12 @@ export function createMentionExtension({ suggestion }: CreateMentionExtensionOpt
           },
 
           onExit() {
-            // Safely destroy popup and component to prevent memory leaks
-            try {
-              if (popup && popup.state && !popup.state.isDestroyed) {
-                popup.destroy();
-              }
-            } catch (e) {
-              // Tippy already destroyed, ignore
+            cleanup?.();
+            cleanup = null;
+            if (popup) {
+              popup.remove();
             }
+            popup = null;
 
             try {
               component.destroy();
