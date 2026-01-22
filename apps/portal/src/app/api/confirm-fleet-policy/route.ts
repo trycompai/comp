@@ -99,51 +99,60 @@ export async function POST(req: NextRequest) {
     uploads.push({ fileName: fileEntry.name, key });
   }
 
-  const existing = await db.fleetPolicyResult.findFirst({
-    where: {
-      userId,
-      organizationId,
-      fleetPolicyId: policyId,
-    },
-  });
-
-  if (existing) {
-    const previousKeys = existing.attachments ?? [];
-
-    const updated = await db.fleetPolicyResult.update({
-      where: { id: existing.id },
-      data: {
-        attachments: uploads.map((upload) => upload.key),
-        fleetPolicyResponse: uploads.length > 0 ? 'pass' : 'fail',
-        fleetPolicyName: policyName,
-      },
-    });
-
-    if (previousKeys.length > 0) {
-      try {
-        await s3Client.send(
-          new DeleteObjectsCommand({
-            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-            Delete: {
-              Objects: previousKeys.map((key) => ({ Key: key })),
-            },
-          }),
-        );
-      } catch (error) {
-        console.error('Failed to delete previous policy attachments from S3', { error, policyId: updated.fleetPolicyId });
-      }
-    }
-  } else {
-    await db.fleetPolicyResult.create({
-      data: {
+  try {
+    const existing = await db.fleetPolicyResult.findFirst({
+      where: {
         userId,
         organizationId,
         fleetPolicyId: policyId,
-        fleetPolicyName: policyName,
-        fleetPolicyResponse: uploads.length > 0 ? 'pass' : 'fail',
-        attachments: uploads.map((upload) => upload.key),
       },
     });
+
+    if (existing) {
+      const previousKeys = existing.attachments ?? [];
+
+      const updated = await db.fleetPolicyResult.update({
+        where: { id: existing.id },
+        data: {
+          attachments: uploads.map((upload) => upload.key),
+          fleetPolicyResponse: uploads.length > 0 ? 'pass' : 'fail',
+          fleetPolicyName: policyName,
+        },
+      });
+
+      if (previousKeys.length > 0) {
+        try {
+          await s3Client.send(
+            new DeleteObjectsCommand({
+              Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+              Delete: {
+                Objects: previousKeys.map((key) => ({ Key: key })),
+              },
+            }),
+          );
+        } catch (error) {
+          console.error('Failed to delete previous policy attachments from S3', {
+            error,
+            policyId: updated.fleetPolicyId,
+          });
+        }
+      }
+    } else {
+      await db.fleetPolicyResult.create({
+        data: {
+          userId,
+          organizationId,
+          fleetPolicyId: policyId,
+          fleetPolicyName: policyName,
+          fleetPolicyResponse: uploads.length > 0 ? 'pass' : 'fail',
+          attachments: uploads.map((upload) => upload.key),
+        },
+      });
+    }
+  } catch (error) {
+    await cleanupPartialUploads();
+    console.error('Failed to save fleet policy result', { error, policyId, organizationId, userId });
+    return NextResponse.json({ error: 'Failed to save policy result' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, uploads });
