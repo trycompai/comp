@@ -24,6 +24,7 @@ export function PolicySettingsCard({
   return (
     <Section title="Policy Settings">
       <UpdatePolicyOverview
+        key={`${policy.id}-${policy.status}-${policy.assigneeId ?? 'none'}-${policy.department ?? 'none'}-${policy.frequency ?? 'none'}-${policy.approverId ?? 'none'}`}
         isPendingApproval={isPendingApproval}
         policy={policy}
         assignees={assignees}

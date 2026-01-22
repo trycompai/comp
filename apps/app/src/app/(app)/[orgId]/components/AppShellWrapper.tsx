@@ -48,6 +48,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useRef } from 'react';
 import { AppSidebar } from './AppSidebar';
+import { SettingsSidebar } from '../settings/components/SettingsSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
 import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
 
@@ -60,6 +61,7 @@ interface AppShellWrapperProps {
   isCollapsed: boolean;
   isQuestionnaireEnabled: boolean;
   isTrustNdaEnabled: boolean;
+  isWebAutomationsEnabled: boolean;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
   user: {
@@ -87,6 +89,7 @@ function AppShellWrapperContent({
   onboarding,
   isQuestionnaireEnabled,
   isTrustNdaEnabled,
+  isWebAutomationsEnabled,
   hasAuditorRole,
   isOnlyAuditor,
   user,
@@ -226,14 +229,18 @@ function AppShellWrapperContent({
         </AppShellRail>
         <AppShellMain>
           <AppShellSidebar collapsible>
-            <AppShellSidebarHeader title="Compliance" />
-            <AppSidebar
-              organization={organization}
-              isQuestionnaireEnabled={isQuestionnaireEnabled}
-              isTrustNdaEnabled={isTrustNdaEnabled}
-              hasAuditorRole={hasAuditorRole}
-              isOnlyAuditor={isOnlyAuditor}
-            />
+            <AppShellSidebarHeader title={isSettingsActive ? 'Settings' : 'Compliance'} />
+            {isSettingsActive ? (
+              <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
+            ) : (
+              <AppSidebar
+                organization={organization}
+                isQuestionnaireEnabled={isQuestionnaireEnabled}
+                isTrustNdaEnabled={isTrustNdaEnabled}
+                hasAuditorRole={hasAuditorRole}
+                isOnlyAuditor={isOnlyAuditor}
+              />
+            )}
           </AppShellSidebar>
 
           <AppShellContent>
