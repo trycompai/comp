@@ -36,6 +36,7 @@ export interface OverviewProps {
   doneTasksScore: DoneTasksScore;
   peopleScore: PeopleScore;
   currentMember: { id: string; role: string } | null;
+  onboardingTriggerJobId: string | null;
 }
 
 export const Overview = ({
@@ -47,6 +48,7 @@ export const Overview = ({
   doneTasksScore,
   peopleScore,
   currentMember,
+  onboardingTriggerJobId,
 }: OverviewProps) => {
   return (
     <DraggableCards>
@@ -77,6 +79,7 @@ export const Overview = ({
         policiesInReview={publishedPoliciesScore.policiesInReview}
         organizationId={organizationId}
         currentMember={currentMember}
+        onboardingTriggerJobId={onboardingTriggerJobId}
       />
     </DraggableCards>
   );

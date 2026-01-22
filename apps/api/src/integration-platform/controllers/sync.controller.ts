@@ -186,7 +186,7 @@ export class SyncController {
           }
           const errorText = await response.text();
           this.logger.error(
-            `Google API error: ${response.status} ${response.statusText}`,
+            `Google API error: ${response.status} ${response.statusText} - ${errorText}`,
           );
           throw new HttpException(
             'Failed to fetch users from Google Workspace',
@@ -242,10 +242,14 @@ export class SyncController {
     };
 
     for (const gwUser of activeUsers) {
+      // Normalize email to lowercase for consistent database operations
+      // This matches how we build suspendedEmails and activeEmails sets
+      const normalizedEmail = gwUser.primaryEmail.toLowerCase();
+
       try {
         // Check if user already exists
         const existingUser = await db.user.findUnique({
-          where: { email: gwUser.primaryEmail },
+          where: { email: normalizedEmail },
         });
 
         let userId: string;
@@ -256,8 +260,8 @@ export class SyncController {
           // Create new user
           const newUser = await db.user.create({
             data: {
-              email: gwUser.primaryEmail,
-              name: gwUser.name.fullName || gwUser.primaryEmail.split('@')[0],
+              email: normalizedEmail,
+              name: gwUser.name.fullName || normalizedEmail.split('@')[0],
               emailVerified: true, // Google Workspace users are verified
             },
           });
@@ -281,14 +285,14 @@ export class SyncController {
             });
             results.reactivated++;
             results.details.push({
-              email: gwUser.primaryEmail,
+              email: normalizedEmail,
               status: 'reactivated',
               reason: 'User is active again in Google Workspace',
             });
           } else {
             results.skipped++;
             results.details.push({
-              email: gwUser.primaryEmail,
+              email: normalizedEmail,
               status: 'skipped',
               reason: 'Already a member',
             });
@@ -308,14 +312,14 @@ export class SyncController {
 
         results.imported++;
         results.details.push({
-          email: gwUser.primaryEmail,
+          email: normalizedEmail,
           status: 'imported',
         });
       } catch (error) {
         this.logger.error(`Error importing Google Workspace user: ${error}`);
         results.errors++;
         results.details.push({
-          email: gwUser.primaryEmail,
+          email: normalizedEmail,
           status: 'error',
           reason: error instanceof Error ? error.message : 'Unknown error',
         });
@@ -334,9 +338,10 @@ export class SyncController {
       },
     });
 
-    // Get the domain from active users to only check members with matching domain
+    // Get the domains from ALL users (including suspended) to track which domains Google Workspace manages
+    // This ensures members get deactivated even when an entire domain has no active users
     const gwDomains = new Set(
-      activeUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
+      users.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
     );
 
     for (const member of allOrgMembers) {
@@ -634,9 +639,10 @@ export class SyncController {
       `Found ${activeWorkers.length} active workers and ${inactiveEmails.size} inactive/terminated workers in Rippling`,
     );
 
-    // Derive domains from Rippling workers to match against our members
+    // Derive domains from ALL Rippling workers (including inactive) to track which domains Rippling manages
+    // This ensures members get deactivated even when an entire domain has no active workers
     const ripplingDomains = new Set(
-      activeWorkers.map((w) => getWorkerEmail(w).split('@')[1]).filter(Boolean),
+      workers.map((w) => getWorkerEmail(w).split('@')[1]).filter(Boolean),
     );
 
     // Get all existing members
@@ -822,6 +828,502 @@ export class SyncController {
   }
 
   /**
+   * Sync employees from JumpCloud
+   */
+  @Post('jumpcloud/employees')
+  async syncJumpCloudEmployees(@Query() query: SyncQuery) {
+    const { organizationId, connectionId } = query;
+
+    if (!organizationId || !connectionId) {
+      throw new HttpException(
+        'organizationId and connectionId are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Get the connection
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Get the provider to check the slug
+    const provider = await db.integrationProvider.findUnique({
+      where: { id: connection.providerId },
+    });
+
+    if (!provider || provider.slug !== 'jumpcloud') {
+      throw new HttpException(
+        'This endpoint only supports JumpCloud connections',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Get credentials (API key auth)
+    const credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+
+    if (!credentials?.api_key) {
+      throw new HttpException(
+        'No valid API key found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // JumpCloud API types
+    interface JumpCloudUser {
+      _id: string;
+      username: string;
+      email: string;
+      firstname?: string;
+      lastname?: string;
+      displayname?: string;
+      department?: string;
+      jobTitle?: string;
+      state: 'ACTIVATED' | 'SUSPENDED' | 'STAGED' | 'PENDING_LOCK_STATE';
+      activated: boolean;
+      suspended: boolean;
+      mfa?: { configured: boolean };
+      totp_enabled?: boolean;
+      created?: string;
+    }
+
+    interface JumpCloudUsersResponse {
+      totalCount: number;
+      results: JumpCloudUser[];
+    }
+
+    interface JumpCloudSystem {
+      _id: string;
+      displayName?: string;
+      hostname?: string;
+      os?: string;
+      version?: string;
+      arch?: string;
+      serialNumber?: string;
+      systemTimezone?: string;
+      lastContact?: string;
+      active?: boolean;
+      agentVersion?: string;
+      allowMultiFactorAuthentication?: boolean;
+      allowPublicKeyAuthentication?: boolean;
+      allowSshPasswordAuthentication?: boolean;
+      created?: string;
+      modifySSHDConfig?: boolean;
+      organization?: string;
+      remoteIP?: string;
+    }
+
+    interface JumpCloudSystemsResponse {
+      totalCount: number;
+      results: JumpCloudSystem[];
+    }
+
+    interface JumpCloudUserSystemBinding {
+      id: string;
+      type: 'system';
+    }
+
+    const apiKey = credentials.api_key;
+    const users: JumpCloudUser[] = [];
+
+    try {
+      // JumpCloud API v1 uses pagination with limit/skip
+      const limit = 100;
+      let skip = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const url = new URL('https://console.jumpcloud.com/api/systemusers');
+        url.searchParams.set('limit', String(limit));
+        url.searchParams.set('skip', String(skip));
+        url.searchParams.set('sort', 'email');
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            'x-api-key': apiKey,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new HttpException(
+              'JumpCloud API key is invalid. Please reconnect.',
+              HttpStatus.UNAUTHORIZED,
+            );
+          }
+          const errorText = await response.text();
+          this.logger.error(
+            `JumpCloud API error: ${response.status} ${response.statusText} - ${errorText}`,
+          );
+          throw new HttpException(
+            'Failed to fetch users from JumpCloud',
+            HttpStatus.BAD_GATEWAY,
+          );
+        }
+
+        const data: JumpCloudUsersResponse = await response.json();
+
+        if (data.results && data.results.length > 0) {
+          users.push(...data.results);
+          skip += data.results.length;
+
+          if (data.results.length < limit || skip >= data.totalCount) {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(`Error fetching JumpCloud users: ${error}`);
+      throw new HttpException(
+        'Failed to fetch users from JumpCloud',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    // Fetch all systems from JumpCloud
+    const systems: JumpCloudSystem[] = [];
+    try {
+      const sysLimit = 100;
+      let sysSkip = 0;
+      let sysHasMore = true;
+
+      while (sysHasMore) {
+        const sysUrl = new URL('https://console.jumpcloud.com/api/systems');
+        sysUrl.searchParams.set('limit', String(sysLimit));
+        sysUrl.searchParams.set('skip', String(sysSkip));
+
+        const sysResponse = await fetch(sysUrl.toString(), {
+          headers: {
+            'x-api-key': apiKey,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (sysResponse.ok) {
+          const sysData: JumpCloudSystemsResponse = await sysResponse.json();
+          if (sysData.results && sysData.results.length > 0) {
+            systems.push(...sysData.results);
+            sysSkip += sysData.results.length;
+            if (
+              sysData.results.length < sysLimit ||
+              sysSkip >= sysData.totalCount
+            ) {
+              sysHasMore = false;
+            }
+          } else {
+            sysHasMore = false;
+          }
+        } else {
+          this.logger.warn(
+            'Failed to fetch JumpCloud systems, continuing without device info',
+          );
+          sysHasMore = false;
+        }
+      }
+      this.logger.log(`Fetched ${systems.length} systems from JumpCloud`);
+    } catch (error) {
+      this.logger.warn(`Error fetching JumpCloud systems: ${error}`);
+    }
+
+    // Create a map of system ID to system details
+    const systemsById = new Map(systems.map((s) => [s._id, s]));
+
+    // Fetch user-to-system bindings for each user
+    const userDevices = new Map<string, JumpCloudSystem[]>();
+
+    for (const user of users) {
+      try {
+        const bindingsUrl = new URL(
+          `https://console.jumpcloud.com/api/v2/users/${user._id}/systems`,
+        );
+
+        const bindingsResponse = await fetch(bindingsUrl.toString(), {
+          headers: {
+            'x-api-key': apiKey,
+            Accept: 'application/json',
+          },
+        });
+
+        if (bindingsResponse.ok) {
+          const bindings: JumpCloudUserSystemBinding[] =
+            await bindingsResponse.json();
+          const userSystems = bindings
+            .map((b) => systemsById.get(b.id))
+            .filter((s): s is JumpCloudSystem => s !== undefined);
+          if (userSystems.length > 0) {
+            userDevices.set(user._id, userSystems);
+          }
+        }
+      } catch {
+        // Ignore binding fetch errors for individual users
+      }
+    }
+
+    this.logger.log(`Found device bindings for ${userDevices.size} users`);
+
+    // Helper to get full name
+    const getFullName = (user: JumpCloudUser): string => {
+      if (user.displayname) return user.displayname;
+      const parts = [user.firstname, user.lastname].filter(Boolean);
+      if (parts.length > 0) return parts.join(' ');
+      return user.username;
+    };
+
+    // Filter to active users (exclude staged and suspended)
+    const activeUsers = users.filter(
+      (u) => u.state === 'ACTIVATED' && u.activated && !u.suspended,
+    );
+    const suspendedEmails = new Set(
+      users
+        .filter((u) => u.suspended || u.state === 'SUSPENDED')
+        .map((u) => u.email.toLowerCase()),
+    );
+    const activeEmails = new Set(activeUsers.map((u) => u.email.toLowerCase()));
+
+    this.logger.log(
+      `Found ${activeUsers.length} active users and ${suspendedEmails.size} suspended users in JumpCloud`,
+    );
+
+    // Import users into the organization
+    const results = {
+      imported: 0,
+      skipped: 0,
+      deactivated: 0,
+      reactivated: 0,
+      errors: 0,
+      totalDevices: systems.length,
+      usersWithDevices: userDevices.size,
+      details: [] as Array<{
+        email: string;
+        status:
+          | 'imported'
+          | 'skipped'
+          | 'deactivated'
+          | 'reactivated'
+          | 'error';
+        reason?: string;
+        devices?: Array<{
+          id: string;
+          name: string;
+          os: string;
+          lastContact?: string;
+        }>;
+      }>,
+    };
+
+    // Helper to get devices for a user
+    const getUserDeviceDetails = (userId: string) => {
+      const devices = userDevices.get(userId);
+      if (!devices || devices.length === 0) return undefined;
+      return devices.map((d) => ({
+        id: d._id,
+        name: d.displayName || d.hostname || 'Unknown Device',
+        os: d.os ? `${d.os} ${d.version || ''}`.trim() : 'Unknown OS',
+        lastContact: d.lastContact,
+      }));
+    };
+
+    for (const jcUser of activeUsers) {
+      // Normalize email to lowercase for consistent database operations
+      // This matches how we build suspendedEmails and activeEmails sets
+      const normalizedEmail = jcUser.email.toLowerCase();
+
+      try {
+        // Check if user already exists
+        const existingUser = await db.user.findUnique({
+          where: { email: normalizedEmail },
+        });
+
+        let userId: string;
+
+        if (existingUser) {
+          userId = existingUser.id;
+        } else {
+          // Create new user
+          const newUser = await db.user.create({
+            data: {
+              email: normalizedEmail,
+              name: getFullName(jcUser),
+              emailVerified: true,
+            },
+          });
+          userId = newUser.id;
+        }
+
+        // Get device info for this user
+        const deviceDetails = getUserDeviceDetails(jcUser._id);
+
+        // Check if member already exists in this org
+        const existingMember = await db.member.findFirst({
+          where: {
+            organizationId,
+            userId,
+          },
+        });
+
+        if (existingMember) {
+          // If member was deactivated but is now active in JumpCloud, reactivate them
+          if (existingMember.deactivated) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { deactivated: false, isActive: true },
+            });
+            results.reactivated++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'reactivated',
+              reason: 'User is active again in JumpCloud',
+              devices: deviceDetails,
+            });
+          } else {
+            results.skipped++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'skipped',
+              reason: 'Already a member',
+              devices: deviceDetails,
+            });
+          }
+          continue;
+        }
+
+        // Create member - always as employee, admins can be promoted manually
+        await db.member.create({
+          data: {
+            organizationId,
+            userId,
+            role: 'employee',
+            isActive: true,
+          },
+        });
+
+        results.imported++;
+        results.details.push({
+          email: normalizedEmail,
+          status: 'imported',
+          devices: deviceDetails,
+        });
+      } catch (error) {
+        this.logger.error(`Error importing JumpCloud user: ${error}`);
+        results.errors++;
+        results.details.push({
+          email: normalizedEmail,
+          status: 'error',
+          reason: error instanceof Error ? error.message : 'Unknown error',
+          devices: getUserDeviceDetails(jcUser._id),
+        });
+      }
+    }
+
+    // Deactivate members who are suspended OR deleted in JumpCloud
+    const allOrgMembers = await db.member.findMany({
+      where: {
+        organizationId,
+        deactivated: false,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    // Get the domains from ALL users (including suspended) to track which domains JumpCloud manages
+    // This ensures members get deactivated even when an entire domain has no active users
+    const jcDomains = new Set(
+      users.map((u) => u.email.split('@')[1]?.toLowerCase()),
+    );
+
+    for (const member of allOrgMembers) {
+      const memberEmail = member.user.email.toLowerCase();
+      const memberDomain = memberEmail.split('@')[1];
+
+      // Only check members whose email domain matches the JumpCloud domain
+      if (!memberDomain || !jcDomains.has(memberDomain)) {
+        continue;
+      }
+
+      // If this member's email is suspended OR not in the active list, deactivate them
+      const isSuspended = suspendedEmails.has(memberEmail);
+      const isDeleted =
+        !activeEmails.has(memberEmail) && !suspendedEmails.has(memberEmail);
+
+      if (isSuspended || isDeleted) {
+        try {
+          await db.member.update({
+            where: { id: member.id },
+            data: { deactivated: true, isActive: false },
+          });
+          results.deactivated++;
+          results.details.push({
+            email: member.user.email,
+            status: 'deactivated',
+            reason: isSuspended
+              ? 'User is suspended in JumpCloud'
+              : 'User was removed from JumpCloud',
+          });
+        } catch (error) {
+          this.logger.error(`Error deactivating member: ${error}`);
+        }
+      }
+    }
+
+    this.logger.log(
+      `JumpCloud sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
+    );
+
+    return {
+      success: true,
+      totalFound: activeUsers.length,
+      totalSuspended: suspendedEmails.size,
+      ...results,
+    };
+  }
+
+  /**
+   * Check if JumpCloud is connected for an organization
+   */
+  @Post('jumpcloud/status')
+  async getJumpCloudStatus(@Query('organizationId') organizationId: string) {
+    if (!organizationId) {
+      throw new HttpException(
+        'organizationId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const connection = await this.connectionRepository.findBySlugAndOrg(
+      'jumpcloud',
+      organizationId,
+    );
+
+    if (!connection || connection.status !== 'active') {
+      return {
+        connected: false,
+        connectionId: null,
+        lastSyncAt: null,
+        nextSyncAt: null,
+      };
+    }
+
+    return {
+      connected: true,
+      connectionId: connection.id,
+      lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
+      nextSyncAt: connection.nextSyncAt?.toISOString() ?? null,
+    };
+  }
+
+  /**
    * Get the current employee sync provider for an organization
    */
   @Get('employee-sync-provider')
@@ -868,7 +1370,7 @@ export class SyncController {
 
     // Validate provider if set
     if (provider) {
-      const validProviders = ['google-workspace', 'rippling'];
+      const validProviders = ['google-workspace', 'rippling', 'jumpcloud'];
       if (!validProviders.includes(provider)) {
         throw new HttpException(
           `Invalid provider. Must be one of: ${validProviders.join(', ')}`,

@@ -2,12 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Overview } from './components/Overview';
 
-interface HomePageProps {
-  params: Promise<{}>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default function HomePage({ params, searchParams }: HomePageProps) {
+export default function HomePage() {
   return (
     <div className="space-y-6">
       {/* Add loading states later if Overview becomes complex */}

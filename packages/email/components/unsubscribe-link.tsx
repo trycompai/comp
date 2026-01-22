@@ -18,4 +18,3 @@ export function UnsubscribeLink({ email, unsubscribeUrl }: UnsubscribeLinkProps)
     </Section>
   );
 }
-

@@ -22,11 +22,13 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
+import { useActiveOrganization } from '@/utils/auth-client';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { EvidenceJsonView } from './EvidenceJsonView';
 
 interface TaskIntegrationCheck {
   integrationId: string;
@@ -89,6 +91,8 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
   const params = useParams();
   const searchParams = useSearchParams();
   const orgId = params.orgId as string;
+  const activeOrg = useActiveOrganization();
+  const organizationName = activeOrg.data?.name || orgId;
 
   const [checks, setChecks] = useState<TaskIntegrationCheck[]>([]);
   const [storedRuns, setStoredRuns] = useState<StoredCheckRun[]>([]);
@@ -613,7 +617,11 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                     >
                       <div className="overflow-hidden">
                         <div className="px-4 pb-4 pt-2 border-t border-border/50 space-y-4">
-                          <GroupedCheckRuns runs={checkRuns} maxRuns={5} />
+                          <GroupedCheckRuns
+                            runs={checkRuns}
+                            maxRuns={5}
+                            organizationName={organizationName}
+                          />
                         </div>
                       </div>
                     </div>
@@ -694,7 +702,15 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
 }
 
 // Group runs by date for display
-function GroupedCheckRuns({ runs, maxRuns = 5 }: { runs: StoredCheckRun[]; maxRuns?: number }) {
+function GroupedCheckRuns({
+  runs,
+  maxRuns = 5,
+  organizationName,
+}: {
+  runs: StoredCheckRun[];
+  maxRuns?: number;
+  organizationName: string;
+}) {
   const [showAll, setShowAll] = useState(false);
 
   // Group runs by date
@@ -756,7 +772,14 @@ function GroupedCheckRuns({ runs, maxRuns = 5 }: { runs: StoredCheckRun[]; maxRu
             {dateRuns.map((run: StoredCheckRun) => {
               const isLatest = runIndex === 0;
               runIndex++;
-              return <CheckRunItem key={run.id} run={run} isLatest={isLatest} />;
+              return (
+                <CheckRunItem
+                  key={run.id}
+                  run={run}
+                  isLatest={isLatest}
+                  organizationName={organizationName}
+                />
+              );
             })}
           </div>
         </div>
@@ -775,7 +798,15 @@ function GroupedCheckRuns({ runs, maxRuns = 5 }: { runs: StoredCheckRun[]; maxRu
 }
 
 // Individual check run item with expandable details
-function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolean }) {
+function CheckRunItem({
+  run,
+  isLatest,
+  organizationName,
+}: {
+  run: StoredCheckRun;
+  isLatest: boolean;
+  organizationName: string;
+}) {
   const [expanded, setExpanded] = useState(isLatest);
 
   const timeAgo = formatDistanceToNow(new Date(run.createdAt), { addSuffix: true });
@@ -816,6 +847,12 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
               <>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-destructive">{run.failedCount} failed</span>
+              </>
+            )}
+            {run.passedCount > 0 && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-primary">{run.passedCount} passed</span>
               </>
             )}
           </div>
@@ -878,36 +915,45 @@ function CheckRunItem({ run, isLatest }: { run: StoredCheckRun; isLatest: boolea
               </div>
             )}
 
-            {/* Passing Results */}
-            {passing.length > 0 && findings.length === 0 && (
-              <div className="space-y-2">
-                {passing.slice(0, 2).map((result) => (
-                  <div key={result.id} className="space-y-2">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{result.title}</p>
-                      {result.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
+            {/* Passing Results - always show when there are passing results */}
+            {passing.length > 0 && (
+              <details className="text-xs" open={findings.length === 0}>
+                <summary className="text-sm font-medium text-primary cursor-pointer flex items-center gap-2">
+                  <span>✓ {passing.length} passed</span>
+                </summary>
+                <div className="mt-2 space-y-2 pl-4 border-l-2 border-primary/20">
+                  {passing.slice(0, 3).map((result) => (
+                    <div key={result.id} className="space-y-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{result.title}</p>
+                        {result.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{result.description}</p>
+                        )}
+                        <Badge variant="secondary" className="mt-2 font-mono text-xs">
+                          {result.resourceId}
+                        </Badge>
+                      </div>
+                      {result.evidence && Object.keys(result.evidence).length > 0 && (
+                        <details className="text-xs">
+                          <summary className="text-muted-foreground cursor-pointer">
+                            View Evidence
+                          </summary>
+                          <EvidenceJsonView
+                            evidence={result.evidence}
+                            organizationName={organizationName}
+                            automationName={run.checkName}
+                          />
+                        </details>
                       )}
-                      <Badge variant="secondary" className="mt-2 font-mono text-xs">
-                        {result.resourceId}
-                      </Badge>
                     </div>
-                    {result.evidence && Object.keys(result.evidence).length > 0 && (
-                      <details className="text-xs">
-                        <summary className="text-muted-foreground cursor-pointer">
-                          View Evidence
-                        </summary>
-                        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-                          {JSON.stringify(result.evidence, null, 2)}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                ))}
-                {passing.length > 2 && (
-                  <p className="text-sm text-muted-foreground">+{passing.length - 2} more passed</p>
-                )}
-              </div>
+                  ))}
+                  {passing.length > 3 && (
+                    <p className="text-sm text-muted-foreground">
+                      +{passing.length - 3} more passed
+                    </p>
+                  )}
+                </div>
+              </details>
             )}
 
             {/* Logs */}

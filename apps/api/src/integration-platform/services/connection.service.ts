@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
+import { ConnectionAuthTeardownService } from './connection-auth-teardown.service';
 import type {
   IntegrationConnection,
   IntegrationConnectionStatus,
@@ -22,6 +23,7 @@ export class ConnectionService {
   constructor(
     private readonly connectionRepository: ConnectionRepository,
     private readonly providerRepository: ProviderRepository,
+    private readonly connectionAuthTeardownService: ConnectionAuthTeardownService,
   ) {}
 
   async getConnection(connectionId: string): Promise<IntegrationConnection> {
@@ -117,11 +119,19 @@ export class ConnectionService {
   async disconnectConnection(
     connectionId: string,
   ): Promise<IntegrationConnection> {
-    return this.updateConnectionStatus(connectionId, 'disconnected');
+    await this.connectionAuthTeardownService.teardown({ connectionId });
+
+    return this.connectionRepository.update(connectionId, {
+      status: 'disconnected',
+      errorMessage: null,
+      activeCredentialVersionId: null,
+    });
   }
 
   async deleteConnection(connectionId: string): Promise<void> {
     await this.getConnection(connectionId); // Verify exists
+    await this.connectionAuthTeardownService.teardown({ connectionId });
+
     await this.connectionRepository.delete(connectionId);
   }
 

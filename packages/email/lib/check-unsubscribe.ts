@@ -3,14 +3,22 @@ const DEFAULT_PREFERENCES = {
   taskReminders: true,
   weeklyTaskDigest: true,
   unassignedItemsNotifications: true,
+  taskMentions: true,
+  taskAssignments: true,
 };
 
-type EmailPreferenceType = 'policyNotifications' | 'taskReminders' | 'weeklyTaskDigest' | 'unassignedItemsNotifications';
+type EmailPreferenceType =
+  | 'policyNotifications'
+  | 'taskReminders'
+  | 'weeklyTaskDigest'
+  | 'unassignedItemsNotifications'
+  | 'taskMentions'
+  | 'taskAssignments';
 
 /**
  * Helper function to check if a user is unsubscribed from a specific type of email notification
  * This should be called before sending any notification/reminder emails
- * 
+ *
  * @param db - Prisma database client
  * @param email - User's email address
  * @param preferenceType - Type of email preference to check
@@ -62,4 +70,3 @@ export async function isUserUnsubscribed(
     return false;
   }
 }
-

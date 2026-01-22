@@ -22,8 +22,8 @@ interface PeopleChartProps {
 }
 
 const CHART_COLORS = {
-  completed: 'hsl(var(--chart-primary))',
-  remaining: 'hsl(var(--muted))',
+  completed: 'var(--color-primary)',
+  remaining: 'var(--color-muted)',
 };
 
 export function PeopleChart({ data }: PeopleChartProps) {
@@ -126,7 +126,7 @@ export function PeopleChart({ data }: PeopleChartProps) {
                       cy={viewBox.cy}
                       r={32}
                       fill="none"
-                      stroke="hsl(var(--border))"
+                      stroke="var(--color-border)"
                       strokeWidth={1}
                       strokeDasharray="2,2"
                     />

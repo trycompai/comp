@@ -26,6 +26,8 @@ export default async function UserSettings() {
     taskReminders: true,
     weeklyTaskDigest: true,
     unassignedItemsNotifications: true,
+    taskMentions: true,
+    taskAssignments: true,
   };
 
   // If user has the old all-or-nothing unsubscribe flag, convert to preferences
@@ -35,11 +37,11 @@ export default async function UserSettings() {
       taskReminders: false,
       weeklyTaskDigest: false,
       unassignedItemsNotifications: false,
+      taskMentions: false,
+      taskAssignments: false,
     };
     return (
-      <div className="space-y-4">
-        <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
-      </div>
+      <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
     );
   }
 
@@ -49,9 +51,7 @@ export default async function UserSettings() {
       : DEFAULT_PREFERENCES;
 
   return (
-    <div className="space-y-4">
-      <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
-    </div>
+    <EmailNotificationPreferences initialPreferences={preferences} email={session.user.email} />
   );
 }
 

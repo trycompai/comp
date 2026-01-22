@@ -4,8 +4,8 @@ import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
-import { Switch } from '@comp/ui/switch';
 import { EvidenceAutomationRun, EvidenceAutomationVersion } from '@db';
+import { Switch } from '@trycompai/design-system';
 import { Clock, Code2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -55,7 +55,9 @@ export function MetricsSection({
 
   // Calculate metrics from latest version runs
   const totalRuns = latestVersionRuns.length;
-  const successfulRuns = latestVersionRuns.filter((run) => run.status === 'completed').length;
+  const successfulRuns = latestVersionRuns.filter(
+    (run) => run.status === 'completed' && run.success && run.evaluationStatus !== 'fail',
+  ).length;
   const successRate = totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
   const latestRun = latestVersionRuns[0];
 
@@ -93,7 +95,7 @@ export function MetricsSection({
   };
 
   return (
-    <div className="flex flex-col gap-6 bg-secondary p-8">
+    <div className="flex flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         {editingName ? (
           <Input
@@ -125,7 +127,6 @@ export function MetricsSection({
               checked={isEnabled}
               onCheckedChange={onToggleEnabled}
               disabled={isTogglingEnabled}
-              className="scale-90"
             />
             <Link href={editScriptUrl}>
               <Button size="sm">

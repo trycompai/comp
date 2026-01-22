@@ -1,8 +1,9 @@
 'use client';
 
 import { useComments } from '@/hooks/use-comments-api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { CommentEntityType } from '@db';
+import { Section, Stack, Text } from '@trycompai/design-system';
+import { useParams } from 'next/navigation';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 
@@ -21,7 +22,6 @@ export type CommentWithAuthor = {
     name: string;
     type: string;
     createdAt: string;
-    // downloadUrl removed - now generated on-demand only
   }>;
   createdAt: string;
 };
@@ -29,12 +29,15 @@ export type CommentWithAuthor = {
 interface CommentsProps {
   entityId: string;
   entityType: CommentEntityType;
+  /**
+   * Optional organization ID override.
+   * Best practice: omit this and let the component use `orgId` from URL params.
+   */
+  organizationId?: string;
   /** Optional custom title for the comments section */
   title?: string;
   /** Optional custom description */
   description?: string;
-  /** Whether to show as a card or just the content */
-  variant?: 'card' | 'inline';
 }
 
 /**
@@ -46,94 +49,82 @@ interface CommentsProps {
  * <Comments entityId={taskId} entityType="task" />
  *
  * @example
- * // Custom title and inline variant
+ * // Custom title
  * <Comments
  *   entityId={riskId}
  *   entityType="risk"
  *   title="Risk Discussion"
- *   variant="inline"
  * />
  */
 export const Comments = ({
   entityId,
   entityType,
+  organizationId,
   title = 'Comments',
   description,
-  variant = 'card',
 }: CommentsProps) => {
+  const params = useParams();
+  const orgIdFromParams =
+    typeof params?.orgId === 'string'
+      ? params.orgId
+      : Array.isArray(params?.orgId)
+        ? params.orgId[0]
+        : undefined;
+  const resolvedOrgId = organizationId ?? orgIdFromParams;
+
   // Use SWR hooks for real-time comment fetching
   const {
     data: commentsData,
     error: commentsError,
     isLoading: commentsLoading,
     mutate: refreshComments,
-  } = useComments(entityId, entityType);
+  } = useComments(entityId, entityType, {
+    organizationId: resolvedOrgId,
+    enabled: Boolean(resolvedOrgId),
+  });
 
   // Extract comments from SWR response
   const comments = commentsData?.data || [];
 
-  // Generate default description if not provided
-  const defaultDescription = description || `Leave a comment on this ${entityType}`;
+  return (
+    <Section title={title} description={description}>
+      <Stack gap="md">
+        <CommentForm entityId={entityId} entityType={entityType} organizationId={resolvedOrgId} />
 
-  const content = (
-    <div className="space-y-4">
-      <CommentForm entityId={entityId} entityType={entityType} />
-
-      {commentsLoading && (
-        <div className="space-y-3">
-          {/* Enhanced comment skeletons */}
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card animate-pulse"
-            >
-              <div className="h-8 w-8 rounded-full bg-muted/50 flex-shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-24 bg-muted/50 rounded" />
-                  <div className="h-3 w-16 bg-muted/30 rounded" />
-                </div>
-                <div className="space-y-1.5">
-                  <div className="h-3 w-full bg-muted/40 rounded" />
-                  <div className="h-3 w-3/4 bg-muted/30 rounded" />
+        {commentsLoading && (
+          <Stack gap="sm">
+            {/* Enhanced comment skeletons */}
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card animate-pulse"
+              >
+                <div className="h-8 w-8 rounded-full bg-muted/50 flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-24 bg-muted/50 rounded" />
+                    <div className="h-3 w-16 bg-muted/30 rounded" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-full bg-muted/40 rounded" />
+                    <div className="h-3 w-3/4 bg-muted/30 rounded" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {commentsError && (
-        <div className="text-destructive text-sm">Failed to load comments. Please try again.</div>
-      )}
-
-      {!commentsLoading && !commentsError && (
-        <CommentList comments={comments} refreshComments={refreshComments} />
-      )}
-    </div>
-  );
-
-  if (variant === 'inline') {
-    return (
-      <div className="space-y-4">
-        {title && (
-          <div>
-            <h3 className="text-lg font-medium">{title}</h3>
-            {description && <p className="text-muted-foreground text-sm mt-1">{description}</p>}
-          </div>
+            ))}
+          </Stack>
         )}
-        {content}
-      </div>
-    );
-  }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{defaultDescription}</CardDescription>
-      </CardHeader>
-      <CardContent>{content}</CardContent>
-    </Card>
+        {commentsError && (
+          <Text size="sm" variant="destructive">
+            Failed to load comments. Please try again.
+          </Text>
+        )}
+
+        {!commentsLoading && !commentsError && (
+          <CommentList comments={comments} refreshComments={refreshComments} />
+        )}
+      </Stack>
+    </Section>
   );
 };

@@ -1,7 +1,9 @@
+import { PageHeader, PageLayout } from '@trycompai/design-system';
+
 export default async function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-[1200px] py-8">
-      <div>{children}</div>
-    </div>
+    <PageLayout header={<PageHeader title="Overview" />} padding="default">
+      {children}
+    </PageLayout>
   );
 }

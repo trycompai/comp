@@ -9,6 +9,11 @@ export type ReportSignatory = {
   email: string;
 };
 
+export type CustomVendor = {
+  name: string;
+  website?: string;
+};
+
 export type CompanyDetails = {
   frameworkIds: string[];
   organizationName: string;
@@ -23,7 +28,8 @@ export type CompanyDetails = {
   workLocation: string;
   infrastructure: string;
   dataTypes: string;
-  software: string;
+  software?: string;
+  customVendors?: CustomVendor[];
   geo: string;
   shipping: {
     fullName: string;
@@ -45,4 +51,5 @@ export type Step = {
   placeholder: string;
   options?: string[];
   description?: string;
+  skippable?: boolean;
 };

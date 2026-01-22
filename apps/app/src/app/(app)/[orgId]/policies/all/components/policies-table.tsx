@@ -3,16 +3,16 @@
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { Download, Loader2 } from 'lucide-react';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { useDataTable } from '@/hooks/use-data-table';
-import { downloadAllPolicies } from '@/lib/pdf-generator';
+import { apiClient } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import type { Policy } from '@db';
 import { useParams } from 'next/navigation';
-import { getLogsForPolicy } from '../../[policyId]/data';
 import { getPolicies } from '../data/queries';
 import { getPolicyColumns } from './policies-table-columns';
 import { type PolicyTailoringStatus, PolicyTailoringProvider } from './policy-tailoring-context';
@@ -103,25 +103,30 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
     clearOnDefault: true,
   });
 
-  const handleDownloadAll = () => {
+  const handleDownloadAll = async () => {
     setIsDownloadingAll(true);
-    // Fetch logs for all policies
-    const fetchAllLogs = async () => {
-      const logsEntries = await Promise.all(
-        data.map(async (policy) => {
-          const logs = await getLogsForPolicy(policy.id);
-          return [policy.id, logs] as const;
-        }),
-      );
-      // Convert array of entries to an object
-      return Object.fromEntries(logsEntries);
-    };
+    try {
+      const response = await apiClient.get<{
+        downloadUrl: string;
+        policyCount: number;
+        name: string;
+      }>('/v1/policies/download-all', orgId);
 
-    // Since handleDownloadAll is not async, we need to handle the async logic here
-    fetchAllLogs().then((policyLogs) => {
+      if (response.error) {
+        toast.error(response.error);
+        return;
+      }
+
+      if (response.data?.downloadUrl) {
+        // Open the download URL in a new tab
+        window.open(response.data.downloadUrl, '_blank');
+        toast.success(`Downloaded ${response.data.policyCount} policies`);
+      }
+    } catch {
+      toast.error('Failed to download policies');
+    } finally {
       setIsDownloadingAll(false);
-      downloadAllPolicies(data, policyLogs);
-    });
+    }
   };
 
   const getRowProps = React.useCallback(

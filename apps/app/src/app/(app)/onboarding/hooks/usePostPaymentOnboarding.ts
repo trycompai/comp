@@ -97,7 +97,13 @@ export function usePostPaymentOnboarding({
   const form = useForm<OnboardingFormFields>({
     resolver: zodResolver(stepSchema),
     mode: 'onSubmit',
-    defaultValues: { [step.key]: savedAnswers[step.key] || '' },
+    defaultValues: {
+      [step.key]: savedAnswers[step.key] || '',
+      // Include customVendors in default values so they persist across step navigation
+      ...(step.key === 'software' && savedAnswers.customVendors
+        ? { customVendors: savedAnswers.customVendors }
+        : {}),
+    },
   });
 
   // Track onboarding start
@@ -126,8 +132,9 @@ export function usePostPaymentOnboarding({
           total_steps: steps.length,
         });
 
-        // Redirect to the organization dashboard
-        router.push(data.redirectUrl);
+        // Hard navigate to ensure updated auth cookies (active org) are applied immediately.
+        // This prevents flakiness where the app still uses the previous activeOrganizationId.
+        window.location.assign(data.redirectUrl);
       } else {
         toast.error('Failed to complete onboarding');
         setIsFinalizing(false);
@@ -159,6 +166,7 @@ export function usePostPaymentOnboarding({
       devices: allAnswers.devices || '',
       authentication: allAnswers.authentication || '',
       software: allAnswers.software || '',
+      customVendors: allAnswers.customVendors || [],
       workLocation: allAnswers.workLocation || '',
       infrastructure: allAnswers.infrastructure || '',
       dataTypes: allAnswers.dataTypes || '',
@@ -185,6 +193,13 @@ export function usePostPaymentOnboarding({
   const onSubmit = (data: OnboardingFormFields) => {
     const newAnswers: OnboardingFormFields = { ...savedAnswers, ...data };
 
+    // Capture customVendors from form state (not included in schema-validated data)
+    // Always set customVendors when on software step - including empty array to allow clearing
+    if (step.key === 'software') {
+      const customVendors = form.getValues('customVendors');
+      newAnswers.customVendors = Array.isArray(customVendors) ? customVendors : [];
+    }
+
     // Handle multi-select fields with "Other" option
     for (const key of Object.keys(newAnswers)) {
       // Only process multi-select string fields (exclude objects/arrays)
@@ -194,7 +209,8 @@ export function usePostPaymentOnboarding({
         key !== 'frameworkIds' &&
         key !== 'shipping' &&
         key !== 'cSuite' &&
-        key !== 'reportSignatory'
+        key !== 'reportSignatory' &&
+        key !== 'customVendors'
       ) {
         const customValue = newAnswers[`${key}Other`] || '';
         const rawValue = newAnswers[key];
@@ -235,9 +251,24 @@ export function usePostPaymentOnboarding({
     if (stepIndex > 0) {
       // Save current form values before going back
       const currentValues = form.getValues();
+      
+      // Build updated answers, preserving customVendors when on software step
+      let updatedAnswers = { ...savedAnswers, organizationName };
+      
       if (currentValues[step.key]) {
-        setSavedAnswers({ ...savedAnswers, [step.key]: currentValues[step.key], organizationName });
+        updatedAnswers = { ...updatedAnswers, [step.key]: currentValues[step.key] };
       }
+      
+      // Also save customVendors when on software step (same as onSubmit)
+      if (step.key === 'software') {
+        const customVendors = form.getValues('customVendors');
+        updatedAnswers = { 
+          ...updatedAnswers, 
+          customVendors: Array.isArray(customVendors) ? customVendors : [] 
+        };
+      }
+      
+      setSavedAnswers(updatedAnswers);
 
       // Clear form errors
       form.clearErrors();
@@ -249,7 +280,32 @@ export function usePostPaymentOnboarding({
     }
   };
 
+  const handleSkip = () => {
+    // Track skip event
+    trackOnboardingEvent(`${step.key}_skipped`, stepIndex + 1, {
+      phase: 'post_payment',
+    });
+
+    // Clear form errors
+    form.clearErrors();
+
+    // Move to next step without saving current value
+    if (stepIndex < postPaymentSteps.length - 1) {
+      const newStepIndex = stepIndex + 1;
+      setStepIndex(newStepIndex);
+      setSavedStepIndex(newStepIndex);
+    } else {
+      // If this is the last step, complete onboarding without this field
+      const allAnswers: Partial<CompanyDetails> = {
+        ...savedAnswers,
+        organizationName,
+      };
+      handleCompleteOnboarding(allAnswers);
+    }
+  };
+
   const isLastStep = stepIndex === postPaymentSteps.length - 1;
+  const isSkippable = step?.skippable ?? false;
 
   return {
     stepIndex,
@@ -262,7 +318,9 @@ export function usePostPaymentOnboarding({
     isLoading,
     onSubmit,
     handleBack,
+    handleSkip,
     isLastStep,
+    isSkippable,
     currentStepNumber: stepIndex + 1, // Display as steps 1-9
     totalSteps: postPaymentSteps.length, // Total 9 steps for post-payment
     completeNow,

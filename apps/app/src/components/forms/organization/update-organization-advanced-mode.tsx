@@ -11,8 +11,8 @@ import {
   CardTitle,
 } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
-import { Switch } from '@comp/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Switch } from '@trycompai/design-system';
 import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';

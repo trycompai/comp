@@ -1,0 +1,28 @@
+#  FOR TESTING LOCALY ONLY
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile.multistage
+      target: production
+    container_name: comp-api-test
+    ports:
+      - "3333:3333"
+    environment:
+      - NODE_ENV=production
+      - PORT=3333
+    env_file:
+      - .env
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/v1/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    
+    restart: unless-stopped
+
+

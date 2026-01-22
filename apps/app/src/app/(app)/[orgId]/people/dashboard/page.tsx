@@ -1,12 +1,6 @@
-import type { Metadata } from 'next';
-import { EmployeesOverview } from './components/EmployeesOverview';
+import { redirect } from 'next/navigation';
 
-export default async function PeopleOverviewPage() {
-  return <EmployeesOverview />;
-}
-
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'People',
-  };
+export default async function DashboardPage({ params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params;
+  redirect(`/${orgId}/people`);
 }

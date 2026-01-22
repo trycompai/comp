@@ -3,20 +3,31 @@
 import { createTaskAction } from '@/actions/tasks/create-task-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskTemplates } from '@/hooks/use-task-template-api';
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { useMediaQuery } from '@comp/ui/hooks';
-import { Input } from '@comp/ui/input';
 import MultipleSelector, { Option } from '@comp/ui/multiple-selector';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Textarea } from '@comp/ui/textarea';
 import { Departments, Member, TaskFrequency, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRightIcon, X } from 'lucide-react';
+import {
+  Button,
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  Textarea,
+} from '@trycompai/design-system';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
-import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -37,31 +48,31 @@ const createTaskSchema = z.object({
   taskTemplateId: z.string().nullable().optional(),
 });
 
+interface CreateTaskSheetProps {
+  members: (Member & { user: User })[];
+  controls: { id: string; name: string }[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export function CreateTaskSheet({
   members,
   controls,
-}: {
-  members: (Member & { user: User })[];
-  controls: { id: string; name: string }[];
-}) {
+  open,
+  onOpenChange,
+}: CreateTaskSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
-  const isOpen = Boolean(createTaskOpen);
 
   const { data: taskTemplates } = useTaskTemplates();
 
-  const handleOpenChange = (open: boolean) => {
-    setCreateTaskOpen(open ? 'true' : null);
-  };
-
   const createTask = useAction(createTaskAction, {
     onSuccess: () => {
-      toast.success('Task created successfully');
-      setCreateTaskOpen(null);
+      toast.success('Evidence created successfully');
+      onOpenChange(false);
       form.reset();
     },
     onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to create task');
+      toast.error(error.error?.serverError || 'Failed to create evidence');
     },
   });
 
@@ -128,21 +139,27 @@ export function CreateTaskSheet({
   );
 
   // Memoize select handlers
-  const handleFrequencyChange = useCallback((value: string, onChange: (value: any) => void) => {
-    onChange(value === 'none' ? null : value);
-  }, []);
+  const handleFrequencyChange = useCallback(
+    (value: string | null, onChange: (value: any) => void) => {
+      onChange(!value || value === 'none' ? null : value);
+    },
+    [],
+  );
 
-  const handleDepartmentChange = useCallback((value: string, onChange: (value: any) => void) => {
-    onChange(value === 'none' ? null : value);
-  }, []);
+  const handleDepartmentChange = useCallback(
+    (value: string | null, onChange: (value: any) => void) => {
+      onChange(!value || value === 'none' ? null : value);
+    },
+    [],
+  );
 
   const handleControlsChange = useCallback((options: Option[], onChange: (value: any) => void) => {
     onChange(options.map((option) => option.value));
   }, []);
 
   const handleTaskTemplateChange = useCallback(
-    (value: string, onChange: (value: any) => void) => {
-      if (value === 'none') {
+    (value: string | null, onChange: (value: any) => void) => {
+      if (!value || value === 'none') {
         onChange(null);
         // Clear the fields when "none" is selected
         form.setValue('title', '');
@@ -162,30 +179,33 @@ export function CreateTaskSheet({
         <FormField
           control={form.control}
           name="taskTemplateId"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Task Template (Optional)</FormLabel>
-              <Select
-                value={field.value || 'none'}
-                onValueChange={(value) => handleTaskTemplateChange(value, field.onChange)}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Template" />
+          render={({ field }) => {
+            const selectedTemplate = frameworkEditorTaskTemplates.find(
+              (t) => t.id === field.value,
+            );
+            return (
+              <FormItem className="w-full">
+                <FormLabel>Evidence Template (Optional)</FormLabel>
+                <Select
+                  value={field.value || 'none'}
+                  onValueChange={(value) => handleTaskTemplateChange(value, field.onChange)}
+                >
+                  <SelectTrigger>
+                    {selectedTemplate?.name || 'Select Template'}
                   </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {frameworkEditorTaskTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      <span className="capitalize">{template.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {frameworkEditorTaskTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         <FormField
@@ -193,13 +213,12 @@ export function CreateTaskSheet({
           name="title"
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Task Title</FormLabel>
+              <FormLabel>Evidence Title</FormLabel>
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="A short, descriptive title for the task"
+                  placeholder="A short, descriptive title for the evidence"
                   autoCorrect="off"
-                  className="w-full"
                 />
               </FormControl>
               <FormMessage />
@@ -216,8 +235,8 @@ export function CreateTaskSheet({
               <FormControl>
                 <Textarea
                   {...field}
-                  className="min-h-[80px] w-full resize-none"
                   placeholder="Provide a detailed description of what needs to be done"
+                  rows={4}
                 />
               </FormControl>
               <FormMessage />
@@ -249,61 +268,67 @@ export function CreateTaskSheet({
         <FormField
           control={form.control}
           name="frequency"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Frequency (Optional)</FormLabel>
-              <Select
-                value={field.value || 'none'}
-                onValueChange={(value) => handleFrequencyChange(value, field.onChange)}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select frequency" />
+          render={({ field }) => {
+            const displayValue = field.value
+              ? field.value.replace('_', ' ')
+              : 'Select frequency';
+            return (
+              <FormItem className="w-full">
+                <FormLabel>Frequency (Optional)</FormLabel>
+                <Select
+                  value={field.value || 'none'}
+                  onValueChange={(value) => handleFrequencyChange(value, field.onChange)}
+                >
+                  <SelectTrigger>
+                    <span className="capitalize">{displayValue}</span>
                   </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {taskFrequencies.map((frequency) => (
-                    <SelectItem key={frequency} value={frequency}>
-                      <span className="capitalize">{frequency.replace('_', ' ')}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {taskFrequencies.map((frequency) => (
+                      <SelectItem key={frequency} value={frequency}>
+                        <span className="capitalize">{frequency.replace('_', ' ')}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         <FormField
           control={form.control}
           name="department"
-          render={({ field }) => (
-            <FormItem className="w-full">
-              <FormLabel>Department (Optional)</FormLabel>
-              <Select
-                value={field.value || 'none'}
-                onValueChange={(value) => handleDepartmentChange(value, field.onChange)}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select department" />
+          render={({ field }) => {
+            const displayValue = field.value
+              ? field.value.toUpperCase()
+              : 'Select department';
+            return (
+              <FormItem className="w-full">
+                <FormLabel>Department (Optional)</FormLabel>
+                <Select
+                  value={field.value || 'none'}
+                  onValueChange={(value) => handleDepartmentChange(value, field.onChange)}
+                >
+                  <SelectTrigger>
+                    <span className="capitalize">{displayValue}</span>
                   </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {taskDepartments
-                    .filter((dept) => dept !== 'none')
-                    .map((department) => (
-                      <SelectItem key={department} value={department}>
-                        <span className="capitalize">{department.toUpperCase()}</span>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {taskDepartments
+                      .filter((dept) => dept !== 'none')
+                      .map((department) => (
+                        <SelectItem key={department} value={department}>
+                          {department.toUpperCase()}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         <FormField
@@ -347,11 +372,13 @@ export function CreateTaskSheet({
         />
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={createTask.status === 'executing'}>
-            <div className="flex items-center justify-center">
-              Create Task
-              <ArrowRightIcon className="ml-2 h-4 w-4" />
-            </div>
+          <Button
+            type="submit"
+            disabled={createTask.status === 'executing'}
+            loading={createTask.status === 'executing'}
+            iconRight={<ArrowRight size={16} />}
+          >
+            Create Evidence
           </Button>
         </div>
       </form>
@@ -360,43 +387,24 @@ export function CreateTaskSheet({
 
   if (isDesktop) {
     return (
-      <>
-        <style>{`
-          [data-radix-dialog-content] > div {
-            overflow: visible !important;
-          }
-          [data-radix-scroll-area-viewport] {
-            overflow: visible !important;
-          }
-        `}</style>
-        <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-          <SheetContent stack className="flex flex-col overflow-visible [&>div]:!overflow-visible">
-            <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-              <SheetTitle>Create New Task</SheetTitle>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="m-0 size-auto p-0 hover:bg-transparent"
-                onClick={() => setCreateTaskOpen(null)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </SheetHeader>
-
-            <div className="flex-1 p-0 pb-[100px] overflow-y-auto overflow-x-visible">
-              <div className="w-full px-2">{taskForm}</div>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Create New Evidence</SheetTitle>
+          </SheetHeader>
+          <SheetBody>{taskForm}</SheetBody>
+        </SheetContent>
+      </Sheet>
     );
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>Create New Task</DrawerTitle>
-      <DrawerContent className="p-6">
-        <div className="w-full">{taskForm}</div>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Create New Evidence</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">{taskForm}</div>
       </DrawerContent>
     </Drawer>
   );

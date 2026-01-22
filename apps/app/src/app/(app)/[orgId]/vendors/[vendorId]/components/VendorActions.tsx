@@ -1,30 +1,58 @@
 'use client';
 
 import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
-import { Button } from '@comp/ui/button';
+import { useVendor } from '@/hooks/use-vendors';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Cog } from 'lucide-react';
+} from '@trycompai/design-system';
+import { Edit, OverflowMenuVertical, Renew } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 
-export function VendorActions({ vendorId }: { vendorId: string }) {
+interface VendorActionsProps {
+  vendorId: string;
+  orgId: string;
+  onOpenEditSheet: () => void;
+}
+
+export function VendorActions({ vendorId, orgId, onOpenEditSheet }: VendorActionsProps) {
+  const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  // Get SWR mutate function to refresh vendor data after mutations
+  // Pass orgId to ensure same cache key as VendorPageClient
+  const { mutate: refreshVendor } = useVendor(vendorId, { organizationId: orgId });
+
   const regenerate = useAction(regenerateVendorMitigationAction, {
-    onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
+    onSuccess: () => {
+      toast.success('Regeneration triggered. This may take a moment.');
+      // Trigger SWR revalidation for vendor detail, list views, and comments
+      refreshVendor();
+      globalMutate(
+        (key) => Array.isArray(key) && key[0] === 'vendors',
+        undefined,
+        { revalidate: true },
+      );
+      // Invalidate comments cache for this vendor
+      globalMutate(
+        (key) => typeof key === 'string' && key.includes(`/v1/comments`) && key.includes(vendorId),
+        undefined,
+        { revalidate: true },
+      );
+    },
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
 
@@ -37,41 +65,43 @@ export function VendorActions({ vendorId }: { vendorId: string }) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Vendor actions">
-            <Cog className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger variant="ellipsis">
+          <OverflowMenuVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onOpenEditSheet}>
+            <Edit size={16} />
+            Edit
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsConfirmOpen(true)}>
-            Regenerate Risk Mitigation
+            <Renew size={16} />
+            Regenerate
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isConfirmOpen} onOpenChange={(open) => !open && setIsConfirmOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Regenerate Mitigation</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate Mitigation</AlertDialogTitle>
+            <AlertDialogDescription>
               This will generate a fresh risk mitigation comment for this vendor and mark it
               assessed. Continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsConfirmOpen(false)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={regenerate.status === 'executing'}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
               disabled={regenerate.status === 'executing'}
             >
-              Cancel
-            </Button>
-            <Button onClick={handleConfirm} disabled={regenerate.status === 'executing'}>
               {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

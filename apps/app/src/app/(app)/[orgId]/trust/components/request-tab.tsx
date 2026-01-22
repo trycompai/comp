@@ -1,6 +1,12 @@
 import { useAccessRequests, usePreviewNda, useResendNda } from '@/hooks/use-access-requests';
-import { Input } from '@comp/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import {
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  Stack,
+} from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ApproveDialog } from './approve-dialog';
@@ -16,6 +22,15 @@ export function RequestsTab({ orgId }: { orgId: string }) {
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string | 'all'>('all');
+
+  const statusOptions = [
+    { value: 'all', label: 'All statuses' },
+    { value: 'under_review', label: 'Under review' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'denied', label: 'Denied' },
+  ];
+
+  const selectedStatusLabel = statusOptions.find((opt) => opt.value === status)?.label ?? 'Filter status';
 
   const handleResendNda = (requestId: string) => {
     toast.promise(resendNda(requestId), {
@@ -51,26 +66,30 @@ export function RequestsTab({ orgId }: { orgId: string }) {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <Input
-          placeholder="Search by name, email, or company"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-8 max-w-md"
-        />
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="h-8 w-full md:w-[200px]">
-            <SelectValue placeholder="Filter status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="under_review">Under review</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="denied">Denied</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <Stack gap="4">
+      <Stack direction="row" gap="2" align="center">
+        <div className="flex-1 max-w-md">
+          <Input
+            placeholder="Search by name, email, or company"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="w-[200px]">
+          <Select value={status} onValueChange={(value) => setStatus(value as string)}>
+            <SelectTrigger>
+              {selectedStatusLabel}
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </Stack>
 
       <RequestDataTable
         data={filtered}
@@ -85,7 +104,6 @@ export function RequestsTab({ orgId }: { orgId: string }) {
         <ApproveDialog orgId={orgId} requestId={approveId} onClose={() => setApproveId(null)} />
       )}
       {denyId && <DenyDialog orgId={orgId} requestId={denyId} onClose={() => setDenyId(null)} />}
-    </div>
+    </Stack>
   );
 }
-

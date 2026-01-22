@@ -7,12 +7,7 @@ export const sendAllPolicyNotificationEmail = async (params: {
   organizationName: string;
   organizationId: string;
 }) => {
-  const {
-    email,
-    userName,
-    organizationName,
-    organizationId,
-  } = params;
+  const { email, userName, organizationName, organizationId } = params;
   const subjectText = 'Please review and accept the policies';
 
   try {
@@ -39,4 +34,3 @@ export const sendAllPolicyNotificationEmail = async (params: {
     return { success: false };
   }
 };
-

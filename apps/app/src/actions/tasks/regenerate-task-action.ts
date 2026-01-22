@@ -46,12 +46,13 @@ export const regenerateTaskAction = authActionClient
       throw new Error('Task has no associated template to regenerate from');
     }
 
-    // Update the task with the template's current title and description
+    // Update the task with the template's current title, description, and automationStatus
     await db.task.update({
       where: { id: taskId },
       data: {
         title: task.taskTemplate.name,
         description: task.taskTemplate.description,
+        automationStatus: task.taskTemplate.automationStatus,
       },
     });
 

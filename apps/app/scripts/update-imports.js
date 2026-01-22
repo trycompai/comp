@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const glob = require('glob');
+import fs from 'node:fs';
+import { globSync } from 'glob';
 
 console.log('🔄 Updating database imports to use local client...');
 
 // Find all TypeScript/TSX files in src directory
-const files = glob.sync('src/**/*.{ts,tsx}', {
+const files = globSync('src/**/*.{ts,tsx}', {
   cwd: process.cwd(),
   absolute: true,
 });

@@ -38,7 +38,7 @@ export function QuestionnaireSidebar() {
         <ul className="text-xs text-muted-foreground space-y-1.5">
           <li className="flex items-start gap-2">
             <span className="text-primary mt-0.5">•</span>
-            <span>Files up to 10MB are supported</span>
+            <span>Files up to 100MB are supported</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary mt-0.5">•</span>

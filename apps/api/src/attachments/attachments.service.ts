@@ -14,12 +14,13 @@ import {
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
+import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
   private s3Client: S3Client;
   private bucketName: string;
-  private readonly MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+  private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
@@ -27,20 +28,16 @@ export class AttachmentsService {
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
 
-    if (
-      !process.env.APP_AWS_ACCESS_KEY_ID ||
-      !process.env.APP_AWS_SECRET_ACCESS_KEY
-    ) {
-      console.warn('AWS credentials are missing, S3 client may fail');
+    if (!s3Client) {
+      console.error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
+      throw new Error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
     }
 
-    this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+    this.s3Client = s3Client;
   }
 
   /**
@@ -129,7 +126,20 @@ export class AttachmentsService {
       const fileId = randomBytes(16).toString('hex');
       const sanitizedFileName = this.sanitizeFileName(uploadDto.fileName);
       const timestamp = Date.now();
-      const s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+
+      // Special S3 path structure for task items: org_{orgId}/attachments/task-item/{entityType}/{entityId}
+      let s3Key: string;
+      if (entityType === 'task_item') {
+        // For task items, extract entityType and entityId from metadata
+        // Metadata should contain taskItemEntityType and taskItemEntityId
+        const taskItemEntityType =
+          uploadDto.description?.split('|')[0] || 'unknown';
+        const taskItemEntityId =
+          uploadDto.description?.split('|')[1] || entityId;
+        s3Key = `${organizationId}/attachments/task-item/${taskItemEntityType}/${taskItemEntityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+      } else {
+        s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+      }
 
       // Upload to S3
       const putCommand = new PutObjectCommand({
@@ -370,6 +380,25 @@ export class AttachmentsService {
 
   async getPresignedDownloadUrl(s3Key: string): Promise<string> {
     return this.generateSignedUrl(s3Key);
+  }
+
+  /**
+   * Generate presigned download URL with a custom download filename
+   */
+  async getPresignedDownloadUrlWithFilename(
+    s3Key: string,
+    downloadFilename: string,
+  ): Promise<string> {
+    const sanitizedFilename = this.sanitizeHeaderValue(downloadFilename);
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      ResponseContentDisposition: `attachment; filename="${sanitizedFilename}"`,
+    });
+
+    return getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: this.SIGNED_URL_EXPIRY,
+    });
   }
 
   async getObjectBuffer(s3Key: string): Promise<Buffer> {

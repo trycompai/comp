@@ -1,5 +1,9 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
+import { getFeatureFlags } from '@/app/posthog';
+import { auth } from '@/utils/auth';
+import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import Link from 'next/link';
 import { PolicyHeaderActions } from './components/PolicyHeaderActions';
 import PolicyPage from './components/PolicyPage';
 import { getAssignees, getLogsForPolicy, getPolicy, getPolicyControlMappingInfo } from './data';
@@ -18,24 +22,43 @@ export default async function PolicyDetails({
 
   const isPendingApproval = !!policy?.approverId;
 
+  // Check feature flag for AI policy editor
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const flags = session?.user?.id ? await getFeatureFlags(session.user.id) : {};
+  const isAiPolicyEditorEnabled =
+    flags['is-ai-policy-assistant-enabled'] === true ||
+    flags['is-ai-policy-assistant-enabled'] === 'true';
+
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Policies', href: `/${orgId}/policies/all` },
-        { label: policy?.name ?? 'Policy', current: true },
-      ]}
-      headerRight={<PolicyHeaderActions policy={policy} logs={logs} />}
-    >
+    <PageLayout>
+      <Breadcrumb
+        items={[
+          {
+            label: 'Policies',
+            href: `/${orgId}/policies`,
+            props: { render: <Link href={`/${orgId}/policies`} /> },
+          },
+          { label: policy?.name ?? 'Policy', isCurrent: true },
+        ]}
+      />
+      <PageHeader
+        title={policy?.name ?? 'Policy'}
+        actions={<PolicyHeaderActions policy={policy} logs={logs} />}
+      />
       <PolicyPage
         policy={policy}
         policyId={policyId}
+        organizationId={orgId}
         assignees={assignees}
         mappedControls={mappedControls}
         allControls={allControls}
         isPendingApproval={isPendingApproval}
         logs={logs}
+        showAiAssistant={isAiPolicyEditorEnabled}
       />
-    </PageWithBreadcrumb>
+    </PageLayout>
   );
 }
 

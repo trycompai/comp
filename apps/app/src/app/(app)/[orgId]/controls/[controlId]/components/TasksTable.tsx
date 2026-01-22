@@ -1,62 +1,29 @@
 'use client';
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
-import { useDataTable } from '@/hooks/use-data-table';
-import { Icons } from '@comp/ui/icons';
-import { Input } from '@comp/ui/input';
 import { Task } from '@db';
-import { ColumnDef } from '@tanstack/react-table';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
+import { Search } from '@trycompai/design-system/icons';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 interface TasksTableProps {
   tasks: Task[];
   orgId: string;
-  controlId: string;
 }
 
-export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
+export function TasksTable({ tasks, orgId }: TasksTableProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Define columns for tasks table
-  const columns = useMemo<ColumnDef<Task>[]>(
-    () => [
-      {
-        accessorKey: 'title',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Title'} />,
-        cell: ({ row }) => {
-          const title = row.original.title;
-          return <span>{title}</span>;
-        },
-        enableSorting: true,
-        sortingFn: (rowA, rowB, columnId) => {
-          const nameA = rowA.original.title || '';
-          const nameB = rowB.original.title || '';
-          return nameA.localeCompare(nameB);
-        },
-      },
-      {
-        accessorKey: 'description',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Description'} />,
-        cell: ({ row }) => {
-          const description = row.original.description;
-          return <span className="line-clamp-1 capitalize">{description}</span>;
-        },
-      },
-      {
-        accessorKey: 'status',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Status'} />,
-        cell: ({ row }) => {
-          const rawStatus = row.original.status;
-
-          // Pass the mapped status directly to StatusIndicator
-          return <StatusIndicator status={rawStatus} />;
-        },
-      },
-    ],
-    [],
-  );
 
   // Filter tasks data based on search term
   const filteredTasks = useMemo(() => {
@@ -71,37 +38,68 @@ export function TasksTable({ tasks, orgId, controlId }: TasksTableProps) {
     );
   }, [tasks, searchTerm]);
 
-  // Set up the tasks table
-  const table = useDataTable({
-    data: filteredTasks,
-    columns,
-    pageCount: 1,
-    shallow: false,
-    getRowId: (row) => row.id,
-    initialState: {
-      sorting: [{ id: 'createdAt', desc: true }],
-    },
-    tableId: 't',
-  });
+  const handleRowClick = (taskId: string) => {
+    router.push(`/${orgId}/tasks/${taskId}`);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
-        <Input
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-          leftIcon={<Icons.Search size={16} />}
-        />
+      <div className="w-full max-w-sm">
+        <InputGroup>
+          <InputGroupAddon>
+            <Search size={16} />
+          </InputGroupAddon>
+          <InputGroupInput
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </InputGroup>
       </div>
 
-      <DataTable
-        table={table.table}
-        rowClickBasePath={`/${orgId}/`}
-        getRowId={(row) => `/tasks/${row.id}`}
-        tableId={'t'}
-      />
+      <Table variant="bordered">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredTasks.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3}>
+                <Text size="sm" variant="muted">
+                  No tasks found.
+                </Text>
+              </TableCell>
+            </TableRow>
+          ) : (
+            filteredTasks.map((task) => (
+              <TableRow
+                key={task.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleRowClick(task.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleRowClick(task.id);
+                  }
+                }}
+              >
+                <TableCell>{task.title}</TableCell>
+                <TableCell>
+                  <span className="line-clamp-1 capitalize">{task.description}</span>
+                </TableCell>
+                <TableCell>
+                  <StatusIndicator status={task.status} />
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

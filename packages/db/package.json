@@ -1,7 +1,7 @@
 {
   "name": "@trycompai/db",
   "description": "Database package with Prisma client and schema for Comp AI",
-  "version": "1.3.18",
+  "version": "1.3.21",
   "dependencies": {
     "@prisma/client": "^6.13.0",
     "dotenv": "^16.4.5",
@@ -14,8 +14,16 @@
     "typescript": "^5.9.2"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./postinstall": "./dist/postinstall.js"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./postinstall": {
+      "import": "./dist/postinstall.js",
+      "types": "./src/postinstall.ts",
+      "default": "./dist/postinstall.js"
+    }
   },
   "bin": {
     "comp-prisma-postinstall": "./dist/postinstall.js"

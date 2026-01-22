@@ -221,6 +221,14 @@ export const Icons = {
       </defs>
     </svg>
   ),
+  Microsoft: (props: any) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23" fill="none" {...props}>
+      <path fill="#f25022" d="M0 0h10.91v10.91H0z" />
+      <path fill="#00a4ef" d="M12.09 0H23v10.91H12.09z" />
+      <path fill="#7fba00" d="M0 12.09h10.91V23H0z" />
+      <path fill="#ffb900" d="M12.09 12.09H23V23H12.09z" />
+    </svg>
+  ),
   EmailIcon: (props: any) => (
     <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" {...props}>
       <g strokeWidth={0} />

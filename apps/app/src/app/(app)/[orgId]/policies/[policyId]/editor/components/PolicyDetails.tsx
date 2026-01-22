@@ -1,20 +1,28 @@
 'use client';
 
 import { PolicyEditor } from '@/components/editor/policy-editor';
+import '@/styles/editor.css';
 import { useChat } from '@ai-sdk/react';
-import { Button } from '@comp/ui/button';
-import { Card, CardContent } from '@comp/ui/card';
 import { DiffViewer } from '@comp/ui/diff-viewer';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
-import '@comp/ui/editor.css';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
+import {
+  Button,
+  Grid,
+  HStack,
+  Section,
+  Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@trycompai/design-system';
+import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
 import { structuredPatch } from 'diff';
-import { CheckCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
 import { PdfViewer } from '../../components/PdfViewer';
@@ -81,6 +89,9 @@ interface PolicyContentManagerProps {
   isPendingApproval: boolean;
   displayFormat?: PolicyDisplayFormat;
   pdfUrl?: string | null;
+  /** Whether the AI assistant feature is enabled (behind feature flag) */
+  aiAssistantEnabled?: boolean;
+  onMutate?: () => void;
 }
 
 export function PolicyContentManager({
@@ -89,9 +100,13 @@ export function PolicyContentManager({
   isPendingApproval,
   displayFormat = 'EDITOR',
   pdfUrl,
+  aiAssistantEnabled = false,
+  onMutate,
 }: PolicyContentManagerProps) {
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>(displayFormat);
+  const previousTabRef = useRef<string>(displayFormat);
   const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
     const formattedContent = Array.isArray(policyContent)
       ? policyContent
@@ -102,12 +117,6 @@ export function PolicyContentManager({
   const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
-  const diffViewerRef = useRef<HTMLDivElement>(null);
-
-  const isAiPolicyAssistantEnabled = true;
-  const scrollToDiffViewer = useCallback(() => {
-    diffViewerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
 
   const {
     messages,
@@ -150,7 +159,19 @@ export function PolicyContentManager({
   );
 
   const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onError: () => toast.error('Failed to switch view.'),
+    onSuccess: () => {
+      // Server action succeeded, update ref for next operation
+      previousTabRef.current = activeTab;
+    },
+    onError: () => {
+      toast.error('Failed to switch view.');
+      // Roll back to the previous tab state on error
+      setActiveTab(previousTabRef.current);
+      // Also restore AI assistant visibility if we were switching from EDITOR
+      if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
+        setShowAiAssistant(true);
+      }
+    },
   });
 
   const currentPolicyMarkdown = useMemo(
@@ -185,42 +206,53 @@ export function PolicyContentManager({
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4 h-[60vh]">
-            <div className="flex-1 min-w-0 h-full overflow-y-auto">
-              <Tabs
-                defaultValue={displayFormat}
-                onValueChange={(format) =>
-                  switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' })
-                }
-                className="w-full"
+    <Stack gap="md">
+      <Tabs
+        defaultValue={displayFormat}
+        value={activeTab}
+        onValueChange={(format) => {
+          previousTabRef.current = activeTab;
+          setActiveTab(format);
+          if (format === 'PDF') {
+            setShowAiAssistant(false);
+          }
+          switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
+        }}
+      >
+        <Stack gap="md">
+          <HStack justify="between" align="center">
+            <div className="max-w-md">
+              <TabsList>
+                <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
+                  Editor View
+                </TabsTrigger>
+                <TabsTrigger value="PDF" disabled={isPendingApproval}>
+                  PDF View
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
+              <Button
+                variant={showAiAssistant ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowAiAssistant((prev) => !prev)}
+                iconLeft={<MagicWand size={16} />}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <TabsList className="grid w-auto grid-cols-2">
-                    <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
-                      Editor View
-                    </TabsTrigger>
-                    <TabsTrigger value="PDF" disabled={isPendingApproval}>
-                      PDF View
-                    </TabsTrigger>
-                  </TabsList>
-                  {!isPendingApproval &&
-                    displayFormat === 'EDITOR' &&
-                    isAiPolicyAssistantEnabled && (
-                      <Button
-                        variant={showAiAssistant ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setShowAiAssistant((prev) => !prev)}
-                        className="gap-2"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        AI Assistant
-                      </Button>
-                    )}
-                </div>
-                <TabsContent value="EDITOR" className="mt-4">
+                AI Assistant
+              </Button>
+            )}
+          </HStack>
+
+          <div
+            className={
+              showAiAssistant && aiAssistantEnabled
+                ? 'flex flex-col lg:flex-row gap-6'
+                : ''
+            }
+          >
+            <div className={showAiAssistant && aiAssistantEnabled ? 'flex-[7] min-w-0' : 'w-full'}>
+              <Stack gap="sm">
+                <TabsContent value="EDITOR">
                   <PolicyEditorWrapper
                     key={editorKey}
                     policyId={policyId}
@@ -229,57 +261,63 @@ export function PolicyContentManager({
                     onContentChange={setCurrentContent}
                   />
                 </TabsContent>
-                <TabsContent value="PDF" className="mt-4">
+                <TabsContent value="PDF">
                   <PdfViewer
                     policyId={policyId}
                     pdfUrl={pdfUrl}
                     isPendingApproval={isPendingApproval}
+                    onMutate={onMutate}
                   />
                 </TabsContent>
-              </Tabs>
+              </Stack>
             </div>
 
-            {showAiAssistant && isAiPolicyAssistantEnabled && (
-              <div className="w-80 shrink-0 self-stretch flex flex-col overflow-hidden">
+            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
+              <div className="flex-[3] min-w-0 self-stretch">
                 <PolicyAiAssistant
                   messages={messages}
                   status={status}
                   errorMessage={chatErrorMessage}
                   sendMessage={sendMessage}
                   close={() => setShowAiAssistant(false)}
-                  onScrollToDiff={scrollToDiffViewer}
                   hasActiveProposal={!!activeProposal && !hasPendingProposal}
                 />
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </Stack>
+      </Tabs>
 
       {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
-        <div ref={diffViewerRef} className="space-y-2">
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDismissedProposalKey(activeProposal.key)}
-            >
-              <X className="h-3 w-3 mr-1" />
-              Dismiss
-            </Button>
-            <Button size="sm" onClick={applyProposedChanges} disabled={isApplying}>
-              {isApplying ? (
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              ) : (
-                <CheckCircle className="h-3 w-3 mr-1" />
-              )}
-              Apply Changes
-            </Button>
-          </div>
+        <Section
+          title="Proposed Changes"
+          description="The AI has proposed updates to this policy. Review the changes above and click 'Apply Changes' to accept them."
+          actions={
+            <HStack gap="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDismissedProposalKey(activeProposal.key)}
+                iconLeft={<Close size={12} />}
+              >
+                Dismiss
+              </Button>
+              <Button
+                size="sm"
+                onClick={applyProposedChanges}
+                disabled={isApplying}
+                loading={isApplying}
+                iconLeft={!isApplying ? <Checkmark size={12} /> : undefined}
+              >
+                Apply Changes
+              </Button>
+            </HStack>
+          }
+        >
           <DiffViewer patch={diffPatch} />
-        </div>
+        </Section>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -370,8 +408,8 @@ function PolicyEditorWrapper({
   }
 
   return (
-    <div className="flex h-full flex-col border border-border rounded-md p-2">
+    <Section>
       <PolicyEditor content={normalizedContent} onSave={savePolicy} readOnly={isPendingApproval} />
-    </div>
+    </Section>
   );
 }

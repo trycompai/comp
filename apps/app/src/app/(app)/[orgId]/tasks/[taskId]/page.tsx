@@ -1,4 +1,7 @@
+import { getFeatureFlags } from '@/app/posthog';
+import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SingleTask } from './components/SingleTask';
 
@@ -16,7 +19,25 @@ export default async function TaskPage({
 
   const automations = await getAutomations(taskId);
 
-  return <SingleTask initialTask={task} initialAutomations={automations} />;
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  let isWebAutomationsEnabled = false;
+  if (session?.user?.id) {
+    const flags = await getFeatureFlags(session.user.id);
+    isWebAutomationsEnabled =
+      flags['is-web-automations-enabled'] === true ||
+      flags['is-web-automations-enabled'] === 'true';
+  }
+
+  return (
+    <SingleTask
+      initialTask={task}
+      initialAutomations={automations}
+      isWebAutomationsEnabled={isWebAutomationsEnabled}
+    />
+  );
 }
 
 const getTask = async (taskId: string) => {

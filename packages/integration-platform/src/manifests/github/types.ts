@@ -17,10 +17,26 @@ export interface GitHubRepo {
   default_branch: string;
   owner: { login: string };
   security_and_analysis?: {
+    advanced_security?: { status: 'enabled' | 'disabled' };
     dependabot_security_updates?: { status: 'enabled' | 'disabled' };
     secret_scanning?: { status: 'enabled' | 'disabled' };
     secret_scanning_push_protection?: { status: 'enabled' | 'disabled' };
   };
+}
+
+export interface GitHubPullRequest {
+  id: number;
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  html_url: string;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  merged_at: string | null;
+  user: { login: string } | null;
+  base: { ref: string };
+  head: { ref: string };
 }
 
 export interface GitHubBranchProtection {
@@ -74,4 +90,56 @@ export interface GitHubCodeScanningDefaultSetup {
   languages?: string[];
   query_suite?: 'default' | 'extended';
   updated_at?: string;
+}
+
+/**
+ * Git tree response
+ * Returned by /repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1
+ */
+export interface GitHubTreeResponse {
+  sha: string;
+  url: string;
+  truncated: boolean;
+  tree: GitHubTreeEntry[];
+}
+
+export interface GitHubTreeEntry {
+  path: string;
+  mode: string;
+  type: 'blob' | 'tree';
+  sha: string;
+  size?: number;
+  url: string;
+}
+
+/**
+ * Dependabot alert response
+ * Returned by /repos/{owner}/{repo}/dependabot/alerts
+ */
+export interface GitHubDependabotAlert {
+  number: number;
+  state: 'open' | 'dismissed' | 'fixed';
+  dependency: {
+    package: {
+      ecosystem: string;
+      name: string;
+    };
+    manifest_path: string;
+  };
+  security_advisory: {
+    ghsa_id: string;
+    cve_id: string | null;
+    summary: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  };
+  security_vulnerability: {
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  };
+  created_at: string;
+  updated_at: string;
+  dismissed_at: string | null;
+  dismissed_by: { login: string } | null;
+  dismissed_reason: string | null;
+  fixed_at: string | null;
+  html_url: string;
 }

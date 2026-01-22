@@ -68,31 +68,15 @@ export const organizationAdvancedModeSchema = z.object({
 // Risks
 export const createRiskSchema = z.object({
   title: z
-    .string({
-      required_error: 'Risk name is required',
-    })
-    .min(1, {
-      message: 'Risk name should be at least 1 character',
-    })
-    .max(100, {
-      message: 'Risk name should be at most 100 characters',
-    }),
+    .string({ error: 'Risk name is required' })
+    .min(1, { message: 'Risk name should be at least 1 character' })
+    .max(100, { message: 'Risk name should be at most 100 characters' }),
   description: z
-    .string({
-      required_error: 'Risk description is required',
-    })
-    .min(1, {
-      message: 'Risk description should be at least 1 character',
-    })
-    .max(255, {
-      message: 'Risk description should be at most 255 characters',
-    }),
-  category: z.nativeEnum(RiskCategory, {
-    required_error: 'Risk category is required',
-  }),
-  department: z.nativeEnum(Departments, {
-    required_error: 'Risk department is required',
-  }),
+    .string({ error: 'Risk description is required' })
+    .min(1, { message: 'Risk description should be at least 1 character' })
+    .max(255, { message: 'Risk description should be at most 255 characters' }),
+  category: z.nativeEnum(RiskCategory, { error: 'Risk category is required' }),
+  department: z.nativeEnum(Departments, { error: 'Risk department is required' }),
   assigneeId: z.string().optional().nullable(),
 });
 
@@ -106,16 +90,10 @@ export const updateRiskSchema = z.object({
   description: z.string().min(1, {
     message: 'Risk description is required',
   }),
-  category: z.nativeEnum(RiskCategory, {
-    required_error: 'Risk category is required',
-  }),
-  department: z.nativeEnum(Departments, {
-    required_error: 'Risk department is required',
-  }),
+  category: z.nativeEnum(RiskCategory, { error: 'Risk category is required' }),
+  department: z.nativeEnum(Departments, { error: 'Risk department is required' }),
   assigneeId: z.string().optional().nullable(),
-  status: z.nativeEnum(RiskStatus, {
-    required_error: 'Risk status is required',
-  }),
+  status: z.nativeEnum(RiskStatus, { error: 'Risk status is required' }),
 });
 
 export const createRiskCommentSchema = z.object({
@@ -165,9 +143,7 @@ export const updateTaskSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   dueDate: z.date().optional(),
-  status: z.nativeEnum(TaskStatus, {
-    required_error: 'Task status is required',
-  }),
+  status: z.nativeEnum(TaskStatus, { error: 'Task status is required' }),
   assigneeId: z.string().optional().nullable(),
 });
 
@@ -255,10 +231,8 @@ export const updateResidualRiskEnumSchema = z.object({
 
 // Policies
 export const createPolicySchema = z.object({
-  title: z.string({ required_error: 'Title is required' }).min(1, 'Title is required'),
-  description: z
-    .string({ required_error: 'Description is required' })
-    .min(1, 'Description is required'),
+  title: z.string({ error: 'Title is required' }).min(1, 'Title is required'),
+  description: z.string({ error: 'Description is required' }).min(1, 'Description is required'),
   frameworkIds: z.array(z.string()).optional(),
   controlIds: z.array(z.string()).optional(),
   entityId: z.string().optional(),
@@ -284,9 +258,7 @@ export const assistantSettingsSchema = z.object({
 export const createEmployeeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  department: z.nativeEnum(Departments, {
-    required_error: 'Department is required',
-  }),
+  department: z.nativeEnum(Departments, { error: 'Department is required' }),
   externalEmployeeId: z.string().optional(),
   isActive: z.boolean().default(true),
 });

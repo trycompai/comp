@@ -28,6 +28,7 @@ export class OrganizationService {
           hasAccess: true,
           fleetDmLabelId: true,
           isFleetSetupCompleted: true,
+          primaryColor: true,
           createdAt: true,
         },
       });
@@ -63,6 +64,7 @@ export class OrganizationService {
           hasAccess: true,
           fleetDmLabelId: true,
           isFleetSetupCompleted: true,
+          primaryColor: true,
           createdAt: true,
         },
       });
@@ -86,6 +88,7 @@ export class OrganizationService {
           hasAccess: true,
           fleetDmLabelId: true,
           isFleetSetupCompleted: true,
+          primaryColor: true,
           createdAt: true,
         },
       });
@@ -202,9 +205,7 @@ export class OrganizationService {
 
       // Prepare updated roles for new owner:
       // Add 'owner', keep all existing roles
-      const updatedNewOwnerRoles = [
-        ...new Set([...newOwnerRoles, Role.owner]),
-      ]; // Use Set to avoid duplicates
+      const updatedNewOwnerRoles = [...new Set([...newOwnerRoles, Role.owner])]; // Use Set to avoid duplicates
 
       this.logger.log('[Transfer Ownership] Role updates:', {
         organizationId,
@@ -268,6 +269,64 @@ export class OrganizationService {
       }
       this.logger.error(
         `Failed to transfer ownership for organization ${organizationId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+  async getPrimaryColor(organizationId: string, token?: string) {
+    try {
+      let targetOrgId = organizationId;
+
+      // If token is provided, resolve organization from the access grant
+      if (token) {
+        const grant = await db.trustAccessGrant.findUnique({
+          where: { accessToken: token },
+          select: {
+            expiresAt: true,
+            accessRequest: {
+              select: {
+                organizationId: true,
+              },
+            },
+          },
+        });
+
+        if (!grant) {
+          throw new NotFoundException('Invalid or expired access token');
+        }
+
+        if (grant.expiresAt && new Date() > grant.expiresAt) {
+          throw new NotFoundException('Access token has expired');
+        }
+
+        targetOrgId = grant.accessRequest.organizationId;
+      }
+
+      const primaryColor = await db.organization.findUnique({
+        where: { id: targetOrgId },
+        select: { primaryColor: true },
+      });
+
+      if (!primaryColor) {
+        throw new NotFoundException(
+          `Organization with ID ${targetOrgId} not found`,
+        );
+      }
+
+      this.logger.log(
+        `Retrieved organization primary color for organization ${targetOrgId}: ${primaryColor.primaryColor}`,
+      );
+
+      return {
+        primaryColor: primaryColor.primaryColor,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to retrieve organization primary color for organization ${organizationId}:`,
         error,
       );
       throw error;

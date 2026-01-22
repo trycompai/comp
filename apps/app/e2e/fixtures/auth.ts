@@ -9,7 +9,7 @@ type AuthFixtures = {
 
 export const test = base.extend<AuthFixtures>({
   // This fixture provides an authenticated page
-  authenticatedPage: async ({ browser }, use) => {
+  authenticatedPage: async ({ browser }, providePage) => {
     // Check if we have saved auth state
     const authFile = path.join(__dirname, '../auth/user.json');
     let context: BrowserContext;
@@ -78,7 +78,7 @@ export const test = base.extend<AuthFixtures>({
     }
 
     const page = await context.newPage();
-    await use(page);
+    await providePage(page);
     await context.close();
   },
 });

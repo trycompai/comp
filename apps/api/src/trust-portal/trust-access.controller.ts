@@ -253,6 +253,33 @@ export class TrustAccessController {
     );
   }
 
+  @Post('admin/grants/:id/resend-access-email')
+  @UseGuards(HybridAuthGuard)
+  @ApiSecurity('apikey')
+  @ApiHeader({
+    name: 'X-Organization-Id',
+    description: 'Organization ID',
+    required: true,
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend access granted email',
+    description: 'Resend the access granted email to user with active grant',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Access email resent',
+  })
+  async resendAccessEmail(
+    @OrganizationId() organizationId: string,
+    @Param('id') grantId: string,
+  ) {
+    return this.trustAccessService.resendAccessGrantEmail(
+      organizationId,
+      grantId,
+    );
+  }
+
   @Get('nda/:token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -440,6 +467,21 @@ export class TrustAccessController {
     return this.trustAccessService.downloadAllPoliciesByAccessToken(token);
   }
 
+  @Get('access/:token/policies/download-all-zip')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download all policies as ZIP with individual PDFs',
+    description:
+      'Generate ZIP archive containing individual watermarked PDFs for each policy',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Download URL for ZIP archive returned',
+  })
+  async downloadAllPoliciesAsZip(@Param('token') token: string) {
+    return this.trustAccessService.downloadAllPoliciesAsZipByAccessToken(token);
+  }
+
   @Get('access/:token/compliance-resources')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -453,6 +495,72 @@ export class TrustAccessController {
   })
   async getComplianceResourcesByAccessToken(@Param('token') token: string) {
     return this.trustAccessService.getComplianceResourcesByAccessToken(token);
+  }
+
+  @Get('access/:token/documents')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List additional documents by access token',
+    description:
+      'Get list of trust portal additional documents available for download',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Documents list returned',
+  })
+  async getTrustDocumentsByAccessToken(@Param('token') token: string) {
+    return this.trustAccessService.getTrustDocumentsByAccessToken(token);
+  }
+
+  @Get('access/:token/documents/download-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download all additional documents as a ZIP by access token',
+    description:
+      'Creates a ZIP archive of all active trust portal additional documents and returns a signed download URL',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL for ZIP archive returned',
+  })
+  async downloadAllTrustDocuments(@Param('token') token: string) {
+    return this.trustAccessService.downloadAllTrustDocumentsByAccessToken(
+      token,
+    );
+  }
+
+  @Get('access/:token/documents/:documentId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download additional document by access token',
+    description:
+      'Get signed URL to download a specific trust portal additional document',
+  })
+  @ApiParam({
+    name: 'documentId',
+    description: 'Trust document ID',
+    example: 'tdoc_abc123',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL for document returned',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Document not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid access token',
+  })
+  async getTrustDocumentUrlByAccessToken(
+    @Param('token') token: string,
+    @Param('documentId') documentId: string,
+  ) {
+    return this.trustAccessService.getTrustDocumentUrlByAccessToken(
+      token,
+      documentId,
+    );
   }
 
   @Get('access/:token/compliance-resources/:framework')
@@ -487,5 +595,46 @@ export class TrustAccessController {
       token,
       framework as any,
     );
+  }
+
+  @Get(':friendlyUrl/faqs')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get FAQs for a trust portal',
+    description:
+      'Retrieve the frequently asked questions for a published trust portal as structured data.',
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'FAQs retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        faqs: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              question: { type: 'string' },
+              answer: { type: 'string' },
+              order: { type: 'number' },
+            },
+          },
+          nullable: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Trust site not found or not published',
+  })
+  async getFaqs(@Param('friendlyUrl') friendlyUrl: string) {
+    return this.trustAccessService.getFaqs(friendlyUrl);
   }
 }

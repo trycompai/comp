@@ -1,25 +1,31 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { useDebounce } from '@/hooks/useDebounce';
+import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Switch } from '@comp/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ExternalLink, FileText, Upload, Download, Eye, FileCheck2 } from 'lucide-react';
+import { Switch } from '@trycompai/design-system';
+import { Download, ExternalLink, Eye, FileCheck2, Upload } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { isFriendlyAvailable } from '../actions/is-friendly-available';
 import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
+import {
+  TrustPortalAdditionalDocumentsSection,
+  type TrustPortalDocument,
+} from './TrustPortalAdditionalDocumentsSection';
+import { TrustPortalDomain } from './TrustPortalDomain';
+import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
+import { AllowedDomainsManager } from './AllowedDomainsManager';
 import {
   GDPR,
   HIPAA,
@@ -36,7 +42,7 @@ import {
 const trustPortalSwitchSchema = z.object({
   enabled: z.boolean(),
   contactEmail: z.string().email().or(z.literal('')).optional(),
-  friendlyUrl: z.string().optional(),
+  primaryColor: z.string().optional(),
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
   iso27001: z.boolean(),
@@ -61,7 +67,7 @@ const trustPortalSwitchSchema = z.object({
 type TrustPortalSwitchActionInput = {
   enabled: boolean;
   contactEmail?: string | '';
-  friendlyUrl?: string;
+  primaryColor?: string;
 };
 
 const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
@@ -95,6 +101,7 @@ export function TrustPortalSwitch({
   domainVerified,
   domain,
   contactEmail,
+  primaryColor,
   orgId,
   soc2type1,
   soc2type2,
@@ -114,7 +121,9 @@ export function TrustPortalSwitch({
   nen7510Status,
   iso9001,
   iso9001Status,
-  friendlyUrl,
+  faqs,
+  isVercelDomain,
+  vercelVerification,
   // File props - will be passed from page.tsx later
   iso27001FileName,
   iso42001FileName,
@@ -125,12 +134,15 @@ export function TrustPortalSwitch({
   pcidssFileName,
   nen7510FileName,
   iso9001FileName,
+  additionalDocuments,
+  allowedDomains,
 }: {
   enabled: boolean;
   slug: string;
   domainVerified: boolean;
   domain: string;
   contactEmail: string | null;
+  primaryColor: string | null;
   orgId: string;
   soc2type1: boolean;
   soc2type2: boolean;
@@ -150,7 +162,9 @@ export function TrustPortalSwitch({
   nen7510Status: 'started' | 'in_progress' | 'compliant';
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
-  friendlyUrl: string | null;
+  faqs: any[] | null;
+  isVercelDomain?: boolean;
+  vercelVerification?: string | null;
   iso27001FileName?: string | null;
   iso42001FileName?: string | null;
   gdprFileName?: string | null;
@@ -160,6 +174,8 @@ export function TrustPortalSwitch({
   pcidssFileName?: string | null;
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
+  additionalDocuments: TrustPortalDocument[];
+  allowedDomains: string[];
 }) {
   const [certificateFiles, setCertificateFiles] = useState<Record<string, string | null>>({
     iso27001: iso27001FileName ?? null,
@@ -284,13 +300,12 @@ export function TrustPortalSwitch({
   const trustPortalSwitchRef = useRef(trustPortalSwitch);
   trustPortalSwitchRef.current = trustPortalSwitch;
 
-  const checkFriendlyUrl = useAction(isFriendlyAvailable);
-
   const form = useForm<z.infer<typeof trustPortalSwitchSchema>>({
     resolver: zodResolver(trustPortalSwitchSchema),
     defaultValues: {
       enabled: enabled,
       contactEmail: contactEmail ?? undefined,
+      primaryColor: primaryColor ?? undefined,
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
@@ -309,7 +324,6 @@ export function TrustPortalSwitch({
       pcidssStatus: pcidssStatus ?? 'started',
       nen7510Status: nen7510Status ?? 'started',
       iso9001Status: iso9001Status ?? 'started',
-      friendlyUrl: friendlyUrl ?? undefined,
     },
   });
 
@@ -322,20 +336,20 @@ export function TrustPortalSwitch({
 
   const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
 
-  const lastSaved = useRef<{ [key: string]: string | boolean }>({
+  const lastSaved = useRef<{ [key: string]: string | boolean | null }>({
     contactEmail: contactEmail ?? '',
-    friendlyUrl: friendlyUrl ?? '',
     enabled: enabled,
+    primaryColor: primaryColor ?? null,
   });
 
   const savingRef = useRef<{ [key: string]: boolean }>({
     contactEmail: false,
-    friendlyUrl: false,
     enabled: false,
+    primaryColor: false,
   });
 
   const autoSave = useCallback(
-    async (field: string, value: any) => {
+    async (field: string, value: unknown) => {
       // Prevent concurrent saves for the same field
       if (savingRef.current[field]) {
         return;
@@ -346,14 +360,16 @@ export function TrustPortalSwitch({
         savingRef.current[field] = true;
         try {
           // Only send fields that trustPortalSwitchAction accepts
-          // Server schema only accepts: enabled, contactEmail, friendlyUrl
+          // Server schema accepts: enabled, contactEmail, primaryColor
           const data: TrustPortalSwitchActionInput = {
-            enabled: field === 'enabled' ? value : current.enabled,
-            contactEmail: field === 'contactEmail' ? value : current.contactEmail ?? '',
-            friendlyUrl: field === 'friendlyUrl' ? value : current.friendlyUrl ?? undefined,
+            enabled: field === 'enabled' ? (value as boolean) : current.enabled,
+            contactEmail:
+              field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
+            primaryColor:
+              field === 'primaryColor' ? (value as string) : (current.primaryColor ?? undefined),
           };
           await onSubmit(data);
-          lastSaved.current[field] = value;
+          lastSaved.current[field] = value as string | boolean | null;
         } finally {
           savingRef.current[field] = false;
         }
@@ -364,6 +380,9 @@ export function TrustPortalSwitch({
 
   const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');
   const debouncedContactEmail = useDebounce(contactEmailValue, 800);
+
+  const [primaryColorValue, setPrimaryColorValue] = useState(form.getValues('primaryColor') || '');
+  const debouncedPrimaryColor = useDebounce(primaryColorValue, 800);
 
   useEffect(() => {
     if (
@@ -376,6 +395,17 @@ export function TrustPortalSwitch({
     }
   }, [debouncedContactEmail, autoSave, form]);
 
+  useEffect(() => {
+    if (
+      debouncedPrimaryColor !== undefined &&
+      debouncedPrimaryColor !== lastSaved.current.primaryColor &&
+      !savingRef.current.primaryColor
+    ) {
+      form.setValue('primaryColor', debouncedPrimaryColor || undefined);
+      void autoSave('primaryColor', debouncedPrimaryColor || null);
+    }
+  }, [debouncedPrimaryColor, autoSave, form]);
+
   const handleContactEmailBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const value = e.target.value;
@@ -385,75 +415,15 @@ export function TrustPortalSwitch({
     [form, autoSave],
   );
 
-  const [friendlyUrlValue, setFriendlyUrlValue] = useState(form.getValues('friendlyUrl') || '');
-  const debouncedFriendlyUrl = useDebounce(friendlyUrlValue, 700);
-  const [friendlyUrlStatus, setFriendlyUrlStatus] = useState<
-    'idle' | 'checking' | 'available' | 'unavailable'
-  >('idle');
-  const lastCheckedUrlRef = useRef<string>('');
-  const processingResultRef = useRef<string>('');
-
-  useEffect(() => {
-    if (!debouncedFriendlyUrl || debouncedFriendlyUrl === (friendlyUrl ?? '')) {
-      setFriendlyUrlStatus('idle');
-      lastCheckedUrlRef.current = '';
-      processingResultRef.current = '';
-      return;
-    }
-    
-    // Only check if we haven't already checked this exact value
-    if (lastCheckedUrlRef.current === debouncedFriendlyUrl) {
-      return;
-    }
-    
-    lastCheckedUrlRef.current = debouncedFriendlyUrl;
-    processingResultRef.current = '';
-    setFriendlyUrlStatus('checking');
-    checkFriendlyUrl.execute({ friendlyUrl: debouncedFriendlyUrl, orgId });
-  }, [debouncedFriendlyUrl, orgId, friendlyUrl]);
-  
-  useEffect(() => {
-    if (checkFriendlyUrl.status === 'executing') return;
-    
-    const result = checkFriendlyUrl.result?.data;
-    const checkedUrl = lastCheckedUrlRef.current;
-    
-    // Only process if this result matches the currently checked URL
-    if (checkedUrl !== debouncedFriendlyUrl || !checkedUrl) {
-      return;
-    }
-    
-    // Prevent processing the same result multiple times
-    if (processingResultRef.current === checkedUrl) {
-      return;
-    }
-    
-    if (result?.isAvailable === true) {
-      setFriendlyUrlStatus('available');
-      processingResultRef.current = checkedUrl;
-
-      if (
-        debouncedFriendlyUrl !== lastSaved.current.friendlyUrl &&
-        !savingRef.current.friendlyUrl
-      ) {
-        form.setValue('friendlyUrl', debouncedFriendlyUrl);
-        void autoSave('friendlyUrl', debouncedFriendlyUrl);
-      }
-    } else if (result?.isAvailable === false) {
-      setFriendlyUrlStatus('unavailable');
-      processingResultRef.current = checkedUrl;
-    }
-  }, [checkFriendlyUrl.status, checkFriendlyUrl.result, debouncedFriendlyUrl, form, autoSave]);
-
-  const handleFriendlyUrlBlur = useCallback(
+  const handlePrimaryColorBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const value = e.target.value;
-      if (friendlyUrlStatus === 'available' && value !== lastSaved.current.friendlyUrl) {
-        form.setValue('friendlyUrl', value);
-        autoSave('friendlyUrl', value);
+      if (value) {
+        form.setValue('primaryColor', value);
       }
+      void autoSave('primaryColor', value || null);
     },
-    [form, autoSave, friendlyUrlStatus],
+    [form, autoSave],
   );
 
   const handleEnabledChange = useCallback(
@@ -504,45 +474,57 @@ export function TrustPortalSwitch({
             {form.watch('enabled') && (
               <div className="pt-2">
                 <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
-                <div className="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-4 lg:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="friendlyUrl"
+                    name="primaryColor"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>Custom URL</FormLabel>
+                        <FormLabel>Brand Color</FormLabel>
                         <FormControl>
-                          <div>
-                            <div className="relative flex w-full items-center">
-                              <Input
-                                {...field}
-                                value={friendlyUrlValue}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  setFriendlyUrlValue(e.target.value);
-                                }}
-                                onBlur={handleFriendlyUrlBlur}
-                                placeholder="my-org"
-                                autoComplete="off"
-                                autoCapitalize="none"
-                                autoCorrect="off"
-                                spellCheck="false"
-                                prefix="trust.inc/"
-                              />
-                            </div>
-                            {friendlyUrlValue && (
-                              <div className="mt-1 min-h-[18px] text-xs">
-                                {friendlyUrlStatus === 'checking' && 'Checking availability...'}
-                                {friendlyUrlStatus === 'available' && (
-                                  <span className="text-green-600">{'This URL is available!'}</span>
-                                )}
-                                {friendlyUrlStatus === 'unavailable' && (
-                                  <span className="text-red-600">
-                                    {'This URL is already taken.'}
-                                  </span>
-                                )}
+                          <div className="relative">
+                            <div className="flex items-center gap-2">
+                              {/* Color Swatch */}
+                              <div className="relative">
+                                <input
+                                  {...field}
+                                  value={primaryColorValue ?? '#000000'}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    setPrimaryColorValue(e.target.value);
+                                  }}
+                                  onBlur={handlePrimaryColorBlur}
+                                  type="color"
+                                  className="sr-only"
+                                  id="color-picker"
+                                />
+                                <label
+                                  htmlFor="color-picker"
+                                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
+                                  style={{ backgroundColor: primaryColorValue || '#000000' }}
+                                >
+                                  <span className="sr-only">Pick a color</span>
+                                </label>
                               </div>
-                            )}
+                              {/* Hex Input */}
+                              <div className="flex-1">
+                                <Input
+                                  value={primaryColorValue?.toUpperCase() || '#000000'}
+                                  onChange={(e) => {
+                                    let value = e.target.value;
+                                    if (!value.startsWith('#')) {
+                                      value = '#' + value;
+                                    }
+                                    field.onChange(value);
+                                    setPrimaryColorValue(value);
+                                  }}
+                                  onBlur={handlePrimaryColorBlur}
+                                  placeholder="#000000"
+                                  className="font-mono"
+                                  maxLength={7}
+                                />
+                              </div>
+                            </div>
                           </div>
                         </FormControl>
                       </FormItem>
@@ -564,7 +546,6 @@ export function TrustPortalSwitch({
                             }}
                             onBlur={handleContactEmailBlur}
                             placeholder="contact@example.com"
-                            className="w-auto"
                             autoComplete="off"
                             autoCapitalize="none"
                             autoCorrect="off"
@@ -575,10 +556,30 @@ export function TrustPortalSwitch({
                     )}
                   />
                 </div>
+                <div className="w-full lg:col-span-2 mt-1.5">
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Used for branding across your trust portal
+                  </p>
+                </div>
               </div>
             )}
             {form.watch('enabled') && (
-              <div className="">
+              <div className="pt-6">
+                {/* FAQ Section */}
+                <TrustPortalFaqBuilder initialFaqs={faqs} orgId={orgId} />
+              </div>
+            )}
+            {form.watch('enabled') && (
+              <div className="pt-6">
+                {/* NDA Bypass - Allowed Domains Section */}
+                <AllowedDomainsManager
+                  initialDomains={allowedDomains}
+                  orgId={orgId}
+                />
+              </div>
+            )}
+            {form.watch('enabled') && (
+              <div className="pt-6">
                 {/* Compliance Frameworks Section */}
                 <div>
                   <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
@@ -896,9 +897,29 @@ export function TrustPortalSwitch({
                 </div>
               </div>
             )}
+            {form.watch('enabled') && (
+              <div className="pt-6">
+                <TrustPortalAdditionalDocumentsSection
+                  organizationId={orgId}
+                  enabled={true}
+                  documents={additionalDocuments}
+                />
+              </div>
+            )}
           </div>
         </div>
       </form>
+      {form.watch('enabled') && (
+        <div className="pt-6">
+          <TrustPortalDomain
+            domain={domain}
+            domainVerified={domainVerified}
+            orgId={orgId}
+            isVercelDomain={isVercelDomain ?? false}
+            vercelVerification={vercelVerification ?? null}
+          />
+        </div>
+      )}
     </Form>
   );
 }
@@ -940,9 +961,9 @@ function ComplianceFramework({
       return;
     }
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const MAX_FILE_SIZE = 100 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
-      toast.error('File size must be less than 10MB');
+      toast.error('File size must be less than 100MB');
       return;
     }
 
@@ -1092,7 +1113,7 @@ function ComplianceFramework({
               <Switch checked={isEnabled} onCheckedChange={onToggle} />
             </div>
           </div>
-          
+
           {/* File Upload Section - Only show when status is "compliant" */}
           {isEnabled && status === 'compliant' && (
             <div className="mt-4 border-t pt-4">
@@ -1109,11 +1130,9 @@ function ComplianceFramework({
                 }}
                 disabled={isUploading}
               />
-              
+
               {/* Section Header */}
-              <h4 className="text-sm font-semibold text-foreground mb-3">
-                Compliance Certificate
-              </h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Compliance Certificate</h4>
 
               {/* Certificate Content */}
               {fileName ? (
@@ -1124,12 +1143,8 @@ function ComplianceFramework({
                       <FileCheck2 className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {fileName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Certificate uploaded
-                      </p>
+                      <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
+                      <p className="text-xs text-muted-foreground">Certificate uploaded</p>
                     </div>
                     {onFilePreview && (
                       <TooltipProvider delayDuration={100}>
@@ -1142,7 +1157,9 @@ function ComplianceFramework({
                                   await onFilePreview(frameworkKey);
                                 } catch (error) {
                                   const message =
-                                    error instanceof Error ? error.message : 'Failed to preview certificate';
+                                    error instanceof Error
+                                      ? error.message
+                                      : 'Failed to preview certificate';
                                   toast.error(message);
                                 }
                               }}
@@ -1192,7 +1209,9 @@ function ComplianceFramework({
                                   await onFilePreview(frameworkKey);
                                 } catch (error) {
                                   const message =
-                                    error instanceof Error ? error.message : 'Failed to download certificate';
+                                    error instanceof Error
+                                      ? error.message
+                                      : 'Failed to download certificate';
                                   toast.error(message);
                                 }
                               }}
@@ -1225,25 +1244,31 @@ function ComplianceFramework({
                   `}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`
+                    <div
+                      className={`
                       flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
                       transition-all duration-200
                       ${isDragging ? 'bg-primary/10' : 'bg-background'}
-                    `}>
-                      <Upload className={`
+                    `}
+                    >
+                      <Upload
+                        className={`
                         h-5 w-5 transition-all duration-200
                         ${isDragging ? 'text-primary scale-110' : 'text-muted-foreground'}
-                      `} />
+                      `}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`
+                      <p
+                        className={`
                         text-sm font-medium transition-colors duration-200
                         ${isDragging ? 'text-primary' : 'text-foreground'}
-                      `}>
+                      `}
+                      >
                         {isDragging ? 'Drop your certificate here' : 'Drag & drop certificate'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        or click to browse • PDF only, max 10MB
+                        or click to browse • PDF only, max 100MB
                       </p>
                     </div>
                   </div>

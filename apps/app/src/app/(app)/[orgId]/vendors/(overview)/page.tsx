@@ -1,8 +1,7 @@
 import { AppOnboarding } from '@/components/app-onboarding';
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import type { SearchParams } from '@/types';
 import { db } from '@db';
-import type { Metadata } from 'next';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';
 import { getAssignees, getVendors } from './data/queries';
@@ -48,7 +47,14 @@ export default async function Page({
   // Show AppOnboarding only if empty, default view, AND onboarding is not active
   if (isEmpty && isDefault && !isOnboardingActive) {
     return (
-      <div className="py-4">
+      <PageLayout
+        header={
+          <PageHeader
+            title="Vendors"
+            actions={<CreateVendorSheet assignees={assignees} organizationId={orgId} />}
+          />
+        }
+      >
         <AppOnboarding
           title={'Vendor Management'}
           description={'Manage your vendors and ensure your organization is protected.'}
@@ -75,14 +81,18 @@ export default async function Page({
             },
           ]}
         />
-        <CreateVendorSheet assignees={assignees} />
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[{ label: 'Vendors', href: `/${orgId}/vendors`, current: true }]}
+    <PageLayout
+      header={
+        <PageHeader
+          title="Vendors"
+          actions={<CreateVendorSheet assignees={assignees} organizationId={orgId} />}
+        />
+      }
     >
       <VendorsTable
         vendors={vendorsResult.data}
@@ -92,12 +102,6 @@ export default async function Page({
         searchParams={parsedSearchParams}
         orgId={orgId}
       />
-    </PageWithBreadcrumb>
+    </PageLayout>
   );
-}
-
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'Vendors',
-  };
 }

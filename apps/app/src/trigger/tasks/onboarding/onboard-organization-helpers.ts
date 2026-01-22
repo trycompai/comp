@@ -11,6 +11,7 @@ import {
   RiskStatus,
   RiskTreatmentType,
   VendorCategory,
+  VendorStatus,
 } from '@db';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, generateText, jsonSchema } from 'ai';
@@ -19,6 +20,12 @@ import type { researchVendor } from '../scrape/research';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
 import { updatePolicy } from './update-policy';
+
+type VendorForRiskAssessmentTrigger = {
+  id: string;
+  name: string;
+  website: string | null;
+};
 
 // Types
 export type ContextItem = {
@@ -176,12 +183,78 @@ export async function getOrganizationContext(
   return { organization, questionsAndAnswers, policies: typedPolicies };
 }
 
+type CustomVendorEntry = {
+  name: string;
+  website?: string;
+};
+
+/**
+ * Parses all selected vendors from context
+ * Returns the full list of all vendors (from software field) and custom vendor URL map
+ */
+function parseAllSelectedVendors(
+  questionsAndAnswers: ContextItem[],
+): { 
+  allVendorNames: string[]; 
+  customVendors: CustomVendorEntry[]; 
+  urlMap: Map<string, string>;
+} {
+  const allVendorNames: string[] = [];
+  const customVendors: CustomVendorEntry[] = [];
+  const urlMap = new Map<string, string>();
+
+  // Find the software answer (contains ALL selected vendor names as comma-separated)
+  const softwareEntry = questionsAndAnswers.find(
+    (qa) => qa.question === 'What software do you use?',
+  );
+
+  if (softwareEntry && softwareEntry.answer) {
+    // Parse comma-separated vendor names
+    const names = softwareEntry.answer.split(',').map((n) => n.trim()).filter(Boolean);
+    allVendorNames.push(...names);
+  }
+
+  // Find the custom vendors context entry (contains URLs for custom vendors)
+  const customVendorsEntry = questionsAndAnswers.find(
+    (qa) => qa.question === 'What are your custom vendors and their websites?',
+  );
+
+  if (customVendorsEntry) {
+    try {
+      const parsed = JSON.parse(customVendorsEntry.answer) as CustomVendorEntry[];
+
+      for (const vendor of parsed) {
+        customVendors.push(vendor);
+        // Also add custom vendor names to allVendorNames so they're included in the fallback loop
+        // This ensures custom vendors are created even if AI fails to extract them
+        if (!allVendorNames.some((n) => n.toLowerCase() === vendor.name.toLowerCase())) {
+          allVendorNames.push(vendor.name);
+        }
+        if (vendor.website && vendor.website.trim()) {
+          // Store lowercase name for case-insensitive matching
+          urlMap.set(vendor.name.toLowerCase(), vendor.website.trim());
+        }
+      }
+    } catch (e) {
+      logger.warn('Failed to parse custom vendors from context', { error: e });
+    }
+  }
+
+  return { allVendorNames, customVendors, urlMap };
+}
+
 /**
  * Extracts vendors from context using AI
  */
 export async function extractVendorsFromContext(
   questionsAndAnswers: ContextItem[],
 ): Promise<VendorData[]> {
+  // Parse all selected vendors from context
+  const { allVendorNames, customVendors, urlMap: customVendorUrls } = parseAllSelectedVendors(questionsAndAnswers);
+
+  // Create a set of custom vendor names for quick lookup
+  const customVendorNameSet = new Set(customVendors.map((v) => v.name.toLowerCase()));
+
   const { object } = await generateObject({
     model: openai('gpt-4.1-mini'),
     schema: jsonSchema({
@@ -221,7 +294,49 @@ export async function extractVendorsFromContext(
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 
-  return (object as { vendors: VendorData[] }).vendors;
+  const vendors = (object as { vendors: VendorData[] }).vendors;
+
+  // Merge custom vendor URLs - user-provided URLs take precedence
+  for (const vendor of vendors) {
+    const customUrl = customVendorUrls.get(vendor.vendor_name.toLowerCase());
+    if (customUrl) {
+      logger.info(`Using custom URL for vendor ${vendor.vendor_name}: ${customUrl}`);
+      vendor.vendor_website = customUrl;
+    }
+  }
+
+  // Track which vendors were extracted by AI
+  const extractedVendorNames = new Set(vendors.map((v) => v.vendor_name.toLowerCase()));
+
+  // Ensure ALL vendors from the software field are added (not just custom ones)
+  // This catches any vendors the AI failed to extract
+  for (const vendorName of allVendorNames) {
+    if (!extractedVendorNames.has(vendorName.toLowerCase())) {
+      const isCustom = customVendorNameSet.has(vendorName.toLowerCase());
+      const customUrl = customVendorUrls.get(vendorName.toLowerCase());
+      
+      logger.info(`Adding vendor not extracted by AI: ${vendorName} (custom: ${isCustom})`);
+      
+      // Create a vendor entry with default risk values
+      vendors.push({
+        vendor_name: vendorName,
+        vendor_website: customUrl || '',
+        vendor_description: isCustom 
+          ? `Custom vendor added during onboarding`
+          : `Vendor selected during onboarding`,
+        category: VendorCategory.other,
+        inherent_probability: Likelihood.possible,
+        inherent_impact: Impact.moderate,
+        residual_probability: Likelihood.possible,
+        residual_impact: Impact.moderate,
+      });
+      
+      // Add to extracted set to avoid duplicates
+      extractedVendorNames.add(vendorName.toLowerCase());
+    }
+  }
+
+  return vendors;
 }
 
 /**
@@ -287,11 +402,14 @@ export async function findCommentAuthor(organizationId: string) {
 export async function createVendorsFromData(
   vendorData: VendorData[],
   organizationId: string,
-): Promise<any[]> {
+): Promise<{ vendors: any[]; newlyCreatedVendors: VendorForRiskAssessmentTrigger[] }> {
   // Mark all vendors as processing before creation
   vendorData.forEach((_, index) => {
     metadata.set(`vendor_temp_${index}_status`, 'processing');
   });
+
+  // Track which vendors existed before creation
+  const existingVendorIds = new Set<string>();
 
   // Check for existing vendors and create new ones concurrently
   const vendorPromises = vendorData.map(async (vendor, index) => {
@@ -306,14 +424,34 @@ export async function createVendorsFromData(
       logger.info(`Vendor ${vendor.vendor_name} already exists`);
       // Mark as completed if it already exists
       const existing = existingVendor[0];
+      existingVendorIds.add(existing.id);
       metadata.set(`vendor_${existing.id}_status`, 'completed');
       return existing;
+    }
+
+    // If vendor has no website, try to find it in GlobalVendors
+    let websiteToUse = vendor.vendor_website;
+    if (!websiteToUse || !websiteToUse.trim()) {
+      const globalVendor = await db.globalVendors.findFirst({
+        where: {
+          company_name: {
+            equals: vendor.vendor_name,
+            mode: 'insensitive',
+          },
+        },
+        select: { website: true },
+      });
+      
+      if (globalVendor?.website) {
+        logger.info(`Enriched vendor ${vendor.vendor_name} with website from GlobalVendors: ${globalVendor.website}`);
+        websiteToUse = globalVendor.website;
+      }
     }
 
     const createdVendor = await db.vendor.create({
       data: {
         name: vendor.vendor_name,
-        website: vendor.vendor_website,
+        website: websiteToUse,
         description: vendor.vendor_description,
         category: vendor.category,
         inherentProbability: vendor.inherent_probability,
@@ -321,6 +459,8 @@ export async function createVendorsFromData(
         residualProbability: vendor.residual_probability,
         residualImpact: vendor.residual_impact,
         organizationId,
+        // Set to in_progress immediately so UI shows "generating" state
+        status: VendorStatus.in_progress,
       },
     });
 
@@ -329,6 +469,21 @@ export async function createVendorsFromData(
   });
 
   const createdVendors = await Promise.all(vendorPromises);
+
+  // Collect newly created vendors AFTER all promises resolve
+  // Filter out vendors that existed before (marked as 'completed')
+  const newlyCreatedVendors: VendorForRiskAssessmentTrigger[] = createdVendors
+    .filter((vendor) => !existingVendorIds.has(vendor.id))
+    .map((vendor) => ({
+      id: vendor.id,
+      name: vendor.name,
+      website: vendor.website ?? null,
+    }));
+
+  logger.info(`Created ${newlyCreatedVendors.length} new vendors out of ${createdVendors.length} total`, {
+    newlyCreated: newlyCreatedVendors.map((v) => v.name),
+    existing: createdVendors.filter((v) => existingVendorIds.has(v.id)).map((v) => v.name),
+  });
 
   // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
   createdVendors.forEach((vendor) => {
@@ -343,7 +498,105 @@ export async function createVendorsFromData(
 
   // Note: vendorsCompleted is incremented when mitigation is generated, not when created
 
-  return createdVendors;
+  return { vendors: createdVendors, newlyCreatedVendors };
+}
+
+async function triggerVendorRiskAssessmentsViaApi(params: {
+  organizationId: string;
+  vendors: VendorForRiskAssessmentTrigger[];
+  withResearch: boolean;
+}): Promise<void> {
+  const { organizationId, vendors, withResearch } = params;
+  if (vendors.length === 0) {
+    logger.info('No vendors to trigger risk assessments for');
+    return;
+  }
+
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
+  const token = process.env.INTERNAL_API_TOKEN;
+
+  // Sanitize vendor websites - only send valid URLs or null
+  const sanitizeWebsite = (
+    website: string | null | undefined,
+    vendorName: string,
+  ): string | null => {
+    if (!website || website.trim() === '') return null;
+
+    const trimmed = website.trim();
+    // If it doesn't have a protocol, try adding https://
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+    try {
+      const url = new URL(withProtocol);
+      return url.toString();
+    } catch {
+      // Invalid URL, return null
+      logger.warn('Invalid vendor website, will skip research', { website, vendorName });
+      return null;
+    }
+  };
+
+  logger.info('Calling vendor risk assessment API endpoint', {
+    organizationId,
+    vendorCount: vendors.length,
+    apiBaseUrl,
+    hasToken: !!token,
+    endpoint: `${apiBaseUrl}/v1/internal/vendors/risk-assessment/trigger-batch`,
+  });
+
+  try {
+    const response = await axios.post(
+      `${apiBaseUrl}/v1/internal/vendors/risk-assessment/trigger-batch`,
+      {
+        organizationId,
+        withResearch,
+        vendors: vendors.map((v) => {
+          const sanitized = sanitizeWebsite(v.website, v.name);
+          return {
+          vendorId: v.id,
+          vendorName: v.name,
+            // Only include vendorWebsite if it's a valid URL (undefined triggers @IsOptional)
+            ...(sanitized && { vendorWebsite: sanitized }),
+          };
+        }),
+      },
+      {
+        headers: token ? { 'X-Internal-Token': token } : undefined,
+        timeout: 15_000,
+      },
+    );
+    logger.info(`Successfully triggered vendor risk assessments via API`, {
+      organizationId,
+      vendorCount: vendors.length,
+      responseData: response.data,
+    });
+  } catch (error) {
+    // Don't fail onboarding if the trigger endpoint fails, but log full details
+    const errorDetails: Record<string, unknown> = {
+      organizationId,
+      vendorCount: vendors.length,
+      apiBaseUrl,
+      hasToken: !!token,
+      endpoint: `${apiBaseUrl}/v1/internal/vendors/risk-assessment/trigger-batch`,
+    };
+
+    if (axios.isAxiosError(error)) {
+      errorDetails.status = error.response?.status;
+      errorDetails.statusText = error.response?.statusText;
+      errorDetails.responseData = error.response?.data;
+      errorDetails.message = error.message;
+      errorDetails.code = error.code;
+    } else if (error instanceof Error) {
+      errorDetails.message = error.message;
+      errorDetails.stack = error.stack;
+    } else {
+      errorDetails.error = String(error);
+    }
+
+    logger.error('Failed to trigger vendor risk assessments via API', errorDetails);
+    // Don't re-throw - vendor risk assessment failure should not block onboarding
+  }
 }
 
 /**
@@ -351,10 +604,36 @@ export async function createVendorsFromData(
  */
 export async function triggerVendorResearch(vendors: any[]): Promise<void> {
   for (const vendor of vendors) {
-    const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
-      website: vendor.website ?? '',
-    });
-    logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
+    const website = (vendor.website ?? '').toString().trim();
+    if (!website) {
+      logger.info(`Skipping research for vendor ${vendor.name} (no website)`);
+      continue;
+    }
+
+    // Ensure it's a valid absolute URL; don't let one bad vendor break the whole onboarding.
+    try {
+      // eslint-disable-next-line no-new
+      new URL(website);
+    } catch {
+      logger.warn(`Skipping research for vendor ${vendor.name} (invalid website URL)`, {
+        website,
+      });
+      continue;
+    }
+
+    try {
+      const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
+        website,
+      });
+      logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
+    } catch (error) {
+      logger.error('Failed to trigger vendor research task', {
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        website,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 }
 
@@ -673,9 +952,41 @@ export async function createVendors(
   const vendorsToCreate = vendorData || (await extractVendorsFromContext(questionsAndAnswers));
 
   // Create vendor records in database
-  const createdVendors = await createVendorsFromData(vendorsToCreate, organizationId);
+  const { vendors: createdVendors, newlyCreatedVendors } = await createVendorsFromData(
+    vendorsToCreate,
+    organizationId,
+  );
 
-  // Trigger background research for each vendor
+  // Trigger Risk Assessment task items in the API Trigger.dev project (batch, idempotent).
+  // We prefer triggering only for newly created vendors, but if for any reason this list is empty
+  // (e.g. reruns, existing vendors), we still trigger for all created vendors — the API task is
+  // idempotent and will quickly dedupe if the task already exists.
+  const vendorsForRiskAssessment =
+    newlyCreatedVendors.length > 0
+      ? newlyCreatedVendors
+      : createdVendors.map((v) => ({
+          id: v.id as string,
+          name: v.name as string,
+          website: (v.website ?? null) as string | null,
+        }));
+
+  logger.info('Triggering vendor risk assessments via API', {
+    organizationId,
+    newlyCreatedCount: newlyCreatedVendors.length,
+    totalVendorsCount: createdVendors.length,
+    triggeredCount: vendorsForRiskAssessment.length,
+  });
+
+  // TODO: Un-comment this when UI part is ready
+  await triggerVendorRiskAssessmentsViaApi({
+    organizationId,
+    vendors: vendorsForRiskAssessment,
+    // Onboarding should NOT force expensive research if GlobalVendors already has data.
+    // If data is missing, the API/Trigger pipeline will still do research.
+    withResearch: false,
+  });
+
+  // Trigger background research for each vendor (best-effort)
   await triggerVendorResearch(createdVendors);
 
   return createdVendors;

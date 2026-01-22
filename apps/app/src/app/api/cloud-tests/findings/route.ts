@@ -1,20 +1,38 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    const orgId = session?.session.activeOrganizationId;
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const orgId = searchParams.get('orgId');
 
     if (!orgId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
+
+    // Verify the user belongs to the requested organization
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: orgId,
+        deactivated: false,
+      },
+    });
+
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // ====================================================================
@@ -23,22 +41,39 @@ export async function GET() {
     const newConnections = await db.integrationConnection.findMany({
       where: {
         organizationId: orgId,
+        status: 'active',
         provider: {
           slug: {
             in: CLOUD_PROVIDER_SLUGS,
           },
         },
       },
-      select: {
-        id: true,
-        provider: {
-          select: {
-            slug: true,
-          },
+      include: {
+        provider: true,
+      },
+    });
+
+    // ====================================================================
+    // Fetch from OLD integration table (Integration) - for backward compat
+    // ====================================================================
+    const legacyIntegrations = await db.integration.findMany({
+      where: {
+        organizationId: orgId,
+        integrationId: {
+          in: CLOUD_PROVIDER_SLUGS,
         },
       },
     });
 
+    // Filter out legacy integrations that have been migrated to new platform
+    const newConnectionSlugs = new Set(newConnections.map((c) => c.provider.slug));
+    const activeLegacyIntegrations = legacyIntegrations.filter(
+      (i) => !newConnectionSlugs.has(i.integrationId),
+    );
+
+    // ====================================================================
+    // Fetch findings from NEW platform (IntegrationCheckResult)
+    // ====================================================================
     const newConnectionIds = newConnections.map((c) => c.id);
     const connectionToSlug = Object.fromEntries(newConnections.map((c) => [c.id, c.provider.slug]));
 
@@ -59,13 +94,12 @@ export async function GET() {
     const latestRunIds = latestRuns.map((r) => r.id);
     const checkRunMap = Object.fromEntries(latestRuns.map((cr) => [cr.id, cr]));
 
-    // Fetch only failed results from the latest runs (findings only, no passing results)
+    // Fetch results only from the latest runs (both passed and failed)
     const newResults =
       latestRunIds.length > 0
         ? await db.integrationCheckResult.findMany({
             where: {
               checkRunId: { in: latestRunIds },
-              passed: false,
             },
             select: {
               id: true,
@@ -75,6 +109,7 @@ export async function GET() {
               severity: true,
               collectedAt: true,
               checkRunId: true,
+              passed: true,
             },
             orderBy: {
               collectedAt: 'desc',
@@ -89,33 +124,26 @@ export async function GET() {
         title: result.title,
         description: result.description,
         remediation: result.remediation,
-        status: 'failed',
+        status: result.passed ? 'passed' : 'failed',
         severity: result.severity,
         completedAt: result.collectedAt,
         integration: {
-          integrationId: checkRun
-            ? connectionToSlug[checkRun.connectionId] || 'unknown'
-            : 'unknown',
+          integrationId: checkRun ? connectionToSlug[checkRun.connectionId] || 'unknown' : 'unknown',
         },
       };
     });
 
     // ====================================================================
-    // Fetch from OLD integration platform
+    // Fetch findings from OLD platform (IntegrationResult)
     // ====================================================================
-    // Filter out cloud providers that have migrated to new platform
-    const newConnectionSlugs = new Set(newConnections.map((c) => c.provider.slug));
-    const legacySlugs = CLOUD_PROVIDER_SLUGS.filter((s) => !newConnectionSlugs.has(s));
+    const legacyIntegrationIds = activeLegacyIntegrations.map((i) => i.id);
 
     const legacyResults =
-      legacySlugs.length > 0
+      legacyIntegrationIds.length > 0
         ? await db.integrationResult.findMany({
             where: {
-              organizationId: orgId,
-              integration: {
-                integrationId: {
-                  in: legacySlugs,
-                },
+              integrationId: {
+                in: legacyIntegrationIds,
               },
             },
             select: {
@@ -153,7 +181,7 @@ export async function GET() {
     }));
 
     // ====================================================================
-    // Merge and sort by date
+    // Merge all findings and sort by date
     // ====================================================================
     const findings = [...newFindings, ...legacyFindings].sort((a, b) => {
       const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;

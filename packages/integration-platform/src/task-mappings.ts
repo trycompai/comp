@@ -186,7 +186,7 @@ export const TASK_TEMPLATES = {
   /** Employee Descriptions */
   employeeDescriptions: 'frk_tt_684069a3a0dd8322b2ac3f03',
   /** 2FA */
-  '2fa': 'frk_tt_68406cd9dde2d8cd4c463fe0',
+  twoFactorAuth: 'frk_tt_68406cd9dde2d8cd4c463fe0', // 2FA
   /** Role-based Access Controls */
   rolebasedAccessControls: 'frk_tt_68e80544d9734e0402cfa807',
   /** Employee Performance Evaluations */

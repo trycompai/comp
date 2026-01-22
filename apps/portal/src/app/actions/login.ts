@@ -18,11 +18,11 @@ const handleServerError = (e: Error) => {
     if (errorMessage.includes('expired') && errorMessage.includes('otp')) {
       return 'OTP code has expired. Please request a new code.';
     }
-    
+
     if (errorMessage.includes('not found') || errorMessage.includes('user not found')) {
       return 'No account found with this email address.';
     }
-    
+
     // For other authentication errors, provide a more specific message
     if (errorMessage.includes('unauthorized') || errorMessage.includes('authentication')) {
       return 'Authentication failed. Please try again.';
@@ -48,7 +48,7 @@ export const login = createSafeActionClient({ handleServerError })
   )
   .action(async ({ parsedInput }) => {
     const headersList = await headers();
-    
+
     await auth.api.signInEmailOTP({
       headers: headersList,
       body: {

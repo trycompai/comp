@@ -8,6 +8,8 @@ export const env = createEnv({
     AUTH_GITHUB_ID: z.string().optional(),
     AUTH_GITHUB_SECRET: z.string().optional(),
     AUTH_SECRET: z.string(),
+    AUTH_MICROSOFT_CLIENT_ID: z.string().optional(),
+    AUTH_MICROSOFT_CLIENT_SECRET: z.string().optional(),
     DATABASE_URL: z.string().min(1),
     OPENAI_API_KEY: z.string().optional(),
     GROQ_API_KEY: z.string().optional(),
@@ -42,6 +44,8 @@ export const env = createEnv({
     GA4_MEASUREMENT_ID: z.string().optional(),
     LINKEDIN_CONVERSIONS_ACCESS_TOKEN: z.string().optional(),
     NOVU_API_KEY: z.string().optional(),
+    INTERNAL_API_TOKEN: z.string().optional(),
+    STRIPE_SECRET_KEY: z.string().optional(),
   },
 
   client: {
@@ -63,6 +67,8 @@ export const env = createEnv({
     AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
     AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
     AUTH_SECRET: process.env.AUTH_SECRET,
+    AUTH_MICROSOFT_CLIENT_ID: process.env.AUTH_MICROSOFT_CLIENT_ID,
+    AUTH_MICROSOFT_CLIENT_SECRET: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
@@ -107,6 +113,8 @@ export const env = createEnv({
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
     NOVU_API_KEY: process.env.NOVU_API_KEY,
     NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER: process.env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER,
+    INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

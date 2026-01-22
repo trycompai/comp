@@ -11,6 +11,8 @@ const emailPreferencesSchema = z.object({
     taskReminders: z.boolean(),
     weeklyTaskDigest: z.boolean(),
     unassignedItemsNotifications: z.boolean(),
+    taskMentions: z.boolean(),
+    taskAssignments: z.boolean(),
   }),
 });
 

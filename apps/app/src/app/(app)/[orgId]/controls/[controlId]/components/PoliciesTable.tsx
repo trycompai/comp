@@ -1,62 +1,29 @@
 'use client';
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
-import { useDataTable } from '@/hooks/use-data-table';
-import { Icons } from '@comp/ui/icons';
-import { Input } from '@comp/ui/input';
 import { Policy } from '@db';
-import { ColumnDef } from '@tanstack/react-table';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
+import { Search } from '@trycompai/design-system/icons';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 interface PoliciesTableProps {
   policies: Policy[];
   orgId: string;
-  controlId: string;
 }
 
-export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps) {
+export function PoliciesTable({ policies, orgId }: PoliciesTableProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-
-  const columns = useMemo<ColumnDef<Policy>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Name'} />,
-        cell: ({ row }) => {
-          const name = row.original.name;
-          return <span>{name}</span>;
-        },
-        enableSorting: true,
-        sortingFn: (rowA, rowB) => {
-          const nameA = rowA.original.name || '';
-          const nameB = rowB.original.name || '';
-          return nameA.localeCompare(nameB);
-        },
-      },
-      {
-        accessorKey: 'createdAt',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Created At'} />,
-        cell: ({ row }) => <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>,
-        enableSorting: true,
-        sortingFn: (rowA, rowB) => {
-          const dateA = new Date(rowA.original.createdAt);
-          const dateB = new Date(rowB.original.createdAt);
-          return dateA.getTime() - dateB.getTime();
-        },
-      },
-      {
-        accessorKey: 'status',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Status'} />,
-        cell: ({ row }) => {
-          const rawStatus = row.original.status;
-          return <StatusIndicator status={rawStatus} />;
-        },
-      },
-    ],
-    [],
-  );
 
   const filteredPolicies = useMemo(() => {
     if (!searchTerm.trim()) return policies;
@@ -69,36 +36,66 @@ export function PoliciesTable({ policies, orgId, controlId }: PoliciesTableProps
     );
   }, [policies, searchTerm]);
 
-  const table = useDataTable({
-    data: filteredPolicies,
-    columns,
-    pageCount: 1,
-    shallow: false,
-    getRowId: (row) => row.id,
-    initialState: {
-      sorting: [{ id: 'createdAt', desc: true }],
-    },
-    tableId: 'policiesTable',
-  });
+  const handleRowClick = (policyId: string) => {
+    router.push(`/${orgId}/policies/${policyId}`);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
-        <Input
-          placeholder="Search policies..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-          leftIcon={<Icons.Search size={16} />}
-        />
+      <div className="w-full max-w-sm">
+        <InputGroup>
+          <InputGroupAddon>
+            <Search size={16} />
+          </InputGroupAddon>
+          <InputGroupInput
+            placeholder="Search policies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </InputGroup>
       </div>
 
-      <DataTable
-        table={table.table}
-        rowClickBasePath={`/${orgId}/policies/`}
-        getRowId={(row) => row.id}
-        tableId={'policiesTable'}
-      />
+      <Table variant="bordered">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredPolicies.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3}>
+                <Text size="sm" variant="muted">
+                  No policies found.
+                </Text>
+              </TableCell>
+            </TableRow>
+          ) : (
+            filteredPolicies.map((policy) => (
+              <TableRow
+                key={policy.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleRowClick(policy.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleRowClick(policy.id);
+                  }
+                }}
+              >
+                <TableCell>{policy.name}</TableCell>
+                <TableCell>{new Date(policy.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <StatusIndicator status={policy.status} />
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

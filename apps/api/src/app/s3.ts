@@ -1,4 +1,8 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  S3Client,
+  type GetObjectCommandOutput,
+} from '@aws-sdk/client-s3';
 import { Logger } from '@nestjs/common';
 import '../config/load-env';
 
@@ -7,6 +11,7 @@ const logger = new Logger('S3');
 const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
 const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
+const APP_AWS_ENDPOINT = process.env.APP_AWS_ENDPOINT;
 
 export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
 export const APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET =
@@ -33,11 +38,13 @@ try {
   }
 
   s3ClientInstance = new S3Client({
+    endpoint: APP_AWS_ENDPOINT || undefined,
     region: APP_AWS_REGION,
     credentials: {
       accessKeyId: APP_AWS_ACCESS_KEY_ID,
       secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
     },
+    forcePathStyle: !!APP_AWS_ENDPOINT,
   });
 } catch (error) {
   logger.error(
@@ -126,7 +133,7 @@ export async function getFleetAgent({
   os,
 }: {
   os: 'macos' | 'windows' | 'linux';
-}) {
+}): Promise<GetObjectCommandOutput['Body']> {
   if (!s3Client) {
     throw new Error('S3 client not configured');
   }

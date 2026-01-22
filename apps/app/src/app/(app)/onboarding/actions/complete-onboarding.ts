@@ -1,9 +1,10 @@
 'use server';
 
-import { authActionClient } from '@/actions/safe-action';
+import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { steps } from '@/app/(app)/setup/lib/constants';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
+import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
@@ -29,7 +30,15 @@ const onboardingCompletionSchema = z.object({
   }),
   devices: z.string().min(1),
   authentication: z.string().min(1),
-  software: z.string().min(1),
+  software: z.string().optional(),
+  customVendors: z
+    .array(
+      z.object({
+        name: z.string(),
+        website: z.string().optional(),
+      }),
+    )
+    .optional(),
   workLocation: z.string().min(1),
   infrastructure: z.string().min(1),
   dataTypes: z.string().min(1),
@@ -41,7 +50,7 @@ const onboardingCompletionSchema = z.object({
   }),
 });
 
-export const completeOnboarding = authActionClient
+export const completeOnboarding = authActionClientWithoutOrg
   .inputSchema(onboardingCompletionSchema)
   .metadata({
     name: 'complete-onboarding',
@@ -52,16 +61,6 @@ export const completeOnboarding = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     try {
-      const { activeOrganizationId } = ctx.session;
-
-      // Verify the organization ID matches the active org
-      if (parsedInput.organizationId !== activeOrganizationId) {
-        return {
-          success: false,
-          error: 'Organization mismatch',
-        };
-      }
-
       // Verify user has access to this organization
       const member = await db.member.findFirst({
         where: {
@@ -78,10 +77,25 @@ export const completeOnboarding = authActionClient
         };
       }
 
+      // Ensure the newly onboarded org is the active org.
+      // This prevents the "Setting up your organization" flow from accidentally using a previous org session.
+      await auth.api.setActiveOrganization({
+        headers: await headers(),
+        body: {
+          organizationId: parsedInput.organizationId,
+        },
+      });
+
       // Save the remaining steps to context
       const postPaymentSteps = steps.slice(3); // Steps 4-12
       const contextData = postPaymentSteps
-        .filter((step) => step.key in parsedInput)
+        .filter((step) => {
+          const value = parsedInput[step.key as keyof typeof parsedInput];
+          // Filter out steps that aren't in parsedInput or have empty values (skipped steps)
+          if (!(step.key in parsedInput)) return false;
+          if (value === undefined || value === null || value === '') return false;
+          return true;
+        })
         .map((step) => ({
           question: step.question,
           answer:
@@ -91,6 +105,50 @@ export const completeOnboarding = authActionClient
           tags: ['onboarding'],
           organizationId: parsedInput.organizationId,
         }));
+
+      // Add customVendors to context if present (for vendor risk assessment with URLs)
+      if (parsedInput.customVendors && parsedInput.customVendors.length > 0) {
+        contextData.push({
+          question: 'What are your custom vendors and their websites?',
+          answer: JSON.stringify(parsedInput.customVendors),
+          tags: ['onboarding'],
+          organizationId: parsedInput.organizationId,
+        });
+
+        // Add custom vendors to GlobalVendors immediately (if they have URLs and don't exist)
+        // This allows other organizations to benefit from user-contributed vendor data
+        for (const vendor of parsedInput.customVendors) {
+          if (vendor.website && vendor.website.trim()) {
+            try {
+              // Check if vendor with same name already exists in GlobalVendors
+              const existingGlobalVendor = await db.globalVendors.findFirst({
+                where: {
+                  company_name: {
+                    equals: vendor.name,
+                    mode: 'insensitive',
+                  },
+                },
+              });
+
+              if (!existingGlobalVendor) {
+                // Create new GlobalVendor entry (approved: false for review)
+                await db.globalVendors.create({
+                  data: {
+                    website: vendor.website,
+                    company_name: vendor.name,
+                    approved: false,
+                  },
+                });
+                console.log(`Added custom vendor to GlobalVendors: ${vendor.name}`);
+              }
+            } catch (error) {
+              // Log but don't fail - GlobalVendors is a nice-to-have
+              console.warn(`Failed to add vendor ${vendor.name} to GlobalVendors:`, error);
+            }
+          }
+        }
+      }
+
       await db.context.createMany({ data: contextData });
 
       // Update organization to mark onboarding as complete

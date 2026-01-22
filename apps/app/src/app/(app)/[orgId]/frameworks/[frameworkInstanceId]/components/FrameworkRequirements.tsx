@@ -1,13 +1,22 @@
 'use client';
 
-import { DataTable } from '@/components/data-table/data-table';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { useDataTable } from '@/hooks/use-data-table';
 import type { FrameworkEditorRequirement } from '@db';
-import { ColumnDef } from '@tanstack/react-table';
-import { useParams } from 'next/navigation';
-import { useMemo } from 'react';
+import {
+  Heading,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { Search } from '@trycompai/design-system/icons';
+import { useParams, useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import type { FrameworkInstanceWithControls } from '../../types';
 
 interface RequirementItem extends FrameworkEditorRequirement {
@@ -21,10 +30,12 @@ export function FrameworkRequirements({
   requirementDefinitions: FrameworkEditorRequirement[];
   frameworkInstanceWithControls: FrameworkInstanceWithControls;
 }) {
+  const router = useRouter();
   const { orgId, frameworkInstanceId } = useParams<{
     orgId: string;
     frameworkInstanceId: string;
   }>();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const items = useMemo(() => {
     return requirementDefinitions.map((def) => {
@@ -40,63 +51,19 @@ export function FrameworkRequirements({
     });
   }, [requirementDefinitions, frameworkInstanceWithControls.controls]);
 
-  const columns = useMemo<ColumnDef<RequirementItem>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Name'} />,
-        cell: ({ row }) => (
-          <span className="line-clamp-2 max-w-[300px] truncate">{row.original.name}</span>
-        ),
-        enableSorting: true,
-        size: 200,
-        minSize: 150,
-        maxSize: 250,
-        meta: {
-          label: 'Requirement Name',
-          placeholder: 'Search...',
-          variant: 'text',
-        },
-        enableColumnFilter: true,
-      },
-      {
-        accessorKey: 'description',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Description'} />,
-        cell: ({ row }) => (
-          <span className="line-clamp-2 max-w-[300px] truncate">{row.original.description}</span>
-        ),
-        enableSorting: true,
-        size: 500,
-        minSize: 300,
-        maxSize: 700,
-        enableResizing: true,
-      },
-      {
-        accessorKey: 'mappedControlsCount',
-        header: ({ column }) => <DataTableColumnHeader column={column} title={'Controls'} />,
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">{row.original.mappedControlsCount}</span>
-        ),
-        size: 25,
-        minSize: 25,
-        maxSize: 25,
-        enableSorting: true,
-        enableResizing: true,
-      },
-    ],
-    [],
-  );
+  const filteredItems = useMemo(() => {
+    if (!searchTerm.trim()) return items;
+    const lowerSearch = searchTerm.toLowerCase();
+    return items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(lowerSearch) ||
+        item.description?.toLowerCase().includes(lowerSearch),
+    );
+  }, [items, searchTerm]);
 
-  const table = useDataTable({
-    data: items,
-    columns,
-    pageCount: 1,
-    shallow: false,
-    getRowId: (row) => row.id,
-    initialState: {
-      sorting: [{ id: 'name', desc: false }],
-    },
-  });
+  const handleRowClick = (requirementId: string) => {
+    router.push(`/${orgId}/frameworks/${frameworkInstanceId}/requirements/${requirementId}`);
+  };
 
   if (!items?.length) {
     return null;
@@ -104,18 +71,68 @@ export function FrameworkRequirements({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">
-        Requirements ({table.table.getFilteredRowModel().rows.length})
-      </h2>
-      <DataTable
-        table={table.table}
-        rowClickBasePath={`/${orgId}/frameworks/${frameworkInstanceId}/requirements/`}
-        getRowId={(row) => row.id}
-      >
-        <DataTableToolbar table={table.table}>
-          {/* <DataTableSortList table={table.table} align="end" /> */}
-        </DataTableToolbar>
-      </DataTable>
+      <Heading level="2">
+        Requirements ({filteredItems.length})
+      </Heading>
+      <div className="w-full max-w-sm">
+        <InputGroup>
+          <InputGroupAddon>
+            <Search size={16} />
+          </InputGroupAddon>
+          <InputGroupInput
+            placeholder="Search requirements..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </InputGroup>
+      </div>
+      <Table variant="bordered">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Controls</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredItems.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3}>
+                <Text size="sm" variant="muted">
+                  No requirements found.
+                </Text>
+              </TableCell>
+            </TableRow>
+          ) : (
+            filteredItems.map((item) => (
+              <TableRow
+                key={item.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleRowClick(item.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleRowClick(item.id);
+                  }
+                }}
+              >
+                <TableCell>
+                  <span className="line-clamp-2 max-w-[300px] truncate">{item.name}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="line-clamp-2 max-w-[300px] truncate">{item.description}</span>
+                </TableCell>
+                <TableCell>
+                  <Text size="sm" variant="muted">
+                    {item.mappedControlsCount}
+                  </Text>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

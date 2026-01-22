@@ -6,7 +6,9 @@
  */
 
 import type { IntegrationManifest } from '../../types';
-import { branchProtectionCheck, dependabotCheck, sanitizedInputsCheck } from './checks';
+import { branchProtectionCheck } from './checks/branch-protection';
+import { dependabotCheck } from './checks/dependabot';
+import { sanitizedInputsCheck } from './checks/sanitized-inputs';
 
 export const manifest: IntegrationManifest = {
   id: 'github',
@@ -32,6 +34,15 @@ export const manifest: IntegrationManifest = {
       scopes: ['read:org', 'repo', 'read:user'],
       pkce: false,
       clientAuthMethod: 'body',
+      revoke: {
+        // Revoke the *grant* (app authorization), not just a single token.
+        // This forces GitHub to show a fresh authorization flow on reconnect.
+        url: 'https://api.github.com/applications/{CLIENT_ID}/grant',
+        method: 'DELETE',
+        auth: 'basic',
+        body: 'json',
+        tokenField: 'access_token',
+      },
       // GitHub tokens don't expire - they're valid until revoked
       supportsRefreshToken: false,
       authorizationParams: {

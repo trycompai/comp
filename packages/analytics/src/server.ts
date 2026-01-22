@@ -42,7 +42,9 @@ export async function identify(distinctId: string, properties?: Properties) {
   await serverInstance.flush();
 }
 
-export async function getFeatureFlags(distinctId: string): Promise<Record<string, boolean | string>> {
+export async function getFeatureFlags(
+  distinctId: string,
+): Promise<Record<string, boolean | string>> {
   if (!serverInstance) return {};
 
   const flags = await serverInstance.getAllFlags(distinctId);

@@ -2,11 +2,11 @@ import { auth } from '@/utils/auth';
 import { db, Role } from '@db';
 import { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
-import { TaskList } from './components/TaskList';
+import { TasksPageClient } from './components/TasksPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Tasks',
+    title: 'Evidence',
   };
 }
 
@@ -34,9 +34,7 @@ export default async function TasksPage({
   const activeTab = savedView === 'categories' || savedView === 'list' ? savedView : 'categories';
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-6 py-8">
-      <TaskList tasks={tasks} members={members} controls={controls} activeTab={activeTab} />
-    </div>
+    <TasksPageClient tasks={tasks} members={members} controls={controls} activeTab={activeTab} />
   );
 }
 

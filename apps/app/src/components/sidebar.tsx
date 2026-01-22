@@ -111,7 +111,7 @@ export async function Sidebar({
       <div className="flex-1" />
 
       <div className="flex justify-center py-2">
-        <SidebarCollapseButton isCollapsed={isCollapsed} />
+        <SidebarCollapseButton />
       </div>
     </div>
   );
