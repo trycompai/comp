@@ -530,7 +530,10 @@ export const RisksTable = ({
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 variant="destructive"
-                                onClick={() => handleDeleteClick(risk)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(risk);
+                                }}
                               >
                                 <TrashCan size={16} />
                                 Delete

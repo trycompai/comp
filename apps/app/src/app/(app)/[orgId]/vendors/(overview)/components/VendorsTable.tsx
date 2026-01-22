@@ -587,7 +587,10 @@ export function VendorsTable({
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               variant="destructive"
-                              onClick={() => handleDeleteClick(vendor)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(vendor);
+                              }}
                             >
                               <TrashCan size={16} />
                               Delete
