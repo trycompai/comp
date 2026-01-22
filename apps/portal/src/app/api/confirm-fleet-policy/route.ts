@@ -46,11 +46,27 @@ export async function POST(req: NextRequest) {
   }
 
   const uploads: Array<{ fileName: string; key: string }> = [];
+  const cleanupPartialUploads = async () => {
+    if (uploads.length === 0) return;
+    try {
+      await s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Delete: {
+            Objects: uploads.map((upload) => ({ Key: upload.key })),
+          },
+        }),
+      );
+    } catch (error) {
+      console.error('Failed to cleanup partial policy uploads from S3', { error, policyId });
+    }
+  };
 
   for (const fileEntry of files) {
     if (!(fileEntry instanceof File)) continue;
 
     if (!fileEntry.type.startsWith('image/')) {
+      await cleanupPartialUploads();
       return NextResponse.json({ error: `Only image files are allowed (${fileEntry.name})` }, { status: 400 });
     }
 
@@ -58,6 +74,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     if (buffer.length > MAX_FILE_SIZE_BYTES) {
+      await cleanupPartialUploads();
       return NextResponse.json({ error: `Image ${fileEntry.name} must be less than 5MB` }, { status: 400 });
     }
 
@@ -72,7 +89,13 @@ export async function POST(req: NextRequest) {
       ContentType: fileEntry.type,
     });
 
-    await s3Client.send(putCommand);
+    try {
+      await s3Client.send(putCommand);
+    } catch (error) {
+      await cleanupPartialUploads();
+      console.error('Failed to upload policy evidence to S3', { error, policyId, fileName: fileEntry.name });
+      return NextResponse.json({ error: 'Failed to upload files' }, { status: 500 });
+    }
     uploads.push({ fileName: fileEntry.name, key });
   }
 
