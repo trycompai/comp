@@ -1,6 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { Buffer } from 'node:buffer';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -85,6 +85,19 @@ export async function POST(req: NextRequest) {
   });
 
   if (existing) {
+    const previousKeys = existing.attachments ?? [];
+
+    if (previousKeys.length > 0) {
+      await s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Delete: {
+            Objects: previousKeys.map((key) => ({ Key: key })),
+          },
+        }),
+      );
+    }
+
     await db.fleetPolicyResult.update({
       where: { id: existing.id },
       data: {
