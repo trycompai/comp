@@ -91,7 +91,7 @@ function AppShellWrapperContent({
   isOnlyAuditor,
   user,
 }: AppShellWrapperContentProps) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -137,7 +137,7 @@ function AppShellWrapperContent({
             <Link href="/">
               <Logo
                 style={{ height: 22, width: 'auto' }}
-                variant={theme === 'dark' ? 'light' : 'dark'}
+                variant={resolvedTheme === 'dark' ? 'light' : 'dark'}
               />
             </Link>
             <span className="pl-3 pr-1 text-muted-foreground">/</span>
@@ -181,7 +181,7 @@ function AppShellWrapperContent({
                   <Text size="sm">Theme</Text>
                   <ThemeToggle
                     size="sm"
-                    isDark={theme === 'dark'}
+                    isDark={resolvedTheme === 'dark'}
                     onChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
                   />
                 </div>
