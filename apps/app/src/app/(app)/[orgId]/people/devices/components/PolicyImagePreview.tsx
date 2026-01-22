@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 
 const fetcher = async (key: string) => {
   const res = await fetch(key, { cache: 'no-store' });
@@ -14,8 +15,15 @@ const fetcher = async (key: string) => {
 };
 
 export function PolicyImagePreview({ image }: { image: string }) {
+  const params = useParams<{ orgId: string }>();
+  const orgIdParam = params?.orgId;
+  const organizationId = Array.isArray(orgIdParam) ? orgIdParam[0] : orgIdParam;
+
   const { data: signedUrl, error, isLoading } = useSWR(
-    () => (image ? `/api/get-image-url?key=${encodeURIComponent(image)}` : null),
+    () =>
+      image && organizationId
+        ? `/api/get-image-url?key=${encodeURIComponent(image)}&organizationId=${encodeURIComponent(organizationId)}`
+        : null,
     fetcher,
   );
 
