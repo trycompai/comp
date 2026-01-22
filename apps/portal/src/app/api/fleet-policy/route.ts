@@ -9,13 +9,17 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const organizationId = req.nextUrl.searchParams.get('organizationId');
+
+  if (!organizationId) {
+    return NextResponse.json({ error: 'No organization ID' }, { status: 400 });
+  }
+
   const session = await auth.api.getSession({ headers: req.headers });
 
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const organizationId = session.session?.activeOrganizationId;
 
   if (!organizationId) {
     return NextResponse.json({ error: 'No active organization' }, { status: 400 });

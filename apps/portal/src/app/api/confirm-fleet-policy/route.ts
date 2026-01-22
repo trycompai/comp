@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const policyIdValue = formData.get('policyId');
   const policyName = formData.get('policyName');
+  const organizationId = formData.get('organizationId') as string;
   const files = formData.getAll('files');
 
   const policyId = typeof policyIdValue === 'string' ? Number(policyIdValue) : null;
-  const organizationId = session.session?.activeOrganizationId;
   const userId = session.user.id;
 
   if (!organizationId) {
