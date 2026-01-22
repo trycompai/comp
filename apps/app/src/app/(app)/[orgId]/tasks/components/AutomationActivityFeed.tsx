@@ -157,7 +157,7 @@ export function AutomationActivityFeed({
                       {run.evaluationStatus && (
                         <Badge
                           variant={run.evaluationStatus === 'pass' ? 'default' : 'destructive'}
-                          className="text-[10px] px-1.5 py-0"
+                          className="text-[10px] px-1.5 py-0 !text-white"
                         >
                           {run.evaluationStatus === 'pass' ? '✓ Pass' : '✗ Fail'}
                         </Badge>

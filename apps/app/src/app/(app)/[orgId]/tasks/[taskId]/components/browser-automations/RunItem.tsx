@@ -67,7 +67,7 @@ export function RunItem({ run, isLatest }: RunItemProps) {
                 <span className="text-muted-foreground">•</span>
                 <Badge
                   variant={evaluationPassed ? 'default' : 'destructive'}
-                  className="text-[10px] px-1.5 py-0"
+                  className="text-[10px] px-1.5 py-0 !text-white"
                 >
                   {evaluationPassed ? '✓ Pass' : '✗ Fail'}
                 </Badge>

@@ -55,7 +55,9 @@ export function MetricsSection({
 
   // Calculate metrics from latest version runs
   const totalRuns = latestVersionRuns.length;
-  const successfulRuns = latestVersionRuns.filter((run) => run.status === 'completed').length;
+  const successfulRuns = latestVersionRuns.filter(
+    (run) => run.status === 'completed' && run.success && run.evaluationStatus !== 'fail',
+  ).length;
   const successRate = totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
   const latestRun = latestVersionRuns[0];
 
