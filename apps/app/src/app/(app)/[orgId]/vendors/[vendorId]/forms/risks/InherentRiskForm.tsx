@@ -4,7 +4,8 @@ import { updateVendorInherentRisk } from '@/app/(app)/[orgId]/vendors/[vendorId]
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Select, SelectItem, Stack } from '@trycompai/design-system';
+import { Button } from '@comp/ui/button';
+import { Select, SelectItem, Stack } from '@trycompai/design-system';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -99,9 +100,7 @@ export function InherentRiskForm({
           />
 
           <div className="flex justify-end pt-4">
-            <button type="submit">
-              <Button>Save</Button>
-            </button>
+            <Button type="submit">Save</Button>
           </div>
         </Stack>
       </form>

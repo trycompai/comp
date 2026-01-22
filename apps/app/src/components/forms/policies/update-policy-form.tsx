@@ -4,12 +4,12 @@ import { updatePolicyOverviewAction } from '@/actions/policies/update-policy-ove
 import { updatePolicyOverviewSchema } from '@/actions/schema';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Policy } from '@db';
+import { Button } from '@comp/ui/button';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Button,
   Input,
   Stack,
   Textarea,
@@ -99,14 +99,9 @@ export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
                   )}
                 />
                 <div className="flex justify-end">
-                  <button type="submit" className="contents">
-                    <Button
-                      loading={updatePolicy.status === 'executing'}
-                      disabled={updatePolicy.status === 'executing'}
-                    >
-                      Save
-                    </Button>
-                  </button>
+                  <Button type="submit" disabled={updatePolicy.status === 'executing'}>
+                    {updatePolicy.status === 'executing' ? 'Saving...' : 'Save'}
+                  </Button>
                 </div>
               </Stack>
             </form>

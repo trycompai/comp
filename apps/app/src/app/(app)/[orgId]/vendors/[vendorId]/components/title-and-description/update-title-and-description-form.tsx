@@ -3,7 +3,8 @@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Vendor } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input, Stack, Textarea } from '@trycompai/design-system';
+import { Button } from '@comp/ui/button';
+import { Input, Stack, Textarea } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -94,9 +95,9 @@ export function UpdateTitleAndDescriptionForm({
             )}
           />
           <div className="flex justify-end pt-4">
-            <button type="submit" disabled={updateVendor.status === 'executing'}>
-              <Button loading={updateVendor.status === 'executing'}>Save</Button>
-            </button>
+            <Button type="submit" disabled={updateVendor.status === 'executing'}>
+              {updateVendor.status === 'executing' ? 'Saving...' : 'Save'}
+            </Button>
           </div>
         </Stack>
       </form>
