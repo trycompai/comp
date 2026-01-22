@@ -1,0 +1,133 @@
+---
+description: Infrastructure - monorepo, package manager, CI checks
+globs: **/*.{ts,tsx,json}
+alwaysApply: false
+---
+
+# Infrastructure
+
+## Package Manager
+
+**Use `bun`, never npm/yarn/pnpm.**
+
+```bash
+bun install              # Install deps
+bun add <pkg>            # Add package
+bun add -D <pkg>         # Add dev dependency
+bun run <script>         # Run script
+bunx <cmd>               # Execute binary
+```
+
+## Monorepo Structure
+
+```
+comp/
+├── apps/
+│   ├── api/             # NestJS backend
+│   ├── app/             # Next.js main app
+│   └── portal/          # Next.js portal
+├── packages/
+│   ├── db/              # Prisma (@comp/db)
+│   ├── ui/              # UI components (@trycompai/ui)
+│   └── ...
+├── turbo.json
+└── package.json
+```
+
+## Running Commands
+
+```bash
+# Multi-package (via turbo)
+bun run build            # Build all
+bun run lint             # Lint all
+bun run typecheck        # Type check all
+bun run dev              # Dev all
+
+# Single package
+bun run -F apps/app dev
+bun run -F @comp/db prisma:generate
+turbo build --filter=@trycompai/ui
+```
+
+## Importing Between Packages
+
+```tsx
+// ✅ Import from package name
+import { Button } from '@trycompai/design-system';
+import { prisma } from '@comp/db';
+
+// ❌ Never relative paths across packages
+import { Button } from '../../../packages/ui/src/button';
+```
+
+## Adding Dependencies
+
+```bash
+# To specific package
+bun add axios -F apps/app
+bun add -D vitest -F @trycompai/ui
+
+# To root (dev tools only)
+bun add -D -w prettier typescript
+```
+
+## After Code Changes
+
+**Always run checks:**
+
+```bash
+bun run typecheck
+bun run lint
+```
+
+Fix all errors before committing.
+
+## Common TypeScript Fixes
+
+- **Property does not exist**: Check interface definitions
+- **Type mismatch**: Verify expected vs actual type
+- **Empty interface extends**: Use `type X = SomeType` instead
+
+## Common ESLint Fixes
+
+- **Unused variables**: Remove or prefix with `_`
+- **Any type**: Add proper typing
+- **Empty object type**: Use `type` instead of `interface`
+
+## Creating a New Package
+
+```bash
+mkdir packages/my-package
+```
+
+```json
+// packages/my-package/package.json
+{
+  "name": "@trycompai/my-package",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "typecheck": "tsc --noEmit"
+  }
+}
+```
+
+```json
+// packages/my-package/tsconfig.json
+{
+  "extends": "@comp/tsconfig/base.json",
+  "include": ["src"]
+}
+```
+
+## Package Boundaries
+
+**✅ Create packages for:**
+- Code used by 2+ apps
+- Self-contained, focused functionality
+
+**❌ Don't create packages for:**
+- Code only used in one app (colocate instead)
+- App-specific business logic

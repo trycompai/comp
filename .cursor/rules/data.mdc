@@ -1,0 +1,139 @@
+---
+description: Data fetching - server-first with SWR hydration
+globs: apps/app/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Data Fetching
+
+## Core Pattern: Server → Client → SWR
+
+### 1. Server Page Fetches Data
+
+```tsx
+// app/(app)/[orgId]/tasks/page.tsx
+export default async function TasksPage({ params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params; // From URL, NOT session
+  const tasks = await getTasks(orgId);
+  return <TaskListClient organizationId={orgId} initialTasks={tasks} />;
+}
+```
+
+### 2. Client Component Receives Initial Data
+
+```tsx
+// components/TaskListClient.tsx
+'use client';
+
+export function TaskListClient({ organizationId, initialTasks }: Props) {
+  const { tasks, createTask, updateTask } = useTasks({
+    organizationId,
+    initialData: initialTasks,
+  });
+  // Initial render is instant - no loading state
+}
+```
+
+### 3. SWR Hook with fallbackData
+
+```tsx
+// hooks/useTasks.ts
+export function useTasks({ organizationId, initialData }: UseTasksOptions) {
+  const { data, mutate } = useSWR(
+    ['/v1/tasks', organizationId], // Include orgId for cache isolation
+    async ([endpoint, orgId]) => {
+      const response = await apiClient.get(endpoint, orgId);
+      return response.data?.tasks ?? [];
+    },
+    { fallbackData: initialData }
+  );
+
+  const createTask = async (input: CreateTaskInput) => {
+    await apiClient.post('/v1/tasks', input, organizationId);
+    mutate(); // Revalidate
+  };
+
+  return { tasks: data ?? [], createTask, mutate };
+}
+```
+
+## API Client
+
+Use `apiClient` from `@/lib/api-client`:
+
+```tsx
+import { apiClient } from '@/lib/api-client';
+
+await apiClient.get<ResponseType>('/v1/endpoint', organizationId);
+await apiClient.post<ResponseType>('/v1/endpoint', body, organizationId);
+await apiClient.put<ResponseType>('/v1/endpoint', body, organizationId);
+await apiClient.delete('/v1/endpoint', organizationId);
+```
+
+## Server vs Client Components
+
+**Layouts = server.** Interactive logic in separate client components.
+
+```tsx
+// layout.tsx (server)
+export default function Layout({ children }) {
+  return (
+    <PageLayout>
+      <PageHeader title="Title" />
+      <ClientTabs /> {/* Client component */}
+      {children}
+    </PageLayout>
+  );
+}
+
+// components/ClientTabs.tsx
+'use client';
+export function ClientTabs() {
+  const router = useRouter();
+  // Interactive logic here
+}
+```
+
+## State Management
+
+**No `nuqs`** - use React state or Next.js patterns:
+
+```tsx
+// ✅ React state for UI
+const [isOpen, setIsOpen] = useState(false);
+
+// ✅ Next.js for URL state
+const router = useRouter();
+const searchParams = useSearchParams();
+
+// ❌ No nuqs
+import { useQueryState } from 'nuqs';
+```
+
+## Rules
+
+```tsx
+// ✅ Always
+const { orgId } = await params;                    // From URL params
+const { data } = useSWR(key, f, { fallbackData }); // With initial data
+await apiClient.get('/v1/endpoint', orgId);        // Use apiClient
+useSWR(['/v1/tasks', orgId], fetcher);            // Include orgId in key
+
+// ❌ Never
+const orgId = session?.activeOrganizationId;       // From session
+const { data } = useSWR('/api/data');              // No initial data
+await fetch('/api/endpoint');                      // Direct fetch
+```
+
+## File Structure
+
+```
+app/(app)/[orgId]/tasks/
+├── page.tsx                 # Server - fetches data
+├── components/
+│   └── TaskListClient.tsx   # Client - receives initialData
+├── hooks/
+│   └── useTasks.ts          # SWR hook with mutations
+└── data/
+    └── queries.ts           # Server-side queries
+```
