@@ -104,9 +104,9 @@ export const PromptInfo = memo(function PromptInfo({
 
   if (isComplete) {
     return (
-      <div className="rounded-xs border bg-green-50 p-4">
+      <div className="rounded-xs border border-primary/20 bg-primary/10 p-4">
         <div className="flex gap-2">
-          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
           <div className="text-sm">
             <p className="font-medium">Information provided successfully</p>
             <p className="mt-1">The automation can now continue with this information.</p>

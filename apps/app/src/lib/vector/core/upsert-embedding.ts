@@ -4,7 +4,7 @@ import { vectorIndex } from './client';
 import { generateEmbedding } from './generate-embedding';
 import { logger } from '@/utils/logger';
 
-export type SourceType = 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire';
+export type SourceType = 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer' | 'knowledge_base_document';
 
 export interface EmbeddingMetadata {
   organizationId: string;
@@ -16,6 +16,8 @@ export interface EmbeddingMetadata {
   vendorId?: string;
   vendorName?: string;
   questionnaireQuestion?: string;
+  documentName?: string;
+  manualAnswerQuestion?: string;
   updatedAt?: string; // ISO timestamp for incremental sync comparison
 }
 
@@ -31,7 +33,14 @@ export async function upsertEmbedding(
   metadata: EmbeddingMetadata,
 ): Promise<void> {
   if (!vectorIndex) {
-    throw new Error('Upstash Vector is not configured');
+    const errorMsg = 'Upstash Vector is not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN';
+    logger.error(errorMsg, {
+      id,
+      sourceType: metadata.sourceType,
+      hasUrl: !!process.env.UPSTASH_VECTOR_REST_URL,
+      hasToken: !!process.env.UPSTASH_VECTOR_REST_TOKEN,
+    });
+    throw new Error(errorMsg);
   }
 
   if (!text || text.trim().length === 0) {
@@ -43,25 +52,57 @@ export async function upsertEmbedding(
     // Generate embedding
     const embedding = await generateEmbedding(text);
 
+    // Prepare metadata
+    const vectorMetadata = {
+      organizationId: metadata.organizationId,
+      sourceType: metadata.sourceType,
+      sourceId: metadata.sourceId,
+      content: text.substring(0, 1000), // Store first 1000 chars for reference
+      ...(metadata.policyName && { policyName: metadata.policyName }),
+      ...(metadata.contextQuestion && { contextQuestion: metadata.contextQuestion }),
+      ...(metadata.vendorId && { vendorId: metadata.vendorId }),
+      ...(metadata.vendorName && { vendorName: metadata.vendorName }),
+      ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
+      ...(metadata.manualAnswerQuestion && { manualAnswerQuestion: metadata.manualAnswerQuestion }),
+      ...(metadata.documentName && { documentName: metadata.documentName }),
+      ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
+    };
+
+    // Log detailed info for manual_answer type (for debugging)
+    if (metadata.sourceType === 'manual_answer') {
+      logger.info('Upserting manual answer embedding', {
+        id,
+        embeddingId: id,
+        vectorLength: embedding.length,
+        vectorPreview: embedding.slice(0, 5).map(v => v.toFixed(6)), // First 5 dimensions
+        vectorStats: {
+          min: Math.min(...embedding),
+          max: Math.max(...embedding),
+          mean: embedding.reduce((a, b) => a + b, 0) / embedding.length,
+        },
+        metadata: vectorMetadata,
+        textPreview: text.substring(0, 200),
+      });
+    }
+
     // Upsert into Upstash Vector
-    await vectorIndex.upsert({
+    const upsertResult = await vectorIndex.upsert({
       id,
       vector: embedding,
-      metadata: {
-        organizationId: metadata.organizationId,
-        sourceType: metadata.sourceType,
-        sourceId: metadata.sourceId,
-        content: text.substring(0, 1000), // Store first 1000 chars for reference
-        ...(metadata.policyName && { policyName: metadata.policyName }),
-        ...(metadata.contextQuestion && { contextQuestion: metadata.contextQuestion }),
-        ...(metadata.vendorId && { vendorId: metadata.vendorId }),
-        ...(metadata.vendorName && { vendorName: metadata.vendorName }),
-        ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
-        ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
-      },
+      metadata: vectorMetadata,
     });
 
-    // Removed per-embedding success logging for performance (only log errors)
+    // Log success for manual_answer type with upsert result
+    if (metadata.sourceType === 'manual_answer') {
+      logger.info('✅ Successfully upserted manual answer embedding', {
+        id,
+        embeddingId: id,
+        organizationId: metadata.organizationId,
+        sourceId: metadata.sourceId,
+        upsertResult: upsertResult ? 'success' : 'unknown',
+        vectorIndexConfigured: !!vectorIndex,
+      });
+    }
   } catch (error) {
     logger.error('Failed to upsert embedding', {
       id,
@@ -132,6 +173,10 @@ export async function batchUpsertEmbeddings(
             ...(item.metadata.questionnaireQuestion && {
               questionnaireQuestion: item.metadata.questionnaireQuestion,
             }),
+            ...(item.metadata.manualAnswerQuestion && {
+              manualAnswerQuestion: item.metadata.manualAnswerQuestion,
+            }),
+            ...(item.metadata.documentName && { documentName: item.metadata.documentName }),
             ...(item.metadata.updatedAt && { updatedAt: item.metadata.updatedAt }),
           },
         });

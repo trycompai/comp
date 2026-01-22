@@ -43,6 +43,7 @@ export default async function PolicyPage({
     where: {
       userId: session.user.id,
       organizationId: orgId,
+      deactivated: false,
     },
   });
 

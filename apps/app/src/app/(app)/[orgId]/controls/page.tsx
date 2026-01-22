@@ -1,10 +1,11 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { getValidFilters } from '@/lib/data-table';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { SearchParams } from 'nuqs';
+import { CreateControlSheet } from './components/CreateControlSheet';
 import { ControlsTable } from './components/controls-table';
 import { getControls } from './data/queries';
 import { searchParamsCache } from './data/validations';
@@ -36,14 +37,17 @@ export default async function ControlsPage({ ...props }: ControlTableProps) {
   const requirements = await getRequirements();
 
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: 'Controls', current: true }]}>
-      <ControlsTable
-        promises={promises}
-        policies={policies}
-        tasks={tasks}
-        requirements={requirements}
-      />
-    </PageWithBreadcrumb>
+    <PageLayout>
+      <Stack gap="md">
+        <PageHeader
+          title="Controls"
+          actions={<CreateControlSheet policies={policies} tasks={tasks} requirements={requirements} />}
+        />
+        <ControlsTable
+          promises={promises}
+        />
+      </Stack>
+    </PageLayout>
   );
 }
 

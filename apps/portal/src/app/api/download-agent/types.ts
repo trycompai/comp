@@ -23,6 +23,7 @@ export interface CreateFleetLabelParams {
 export interface DownloadAgentRequest {
   orgId: string;
   employeeId: string;
+  os?: SupportedOS;
 }
 
 export interface FleetDevicePaths {

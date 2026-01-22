@@ -17,7 +17,7 @@ interface Props {
   toName: string;
   organizationName: string;
   expiresAt: Date;
-  portalUrl?: string | null;
+  portalUrl: string;
 }
 
 export const AccessGrantedEmail = ({
@@ -76,16 +76,14 @@ export const AccessGrantedEmail = ({
               </strong>
             </Text>
 
-            {portalUrl && (
-              <Section className="mt-[32px] mb-[32px] text-center">
-                <Button
-                  className="rounded-[3px] bg-[#121212] px-[20px] py-[12px] text-center text-[14px] font-semibold text-white no-underline"
-                  href={portalUrl}
-                >
-                  View Documents
-                </Button>
-              </Section>
-            )}
+            <Section className="mt-[32px] mb-[32px] text-center">
+              <Button
+                className="rounded-[3px] bg-[#121212] px-[20px] py-[12px] text-center text-[14px] font-semibold text-white no-underline"
+                href={portalUrl}
+              >
+                View Documents
+              </Button>
+            </Section>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
               You can download your signed NDA for your records from the

@@ -12,9 +12,11 @@ export const auth = betterAuth({
     provider: 'postgresql',
   }),
   advanced: {
-    // This will enable us to fall back to DB for ID generation.
-    // It's important so we can use custom IDs specified in Prisma Schema.
-    generateId: false,
+    database: {
+      // This will enable us to fall back to DB for ID generation.
+      // It's important so we can use custom IDs specified in Prisma Schema.
+      generateId: false,
+    },
   },
   trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
   secret: env.AUTH_SECRET!,
@@ -75,6 +77,16 @@ export const auth = betterAuth({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
     },
+    ...(process.env.AUTH_MICROSOFT_CLIENT_ID && process.env.AUTH_MICROSOFT_CLIENT_SECRET
+      ? {
+          microsoft: {
+            clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
+            clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
+            tenantId: 'common',
+            prompt: 'select_account',
+          },
+        }
+      : {}),
   },
   user: {
     modelName: 'User',
@@ -93,6 +105,10 @@ export const auth = betterAuth({
   },
   account: {
     modelName: 'Account',
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ['google', 'microsoft'],
+    },
   },
   verification: {
     modelName: 'Verification',

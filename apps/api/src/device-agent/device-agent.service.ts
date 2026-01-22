@@ -66,7 +66,11 @@ export class DeviceAgentService {
     }
   }
 
-  async downloadWindowsAgent(): Promise<{ stream: Readable; filename: string; contentType: string }> {
+  async downloadWindowsAgent(): Promise<{
+    stream: Readable;
+    filename: string;
+    contentType: string;
+  }> {
     try {
       const windowsPackageFilename = 'Comp AI Agent 1.0.0.exe';
       const packageKey = `windows/${windowsPackageFilename}`;
@@ -81,7 +85,9 @@ export class DeviceAgentService {
       const s3Response = await this.s3Client.send(getObjectCommand);
 
       if (!s3Response.Body) {
-        throw new NotFoundException('Windows agent executable file not found in S3');
+        throw new NotFoundException(
+          'Windows agent executable file not found in S3',
+        );
       }
 
       // Use S3 stream directly as Node.js Readable

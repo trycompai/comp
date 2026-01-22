@@ -13,6 +13,8 @@ import {
 } from '@react-email/components';
 import { Footer } from '../components/footer';
 import { Logo } from '../components/logo';
+import { UnsubscribeLink } from '../components/unsubscribe-link';
+import { getUnsubscribeUrl } from '../lib/unsubscribe';
 
 interface Props {
   email: string;
@@ -85,16 +87,13 @@ export const PolicyNotificationEmail = ({
               {subjectText}
             </Heading>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Hi {userName},
-            </Text>
+            <Text className="text-[14px] leading-[24px] text-[#121212]">Hi {userName},</Text>
+
+            <Text className="text-[14px] leading-[24px] text-[#121212]">{getBodyText()}</Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              {getBodyText()}
-            </Text>
-
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Your organization <strong>{organizationName}</strong> requires all employees to review and accept this policy.
+              Your organization <strong>{organizationName}</strong> requires all employees to review
+              and accept this policy.
             </Text>
 
             <Section className="mt-[32px] mb-[42px] text-center">
@@ -119,6 +118,8 @@ export const PolicyNotificationEmail = ({
                 This notification was intended for <span className="text-[#121212]">{email}</span>.
               </Text>
             </Section>
+
+            <UnsubscribeLink email={email} unsubscribeUrl={getUnsubscribeUrl(email)} />
 
             <br />
 

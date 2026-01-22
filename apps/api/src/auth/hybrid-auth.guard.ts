@@ -70,6 +70,8 @@ export class HybridAuthGuard implements CanActivate {
     request.organizationId = organizationId;
     request.authType = 'api-key';
     request.isApiKey = true;
+    // API keys are organization-scoped and are not tied to a specific user/member.
+    request.userRoles = null;
 
     return true;
   }
@@ -171,9 +173,23 @@ export class HybridAuthGuard implements CanActivate {
         );
       }
 
+      const member = await db.member.findFirst({
+        where: {
+          userId,
+          organizationId: explicitOrgId,
+          deactivated: false,
+        },
+        select: {
+          role: true,
+        },
+      });
+
+      const userRoles = member?.role ? member.role.split(',') : null;
+
       // Set request context for JWT auth
       request.userId = userId;
       request.userEmail = userEmail;
+      request.userRoles = userRoles;
       request.organizationId = explicitOrgId;
       request.authType = 'jwt';
       request.isApiKey = false;
@@ -232,6 +248,7 @@ export class HybridAuthGuard implements CanActivate {
         where: {
           userId,
           organizationId,
+          deactivated: false,
         },
         select: {
           id: true,

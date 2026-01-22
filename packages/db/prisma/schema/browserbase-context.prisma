@@ -1,0 +1,96 @@
+/// Stores Browserbase context IDs for browser-based automation
+/// One context per organization - shared like a normal browser
+model BrowserbaseContext {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('bbc'::text)"))
+
+    /// Organization that owns this browser context
+    organizationId String       @unique
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    /// Browserbase context ID from their API
+    contextId String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([organizationId])
+}
+
+/// Browser automation configuration linked to a task
+model BrowserAutomation {
+    id          String  @id @default(dbgenerated("generate_prefixed_cuid('bau'::text)"))
+    name        String
+    description String?
+
+    /// Task this automation belongs to
+    taskId String
+    task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+    /// Starting URL for the automation
+    targetUrl String
+
+    /// Natural language instruction for the AI agent
+    instruction String
+
+    /// Whether automation is enabled for scheduled runs
+    isEnabled Boolean @default(false)
+
+    /// Cron expression for scheduled runs (null = manual only)
+    schedule String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    runs BrowserAutomationRun[]
+
+    @@index([taskId])
+}
+
+/// Records of browser automation executions
+model BrowserAutomationRun {
+    id String @id @default(dbgenerated("generate_prefixed_cuid('bar'::text)"))
+
+    /// Parent automation
+    automationId String
+    automation   BrowserAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+    /// Execution status
+    status BrowserAutomationRunStatus @default(pending)
+
+    /// Timestamps
+    startedAt   DateTime?
+    completedAt DateTime?
+
+    /// Duration in milliseconds
+    durationMs Int?
+
+    /// Screenshot URL in S3 (if successful)
+    screenshotUrl String?
+
+    /// Evaluation result - whether the automation fulfilled the task requirements
+    evaluationStatus BrowserAutomationEvaluationStatus?
+
+    /// AI explanation of why it passed or failed
+    evaluationReason String?
+
+    /// Error message (if failed)
+    error String?
+
+    createdAt DateTime @default(now())
+
+    @@index([automationId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+enum BrowserAutomationEvaluationStatus {
+    pass
+    fail
+}
+
+enum BrowserAutomationRunStatus {
+    pending
+    running
+    completed
+    failed
+}

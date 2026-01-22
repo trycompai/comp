@@ -32,7 +32,7 @@ export function ControlRequirementsTable({ data }: DataTableProps) {
     switch (requirement.policy ? 'policy' : 'task') {
       case 'policy':
         if (requirement.policy?.id) {
-          router.push(`/${orgId}/policies/all/${requirement.policy.id}`);
+          router.push(`/${orgId}/policies/${requirement.policy.id}`);
         }
         break;
       case 'task':

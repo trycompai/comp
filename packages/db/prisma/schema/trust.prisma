@@ -9,6 +9,9 @@ model Trust {
   status             TrustStatus  @default(draft)
   contactEmail       String?
 
+  /// Domains that bypass NDA signing when requesting trust portal access
+  allowedDomains String[] @default([])
+
   email         String?
   privacyPolicy String?
   soc2          Boolean @default(false)
@@ -20,6 +23,7 @@ model Trust {
   gdpr          Boolean @default(false)
   hipaa         Boolean @default(false)
   pci_dss       Boolean @default(false)
+  iso9001       Boolean @default(false)
 
   soc2_status      FrameworkStatus @default(started)
   soc2type1_status FrameworkStatus @default(started)
@@ -30,6 +34,7 @@ model Trust {
   gdpr_status      FrameworkStatus @default(started)
   hipaa_status     FrameworkStatus @default(started)
   pci_dss_status   FrameworkStatus @default(started)
+  iso9001_status   FrameworkStatus @default(started)
 
   @@id([status, organizationId])
   @@unique([organizationId])
@@ -46,6 +51,33 @@ enum FrameworkStatus {
   started
   in_progress
   compliant
+}
+
+enum TrustFramework {
+  iso_27001
+  iso_42001
+  gdpr
+  hipaa
+  soc2_type1
+  soc2_type2
+  pci_dss
+  nen_7510
+  iso_9001
+}
+
+model TrustResource {
+  id             String         @id @default(dbgenerated("generate_prefixed_cuid('tcr'::text)"))
+  organizationId String
+  organization   Organization   @relation("OrganizationTrustResources", fields: [organizationId], references: [id], onDelete: Cascade)
+  framework      TrustFramework
+  s3Key          String
+  fileName       String
+  fileSize       Int
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([organizationId, framework])
+  @@index([organizationId])
 }
 
 model TrustAccessRequest {

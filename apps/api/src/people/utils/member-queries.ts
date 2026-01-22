@@ -40,7 +40,7 @@ export class MemberQueries {
     organizationId: string,
   ): Promise<PeopleResponseDto[]> {
     return db.member.findMany({
-      where: { organizationId },
+      where: { organizationId, deactivated: false },
       select: this.MEMBER_SELECT,
       orderBy: { createdAt: 'desc' },
     });
@@ -141,6 +141,17 @@ export class MemberQueries {
   static async deleteMember(memberId: string): Promise<void> {
     await db.member.delete({
       where: { id: memberId },
+    });
+  }
+
+  /**
+   * Unlink device by resetting fleetDmLabelId to null
+   */
+  static async unlinkDevice(memberId: string): Promise<PeopleResponseDto> {
+    return db.member.update({
+      where: { id: memberId },
+      data: { fleetDmLabelId: null },
+      select: this.MEMBER_SELECT,
     });
   }
 

@@ -15,25 +15,45 @@ model Organization {
   fleetDmLabelId        Int?
   isFleetSetupCompleted Boolean @default(false)
 
-  apiKeys             ApiKey[]
-  auditLog            AuditLog[]
-  controls            Control[]
-  frameworkInstances  FrameworkInstance[]
-  integrations        Integration[]
-  invitations         Invitation[]
-  members             Member[]
-  policy              Policy[]
-  risk                Risk[]
-  vendors             Vendor[]
-  tasks               Task[]
-  comments            Comment[]
-  attachments         Attachment[]
-  trust               Trust[]
-  context             Context[]
-  secrets             Secret[]
-  trustAccessRequests TrustAccessRequest[]
-  trustNdaAgreements  TrustNDAAgreement[]
-  trustDocuments      TrustDocument[]
+  // Employee sync provider (e.g., 'google-workspace', 'rippling')
+  // When set, the scheduled sync will only use this provider
+  employeeSyncProvider String?
+
+  apiKeys                            ApiKey[]
+  auditLog                           AuditLog[]
+  controls                           Control[]
+  frameworkInstances                 FrameworkInstance[]
+  integrations                       Integration[]
+  invitations                        Invitation[]
+  members                            Member[]
+  policy                             Policy[]
+  risk                               Risk[]
+  vendors                            Vendor[]
+  tasks                              Task[]
+  taskItems                          TaskItem[]
+  comments                           Comment[]
+  attachments                        Attachment[]
+  trust                              Trust[]
+  context                            Context[]
+  secrets                            Secret[]
+  trustAccessRequests                TrustAccessRequest[]
+  trustNdaAgreements                 TrustNDAAgreement[]
+  trustDocuments                     TrustDocument[]
+  trustResources                     TrustResource[]                     @relation("OrganizationTrustResources")
+  knowledgeBaseDocuments             KnowledgeBaseDocument[]
+  questionnaires                     Questionnaire[]
+  securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
+  soaDocuments                       SOADocument[]
+  primaryColor                       String?
+  trustPortalFaqs                    Json? // Array of { question: string, answer: string, order: number }
+
+
+  // Integration Platform
+  integrationConnections IntegrationConnection[]
+  integrationOAuthApps   IntegrationOAuthApp[]
+
+  // Browser Automation
+  browserbaseContext BrowserbaseContext?
 
   @@index([slug])
 }

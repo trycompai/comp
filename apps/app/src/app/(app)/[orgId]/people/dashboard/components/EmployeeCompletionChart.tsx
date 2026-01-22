@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { Input } from '@comp/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
 import { ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -23,10 +23,10 @@ interface EmployeeCompletionChartProps {
   showAll?: boolean;
 }
 
-// Define colors for the chart
+// Define colors for the chart using DS semantic colors
 const taskColors = {
-  completed: 'bg-primary', // Green/Blue
-  incomplete: 'bg-[var(--chart-open)]', // Yellow
+  completed: 'bg-success', // Green - completed/good state
+  incomplete: 'bg-warning', // Yellow - needs action
 };
 
 interface EmployeeTaskStats {
@@ -191,12 +191,16 @@ export function EmployeeCompletionChart({
         <CardTitle>{'Employee Task Completion'}</CardTitle>
         {showAll && (
           <div className="mt-4">
-            <Input
-              placeholder="Search employees..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              leftIcon={<Search className="h-4 w-4" />}
-            />
+            <InputGroup>
+              <InputGroupAddon>
+                <Search size={16} />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search employees..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </InputGroup>
           </div>
         )}
       </CardHeader>
@@ -243,11 +247,11 @@ export function EmployeeCompletionChart({
 
                   <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
                     <div className="flex items-center gap-1">
-                      <div className="bg-primary size-2 rounded-xs" />
+                      <div className="size-2 rounded-xs bg-success" />
                       <span>{'Completed'}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="size-2 rounded-xs bg-[var(--chart-open)]" />
+                      <div className="size-2 rounded-xs bg-warning" />
                       <span>{'Not Completed'}</span>
                     </div>
                   </div>

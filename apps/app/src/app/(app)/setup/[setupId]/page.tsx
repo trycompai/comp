@@ -45,7 +45,7 @@ export default async function SetupWithIdPage({ params, searchParams }: SetupPag
     <div className="flex flex-1 min-h-0">
       {/* Form Section - Left Side */}
       <div className="flex-1 flex flex-col">
-        <MinimalHeader user={user} organizations={[]} currentOrganization={null} />
+        <MinimalHeader user={user} organizations={[]} currentOrganization={null} variant="setup" />
 
         <OrganizationSetupForm
           setupId={setupId}

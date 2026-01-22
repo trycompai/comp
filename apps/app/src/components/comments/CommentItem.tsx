@@ -2,28 +2,44 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
+import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { Button } from '@comp/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Textarea } from '@comp/ui/textarea';
-import { FileIcon, FileText, ImageIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import type { JSONContent } from '@tiptap/react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@trycompai/design-system';
+import {
+  AlertTriangle,
+  FileIcon,
+  FileText,
+  ImageIcon,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '../../app/(app)/[orgId]/tasks/[taskId]/components/commentUtils';
+import { CommentContentView } from './CommentContentView';
+import { CommentRichTextField } from './CommentRichTextField';
 import type { CommentWithAuthor } from './Comments';
 
 // Helper function to generate gravatar URL
@@ -72,17 +88,56 @@ interface CommentItemProps {
 
 export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(comment.content);
+  const [editedContent, setEditedContent] = useState<JSONContent | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Use API hooks instead of server actions
   const { updateComment, deleteComment } = useCommentActions();
   const { get: apiGet } = useApi();
+  const { members } = useOrganizationMembers();
+
+  // Convert members to MentionUser format - only show admin/owner users
+  const mentionMembers = useMemo(() => {
+    if (!members) return [];
+    return members
+      .filter((member) => {
+        if (!member.role) return false;
+        const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
+        return roles.includes('owner') || roles.includes('admin');
+      })
+      .map((member) => ({
+        id: member.user.id,
+        name: member.user.name || member.user.email || 'Unknown',
+        email: member.user.email || '',
+        image: member.user.image,
+      }));
+  }, [members]);
+
+  // Parse comment content to JSONContent
+  const parseContent = (content: string): JSONContent | null => {
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
+        return parsed as JSONContent;
+      }
+    } catch {
+      // Not JSON, return null
+    }
+    return null;
+  };
+
+  // Convert JSONContent to string for API
+  const contentToString = (content: JSONContent | null): string => {
+    if (!content) return '';
+    return JSON.stringify(content);
+  };
 
   const handleEditToggle = () => {
     if (!isEditing) {
-      setEditedContent(comment.content);
+      // Parse existing content or create empty content
+      const parsed = parseContent(comment.content);
+      setEditedContent(parsed);
     }
     setIsEditing(!isEditing);
   };
@@ -92,7 +147,8 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   };
 
   const handleSaveEdit = async () => {
-    const contentChanged = editedContent !== comment.content;
+    const contentString = contentToString(editedContent);
+    const contentChanged = contentString !== comment.content;
 
     if (!contentChanged) {
       toast.info('No changes detected.');
@@ -102,7 +158,7 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
 
     try {
       // Use API hook directly instead of server action
-      await updateComment(comment.id, { content: editedContent });
+      await updateComment(comment.id, { content: contentString });
 
       toast.success('Comment updated successfully.');
       refreshComments();
@@ -158,15 +214,29 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
   return (
     <>
       <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card hover:shadow-sm transition-all group">
-        <Avatar className="h-8 w-8 border border-border">
-          <AvatarImage
-            src={comment.author.image || getGravatarUrl(comment.author.email)}
-            alt={comment.author.name ?? 'User'}
-          />
-          <AvatarFallback className="text-xs bg-muted">
-            {comment.author.name?.charAt(0).toUpperCase() ?? '?'}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar>
+            <AvatarImage
+              src={comment.author.image || getGravatarUrl(comment.author.email)}
+              alt={comment.author.name ?? 'User'}
+            />
+            <AvatarFallback>{comment.author.name?.charAt(0).toUpperCase() ?? '?'}</AvatarFallback>
+          </Avatar>
+          {comment.author.deactivated && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute -bottom-0.5 -right-0.5 rounded-full">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 fill-yellow-400" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This user is deactivated.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         <div className="flex-1 items-start space-y-2 text-sm">
           <div>
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -208,18 +278,14 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
             </div>
 
             {!isEditing ? (
-              <p className="whitespace-pre-wrap break-words">
-                {renderContentWithLinks(comment.content)}
-              </p>
+              <CommentContentView content={comment.content} />
             ) : (
-              <Textarea
+              <CommentRichTextField
                 value={editedContent}
-                onChange={(e: { target: { value: React.SetStateAction<string> } }) =>
-                  setEditedContent(e.target.value)
-                }
-                className="bg-muted/50 border-border min-h-[80px] text-sm resize-none"
+                onChange={setEditedContent}
+                members={mentionMembers}
+                disabled={false}
                 placeholder="Edit comment..."
-                autoFocus
               />
             )}
 
@@ -282,24 +348,26 @@ export function CommentItem({ comment, refreshComments }: CommentItemProps) {
         </div>
       </div>
       {/* Delete confirmation dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Delete Comment</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete this comment? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteComment} disabled={isDeleting}>
-              {isDeleting ? 'Deleting…' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteComment}
+              loading={isDeleting}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

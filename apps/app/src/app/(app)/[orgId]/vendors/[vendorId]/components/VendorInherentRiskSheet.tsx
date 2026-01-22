@@ -1,13 +1,20 @@
 'use client';
 
 import { InherentRiskForm } from '@/app/(app)/[orgId]/vendors/[vendorId]/forms/risks/InherentRiskForm';
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Impact, Likelihood } from '@db';
-import { X } from 'lucide-react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/design-system';
 import { useQueryState } from 'nuqs';
 
 export function VendorInherentRiskSheet({
@@ -22,46 +29,43 @@ export function VendorInherentRiskSheet({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isOpen, setOpen] = useQueryState('inherent-risk-sheet');
 
+  const handleOpenChange = (value: boolean) => {
+    setOpen(value ? 'true' : null);
+  };
+
   if (isDesktop) {
     return (
-      <Sheet open={isOpen === 'true'} onOpenChange={(value) => setOpen(value ? 'true' : null)}>
-        <SheetContent stack>
-          <SheetHeader className="mb-8">
-            <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{'Update Inherent Risk'}</SheetTitle>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="m-0 size-auto p-0 hover:bg-transparent"
-                onClick={() => setOpen(null)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            <SheetDescription>{'Select the inherent risk level for this vendor'}</SheetDescription>
+      <Sheet open={isOpen === 'true'} onOpenChange={handleOpenChange}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Update Inherent Risk</SheetTitle>
+            <SheetDescription>Select the inherent risk level for this vendor</SheetDescription>
           </SheetHeader>
-
-          <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
+          <SheetBody>
             <InherentRiskForm
               vendorId={vendorId}
               initialProbability={initialProbability}
               initialImpact={initialImpact}
             />
-          </ScrollArea>
+          </SheetBody>
         </SheetContent>
       </Sheet>
     );
   }
 
   return (
-    <Drawer open={isOpen === 'true'} onOpenChange={(value) => setOpen(value ? 'true' : null)}>
-      <DrawerTitle hidden>{'Update Inherent Risk'}</DrawerTitle>
-      <DrawerContent className="p-6">
-        <InherentRiskForm
-          vendorId={vendorId}
-          initialProbability={initialProbability}
-          initialImpact={initialImpact}
-        />
+    <Drawer open={isOpen === 'true'} onOpenChange={handleOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Update Inherent Risk</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">
+          <InherentRiskForm
+            vendorId={vendorId}
+            initialProbability={initialProbability}
+            initialImpact={initialImpact}
+          />
+        </div>
       </DrawerContent>
     </Drawer>
   );

@@ -1,16 +1,34 @@
 'use client';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Separator } from '@comp/ui/separator';
+import { updateTaskViewPreference } from '@/actions/tasks';
 import type { Member, Task, User } from '@db';
-import { Check, Circle, FolderTree, List, Plus, XCircle } from 'lucide-react';
-import Image from 'next/image';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  HStack,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
+  Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+} from '@trycompai/design-system';
+
+import { Check, Circle, FolderTree, List, Search, XCircle } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
-import { CreateTaskSheet } from './CreateTaskSheet';
+import { useEffect, useMemo, useState } from 'react';
 import { ModernTaskList } from './ModernTaskList';
-import { SearchInput } from './SearchInput';
 import { TasksByCategory } from './TasksByCategory';
 
 const statuses = [
@@ -24,7 +42,7 @@ const statuses = [
 export function TaskList({
   tasks: initialTasks,
   members,
-  controls,
+  activeTab,
 }: {
   tasks: (Task & {
     controls: { id: string; name: string }[];
@@ -43,15 +61,25 @@ export function TaskList({
     }>;
   })[];
   members: (Member & { user: User })[];
-  controls: { id: string; name: string }[];
+  activeTab: 'categories' | 'list';
 }) {
   const params = useParams();
   const orgId = params.orgId as string;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useQueryState('status');
   const [assigneeFilter, setAssigneeFilter] = useQueryState('assignee');
-  const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
-  const [activeTab, setActiveTab] = useState<'categories' | 'list'>('categories');
+  const [currentTab, setCurrentTab] = useState<'categories' | 'list'>(activeTab);
+
+  // Sync activeTab prop with state when it changes
+  useEffect(() => {
+    setCurrentTab(activeTab);
+  }, [activeTab]);
+
+  const handleTabChange = async (value: string) => {
+    const newTab = value as 'categories' | 'list';
+    setCurrentTab(newTab);
+    await updateTaskViewPreference({ view: newTab, orgId });
+  };
 
   const eligibleAssignees = useMemo(() => {
     return members
@@ -88,7 +116,9 @@ export function TaskList({
   // Calculate overall stats from all tasks (not filtered)
   const overallStats = useMemo(() => {
     const total = initialTasks.length;
-    const done = initialTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
+    const done = initialTasks.filter(
+      (t) => t.status === 'done' || t.status === 'not_relevant',
+    ).length;
     const inProgress = initialTasks.filter((t) => t.status === 'in_progress').length;
     const todo = initialTasks.filter((t) => t.status === 'todo').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -240,24 +270,7 @@ export function TaskList({
   }, [initialTasks]);
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">Tasks</h1>
-          <p className="text-muted-foreground mt-0.5 text-sm">
-            Manage and track your compliance tasks
-          </p>
-        </div>
-        <button
-          onClick={() => setCreateTaskOpen('true')}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Task</span>
-        </button>
-      </div>
-
+    <Stack gap="lg">
       {/* Analytics Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Main Progress Section */}
@@ -345,8 +358,8 @@ export function TaskList({
         <div
           className={`lg:col-span-3 border-l-2 border-l-primary/30 bg-card/50 px-3 py-2.5 ${initialTasks.length === 0 ? 'lg:col-span-12' : ''}`}
         >
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2">
+          <Stack gap="sm">
+            <HStack gap="sm" align="center">
               {/* Custom geometric icon matching task page */}
               <div className="relative">
                 <svg
@@ -435,10 +448,10 @@ export function TaskList({
                   />
                 </svg>
               </div>
-              <h3 className="text-[10px] font-semibold text-foreground uppercase tracking-[0.15em]">
+              <Text size="xs" weight="semibold">
                 Automation
-              </h3>
-            </div>
+              </Text>
+            </HStack>
 
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
@@ -490,7 +503,7 @@ export function TaskList({
                 </div>
               )}
             </div>
-          </div>
+          </Stack>
         </div>
       </div>
 
@@ -498,173 +511,160 @@ export function TaskList({
       <Separator />
 
       {/* Unified Control Module */}
-      <div className="flex items-center gap-3">
-        {/* Search */}
-        <SearchInput
-          placeholder="Search tasks..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <Tabs value={currentTab} onValueChange={handleTabChange}>
+        <Stack gap="lg">
+          <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            {/* Filters */}
+            <div className="flex w-full flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-2 lg:flex-1">
+              <div className="w-full sm:flex-1 lg:max-w-[200px]">
+                <InputGroup>
+                  <InputGroupAddon>
+                    <Search size={16} />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    placeholder="Search evidence..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </InputGroup>
+              </div>
 
-        {/* Divider */}
-        <div className="h-6 w-px bg-border" />
+              <div className="h-6 w-px bg-border hidden lg:block" />
 
-        {/* Status Filter */}
-        <Select
-          value={statusFilter || 'all'}
-          onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}
-        >
-          <SelectTrigger className="h-9 w-[150px] text-sm">
-            <SelectValue placeholder="All statuses">
-              {(() => {
-                if (!statusFilter) return 'All statuses';
-                const selectedStatus = statuses.find((s) => s.id === statusFilter);
-                if (!selectedStatus) return 'All statuses';
-                const StatusIcon = selectedStatus.icon;
-                return (
-                  <div className="flex items-center gap-1.5">
-                    <StatusIcon className={`h-3.5 w-3.5 ${selectedStatus.color}`} />
-                    <span>{selectedStatus.label}</span>
-                  </div>
-                );
-              })()}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">
-              <span className="text-sm">All statuses</span>
-            </SelectItem>
-            {statuses.map((status) => {
-              const StatusIcon = status.icon;
-              return (
-                <SelectItem key={status.id} value={status.id}>
-                  <div className="flex items-center gap-2 text-sm">
-                    <StatusIcon className={`h-3.5 w-3.5 ${status.color}`} />
-                    <span>{status.label}</span>
-                  </div>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+              {/* Status + Assignee */}
+              <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center lg:gap-2">
+                <Select
+                  value={statusFilter || 'all'}
+                  onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}
+                >
+                  <SelectTrigger size="sm">
+                    <SelectValue placeholder="All statuses">
+                      {(() => {
+                        if (!statusFilter) return 'All statuses';
+                        const selectedStatus = statuses.find((s) => s.id === statusFilter);
+                        if (!selectedStatus) return 'All statuses';
+                        const StatusIcon = selectedStatus.icon;
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <StatusIcon className={`h-3.5 w-3.5 ${selectedStatus.color}`} />
+                            <span>{selectedStatus.label}</span>
+                          </div>
+                        );
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <span className="text-xs">All statuses</span>
+                    </SelectItem>
+                    {statuses.map((status) => {
+                      const StatusIcon = status.icon;
+                      return (
+                        <SelectItem key={status.id} value={status.id}>
+                          <div className="flex items-center gap-2 text-xs">
+                            <StatusIcon className={`h-3.5 w-3.5 ${status.color}`} />
+                            <span>{status.label}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
 
-        {/* Assignee Filter */}
-        <Select
-          value={assigneeFilter || 'all'}
-          onValueChange={(value) => setAssigneeFilter(value === 'all' ? null : value)}
-        >
-          <SelectTrigger
-            className="h-9 w-[190px] text-sm"
-            disabled={eligibleAssignees.length === 0}
-          >
-            <SelectValue placeholder="Everyone">
-              {(() => {
-                if (eligibleAssignees.length === 0) return 'No eligible members';
-                if (!assigneeFilter) return 'Everyone';
-                const selectedMember = eligibleAssignees.find(
-                  (member) => member.id === assigneeFilter,
-                );
-                if (!selectedMember) return 'Everyone';
-                return (
-                  <div className="flex items-center gap-2">
-                    {selectedMember.user.image ? (
-                      <Image
-                        src={selectedMember.user.image}
-                        alt={selectedMember.user.name ?? 'Assignee'}
-                        width={20}
-                        height={20}
-                        className="h-5 w-5 rounded-full border border-border/60 object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-muted/40 text-[10px] font-medium uppercase text-muted-foreground">
-                        {selectedMember.user.name?.charAt(0) ?? '?'}
-                      </span>
-                    )}
-                    <span>{selectedMember.user.name ?? 'Unknown member'}</span>
-                  </div>
-                );
-              })()}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-sm">
-              Everyone
-            </SelectItem>
-            {eligibleAssignees.map((member) => (
-              <SelectItem key={member.id} value={member.id}>
-                <div className="flex items-center gap-2 text-sm">
-                  {member.user.image ? (
-                    <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-border/60 bg-muted/40">
-                      <Image
-                        src={member.user.image}
-                        alt={member.user.name ?? 'Assignee'}
-                        width={24}
-                        height={24}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-muted/40 text-[10px] font-medium uppercase text-muted-foreground">
-                      {member.user.name?.charAt(0) ?? '?'}
-                    </span>
-                  )}
-                  <span>{member.user.name ?? 'Unknown member'}</span>
+                <Select
+                  value={assigneeFilter || 'all'}
+                  onValueChange={(value) => setAssigneeFilter(value === 'all' ? null : value)}
+                >
+                  <SelectTrigger size="sm" disabled={eligibleAssignees.length === 0}>
+                    <SelectValue placeholder="Everyone">
+                      {(() => {
+                        if (eligibleAssignees.length === 0) return 'No eligible members';
+                        if (!assigneeFilter) return 'Everyone';
+                        const selectedMember = eligibleAssignees.find(
+                          (member) => member.id === assigneeFilter,
+                        );
+                        if (!selectedMember) return 'Everyone';
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Avatar size="xs">
+                              {selectedMember.user.image && (
+                                <AvatarImage
+                                  src={selectedMember.user.image}
+                                  alt={selectedMember.user.name ?? 'Assignee'}
+                                />
+                              )}
+                              <AvatarFallback>
+                                {selectedMember.user.name?.charAt(0)?.toUpperCase() ?? '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">
+                              {selectedMember.user.name ?? 'Unknown member'}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Everyone</SelectItem>
+                    {eligibleAssignees.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Avatar size="xs">
+                            {member.user.image && (
+                              <AvatarImage
+                                src={member.user.image}
+                                alt={member.user.name ?? 'Assignee'}
+                              />
+                            )}
+                            <AvatarFallback>
+                              {member.user.name?.charAt(0)?.toUpperCase() ?? '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{member.user.name ?? 'Unknown member'}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Result Count */}
+              {(searchQuery || statusFilter || assigneeFilter) && (
+                <div className="text-muted-foreground text-xs tabular-nums whitespace-nowrap lg:ml-auto">
+                  {filteredTasks.length} {filteredTasks.length === 1 ? 'result' : 'results'}
                 </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              )}
+            </div>
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* View Toggle */}
-        <div className="flex items-center gap-0 rounded-md border border-border bg-card p-0.5">
-          <button
-            onClick={() => setActiveTab('categories')}
-            className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeTab === 'categories'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-          >
-            <FolderTree className="h-3.5 w-3.5" />
-            <span>Categories</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeTab === 'list'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-          >
-            <List className="h-3.5 w-3.5" />
-            <span>List</span>
-          </button>
-        </div>
-
-        {/* Result Count */}
-        {(searchQuery || statusFilter || assigneeFilter) && (
-          <div className="flex items-center gap-2 px-3">
-            <div className="h-4 w-px bg-border" />
-            <div className="text-muted-foreground text-xs tabular-nums">
-              {filteredTasks.length} {filteredTasks.length === 1 ? 'result' : 'results'}
+            {/* Tabs - visible on all screens */}
+            <div className="flex w-full justify-start lg:w-auto lg:shrink-0">
+              <TabsList>
+                <TabsTrigger value="categories">
+                  <FolderTree className="h-2.5 w-2.5" />
+                  Categories
+                </TabsTrigger>
+                <TabsTrigger value="list">
+                  <List className="h-2.5 w-2.5" />
+                  List
+                </TabsTrigger>
+              </TabsList>
             </div>
           </div>
-        )}
-      </div>
+          <div>
+            <TabsContent value="categories">
+              <TasksByCategory
+                tasks={filteredTasks}
+                members={members}
+                statusFilter={statusFilter}
+              />
+            </TabsContent>
+            <TabsContent value="list">
+              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} />
+            </TabsContent>
+          </div>
+        </Stack>
+      </Tabs>
 
-      {/* Content */}
-      <div>
-        {activeTab === 'categories' ? (
-          <TasksByCategory tasks={filteredTasks} members={members} statusFilter={statusFilter} />
-        ) : (
-          <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} />
-        )}
-      </div>
-
-      <CreateTaskSheet members={members} controls={controls} />
-    </div>
+    </Stack>
   );
 }

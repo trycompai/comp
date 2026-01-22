@@ -6,6 +6,7 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { removeMember } from '../actions/removeMember';
 import { revokeInvitation } from '../actions/revokeInvitation';
+import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
 
 export interface MemberWithUser extends Member {
@@ -37,11 +38,13 @@ export async function TeamMembers() {
   // Parse roles from comma-separated string and check if user has admin or owner role
   const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
   const canManageMembers = currentUserRoles.some((role) => ['owner', 'admin'].includes(role));
+  const isCurrentUserOwner = currentUserRoles.includes('owner');
 
   let members: MemberWithUser[] = [];
   let pendingInvitations: Invitation[] = [];
 
   if (organizationId) {
+    // Fetch all members including deactivated ones
     const fetchedMembers = await db.member.findMany({
       where: {
         organizationId: organizationId,
@@ -49,11 +52,10 @@ export async function TeamMembers() {
       include: {
         user: true,
       },
-      orderBy: {
-        user: {
-          email: 'asc',
-        },
-      },
+      orderBy: [
+        { deactivated: 'asc' }, // Active members first
+        { user: { email: 'asc' } },
+      ],
     });
 
     members = fetchedMembers;
@@ -74,6 +76,9 @@ export async function TeamMembers() {
     pendingInvitations: pendingInvitations,
   };
 
+  // Fetch employee sync connections server-side
+  const employeeSyncData = await getEmployeeSyncConnections(organizationId);
+
   return (
     <TeamMembersClient
       data={data}
@@ -81,6 +86,8 @@ export async function TeamMembers() {
       removeMemberAction={removeMember}
       revokeInvitationAction={revokeInvitation}
       canManageMembers={canManageMembers}
+      isCurrentUserOwner={isCurrentUserOwner}
+      employeeSyncData={employeeSyncData}
     />
   );
 }

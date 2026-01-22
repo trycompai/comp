@@ -121,8 +121,9 @@ export function useOnboardingForm({
           flow_type: 'pre_payment',
         });
 
-        // Organization created, now redirect to plans page with search params
-        router.push(buildUrlWithParams(`/upgrade/${data.organizationId}`));
+        // Hard navigate to ensure updated auth cookies (active org) are applied immediately.
+        // This prevents flakiness where the app still uses the previous activeOrganizationId.
+        window.location.assign(buildUrlWithParams(`/upgrade/${data.organizationId}`));
 
         // Clear answers after successful creation
         setSavedAnswers({});
@@ -155,9 +156,19 @@ export function useOnboardingForm({
     const newAnswers: OnboardingFormFields = { ...savedAnswers, ...data };
 
     for (const key of Object.keys(newAnswers)) {
-      if (step.options && step.key === key && key !== 'frameworkIds' && key !== 'shipping') {
+      // Only process multi-select string fields (exclude objects/arrays)
+      if (
+        step.options &&
+        step.key === key &&
+        key !== 'frameworkIds' &&
+        key !== 'shipping' &&
+        key !== 'cSuite' &&
+        key !== 'reportSignatory' &&
+        key !== 'customVendors'
+      ) {
         const customValue = newAnswers[`${key}Other`] || '';
-        const values = (newAnswers[key] || '').split(',').filter(Boolean);
+        const rawValue = newAnswers[key];
+        const values = (typeof rawValue === 'string' ? rawValue : '').split(',').filter(Boolean);
 
         if (customValue) {
           values.push(customValue);

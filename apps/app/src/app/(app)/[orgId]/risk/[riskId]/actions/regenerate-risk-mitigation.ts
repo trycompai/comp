@@ -1,11 +1,11 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { generateRiskMitigation } from '@/jobs/tasks/onboarding/generate-risk-mitigation';
+import { generateRiskMitigation } from '@/trigger/tasks/onboarding/generate-risk-mitigation';
 import {
   findCommentAuthor,
   type PolicyContext,
-} from '@/jobs/tasks/onboarding/onboard-organization-helpers';
+} from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';

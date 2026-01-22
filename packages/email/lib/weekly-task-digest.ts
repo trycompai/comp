@@ -45,4 +45,3 @@ export const sendWeeklyTaskDigestEmail = async (params: {
     return { success: false };
   }
 };
-

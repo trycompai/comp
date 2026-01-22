@@ -32,6 +32,8 @@ import {
 import { Input } from '@comp/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
+import { checkMemberStatus } from '../actions/checkMemberStatus';
+import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEmail';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
@@ -169,11 +171,26 @@ export function InviteMembersModal({
                 roles: invite.roles,
               });
             } else {
-              // Use authClient to send the invitation
-              await authClient.organization.inviteMember({
+              // Check member status and reactivate if needed
+              const memberStatus = await checkMemberStatus({
                 email: invite.email.toLowerCase(),
-                role: invite.roles.length === 1 ? invite.roles[0] : invite.roles,
+                organizationId,
               });
+
+              if (memberStatus.memberExists && memberStatus.isActive) {
+                // Member already exists and is active - send invitation email manually
+                await sendInvitationEmailToExistingMember({
+                  email: invite.email.toLowerCase(),
+                  organizationId,
+                  roles: invite.roles,
+                });
+              } else {
+                // Member doesn't exist - use authClient to send the invitation
+                await authClient.organization.inviteMember({
+                  email: invite.email.toLowerCase(),
+                  role: invite.roles.length === 1 ? invite.roles[0] : invite.roles,
+                });
+              }
             }
             successCount++;
           } catch (error) {
@@ -331,10 +348,26 @@ export function InviteMembersModal({
                   roles: validRoles,
                 });
               } else {
-                await authClient.organization.inviteMember({
+                // Check member status and reactivate if needed
+                const memberStatus = await checkMemberStatus({
                   email: email.toLowerCase(),
-                  role: validRoles,
+                  organizationId,
                 });
+
+                if (memberStatus.memberExists && memberStatus.isActive) {
+                  // Member already exists and is active - send invitation email manually
+                  await sendInvitationEmailToExistingMember({
+                    email: email.toLowerCase(),
+                    organizationId,
+                    roles: validRoles,
+                  });
+                } else {
+                  // Member doesn't exist - use authClient to send the invitation
+                  await authClient.organization.inviteMember({
+                    email: email.toLowerCase(),
+                    role: validRoles,
+                  });
+                }
               }
               successCount++;
             } catch (error) {

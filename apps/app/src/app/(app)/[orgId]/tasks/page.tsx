@@ -1,12 +1,12 @@
 import { auth } from '@/utils/auth';
 import { db, Role } from '@db';
 import { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { TaskList } from './components/TaskList';
+import { cookies, headers } from 'next/headers';
+import { TasksPageClient } from './components/TasksPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Tasks',
+    title: 'Evidence',
   };
 }
 
@@ -28,10 +28,13 @@ export default async function TasksPage({
   const members = await getMembersWithMetadata();
   const controls = await getControls();
 
+  // Read tab preference from cookie (server-side, no hydration issues)
+  const cookieStore = await cookies();
+  const savedView = cookieStore.get(`task-view-preference-${orgId}`)?.value;
+  const activeTab = savedView === 'categories' || savedView === 'list' ? savedView : 'categories';
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-6 py-8">
-      <TaskList tasks={tasks} members={members} controls={controls} />
-    </div>
+    <TasksPageClient tasks={tasks} members={members} controls={controls} activeTab={activeTab} />
   );
 }
 
@@ -57,27 +60,27 @@ const getTasks = async () => {
           name: true,
         },
       },
-          evidenceAutomations: {
+      evidenceAutomations: {
+        select: {
+          id: true,
+          isEnabled: true,
+          name: true,
+          runs: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 3,
             select: {
-              id: true,
-              isEnabled: true,
-              name: true,
-              runs: {
-                orderBy: {
-                  createdAt: 'desc',
-                },
-                take: 3,
-                select: {
-                  status: true,
-                  success: true,
-                  evaluationStatus: true,
-                  createdAt: true,
-                  triggeredBy: true,
-                  runDuration: true,
-                },
-              },
+              status: true,
+              success: true,
+              evaluationStatus: true,
+              createdAt: true,
+              triggeredBy: true,
+              runDuration: true,
             },
           },
+        },
+      },
     },
     orderBy: [{ status: 'asc' }, { title: 'asc' }],
   });
@@ -101,6 +104,7 @@ const getMembersWithMetadata = async () => {
       role: {
         notIn: [Role.employee, Role.auditor, Role.contractor],
       },
+      deactivated: false,
     },
     include: {
       user: true,

@@ -1,0 +1,336 @@
+---
+title: 'Writing Integrations'
+description: 'Step-by-step guide to creating integration manifests and checks'
+---
+
+## Prerequisites
+
+- TypeScript knowledge
+- Understanding of the service you're integrating
+- API documentation for the service
+
+## Step 1: Create Integration Folder
+
+Create a new folder in `packages/integration-platform/src/manifests/`:
+
+```bash
+mkdir -p packages/integration-platform/src/manifests/your-service
+cd packages/integration-platform/src/manifests/your-service
+```
+
+**File structure:**
+```
+your-service/
+├── index.ts           # Manifest definition
+├── types.ts           # TypeScript types
+├── checks/
+│   ├── index.ts       # Export all checks
+│   └── your-check.ts  # Individual checks
+└── helpers/           # Optional: API client helpers
+    └── api-client.ts
+```
+
+## Step 2: Define Types
+
+Create `types.ts` for the integration's data structures:
+
+```typescript
+// Service-specific types
+export interface YourServiceUser {
+  id: string;
+  email: string;
+  twoFactorEnabled: boolean;
+}
+
+export interface YourServiceCredentials {
+  access_token?: string; // For OAuth
+  api_key?: string;      // For API key auth
+}
+```
+
+## Step 3: Create the Manifest
+
+Create `index.ts`:
+
+```typescript
+import type { IntegrationManifest } from '../../types';
+import { yourCheck } from './checks';
+
+export const yourServiceManifest: IntegrationManifest = {
+  id: 'your-service',
+  name: 'Your Service',
+  description: 'Monitor compliance in Your Service',
+  category: 'Developer Tools',
+  logoUrl: 'https://img.logo.dev/yourservice.com?token=pk_TOKEN',
+  docsUrl: 'https://docs.yourservice.com/api',
+  isActive: true,
+
+  auth: {
+    type: 'oauth2',
+    config: {
+      authorizeUrl: 'https://yourservice.com/oauth/authorize',
+      tokenUrl: 'https://yourservice.com/oauth/token',
+      scopes: ['read:users', 'read:security'],
+      pkce: false,
+      clientAuthMethod: 'body',
+      supportsRefreshToken: true,
+      authorizationParams: {
+        access_type: 'offline',
+      },
+      setupInstructions: `Create an OAuth app at https://yourservice.com/apps`,
+      createAppUrl: 'https://yourservice.com/apps/new',
+    },
+  },
+
+  baseUrl: 'https://api.yourservice.com',
+  defaultHeaders: {
+    'Content-Type': 'application/json',
+  },
+
+  capabilities: ['checks'],
+
+  checks: [yourCheck],
+};
+```
+
+## Step 4: Write a Check
+
+Create `checks/your-check.ts`:
+
+```typescript
+import type { CheckContext, IntegrationCheck } from '../../../types';
+import { TASK_TEMPLATES } from '../../../task-mappings';
+import type { YourServiceUser } from '../types';
+
+export const twoFactorCheck: IntegrationCheck = {
+  id: 'two-factor-auth',
+  name: '2FA Enabled',
+  description: 'Verify all users have 2FA enabled',
+  taskMapping: TASK_TEMPLATES['2fa'],
+  defaultSeverity: 'high',
+  variables: [],
+
+  run: async (ctx: CheckContext) => {
+    ctx.log('Checking 2FA status for all users');
+
+    // Fetch users from API
+    const users = await ctx.fetch<YourServiceUser[]>('/users');
+
+    ctx.log(`Found ${users.length} users`);
+
+    // Check each user
+    for (const user of users) {
+      if (!user.twoFactorEnabled) {
+        ctx.fail({
+          title: `2FA Disabled for ${user.email}`,
+          resourceType: 'user',
+          resourceId: user.id,
+          severity: 'high',
+          description: `User ${user.email} does not have 2FA enabled`,
+          remediation: 'Enable 2FA in account settings',
+          evidence: {
+            userId: user.id,
+            email: user.email,
+            twoFactorEnabled: false,
+          },
+        });
+      }
+    }
+
+    const usersWithout2FA = users.filter((u) => !u.twoFactorEnabled).length;
+
+    if (usersWithout2FA === 0) {
+      ctx.pass({
+        title: 'All Users Have 2FA',
+        resourceType: 'users',
+        resourceId: 'all',
+        description: `All ${users.length} users have 2FA enabled`,
+        evidence: { totalUsers: users.length },
+      });
+    }
+
+    ctx.log(`Check complete: ${usersWithout2FA} users without 2FA`);
+  },
+};
+```
+
+## Step 5: Add Variables (Optional)
+
+If your check needs user configuration:
+
+```typescript
+const targetReposVariable: CheckVariable = {
+  id: 'target_repos',
+  label: 'Repositories to Monitor',
+  type: 'multi-select',
+  required: true,
+  helpText: 'Select which repositories to check',
+  
+  // Dynamic options from API
+  fetchOptions: async (ctx) => {
+    const repos = await ctx.fetch<Repo[]>('/repos');
+    return repos.map((r) => ({
+      value: r.name,
+      label: r.full_name,
+    }));
+  },
+};
+
+export const yourCheck: IntegrationCheck = {
+  id: 'repo-check',
+  variables: [targetReposVariable],
+  
+  run: async (ctx) => {
+    const targetRepos = ctx.variables.target_repos as string[];
+    // Only check selected repos
+  },
+};
+```
+
+## Step 6: Register the Manifest
+
+Add to `packages/integration-platform/src/registry/index.ts`:
+
+```typescript
+import { yourServiceManifest } from '../manifests/your-service';
+
+export const registry: IntegrationRegistry = {
+  // ... existing integrations
+  'your-service': yourServiceManifest,
+};
+```
+
+## Step 7: Test It
+
+1. **Start dev servers:**
+   ```bash
+   bun run dev
+   ```
+
+2. **Configure OAuth** (if using OAuth):
+   - Go to `/admin/integrations`
+   - Find your integration → Configure OAuth
+   - Add Client ID/Secret
+
+3. **Connect the integration:**
+   - Go to `/integrations`
+   - Find your integration
+   - Click "Connect"
+   - Authorize (if OAuth) or enter credentials
+
+4. **Run checks:**
+   - Go to `/cloud-tests` (if it's a cloud provider)
+   - Or go to a task page and run the integration check
+   - Verify findings appear correctly
+
+5. **Check logs:**
+   - Look at API terminal for check execution logs
+   - Verify no errors
+
+## Common Patterns
+
+### Pagination
+
+```typescript
+// Auto-pagination (OAuth with standardized pagination)
+const allItems = await ctx.fetchAllPages<Item>('/items');
+
+// Manual pagination
+let items: Item[] = [];
+let page = 1;
+
+while (true) {
+  const response = await ctx.fetch<{ data: Item[]; hasMore: boolean }>(
+    `/items?page=${page}`
+  );
+  items.push(...response.data);
+  if (!response.hasMore) break;
+  page++;
+}
+```
+
+### Error Handling
+
+```typescript
+try {
+  const data = await ctx.fetch('/endpoint');
+  // Process data
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  
+  // Handle specific errors
+  if (errorMessage.includes('PERMISSION_DENIED')) {
+    ctx.fail({
+      title: 'Permission Denied',
+      resourceType: 'api',
+      resourceId: 'access',
+      severity: 'high',
+      description: 'Your account lacks necessary permissions',
+      remediation: 'Grant [specific role] in provider settings',
+      evidence: { error: errorMessage },
+    });
+    return;
+  }
+  
+  // Generic error
+  ctx.log(`Error: ${errorMessage}`);
+}
+```
+
+### Multiple Checks
+
+```typescript
+// checks/index.ts
+export { check1 } from './check-1';
+export { check2 } from './check-2';
+export { check3 } from './check-3';
+
+// index.ts
+import { check1, check2, check3 } from './checks';
+
+export const manifest: IntegrationManifest = {
+  // ...
+  checks: [check1, check2, check3],
+};
+```
+
+## Best Practices
+
+### Do's
+
+- **Use descriptive IDs**: `branch-protection`, not `check1`
+- **Map to tasks**: Use `taskMapping` to auto-complete tasks
+- **Friendly errors**: Convert API errors to user-friendly messages
+- **Log liberally**: Use `ctx.log()` for debugging
+- **Handle missing data**: Not all orgs have all resources
+- **Paginate when needed**: Don't assume small datasets
+- **Type everything**: Use TypeScript types for API responses
+
+### Don'ts
+
+- **Don't expose raw API errors** to users in descriptions
+- **Don't assume variables exist**: Check for undefined
+- **Don't use `console.log`**: Use `ctx.log()` instead
+- **Don't create findings for missing resources**: Just log it
+- **Don't hardcode URLs**: Use `baseUrl` in manifest
+- **Don't skip error handling**: Wrap API calls in try/catch
+
+## Examples to Reference
+
+| Integration | Type | Good for learning |
+|-------------|------|-------------------|
+| **GitHub** | OAuth | Dynamic variables, pagination, multiple checks |
+| **Google Workspace** | OAuth | User iteration, domain-scoped checks |
+| **AWS** | Custom | Complex credentials, error handling |
+| **Azure** | Custom | Multi-field credentials, API error mapping |
+| **Linear** | OAuth | Simple OAuth, GraphQL |
+| **Vercel** | OAuth | Project scoping, deployment checks |
+
+All integration source code is in `packages/integration-platform/src/manifests/`.
+
+## Need Help?
+
+- Check existing integration manifests for patterns
+- Review type definitions in `src/types.ts`
+- See the [Contributing Guide](/integrations/contributing) for PR requirements
+

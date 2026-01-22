@@ -1,97 +1,87 @@
-import { useAccessGrants } from '@/hooks/use-access-requests';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
-import { Skeleton } from '@comp/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
+import { useAccessGrants, useResendAccessEmail } from '@/hooks/use-access-requests';
+import {
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  Stack,
+} from '@trycompai/design-system';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { GrantDataTable } from './grant-data-table';
 import { RevokeDialog } from './revoke-dialog';
 
 export function GrantsTab({ orgId }: { orgId: string }) {
   const { data, isLoading } = useAccessGrants(orgId);
+  const { mutateAsync: resendAccessEmail } = useResendAccessEmail(orgId);
   const [revokeId, setRevokeId] = useState<string | null>(null);
 
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<string | 'all'>('all');
+
+  const statusOptions = [
+    { value: 'all', label: 'All statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'revoked', label: 'Revoked' },
+    { value: 'expired', label: 'Expired' },
+  ];
+
+  const selectedStatusLabel = statusOptions.find((opt) => opt.value === status)?.label ?? 'Filter status';
+
+  const handleResendAccess = (grantId: string) => {
+    toast.promise(resendAccessEmail(grantId), {
+      loading: 'Resending...',
+      success: 'Access email resent',
+      error: 'Failed to resend access email',
+    });
+  };
+
+  const filtered = (data ?? []).filter((grant) => {
+    const matchesSearch =
+      !search || grant.subjectEmail.toLowerCase().includes(search.toLowerCase());
+
+    const matchesStatus = status === 'all' || grant.status === status;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
-    <div className="space-y-3">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Expires</TableHead>
-            <TableHead>Revoked</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading
-            ? Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index} className="h-[45px]">
-                  <TableCell className="w-[260px]">
-                    <Skeleton className="h-3.5 w-[80%]" />
-                  </TableCell>
-                  <TableCell className="w-[120px]">
-                    <Skeleton className="h-5 w-[70%]" />
-                  </TableCell>
-                  <TableCell className="w-[160px]">
-                    <Skeleton className="h-3.5 w-[60%]" />
-                  </TableCell>
-                  <TableCell className="w-[160px]">
-                    <Skeleton className="h-3.5 w-[60%]" />
-                  </TableCell>
-                  <TableCell className="w-[140px]">
-                    <Skeleton className="h-3.5 w-[70%]" />
-                  </TableCell>
-                </TableRow>
-              ))
-            : data && data.length > 0
-              ? data.map((grant) => (
-                  <TableRow key={grant.id}>
-                    <TableCell>{grant.subjectEmail}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          grant.status === 'active'
-                            ? 'default'
-                            : grant.status === 'revoked'
-                              ? 'destructive'
-                              : 'secondary'
-                        }
-                      >
-                        {grant.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(grant.expiresAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      {grant.revokedAt ? new Date(grant.revokedAt).toLocaleDateString() : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {grant.status === 'active' && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setRevokeId(grant.id)}
-                        >
-                          Revoke
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              : (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-8 text-center text-sm text-muted-foreground"
-                  >
-                    No access grants yet
-                  </TableCell>
-                </TableRow>
-              )}
-        </TableBody>
-      </Table>
+    <Stack gap="4">
+      <Stack direction="row" gap="2" align="center">
+        <div className="flex-1 max-w-md">
+          <Input
+            placeholder="Search by email"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="w-[200px]">
+          <Select value={status} onValueChange={(value) => setStatus(value ?? 'all')}>
+            <SelectTrigger>
+              {selectedStatusLabel}
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </Stack>
+
+      <GrantDataTable
+        data={filtered}
+        isLoading={isLoading}
+        onRevoke={(row) => setRevokeId(row.id)}
+        onResendAccess={(row) => handleResendAccess(row.id)}
+      />
+
       {revokeId && (
         <RevokeDialog orgId={orgId} grantId={revokeId} onClose={() => setRevokeId(null)} />
       )}
-    </div>
+    </Stack>
   );
 }
+

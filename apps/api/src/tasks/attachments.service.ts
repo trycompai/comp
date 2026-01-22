@@ -15,25 +15,30 @@ import { db } from '@trycompai/db';
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from './dto/task-responses.dto';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';
+import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
   private s3Client: S3Client;
   private bucketName: string;
-  private readonly MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+  private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
     // AWS configuration is validated at startup via ConfigModule
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
-    this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+
+    if (!s3Client) {
+      console.error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
+      throw new Error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
+    }
+
+    this.s3Client = s3Client;
   }
 
   /**
@@ -47,6 +52,69 @@ export class AttachmentsService {
     userId?: string,
   ): Promise<AttachmentResponseDto> {
     try {
+      // Blocked file extensions for security
+      const BLOCKED_EXTENSIONS = [
+        'exe',
+        'bat',
+        'cmd',
+        'com',
+        'scr',
+        'msi', // Windows executables
+        'js',
+        'vbs',
+        'vbe',
+        'wsf',
+        'wsh',
+        'ps1', // Scripts
+        'sh',
+        'bash',
+        'zsh', // Shell scripts
+        'dll',
+        'sys',
+        'drv', // System files
+        'app',
+        'deb',
+        'rpm', // Application packages
+        'jar', // Java archives (can execute)
+        'pif',
+        'lnk',
+        'cpl', // Shortcuts and control panel
+        'hta',
+        'reg', // HTML apps and registry
+      ];
+
+      // Blocked MIME types for security
+      const BLOCKED_MIME_TYPES = [
+        'application/x-msdownload', // .exe
+        'application/x-msdos-program',
+        'application/x-executable',
+        'application/x-sh', // Shell scripts
+        'application/x-bat', // Batch files
+        'text/x-sh',
+        'text/x-python',
+        'text/x-perl',
+        'text/x-ruby',
+        'application/x-httpd-php', // PHP files
+        'application/x-javascript', // Executable JS (not JSON)
+        'application/javascript',
+        'text/javascript',
+      ];
+
+      // Validate file extension
+      const fileExt = uploadDto.fileName.split('.').pop()?.toLowerCase();
+      if (fileExt && BLOCKED_EXTENSIONS.includes(fileExt)) {
+        throw new BadRequestException(
+          `File extension '.${fileExt}' is not allowed for security reasons`,
+        );
+      }
+
+      // Validate MIME type
+      if (BLOCKED_MIME_TYPES.includes(uploadDto.fileType.toLowerCase())) {
+        throw new BadRequestException(
+          `File type '${uploadDto.fileType}' is not allowed for security reasons`,
+        );
+      }
+
       // Validate file size
       const fileBuffer = Buffer.from(uploadDto.fileData, 'base64');
       if (fileBuffer.length > this.MAX_FILE_SIZE_BYTES) {

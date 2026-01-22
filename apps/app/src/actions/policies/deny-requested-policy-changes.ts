@@ -68,6 +68,7 @@ export const denyRequestedPolicyChangesAction = authActionClient
           where: {
             userId: user.id,
             organizationId: session.activeOrganizationId,
+            deactivated: false,
           },
         });
 
@@ -86,7 +87,7 @@ export const denyRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies');
+      revalidateTag('policies', 'max');
 
       return {
         success: true,

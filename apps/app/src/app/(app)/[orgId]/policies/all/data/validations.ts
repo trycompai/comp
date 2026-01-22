@@ -7,7 +7,7 @@ import {
   parseAsString,
   parseAsStringEnum,
 } from 'nuqs/server';
-import * as z from 'zod';
+import * as z from 'zod/v3';
 
 export const searchParamsCache = createSearchParamsCache({
   page: parseAsInteger.withDefault(1),

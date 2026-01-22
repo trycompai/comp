@@ -27,7 +27,62 @@ interface PolicyForPDF {
 
 @Injectable()
 export class PolicyPdfRendererService {
+  /**
+   * Convert hex color to RGB values (0-255 range for jsPDF)
+   */
+  private hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const cleanHex = hex.replace('#', '');
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    return { r, g, b };
+  }
+
+  /**
+   * Get accent color from organization or use default
+   */
+  private getAccentColor(primaryColor: string | null | undefined): {
+    r: number;
+    g: number;
+    b: number;
+  } {
+    // Default project primary color: dark teal/green (hsl(165, 100%, 15%) = #004D3D)
+    const defaultColor = { r: 0, g: 77, b: 61 };
+
+    if (!primaryColor) {
+      return defaultColor;
+    }
+
+    const color = this.hexToRgb(primaryColor);
+
+    // Check for NaN values (parseInt returns NaN for invalid hex)
+    if (
+      Number.isNaN(color.r) ||
+      Number.isNaN(color.g) ||
+      Number.isNaN(color.b)
+    ) {
+      console.warn(
+        'Invalid primary color format, using default:',
+        primaryColor,
+      );
+      return defaultColor;
+    }
+
+    return color;
+  }
+
   private cleanTextForPDF(text: string): string {
+    // Strip invisible/control-ish unicode chars that commonly appear via copy/paste.
+    // These aren't visible in the editor, but previous logic converted unknown unicode to
+    // "?" which looks like random corruption in the generated PDF.
+    const strippedText = text
+      .replace(/\u00AD/g, '')
+      .replace(/[\u200B-\u200F]/g, '')
+      .replace(/[\u202A-\u202E]/g, '')
+      .replace(/[\u2060-\u206F]/g, '')
+      .replace(/\uFEFF/g, '')
+      .replace(/\uFFFD/g, '');
+
     const replacements: { [key: string]: string } = {
       '\u2018': "'",
       '\u2019': "'",
@@ -52,7 +107,7 @@ export class PolicyPdfRendererService {
       '\u2194': '<->',
     };
 
-    let cleanedText = text;
+    let cleanedText = strippedText;
     for (const [unicode, replacement] of Object.entries(replacements)) {
       cleanedText = cleanedText.replace(new RegExp(unicode, 'g'), replacement);
     }
@@ -122,7 +177,10 @@ export class PolicyPdfRendererService {
         Ç: 'C',
         Ý: 'Y',
       };
-      return fallbacks[char] || '?';
+      // Preserve unknown characters instead of coercing to "?".
+      // If a glyph isn't supported by the active PDF font, viewers may show a tofu box,
+      // but inserting "?" is worse because it looks like text was modified.
+      return fallbacks[char] ?? char;
     });
   }
 
@@ -349,6 +407,8 @@ export class PolicyPdfRendererService {
   renderPoliciesPdfBuffer(
     policies: PolicyForPDF[],
     organizationName?: string,
+    primaryColor?: string | null,
+    totalPoliciesCount?: number,
   ): Buffer {
     const doc = new jsPDF();
     const config: PDFConfig = {
@@ -362,15 +422,65 @@ export class PolicyPdfRendererService {
       yPosition: 20,
     };
 
-    const documentTitle = organizationName
-      ? `${organizationName} - All Policies`
-      : 'All Policies';
-    const cleanTitle = this.cleanTextForPDF(documentTitle);
+    // Get organization primary color or use default
+    const accentColor = this.getAccentColor(primaryColor);
 
-    config.doc.setFontSize(18);
-    config.doc.setFont('helvetica', 'bold');
-    config.doc.text(cleanTitle, config.margin, config.yPosition);
-    config.yPosition += config.lineHeight * 3;
+    // Add organization header if provided
+    if (organizationName) {
+      const cleanOrgName = this.cleanTextForPDF(organizationName);
+
+      // Draw colored accent line at the top
+      config.doc.setLineWidth(3);
+      config.doc.setDrawColor(accentColor.r, accentColor.g, accentColor.b);
+      config.doc.line(
+        config.margin,
+        config.yPosition,
+        config.pageWidth - config.margin,
+        config.yPosition,
+      );
+
+      config.yPosition += config.lineHeight * 2.5;
+
+      // Organization name - large and bold
+      config.doc.setFontSize(24);
+      config.doc.setFont('helvetica', 'bold');
+      config.doc.setTextColor(0, 0, 0);
+      config.doc.text(cleanOrgName, config.margin, config.yPosition);
+
+      config.yPosition += config.lineHeight * 2;
+
+      // "All Policies" subtitle - simple and clean
+      config.doc.setFontSize(14);
+      config.doc.setFont('helvetica', 'normal');
+      config.doc.setTextColor(100, 100, 100); // Light gray
+      config.doc.text('All Policies', config.margin, config.yPosition);
+
+      config.yPosition += config.lineHeight * 2;
+
+      // Metadata - minimal styling
+      config.doc.setFontSize(9);
+      config.doc.setFont('helvetica', 'normal');
+      config.doc.setTextColor(140, 140, 140); // Lighter gray
+
+      const generatedDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      config.doc.text(`${generatedDate}`, config.margin, config.yPosition);
+
+      config.yPosition += config.lineHeight * 1.2;
+
+      config.doc.text(
+        `Total Policies: ${totalPoliciesCount ?? policies.length}`,
+        config.margin,
+        config.yPosition,
+      );
+
+      // Extra spacing before policies
+      config.yPosition += config.lineHeight * 3;
+    }
 
     policies.forEach((policy, index) => {
       config.doc.setTextColor(0, 0, 0);
@@ -380,13 +490,20 @@ export class PolicyPdfRendererService {
         config.yPosition = config.margin;
       }
 
+      // Add visual policy separator with icon and styled header
       if (policy.name) {
-        const cleanPolicyTitle = this.cleanTextForPDF(policy.name);
-        config.doc.setFontSize(16);
+        // Draw accent bar with organization's primary color
+        config.doc.setFillColor(accentColor.r, accentColor.g, accentColor.b);
+        config.doc.rect(config.margin, config.yPosition, 4, 12, 'F');
+
+        // Add "POLICY:" label and title
+        config.doc.setFontSize(14);
         config.doc.setFont('helvetica', 'bold');
-        config.doc.setTextColor(0, 0, 0);
-        config.doc.text(cleanPolicyTitle, config.margin, config.yPosition);
-        config.yPosition += config.lineHeight * 2;
+        config.doc.setTextColor(30, 41, 59); // Dark slate color
+        const policyTitle = this.cleanTextForPDF(`POLICY: ${policy.name}`);
+        config.doc.text(policyTitle, config.margin + 10, config.yPosition + 8);
+
+        config.yPosition += config.lineHeight * 4;
       }
 
       if (policy.content) {
@@ -416,7 +533,7 @@ export class PolicyPdfRendererService {
       doc.setFontSize(8);
       doc.setTextColor(128, 128, 128);
       doc.text(
-        `Page ${i} of ${totalPages}`,
+        `Policy page ${i} of ${totalPages}`,
         config.pageWidth / 2,
         config.pageHeight - 10,
         { align: 'center' },
