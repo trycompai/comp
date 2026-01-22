@@ -16,6 +16,7 @@ import {
 } from '@trycompai/design-system';
 import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
+import { PolicyItem } from '../../devices/components/PolicyItem';
 
 export const EmployeeTasks = ({
   employee,
@@ -119,28 +120,7 @@ export const EmployeeTasks = ({
                   <CardTitle>{host.computer_name}&apos;s Policies</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {fleetPolicies.map((policy) => (
-                    <div
-                      key={policy.id}
-                      className={cn(
-                        'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                        policy.response === 'pass' ? 'border-l-primary' : 'border-l-destructive',
-                      )}
-                    >
-                      <Text weight="medium">{policy.name}</Text>
-                      {policy.response === 'pass' ? (
-                        <div className="flex items-center gap-1 text-primary">
-                          <CheckCircle2 size={16} />
-                          <Text size="sm">Pass</Text>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-destructive">
-                          <XCircle size={16} />
-                          <Text size="sm">Fail</Text>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {fleetPolicies.map((policy) => <PolicyItem key={policy.id} policy={policy} />)}
                 </CardContent>
               </Card>
             ) : (
