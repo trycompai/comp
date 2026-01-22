@@ -12,7 +12,7 @@ export default defineConfig({
   build: {
     extensions: [
       prismaExtension({
-        version: '6.13.0',
+        version: '6.18.0',
         dbPackageVersion: '^1.3.15', // Version of @trycompai/db package with compiled JS
       }),
       puppeteer(),
