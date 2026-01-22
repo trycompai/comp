@@ -13,12 +13,14 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
   const { orgId } = await params;
 
   // Auth check with error handling
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  }).catch((error) => {
-    console.error('Error getting session:', error);
-    redirect('/');
-  });
+  const session = await auth.api
+    .getSession({
+      headers: await headers(),
+    })
+    .catch((error) => {
+      console.error('Error getting session:', error);
+      redirect('/');
+    });
 
   if (!session?.user) {
     redirect('/auth');

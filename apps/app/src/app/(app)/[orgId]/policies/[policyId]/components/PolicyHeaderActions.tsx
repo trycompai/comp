@@ -21,6 +21,7 @@ import {
 import { Icons } from '@comp/ui/icons';
 import type { Policy, Member, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
+import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -33,12 +34,19 @@ export function PolicyHeaderActions({
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   logs: AuditLogWithRelations[];
 }) {
+  const router = useRouter();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   // Delete flows through query param to existing dialog in PolicyOverview
   const regenerate = useAction(regeneratePolicyAction, {
     onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
     onError: () => toast.error('Failed to trigger policy regeneration'),
   });
+
+  const updateQueryParam = ({ key, value }: { key: string; value: string }) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set(key, value);
+    router.push(`${url.pathname}?${url.searchParams.toString()}`);
+  };
 
   const handleDownloadPDF = () => {
     try {
@@ -84,9 +92,7 @@ export function PolicyHeaderActions({
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              const url = new URL(window.location.href);
-              url.searchParams.set('policy-overview-sheet', 'true');
-              window.history.pushState({}, '', url.toString());
+              updateQueryParam({ key: 'policy-overview-sheet', value: 'true' });
             }}
           >
             <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
@@ -99,18 +105,14 @@ export function PolicyHeaderActions({
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              const url = new URL(window.location.href);
-              url.searchParams.set('archive-policy-sheet', 'true');
-              window.history.pushState({}, '', url.toString());
+              updateQueryParam({ key: 'archive-policy-sheet', value: 'true' });
             }}
           >
             <Icons.InboxCustomize className="mr-2 h-4 w-4" /> Archive / Restore
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              const url = new URL(window.location.href);
-              url.searchParams.set('delete-policy', 'true');
-              window.history.pushState({}, '', url.toString());
+              updateQueryParam({ key: 'delete-policy', value: 'true' });
             }}
             className="text-destructive"
           >

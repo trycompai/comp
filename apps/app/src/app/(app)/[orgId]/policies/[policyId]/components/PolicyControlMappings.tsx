@@ -1,6 +1,8 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+'use client';
+
 import { SelectPills } from '@comp/ui/select-pills';
 import { Control } from '@db';
+import { Section } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -66,7 +68,7 @@ export const PolicyControlMappings = ({
           controlId: removed[0].id,
         });
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to update controls');
     } finally {
       setLoading(false);
@@ -74,20 +76,14 @@ export const PolicyControlMappings = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Map Controls</CardTitle>
-        <CardDescription>Map controls that are relevant to this policy.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex w-full flex-col gap-2">
-        <SelectPills
-          data={allControls.map((c) => ({ id: c.id, name: c.name }))}
-          value={mappedNames}
-          onValueChange={handleValueChange}
-          placeholder="Search controls..."
-          disabled={isPendingApproval || loading}
-        />
-      </CardContent>
-    </Card>
+    <Section title="Map Controls" description="Map controls that are relevant to this policy.">
+      <SelectPills
+        data={allControls.map((c) => ({ id: c.id, name: c.name }))}
+        value={mappedNames}
+        onValueChange={handleValueChange}
+        placeholder="Search controls..."
+        disabled={isPendingApproval || loading}
+      />
+    </Section>
   );
 };

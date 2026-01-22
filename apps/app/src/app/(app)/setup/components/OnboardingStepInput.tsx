@@ -7,7 +7,7 @@ import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { GlobalVendors } from '@db';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
-import { AlertCircle, ChevronDown, ChevronUp, HelpCircle, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronUp, HelpCircle, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
@@ -571,6 +571,7 @@ function SoftwareVendorInput({
   const [searchResults, setSearchResults] = useState<GlobalVendors[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   // URL validation state - track which fields have been touched/blurred
   const [touchedUrls, setTouchedUrls] = useState<Set<string>>(new Set());
@@ -625,13 +626,9 @@ function SoftwareVendorInput({
   });
 
   const debouncedSearch = useDebouncedCallback((query: string) => {
-    if (query.trim().length >= 1) {
-      searchVendors.execute({ name: query });
-      setShowSuggestions(true);
-    } else {
-      setSearchResults([]);
-      setShowSuggestions(false);
-    }
+    // Always search - empty string returns all vendors
+    searchVendors.execute({ name: query });
+    setShowSuggestions(true);
   }, 300);
 
   const handlePredefinedToggle = (option: string) => {
@@ -742,12 +739,40 @@ function SoftwareVendorInput({
     debouncedSearch(value);
   };
 
+  const handleInputFocus = () => {
+    setShowSuggestions(true);
+    // If no search has been done yet, trigger a search with empty string to get initial results
+    if (searchResults.length === 0 && customValue.trim() === '') {
+      searchVendors.execute({ name: '' });
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      handleAddCustomVendor();
+      if (showSuggestions && filteredSearchResults.length > 0) {
+        setHighlightedIndex((prev) =>
+          prev < filteredSearchResults.length - 1 ? prev + 1 : prev
+        );
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (showSuggestions && highlightedIndex > 0) {
+        setHighlightedIndex((prev) => prev - 1);
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && highlightedIndex < filteredSearchResults.length) {
+        // Select the highlighted vendor
+        handleSelectGlobalVendor(filteredSearchResults[highlightedIndex]);
+        setHighlightedIndex(-1);
+      } else {
+        // No selection, add as custom
+        handleAddCustomVendor();
+      }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
+      setHighlightedIndex(-1);
     } else if (e.key === 'Backspace' && customValue === '') {
       e.preventDefault();
       // Remove last custom vendor first, then predefined
@@ -781,6 +806,11 @@ function SoftwareVendorInput({
       !customVendors.some((v) => normalizeVendorName(v.name) === normalizedName)
     );
   });
+
+  // Reset highlighted index when search results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredSearchResults.length, customValue]);
 
   // All selected values for display in the tag input
   const allSelectedValues = [
@@ -834,6 +864,7 @@ function SoftwareVendorInput({
               value={customValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              onFocus={handleInputFocus}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder={
                 allSelectedValues.length === 0 ? 'Search or add custom (press Enter)' : ''
@@ -843,48 +874,45 @@ function SoftwareVendorInput({
             />
           </div>
 
-          {/* Autocomplete suggestions dropdown */}
-          {showSuggestions && customValue.trim().length >= 1 && (
+          {/* Autocomplete suggestions dropdown - show when we have results OR user typed something */}
+          {showSuggestions && !isSearching && (filteredSearchResults.length > 0 || customValue.trim().length > 0) && (
             <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border border-border bg-background shadow-lg animate-in fade-in-0 slide-in-from-top-1 duration-150">
-              <div className="max-h-[200px] overflow-y-auto p-1">
-                {/* Always show "Add as custom" option first for consistent height */}
-                <div
-                  className="hover:bg-accent cursor-pointer rounded-sm px-2 py-1.5 text-sm text-muted-foreground transition-colors duration-100"
-                  onMouseDown={() => handleAddCustomVendor()}
-                >
-                  {isSearching ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Searching for "{customValue.trim()}"...
-                    </span>
-                  ) : (
-                    <>Add "{customValue.trim()}" as custom vendor</>
-                  )}
-                </div>
-
-                {/* Animated results section using CSS Grid for smooth height transition */}
-                <div
-                  className="grid transition-[grid-template-rows] duration-200 ease-out"
-                  style={{
-                    gridTemplateRows: !isSearching && filteredSearchResults.length > 0 ? '1fr' : '0fr',
-                  }}
-                >
-                  <div className="overflow-hidden">
-                    <div className="my-1 border-t border-border" />
+              <div className="max-h-[280px] overflow-y-auto p-1">
+                {/* Suggestions section - appears first/on top */}
+                {filteredSearchResults.length > 0 && (
+                  <>
                     <p className="text-muted-foreground px-2 py-1 text-xs font-medium">
                       Suggestions
                     </p>
-                    {filteredSearchResults.map((vendor) => (
+                    {filteredSearchResults.map((vendor, index) => (
                       <div
                         key={vendor.website}
-                        className="hover:bg-accent cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors duration-100"
+                        className={`cursor-pointer rounded-sm px-2 py-1.5 text-sm transition-colors duration-100 ${
+                          index === highlightedIndex ? 'bg-accent' : 'hover:bg-accent'
+                        }`}
                         onMouseDown={() => handleSelectGlobalVendor(vendor)}
+                        onMouseEnter={() => setHighlightedIndex(index)}
                       >
                         {getVendorDisplayName(vendor)}
                       </div>
                     ))}
-                  </div>
-                </div>
+                  </>
+                )}
+
+                {/* Add as custom option - appears below suggestions */}
+                {customValue.trim().length > 0 && (
+                  <>
+                    {filteredSearchResults.length > 0 && (
+                      <div className="my-1 border-t border-border" />
+                    )}
+                    <div
+                      className="hover:bg-accent cursor-pointer rounded-sm px-2 py-1.5 text-sm text-muted-foreground transition-colors duration-100"
+                      onMouseDown={() => handleAddCustomVendor()}
+                    >
+                      Add "{customValue.trim()}" as custom vendor
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -992,6 +1020,10 @@ function SoftwareVendorInput({
                       {showError ? (
                         <div className="pr-2 flex items-center">
                           <AlertCircle className="h-4 w-4 text-red-500" />
+                        </div>
+                      ) : displayValue && isValid ? (
+                        <div className="pr-2 flex items-center">
+                          <Check className="h-4 w-4 text-green-500" />
                         </div>
                       ) : !displayValue ? (
                         <div className="pr-2 flex items-center">

@@ -31,16 +31,5 @@ export default async function BrowserConnectionPage({
     return notFound();
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Browser Connection</h2>
-        <p className="text-sm text-muted-foreground">
-          Connect a browser session to enable automated screenshots and evidence collection from
-          authenticated web pages.
-        </p>
-      </div>
-      <BrowserConnectionClient organizationId={orgId} />
-    </div>
-  );
+  return <BrowserConnectionClient organizationId={orgId} />;
 }

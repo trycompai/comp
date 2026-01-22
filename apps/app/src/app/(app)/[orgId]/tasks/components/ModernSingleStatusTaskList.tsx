@@ -79,12 +79,12 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 border-b border-slate-200/50 pb-2">
+      <div className="flex items-center gap-2 border-b border-border/50 pb-2">
         <StatusIcon className={`h-4 w-4 ${config.color}`} />
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {config.label}
         </h3>
-        <span className="text-slate-400 text-xs font-medium">({tasks.length})</span>
+        <span className="text-muted-foreground/60 text-xs font-medium">({tasks.length})</span>
         <TaskBulkActions
           selectedTaskIds={selectedTaskIds}
           onEdit={setSelectable}
@@ -94,7 +94,7 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
           }}
         />
       </div>
-      <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200/60 bg-white">
+      <div className="divide-y divide-border/50 overflow-hidden rounded-lg border border-border/60 bg-card">
         {selectable ? (
           <div className="flex items-center gap-4 p-4">
             <Checkbox
@@ -102,7 +102,7 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
               onCheckedChange={handleSelectAllChange}
               aria-label="Select all tasks"
             />
-            <span className="text-sm text-slate-600">Select all</span>
+            <span className="text-sm text-muted-foreground">Select all</span>
           </div>
         ) : null}
         {tasks.map((task) => (

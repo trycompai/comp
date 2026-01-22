@@ -22,8 +22,8 @@ interface TasksChartProps {
 }
 
 const CHART_COLORS = {
-  done: 'hsl(var(--chart-primary))',
-  remaining: 'hsl(var(--muted))',
+  done: 'var(--color-primary)',
+  remaining: 'var(--color-muted)',
 };
 
 export function TasksChart({ data }: TasksChartProps) {
@@ -126,7 +126,7 @@ export function TasksChart({ data }: TasksChartProps) {
                       cy={viewBox.cy}
                       r={32}
                       fill="none"
-                      stroke="hsl(var(--border))"
+                      stroke="var(--color-border)"
                       strokeWidth={1}
                       strokeDasharray="2,2"
                     />

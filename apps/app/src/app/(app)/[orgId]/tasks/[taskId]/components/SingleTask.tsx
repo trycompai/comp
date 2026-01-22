@@ -216,8 +216,6 @@ export function SingleTask({
               entityId={task.id}
               entityType={CommentEntityType.task}
               organizationId={orgId}
-              variant="inline"
-              title=""
             />
           </div>
         </div>

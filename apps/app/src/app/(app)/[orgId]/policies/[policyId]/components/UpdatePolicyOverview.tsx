@@ -4,14 +4,34 @@ import { submitPolicyForApprovalAction } from '@/actions/policies/submit-policy-
 import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
-import { Button } from '@comp/ui/button';
-import { cn } from '@comp/ui/cn';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Departments, Frequency, Member, type Policy, PolicyStatus, User } from '@db';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  Grid,
+  HStack,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Stack,
+  Text,
+} from '@trycompai/design-system';
+import { Calendar } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { SubmitApprovalDialog } from './SubmitApprovalDialog';
@@ -22,28 +42,41 @@ interface UpdatePolicyOverviewProps {
   };
   assignees: (Member & { user: User })[];
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }
 
 export function UpdatePolicyOverview({
   policy,
   assignees,
   isPendingApproval,
+  onMutate,
 }: UpdatePolicyOverviewProps) {
-  // Dialog state only - no form state
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [isStatusChangeDialogOpen, setIsStatusChangeDialogOpen] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<{
+    status: { from: PolicyStatus; to: PolicyStatus } | null;
+    assigneeId: { from: string | null; to: string | null } | null;
+    department: { from: Departments | null; to: Departments } | null;
+    reviewFrequency: { from: Frequency | null; to: Frequency } | null;
+    formData: {
+      status: PolicyStatus;
+      assigneeId: string | null;
+      department: Departments;
+      reviewFrequency: Frequency;
+      reviewDate: Date;
+    };
+  } | null>(null);
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
-  const router = useRouter();
 
-  // Track selected status
   const [selectedStatus, setSelectedStatus] = useState<PolicyStatus>(policy.status);
-
-  // Track selected assignee
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(policy.assigneeId);
-
-  // Loading state
+  const [selectedDepartment, setSelectedDepartment] = useState<Departments>(
+    policy.department || Departments.admin,
+  );
+  const [selectedFrequency, setSelectedFrequency] = useState<Frequency>(
+    policy.frequency || Frequency.monthly,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Track form interactions to determine button text
   const [formInteracted, setFormInteracted] = useState(false);
 
   const fieldsDisabled = isPendingApproval;
@@ -52,8 +85,8 @@ export function UpdatePolicyOverview({
     onSuccess: () => {
       toast.success('Policy updated successfully');
       setIsSubmitting(false);
-      setFormInteracted(false); // Reset form interaction state after successful update
-      router.refresh();
+      setFormInteracted(false);
+      onMutate?.();
     },
     onError: () => {
       toast.error('Failed to update policy');
@@ -66,9 +99,9 @@ export function UpdatePolicyOverview({
       toast.success('Policy submitted for approval successfully!');
       setIsSubmitting(false);
       setIsApprovalDialogOpen(false);
-      setFormInteracted(false); // Reset form interaction state after successful submission
+      setFormInteracted(false);
       setSelectedStatus('needs_review');
-      router.refresh();
+      onMutate?.();
     },
     onError: () => {
       toast.error('Failed to submit policy for approval.');
@@ -76,7 +109,6 @@ export function UpdatePolicyOverview({
     },
   });
 
-  // Function to handle form field changes
   const handleFormChange = () => {
     setFormInteracted(true);
   };
@@ -85,42 +117,52 @@ export function UpdatePolicyOverview({
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Get form data directly from the form element
-    const formData = new FormData(e.currentTarget);
-    const status = formData.get('status') as PolicyStatus;
-    const assigneeId = selectedAssigneeId; // Use state instead of form data
-    const department = formData.get('department') as Departments;
-    const reviewFrequency = formData.get('review_frequency') as Frequency;
-
-    // Get review date from the form or use the existing one
+    const status = selectedStatus;
+    const assigneeId = selectedAssigneeId;
+    const department = selectedDepartment;
+    const reviewFrequency = selectedFrequency;
     const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
 
-    // Check if the policy is published and if there are changes
-    const isPublishedWithChanges =
-      policy.status === 'published' &&
-      (status !== policy.status ||
-        assigneeId !== policy.assigneeId ||
-        department !== policy.department ||
-        reviewFrequency !== policy.frequency ||
-        (policy.reviewDate ? new Date(policy.reviewDate).toDateString() : '') !==
-          reviewDate.toDateString());
-
-    // If policy is draft and being published OR policy is published and has changes
-    if ((['draft', 'needs_review'].includes(policy.status) && status === 'published') || isPublishedWithChanges) {
+    // Case 1: Moving to published (from draft/needs_review) - requires approval
+    if (['draft', 'needs_review'].includes(policy.status) && status === 'published') {
       setIsApprovalDialogOpen(true);
       setIsSubmitting(false);
-    } else {
-      updatePolicyForm.execute({
-        id: policy.id,
-        status,
-        assigneeId,
-        department,
-        review_frequency: reviewFrequency,
-        review_date: reviewDate,
-        approverId: null,
-        entityId: policy.id,
-      });
+      return;
     }
+
+    // Case 2: Any other changes - show confirmation dialog with list of changes
+    const statusChanged = status !== policy.status;
+    const assigneeChanged = assigneeId !== policy.assigneeId;
+    const departmentChanged = department !== policy.department;
+    const frequencyChanged = reviewFrequency !== policy.frequency;
+
+    setPendingChanges({
+      status: statusChanged ? { from: policy.status, to: status } : null,
+      assigneeId: assigneeChanged ? { from: policy.assigneeId, to: assigneeId } : null,
+      department: departmentChanged ? { from: policy.department, to: department } : null,
+      reviewFrequency: frequencyChanged ? { from: policy.frequency, to: reviewFrequency } : null,
+      formData: { assigneeId, department, reviewFrequency, reviewDate, status },
+    });
+    setIsStatusChangeDialogOpen(true);
+    setIsSubmitting(false);
+  };
+
+  const handleConfirmChanges = () => {
+    if (!pendingChanges) return;
+
+    setIsSubmitting(true);
+    updatePolicyForm.execute({
+      id: policy.id,
+      status: pendingChanges.formData.status,
+      assigneeId: pendingChanges.formData.assigneeId,
+      department: pendingChanges.formData.department,
+      review_frequency: pendingChanges.formData.reviewFrequency,
+      review_date: pendingChanges.formData.reviewDate,
+      approverId: null,
+      entityId: policy.id,
+    });
+    setIsStatusChangeDialogOpen(false);
+    setPendingChanges(null);
   };
 
   const handleConfirmApproval = () => {
@@ -129,14 +171,9 @@ export function UpdatePolicyOverview({
       return;
     }
 
-    // Get form data directly from the DOM
-    const form = document.getElementById('policy-form') as HTMLFormElement;
-    const formData = new FormData(form);
-    const assigneeId = selectedAssigneeId; // Use state instead of form data
-    const department = formData.get('department') as Departments;
-    const reviewFrequency = formData.get('review_frequency') as Frequency;
-
-    // Get review date from the form or use the existing one
+    const assigneeId = selectedAssigneeId;
+    const department = selectedDepartment;
+    const reviewFrequency = selectedFrequency;
     const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
 
     setIsSubmitting(true);
@@ -153,174 +190,160 @@ export function UpdatePolicyOverview({
     setSelectedApproverId(null);
   };
 
-  // Check if form has been modified to determine button state
   const hasFormChanges = formInteracted;
 
-  // Determine button text based on status and form interaction
   let buttonText = 'Save';
-  if (
-    (['draft', 'needs_review'].includes(policy.status) && selectedStatus === 'published') ||
-    (policy.status === 'published' && hasFormChanges)
-  ) {
+  // Only show "Submit for Approval" when moving TO published from draft/needs_review
+  if (['draft', 'needs_review'].includes(policy.status) && selectedStatus === 'published') {
     buttonText = 'Submit for Approval';
   }
 
+  const isLoading = isSubmitting || updatePolicyForm.isExecuting || submitForApproval.isExecuting;
+
   return (
     <>
-      <form id="policy-form" onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Status Field */}
-          <div className="space-y-2">
-            <label htmlFor="status" className="text-sm font-medium">
-              Status
-            </label>
-            {/* Hidden input for form submission */}
-            <input type="hidden" name="status" id="status" value={selectedStatus} />
-            <Select
-              value={selectedStatus}
-              disabled={fieldsDisabled}
-              onValueChange={(value) => {
-                setSelectedStatus(value as PolicyStatus);
-                handleFormChange();
-              }}
-            >
-              <SelectTrigger value={selectedStatus}>
-                <SelectValue placeholder="Select status">
-                  <StatusIndicator status={selectedStatus} />
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(PolicyStatus).map((statusOption) => (
-                  <SelectItem key={statusOption} value={statusOption}>
-                    <StatusIndicator status={statusOption} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Review Frequency Field */}
-          <div className="space-y-2">
-            <label htmlFor="review_frequency" className="text-sm font-medium">
-              Review Frequency
-            </label>
-            <Select
-              name="review_frequency"
-              defaultValue={policy.frequency || Frequency.monthly}
-              disabled={fieldsDisabled}
-              onValueChange={handleFormChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select review frequency" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(Frequency).map((frequency) => (
-                  <SelectItem key={frequency} value={frequency}>
-                    {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Department Field */}
-          <div className="space-y-2">
-            <label htmlFor="department" className="text-sm font-medium">
-              Department
-            </label>
-            <Select
-              name="department"
-              defaultValue={policy.department || Departments.admin}
-              disabled={fieldsDisabled}
-              onValueChange={handleFormChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(Departments).map((dept) => {
-                  const formattedDepartment = dept.toUpperCase();
-                  return (
-                    <SelectItem key={dept} value={dept}>
-                      {formattedDepartment}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Assignee Field */}
-          <div className="space-y-2">
-            <label htmlFor="assigneeId" className="text-sm font-medium">
-              Assignee
-            </label>
-            <SelectAssignee
-              assignees={assignees}
-              onAssigneeChange={(id) => {
-                setSelectedAssigneeId(id);
-                handleFormChange();
-              }}
-              assigneeId={selectedAssigneeId || ''}
-              disabled={fieldsDisabled}
-              withTitle={false}
-            />
-          </div>
-
-          {/* Review Date Field */}
-          <div className="mt-2 space-y-2">
-            <label htmlFor="review_date" className="text-sm font-medium">
-              Review Date
-            </label>
-            <div className="pt-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                disabled
-                className={cn(
-                  'w-full pl-3 text-left font-normal pointer-events-none cursor-not-allowed select-none'
-                )}
+      <form id="policy-form" onSubmit={handleSubmit}>
+        <Stack gap="md">
+          <Grid cols={{ base: '1', md: '2' }} gap="4">
+            {/* Status Field */}
+            <Stack gap="sm">
+              <Label htmlFor="status">Status</Label>
+              <input type="hidden" name="status" id="status" value={selectedStatus} />
+              <Select
+                value={selectedStatus}
+                disabled={fieldsDisabled}
+                onValueChange={(value) => {
+                  setSelectedStatus(value as PolicyStatus);
+                  handleFormChange();
+                }}
               >
-                {policy.reviewDate ? (
-                  format(new Date(policy.reviewDate), 'PPP')
-                ) : (
-                  <span>None</span>
-                )}
-                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-              </Button>
-            </div>
-            {/* Hidden input to store the date value */}
-            <input
-              type="hidden"
-              id="review_date"
-              name="review_date"
-              value={
-                policy.reviewDate
-                  ? new Date(policy.reviewDate).toISOString()
-                  : new Date().toISOString()
-              }
-            />
-          </div>
-        </div>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status">
+                    <StatusIndicator status={selectedStatus} />
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(PolicyStatus).map((statusOption) => (
+                    <SelectItem key={statusOption} value={statusOption}>
+                      <StatusIndicator status={statusOption} />
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Stack>
 
-        <div className="col-span-1 flex justify-end gap-2 md:col-span-2">
+            {/* Review Frequency Field */}
+            <Stack gap="sm">
+              <Label htmlFor="review_frequency">Review Frequency</Label>
+              <input type="hidden" name="review_frequency" value={selectedFrequency} />
+              <Select
+                value={selectedFrequency}
+                disabled={fieldsDisabled}
+                onValueChange={(value) => {
+                  setSelectedFrequency(value as Frequency);
+                  handleFormChange();
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select review frequency">
+                    {selectedFrequency.charAt(0).toUpperCase() + selectedFrequency.slice(1)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(Frequency).map((frequency) => (
+                    <SelectItem key={frequency} value={frequency}>
+                      {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Stack>
+
+            {/* Department Field */}
+            <Stack gap="sm">
+              <Label htmlFor="department">Department</Label>
+              <input type="hidden" name="department" value={selectedDepartment} />
+              <Select
+                value={selectedDepartment}
+                disabled={fieldsDisabled}
+                onValueChange={(value) => {
+                  setSelectedDepartment(value as Departments);
+                  handleFormChange();
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department">
+                    {selectedDepartment.charAt(0).toUpperCase() + selectedDepartment.slice(1)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(Departments).map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept.charAt(0).toUpperCase() + dept.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Stack>
+
+            {/* Assignee Field */}
+            <Stack gap="sm">
+              <Label htmlFor="assigneeId">Assignee</Label>
+              <SelectAssignee
+                assignees={assignees}
+                onAssigneeChange={(id) => {
+                  setSelectedAssigneeId(id);
+                  handleFormChange();
+                }}
+                assigneeId={selectedAssigneeId || ''}
+                disabled={fieldsDisabled}
+                withTitle={false}
+              />
+            </Stack>
+
+            {/* Review Date Field */}
+            <Stack gap="sm">
+              <Label htmlFor="review_date">Review Date</Label>
+              <InputGroup>
+                <InputGroupInput
+                  id="review_date_display"
+                  value={policy.reviewDate ? format(new Date(policy.reviewDate), 'PPP') : 'None'}
+                  disabled
+                  readOnly
+                />
+                <InputGroupAddon align="inline-end">
+                  <Calendar size={16} />
+                </InputGroupAddon>
+              </InputGroup>
+              <input
+                type="hidden"
+                id="review_date"
+                name="review_date"
+                value={
+                  policy.reviewDate
+                    ? new Date(policy.reviewDate).toISOString()
+                    : new Date().toISOString()
+                }
+              />
+            </Stack>
+          </Grid>
+
           {!isPendingApproval && (
-            <Button
-              type="submit"
-              disabled={
-                !hasFormChanges ||
-                isSubmitting ||
-                updatePolicyForm.isExecuting ||
-                submitForApproval.isExecuting
-              }
-            >
-              {(isSubmitting || updatePolicyForm.isExecuting || submitForApproval.isExecuting) && (
-                <Loader2 className="mr-2 animate-spin" />
-              )}
-              {buttonText}
-            </Button>
+            <HStack justify="end">
+              <Button
+                disabled={!hasFormChanges || isLoading}
+                loading={isLoading}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const form = document.getElementById('policy-form') as HTMLFormElement;
+                  form.requestSubmit();
+                }}
+              >
+                {buttonText}
+              </Button>
+            </HStack>
           )}
-        </div>
+        </Stack>
       </form>
 
       <SubmitApprovalDialog
@@ -332,6 +355,117 @@ export function UpdatePolicyOverview({
         onConfirm={handleConfirmApproval}
         isSubmitting={isSubmitting}
       />
+
+      <AlertDialog
+        open={isStatusChangeDialogOpen}
+        onOpenChange={(open) => {
+          setIsStatusChangeDialogOpen(open);
+          if (!open) setPendingChanges(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Policy Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to make the following changes to this policy:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Stack gap="0">
+            {pendingChanges?.status && (
+              <HStack justify="between" align="center">
+                <Text size="sm" variant="muted">
+                  Status
+                </Text>
+                <Text size="sm">
+                  <Text as="span" size="sm" variant="muted">
+                    {pendingChanges.status.from
+                      .replace('_', ' ')
+                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </Text>
+                  <Text as="span" size="sm" variant="muted">
+                    {' → '}
+                  </Text>
+                  <Text as="span" size="sm" weight="medium">
+                    {pendingChanges.status.to
+                      .replace('_', ' ')
+                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </Text>
+                </Text>
+              </HStack>
+            )}
+            {pendingChanges?.assigneeId && (
+              <HStack justify="between" align="center">
+                <Text size="sm" variant="muted">
+                  Assignee
+                </Text>
+                <Text size="sm">
+                  <Text as="span" size="sm" variant="muted">
+                    {assignees.find((a) => a.id === pendingChanges.assigneeId?.from)?.user.name ??
+                      'Unassigned'}
+                  </Text>
+                  <Text as="span" size="sm" variant="muted">
+                    {' → '}
+                  </Text>
+                  <Text as="span" size="sm" weight="medium">
+                    {assignees.find((a) => a.id === pendingChanges.assigneeId?.to)?.user.name ??
+                      'Unassigned'}
+                  </Text>
+                </Text>
+              </HStack>
+            )}
+            {pendingChanges?.department && (
+              <HStack justify="between" align="center">
+                <Text size="sm" variant="muted">
+                  Department
+                </Text>
+                <Text size="sm">
+                  <Text as="span" size="sm" variant="muted">
+                    {pendingChanges.department.from
+                      ? pendingChanges.department.from.charAt(0).toUpperCase() +
+                        pendingChanges.department.from.slice(1)
+                      : ''}
+                  </Text>
+                  <Text as="span" size="sm" variant="muted">
+                    {' → '}
+                  </Text>
+                  <Text as="span" size="sm" weight="medium">
+                    {pendingChanges.department.to.charAt(0).toUpperCase() +
+                      pendingChanges.department.to.slice(1)}
+                  </Text>
+                </Text>
+              </HStack>
+            )}
+            {pendingChanges?.reviewFrequency && (
+              <HStack justify="between" align="center">
+                <Text size="sm" variant="muted">
+                  Review Frequency
+                </Text>
+                <Text size="sm">
+                  <Text as="span" size="sm" variant="muted">
+                    {pendingChanges.reviewFrequency.from
+                      ? pendingChanges.reviewFrequency.from.charAt(0).toUpperCase() +
+                        pendingChanges.reviewFrequency.from.slice(1)
+                      : ''}
+                  </Text>
+                  <Text as="span" size="sm" variant="muted">
+                    {' → '}
+                  </Text>
+                  <Text as="span" size="sm" weight="medium">
+                    {pendingChanges.reviewFrequency.to.charAt(0).toUpperCase() +
+                      pendingChanges.reviewFrequency.to.slice(1)}
+                  </Text>
+                </Text>
+              </HStack>
+            )}
+          </Stack>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmChanges} loading={isSubmitting}>
+              Confirm Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

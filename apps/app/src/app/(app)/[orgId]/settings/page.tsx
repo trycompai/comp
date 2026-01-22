@@ -18,14 +18,13 @@ export default async function OrganizationSettings({
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
-  console.log('[OrganizationSettings Debug] orgId:', orgId);
 
   const organization = await organizationDetails(orgId);
   const logoUrl = await getLogoUrl(organization?.logo);
   const { isOwner, eligibleMembers } = await getOwnershipData(orgId);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <UpdateOrganizationName organizationName={organization?.name ?? ''} />
       <UpdateOrganizationWebsite organizationWebsite={organization?.website ?? ''} />
       <UpdateOrganizationLogo currentLogoUrl={logoUrl} />

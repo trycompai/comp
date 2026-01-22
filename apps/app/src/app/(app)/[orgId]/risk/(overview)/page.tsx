@@ -1,13 +1,13 @@
 import { AppOnboarding } from '@/components/app-onboarding';
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { getValidFilters } from '@/lib/data-table';
 import { db } from '@db';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { cache } from 'react';
-import { RisksTable } from './RisksTable';
 import { getRisks } from './data/getRisks';
 import { searchParamsCache } from './data/validations';
+import { RisksTable } from './RisksTable';
 
 export default async function RiskRegisterPage(props: {
   params: Promise<{ orgId: string }>;
@@ -48,7 +48,8 @@ export default async function RiskRegisterPage(props: {
   // Show AppOnboarding only if empty, default view, AND onboarding is not active
   if (isEmpty && isDefaultView && !isOnboardingActive) {
     return (
-      <div className="py-4">
+      <PageLayout padding="sm" container={false}>
+        <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees} />} />
         <AppOnboarding
           title={'Risk Management'}
           description={
@@ -77,13 +78,13 @@ export default async function RiskRegisterPage(props: {
             },
           ]}
         />
-        <CreateRiskSheet assignees={assignees} />
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <PageWithBreadcrumb breadcrumbs={[{ label: 'Risks', href: `/${orgId}/risk`, current: true }]}>
+    <PageLayout>
+      <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees} />} />
       <RisksTable
         risks={risksResult?.data || []}
         pageCount={risksResult.pageCount}
@@ -92,7 +93,7 @@ export default async function RiskRegisterPage(props: {
         searchParams={searchParamsForTable}
         orgId={orgId}
       />
-    </PageWithBreadcrumb>
+    </PageLayout>
   );
 }
 

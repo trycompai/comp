@@ -11,7 +11,6 @@ import { SecondaryFields } from './secondary-fields/secondary-fields';
 import { VendorHeader } from './VendorHeader';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
-import { VendorTabs } from './VendorTabs';
 
 // Vendor with risk assessment data merged from GlobalVendors
 type VendorWithRiskAssessment = Vendor & {
@@ -48,12 +47,14 @@ interface VendorPageClientProps {
   initialVendor: VendorWithRiskAssessment;
   assignees: (Member & { user: User })[];
   isViewingTask: boolean;
+  isEditSheetOpen: boolean;
+  onEditSheetOpenChange: (open: boolean) => void;
 }
 
 /**
  * Client component for vendor detail page content
  * Uses SWR for real-time updates and caching
- * 
+ *
  * Benefits:
  * - Instant initial render (uses server-fetched data)
  * - Real-time updates via polling (5s interval)
@@ -65,9 +66,11 @@ export function VendorPageClient({
   initialVendor,
   assignees,
   isViewingTask,
+  isEditSheetOpen,
+  onEditSheetOpenChange,
 }: VendorPageClientProps) {
   // Use SWR for real-time updates with polling
-  const { vendor: swrVendor, isLoading } = useVendor(vendorId, {
+  const { vendor: swrVendor } = useVendor(vendorId, {
     organizationId: orgId,
   });
 
@@ -82,8 +85,13 @@ export function VendorPageClient({
 
   return (
     <>
-      {!isViewingTask && <VendorHeader vendor={vendor} />}
-      {!isViewingTask && <VendorTabs vendorId={vendorId} orgId={orgId} />}
+      {!isViewingTask && (
+        <VendorHeader
+          vendor={vendor}
+          isEditSheetOpen={isEditSheetOpen}
+          onEditSheetOpenChange={onEditSheetOpenChange}
+        />
+      )}
       <div className="flex flex-col gap-4">
         {!isViewingTask && (
           <>
@@ -94,11 +102,7 @@ export function VendorPageClient({
             </div>
           </>
         )}
-        <TaskItems
-          entityId={vendorId}
-          entityType="vendor"
-          organizationId={orgId}
-        />
+        <TaskItems entityId={vendorId} entityType="vendor" organizationId={orgId} />
         {!isViewingTask && (
           <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
         )}
@@ -112,4 +116,3 @@ export function VendorPageClient({
  * Call this after updating vendor data to trigger SWR revalidation
  */
 export { useVendor } from '@/hooks/use-vendors';
-

@@ -1,10 +1,5 @@
-import Loader from '@/components/ui/loader';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 
 export default function Loading() {
-  return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8">
-      <Loader />
-    </div>
-  );
+  return <PageLayout loading header={<PageHeader title="Questionnaires" />} />;
 }
-

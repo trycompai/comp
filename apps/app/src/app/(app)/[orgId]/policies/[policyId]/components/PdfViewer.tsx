@@ -1,8 +1,5 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { cn } from '@comp/ui/cn';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,14 +10,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@comp/ui/alert-dialog';
-import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { ExternalLink, FileText, Loader2, MoreVertical, Trash2, Upload } from 'lucide-react';
+} from '@trycompai/design-system';
+import {
+  DocumentPdf,
+  Launch,
+  OverflowMenuVertical,
+  TrashCan,
+  Upload,
+} from '@trycompai/design-system/icons';
+import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -34,9 +42,10 @@ interface PdfViewerProps {
   policyId: string;
   pdfUrl?: string | null; // This prop contains the S3 Key
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }
 
-export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProps) {
+export function PdfViewer({ policyId, pdfUrl, isPendingApproval, onMutate }: PdfViewerProps) {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -69,7 +78,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
     onSuccess: () => {
       toast.success('PDF uploaded successfully.');
       setFiles([]);
-      router.refresh();
+      onMutate?.();
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to upload PDF.'),
   });
@@ -78,7 +87,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
     onSuccess: () => {
       toast.success('PDF deleted successfully.');
       setSignedUrl(null);
-      router.refresh();
+      onMutate?.();
     },
     onError: (error) => toast.error(error.error.serverError || 'Failed to delete PDF.'),
   });
@@ -157,24 +166,26 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="min-w-0 flex-1">
-            {signedUrl ? (
-              <a
-                href={signedUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline cursor-pointer flex items-center gap-2 min-w-0"
-                title={fileName}
-              >
-                <span className="truncate">{truncatedFileName}</span>
-                <ExternalLink className="h-4 w-4 shrink-0" />
-              </a>
-            ) : (
-              <span className="truncate" title={fileName}>
-                {truncatedFileName}
-              </span>
-            )}
-          </CardTitle>
+          <div className="min-w-0 flex-1">
+            <CardTitle>
+              {signedUrl ? (
+                <a
+                  href={signedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline cursor-pointer flex items-center gap-2 min-w-0"
+                  title={fileName}
+                >
+                  <span className="truncate">{truncatedFileName}</span>
+                  <Launch size={16} className="shrink-0" />
+                </a>
+              ) : (
+                <span className="truncate" title={fileName}>
+                  {truncatedFileName}
+                </span>
+              )}
+            </CardTitle>
+          </div>
           {pdfUrl && !isPendingApproval && (
             <>
               <input
@@ -186,37 +197,32 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                 disabled={isUploading || isDeleting}
               />
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={isUploading || isDeleting}
-                    className="h-8 w-8"
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <MoreVertical className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Open menu</span>
-                  </Button>
+                <DropdownMenuTrigger
+                  variant="ellipsis"
+                  disabled={isUploading || isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <OverflowMenuVertical size={16} />
+                  )}
+                  <span className="sr-only">Open menu</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={handleReplaceClick}
                     disabled={isUploading || isDeleting}
                   >
-                    <Upload className="mr-2 h-4 w-4" />
+                    <Upload size={16} />
                     Replace
                   </DropdownMenuItem>
                   <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                    <AlertDialogTrigger>
                       <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
+                        variant="destructive"
                         disabled={isUploading || isDeleting}
-                        className="text-destructive focus:text-destructive"
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
+                        <TrashCan size={16} />
                         Delete
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
@@ -232,16 +238,10 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => deletePdf({ policyId })}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          variant="destructive"
+                          loading={isDeleting}
                         >
-                          {isDeleting ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Deleting...
-                            </>
-                          ) : (
-                            'Delete'
-                          )}
+                          Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -252,7 +252,8 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
+        <div className="space-y-4">
         {pdfUrl ? (
           <div className="space-y-4">
             {isUrlLoading ? (
@@ -273,7 +274,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
               </div>
             ) : (
               <div className="flex h-[800px] w-full flex-col items-center justify-center rounded-md border text-center">
-                <FileText className="h-12 w-12 text-destructive" />
+                <DocumentPdf size={48} className="text-destructive" />
                 <p className="mt-4 font-semibold">Could not load PDF</p>
                 <p className="text-sm text-muted-foreground">
                   The document might be missing or there was a problem retrieving it.
@@ -339,7 +340,7 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
                 {isUploading ? (
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 ) : (
-                  <FileText className="h-12 w-12 text-primary" />
+                  <DocumentPdf size={48} className="text-primary" />
                 )}
                 <h3 className="text-lg font-semibold">
                   {isUploading
@@ -360,13 +361,14 @@ export function PdfViewer({ policyId, pdfUrl, isPendingApproval }: PdfViewerProp
           </Dropzone>
         ) : (
           <div className="flex flex-col items-center justify-center space-y-4 rounded-md border-2 border-dashed border-muted p-12 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground" />
+            <DocumentPdf size={48} className="text-muted-foreground" />
             <h3 className="text-lg font-semibold">No PDF Uploaded</h3>
             <p className="text-sm text-muted-foreground">
               A PDF document is required for this policy.
             </p>
           </div>
         )}
+        </div>
       </CardContent>
     </Card>
   );

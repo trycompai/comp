@@ -2,7 +2,7 @@
 
 import { Edit, Laptop, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
@@ -56,8 +56,16 @@ function getInitials(name?: string | null, email?: string | null): string {
   return '??';
 }
 
-export function MemberRow({ member, onRemove, onRemoveDevice, onUpdateRole, canEdit, isCurrentUserOwner }: MemberRowProps) {
+export function MemberRow({
+  member,
+  onRemove,
+  onRemoveDevice,
+  onUpdateRole,
+  canEdit,
+  isCurrentUserOwner,
+}: MemberRowProps) {
   const params = useParams<{ orgId: string }>();
+  const router = useRouter();
   const { orgId } = params;
 
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = useState(false);
@@ -90,6 +98,9 @@ export function MemberRow({ member, onRemove, onRemoveDevice, onUpdateRole, canE
 
   const isEmployee = currentRoles.includes('employee');
   const isContractor = currentRoles.includes('contractor');
+  const isDeactivated = member.deactivated;
+  const canViewProfile = !isDeactivated;
+  const profileHref = canViewProfile ? `/${orgId}/people/${memberId}` : null;
 
   const handleDialogItemSelect = () => {
     focusRef.current = dropdownTriggerRef.current;
@@ -140,11 +151,11 @@ export function MemberRow({ member, onRemove, onRemoveDevice, onUpdateRole, canE
     }
   };
 
-  const isDeactivated = member.deactivated;
-
   return (
     <>
-      <div className={`hover:bg-muted/50 flex items-center justify-between p-4 ${isDeactivated ? 'opacity-60' : ''}`}>
+      <div
+        className={`hover:bg-muted/50 flex items-center justify-between p-4 ${isDeactivated ? 'opacity-60' : ''}`}
+      >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <Avatar className={`flex-shrink-0 ${isDeactivated ? 'grayscale' : ''}`}>
             <AvatarImage src={memberAvatar || undefined} />
@@ -152,17 +163,35 @@ export function MemberRow({ member, onRemove, onRemoveDevice, onUpdateRole, canE
           </Avatar>
           <div className="min-w-0 flex-1 gap-2">
             <div className="flex items-center flex-wrap gap-1.5">
-              <span className={`truncate text-sm font-medium ${isDeactivated ? 'line-through text-muted-foreground' : ''}`}>
-                {memberName}
-              </span>
+              {profileHref ? (
+                <Link
+                  href={profileHref}
+                  className={`truncate text-sm font-medium hover:underline ${
+                    isDeactivated ? 'line-through text-muted-foreground' : ''
+                  }`}
+                >
+                  {memberName}
+                </Link>
+              ) : (
+                <span
+                  className={`truncate text-sm font-medium ${
+                    isDeactivated ? 'line-through text-muted-foreground' : ''
+                  }`}
+                >
+                  {memberName}
+                </span>
+              )}
               {isDeactivated && (
-                <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 bg-orange-50">
+                <Badge
+                  variant="outline"
+                  className="text-xs text-orange-600 border-orange-300 bg-orange-50"
+                >
                   Deactivated
                 </Badge>
               )}
-              {!isDeactivated && (isEmployee || isContractor) && (
+              {profileHref && (
                 <Link
-                  href={`/${orgId}/people/${memberId}`}
+                  href={profileHref}
                   className="text-xs text-blue-600 hover:underline flex-shrink-0"
                 >
                   ({'View Profile'})
@@ -175,7 +204,11 @@ export function MemberRow({ member, onRemove, onRemoveDevice, onUpdateRole, canE
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex flex-wrap gap-1 max-w-[120px] sm:max-w-none">
             {currentRoles.map((role) => (
-              <Badge key={role} variant="secondary" className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}>
+              <Badge
+                key={role}
+                variant="secondary"
+                className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}
+              >
                 {(() => {
                   switch (role) {
                     case 'owner':

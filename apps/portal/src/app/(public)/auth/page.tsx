@@ -2,7 +2,14 @@ import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
 import { env } from '@/env.mjs';
 import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@comp/ui/card';
 import { Icons } from '@comp/ui/icons';
 import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';

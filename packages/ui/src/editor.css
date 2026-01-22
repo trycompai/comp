@@ -66,49 +66,49 @@ pre {
 
 /* Base editor styles */
 .ProseMirror {
-  @reference w-full text-sm leading-normal;
+  @apply w-full text-sm leading-normal;
   height: var(--editor-height, 100%);
   min-height: var(--editor-min-height, 350px);
 }
 
 .ProseMirror:focus {
-  @reference outline-hidden;
+  @apply outline-hidden;
 }
 
 /* Typography */
 .ProseMirror h1 {
-  @reference text-xl font-semibold text-foreground;
+  @apply text-foreground text-xl font-semibold;
 }
 
 .ProseMirror h2 {
-  @reference text-lg font-semibold text-foreground;
+  @apply text-foreground text-lg font-semibold;
 }
 
 .ProseMirror h3 {
-  @reference text-base font-semibold text-foreground;
+  @apply text-foreground text-base font-semibold;
 }
 
 .ProseMirror h4 {
-  @reference text-sm font-semibold text-foreground;
+  @apply text-foreground text-sm font-semibold;
 }
 
 .ProseMirror p {
-  @reference text-sm;
+  @apply text-sm;
 }
 
 /* Lists */
 .ProseMirror ul,
 .ProseMirror ol {
-  @reference my-1 ml-2 space-y-2;
+  @apply my-1 ml-2 space-y-2;
 }
 
 .ProseMirror li {
-  @reference text-sm leading-6;
+  @apply text-sm leading-6;
   margin: 0 !important;
 }
 
 .ProseMirror li > p {
-  @reference m-0;
+  @apply m-0;
 }
 
 /* Numbered lists specific styling */
@@ -135,35 +135,35 @@ pre {
 .ProseMirror h2 + p,
 .ProseMirror h3 + p,
 .ProseMirror h4 + p {
-  @reference mt-1;
+  @apply mt-1;
 }
 
 /* Code blocks */
 .ProseMirror pre {
-  @reference bg-muted p-4 my-4 overflow-x-auto;
+  @apply bg-muted my-4 overflow-x-auto p-4;
 }
 
 .ProseMirror code {
-  @reference font-mono text-sm;
+  @apply font-mono text-sm;
 }
 
 /* Blockquotes */
 .ProseMirror blockquote {
-  @reference border-l-4 border-primary pl-4 italic my-4;
+  @apply border-primary my-4 border-l-4 pl-4 italic;
 }
 
 /* Task lists */
 .ProseMirror ul[data-type='taskList'] {
-  @reference list-none p-0;
+  @apply list-none p-0;
 }
 
 .ProseMirror ul[data-type='taskList'] li {
-  @reference flex items-start gap-2;
+  @apply flex items-start gap-2;
 }
 
 /* Placeholder */
 .ProseMirror p.is-empty::before {
-  @reference text-muted-foreground;
+  @apply text-muted-foreground;
   content: attr(data-placeholder);
   float: left;
   height: 0;
@@ -171,9 +171,9 @@ pre {
 }
 
 .ProseMirror table {
-  @reference w-full border-collapse my-4 border border-border;
+  @apply border-border my-4 w-full border-collapse border;
 }
 
 .ProseMirror th {
-  @reference text-sm font-medium;
+  @apply text-sm font-medium;
 }

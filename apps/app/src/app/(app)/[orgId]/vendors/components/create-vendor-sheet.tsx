@@ -1,13 +1,22 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Member, User } from '@db';
-import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import type { Member, User } from '@db';
+import {
+  Button,
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  ScrollArea,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/design-system';
+import { Add } from '@trycompai/design-system/icons';
+import { useCallback, useState } from 'react';
 import { CreateVendorForm } from './create-vendor-form';
 
 export function CreateVendorSheet({
@@ -18,43 +27,57 @@ export function CreateVendorSheet({
   organizationId: string;
 }) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('createVendorSheet');
-  const isOpen = Boolean(open);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
-  };
+  const handleSuccess = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  const trigger = (
+    <Button iconLeft={<Add size={16} />} onClick={() => setIsOpen(true)}>
+      Add Vendor
+    </Button>
+  );
 
   if (isDesktop) {
     return (
-      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent stack>
-          <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{'Create Vendor'}</SheetTitle>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="m-0 size-auto p-0 hover:bg-transparent"
-              onClick={() => setOpen(null)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </SheetHeader>
-
-          <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
-            <CreateVendorForm assignees={assignees} organizationId={organizationId} />
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+      <>
+        {trigger}
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Create Vendor</SheetTitle>
+            </SheetHeader>
+            <SheetBody>
+              <CreateVendorForm
+                assignees={assignees}
+                organizationId={organizationId}
+                onSuccess={handleSuccess}
+              />
+            </SheetBody>
+          </SheetContent>
+        </Sheet>
+      </>
     );
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Create Vendor'}</DrawerTitle>
-      <DrawerContent className="p-6">
-        <CreateVendorForm assignees={assignees} organizationId={organizationId} />
-      </DrawerContent>
-    </Drawer>
+    <>
+      {trigger}
+      <Drawer open={isOpen} onOpenChange={setIsOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Create Vendor</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-4">
+            <CreateVendorForm
+              assignees={assignees}
+              organizationId={organizationId}
+              onSuccess={handleSuccess}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }

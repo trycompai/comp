@@ -1,5 +1,5 @@
-import { env } from '@/env.mjs';
 import { auth } from '@/app/lib/auth';
+import { env } from '@/env.mjs';
 import { initializeServer } from '@comp/analytics/server';
 import { cn } from '@comp/ui/cn';
 import '@comp/ui/globals.css';
