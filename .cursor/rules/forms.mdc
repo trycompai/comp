@@ -1,0 +1,177 @@
+---
+description: Use when building forms - covers React Hook Form, Zod validation, and form patterns
+alwaysApply: false
+---
+
+# Forms: React Hook Form + Zod
+
+**All forms MUST use React Hook Form with Zod validation.**
+
+## Basic Pattern
+
+```tsx
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button, Input } from '@trycompai/design-system';
+
+// 1. Define schema
+const formSchema = z.object({
+  email: z.string().email('Invalid email'),
+  password: z.string().min(8, 'Min 8 characters'),
+});
+
+// 2. Infer type
+type FormData = z.infer<typeof formSchema>;
+
+// 3. Use in component
+function MyForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+  });
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Input {...register('email')} />
+      {errors.email && <p>{errors.email.message}</p>}
+      
+      <Button type="submit" loading={isSubmitting}>
+        Submit
+      </Button>
+    </form>
+  );
+}
+```
+
+## Zod Schema Patterns
+
+```tsx
+const schema = z.object({
+  // Strings
+  name: z.string().min(1, 'Required'),
+  email: z.string().email(),
+  website: z.string().url().optional(),
+  
+  // Numbers (coerce for inputs)
+  age: z.coerce.number().int().min(0),
+  price: z.coerce.number().positive(),
+  
+  // Arrays
+  tags: z.array(z.string()).min(1),
+  
+  // Enums
+  status: z.enum(['active', 'inactive']),
+});
+
+// Cross-field validation
+const schema = z.object({
+  password: z.string().min(8),
+  confirmPassword: z.string(),
+}).refine(d => d.password === d.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+```
+
+## Controller for Complex Components
+
+```tsx
+import { Controller } from 'react-hook-form';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@trycompai/design-system';
+
+<Controller
+  name="status"
+  control={control}
+  render={({ field }) => (
+    <Select onValueChange={field.onChange} value={field.value}>
+      <SelectTrigger>{field.value || 'Select...'}</SelectTrigger>
+      <SelectContent>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="inactive">Inactive</SelectItem>
+      </SelectContent>
+    </Select>
+  )}
+/>
+```
+
+## Form State
+
+```tsx
+const {
+  register,
+  handleSubmit,
+  control,
+  watch,           // Watch field values
+  setValue,        // Set field programmatically
+  reset,           // Reset form
+  setError,        // Set error manually
+  formState: {
+    errors,        // Field errors
+    isSubmitting,  // Submitting
+    isValid,       // All valid
+    isDirty,       // Modified
+  },
+} = useForm<FormData>({
+  resolver: zodResolver(schema),
+  mode: 'onChange', // Validate on change
+});
+```
+
+## Error Handling
+
+```tsx
+const onSubmit = async (data: FormData) => {
+  try {
+    await submitToApi(data);
+  } catch (error) {
+    // Field-specific error
+    setError('email', { message: 'Email taken' });
+    // Or root error
+    setError('root', { message: 'Something went wrong' });
+  }
+};
+
+// Display root error
+{errors.root && <p>{errors.root.message}</p>}
+```
+
+## Dynamic Fields
+
+```tsx
+import { useFieldArray } from 'react-hook-form';
+
+const { fields, append, remove } = useFieldArray({
+  control,
+  name: 'items',
+});
+
+{fields.map((field, index) => (
+  <div key={field.id}>
+    <Input {...register(`items.${index}.name`)} />
+    <Button type="button" onClick={() => remove(index)}>Remove</Button>
+  </div>
+))}
+<Button type="button" onClick={() => append({ name: '' })}>Add</Button>
+```
+
+## Anti-Patterns
+
+```tsx
+// ❌ useState for form fields
+const [email, setEmail] = useState('');
+
+// ❌ Manual validation
+if (email.length < 5) setError('Too short');
+
+// ❌ Missing button type (defaults to submit)
+<Button onClick={handleCancel}>Cancel</Button>
+
+// ✅ Correct
+const { register } = useForm();
+const schema = z.object({ email: z.string().min(5) });
+<Button type="button" onClick={handleCancel}>Cancel</Button>
+```

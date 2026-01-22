@@ -14,7 +14,9 @@ export type { ExistingEmbedding } from './core/find-existing-embeddings';
 
 // Sync functionality
 export { syncOrganizationEmbeddings } from './sync/sync-organization';
+export { syncManualAnswerToVector, deleteManualAnswerFromVector } from './sync/sync-manual-answer';
 
 // Utilities
+export { countEmbeddings, listManualAnswerEmbeddings } from './core/count-embeddings';
 export { chunkText } from './utils/chunk-text';
 export { extractTextFromPolicy } from './utils/extract-policy-text';

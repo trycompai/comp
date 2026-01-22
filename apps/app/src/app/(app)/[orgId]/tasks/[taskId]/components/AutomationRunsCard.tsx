@@ -75,33 +75,33 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
     switch (status) {
       case 'completed':
         return {
-          dot: 'bg-chart-positive shadow-[0_0_8px_rgba(0,76,58,0.4)]',
-          text: 'text-chart-positive',
-          bg: 'bg-chart-positive/5',
+          dot: 'bg-primary shadow-[0_0_8px_rgba(0,76,58,0.4)]',
+          text: 'text-primary',
+          bg: 'bg-primary/5',
         };
       case 'failed':
         return {
-          dot: 'bg-chart-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]',
-          text: 'text-chart-destructive',
-          bg: 'bg-chart-destructive/5',
+          dot: 'bg-destructive shadow-[0_0_8px_rgba(255,0,0,0.3)]',
+          text: 'text-destructive',
+          bg: 'bg-destructive/5',
         };
       case 'running':
         return {
-          dot: 'bg-chart-other animate-pulse shadow-[0_0_8px_rgba(32,128,141,0.4)]',
-          text: 'text-chart-other',
-          bg: 'bg-chart-other/5',
+          dot: 'bg-blue-500 dark:bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(32,128,141,0.4)]',
+          text: 'text-blue-600 dark:text-blue-400',
+          bg: 'bg-blue-500/5',
         };
       case 'pending':
         return {
-          dot: 'bg-chart-neutral shadow-[0_0_6px_rgba(255,192,7,0.3)]',
-          text: 'text-chart-neutral',
-          bg: 'bg-chart-neutral/5',
+          dot: 'bg-yellow-500 shadow-[0_0_6px_rgba(255,192,7,0.3)]',
+          text: 'text-yellow-600 dark:text-yellow-400',
+          bg: 'bg-yellow-500/5',
         };
       case 'cancelled':
         return {
-          dot: 'bg-chart-warning',
-          text: 'text-chart-warning',
-          bg: 'bg-chart-warning/5',
+          dot: 'bg-muted-foreground',
+          text: 'text-muted-foreground',
+          bg: 'bg-muted/5',
         };
     }
   };
@@ -189,7 +189,7 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
                                     variant={
                                       run.evaluationStatus === 'pass' ? 'default' : 'destructive'
                                     }
-                                    className="text-[10px] px-1.5 py-0"
+                                    className={`text-[10px] px-1.5 py-0 ${run.evaluationStatus === 'pass' ? '!text-white' : '!text-white'}`}
                                   >
                                     {run.evaluationStatus === 'pass' ? '✓ Pass' : '✗ Fail'}
                                   </Badge>
@@ -254,8 +254,8 @@ export function AutomationRunsCard({ runs }: AutomationRunsCardProps) {
 
                             {/* Error message if failed */}
                             {isFailed && run.error && (
-                              <div className="px-2 py-1.5 rounded-xs bg-chart-destructive/10 border border-chart-destructive/20">
-                                <p className="text-xs text-chart-destructive/90">{run.error}</p>
+                              <div className="px-2 py-1.5 rounded-xs bg-destructive/10 border border-destructive/20">
+                                <p className="text-xs text-destructive">{run.error}</p>
                               </div>
                             )}
                           </div>

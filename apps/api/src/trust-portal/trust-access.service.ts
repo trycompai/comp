@@ -1,9 +1,10 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db } from '@db';
 import { randomBytes } from 'crypto';
 import {
   ApproveAccessRequestDto,
@@ -16,9 +17,66 @@ import { TrustEmailService } from './email.service';
 import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import { Prisma, TrustFramework } from '@prisma/client';
+import archiver from 'archiver';
+import { PassThrough, Readable } from 'stream';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 @Injectable()
 export class TrustAccessService {
+  /**
+   * Convert hex color to RGB values (0-1 range for pdf-lib)
+   * @param hex - Hex color string (e.g., "#3B82F6" or "3B82F6")
+   * @returns RGB object with r, g, b values between 0 and 1
+   */
+  private hexToRgb(hex: string): { r: number; g: number; b: number } {
+    // Remove # if present
+    const cleanHex = hex.replace('#', '');
+
+    // Parse hex values
+    const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+    const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+    const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+
+    return { r, g, b };
+  }
+
+  /**
+   * Get accent color from organization or use default
+   */
+  private getAccentColor(primaryColor: string | null | undefined): {
+    r: number;
+    g: number;
+    b: number;
+  } {
+    // Default project primary color: dark teal/green (hsl(165, 100%, 15%) = #004D3D)
+    const defaultColor = { r: 0, g: 0.302, b: 0.239 };
+
+    if (!primaryColor) {
+      return defaultColor;
+    }
+
+    const color = this.hexToRgb(primaryColor);
+
+    // Check for NaN values (parseInt returns NaN for invalid hex)
+    if (
+      Number.isNaN(color.r) ||
+      Number.isNaN(color.g) ||
+      Number.isNaN(color.b)
+    ) {
+      console.warn(
+        'Invalid primary color format, using default:',
+        primaryColor,
+      );
+      return defaultColor;
+    }
+
+    return color;
+  }
+
   private readonly TRUST_APP_URL =
     process.env.TRUST_APP_URL ||
     process.env.BASE_URL ||
@@ -26,6 +84,152 @@ export class TrustAccessService {
 
   private generateToken(length: number): string {
     return randomBytes(length).toString('base64url').slice(0, length);
+  }
+
+  /**
+   * Normalize URL by removing trailing slash
+   */
+  private normalizeUrl(input: string): string {
+    return input.endsWith('/') ? input.slice(0, -1) : input;
+  }
+
+  /**
+   * Normalize domain by removing protocol and path
+   */
+  private normalizeDomain(input: string): string {
+    const trimmed = input.trim();
+    const withoutProtocol = trimmed.replace(/^https?:\/\//i, '');
+    const withoutPath = withoutProtocol.split('/')[0] ?? withoutProtocol;
+    return withoutPath.trim().toLowerCase();
+  }
+
+  /**
+   * Create a URL-friendly slug from organization name
+   */
+  private slugifyOrganizationName(name: string): string {
+    const cleaned = name
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    return cleaned.slice(0, 60);
+  }
+
+  /**
+   * Ensure organization has a friendlyUrl, create one if missing
+   */
+  private async ensureFriendlyUrl(params: {
+    organizationId: string;
+    organizationName: string;
+  }): Promise<string> {
+    const { organizationId, organizationName } = params;
+
+    const current = await db.trust.findUnique({
+      where: { organizationId },
+      select: { friendlyUrl: true },
+    });
+
+    if (current?.friendlyUrl) return current.friendlyUrl;
+
+    const baseCandidate =
+      this.slugifyOrganizationName(organizationName) ||
+      `org-${organizationId.slice(-8)}`;
+
+    for (let i = 0; i < 25; i += 1) {
+      const candidate = i === 0 ? baseCandidate : `${baseCandidate}-${i + 1}`;
+
+      const taken = await db.trust.findUnique({
+        where: { friendlyUrl: candidate },
+        select: { organizationId: true },
+      });
+
+      if (taken && taken.organizationId !== organizationId) continue;
+
+      try {
+        await db.trust.upsert({
+          where: { organizationId },
+          update: { friendlyUrl: candidate },
+          create: { organizationId, friendlyUrl: candidate },
+        });
+        return candidate;
+      } catch (error: unknown) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    return organizationId;
+  }
+
+  /**
+   * Build portal base URL, checking custom domain first
+   */
+  private async buildPortalBaseUrl(params: {
+    organizationId: string;
+    organizationName: string;
+  }): Promise<string> {
+    const { organizationId, organizationName } = params;
+
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { domain: true, domainVerified: true, friendlyUrl: true },
+    });
+
+    if (trust?.domain && trust.domainVerified) {
+      return `https://${this.normalizeDomain(trust.domain)}`;
+    }
+
+    const urlId =
+      trust?.friendlyUrl ||
+      (await this.ensureFriendlyUrl({ organizationId, organizationName }));
+
+    return `${this.normalizeUrl(this.TRUST_APP_URL)}/${urlId}`;
+  }
+
+  /**
+   * Build portal access URL with access token
+   */
+  private async buildPortalAccessUrl(params: {
+    organizationId: string;
+    organizationName: string;
+    accessToken: string;
+  }): Promise<string> {
+    const { organizationId, organizationName, accessToken } = params;
+    const base = await this.buildPortalBaseUrl({
+      organizationId,
+      organizationName,
+    });
+    return `${base}/access/${accessToken}`;
+  }
+
+  private async findPublishedTrustByRouteId(id: string) {
+    // First, try treating `id` as the existing friendlyUrl.
+    let trust = await db.trust.findUnique({
+      where: { friendlyUrl: id },
+      include: { organization: true },
+    });
+
+    // If none found, fall back to treating `id` as organizationId.
+    if (!trust) {
+      trust = await db.trust.findFirst({
+        where: { organizationId: id },
+        include: { organization: true },
+      });
+    }
+
+    if (!trust || trust.status !== 'published') {
+      throw new NotFoundException('Trust site not found or not published');
+    }
+
+    return trust;
   }
 
   constructor(
@@ -60,19 +264,12 @@ export class TrustAccessService {
   }
 
   async createAccessRequest(
-    friendlyUrl: string,
+    id: string,
     dto: CreateAccessRequestDto,
     ipAddress: string | undefined,
     userAgent: string | undefined,
   ) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      include: { organization: true },
-    });
-
-    if (!trust || trust.status !== 'published') {
-      throw new NotFoundException('Trust site not found or not published');
-    }
+    const trust = await this.findPublishedTrustByRouteId(id);
 
     // Check if the email already has an active grant
     const existingGrant = await db.trustAccessGrant.findFirst({
@@ -131,11 +328,88 @@ export class TrustAccessService {
       },
     });
 
+    // Send notification email to organization
+    await this.sendAccessRequestNotificationToOrg(
+      trust.organizationId,
+      request.id,
+      trust.organization.name,
+      dto,
+    );
+
     return {
       id: request.id,
       status: request.status,
       message: 'Access request submitted for review',
     };
+  }
+
+  private async sendAccessRequestNotificationToOrg(
+    organizationId: string,
+    requestId: string,
+    organizationName: string,
+    dto: CreateAccessRequestDto,
+  ) {
+    // Get contact email from Trust or fallback to owner/admin emails
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { contactEmail: true },
+    });
+
+    let notificationEmails: string[] = [];
+
+    // Use contactEmail if available
+    if (trust?.contactEmail) {
+      notificationEmails.push(trust.contactEmail);
+    } else {
+      // Fallback: Get owner and admin emails
+      const members = await db.member.findMany({
+        where: {
+          organizationId,
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      });
+
+      // Filter for members with owner or admin role (handles comma-separated roles)
+      const ownerAdminMembers = members.filter((m) => {
+        const role = m.role.toLowerCase();
+        return role.includes('owner') || role.includes('admin');
+      });
+
+      notificationEmails = ownerAdminMembers
+        .map((m) => m.user.email)
+        .filter((email): email is string => !!email);
+    }
+
+    // If no notification emails found, skip sending
+    if (notificationEmails.length === 0) {
+      return;
+    }
+
+    // Construct review URL
+    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust`;
+
+    // Send notification to all recipients
+    const emailPromises = notificationEmails.map((email) =>
+      this.emailService.sendAccessRequestNotification({
+        toEmail: email,
+        organizationName,
+        requesterName: dto.name,
+        requesterEmail: dto.email,
+        requesterCompany: dto.company,
+        requesterJobTitle: dto.jobTitle,
+        purpose: dto.purpose,
+        requestedDurationDays: dto.requestedDurationDays,
+        reviewUrl,
+      }),
+    );
+
+    await Promise.allSettled(emailPromises);
   }
 
   async listAccessRequests(organizationId: string, dto: ListAccessRequestsDto) {
@@ -191,6 +465,35 @@ export class TrustAccessService {
     return request;
   }
 
+  /**
+   * Extract domain from email address
+   */
+  private extractEmailDomain(email: string): string {
+    const parts = email.split('@');
+    return (parts[1] ?? '').toLowerCase().trim();
+  }
+
+  /**
+   * Check if email domain is in the allow list (bypasses NDA requirement)
+   */
+  private isDomainInAllowList(
+    email: string,
+    allowedDomains: string[],
+  ): boolean {
+    if (!allowedDomains || allowedDomains.length === 0) {
+      return false;
+    }
+
+    const emailDomain = this.extractEmailDomain(email);
+    if (!emailDomain) {
+      return false;
+    }
+
+    return allowedDomains.some(
+      (allowed) => allowed.toLowerCase().trim() === emailDomain,
+    );
+  }
+
   async approveRequest(
     organizationId: string,
     requestId: string,
@@ -231,6 +534,29 @@ export class TrustAccessService {
       throw new BadRequestException('Invalid member ID');
     }
 
+    // Check if email domain is in the allow list
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { allowedDomains: true },
+    });
+
+    const isAllowedDomain = this.isDomainInAllowList(
+      request.email,
+      trust?.allowedDomains ?? [],
+    );
+
+    // If domain is in allow list, skip NDA and grant access directly
+    if (isAllowedDomain) {
+      return this.approveWithoutNda({
+        organizationId,
+        requestId,
+        request,
+        member,
+        durationDays,
+      });
+    }
+
+    // Standard flow: require NDA signing
     const signToken = this.generateToken(32);
     const signTokenExpiresAt = new Date();
     signTokenExpiresAt.setDate(signTokenExpiresAt.getDate() + 7);
@@ -288,6 +614,96 @@ export class TrustAccessService {
       request: result.request,
       ndaAgreement: result.ndaAgreement,
       message: 'NDA signing email sent',
+    };
+  }
+
+  /**
+   * Approve request without NDA for allowed domains - grants immediate access
+   */
+  private async approveWithoutNda({
+    organizationId,
+    requestId,
+    request,
+    member,
+    durationDays,
+  }: {
+    organizationId: string;
+    requestId: string;
+    request: {
+      email: string;
+      name: string;
+      organization: { name: string };
+    };
+    member: { id: string; userId: string };
+    durationDays: number;
+  }) {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+    const accessToken = this.generateToken(32);
+    const accessTokenExpiresAt = new Date();
+    accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+
+    const result = await db.$transaction(async (tx) => {
+      const updatedRequest = await tx.trustAccessRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'approved',
+          reviewerMemberId: member.id,
+          reviewedAt: new Date(),
+          requestedDurationDays: durationDays,
+        },
+      });
+
+      const grant = await tx.trustAccessGrant.create({
+        data: {
+          accessRequestId: requestId,
+          subjectEmail: request.email,
+          expiresAt,
+          accessToken,
+          accessTokenExpiresAt,
+          issuedByMemberId: member.id,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId,
+          userId: member.userId,
+          memberId: member.id,
+          entityType: 'trust',
+          entityId: requestId,
+          description: `Access request approved for ${request.email} (allowed domain - NDA bypassed)`,
+          data: {
+            requestId,
+            grantId: grant.id,
+            durationDays,
+            ndaBypassed: true,
+          },
+        },
+      });
+
+      return { request: updatedRequest, grant };
+    });
+
+    const portalUrl = await this.buildPortalAccessUrl({
+      organizationId,
+      organizationName: request.organization.name,
+      accessToken,
+    });
+
+    await this.emailService.sendAccessGrantedEmail({
+      toEmail: request.email,
+      toName: request.name,
+      organizationName: request.organization.name,
+      expiresAt: result.grant.expiresAt,
+      portalUrl,
+    });
+
+    return {
+      request: result.request,
+      grant: result.grant,
+      message: 'Access granted', // NDA bypassed for allowed domain
     };
   }
 
@@ -354,6 +770,24 @@ export class TrustAccessService {
   }
 
   async listGrants(organizationId: string) {
+    const now = new Date();
+
+    // Update expired grants that are still marked as active
+    await db.trustAccessGrant.updateMany({
+      where: {
+        accessRequest: {
+          organizationId,
+        },
+        status: 'active',
+        expiresAt: {
+          lt: now,
+        },
+      },
+      data: {
+        status: 'expired',
+      },
+    });
+
     const grants = await db.trustAccessGrant.findMany({
       where: {
         accessRequest: {
@@ -461,6 +895,79 @@ export class TrustAccessService {
     return updatedGrant;
   }
 
+  async resendAccessGrantEmail(organizationId: string, grantId: string) {
+    const grant = await db.trustAccessGrant.findFirst({
+      where: {
+        id: grantId,
+        accessRequest: {
+          organizationId,
+        },
+      },
+      include: {
+        accessRequest: {
+          include: {
+            organization: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Grant not found');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException(
+        `Cannot resend access email for ${grant.status} grant`,
+      );
+    }
+
+    const now = new Date();
+
+    // Check if grant has expired
+    if (grant.expiresAt < now) {
+      throw new BadRequestException(
+        'Cannot resend access email for expired grant',
+      );
+    }
+
+    // Generate a new access token if expired or missing
+    let accessToken = grant.accessToken;
+
+    if (
+      !accessToken ||
+      (grant.accessTokenExpiresAt && grant.accessTokenExpiresAt < now)
+    ) {
+      accessToken = this.generateToken(32);
+      const accessTokenExpiresAt = new Date(
+        now.getTime() + 24 * 60 * 60 * 1000,
+      );
+
+      await db.trustAccessGrant.update({
+        where: { id: grantId },
+        data: { accessToken, accessTokenExpiresAt },
+      });
+    }
+
+    const portalUrl = await this.buildPortalAccessUrl({
+      organizationId,
+      organizationName: grant.accessRequest.organization.name,
+      accessToken,
+    });
+
+    await this.emailService.sendAccessGrantedEmail({
+      toEmail: grant.subjectEmail,
+      toName: grant.accessRequest.name,
+      organizationName: grant.accessRequest.organization.name,
+      expiresAt: grant.expiresAt,
+      portalUrl,
+    });
+
+    return { message: 'Access email resent successfully' };
+  }
+
   async getNdaByToken(token: string) {
     const nda = await db.trustNDAAgreement.findUnique({
       where: { signToken: token },
@@ -470,6 +977,7 @@ export class TrustAccessService {
             organization: true,
           },
         },
+        grant: true,
       },
     });
 
@@ -477,26 +985,57 @@ export class TrustAccessService {
       throw new NotFoundException('NDA agreement not found');
     }
 
-    if (nda.signTokenExpiresAt < new Date()) {
-      throw new BadRequestException('NDA signing link has expired');
-    }
+    const portalUrl = await this.buildPortalBaseUrl({
+      organizationId: nda.organizationId,
+      organizationName: nda.accessRequest.organization.name,
+    });
 
-    if (nda.status === 'void') {
-      throw new BadRequestException(
-        'This NDA has been revoked and is no longer valid',
-      );
-    }
-
-    if (nda.status !== 'pending') {
-      throw new BadRequestException('NDA has already been signed');
-    }
-
-    return {
+    const baseResponse = {
       id: nda.id,
       organizationName: nda.accessRequest.organization.name,
       requesterName: nda.accessRequest.name,
       requesterEmail: nda.accessRequest.email,
       expiresAt: nda.signTokenExpiresAt,
+      portalUrl,
+    };
+
+    if (nda.signTokenExpiresAt < new Date()) {
+      return {
+        ...baseResponse,
+        status: 'expired',
+        message: 'NDA signing link has expired',
+      };
+    }
+
+    if (nda.status === 'void') {
+      return {
+        ...baseResponse,
+        status: 'void',
+        message: 'This NDA has been revoked and is no longer valid',
+      };
+    }
+
+    if (nda.status === 'signed') {
+      let accessUrl: string | null = portalUrl;
+      if (nda.grant?.accessToken && nda.grant.status === 'active') {
+        accessUrl = await this.buildPortalAccessUrl({
+          organizationId: nda.organizationId,
+          organizationName: nda.accessRequest.organization.name,
+          accessToken: nda.grant.accessToken,
+        });
+      }
+
+      return {
+        ...baseResponse,
+        status: 'signed',
+        message: 'NDA has already been signed',
+        portalUrl: accessUrl,
+      };
+    }
+
+    return {
+      ...baseResponse,
+      status: 'pending',
     };
   }
 
@@ -550,14 +1089,11 @@ export class TrustAccessService {
         });
       }
 
-      const trust = await db.trust.findUnique({
-        where: { organizationId: nda.organizationId },
-        select: { friendlyUrl: true },
+      const portalUrl = await this.buildPortalAccessUrl({
+        organizationId: nda.organizationId,
+        organizationName: nda.accessRequest.organization.name,
+        accessToken,
       });
-
-      const portalUrl = trust?.friendlyUrl
-        ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${accessToken}`
-        : null;
 
       return {
         message: 'NDA already signed',
@@ -621,14 +1157,11 @@ export class TrustAccessService {
       return { grant, updatedNda };
     });
 
-    const trust = await db.trust.findUnique({
-      where: { organizationId: nda.organizationId },
-      select: { friendlyUrl: true },
+    const portalUrl = await this.buildPortalAccessUrl({
+      organizationId: nda.organizationId,
+      organizationName: nda.accessRequest.organization.name,
+      accessToken,
     });
-
-    const portalUrl = trust?.friendlyUrl
-      ? `${this.TRUST_APP_URL}/${trust.friendlyUrl}/access/${accessToken}`
-      : null;
 
     await this.emailService.sendAccessGrantedEmail({
       toEmail: signerEmail,
@@ -791,15 +1324,8 @@ export class TrustAccessService {
     };
   }
 
-  async reclaimAccess(friendlyUrl: string, email: string) {
-    const trust = await db.trust.findUnique({
-      where: { friendlyUrl },
-      include: { organization: true },
-    });
-
-    if (!trust || trust.status !== 'published') {
-      throw new NotFoundException('Trust site not found or not published');
-    }
+  async reclaimAccess(id: string, email: string, query?: string) {
+    const trust = await this.findPublishedTrustByRouteId(id);
 
     const grant = await db.trustAccessGrant.findFirst({
       where: {
@@ -849,7 +1375,17 @@ export class TrustAccessService {
       });
     }
 
-    const accessLink = `${this.TRUST_APP_URL}/${friendlyUrl}/access/${accessToken}`;
+    let accessLink = await this.buildPortalAccessUrl({
+      organizationId: trust.organizationId,
+      organizationName: grant.accessRequest.organization.name,
+      accessToken,
+    });
+
+    // Append query parameter if provided
+    if (query) {
+      const separator = accessLink.includes('?') ? '&' : '?';
+      accessLink = `${accessLink}${separator}query=${encodeURIComponent(query)}`;
+    }
 
     await this.emailService.sendAccessReclaimEmail({
       toEmail: email,
@@ -908,6 +1444,13 @@ export class TrustAccessService {
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
     };
+  }
+
+  async validateAccessTokenAndGetOrganizationId(
+    token: string,
+  ): Promise<string> {
+    const grant = await this.validateAccessToken(token);
+    return grant.accessRequest.organizationId;
   }
 
   private async validateAccessToken(token: string) {
@@ -994,6 +1537,412 @@ export class TrustAccessService {
     return policies;
   }
 
+  async getComplianceResourcesByAccessToken(token: string) {
+    const grant = await db.trustAccessGrant.findUnique({
+      where: { accessToken: token },
+      include: {
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!grant) {
+      throw new NotFoundException('Invalid access token');
+    }
+
+    if (grant.status !== 'active') {
+      throw new BadRequestException('Access grant is not active');
+    }
+
+    if (grant.expiresAt < new Date()) {
+      throw new BadRequestException('Access grant has expired');
+    }
+
+    if (
+      !grant.accessTokenExpiresAt ||
+      grant.accessTokenExpiresAt < new Date()
+    ) {
+      throw new BadRequestException('Access token has expired');
+    }
+
+    const complianceResources = await db.trustResource.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+      },
+      select: {
+        framework: true,
+        fileName: true,
+        fileSize: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    // Return all resources - the download endpoint will auto-enable frameworks as needed
+    return complianceResources.map((resource) => ({
+      framework: resource.framework,
+      fileName: resource.fileName,
+      fileSize: resource.fileSize,
+      updatedAt: resource.updatedAt.toISOString(),
+    }));
+  }
+
+  async getTrustDocumentsByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
+
+    const documents = await db.trustDocument.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return documents.map((d) => ({
+      id: d.id,
+      name: d.name,
+      description: d.description,
+      createdAt: d.createdAt.toISOString(),
+      updatedAt: d.updatedAt.toISOString(),
+    }));
+  }
+
+  async getTrustDocumentUrlByAccessToken(token: string, documentId: string) {
+    const grant = await this.validateAccessToken(token);
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const document = await db.trustDocument.findFirst({
+      where: {
+        id: documentId,
+        organizationId: grant.accessRequest.organizationId,
+        isActive: true,
+      },
+      select: {
+        name: true,
+        s3Key: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: document.s3Key,
+      ResponseContentDisposition: `attachment; filename="${document.name.replaceAll('"', '')}"`,
+    });
+
+    const signedUrl = await getSignedUrl(s3Client, getCommand, {
+      expiresIn: 900,
+    });
+
+    return {
+      signedUrl,
+      fileName: document.name,
+    };
+  }
+
+  async downloadAllTrustDocumentsByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const organizationId = grant.accessRequest.organizationId;
+    const documents = await db.trustDocument.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        s3Key: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (documents.length === 0) {
+      throw new NotFoundException('No additional documents available');
+    }
+
+    const timestamp = Date.now();
+    const zipKey = `${organizationId}/trust-documents/bundles/${grant.id}-${timestamp}.zip`;
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    const zipStream = new PassThrough();
+    let putPromise: Promise<unknown> | undefined;
+
+    try {
+      putPromise = s3Client.send(
+        new PutObjectCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Key: zipKey,
+          Body: zipStream,
+          ContentType: 'application/zip',
+          Metadata: {
+            organizationId,
+            grantId: grant.id,
+            kind: 'trust_documents_bundle',
+          },
+        }),
+      );
+
+      archive.on('error', (err) => {
+        zipStream.destroy(err);
+      });
+
+      archive.pipe(zipStream);
+
+      // Track names case-insensitively to avoid collisions on case-insensitive filesystems
+      // (e.g. Windows/macOS): "Report.pdf" vs "report.pdf"
+      const usedNamesLower = new Set<string>();
+      const toSafeName = (name: string): string => {
+        const sanitized =
+          name.replace(/[^\w.\-() ]/g, '_').trim() || 'document';
+        const dot = sanitized.lastIndexOf('.');
+        const base = dot > 0 ? sanitized.slice(0, dot) : sanitized;
+        const ext = dot > 0 ? sanitized.slice(dot) : '';
+
+        let candidate = `${base}${ext}`;
+        let i = 1;
+        while (usedNamesLower.has(candidate.toLowerCase())) {
+          candidate = `${base} (${i})${ext}`;
+          i += 1;
+        }
+        usedNamesLower.add(candidate.toLowerCase());
+        return candidate;
+      };
+
+      for (const doc of documents) {
+        const response = await s3Client.send(
+          new GetObjectCommand({
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+            Key: doc.s3Key,
+          }),
+        );
+
+        if (!response.Body) {
+          throw new InternalServerErrorException(
+            `No file data received from S3 for document ${doc.id}`,
+          );
+        }
+
+        const bodyStream =
+          response.Body instanceof Readable
+            ? response.Body
+            : Readable.from(response.Body as any);
+
+        archive.append(bodyStream, { name: toSafeName(doc.name) });
+      }
+
+      await archive.finalize();
+      await putPromise;
+    } catch (error) {
+      // Ensure the upload stream is closed, otherwise the S3 PutObject may hang/reject later.
+      try {
+        archive.abort();
+      } catch {
+        // ignore
+      }
+
+      if (!zipStream.destroyed) {
+        zipStream.destroy(
+          error instanceof Error ? error : new Error('ZIP generation failed'),
+        );
+      }
+
+      // Avoid unhandled rejections from an in-flight S3 put.
+      await putPromise?.catch(() => undefined);
+
+      throw error;
+    }
+
+    const signedUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: zipKey,
+        ResponseContentDisposition: `attachment; filename="additional-documents-${timestamp}.zip"`,
+      }),
+      { expiresIn: 900 },
+    );
+
+    return {
+      name: 'Additional Documents',
+      fileCount: documents.length,
+      downloadUrl: signedUrl,
+    };
+  }
+
+  /**
+   * Get FAQ markdown for a published trust portal.
+   *
+   * Recommended markdown format:
+   * - Use ### headings for questions (e.g., "### What is your security policy?")
+   * - Use regular markdown text for answers
+   * - Supports standard markdown: links, lists, code blocks, etc.
+   *
+   * Important: Render markdown WITHOUT rehype-raw (no raw HTML) for security.
+   *
+   * @param friendlyUrl - Trust portal friendly URL or organization ID
+   * @returns FAQ markdown content (empty string if not configured)
+   */
+  async getFaqs(friendlyUrl: string): Promise<{ faqs: any[] | null }> {
+    const trust = await this.findPublishedTrustByRouteId(friendlyUrl);
+    const organization = await db.organization.findUnique({
+      where: { id: trust.organizationId },
+      select: { trustPortalFaqs: true },
+    });
+
+    const faqs = organization?.trustPortalFaqs;
+    return { faqs: Array.isArray(faqs) ? faqs : null };
+  }
+
+  async getComplianceResourceUrlByAccessToken(
+    token: string,
+    framework: TrustFramework,
+  ) {
+    const grant = await this.validateAccessToken(token);
+
+    // Validate framework enum
+    if (!Object.values(TrustFramework).includes(framework)) {
+      throw new BadRequestException(`Invalid framework: ${framework}`);
+    }
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const record = await db.trustResource.findUnique({
+      where: {
+        organizationId_framework: {
+          organizationId: grant.accessRequest.organizationId,
+          framework,
+        },
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException(
+        `No certificate uploaded for framework ${framework}`,
+      );
+    }
+
+    // Check if framework is enabled in Trust record and auto-enable if not (for backward compatibility)
+    const trustRecord = await db.trust.findUnique({
+      where: { organizationId: grant.accessRequest.organizationId },
+    });
+
+    const frameworkFieldMap: Record<
+      TrustFramework,
+      | 'iso27001'
+      | 'iso42001'
+      | 'gdpr'
+      | 'hipaa'
+      | 'soc2type1'
+      | 'soc2type2'
+      | 'pci_dss'
+      | 'nen7510'
+      | 'iso9001'
+    > = {
+      [TrustFramework.iso_27001]: 'iso27001',
+      [TrustFramework.iso_42001]: 'iso42001',
+      [TrustFramework.gdpr]: 'gdpr',
+      [TrustFramework.hipaa]: 'hipaa',
+      [TrustFramework.soc2_type1]: 'soc2type1',
+      [TrustFramework.soc2_type2]: 'soc2type2',
+      [TrustFramework.pci_dss]: 'pci_dss',
+      [TrustFramework.nen_7510]: 'nen7510',
+      [TrustFramework.iso_9001]: 'iso9001',
+    };
+
+    const enabledField = frameworkFieldMap[framework];
+    if (trustRecord && !trustRecord[enabledField]) {
+      // Auto-enable the framework for backward compatibility with old organizations
+      await db.trust.update({
+        where: { organizationId: grant.accessRequest.organizationId },
+        data: {
+          [enabledField]: true,
+        },
+      });
+    }
+
+    // Download the original PDF from S3
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: record.s3Key,
+    });
+
+    const response = await s3Client.send(getCommand);
+    const chunks: Uint8Array[] = [];
+
+    if (!response.Body) {
+      throw new InternalServerErrorException('No file data received from S3');
+    }
+
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+
+    const originalPdfBuffer = Buffer.concat(chunks);
+
+    // Watermark the PDF
+    const docId = `compliance-${grant.id}-${framework}-${Date.now()}`;
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      originalPdfBuffer,
+      {
+        name: grant.accessRequest.name,
+        email: grant.subjectEmail,
+        docId,
+        watermarkText: 'Comp AI',
+      },
+    );
+
+    // Upload watermarked PDF to S3
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      `compliance-${framework}-grant-${grant.id}-${Date.now()}.pdf`,
+      'application/pdf',
+      grant.accessRequest.organizationId,
+      'trust_compliance_downloads',
+      `${grant.id}`,
+    );
+
+    // Generate signed URL for the watermarked PDF
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(key);
+
+    return {
+      signedUrl: downloadUrl,
+      fileName: record.fileName,
+      fileSize: watermarked.length,
+    };
+  }
+
   async downloadAllPoliciesByAccessToken(token: string) {
     const grant = await this.validateAccessToken(token);
 
@@ -1007,6 +1956,7 @@ export class TrustAccessService {
         id: true,
         name: true,
         content: true,
+        pdfUrl: true,
       },
       orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
@@ -1015,13 +1965,215 @@ export class TrustAccessService {
       throw new NotFoundException('No published policies available');
     }
 
-    const pdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-      policies.map((p) => ({
-        name: p.name,
-        content: p.content,
-      })),
-      grant.accessRequest.organization.name,
+    // Create merged PDF document
+    const mergedPdf = await PDFDocument.create();
+
+    const organizationName =
+      grant.accessRequest.organization.name || 'Organization';
+
+    // Get organization primary color or use default
+    const accentColor = this.getAccentColor(
+      grant.accessRequest.organization.primaryColor,
     );
+
+    // Embed fonts once before the loop (expensive operation)
+    const helveticaBold = await mergedPdf.embedFont(
+      StandardFonts.HelveticaBold,
+    );
+    const helvetica = await mergedPdf.embedFont(StandardFonts.Helvetica);
+
+    // Step 1: Fetch/render all PDFs in parallel (expensive I/O operations)
+    type PreparedPolicy = {
+      policy: (typeof policies)[0];
+      pdfBuffer: Buffer;
+      isUploaded: boolean;
+    };
+
+    const preparePolicy = async (
+      policy: (typeof policies)[0],
+    ): Promise<PreparedPolicy> => {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+
+      if (hasUploadedPdf) {
+        try {
+          const pdfBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          return {
+            policy,
+            pdfBuffer: Buffer.from(pdfBuffer),
+            isUploaded: true,
+          };
+        } catch (error) {
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+        }
+      }
+
+      // Render from content (either no pdfUrl or fetch failed)
+      const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: policy.content }],
+        undefined, // We'll add org header during merge
+        grant.accessRequest.organization.primaryColor,
+        policies.length,
+      );
+      return { policy, pdfBuffer: renderedBuffer, isUploaded: false };
+    };
+
+    const preparedPolicies = await Promise.all(policies.map(preparePolicy));
+
+    // Step 2: Merge PDFs sequentially (must be sequential for PDFDocument operations)
+    // Helper to add content-rendered policy to merged PDF
+    const addContentRenderedPolicy = async (
+      policy: (typeof policies)[0],
+      addOrgHeader: boolean,
+    ) => {
+      const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: policy.content }],
+        addOrgHeader ? organizationName : undefined,
+        grant.accessRequest.organization.primaryColor,
+        policies.length,
+      );
+      const renderedPdf = await PDFDocument.load(renderedBuffer);
+      const copiedPages = await mergedPdf.copyPages(
+        renderedPdf,
+        renderedPdf.getPageIndices(),
+      );
+      for (const page of copiedPages) {
+        mergedPdf.addPage(page);
+      }
+    };
+
+    let isFirst = true;
+    for (const { policy, pdfBuffer, isUploaded } of preparedPolicies) {
+      if (isUploaded) {
+        try {
+          const uploadedPdf = await PDFDocument.load(pdfBuffer, {
+            ignoreEncryption: true,
+          });
+
+          // Rebuild the FIRST page: embed original page into a taller page
+          const originalFirstPage = uploadedPdf.getPage(0);
+          const { width, height } = originalFirstPage.getSize();
+
+          const headerHeight = isFirst ? 120 : 60;
+          const embeddedFirstPage =
+            await mergedPdf.embedPage(originalFirstPage);
+          const rebuiltFirstPage = mergedPdf.addPage([
+            width,
+            height + headerHeight,
+          ]);
+
+          rebuiltFirstPage.drawPage(embeddedFirstPage, {
+            x: 0,
+            y: 0,
+            width,
+            height,
+          });
+
+          let yPos = height + headerHeight - 25;
+
+          if (isFirst) {
+            rebuiltFirstPage.drawLine({
+              start: { x: 20, y: yPos + 8 },
+              end: { x: width - 20, y: yPos + 8 },
+              thickness: 2,
+              color: rgb(accentColor.r, accentColor.g, accentColor.b),
+            });
+
+            rebuiltFirstPage.drawText(`${organizationName} - All Policies`, {
+              x: 20,
+              y: yPos - 14,
+              size: 14,
+              font: helveticaBold,
+              color: rgb(0, 0, 0),
+            });
+
+            const generatedDate = new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            });
+
+            rebuiltFirstPage.drawText(
+              `Generated: ${generatedDate} | Total: ${policies.length} policies`,
+              {
+                x: width - 180,
+                y: yPos - 14,
+                size: 8,
+                font: helvetica,
+                color: rgb(0.5, 0.5, 0.5),
+              },
+            );
+
+            yPos -= 34;
+            isFirst = false;
+          }
+
+          rebuiltFirstPage.drawRectangle({
+            x: 55,
+            y: yPos - 40,
+            width: 10,
+            height: 26,
+            color: rgb(accentColor.r, accentColor.g, accentColor.b),
+          });
+
+          rebuiltFirstPage.drawText(`POLICY: ${policy.name}`, {
+            x: 75,
+            y: yPos - 34,
+            size: 16,
+            font: helveticaBold,
+            color: rgb(0.12, 0.16, 0.23),
+          });
+
+          // Remaining pages unchanged (page 2..n)
+          if (uploadedPdf.getPageCount() > 1) {
+            const copiedRemainingPages = await mergedPdf.copyPages(
+              uploadedPdf,
+              uploadedPdf.getPageIndices().slice(1),
+            );
+            for (const page of copiedRemainingPages) {
+              mergedPdf.addPage(page);
+            }
+          }
+        } catch (error) {
+          // PDF is corrupted/malformed, fall back to content rendering
+          console.warn(
+            `Failed to parse uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+          await addContentRenderedPolicy(policy, isFirst);
+          isFirst = false;
+        }
+      } else {
+        // Content was already rendered, but re-render if first (needs org header)
+        await addContentRenderedPolicy(policy, isFirst);
+        isFirst = false;
+      }
+    }
+
+    // Add page numbers to all pages in the merged PDF
+    const pages = mergedPdf.getPages();
+    const totalPages = pages.length;
+    // helvetica font already embedded above
+
+    for (let i = 0; i < totalPages; i++) {
+      const page = pages[i];
+      const { width } = page.getSize();
+      const pageNumber = i + 1;
+
+      page.drawText(`Page ${pageNumber} of ${totalPages}`, {
+        x: width / 2 - 30,
+        y: 15,
+        size: 8,
+        font: helvetica,
+        color: rgb(0.5, 0.5, 0.5),
+      });
+    }
+
+    const pdfBuffer = Buffer.from(await mergedPdf.save());
 
     const bundleDocId = `bundle-${grant.id}-${Date.now()}`;
     const watermarked = await this.ndaPdfService.watermarkExistingPdf(
@@ -1046,5 +2198,162 @@ export class TrustAccessService {
       await this.attachmentsService.getPresignedDownloadUrl(key);
 
     return { name: 'All Policies', downloadUrl };
+  }
+
+  /**
+   * Convert a policy name to a safe filename
+   * "Security Updates" -> "security_updates"
+   */
+  private toSafeFilename(name: string): string {
+    const safeName = name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/-+/g, '_') // Replace hyphens with underscores
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+
+    // Fallback for non-ASCII only names
+    return safeName || 'policy';
+  }
+
+  async downloadAllPoliciesAsZipByAccessToken(token: string) {
+    const grant = await this.validateAccessToken(token);
+
+    const policies = await db.policy.findMany({
+      where: {
+        organizationId: grant.accessRequest.organizationId,
+        status: 'published',
+        isArchived: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        content: true,
+        pdfUrl: true,
+      },
+      orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
+    });
+
+    if (policies.length === 0) {
+      throw new NotFoundException('No published policies available');
+    }
+
+    const organizationName =
+      grant.accessRequest.organization.name || 'Organization';
+
+    // Create ZIP archive
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    const passThrough = new PassThrough();
+
+    archive.on('error', (err) => {
+      passThrough.destroy(err);
+    });
+
+    archive.pipe(passThrough);
+
+    // Track filenames to avoid duplicates (case-insensitive)
+    const usedNamesLower = new Set<string>();
+
+    const getUniqueFilename = (baseName: string): string => {
+      const filename = this.toSafeFilename(baseName);
+      let counter = 1;
+      let finalName = filename;
+
+      while (usedNamesLower.has(finalName.toLowerCase())) {
+        finalName = `${filename}_${counter}`;
+        counter++;
+      }
+
+      usedNamesLower.add(finalName.toLowerCase());
+      return `${finalName}.pdf`;
+    };
+
+    // Process policies sequentially
+    for (const policy of policies) {
+      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+      let policyPdfBuffer: Buffer;
+
+      if (hasUploadedPdf) {
+        try {
+          const rawBuffer = await this.attachmentsService.getObjectBuffer(
+            policy.pdfUrl!,
+          );
+          policyPdfBuffer = Buffer.from(rawBuffer);
+        } catch (error) {
+          console.warn(
+            `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+            error,
+          );
+          policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+            [{ name: policy.name, content: policy.content }],
+            undefined,
+            grant.accessRequest.organization.primaryColor,
+          );
+        }
+      } else {
+        policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          [{ name: policy.name, content: policy.content }],
+          undefined,
+          grant.accessRequest.organization.primaryColor,
+        );
+      }
+
+      // Watermark the PDF
+      const docId = `policy-${policy.id}-${Date.now()}`;
+      const watermarkedPdf = await this.ndaPdfService.watermarkExistingPdf(
+        policyPdfBuffer,
+        {
+          name: grant.accessRequest.name,
+          email: grant.subjectEmail,
+          docId,
+        },
+      );
+
+      // Add to archive
+      const filename = getUniqueFilename(policy.name);
+      archive.append(watermarkedPdf, { name: filename });
+    }
+
+    // Collect ZIP buffer - set up listeners BEFORE finalize to avoid deadlock
+    const zipBufferPromise = new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      passThrough.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      passThrough.on('end', () => resolve(Buffer.concat(chunks)));
+      passThrough.on('error', reject);
+    });
+
+    // Finalize the archive
+    await archive.finalize();
+
+    // Wait for buffer to be collected
+    const zipBuffer = await zipBufferPromise;
+
+    // Upload to S3 using attachmentsService (avoids streaming issues)
+    const safeOrgName = this.toSafeFilename(organizationName);
+    const dateStr = new Date().toISOString().split('T')[0];
+    const downloadFilename = `${safeOrgName}_policies_${dateStr}.zip`;
+
+    const zipKey = await this.attachmentsService.uploadToS3(
+      zipBuffer,
+      downloadFilename,
+      'application/zip',
+      grant.accessRequest.organizationId,
+      'trust_policy_downloads',
+      `${grant.id}`,
+    );
+
+    // Generate download URL with proper filename
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrlWithFilename(
+        zipKey,
+        downloadFilename,
+      );
+
+    return {
+      name: `${organizationName} - All Policies (ZIP)`,
+      downloadUrl,
+      policyCount: policies.length,
+    };
   }
 }

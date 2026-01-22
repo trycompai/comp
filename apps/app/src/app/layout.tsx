@@ -1,5 +1,4 @@
-import '@/styles/globals.css';
-import '@comp/ui/globals.css';
+import '@trycompai/design-system/globals.css';
 
 import { LinkedInInsight } from '@/components/tracking/LinkedInInsight';
 import { env } from '@/env.mjs';
@@ -101,7 +100,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
       <body
         className={cn(
           `${GeistMono.variable} ${font.variable}`,
-          'overscroll-none whitespace-pre-line antialiased',
+          'antialiased',
         )}
       >
         {env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID && (
@@ -109,7 +108,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
         )}
         <NuqsAdapter>
           <Providers session={session}>
-            <main>{children}</main>
+            {children}
           </Providers>
         </NuqsAdapter>
         <Toaster richColors />

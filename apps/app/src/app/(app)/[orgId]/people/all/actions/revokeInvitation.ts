@@ -37,6 +37,7 @@ export const revokeInvitation = authActionClient
         where: {
           organizationId: ctx.session.activeOrganizationId,
           userId: ctx.user.id,
+          deactivated: false,
         },
       });
 
@@ -74,7 +75,7 @@ export const revokeInvitation = authActionClient
       });
 
       revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`);
+      revalidateTag(`user_${ctx.user.id}`, 'max');
 
       return {
         success: true,

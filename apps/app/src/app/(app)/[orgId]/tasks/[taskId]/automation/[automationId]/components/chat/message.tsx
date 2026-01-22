@@ -301,7 +301,7 @@ export const Message = memo(function Message({
 
   return (
     <ReasoningContext.Provider value={{ expandedReasoningIndex, setExpandedReasoningIndex }}>
-      <div className="group relative flex gap-3 px-4 py-3 hover:bg-muted/30 transition-colors duration-150 z-10">
+      <div className="group relative flex gap-3 py-3 hover:bg-muted/30 transition-colors duration-150 z-10">
         {/* Avatar */}
         <div className="flex-shrink-0 mt-0.5">
           {message.role === 'user' ? (

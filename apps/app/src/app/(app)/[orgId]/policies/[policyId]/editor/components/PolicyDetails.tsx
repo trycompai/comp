@@ -1,17 +1,87 @@
 'use client';
 
 import { PolicyEditor } from '@/components/editor/policy-editor';
-import { Card, CardContent } from '@comp/ui/card';
+import '@/styles/editor.css';
+import { useChat } from '@ai-sdk/react';
+import { DiffViewer } from '@comp/ui/diff-viewer';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
-import '@comp/ui/editor.css';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import type { PolicyDisplayFormat } from '@db';
 import type { JSONContent } from '@tiptap/react';
+import {
+  Button,
+  Grid,
+  HStack,
+  Section,
+  Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@trycompai/design-system';
+import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
+import { DefaultChatTransport } from 'ai';
+import { structuredPatch } from 'diff';
 import { useAction } from 'next-safe-action/hooks';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { PdfViewer } from '../../components/PdfViewer';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
+import { PdfViewer } from '../../components/PdfViewer';
 import { updatePolicy } from '../actions/update-policy';
+import type { PolicyChatUIMessage } from '../types';
+import { markdownToTipTapJSON } from './ai/markdown-utils';
+import { PolicyAiAssistant } from './ai/policy-ai-assistant';
+
+function mapChatErrorToMessage(error: unknown): string {
+  const e = error as { status?: number };
+  const status = e?.status;
+
+  if (status === 401 || status === 403) {
+    return "You don't have access to this policy's AI assistant.";
+  }
+  if (status === 404) {
+    return 'This policy could not be found. It may have been removed.';
+  }
+  if (status === 429) {
+    return 'Too many requests. Please wait a moment and try again.';
+  }
+  return 'The AI assistant is currently unavailable. Please try again.';
+}
+
+interface LatestProposal {
+  key: string;
+  content: string;
+  summary: string;
+  title: string;
+  detail: string;
+  reviewHint: string;
+}
+
+function getLatestProposedPolicy(messages: PolicyChatUIMessage[]): LatestProposal | null {
+  const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
+  if (!lastAssistantMessage?.parts) return null;
+
+  let latest: LatestProposal | null = null;
+
+  lastAssistantMessage.parts.forEach((part, index) => {
+    if (part.type !== 'tool-proposePolicy') return;
+    if (part.state === 'input-streaming' || part.state === 'output-error') return;
+    const input = part.input;
+    if (!input?.content) return;
+
+    latest = {
+      key: `${lastAssistantMessage.id}:${index}`,
+      content: input.content,
+      summary: input.summary ?? 'Proposing policy changes',
+      title: input.title ?? input.summary ?? 'Policy updates ready for your review',
+      detail:
+        input.detail ??
+        'I have prepared an updated version of this policy based on your instructions.',
+      reviewHint: input.reviewHint ?? 'Review the proposed changes below before applying them.',
+    };
+  });
+
+  return latest;
+}
 
 interface PolicyContentManagerProps {
   policyId: string;
@@ -19,6 +89,9 @@ interface PolicyContentManagerProps {
   isPendingApproval: boolean;
   displayFormat?: PolicyDisplayFormat;
   pdfUrl?: string | null;
+  /** Whether the AI assistant feature is enabled (behind feature flag) */
+  aiAssistantEnabled?: boolean;
+  onMutate?: () => void;
 }
 
 export function PolicyContentManager({
@@ -27,87 +100,316 @@ export function PolicyContentManager({
   isPendingApproval,
   displayFormat = 'EDITOR',
   pdfUrl,
+  aiAssistantEnabled = false,
+  onMutate,
 }: PolicyContentManagerProps) {
-  const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onSuccess: () => toast.info('View mode switched.'),
-    onError: () => toast.error('Failed to switch view.'),
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>(displayFormat);
+  const previousTabRef = useRef<string>(displayFormat);
+  const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
+    const formattedContent = Array.isArray(policyContent)
+      ? policyContent
+      : [policyContent as JSONContent];
+    return formattedContent;
   });
 
-  const handleTabChange = (newFormat: string) => {
-    switchFormat.execute({
-      policyId,
-      format: newFormat as 'EDITOR' | 'PDF',
-    });
+  const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
+  const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
+
+  const {
+    messages,
+    status,
+    sendMessage: baseSendMessage,
+  } = useChat<PolicyChatUIMessage>({
+    transport: new DefaultChatTransport({
+      api: `/api/policies/${policyId}/chat`,
+    }),
+    onError(error) {
+      console.error('Policy AI chat error:', error);
+      setChatErrorMessage(mapChatErrorToMessage(error));
+    },
+  });
+
+  const sendMessage = (payload: { text: string }) => {
+    setChatErrorMessage(null);
+    baseSendMessage(payload);
   };
 
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <Tabs
-          defaultValue={displayFormat}
-          onValueChange={handleTabChange}
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="EDITOR" disabled={isPendingApproval}>Editor View</TabsTrigger>
-            <TabsTrigger value="PDF" disabled={isPendingApproval}>PDF View</TabsTrigger>
-          </TabsList>
-          <TabsContent value="EDITOR" className="mt-4">
-            <PolicyEditorWrapper
-              policyId={policyId}
-              policyContent={policyContent}
-              isPendingApproval={isPendingApproval}
-            />
-          </TabsContent>
-          <TabsContent value="PDF" className="mt-4">
-            <PdfViewer
-              policyId={policyId}
-              pdfUrl={pdfUrl}
-              isPendingApproval={isPendingApproval}
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+  const latestProposal = useMemo(() => getLatestProposedPolicy(messages), [messages]);
+
+  const activeProposal =
+    latestProposal && latestProposal.key !== dismissedProposalKey ? latestProposal : null;
+
+  const proposedPolicyMarkdown = activeProposal?.content ?? null;
+
+  const hasPendingProposal = useMemo(
+    () =>
+      messages.some(
+        (m) =>
+          m.role === 'assistant' &&
+          m.parts?.some(
+            (part) =>
+              part.type === 'tool-proposePolicy' &&
+              (part.state === 'input-streaming' || part.state === 'input-available'),
+          ),
+      ),
+    [messages],
   );
+
+  const switchFormat = useAction(switchPolicyDisplayFormatAction, {
+    onSuccess: () => {
+      // Server action succeeded, update ref for next operation
+      previousTabRef.current = activeTab;
+    },
+    onError: () => {
+      toast.error('Failed to switch view.');
+      // Roll back to the previous tab state on error
+      setActiveTab(previousTabRef.current);
+      // Also restore AI assistant visibility if we were switching from EDITOR
+      if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
+        setShowAiAssistant(true);
+      }
+    },
+  });
+
+  const currentPolicyMarkdown = useMemo(
+    () => convertContentToMarkdown(currentContent),
+    [currentContent],
+  );
+
+  const diffPatch = useMemo(() => {
+    if (!proposedPolicyMarkdown) return null;
+    return createGitPatch('Proposed Changes', currentPolicyMarkdown, proposedPolicyMarkdown);
+  }, [currentPolicyMarkdown, proposedPolicyMarkdown]);
+
+  async function applyProposedChanges() {
+    if (!activeProposal) return;
+
+    const { content, key } = activeProposal;
+
+    setIsApplying(true);
+    try {
+      const jsonContent = markdownToTipTapJSON(content);
+      await updatePolicy({ policyId, content: jsonContent });
+      setCurrentContent(jsonContent);
+      setEditorKey((prev) => prev + 1);
+      setDismissedProposalKey(key);
+      toast.success('Policy updated with AI suggestions');
+    } catch (err) {
+      console.error('Failed to apply changes:', err);
+      toast.error('Failed to apply changes');
+    } finally {
+      setIsApplying(false);
+    }
+  }
+
+  return (
+    <Stack gap="md">
+      <Tabs
+        defaultValue={displayFormat}
+        value={activeTab}
+        onValueChange={(format) => {
+          previousTabRef.current = activeTab;
+          setActiveTab(format);
+          if (format === 'PDF') {
+            setShowAiAssistant(false);
+          }
+          switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
+        }}
+      >
+        <Stack gap="md">
+          <HStack justify="between" align="center">
+            <div className="max-w-md">
+              <TabsList>
+                <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
+                  Editor View
+                </TabsTrigger>
+                <TabsTrigger value="PDF" disabled={isPendingApproval}>
+                  PDF View
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
+              <Button
+                variant={showAiAssistant ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowAiAssistant((prev) => !prev)}
+                iconLeft={<MagicWand size={16} />}
+              >
+                AI Assistant
+              </Button>
+            )}
+          </HStack>
+
+          <div
+            className={
+              showAiAssistant && aiAssistantEnabled
+                ? 'flex flex-col lg:flex-row gap-6'
+                : ''
+            }
+          >
+            <div className={showAiAssistant && aiAssistantEnabled ? 'flex-[7] min-w-0' : 'w-full'}>
+              <Stack gap="sm">
+                <TabsContent value="EDITOR">
+                  <PolicyEditorWrapper
+                    key={editorKey}
+                    policyId={policyId}
+                    policyContent={currentContent}
+                    isPendingApproval={isPendingApproval}
+                    onContentChange={setCurrentContent}
+                  />
+                </TabsContent>
+                <TabsContent value="PDF">
+                  <PdfViewer
+                    policyId={policyId}
+                    pdfUrl={pdfUrl}
+                    isPendingApproval={isPendingApproval}
+                    onMutate={onMutate}
+                  />
+                </TabsContent>
+              </Stack>
+            </div>
+
+            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
+              <div className="flex-[3] min-w-0 self-stretch">
+                <PolicyAiAssistant
+                  messages={messages}
+                  status={status}
+                  errorMessage={chatErrorMessage}
+                  sendMessage={sendMessage}
+                  close={() => setShowAiAssistant(false)}
+                  hasActiveProposal={!!activeProposal && !hasPendingProposal}
+                />
+              </div>
+            )}
+          </div>
+        </Stack>
+      </Tabs>
+
+      {proposedPolicyMarkdown && diffPatch && activeProposal && !hasPendingProposal && (
+        <Section
+          title="Proposed Changes"
+          description="The AI has proposed updates to this policy. Review the changes above and click 'Apply Changes' to accept them."
+          actions={
+            <HStack gap="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDismissedProposalKey(activeProposal.key)}
+                iconLeft={<Close size={12} />}
+              >
+                Dismiss
+              </Button>
+              <Button
+                size="sm"
+                onClick={applyProposedChanges}
+                disabled={isApplying}
+                loading={isApplying}
+                iconLeft={!isApplying ? <Checkmark size={12} /> : undefined}
+              >
+                Apply Changes
+              </Button>
+            </HStack>
+          }
+        >
+          <DiffViewer patch={diffPatch} />
+        </Section>
+      )}
+    </Stack>
+  );
+}
+
+function createGitPatch(fileName: string, oldStr: string, newStr: string): string {
+  const patch = structuredPatch(fileName, fileName, oldStr, newStr, '', '', { context: 1 });
+  const lines: string[] = [
+    `diff --git a/${fileName} b/${fileName}`,
+    `--- a/${fileName}`,
+    `+++ b/${fileName}`,
+  ];
+
+  for (const hunk of patch.hunks) {
+    lines.push(`@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`);
+    for (const line of hunk.lines) {
+      lines.push(line);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function convertContentToMarkdown(content: Array<JSONContent>): string {
+  function extractText(node: JSONContent): string {
+    if (node.type === 'text' && typeof node.text === 'string') {
+      return node.text;
+    }
+
+    if (Array.isArray(node.content)) {
+      const texts = node.content.map(extractText).filter(Boolean);
+
+      switch (node.type) {
+        case 'heading': {
+          const level = (node.attrs as Record<string, unknown>)?.level || 1;
+          return '\n' + '#'.repeat(Number(level)) + ' ' + texts.join('') + '\n';
+        }
+        case 'paragraph':
+          return texts.join('') + '\n';
+        case 'bulletList':
+        case 'orderedList':
+          return '\n' + texts.join('');
+        case 'listItem':
+          return '- ' + texts.join('') + '\n';
+        case 'blockquote':
+          return '\n> ' + texts.join('\n> ') + '\n';
+        default:
+          return texts.join('');
+      }
+    }
+
+    return '';
+  }
+
+  return content.map(extractText).join('\n').trim();
 }
 
 function PolicyEditorWrapper({
   policyId,
   policyContent,
   isPendingApproval,
+  onContentChange,
 }: {
   policyId: string;
-  policyContent: JSONContent | JSONContent[];
+  policyContent: JSONContent | Array<JSONContent>;
   isPendingApproval: boolean;
+  onContentChange?: (content: Array<JSONContent>) => void;
 }) {
-  const formattedContent = Array.isArray(policyContent) ? policyContent : [policyContent as JSONContent];
+  const formattedContent = Array.isArray(policyContent)
+    ? policyContent
+    : [policyContent as JSONContent];
   const sanitizedContent = formattedContent.map((node) => {
     if (node.marks) node.marks = node.marks.filter((mark) => mark.type !== 'textStyle');
     if (node.content) node.content = node.content.map((child) => child);
     return node;
   });
   const validatedDoc = validateAndFixTipTapContent(sanitizedContent);
-  const normalizedContent = (validatedDoc.content || []) as JSONContent[];
+  const normalizedContent = (validatedDoc.content || []) as Array<JSONContent>;
 
-  const handleSavePolicy = async (content: JSONContent[]): Promise<void> => {
+  async function savePolicy(content: Array<JSONContent>): Promise<void> {
     if (!policyId) return;
 
     try {
       await updatePolicy({ policyId, content });
+      onContentChange?.(content);
     } catch (error) {
       console.error('Error saving policy:', error);
       throw error;
     }
-  };
+  }
 
   return (
-    <div className="flex h-full flex-col border border-border rounded-md p-2">
-      <PolicyEditor
-        content={normalizedContent}
-        onSave={handleSavePolicy}
-        readOnly={isPendingApproval}
-      />
-    </div>
+    <Section>
+      <PolicyEditor content={normalizedContent} onSave={savePolicy} readOnly={isPendingApproval} />
+    </Section>
   );
 }

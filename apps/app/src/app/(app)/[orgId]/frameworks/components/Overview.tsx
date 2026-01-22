@@ -22,6 +22,11 @@ export interface DoneTasksScore {
   incompleteTasks: Task[];
 }
 
+export interface PeopleScore {
+  totalMembers: number;
+  completedMembers: number;
+}
+
 export interface OverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
   frameworksWithCompliance: FrameworkInstanceWithComplianceScore[];
@@ -29,7 +34,9 @@ export interface OverviewProps {
   organizationId: string;
   publishedPoliciesScore: PublishedPoliciesScore;
   doneTasksScore: DoneTasksScore;
+  peopleScore: PeopleScore;
   currentMember: { id: string; role: string } | null;
+  onboardingTriggerJobId: string | null;
 }
 
 export const Overview = ({
@@ -39,7 +46,9 @@ export const Overview = ({
   organizationId,
   publishedPoliciesScore,
   doneTasksScore,
+  peopleScore,
   currentMember,
+  onboardingTriggerJobId,
 }: OverviewProps) => {
   return (
     <DraggableCards>
@@ -49,6 +58,8 @@ export const Overview = ({
         publishedPolicies={publishedPoliciesScore.publishedPolicies}
         totalTasks={doneTasksScore.totalTasks}
         doneTasks={doneTasksScore.doneTasks}
+        totalMembers={peopleScore.totalMembers}
+        completedMembers={peopleScore.completedMembers}
       />
       <FrameworksOverview
         frameworksWithControls={frameworksWithControls}
@@ -68,6 +79,7 @@ export const Overview = ({
         policiesInReview={publishedPoliciesScore.policiesInReview}
         organizationId={organizationId}
         currentMember={currentMember}
+        onboardingTriggerJobId={onboardingTriggerJobId}
       />
     </DraggableCards>
   );

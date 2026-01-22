@@ -32,6 +32,7 @@ export const markPolicyAsCompleted = authActionClient
     const member = await db.member.findFirst({
       where: {
         userId: user.id,
+        deactivated: false,
       },
     });
 

@@ -1,5 +1,6 @@
 import { db } from '@db';
-import { IntegrationsGrid } from './components/IntegrationsGrid';
+import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
+import { PlatformIntegrations } from './components/PlatformIntegrations';
 
 export default async function IntegrationsPage() {
   // Fetch task templates server-side
@@ -15,21 +16,11 @@ export default async function IntegrationsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10 py-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-baseline gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
-          <span className="text-2xl text-muted-foreground/40 font-light">∞</span>
-        </div>
-        <p className="text-muted-foreground text-base leading-relaxed">
-          Connect to any system through the AI agent. This directory shows common patterns—the
-          agent can integrate with anything that has an API or web interface.
-        </p>
-      </div>
-
-      {/* Integrations Grid */}
-      <IntegrationsGrid taskTemplates={taskTemplates} />
-    </div>
+    <PageLayout>
+      <Stack gap="md">
+        <PageHeader title="Integrations" />
+        <PlatformIntegrations taskTemplates={taskTemplates} />
+      </Stack>
+    </PageLayout>
   );
 }

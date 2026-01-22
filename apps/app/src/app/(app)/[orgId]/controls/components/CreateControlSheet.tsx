@@ -359,6 +359,7 @@ export function CreateControlSheet({
                 <X className="h-5 w-5" />
               </Button>
             </SheetHeader>
+            
 
             <div className="flex-1 overflow-y-auto min-h-0">
               <div className="px-2 pb-6">{controlForm}</div>

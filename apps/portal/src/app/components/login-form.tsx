@@ -1,17 +1,19 @@
 'use client';
 
-import { GoogleSignIn } from './google-sign-in';
 import { useSearchParams } from 'next/navigation';
+import { GoogleSignIn } from './google-sign-in';
+import { MicrosoftSignIn } from './microsoft-sign-in';
 
 interface LoginFormProps {
   inviteCode?: string;
   showGoogle: boolean;
+  showMicrosoft: boolean;
 }
 
-export function LoginForm({ inviteCode, showGoogle }: LoginFormProps) {
+export function LoginForm({ inviteCode, showGoogle, showMicrosoft }: LoginFormProps) {
   const searchParams = useSearchParams();
 
-  if (!showGoogle) {
+  if (!showGoogle && !showMicrosoft) {
     return;
   }
 
@@ -26,7 +28,12 @@ export function LoginForm({ inviteCode, showGoogle }: LoginFormProps) {
         </span>
       </div>
       <div className="space-y-4 pt-4">
-        <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+        {showGoogle && (
+          <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+        )}
+        {showMicrosoft && (
+          <MicrosoftSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+        )}
       </div>
     </div>
   );

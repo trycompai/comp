@@ -18,6 +18,7 @@ const config: NextConfig = {
       },
     },
   },
+
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Very important, DO NOT REMOVE, it's needed for Prisma to work in the server bundle
@@ -40,7 +41,12 @@ const config: NextConfig = {
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
   reactStrictMode: false,
-  transpilePackages: ['@trycompai/db', '@prisma/client'],
+  transpilePackages: [
+    '@trycompai/db',
+    '@prisma/client',
+    '@trycompai/design-system',
+    '@carbon/icons-react',
+  ],
   images: {
     remotePatterns: [
       {
@@ -52,7 +58,9 @@ const config: NextConfig = {
 
   experimental: {
     serverActions: {
-      bodySizeLimit: '15mb',
+      // NOTE: Attachment uploads may be sent as base64 strings, which increases payload size.
+      // Keep this above the user-facing max file size.
+      bodySizeLimit: '150mb',
       allowedOrigins:
         process.env.NODE_ENV === 'production'
           ? ([process.env.NEXT_PUBLIC_PORTAL_URL, 'https://app.trycomp.ai'].filter(

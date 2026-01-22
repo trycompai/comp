@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-Always opt for colocallizing code, where components, actions, etc.. are encapsulated at a route/page level in their own directory. If you encounter examples of non-colocalized code, try to colocalize it.
-
-The only exception to this rule is code that will be reused across many different components/pages.

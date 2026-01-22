@@ -89,6 +89,16 @@ export const completeInvitation = authActionClientWithoutOrg
             },
           });
 
+          if (existingMembership.deactivated) {
+            await db.member.update({
+              where: { id: existingMembership.id },
+              data: {
+                deactivated: false,
+                role: invitation.role,
+              },
+            });
+          }
+
           // Server redirect to the organization's root
           redirect(`/${invitation.organizationId}/`);
         }
@@ -129,7 +139,7 @@ export const completeInvitation = authActionClientWithoutOrg
 
         revalidatePath(`/${invitation.organization.id}`);
         revalidatePath(`/${invitation.organization.id}/settings/users`);
-        revalidateTag(`user_${user.id}`);
+        revalidateTag(`user_${user.id}`, 'max');
 
         // Server redirect to the organization's root
         redirect(`/${invitation.organizationId}/`);

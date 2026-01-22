@@ -218,6 +218,86 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return 'Initializing...';
   }, [stepStatus.currentStep, stepStatus.policiesTotal, stepStatus.policiesCompleted, currentStep]);
 
+  // Normalize vendor name for deduplication - strips parenthetical suffixes
+  // e.g., "Fanta (cool)" and "Fanta" are treated as the same vendor
+  const normalizeVendorName = useCallback((name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parenthetical suffixes
+      .trim();
+  }, []);
+
+  const uniqueVendorsInfo = useMemo(() => {
+    const statusRank = (status: 'pending' | 'processing' | 'assessing' | 'completed') => {
+      switch (status) {
+        case 'completed':
+          return 3;
+        case 'assessing':
+        case 'processing':
+          return 2;
+        case 'pending':
+        default:
+          return 1;
+      }
+    };
+
+    const map = new Map<
+      string,
+      { vendor: { id: string; name: string }; rank: number; status: 'pending' | 'processing' | 'assessing' | 'completed' }
+    >();
+
+    stepStatus.vendorsInfo.forEach((vendor) => {
+      const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
+      const nameKey = normalizeVendorName(vendor.name);
+      const rank = statusRank(status);
+      const existing = map.get(nameKey);
+
+      if (!existing || rank > existing.rank) {
+        map.set(nameKey, { vendor, rank, status });
+      }
+    });
+
+    return Array.from(map.values()).map(({ vendor }) => vendor);
+  }, [stepStatus.vendorsInfo, stepStatus.vendorsStatus, normalizeVendorName]);
+
+  // Calculate unique completed count for the counter (to match deduplicated list)
+  const uniqueVendorsCounts = useMemo(() => {
+    const statusRank = (status: 'pending' | 'processing' | 'assessing' | 'completed') => {
+      switch (status) {
+        case 'completed':
+          return 3;
+        case 'assessing':
+        case 'processing':
+          return 2;
+        case 'pending':
+        default:
+          return 1;
+      }
+    };
+
+    const map = new Map<
+      string,
+      { status: 'pending' | 'processing' | 'assessing' | 'completed'; rank: number }
+    >();
+
+    stepStatus.vendorsInfo.forEach((vendor) => {
+      const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
+      const nameKey = normalizeVendorName(vendor.name);
+      const rank = statusRank(status);
+      const existing = map.get(nameKey);
+
+      if (!existing || rank > existing.rank) {
+        map.set(nameKey, { status, rank });
+      }
+    });
+
+    const entries = Array.from(map.values());
+    return {
+      total: entries.length,
+      completed: entries.filter((e) => e.status === 'completed').length,
+    };
+  }, [stepStatus.vendorsInfo, stepStatus.vendorsStatus, normalizeVendorName]);
+
   if (!triggerJobId || !mounted) {
     return null;
   }
@@ -245,7 +325,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {isCompleted ? (
-                    <Rocket className="h-5 w-5 shrink-0 text-chart-positive" />
+                    <Rocket className="h-5 w-5 shrink-0 text-primary" />
                   ) : (
                     <Settings className="h-5 w-5 shrink-0 text-primary" />
                   )}
@@ -298,7 +378,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     if (!run && !error) {
       return (
         <div className="flex items-center gap-3">
-          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
           <div className="flex-1 min-w-0">
             <p className="text-base font-medium text-foreground">Initializing...</p>
             <p className="text-muted-foreground text-sm mt-1">Checking onboarding status</p>
@@ -361,10 +441,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 const isRisksStep = step.key === 'risk';
                 const isPoliciesStep = step.key === 'policies';
 
-                // Determine completion based on actual counts, not boolean flags
+                // Determine completion based on unique counts, not raw metadata totals
                 const vendorsCompleted =
-                  stepStatus.vendorsTotal > 0 &&
-                  stepStatus.vendorsCompleted >= stepStatus.vendorsTotal;
+                  uniqueVendorsCounts.total > 0 &&
+                  uniqueVendorsCounts.completed >= uniqueVendorsCounts.total;
                 const risksCompleted =
                   stepStatus.risksTotal > 0 && stepStatus.risksCompleted >= stepStatus.risksTotal;
                 const policiesCompleted =
@@ -415,9 +495,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         className="flex items-center gap-2 w-full text-left"
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
+                          <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                         ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
                         ) : vendorsQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
@@ -427,7 +507,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           <span
                             className={`text-sm ${
                               isCompleted
-                                ? 'text-chart-positive'
+                                ? 'text-primary'
                                 : isCurrent
                                   ? 'text-primary font-medium'
                                   : 'text-muted-foreground'
@@ -437,7 +517,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-muted-foreground text-sm">
-                              {stepStatus.vendorsCompleted}/{stepStatus.vendorsTotal}
+                              {uniqueVendorsCounts.completed}/{uniqueVendorsCounts.total}
                             </span>
                             {isVendorsExpanded ? (
                               <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -449,7 +529,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                       </button>
 
                       {/* Expanded vendor list */}
-                      {isVendorsExpanded && stepStatus.vendorsInfo.length > 0 && (
+                      {isVendorsExpanded && uniqueVendorsInfo.length > 0 && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
@@ -458,7 +538,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           className="overflow-hidden"
                         >
                           <div className="flex flex-col gap-1.5 pl-7">
-                            {stepStatus.vendorsInfo.map((vendor) => {
+                            {uniqueVendorsInfo.map((vendor) => {
                               const vendorStatus = stepStatus.vendorsStatus[vendor.id] || 'pending';
                               const isVendorCompleted = vendorStatus === 'completed';
                               const isVendorProcessing = vendorStatus === 'processing';
@@ -467,9 +547,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const content = (
                                 <>
                                   {isVendorCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 shrink-0 pointer-events-none" />
+                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isVendorProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
+                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
                                   ) : isVendorQueued ? (
                                     <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
                                   ) : (
@@ -478,7 +558,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   <span
                                     className={`text-sm truncate pointer-events-none ${
                                       isVendorCompleted
-                                        ? 'text-chart-positive'
+                                        ? 'text-primary'
                                         : isVendorProcessing
                                           ? 'text-primary'
                                           : 'text-muted-foreground'
@@ -521,9 +601,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         className="flex items-center gap-2 w-full text-left"
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
+                          <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                         ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
                         ) : risksQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
@@ -533,7 +613,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           <span
                             className={`text-sm ${
                               isCompleted
-                                ? 'text-chart-positive'
+                                ? 'text-primary'
                                 : isCurrent
                                   ? 'text-primary font-medium'
                                   : 'text-muted-foreground'
@@ -572,16 +652,16 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const content = (
                                 <>
                                   {isRiskCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 shrink-0 pointer-events-none" />
+                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isRiskProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
+                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
                                   ) : (
                                     <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
                                   <span
                                     className={`text-sm truncate pointer-events-none ${
                                       isRiskCompleted
-                                        ? 'text-chart-positive'
+                                        ? 'text-primary'
                                         : isRiskProcessing
                                           ? 'text-primary'
                                           : 'text-muted-foreground'
@@ -624,9 +704,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         className="flex items-center gap-2 w-full text-left"
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
+                          <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                         ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
                         ) : policiesQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
@@ -636,7 +716,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                           <span
                             className={`text-sm ${
                               isCompleted
-                                ? 'text-chart-positive'
+                                ? 'text-primary'
                                 : isCurrent
                                   ? 'text-primary font-medium'
                                   : 'text-muted-foreground'
@@ -678,9 +758,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const content = (
                                 <>
                                   {isPolicyCompleted ? (
-                                    <CheckCircle2 className="text-chart-positive h-4 w-4 shrink-0 pointer-events-none" />
+                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isPolicyProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
+                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
                                   ) : isPolicyQueued ? (
                                     <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
                                   ) : (
@@ -689,12 +769,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   <span
                                     className={`text-sm truncate pointer-events-none ${
                                       isPolicyCompleted
-                                        ? 'text-chart-positive'
+                                        ? 'text-primary'
                                         : isPolicyProcessing
                                           ? 'text-primary'
-                                          : isPolicyQueued
-                                            ? 'text-muted-foreground'
-                                            : 'text-muted-foreground'
+                                          : 'text-muted-foreground'
                                     }`}
                                   >
                                     {policy.name}
@@ -729,9 +807,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 return (
                   <div key={step.key} className="flex items-center gap-2">
                     {isCompleted ? (
-                      <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
+                      <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                     ) : isCurrent ? (
-                      <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                      <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
                     ) : policiesQueued ? (
                       <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                     ) : (
@@ -740,7 +818,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                     <span
                       className={`text-sm ${
                         isCompleted
-                          ? 'text-chart-positive'
+                          ? 'text-primary'
                           : isCurrent
                             ? 'text-primary font-medium'
                             : 'text-muted-foreground'
@@ -760,7 +838,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             {/* Header */}
             <div className="flex items-start justify-between gap-3 shrink-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Rocket className="h-5 w-5 shrink-0 text-chart-positive" />
+                <Rocket className="h-5 w-5 shrink-0 text-primary" />
                 <p className="text-base font-medium text-foreground">Setup Complete</p>
               </div>
               <button
@@ -774,7 +852,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
             <div className="flex-1 flex flex-col justify-center">
               <div className="flex flex-col gap-2">
-                <p className="text-chart-positive text-base font-medium">
+                <p className="text-primary text-base font-medium">
                   Your organization is ready!
                 </p>
                 <p className="text-muted-foreground text-sm">
@@ -787,8 +865,8 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             <div className="flex flex-col gap-2.5 shrink-0">
               {ONBOARDING_STEPS.map((step) => (
                 <div key={step.key} className="flex items-center gap-2">
-                  <CheckCircle2 className="text-chart-positive h-5 w-5 shrink-0" />
-                  <span className="text-sm text-chart-positive">{step.label}</span>
+                  <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
+                  <span className="text-sm text-primary">{step.label}</span>
                 </div>
               ))}
             </div>

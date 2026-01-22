@@ -7,6 +7,8 @@ import {
   Body,
   Param,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -216,6 +218,38 @@ export class PeopleController {
 
     return {
       ...result,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Patch(':id/unlink-device')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation(PEOPLE_OPERATIONS.unlinkDevice)
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[200])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[400])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[401])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[404])
+  @ApiResponse(UPDATE_MEMBER_RESPONSES[500])
+  async unlinkDevice(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const updatedMember = await this.peopleService.unlinkDevice(
+      memberId,
+      organizationId,
+    );
+
+    return {
+      ...updatedMember,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {

@@ -69,7 +69,7 @@ export function Providers({ children, session }: ProviderProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
         attribute="class"
-        defaultTheme="dark"
+        defaultTheme="light"
         disableTransitionOnChange
         scriptProps={{ 'data-cfasync': 'false' }}
       >

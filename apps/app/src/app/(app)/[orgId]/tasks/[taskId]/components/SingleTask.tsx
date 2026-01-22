@@ -36,8 +36,11 @@ import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
+import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
+import { BrowserAutomations } from './BrowserAutomations';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
+import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
@@ -49,9 +52,14 @@ interface SingleTaskProps {
   initialTask: Task & { fileUrls?: string[]; controls?: Control[] };
   initialMembers?: (Member & { user: User })[];
   initialAutomations: AutomationWithRuns[];
+  isWebAutomationsEnabled: boolean;
 }
 
-export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps) {
+export function SingleTask({
+  initialTask,
+  initialAutomations,
+  isWebAutomationsEnabled,
+}: SingleTaskProps) {
   const params = useParams();
   const orgId = params.orgId as string;
 
@@ -66,6 +74,7 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
+  const { hasMappedChecks } = useTaskIntegrationChecks();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
@@ -185,23 +194,28 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
             </div>
           </div>
 
-          {/* Automations Section - Front & Center */}
-          <div>
-            <TaskAutomations automations={automations || []} />
-          </div>
-
-          {/* Attachments - De-emphasized */}
+          {/* Attachments */}
           <div className="space-y-3">
             <TaskMainContent task={task} showComments={false} />
           </div>
+
+          {/* Integration Checks Section */}
+          <TaskIntegrationChecks taskId={task.id} onTaskUpdated={() => mutateTask()} />
+
+          {/* Browser Automations Section */}
+          {isWebAutomationsEnabled && <BrowserAutomations taskId={task.id} />}
+
+          {/* Custom Automations Section - always show if automations exist, or show empty state if no integration checks */}
+          {((automations && automations.length > 0) || !hasMappedChecks) && (
+            <TaskAutomations automations={automations || []} />
+          )}
 
           {/* Comments Section */}
           <div>
             <Comments
               entityId={task.id}
               entityType={CommentEntityType.task}
-              variant="inline"
-              title=""
+              organizationId={orgId}
             />
           </div>
         </div>
@@ -227,8 +241,8 @@ export function SingleTask({ initialTask, initialAutomations }: SingleTaskProps)
           <DialogHeader>
             <DialogTitle>Regenerate Task</DialogTitle>
             <DialogDescription>
-              This will update the task title and description with the latest content from the
-              framework template. The current content will be replaced. Continue?
+              This will update the task title, description, and automation status with the latest
+              content from the framework template. The current content will be replaced. Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

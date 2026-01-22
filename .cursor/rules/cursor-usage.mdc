@@ -1,0 +1,266 @@
+---
+description: How to write and manage Cursor rules - invoke with @cursor-usage
+globs: .cursor/rules/*.mdc
+alwaysApply: false
+---
+
+# Using Cursor Rules
+
+## Overview
+
+Cursor rules provide system-level instructions to the AI to maintain code consistency, quality, and adherence to project standards. They are stored in the `.cursor/rules/` directory as `.mdc` (Markdown with frontmatter) files.
+
+## Rule File Structure
+
+Each `.mdc` rule file consists of two parts:
+
+### 1. Frontmatter (YAML metadata)
+
+```yaml
+---
+description: Brief overview of what this rule enforces
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+```
+
+**Frontmatter Fields:**
+
+- `description`: A clear, concise explanation of the rule's purpose
+- `globs`: Glob pattern to match files where this rule should apply (plain string, no quotes or arrays)
+  - Examples:
+    - `**/*.tsx` - All TSX files
+    - `**/*.{ts,tsx}` - All TS and TSX files
+    - `apps/*/components/**/*.tsx` - All TSX files in any app's components directory
+    - `**/trigger/**/*.ts` - All TS files in trigger directories
+- `alwaysApply`: Boolean indicating if the rule should always be active
+  - `true`: Rule is always active when working on matching files
+  - `false`: Rule can be selectively invoked with `@rule-name`
+
+### 2. Content (Markdown)
+
+The body of the rule file contains the actual guidelines, examples, and instructions written in Markdown format.
+
+## How Rules Are Applied
+
+### Automatic Application
+
+Rules with `alwaysApply: true` are automatically loaded when:
+
+- You open a file matching the `globs` pattern
+- You're working on code that matches the pattern
+- Cursor AI generates or suggests code for matching files
+
+### Manual Invocation
+
+You can reference specific rules in your prompts:
+
+```
+@design-system create a new button component
+```
+
+This explicitly tells Cursor to apply the design-system rule.
+
+## Best Practices for Writing Rules
+
+### 1. Keep Rules Focused
+
+- Each rule file should cover a specific domain (e.g., design system, API patterns, testing)
+- Avoid mixing unrelated concerns in a single rule file
+- Aim for rules under 500 lines for better AI comprehension
+
+### 2. Provide Concrete Examples
+
+Always include:
+
+- ✅ Good examples (what TO do)
+- ❌ Bad examples (what NOT to do)
+- Real code snippets from your project
+
+```tsx
+// ✅ Good: Use semantic tokens
+<div className="bg-background text-foreground">Content</div>
+
+// ❌ Bad: Hardcoded colors
+<div className="bg-white text-black">Content</div>
+```
+
+### 3. Use Clear Section Headers
+
+Organize content with descriptive headers:
+
+```markdown
+## Core Principles
+
+## Rules
+
+## Examples
+
+## Exceptions
+
+## Common Mistakes
+```
+
+### 4. Define Exceptions Explicitly
+
+If there are cases where rules don't apply, state them clearly:
+
+```markdown
+## Exceptions
+
+The ONLY time you can pass className to a design system component is for:
+
+1. Width utilities: `w-full`, `max-w-md`
+2. Responsive display: `hidden`, `md:block`
+```
+
+### 5. Include Checklists
+
+Provide actionable checklists for validation:
+
+```markdown
+## Code Review Checklist
+
+Before committing:
+
+- [ ] Uses semantic color tokens
+- [ ] Works in both light and dark mode
+- [ ] Fully responsive
+```
+
+## Managing Rules
+
+### Creating a New Rule
+
+1. Create a new `.mdc` file in `.cursor/rules/`
+2. Add appropriate frontmatter
+3. Write clear guidelines with examples
+4. Test by working on matching files
+
+### Updating Existing Rules
+
+1. Edit the `.mdc` file
+2. Rules are automatically reloaded
+3. Test changes with relevant files
+
+### Organizing Rules
+
+Recommended structure:
+
+```
+.cursor/rules/
+├── design-system.mdc       # Component usage, variants, composition
+├── code-standards.mdc      # General code quality rules
+├── typescript-rules.mdc    # TypeScript type safety
+├── react-code.mdc          # React patterns and conventions
+├── data-fetching.mdc       # Server/client data patterns
+└── cursor-usage.mdc        # This file - how to use rules
+```
+
+## Rule Scope with Globs
+
+### Common Glob Patterns
+
+```yaml
+# All TypeScript/TSX files
+globs: **/*.{ts,tsx}
+
+# Only TSX files (React components)
+globs: **/*.tsx
+
+# Only trigger task files
+globs: **/trigger/**/*.ts
+
+# Prisma schema files
+globs: **/*.prisma
+
+# All JSON and TypeScript files
+globs: **/*.{ts,tsx,json}
+```
+
+### Glob Pattern Tips
+
+- Use `**` for recursive directory matching
+- Use `*` for single-level wildcard
+- Use `{ts,tsx}` for multiple extensions
+- No quotes or array brackets needed
+- Be specific to avoid over-applying rules
+
+## Debugging Rules
+
+### Rule Not Applying?
+
+1. Check the `globs` pattern matches your file
+2. Verify frontmatter YAML syntax is correct
+3. Ensure `alwaysApply` is set appropriately
+4. Try manually invoking with `@ruleName`
+
+### Rule Conflicting?
+
+1. Check if multiple rules apply to the same files
+2. Make rules more specific with tighter `globs`
+3. Consolidate related rules into one file
+
+## Advanced Features
+
+### Conditional Rules
+
+Use `alwaysApply: false` for rules that should only apply in specific contexts:
+
+```yaml
+---
+description: Performance optimization guidelines
+globs: **/*.ts
+alwaysApply: false
+---
+```
+
+Invoke with: `@performance-optimization refactor this component`
+
+### Hierarchical Rules
+
+More specific globs take precedence:
+
+- `design-system.mdc` with `globs: **/*.tsx` (broad)
+- `trigger.basic.mdc` with `globs: **/trigger/**/*.ts` (specific)
+
+The specific rule will have more weight for trigger files.
+
+## Quick Reference
+
+### Create a New Rule
+
+```bash
+touch .cursor/rules/my-new-rule.mdc
+```
+
+```yaml
+---
+description: What this rule enforces
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Rule Title
+
+## Guidelines
+
+- Point 1
+- Point 2
+```
+
+### Apply a Rule
+
+- Automatic: Save a file matching the `globs` pattern
+- Manual: Use `@my-new-rule` in your prompt
+
+### Debug a Rule
+
+1. Check file matches `globs` pattern
+2. Verify YAML frontmatter syntax
+3. Look for conflicting rules
+4. Try manual invocation
+
+---
+
+**Remember**: Rules are here to help, not hinder. If a rule doesn't make sense for a specific case, discuss with the team and update the rule accordingly.

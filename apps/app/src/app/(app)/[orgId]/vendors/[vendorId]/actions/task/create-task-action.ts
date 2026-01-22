@@ -43,7 +43,7 @@ export const createVendorTaskAction = authActionClient
       });
 
       revalidatePath(`/${activeOrganizationId}/vendor/${vendorId}`);
-      revalidateTag(`vendor_${activeOrganizationId}`);
+      revalidateTag(`vendor_${activeOrganizationId}`, 'max');
 
       return {
         success: true,

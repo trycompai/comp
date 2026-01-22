@@ -1,0 +1,62 @@
+model Questionnaire {
+  id                String              @id @default(dbgenerated("generate_prefixed_cuid('qst'::text)"))
+  filename          String // Original filename
+  s3Key             String // S3 storage key for the uploaded file
+  fileType          String // MIME type (e.g., "application/pdf")
+  fileSize          Int // File size in bytes
+  status            QuestionnaireStatus @default(parsing) // Parsing status
+  parsedAt          DateTime? // When parsing completed
+  totalQuestions    Int                 @default(0) // Total number of questions parsed
+  answeredQuestions Int                 @default(0) // Number of questions with answers
+  source            String              @default("internal") // Source of the questionnaire: 'internal' (from app) or 'external' (from trust portal)
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  organizationId String
+  organization   Organization                        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  questions      QuestionnaireQuestionAnswer[]
+  manualAnswers  SecurityQuestionnaireManualAnswer[] // Manual answers saved from this questionnaire
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+  @@index([status])
+  @@index([source])
+}
+
+model QuestionnaireQuestionAnswer {
+  id            String                    @id @default(dbgenerated("generate_prefixed_cuid('qqa'::text)"))
+  question      String // The question text
+  answer        String? // The answer (nullable if not provided in file or not generated yet)
+  status        QuestionnaireAnswerStatus @default(untouched) // Answer status
+  questionIndex Int // Order/index of the question in the questionnaire
+  sources       Json? // Sources used for generated answers (array of source objects)
+  generatedAt   DateTime? // When answer was generated (if status is generated)
+  updatedBy     String? // User ID who last updated the answer (if manual)
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  @@index([questionnaireId])
+  @@index([questionnaireId, questionIndex])
+  @@index([status])
+}
+
+enum QuestionnaireStatus {
+  parsing // Currently being parsed
+  completed // Successfully parsed
+  failed // Parsing failed
+}
+
+enum QuestionnaireAnswerStatus {
+  untouched // No answer yet (empty or not generated)
+  generated // AI generated answer
+  manual // Manually written/edited by user
+}

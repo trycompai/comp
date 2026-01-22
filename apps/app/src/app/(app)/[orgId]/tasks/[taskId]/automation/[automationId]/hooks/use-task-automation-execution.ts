@@ -20,6 +20,7 @@
 
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sanitizeErrorMessage } from '../actions/sanitize-error';
 import { useSharedChatContext } from '../lib/chat-context';
 import { taskAutomationApi } from '../lib/task-automation-api';
 import type {
@@ -60,11 +61,21 @@ export function useTaskAutomationExecution({
         }
 
         if (data.status === 'COMPLETED' && data.output) {
+          // Check both possible error locations:
+          // - data.output.error (direct error)
+          // - data.output.output.error (nested error from user's script returning {ok: false, error: "..."})
+          const rawError = data.output.error || data.output.output?.error;
+
+          // Sanitize if there's an error - makes it user-friendly and removes sensitive data
+          const sanitizedError = rawError
+            ? await sanitizeErrorMessage(rawError).catch(() => String(rawError))
+            : undefined;
+
           const executionResult: TaskAutomationExecutionResult = {
             success: data.output.success,
             data: data.output.output,
-            error: data.output.error,
-            logs: data.output.logs,
+            error: sanitizedError,
+            logs: [], // Don't expose internal execution logs to users
             summary: data.output.summary,
             evaluationStatus: data.output.evaluationStatus,
             evaluationReason: data.output.evaluationReason,
@@ -75,8 +86,18 @@ export function useTaskAutomationExecution({
           setIsExecuting(false);
           onSuccess?.(executionResult);
         } else if (data.status === 'FAILED') {
-          const error = new Error(data.error?.message || 'Task execution failed');
-          console.error('[Automation Execution] Client received error:', data.error);
+          // Log raw error for debugging (internal only)
+          console.error('[Automation Execution] Raw error:', data.error);
+
+          // Use AI to sanitize error message with fallback if AI fails
+          // Fallback extracts message from error object if available
+          const sanitizedMessage = await sanitizeErrorMessage(data.error).catch(() => {
+            if (typeof data.error === 'string') return data.error;
+            if (data.error?.message) return String(data.error.message);
+            return 'The automation failed to execute';
+          });
+          const error = new Error(sanitizedMessage);
+
           setError(error);
           setIsExecuting(false);
           onError?.(error);
@@ -85,7 +106,11 @@ export function useTaskAutomationExecution({
           pollingIntervalRef.current = setTimeout(pollRunStatus, 1000);
         }
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to poll run status');
+        // Sanitize with fallback to ensure state cleanup always happens
+        const sanitizedMessage = await sanitizeErrorMessage(err).catch(
+          () => (err instanceof Error ? err.message : 'An unexpected error occurred'),
+        );
+        const error = new Error(sanitizedMessage);
         setError(error);
         setIsExecuting(false);
         onError?.(error);
@@ -135,7 +160,11 @@ export function useTaskAutomationExecution({
         return response;
       }
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Unknown error');
+      // Sanitize with fallback to ensure state cleanup always happens
+      const sanitizedMessage = await sanitizeErrorMessage(err).catch(
+        () => (err instanceof Error ? err.message : 'An unexpected error occurred'),
+      );
+      const error = new Error(sanitizedMessage);
       setError(error);
       setIsExecuting(false);
       onError?.(error);

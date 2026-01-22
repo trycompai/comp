@@ -1,7 +1,9 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { auth } from '@/utils/auth';
+import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { ControlHeaderActions } from './components/ControlHeaderActions';
 import { SingleControl } from './components/SingleControl';
 import { getControl } from './data/getControl';
 import type { ControlProgressResponse } from './data/getOrganizationControlProgress';
@@ -53,18 +55,24 @@ export default async function ControlPage({ params }: ControlPageProps) {
   });
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        { label: 'Controls', href: `/${orgId}/controls` },
-        { label: control.name, current: true },
-      ]}
-    >
+    <PageLayout>
+      <Breadcrumb
+        items={[
+          {
+            label: 'Controls',
+            href: `/${orgId}/controls`,
+            props: { render: <Link href={`/${orgId}/controls`} /> },
+          },
+          { label: control.name, isCurrent: true },
+        ]}
+      />
+      <PageHeader title={control.name} actions={<ControlHeaderActions control={control} />} />
       <SingleControl
         control={control}
         controlProgress={controlProgress}
         relatedPolicies={relatedPolicies}
         relatedTasks={control.tasks}
       />
-    </PageWithBreadcrumb>
+    </PageLayout>
   );
 }

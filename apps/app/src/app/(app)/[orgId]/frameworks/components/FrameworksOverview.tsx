@@ -48,6 +48,10 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
     return '/badges/nen7510.svg';
   }
 
+  if (framework.framework.name === 'ISO 9001') {
+    return '/badges/iso9001.svg';
+  }
+
   return null;
 }
 
@@ -77,7 +81,7 @@ export function FrameworksOverview({
   );
 
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="flex flex-col overflow-hidden border h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">{'Frameworks'}</CardTitle>

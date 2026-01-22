@@ -1,6 +1,6 @@
 'use server';
 
-import { sendNewPolicyEmail } from '@/jobs/tasks/email/new-policy-email';
+import { sendNewPolicyEmail } from '@/trigger/tasks/email/new-policy-email';
 import { db, PolicyStatus } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
@@ -82,6 +82,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         where: {
           organizationId: session.activeOrganizationId,
           isActive: true,
+          deactivated: false,
         },
         include: {
           user: true,
@@ -131,6 +132,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
           where: {
             userId: user.id,
             organizationId: session.activeOrganizationId,
+            deactivated: false,
           },
         });
 
@@ -149,7 +151,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
 
       revalidatePath(`/${session.activeOrganizationId}/policies`);
       revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
-      revalidateTag('policies');
+      revalidateTag('policies', 'max');
 
       return {
         success: true,

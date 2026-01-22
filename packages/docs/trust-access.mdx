@@ -1,0 +1,226 @@
+---
+title: 'Access'
+description: 'A comprehensive guide to managing external access requests, NDAs, and approvals.'
+---
+
+## Overview
+
+Trust Access enables secure, controlled access to your compliance documentation for external users. This system manages the complete access lifecycle—from initial requests through NDA signing, access grants, and ongoing management—while maintaining full audit trails for compliance purposes.
+
+## 1. Key Concepts
+
+Trust Access consists of four core components:
+
+- **Access Request:** An external user's initial request to access your compliance documentation.
+- **NDA Agreement:** A legally binding document that must be digitally signed before access is granted.
+- **Access Grant:** A time-limited authorization window (configurable, default 30 days) during which the user has access.
+- **Access Link:** A secure, time-limited email link that authenticates the user and grants portal access.
+
+### Time Limits and Expiration
+
+Each component has specific time constraints:
+
+| Item                 | Duration       | Notes                                                                    |
+| :------------------- | :------------- | :----------------------------------------------------------------------- |
+| **NDA Signing Link** | **7 Days**     | Expires if not signed within 7 days. Administrators can resend the link. |
+| **Access Grant**     | **7–365 Days** | Configurable access window. Default duration is 30 days.                 |
+| **Access Link**      | **24 Hours**   | Email authentication links expire after 24 hours for security.           |
+
+---
+
+## 2. Prerequisites
+
+Before using Trust Access, ensure the following is configured:
+
+1. **Published Trust Portal:** The portal must be published and publicly accessible for users to submit access requests.
+
+---
+
+## 3. Workflow: Step-by-Step
+
+### Step 1: Access Request Submission
+
+When external visitors access your public Trust Portal, they see a **Request Access** button. Clicking this button opens a form where they provide:
+
+- Full name and email address
+- Company name and job title
+- Reason for requesting access
+
+<img
+  src="/images/trust-access-portal-request-button.png"
+  alt="Trust Portal with Request Access button"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+<img
+  src="/images/trust-access-request-form.png"
+  alt="Access Request Form"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+New access requests appear in the **Trust Access Management** dashboard with `Pending` status. If the user already has an active access grant, they see: _"You already have active access."_ If a pending request exists, duplicate submissions are blocked.
+
+### Step 2: Administrative Review and Decision
+
+Access the **Trust Access Management** dashboard to view all pending access requests. Each request displays the requester's information, purpose, submission timestamp, and current status.
+
+<img
+  src="/images/trust-access-admin-request-details.png"
+  alt="Access Request Detail View"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+#### Option A: Approve Access Request
+
+1. Click on the request to view complete details
+2. Configure the access grant period (7-365 days, default 30 days)
+3. Click **Approve & Send NDA** to proceed
+
+<img
+  src="/images/trust-access-admin-approve-duration.png"
+  alt="Approve Access Request with Duration Configuration"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+Request status changes to `Approved`, a pending NDA agreement is generated, and an email is sent to the requester with an NDA signing link (valid for 7 days). The requester receives an email notification: _"NDA Signature Required"_ with a secure link to review and sign the NDA.
+
+<img
+  src="/images/trust-access-email-nda-required.png"
+  alt="NDA Signature Required Email"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+#### Option B: Deny Access Request
+
+1. Provide a reason for denial
+2. Click **Deny** to reject the request
+
+<img
+  src="/images/trust-access-admin-deny-dialog.png"
+  alt="Deny Access Request Dialog"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+Request status changes to `Denied` and the denial reason is logged in the audit trail. No email notification is sent to the requester.
+
+### Step 3: NDA Signing Process
+
+1. The requester receives an email with subject _"NDA Signature Required"_ containing a secure signing link
+2. Clicking the link opens a secure page displaying the complete NDA document
+3. They provide their digital signature to accept the agreement
+4. After signing, they receive confirmation that the NDA has been completed
+
+<img
+  src="/images/trust-access-nda-signing-page.png"
+  alt="NDA Signing Page"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+NDA status updates to `Signed` in the dashboard, the signed NDA PDF is available for download, and the access grant is automatically activated. The audit log captures the signing timestamp, signer's IP address, User Agent information, and the final signed PDF document.
+
+<img
+  src="/images/trust-access-admin-nda-signed.png"
+  alt="Dashboard showing Signed NDA status"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+If the 7-day signing window expires, administrators see `NDA Link Expired` status and can use **Resend NDA** to generate a new link. If users attempt to access an already-signed NDA link, they are redirected to the portal.
+
+### Step 4: Portal Access Granted
+
+After successfully signing the NDA, users receive an email notification: _"Access Granted"_. This email contains their first **Access Link** (valid for 24 hours).
+
+Once authenticated via the access link, users are presented with a tabbed interface providing access to different features:
+
+<img
+  src="/images/trust-nav-tabs.png"
+  alt="Trust Portal with Access Granted - Navigation tabs"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+#### Documents Tab (Default)
+
+The **Documents** tab is selected by default and provides access to compliance documentation:
+
+- **Compliance Resources Section:** Browse and read all published, non-archived compliance policies organized by category
+
+<img
+  src="/images/compliance-resources-section.png"
+  alt="Trust Portal with Access Granted - Compliance Resources Section"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+- **PDF Bundle Generation:** Generate a single PDF bundle containing all accessible policies
+  - The downloaded PDF bundle is watermarked with the user's full name, email address, and a unique document identifier
+
+<img
+  src="/images/trust-access-portal-view.png"
+  alt="Trust Portal with Access Granted - Document View"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+#### Security Questionnaire Tab
+
+<img
+  src="/images/security-questionnaire-section.png"
+  alt="Trust Portal with Access Granted - Security Questionnaire"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+The **Security Questionnaire** tab enables external users to automatically parse and answer security questionnaires using the organization's compliance documentation.
+
+**Questionnaire Upload Interface:**
+
+1. **File Upload Field:** Upload your security questionnaire file
+   - Supported formats: PDF, CSV, Excel (.xlsx, .xls)
+   - File must be readable and not corrupted
+   - Maximum file size: 10MB
+
+2. **Output Format Selection:** Choose the format for the processed questionnaire
+   - **Excel (.xlsx)** - Default format, editable in Excel
+   - **PDF** - Final submission format
+   - **CSV** - Simple data exchange format
+
+3. **Upload & Process Button:** Submit the questionnaire for processing
+   - The system automatically extracts questions from your file
+   - Answers are generated based on the organization's published policies
+   - Processing typically takes 5-30 seconds depending on file type and size
+
+After processing, the completed questionnaire is automatically downloaded with all questions answered based on the organization's compliance documentation. Users can review and edit answers before final submission.
+
+<Note>
+  For detailed API documentation and integration examples, see the [Security Questionnaire](./security-questionnaire-trust-center) documentation in the Trust section.
+</Note>
+
+Access grant status shows as `Active` in the dashboard, the grant expiration date is visible, and all activity (document downloads and questionnaire submissions) is logged for audit purposes.
+
+---
+
+## 4. Managing Active Access
+
+### Reclaiming Access (Expired Access Links)
+
+Access links expire after 24 hours. If a user attempts to use an expired link, they can reclaim access without administrator intervention:
+
+1. Navigate to the Trust Portal
+2. Click **Reclaim Access**
+3. Enter their email address
+
+<img
+  src="/images/trust-access-reclaim-access.png"
+  alt="Reclaim Access button and form"
+  style={{ width: '100%', borderRadius: '0.5rem', marginBottom: '1rem' }}
+/>
+
+If their access grant is still within the valid period, the system automatically sends a new 24-hour access link via email. If their access grant has expired, they see: _"No active access found"_ and must submit a new access request. Reclaim attempts are logged in the audit trail.
+
+### Revoking Access
+
+Access can be revoked at any time through the **Grants** section of the dashboard:
+
+1. Navigate to the **Grants** list in the dashboard
+2. Locate the active grant for the user
+3. Click **Revoke**
+4. Enter a reason for revocation
+
+Grant status immediately changes to `Revoked`, the signed NDA is marked as `Void`, all active access links are immediately invalidated, and the revocation action is logged in the audit trail. Any active access links stop working immediately, and users must submit a new access request if access is needed again.
