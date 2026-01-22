@@ -3,7 +3,6 @@
 import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
 
-import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import {
   Section,
@@ -14,7 +13,7 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
-import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
 import { PolicyItem } from '../../devices/components/PolicyItem';
 
