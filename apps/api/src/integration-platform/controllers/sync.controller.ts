@@ -254,6 +254,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
+        rampStatus?: RampUser['status'] | 'USER_MISSING';
       }>,
     };
 
@@ -685,6 +686,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
+        rampStatus?: RampUser['status'] | 'USER_MISSING';
       }>,
     };
 
@@ -1051,6 +1053,7 @@ export class SyncController {
           | 'reactivated'
           | 'error';
         reason?: string;
+        rampStatus?: RampUser['status'] | 'USER_MISSING';
       }>,
     };
 
@@ -1167,6 +1170,13 @@ export class SyncController {
       const isInactive = inactiveEmails.has(memberEmail);
       const isRemoved =
         !activeEmails.has(memberEmail) && !isSuspended && !isInactive;
+      const rampStatus: RampUser['status'] | 'USER_MISSING' = isSuspended
+        ? 'USER_SUSPENDED'
+        : isInactive
+          ? 'USER_INACTIVE'
+          : isRemoved
+            ? 'USER_MISSING'
+            : 'USER_ACTIVE';
 
       if (isSuspended || isInactive || isRemoved) {
         try {
@@ -1183,7 +1193,11 @@ export class SyncController {
               : isInactive
                 ? 'User is inactive in Ramp'
                 : 'User was removed from Ramp',
+            rampStatus,
           });
+          this.logger.log(
+            `Ramp deactivated member ${member.user.email} (${rampStatus})`,
+          );
         } catch (error) {
           this.logger.error(`Error deactivating member: ${error}`);
         }
