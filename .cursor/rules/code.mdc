@@ -1,6 +1,5 @@
 ---
-description: Code standards - TypeScript, React patterns, file structure
-globs: **/*.{ts,tsx}
+description: Use when writing TypeScript/React code - covers type safety, component patterns, and file organization
 alwaysApply: false
 ---
 

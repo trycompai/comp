@@ -1,9 +1,7 @@
 ---
-description: UI component patterns - design system usage and componentization
-globs: **/*.tsx
+description: Use when building or modifying React components, styling, or working with the design system
 alwaysApply: false
 ---
-
 # UI Components
 
 ## Design System Priority

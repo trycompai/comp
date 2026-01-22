@@ -1,6 +1,5 @@
 ---
-description: Data fetching - server-first with SWR hydration
-globs: apps/app/**/*.{ts,tsx}
+description: Use when implementing data fetching, API calls, server/client components, or SWR hooks
 alwaysApply: false
 ---
 

@@ -1,6 +1,5 @@
 ---
-description: Infrastructure - monorepo, package manager, CI checks
-globs: **/*.{ts,tsx,json}
+description: Use when working with packages, dependencies, monorepo structure, or build configuration
 alwaysApply: false
 ---
 

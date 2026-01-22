@@ -1,6 +1,5 @@
 ---
-description: Form handling with React Hook Form and Zod
-globs: **/*.{ts,tsx}
+description: Use when building forms - covers React Hook Form, Zod validation, and form patterns
 alwaysApply: false
 ---
 
