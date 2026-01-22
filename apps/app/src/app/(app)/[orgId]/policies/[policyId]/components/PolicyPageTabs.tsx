@@ -65,7 +65,7 @@ export function PolicyPageTabs({
   return (
     <Stack gap="md">
       {/* Alerts always visible above tabs */}
-      <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} onMutate={() => mutate()} />
+      <PolicyAlerts policy={policy} isPendingApproval={isPendingApproval} onMutate={mutate} />
 
       <Tabs defaultValue="overview">
         <Stack gap="lg">
@@ -82,7 +82,7 @@ export function PolicyPageTabs({
                 policy={policy}
                 assignees={assignees}
                 isPendingApproval={isPendingApproval}
-                onMutate={() => mutate()}
+                onMutate={mutate}
               />
               <PolicyControlMappings
                 mappedControls={mappedControls}
@@ -100,7 +100,7 @@ export function PolicyPageTabs({
               displayFormat={policy?.displayFormat}
               pdfUrl={policy?.pdfUrl}
               aiAssistantEnabled={showAiAssistant}
-              onMutate={() => mutate()}
+              onMutate={mutate}
             />
           </TabsContent>
 
