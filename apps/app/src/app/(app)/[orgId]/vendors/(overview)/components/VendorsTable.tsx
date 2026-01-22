@@ -40,7 +40,7 @@ import {
 import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { deleteVendor } from '../actions/deleteVendor';
@@ -202,7 +202,6 @@ export function VendorsTable({
   });
 
   const vendors = vendorsData?.data || initialVendors;
-  const pageCount = vendorsData?.pageCount ?? initialPageCount;
 
   // Check if all vendors are done assessing
   const allVendorsDoneAssessing = useMemo(() => {
@@ -304,6 +303,11 @@ export function VendorsTable({
     return [...vendorsWithStatus, ...pendingVendors, ...tempVendors];
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
   // Client-side filtering and sorting
   const filteredAndSortedVendors = useMemo(() => {
     let result = [...mergedVendors];
@@ -330,6 +334,18 @@ export function VendorsTable({
 
     return result;
   }, [mergedVendors, searchQuery, sort]);
+
+  // Calculate pageCount from filtered data and paginate
+  const filteredPageCount = Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage));
+  const startIndex = (page - 1) * perPage;
+  const paginatedVendors = filteredAndSortedVendors.slice(startIndex, startIndex + perPage);
+
+  // Keep page in bounds when pageCount changes
+  useEffect(() => {
+    if (page > filteredPageCount) {
+      setPage(filteredPageCount);
+    }
+  }, [page, filteredPageCount]);
 
   // Calculate assessment progress
   const assessmentProgress = useMemo(() => {
@@ -496,7 +512,7 @@ export function VendorsTable({
             variant="bordered"
             pagination={{
               page,
-              pageCount,
+              pageCount: filteredPageCount,
               onPageChange: setPage,
               pageSize: perPage,
               pageSizeOptions: pageSizeOptions,
@@ -525,7 +541,7 @@ export function VendorsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedVendors.map((vendor) => {
+              {paginatedVendors.map((vendor) => {
                 const blocked = isRowBlocked(vendor);
                 return (
                   <TableRow
