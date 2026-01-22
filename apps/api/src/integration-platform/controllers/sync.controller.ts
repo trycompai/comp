@@ -37,6 +37,22 @@ interface GoogleWorkspaceUsersResponse {
   nextPageToken?: string;
 }
 
+interface RampUser {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  employee_id?: string | null;
+  status?: 'USER_ACTIVE' | 'USER_INACTIVE' | 'USER_SUSPENDED';
+}
+
+interface RampUsersResponse {
+  data: RampUser[];
+  page: {
+    next?: string | null;
+  };
+}
+
 @Controller({ path: 'integrations/sync', version: '1' })
 export class SyncController {
   private readonly logger = new Logger(SyncController.name);
@@ -828,6 +844,366 @@ export class SyncController {
   }
 
   /**
+   * Sync employees from Ramp
+   */
+  @Post('ramp/employees')
+  async syncRampEmployees(@Query() query: SyncQuery) {
+    const { organizationId, connectionId } = query;
+
+    if (!organizationId || !connectionId) {
+      throw new HttpException(
+        'organizationId and connectionId are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    const provider = await db.integrationProvider.findUnique({
+      where: { id: connection.providerId },
+    });
+
+    if (!provider || provider.slug !== 'ramp') {
+      throw new HttpException(
+        'This endpoint only supports Ramp connections',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const manifest = getManifest('ramp');
+    if (!manifest) {
+      throw new HttpException(
+        'Ramp manifest not found',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    let credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+
+    if (!credentials?.access_token) {
+      throw new HttpException(
+        'No valid credentials found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const oauthConfig =
+      manifest.auth.type === 'oauth2' ? manifest.auth.config : null;
+
+    if (oauthConfig?.supportsRefreshToken && credentials.refresh_token) {
+      try {
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            'ramp',
+            organizationId,
+          );
+
+        if (oauthCredentials) {
+          const newToken = await this.credentialVaultService.refreshOAuthTokens(
+            connectionId,
+            {
+              tokenUrl: oauthConfig.tokenUrl,
+              refreshUrl: oauthConfig.refreshUrl,
+              clientId: oauthCredentials.clientId,
+              clientSecret: oauthCredentials.clientSecret,
+              clientAuthMethod: oauthConfig.clientAuthMethod,
+            },
+          );
+          if (newToken) {
+            credentials =
+              await this.credentialVaultService.getDecryptedCredentials(
+                connectionId,
+              );
+            if (!credentials?.access_token) {
+              throw new Error('Failed to get refreshed credentials');
+            }
+            this.logger.log('Successfully refreshed Ramp OAuth token');
+          }
+        }
+      } catch (refreshError) {
+        this.logger.warn(
+          `Token refresh failed, trying with existing token: ${refreshError}`,
+        );
+      }
+    }
+
+    const accessToken = credentials?.access_token;
+    if (!accessToken) {
+      throw new HttpException(
+        'No valid credentials found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const fetchRampUsers = async (status?: RampUser['status']) => {
+      const users: RampUser[] = [];
+      let nextUrl: string | null = null;
+
+      try {
+        do {
+          const url = nextUrl
+            ? new URL(nextUrl)
+            : new URL('https://api.ramp.com/developer/v1/users');
+          if (!nextUrl) {
+            url.searchParams.set('page_size', '100');
+            if (status) {
+              url.searchParams.set('status', status);
+            }
+          }
+
+          const response = await fetch(url.toString(), {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              throw new HttpException(
+                'Ramp credentials expired. Please reconnect.',
+                HttpStatus.UNAUTHORIZED,
+              );
+            }
+            if (response.status === 403) {
+              throw new HttpException(
+                'Ramp access denied. Ensure users:read scope is granted.',
+                HttpStatus.FORBIDDEN,
+              );
+            }
+
+            const errorText = await response.text();
+            this.logger.error(
+              `Ramp API error: ${response.status} ${response.statusText} - ${errorText}`,
+            );
+            throw new HttpException(
+              'Failed to fetch users from Ramp',
+              HttpStatus.BAD_GATEWAY,
+            );
+          }
+
+          const data: RampUsersResponse = await response.json();
+          if (data.data?.length) {
+            users.push(...data.data);
+          }
+
+          nextUrl = data.page?.next ?? null;
+        } while (nextUrl);
+      } catch (error) {
+        if (error instanceof HttpException) throw error;
+        this.logger.error(`Error fetching Ramp users: ${error}`);
+        throw new HttpException(
+          'Failed to fetch users from Ramp',
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return users;
+    };
+
+    const baseUsers = await fetchRampUsers();
+    const suspendedUsers = await fetchRampUsers('USER_SUSPENDED');
+    const users = [...baseUsers, ...suspendedUsers];
+
+    const activeUsers = users.filter((u) => u.status === 'USER_ACTIVE');
+    const inactiveUsers = users.filter((u) => u.status === 'USER_INACTIVE');
+
+    const activeEmails = new Set(
+      activeUsers
+        .map((u) => u.email?.toLowerCase())
+        .filter((email): email is string => Boolean(email)),
+    );
+    const inactiveEmails = new Set(
+      inactiveUsers
+        .map((u) => u.email?.toLowerCase())
+        .filter((email): email is string => Boolean(email)),
+    );
+    const suspendedEmails = new Set(
+      suspendedUsers
+        .map((u) => u.email?.toLowerCase())
+        .filter((email): email is string => Boolean(email)),
+    );
+
+    this.logger.log(
+      `Found ${activeUsers.length} active, ${inactiveUsers.length} inactive, and ${suspendedUsers.length} suspended Ramp users`,
+    );
+
+    const results = {
+      imported: 0,
+      skipped: 0,
+      deactivated: 0,
+      reactivated: 0,
+      errors: 0,
+      details: [] as Array<{
+        email: string;
+        status:
+          | 'imported'
+          | 'skipped'
+          | 'deactivated'
+          | 'reactivated'
+          | 'error';
+        reason?: string;
+      }>,
+    };
+
+    for (const rampUser of activeUsers) {
+      const normalizedEmail = rampUser.email?.toLowerCase();
+      if (!normalizedEmail) {
+        continue;
+      }
+
+      try {
+        const existingUser = await db.user.findUnique({
+          where: { email: normalizedEmail },
+        });
+
+        let userId: string;
+
+        if (existingUser) {
+          userId = existingUser.id;
+        } else {
+          const displayName =
+            `${rampUser.first_name ?? ''} ${rampUser.last_name ?? ''}`.trim() ||
+            normalizedEmail.split('@')[0];
+
+          const newUser = await db.user.create({
+            data: {
+              email: normalizedEmail,
+              name: displayName,
+              emailVerified: true,
+            },
+          });
+          userId = newUser.id;
+        }
+
+        const existingMember = await db.member.findFirst({
+          where: {
+            organizationId,
+            userId,
+          },
+        });
+
+        if (existingMember) {
+          if (existingMember.deactivated) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { deactivated: false, isActive: true },
+            });
+            results.reactivated++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'reactivated',
+              reason: 'User is active again in Ramp',
+            });
+          } else {
+            results.skipped++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'skipped',
+              reason: 'Already a member',
+            });
+          }
+          continue;
+        }
+
+        await db.member.create({
+          data: {
+            organizationId,
+            userId,
+            role: 'employee',
+            isActive: true,
+          },
+        });
+
+        results.imported++;
+        results.details.push({
+          email: normalizedEmail,
+          status: 'imported',
+        });
+      } catch (error) {
+        this.logger.error(`Error importing Ramp user: ${error}`);
+        results.errors++;
+        results.details.push({
+          email: normalizedEmail,
+          status: 'error',
+          reason: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    const allOrgMembers = await db.member.findMany({
+      where: {
+        organizationId,
+        deactivated: false,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    const rampDomains = new Set(
+      users
+        .map((u) => u.email?.split('@')[1]?.toLowerCase())
+        .filter((domain): domain is string => Boolean(domain)),
+    );
+
+    for (const member of allOrgMembers) {
+      const memberEmail = member.user.email.toLowerCase();
+      const memberDomain = memberEmail.split('@')[1];
+
+      if (!memberDomain || !rampDomains.has(memberDomain)) {
+        continue;
+      }
+
+      const isSuspended = suspendedEmails.has(memberEmail);
+      const isInactive = inactiveEmails.has(memberEmail);
+      const isRemoved =
+        !activeEmails.has(memberEmail) && !isSuspended && !isInactive;
+
+      if (isSuspended || isInactive || isRemoved) {
+        try {
+          await db.member.update({
+            where: { id: member.id },
+            data: { deactivated: true, isActive: false },
+          });
+          results.deactivated++;
+          results.details.push({
+            email: member.user.email,
+            status: 'deactivated',
+            reason: isSuspended
+              ? 'User is suspended in Ramp'
+              : isInactive
+                ? 'User is inactive in Ramp'
+                : 'User was removed from Ramp',
+          });
+        } catch (error) {
+          this.logger.error(`Error deactivating member: ${error}`);
+        }
+      }
+    }
+
+    this.logger.log(
+      `Ramp sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
+    );
+
+    return {
+      success: true,
+      totalFound: activeUsers.length,
+      totalInactive: inactiveUsers.length,
+      totalSuspended: suspendedUsers.length,
+      ...results,
+    };
+  }
+
+  /**
    * Sync employees from JumpCloud
    */
   @Post('jumpcloud/employees')
@@ -1324,6 +1700,40 @@ export class SyncController {
   }
 
   /**
+   * Check if Ramp is connected for an organization
+   */
+  @Post('ramp/status')
+  async getRampStatus(@Query('organizationId') organizationId: string) {
+    if (!organizationId) {
+      throw new HttpException(
+        'organizationId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const connection = await this.connectionRepository.findBySlugAndOrg(
+      'ramp',
+      organizationId,
+    );
+
+    if (!connection || connection.status !== 'active') {
+      return {
+        connected: false,
+        connectionId: null,
+        lastSyncAt: null,
+        nextSyncAt: null,
+      };
+    }
+
+    return {
+      connected: true,
+      connectionId: connection.id,
+      lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
+      nextSyncAt: connection.nextSyncAt?.toISOString() ?? null,
+    };
+  }
+
+  /**
    * Get the current employee sync provider for an organization
    */
   @Get('employee-sync-provider')
@@ -1370,7 +1780,12 @@ export class SyncController {
 
     // Validate provider if set
     if (provider) {
-      const validProviders = ['google-workspace', 'rippling', 'jumpcloud'];
+      const validProviders = [
+        'google-workspace',
+        'rippling',
+        'jumpcloud',
+        'ramp',
+      ];
       if (!validProviders.includes(provider)) {
         throw new HttpException(
           `Invalid provider. Must be one of: ${validProviders.join(', ')}`,

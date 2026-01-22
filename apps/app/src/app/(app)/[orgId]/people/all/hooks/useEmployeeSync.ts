@@ -7,7 +7,7 @@ import useSWR from 'swr';
 
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 
-type SyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud';
+type SyncProvider = 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp';
 
 interface SyncResult {
   success: boolean;
@@ -28,6 +28,7 @@ interface UseEmployeeSyncReturn {
   googleWorkspaceConnectionId: string | null;
   ripplingConnectionId: string | null;
   jumpcloudConnectionId: string | null;
+  rampConnectionId: string | null;
   selectedProvider: SyncProvider | null;
   isSyncing: boolean;
   syncEmployees: (provider: SyncProvider) => Promise<SyncResult | null>;
@@ -53,6 +54,11 @@ const PROVIDER_CONFIG = {
     shortName: 'JumpCloud',
     logo: 'https://img.logo.dev/jumpcloud.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true',
   },
+  ramp: {
+    name: 'Ramp',
+    shortName: 'Ramp',
+    logo: 'https://img.logo.dev/ramp.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ&format=png&retina=true',
+  },
 } as const;
 
 export const useEmployeeSync = ({
@@ -70,6 +76,7 @@ export const useEmployeeSync = ({
   const googleWorkspaceConnectionId = data?.googleWorkspaceConnectionId ?? null;
   const ripplingConnectionId = data?.ripplingConnectionId ?? null;
   const jumpcloudConnectionId = data?.jumpcloudConnectionId ?? null;
+  const rampConnectionId = data?.rampConnectionId ?? null;
   const selectedProvider = data?.selectedProvider ?? null;
 
   const setSyncProvider = async (provider: SyncProvider | null) => {
@@ -97,7 +104,9 @@ export const useEmployeeSync = ({
         ? googleWorkspaceConnectionId
         : provider === 'rippling'
           ? ripplingConnectionId
-          : jumpcloudConnectionId;
+          : provider === 'jumpcloud'
+            ? jumpcloudConnectionId
+            : rampConnectionId;
 
     if (!connectionId) {
       toast.error(`${PROVIDER_CONFIG[provider].name} is not connected`);
@@ -161,6 +170,7 @@ export const useEmployeeSync = ({
     googleWorkspaceConnectionId,
     ripplingConnectionId,
     jumpcloudConnectionId,
+    rampConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
@@ -168,7 +178,8 @@ export const useEmployeeSync = ({
     hasAnyConnection: !!(
       googleWorkspaceConnectionId ||
       ripplingConnectionId ||
-      jumpcloudConnectionId
+      jumpcloudConnectionId ||
+      rampConnectionId
     ),
     getProviderName,
     getProviderLogo,

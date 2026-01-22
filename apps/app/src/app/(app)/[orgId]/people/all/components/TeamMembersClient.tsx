@@ -75,6 +75,7 @@ export function TeamMembersClient({
     googleWorkspaceConnectionId,
     ripplingConnectionId,
     jumpcloudConnectionId,
+    rampConnectionId,
     selectedProvider,
     isSyncing,
     syncEmployees,
@@ -86,7 +87,9 @@ export function TeamMembersClient({
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
 
-  const handleEmployeeSync = async (provider: 'google-workspace' | 'rippling' | 'jumpcloud') => {
+  const handleEmployeeSync = async (
+    provider: 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp',
+  ) => {
     const result = await syncEmployees(provider);
     if (result?.success) {
       router.refresh();
@@ -305,7 +308,7 @@ export function TeamMembersClient({
           <div className="flex items-center gap-2">
             <Select
               onValueChange={(value) =>
-                handleEmployeeSync(value as 'google-workspace' | 'rippling')
+                handleEmployeeSync(value as 'google-workspace' | 'rippling' | 'jumpcloud' | 'ramp')
               }
               disabled={isSyncing || !canManageMembers}
             >
@@ -401,6 +404,24 @@ export function TeamMembersClient({
                       />
                       JumpCloud
                       {selectedProvider === 'jumpcloud' && (
+                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                )}
+                {rampConnectionId && (
+                  <SelectItem value="ramp">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={getProviderLogo('ramp')}
+                        alt="Ramp"
+                        width={16}
+                        height={16}
+                        className="rounded-sm"
+                        unoptimized
+                      />
+                      Ramp
+                      {selectedProvider === 'ramp' && (
                         <span className="ml-auto text-xs text-muted-foreground">Active</span>
                       )}
                     </div>
