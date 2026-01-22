@@ -26,7 +26,7 @@ interface PolicyAssigneeChartProps {
   data?: AssigneeData[] | null;
 }
 
-const BAR_COLOR = 'var(--success)';
+const BAR_COLOR = 'var(--primary)';
 
 const STATUS_COLORS = {
   published: 'var(--success)',
