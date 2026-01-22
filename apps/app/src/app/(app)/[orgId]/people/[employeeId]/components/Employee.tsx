@@ -2,6 +2,7 @@
 
 import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
+import { Stack } from '@trycompai/design-system';
 import type { FleetPolicy, Host } from '../../devices/types';
 import { EmployeeDetails } from './EmployeeDetails';
 import { EmployeeTasks } from './EmployeeTasks';
@@ -28,7 +29,7 @@ export function Employee({
   canEdit,
 }: EmployeeDetailsProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       <EmployeeDetails employee={employee} canEdit={canEdit} />
       <EmployeeTasks
         employee={employee}
@@ -37,6 +38,6 @@ export function Employee({
         fleetPolicies={fleetPolicies}
         host={host}
       />
-    </div>
+    </Stack>
   );
 }

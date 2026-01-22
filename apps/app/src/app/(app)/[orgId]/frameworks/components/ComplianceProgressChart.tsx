@@ -22,8 +22,8 @@ interface ComplianceProgressChartProps {
 }
 
 const CHART_COLORS = {
-  score: 'hsl(var(--chart-primary))',
-  remaining: 'hsl(var(--muted))',
+  score: 'var(--color-primary)',
+  remaining: 'var(--color-muted)',
 };
 
 export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) {
@@ -73,10 +73,10 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
   } satisfies ChartConfig;
 
   return (
-    <ChartContainer config={chartConfig} className="mx-auto h-[160px] max-w-[200px]">
+    <ChartContainer config={chartConfig} className="mx-auto h-[120px] max-w-[150px]">
       <PieChart
-        width={200}
-        height={160}
+        width={120}
+        height={120}
         margin={{
           top: 0,
           right: 0,
@@ -89,8 +89,8 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
           data={chartData}
           dataKey="value"
           nameKey="name"
-          innerRadius={45}
-          outerRadius={62}
+          innerRadius={35}
+          outerRadius={50}
           paddingAngle={2}
           strokeWidth={2}
           cursor="pointer"
@@ -111,14 +111,14 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
                       <tspan
                         x={viewBox.cx}
                         y={viewBox.cy}
-                        className="fill-foreground text-lg font-medium select-none"
+                        className="fill-foreground text-base font-medium select-none"
                       >
                         {data.score}%
                       </tspan>
                       <tspan
                         x={viewBox.cx}
-                        y={(viewBox.cy || 0) + 22}
-                        className="fill-muted-foreground text-[10px] select-none"
+                        y={(viewBox.cy || 0) + 18}
+                        className="fill-muted-foreground text-[9px] select-none"
                       >
                         Overall
                       </tspan>
@@ -126,9 +126,9 @@ export function ComplianceProgressChart({ data }: ComplianceProgressChartProps) 
                     <circle
                       cx={viewBox.cx}
                       cy={viewBox.cy}
-                      r={42}
+                      r={32}
                       fill="none"
-                      stroke="hsl(var(--border))"
+                      stroke="var(--color-border)"
                       strokeWidth={1}
                       strokeDasharray="2,2"
                     />

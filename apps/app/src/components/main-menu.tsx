@@ -6,10 +6,13 @@ import { cn } from '@comp/ui/cn';
 import { Icons } from '@comp/ui/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import {
+  ClipboardCheck,
+  FileTextIcon,
   FlaskConical,
   Gauge,
   ListCheck,
   NotebookText,
+  ShieldCheck,
   ShieldEllipsis,
   Store,
   Users,
@@ -44,11 +47,26 @@ interface ItemProps {
   itemRef: (el: HTMLDivElement | null) => void;
 }
 
+export type Props = {
+  organizationId?: string;
+  organization?: { advancedModeEnabled?: boolean } | null;
+  isCollapsed?: boolean;
+  onItemClick?: () => void;
+  isQuestionnaireEnabled?: boolean;
+  isTrustNdaEnabled?: boolean;
+  hasAuditorRole?: boolean;
+  isOnlyAuditor?: boolean;
+};
+
 export function MainMenu({
   organizationId,
   organization,
   isCollapsed = false,
   onItemClick,
+  isQuestionnaireEnabled = false,
+  isTrustNdaEnabled = false,
+  hasAuditorRole = false,
+  isOnlyAuditor = false,
 }: Props) {
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
@@ -62,6 +80,15 @@ export function MainMenu({
       disabled: false,
       icon: Gauge,
       protected: false,
+    },
+    {
+      id: 'auditor',
+      path: '/:organizationId/auditor',
+      name: 'Auditor View',
+      disabled: false,
+      icon: ClipboardCheck,
+      protected: false,
+      hidden: !hasAuditorRole,
     },
     {
       id: 'controls',
@@ -83,10 +110,19 @@ export function MainMenu({
     {
       id: 'tasks',
       path: '/:organizationId/tasks',
-      name: 'Tasks',
+      name: 'Evidence',
       disabled: false,
       icon: ListCheck,
       protected: false,
+    },
+    {
+      id: 'trust',
+      path: '/:organizationId/trust',
+      name: 'Trust',
+      disabled: false,
+      icon: ShieldCheck,
+      protected: false,
+      hidden: !isTrustNdaEnabled,
     },
     {
       id: 'people',
@@ -113,12 +149,22 @@ export function MainMenu({
       protected: false,
     },
     {
+      id: 'questionnaire',
+      path: '/:organizationId/questionnaire',
+      name: 'Questionnaire',
+      disabled: false,
+      icon: FileTextIcon,
+      protected: false,
+      hidden: !isQuestionnaireEnabled,
+    },
+    {
       id: 'integrations',
       path: '/:organizationId/integrations',
       name: 'Integrations',
       disabled: false,
       icon: Zap,
       protected: false,
+      hidden: isOnlyAuditor,
     },
     {
       id: 'tests',
@@ -135,6 +181,7 @@ export function MainMenu({
       disabled: false,
       icon: Icons.Settings,
       protected: true,
+      hidden: isOnlyAuditor,
     },
   ];
 
@@ -312,11 +359,4 @@ const Item = ({
       </TooltipProvider>
     </div>
   );
-};
-
-type Props = {
-  organizationId?: string;
-  organization?: { advancedModeEnabled?: boolean } | null;
-  isCollapsed?: boolean;
-  onItemClick?: () => void;
 };

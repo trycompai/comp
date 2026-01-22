@@ -1,90 +1,29 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": [
-    "**/.env"
-  ],
-  "ui": "stream",
+  "globalDependencies": ["**/.env"],
+  "ui": "tui",
   "tasks": {
     "prisma:generate": {
       "cache": false,
-      "outputs": [
-        "prisma/schema.prisma",
-        "node_modules/.prisma/**"
-      ]
+      "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
+    },
+    "db:generate": {
+      "cache": false,
+      "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
     },
     "build": {
-      "dependsOn": [
-        "^build",
-        "prisma:generate"
-      ],
-      "env": [
-        "AUTH_GOOGLE_ID",
-        "AUTH_GOOGLE_SECRET",
-        "AUTH_GITHUB_ID",
-        "AUTH_GITHUB_SECRET",
-        "AUTH_SECRET",
-        "DATABASE_URL",
-        "OPENAI_API_KEY",
-        "RESEND_API_KEY",
-        "UPSTASH_REDIS_REST_URL",
-        "UPSTASH_REDIS_REST_TOKEN",
-        "TRIGGER_SECRET_KEY",
-        "TRIGGER_API_KEY",
-        "TRIGGER_API_URL",
-        "REVALIDATION_SECRET",
-        "VERCEL_ACCESS_TOKEN",
-        "VERCEL_TEAM_ID",
-        "VERCEL_PROJECT_ID",
-        "TRUST_PORTAL_PROJECT_ID",
-        "NODE_ENV",
-        "APP_AWS_ACCESS_KEY_ID",
-        "APP_AWS_SECRET_ACCESS_KEY",
-        "APP_AWS_REGION",
-        "APP_AWS_BUCKET_NAME",
-        "NEXT_PUBLIC_PORTAL_URL",
-        "FIRECRAWL_API_KEY",
-        "FLEET_URL",
-        "FLEET_TOKEN",
-        "DUB_API_KEY",
-        "DUB_REFER_URL",
-        "GA4_API_SECRET",
-        "GA4_MEASUREMENT_ID",
-        "LINKEDIN_CONVERSIONS_ACCESS_TOKEN",
-        "NEXT_PUBLIC_POSTHOG_KEY",
-        "NEXT_PUBLIC_POSTHOG_HOST",
-        "NEXT_PUBLIC_IS_DUB_ENABLED",
-        "NEXT_PUBLIC_GTM_ID",
-        "NEXT_PUBLIC_LINKEDIN_PARTNER_ID",
-        "NEXT_PUBLIC_LINKEDIN_CONVERSION_ID",
-        "NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL",
-        "NEXT_PUBLIC_API_URL",
-        "NEXT_PUBLIC_BETTER_AUTH_URL"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "next-env.d.ts"
-      ]
+      "dependsOn": ["^build", "prisma:generate"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "dist/**"]
     },
     "lint": {
-      "dependsOn": [
-        "^lint"
-      ]
+      "dependsOn": ["^lint"]
     },
     "typecheck": {
-      "outputs": [
-        "node_modules/.cache/tsbuildinfo.json"
-      ]
+      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
     "dev": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env"],
       "persistent": true,
       "cache": false
     },
@@ -96,13 +35,8 @@
     },
     "test": {
       "cache": false,
-      "outputs": [
-        "coverage/**"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env"
-      ]
+      "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env"]
     }
   }
 }

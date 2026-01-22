@@ -30,9 +30,12 @@ const severityVariant = {
 
 const statusVariant = {
   failed: 'destructive',
-  passed: 'default',
+  passed: 'success',
   new: 'warning',
   active: 'warning',
+  open: 'destructive',
+  success: 'success',
+  resolved: 'default',
 } as const;
 
 export function FindingsTable({ findings }: FindingsTableProps) {
@@ -67,7 +70,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
             <TableHead className="w-[120px]">Severity</TableHead>
             <TableHead>Title</TableHead>
             <TableHead className="w-[150px]">Status</TableHead>
-            <TableHead className="w-[180px]">Last Checked</TableHead>
+            <TableHead className="w-[180px]">Detected At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -102,7 +105,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[statusKey] || 'secondary'}>
-                      {finding.status || 'Unknown'}
+                      {finding.status === 'success' ? 'Passed' : finding.status || 'Unknown'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">

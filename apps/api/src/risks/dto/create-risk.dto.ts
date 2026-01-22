@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
-import { 
-  RiskCategory, 
-  Departments, 
-  RiskStatus, 
-  Likelihood, 
-  Impact, 
-  RiskTreatmentType 
+import {
+  RiskCategory,
+  Departments,
+  RiskStatus,
+  Likelihood,
+  Impact,
+  RiskTreatmentType,
 } from '@trycompai/db';
 
 export class CreateRiskDto {
@@ -20,7 +20,8 @@ export class CreateRiskDto {
 
   @ApiProperty({
     description: 'Detailed description of the risk',
-    example: 'Weak password requirements could lead to unauthorized access to user accounts',
+    example:
+      'Weak password requirements could lead to unauthorized access to user accounts',
   })
   @IsString()
   @IsNotEmpty()
@@ -97,7 +98,8 @@ export class CreateRiskDto {
   @ApiProperty({
     description: 'Description of the treatment strategy',
     required: false,
-    example: 'Implement multi-factor authentication and strengthen password requirements',
+    example:
+      'Implement multi-factor authentication and strengthen password requirements',
   })
   @IsOptional()
   @IsString()

@@ -1,15 +1,13 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Integration } from '@db';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { Plus, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { useIntegrationMutations } from '@/hooks/use-integration-platform';
+import { api } from '@/lib/api-client';
+import { Button, PageHeader, PageHeaderDescription, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
+import { Add, Settings } from '@trycompai/design-system/icons';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import { runTests } from '../actions/run-tests';
-import { ChatPlaceholder } from './ChatPlaceholder';
 import { CloudSettingsModal } from './CloudSettingsModal';
 import { EmptyState } from './EmptyState';
 import { ResultsView } from './ResultsView';
@@ -27,79 +25,132 @@ interface Finding {
   };
 }
 
-interface TestsLayoutProps {
-  initialFindings: Finding[];
-  initialProviders: Integration[];
+interface Provider {
+  id: string;
+  integrationId: string;
+  name: string;
+  organizationId: string;
+  lastRunAt: Date | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isLegacy?: boolean;
+  variables?: Record<string, unknown> | null;
+  requiredVariables?: string[];
 }
 
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch');
-  return res.json();
+interface TestsLayoutProps {
+  initialFindings: Finding[];
+  initialProviders: Provider[];
+  orgId: string;
+}
+
+type SupportedProviderId = 'aws' | 'gcp' | 'azure';
+
+const SUPPORTED_PROVIDER_IDS: readonly SupportedProviderId[] = ['aws', 'gcp', 'azure'];
+
+// Check if a provider needs configuration (has required variables that aren't set)
+const needsVariableConfiguration = (provider: Provider): boolean => {
+  // Legacy providers use old system - no variable config needed here
+  if (provider.isLegacy) return false;
+
+  const requiredVars = provider.requiredVariables || [];
+  if (requiredVars.length === 0) return false;
+
+  const currentVars = provider.variables || {};
+  return requiredVars.some((varId) => !currentVars[varId]);
 };
 
-export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutProps) {
-  const [scanTaskId, setScanTaskId] = useState<string | null>(null);
-  const [scanAccessToken, setScanAccessToken] = useState<string | null>(null);
+const isSupportedProviderId = (id: string): id is SupportedProviderId =>
+  SUPPORTED_PROVIDER_IDS.includes(id as SupportedProviderId);
+
+export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsLayoutProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
+  const [configureProvider, setConfigureProvider] = useState<Provider | null>(null);
+  const { disconnectConnection } = useIntegrationMutations();
 
-  // Use SWR for real-time updates
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
-    '/api/cloud-tests/findings',
-    fetcher,
+    `/api/cloud-tests/findings?orgId=${orgId}`,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
     {
       fallbackData: initialFindings,
-      refreshInterval: 5000, // Refresh every 5 seconds when scanning
+      refreshInterval: 5000,
       revalidateOnFocus: true,
     },
   );
 
-  const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Integration[]>(
-    '/api/cloud-tests/providers',
-    fetcher,
+  const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Provider[]>(
+    `/api/cloud-tests/providers?orgId=${orgId}`,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
     {
       fallbackData: initialProviders,
       revalidateOnFocus: true,
     },
   );
 
-  const connectedProviders = (providers || []).filter((p) =>
-    ['aws', 'gcp', 'azure'].includes(p.integrationId),
-  );
+  const connectedProviders = providers.filter((p) => isSupportedProviderId(p.integrationId));
 
-  // Track scan run status with access token
-  const { run: scanRun } = useRealtimeRun(scanTaskId || '', {
-    enabled: !!scanTaskId && !!scanAccessToken,
-    accessToken: scanAccessToken || undefined,
-  });
+  // Get the current active provider (use activeTab state or default to first provider)
+  const currentProviderId = activeTab || connectedProviders[0]?.integrationId;
 
-  // Auto-refresh findings when scan completes
-  useEffect(() => {
-    if (scanRun?.status === 'COMPLETED') {
-      mutateFindings();
-      toast.success('Scan completed! Results updated.');
-    } else if (scanRun?.status === 'FAILED' || scanRun?.status === 'CRASHED') {
-      toast.error('Scan failed. Please try again.');
-    }
-  }, [scanRun?.status, mutateFindings]);
-
-  const handleRunScan = async (): Promise<string | null> => {
-    try {
-      const result = await runTests();
-      if (result.success && result.taskId && result.publicAccessToken) {
-        setScanTaskId(result.taskId);
-        setScanAccessToken(result.publicAccessToken);
-        toast.success('Scan started! Checking your cloud infrastructure...');
-        return result.taskId;
-      } else {
-        toast.error(result.errors?.[0] || 'Failed to start scan');
-        return null;
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to start scan. Please try again.');
+  const handleRunScan = async (providerId?: string): Promise<string | null> => {
+    if (!orgId) {
+      toast.error('No active organization');
       return null;
+    }
+
+    // Use the passed providerId, or fall back to the current active tab
+    const targetProviderId = providerId || currentProviderId;
+    const targetProvider = connectedProviders.find((p) => p.integrationId === targetProviderId);
+
+    if (!targetProvider) {
+      toast.error('No provider selected');
+      return null;
+    }
+
+    setIsScanning(true);
+    toast.message(`Starting ${targetProvider.name} security scan...`);
+
+    try {
+      if (targetProvider.isLegacy) {
+        // Run legacy check for this specific provider
+        const { runTests } = await import('../actions/run-tests');
+        const result = await runTests();
+        if (!result.success) {
+          console.error('Legacy scan error:', result.errors);
+        }
+      } else {
+        // Use dedicated cloud security endpoint
+        const response = await api.post(`/v1/cloud-security/scan/${targetProvider.id}`, {}, orgId);
+        if (response.error) {
+          console.error(`Error scanning ${targetProvider.name}:`, response.error);
+          toast.error(`Failed to scan ${targetProvider.name}`);
+          return null;
+        }
+      }
+
+      toast.success('Scan completed! Results updated.');
+      await mutateProviders(); // Refresh to get updated lastRunAt
+      await mutateFindings();
+      return 'completed';
+    } catch (error) {
+      console.error('Scan error:', error);
+      toast.error('Failed to complete scan. Please try again.');
+      return null;
+    } finally {
+      setIsScanning(false);
     }
   };
 
@@ -109,134 +160,141 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
     setViewingResults(true);
   };
 
-  // First-time user: No clouds connected OR user wants to add a cloud
+  const handleCloudConnected = async () => {
+    mutateProviders();
+    mutateFindings();
+    setViewingResults(true);
+  };
+
   if (connectedProviders.length === 0 || !viewingResults) {
     return (
       <EmptyState
         onBack={connectedProviders.length > 0 ? () => setViewingResults(true) : undefined}
         connectedProviders={connectedProviders.map((p) => p.integrationId)}
+        onConnected={handleCloudConnected}
       />
     );
   }
 
-  // Group findings by cloud provider
-  const findingsByProvider = (findings || []).reduce(
-    (acc, finding) => {
-      const provider = finding.integration.integrationId;
-      if (!acc[provider]) {
-        acc[provider] = [];
-      }
-      acc[provider].push(finding);
-      return acc;
-    },
-    {} as Record<string, Finding[]>,
-  );
+  const findingsByProvider = findings.reduce<Record<string, Finding[]>>((acc, finding) => {
+    const bucket = acc[finding.integration.integrationId] ?? [];
+    bucket.push(finding);
+    acc[finding.integration.integrationId] = bucket;
+    return acc;
+  }, {});
 
-  // Single cloud user (primary use case)
   if (connectedProviders.length === 1) {
     const provider = connectedProviders[0];
-    const providerFindings = findingsByProvider[provider.integrationId] || [];
+    const providerFindings = findingsByProvider[provider.integrationId] ?? [];
+
+    const description = provider.lastRunAt
+      ? `${provider.name} • ${providerFindings.length} findings • Last scan: ${new Date(provider.lastRunAt).toLocaleString()}`
+      : `${provider.name} • ${providerFindings.length} findings`;
 
     return (
-      <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Cloud Security Tests</h1>
-            <p className="text-muted-foreground text-sm">
-              {provider.name} • {providerFindings.length} findings
-            </p>
-            {provider.lastRunAt && (
-              <p className="text-muted-foreground text-xs">
-                Last scan: {new Date(provider.lastRunAt).toLocaleString()} • Next scan: Daily at
-                5:00 AM UTC
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {connectedProviders.length < 3 && (
-              <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Cloud
+      <PageLayout>
+        <PageHeader
+          title="Cloud Security Tests"
+          actions={
+            <>
+              {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
+                <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
+                  <Add />
+                  Add Cloud
+                </Button>
+              )}
+              <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
+                <Settings />
               </Button>
-            )}
-            <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <PageHeaderDescription>{description}</PageHeaderDescription>
+        </PageHeader>
 
-        {/* Split-screen layout: Results (70%) + Chat placeholder (30%) */}
-        <div className="gap-6">
-          <div>
-            <ResultsView
-              findings={providerFindings}
-              scanTaskId={scanTaskId}
-              scanAccessToken={scanAccessToken}
-              onRunScan={handleRunScan}
-              isScanning={
-                !!(
-                  scanRun &&
-                  ['QUEUED', 'EXECUTING', 'WAITING_FOR_DEPLOY', 'REATTEMPTING'].includes(
-                    scanRun.status,
-                  )
-                )
-              }
-            />
-          </div>
-          {/* <div className="hidden lg:block">
-            <ChatPlaceholder />
-          </div> */}
-        </div>
+        <ResultsView
+          findings={providerFindings}
+          onRunScan={() => handleRunScan(provider.integrationId)}
+          isScanning={isScanning}
+          needsConfiguration={needsVariableConfiguration(provider)}
+          onConfigure={() => {
+            setConfigureProvider(provider);
+            setConfigureDialogOpen(true);
+          }}
+        />
 
-        {/* Settings Modal */}
         <CloudSettingsModal
           open={showSettings}
           onOpenChange={setShowSettings}
           connectedProviders={connectedProviders.map((p) => ({
-            id: p.integrationId as 'aws' | 'gcp' | 'azure',
+            id: p.integrationId,
+            connectionId: p.id,
             name: p.name,
-            fields: getProviderFields(p.integrationId),
           }))}
           onUpdate={handleProvidersUpdate}
         />
-      </div>
+
+        {/* Configure dialog for setting variables */}
+        {configureProvider && (
+          <ManageIntegrationDialog
+            open={configureDialogOpen}
+            onOpenChange={setConfigureDialogOpen}
+            connectionId={configureProvider.id}
+            integrationId={configureProvider.integrationId}
+            integrationName={configureProvider.name}
+            integrationLogoUrl={`https://img.logo.dev/${
+              configureProvider.integrationId === 'aws'
+                ? 'aws.amazon.com'
+                : configureProvider.integrationId === 'gcp'
+                  ? 'cloud.google.com'
+                  : 'azure.com'
+            }?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
+            configureOnly={true}
+            onSaved={async () => {
+              const savedProvider = configureProvider;
+              setConfigureDialogOpen(false);
+              setConfigureProvider(null);
+              await mutateProviders();
+              // Run scan after saving variables
+              if (savedProvider) {
+                toast.message('Configuration saved! Running security scan...');
+                await handleRunScan(savedProvider.integrationId);
+              }
+            }}
+          />
+        )}
+      </PageLayout>
     );
   }
 
-  // Multi-cloud user (<5%)
-  const defaultTab = connectedProviders[0]?.integrationId || 'aws';
+  const defaultTab = connectedProviders[0]?.integrationId ?? 'aws';
+
+  const multiProviderDescription = connectedProviders.some((p) => p.lastRunAt)
+    ? `${connectedProviders.length} cloud providers connected • Automated scans run daily at 5:00 AM UTC`
+    : `${connectedProviders.length} cloud providers connected`;
 
   return (
-    <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Cloud Security Tests</h1>
-          <p className="text-muted-foreground text-sm">
-            {connectedProviders.length} cloud providers connected
-          </p>
-          {connectedProviders.some((p) => p.lastRunAt) && (
-            <p className="text-muted-foreground text-xs">
-              Automated scans run daily at 5:00 AM UTC
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          {connectedProviders.length < 3 && (
-            <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Cloud
+    <PageLayout>
+      <PageHeader
+        title="Cloud Security Tests"
+        actions={
+          <>
+            {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
+              <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
+                <Add />
+                Add Cloud
+              </Button>
+            )}
+            <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
+              <Settings />
             </Button>
-          )}
-          <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      >
+        <PageHeaderDescription>{multiProviderDescription}</PageHeaderDescription>
+      </PageHeader>
 
-      {/* Tabs for multiple clouds */}
-      <Tabs defaultValue={defaultTab}>
+      <Tabs defaultValue={defaultTab} onValueChange={setActiveTab}>
         <TabsList>
           {connectedProviders.map((provider) => (
             <TabsTrigger key={provider.integrationId} value={provider.integrationId}>
@@ -246,78 +304,65 @@ export function TestsLayout({ initialFindings, initialProviders }: TestsLayoutPr
         </TabsList>
 
         {connectedProviders.map((provider) => {
-          const providerFindings = findingsByProvider[provider.integrationId] || [];
+          const providerFindings = findingsByProvider[provider.integrationId] ?? [];
 
           return (
-            <TabsContent
-              key={provider.integrationId}
-              value={provider.integrationId}
-              className="mt-6"
-            >
-              {/* Split-screen layout */}
-              <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
-                <div>
-                  <ResultsView
-                    findings={providerFindings}
-                    scanTaskId={scanTaskId}
-                    scanAccessToken={scanAccessToken}
-                    onRunScan={handleRunScan}
-                    isScanning={
-                      !!(
-                        scanRun &&
-                        ['QUEUED', 'EXECUTING', 'WAITING_FOR_DEPLOY', 'REATTEMPTING'].includes(
-                          scanRun.status,
-                        )
-                      )
-                    }
-                  />
-                </div>
-                <div className="hidden lg:block">
-                  <ChatPlaceholder />
-                </div>
-              </div>
+            <TabsContent key={provider.integrationId} value={provider.integrationId}>
+              <ResultsView
+                findings={providerFindings}
+                onRunScan={() => handleRunScan(provider.integrationId)}
+                isScanning={isScanning}
+                needsConfiguration={needsVariableConfiguration(provider)}
+                onConfigure={() => {
+                  setConfigureProvider(provider);
+                  setConfigureDialogOpen(true);
+                }}
+              />
             </TabsContent>
           );
         })}
       </Tabs>
 
-      {/* Settings Modal */}
       <CloudSettingsModal
         open={showSettings}
         onOpenChange={setShowSettings}
         connectedProviders={connectedProviders.map((p) => ({
-          id: p.integrationId as 'aws' | 'gcp' | 'azure',
+          id: p.integrationId,
+          connectionId: p.id,
           name: p.name,
-          fields: getProviderFields(p.integrationId),
         }))}
         onUpdate={handleProvidersUpdate}
       />
-    </div>
-  );
-}
 
-// Helper function to get provider fields for settings modal
-function getProviderFields(providerId: string) {
-  switch (providerId) {
-    case 'aws':
-      return [
-        { id: 'region', label: 'AWS Region' },
-        { id: 'access_key_id', label: 'Access Key ID' },
-        { id: 'secret_access_key', label: 'Secret Access Key' },
-      ];
-    case 'gcp':
-      return [
-        { id: 'organization_id', label: 'Organization ID' },
-        { id: 'service_account_key', label: 'Service Account Key' },
-      ];
-    case 'azure':
-      return [
-        { id: 'AZURE_CLIENT_ID', label: 'Client ID' },
-        { id: 'AZURE_TENANT_ID', label: 'Tenant ID' },
-        { id: 'AZURE_CLIENT_SECRET', label: 'Client Secret' },
-        { id: 'AZURE_SUBSCRIPTION_ID', label: 'Subscription ID' },
-      ];
-    default:
-      return [];
-  }
+      {/* Configure dialog for setting variables */}
+      {configureProvider && (
+        <ManageIntegrationDialog
+          open={configureDialogOpen}
+          onOpenChange={setConfigureDialogOpen}
+          connectionId={configureProvider.id}
+          integrationId={configureProvider.integrationId}
+          integrationName={configureProvider.name}
+          integrationLogoUrl={`https://img.logo.dev/${
+            configureProvider.integrationId === 'aws'
+              ? 'aws.amazon.com'
+              : configureProvider.integrationId === 'gcp'
+                ? 'cloud.google.com'
+                : 'azure.com'
+          }?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
+          configureOnly={true}
+          onSaved={async () => {
+            const savedProvider = configureProvider;
+            setConfigureDialogOpen(false);
+            setConfigureProvider(null);
+            await mutateProviders();
+            // Run scan after saving variables
+            if (savedProvider) {
+              toast.message('Configuration saved! Running security scan...');
+              await handleRunScan(savedProvider.integrationId);
+            }
+          }}
+        />
+      )}
+    </PageLayout>
+  );
 }

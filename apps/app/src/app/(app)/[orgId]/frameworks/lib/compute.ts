@@ -34,7 +34,7 @@ export function computeFrameworkStats(
   for (const t of frameworkTasks) uniqueTaskMap.set(t.id, t);
   const uniqueTasks = Array.from(uniqueTaskMap.values());
   const totalTasks = uniqueTasks.length;
-  const doneTasks = uniqueTasks.filter((t) => t.status === 'done').length;
+  const doneTasks = uniqueTasks.filter((t) => t.status === 'done' || t.status === 'not_relevant').length;
   const taskRatio = totalTasks > 0 ? doneTasks / totalTasks : 1;
 
   const complianceScore = Math.round(((policyRatio + taskRatio) / 2) * 100);

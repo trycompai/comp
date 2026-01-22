@@ -1,15 +1,12 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
-import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
-import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
-import { RiskOverview } from '@/components/risks/risk-overview';
 import { auth } from '@/utils/auth';
-import { CommentEntityType, db } from '@db';
+import { db } from '@db';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
-import { Comments } from '../../../../../components/comments/Comments';
 import { RiskActions } from './components/RiskActions';
+import { RiskPageClient } from './components/RiskPageClient';
 
 interface PageProps {
   searchParams: Promise<{
@@ -18,35 +15,58 @@ interface PageProps {
     sort?: string;
     page?: string;
     per_page?: string;
+    taskItemId?: string;
   }>;
   params: Promise<{ riskId: string; orgId: string }>;
 }
 
+/**
+ * Risk detail page - server component
+ * Fetches initial data server-side for fast first render
+ * Passes data to RiskPageClient which uses SWR for real-time updates
+ */
 export default async function RiskPage({ searchParams, params }: PageProps) {
   const { riskId, orgId } = await params;
+  const { taskItemId } = await searchParams;
   const risk = await getRisk(riskId);
   const assignees = await getAssignees();
+  
   if (!risk) {
     redirect('/');
   }
 
-  return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
+  const shortTaskId = (id: string) => id.slice(-6).toUpperCase();
+  const isViewingTask = Boolean(taskItemId);
+
+  const breadcrumbs = taskItemId
+    ? [
         { label: 'Risks', href: `/${orgId}/risk` },
-        { label: risk.title, current: true },
-      ]}
-      headerRight={<RiskActions riskId={riskId} />}
+        { label: risk.title, href: `/${orgId}/risk/${riskId}` },
+        { label: shortTaskId(taskItemId), isCurrent: true },
+      ]
+    : [
+        { label: 'Risks', href: `/${orgId}/risk` },
+        { label: risk.title, isCurrent: true },
+      ];
+
+  return (
+    <PageLayout
+      header={
+        <PageHeader
+          title={taskItemId ? shortTaskId(taskItemId) : risk.title}
+          breadcrumbs={breadcrumbs}
+          actions={<RiskActions riskId={riskId} orgId={orgId} />}
+        />
+      }
     >
-      <div className="flex flex-col gap-4">
-        <RiskOverview risk={risk} assignees={assignees} />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <InherentRiskChart risk={risk} />
-          <ResidualRiskChart risk={risk} />
-        </div>
-        <Comments entityId={riskId} entityType={CommentEntityType.risk} />
-      </div>
-    </PageWithBreadcrumb>
+      <RiskPageClient
+        riskId={riskId}
+        orgId={orgId}
+        initialRisk={risk}
+        assignees={assignees}
+        isViewingTask={isViewingTask}
+      />
+    </PageLayout>
   );
 }
 
@@ -89,8 +109,9 @@ const getAssignees = cache(async () => {
     where: {
       organizationId: session.session.activeOrganizationId,
       role: {
-        notIn: ['employee'],
+        notIn: ['employee', 'contractor'],
       },
+      deactivated: false,
     },
     include: {
       user: true,

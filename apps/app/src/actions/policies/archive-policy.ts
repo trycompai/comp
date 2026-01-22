@@ -58,9 +58,9 @@ export const archivePolicyAction = authActionClient
       });
 
       revalidatePath(`/${activeOrganizationId}/policies/${id}`);
-      revalidatePath(`/${activeOrganizationId}/policies/all`);
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidateTag('policies');
+      revalidatePath(`/${activeOrganizationId}/policies`);
+      revalidateTag('policies', 'max');
 
       return {
         success: true,

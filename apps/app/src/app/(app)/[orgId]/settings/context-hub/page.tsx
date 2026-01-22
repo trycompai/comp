@@ -1,4 +1,3 @@
-import PageCore from '@/components/pages/PageCore.tsx';
 import type { Metadata } from 'next';
 import { ContextTable } from './ContextTable';
 import { getContextEntries } from './data/getContextEntries';
@@ -24,11 +23,7 @@ export default async function ContextHubSettings({
     perPage: Number(perPage) || 50,
   });
 
-  return (
-    <PageCore>
-      <ContextTable entries={entriesResult.data} pageCount={entriesResult.pageCount} />
-    </PageCore>
-  );
+  return <ContextTable entries={entriesResult.data} pageCount={entriesResult.pageCount} />;
 }
 
 export async function generateMetadata(): Promise<Metadata> {

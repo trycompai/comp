@@ -34,7 +34,7 @@ export function getControlStatus(
       (policy) => policy.status === 'published', // Simplified from artifact.policy.status
     );
   const allTasksDone =
-    controlTasks.length > 0 && controlTasks.every((task) => task.status === 'done');
+    controlTasks.length > 0 && controlTasks.every((task) => task.status === 'done' || task.status === 'not_relevant');
 
   if (allPoliciesPublished && (controlTasks.length === 0 || allTasksDone)) return 'completed';
   if (allPoliciesDraft && allTasksTodo) return 'not_started';

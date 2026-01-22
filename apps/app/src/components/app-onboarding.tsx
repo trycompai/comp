@@ -4,6 +4,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@c
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { BookOpen, HelpCircle, PlusIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
@@ -25,6 +26,8 @@ type Props = {
   faqs?: FAQ[];
   sheetName?: string;
   href?: string;
+  ctaDisabled?: boolean;
+  ctaTooltip?: string;
 };
 
 export function AppOnboarding({
@@ -37,6 +40,8 @@ export function AppOnboarding({
   faqs,
   sheetName,
   href,
+  ctaDisabled = false,
+  ctaTooltip,
 }: Props) {
   const [open, setOpen] = useQueryState(sheetName ?? 'sheet');
   const isOpen = Boolean(open);
@@ -102,23 +107,52 @@ export function AppOnboarding({
 
                   {cta && (
                     <div className="mt-4 flex w-full">
+                      <TooltipProvider delayDuration={100}>
                       {href ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className={`w-full ${ctaDisabled ? 'cursor-not-allowed' : ''}`}>
                         <Link href={href}>
-                          <Button variant="default" className="flex w-full items-center gap-2">
+                                  <Button
+                                    variant="default"
+                                    className={`flex w-full items-center gap-2 ${ctaDisabled ? 'cursor-not-allowed' : ''}`}
+                                    disabled={ctaDisabled}
+                                  >
                             <PlusIcon className="h-4 w-4" />
                             {cta}
                           </Button>
                         </Link>
-                      ) : (
+                              </span>
+                            </TooltipTrigger>
+                            {ctaDisabled && ctaTooltip && (
+                              <TooltipContent>
+                                <p>{ctaTooltip}</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className={`w-full ${ctaDisabled ? 'cursor-not-allowed' : ''}`}>
                         <Button
                           variant="default"
-                          className="flex w-full items-center gap-2"
+                                  className={`flex w-full items-center gap-2 ${ctaDisabled ? 'cursor-not-allowed' : ''}`}
                           onClick={() => setOpen('true')}
+                                  disabled={ctaDisabled}
                         >
                           <PlusIcon className="h-4 w-4" />
                           {cta}
                         </Button>
+                              </span>
+                            </TooltipTrigger>
+                            {ctaDisabled && ctaTooltip && (
+                              <TooltipContent>
+                                <p>{ctaTooltip}</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
                       )}
+                      </TooltipProvider>
                     </div>
                   )}
                 </div>

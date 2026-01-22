@@ -121,8 +121,9 @@ export function useOnboardingForm({
           flow_type: 'pre_payment',
         });
 
-        // Organization created, now redirect to plans page with search params
-        router.push(buildUrlWithParams(`/upgrade/${data.organizationId}`));
+        // Hard navigate to ensure updated auth cookies (active org) are applied immediately.
+        // This prevents flakiness where the app still uses the previous activeOrganizationId.
+        window.location.assign(buildUrlWithParams(`/upgrade/${data.organizationId}`));
 
         // Clear answers after successful creation
         setSavedAnswers({});
@@ -155,9 +156,19 @@ export function useOnboardingForm({
     const newAnswers: OnboardingFormFields = { ...savedAnswers, ...data };
 
     for (const key of Object.keys(newAnswers)) {
-      if (step.options && step.key === key && key !== 'frameworkIds' && key !== 'shipping') {
+      // Only process multi-select string fields (exclude objects/arrays)
+      if (
+        step.options &&
+        step.key === key &&
+        key !== 'frameworkIds' &&
+        key !== 'shipping' &&
+        key !== 'cSuite' &&
+        key !== 'reportSignatory' &&
+        key !== 'customVendors'
+      ) {
         const customValue = newAnswers[`${key}Other`] || '';
-        const values = (newAnswers[key] || '').split(',').filter(Boolean);
+        const rawValue = newAnswers[key];
+        const values = (typeof rawValue === 'string' ? rawValue : '').split(',').filter(Boolean);
 
         if (customValue) {
           values.push(customValue);
@@ -209,6 +220,40 @@ export function useOnboardingForm({
     }
   };
 
+  // Pre-fill all answers for localhost development
+  const handlePrefillAll = async () => {
+    try {
+      // Fetch frameworks to get valid IDs
+      const response = await fetch('/api/frameworks');
+      if (!response.ok) throw new Error('Failed to fetch frameworks');
+      const data = await response.json();
+      const visibleFrameworks = data.frameworks.filter((f: { visible: boolean }) => f.visible);
+      
+      // Use first two visible frameworks, or just the first one if only one exists
+      const frameworkIds = visibleFrameworks
+        .slice(0, 2)
+        .map((f: { id: string }) => f.id);
+
+      const prefilledAnswers: Partial<CompanyDetails> = {
+        frameworkIds: frameworkIds.length > 0 ? frameworkIds : [],
+        organizationName: 'Test Company',
+        website: 'https://example.com',
+      };
+
+      // Set all answers at once
+      setSavedAnswers(prefilledAnswers);
+
+      // Fill current step form
+      form.reset({ [step.key]: prefilledAnswers[step.key as keyof typeof prefilledAnswers] || '' });
+
+      // Submit with all prefilled answers
+      handleCreateOrganizationAction(prefilledAnswers);
+    } catch (error) {
+      console.error('Error pre-filling answers:', error);
+      toast.error('Failed to pre-fill answers');
+    }
+  };
+
   const isLastStep = stepIndex === prePaymentSteps.length - 1;
 
   return {
@@ -222,6 +267,7 @@ export function useOnboardingForm({
     mounted,
     onSubmit,
     handleBack,
+    handlePrefillAll,
     isLastStep,
   };
 }

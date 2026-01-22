@@ -32,10 +32,12 @@ import {
 import { Input } from '@comp/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
+import { checkMemberStatus } from '../actions/checkMemberStatus';
+import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEmail';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
-const selectableRoles = ['admin', 'auditor', 'employee'] as const satisfies Readonly<
+const selectableRoles = ['admin', 'auditor', 'employee', 'contractor'] as const satisfies Readonly<
   [Role, ...Role[]]
 >;
 type InviteRole = (typeof selectableRoles)[number];
@@ -43,7 +45,7 @@ const DEFAULT_ROLES: InviteRole[] = [];
 
 // Type guard to check if a string is a valid InviteRole
 const isInviteRole = (role: string): role is InviteRole => {
-  return role === 'admin' || role === 'auditor' || role === 'employee';
+  return role === 'admin' || role === 'auditor' || role === 'employee' || role === 'contractor';
 };
 
 // --- Schemas ---
@@ -159,7 +161,8 @@ export function InviteMembersModal({
         // Process each invitation sequentially
         for (const invite of values.manualInvites) {
           const hasEmployeeRoleAndNoAdmin =
-            !invite.roles.includes('admin') && invite.roles.includes('employee');
+            !invite.roles.includes('admin') &&
+            (invite.roles.includes('employee') || invite.roles.includes('contractor'));
           try {
             if (hasEmployeeRoleAndNoAdmin) {
               await addEmployeeWithoutInvite({
@@ -168,11 +171,26 @@ export function InviteMembersModal({
                 roles: invite.roles,
               });
             } else {
-              // Use authClient to send the invitation
-              await authClient.organization.inviteMember({
+              // Check member status and reactivate if needed
+              const memberStatus = await checkMemberStatus({
                 email: invite.email.toLowerCase(),
-                role: invite.roles.length === 1 ? invite.roles[0] : invite.roles,
+                organizationId,
               });
+
+              if (memberStatus.memberExists && memberStatus.isActive) {
+                // Member already exists and is active - send invitation email manually
+                await sendInvitationEmailToExistingMember({
+                  email: invite.email.toLowerCase(),
+                  organizationId,
+                  roles: invite.roles,
+                });
+              } else {
+                // Member doesn't exist - use authClient to send the invitation
+                await authClient.organization.inviteMember({
+                  email: invite.email.toLowerCase(),
+                  role: invite.roles.length === 1 ? invite.roles[0] : invite.roles,
+                });
+              }
             }
             successCount++;
           } catch (error) {
@@ -320,7 +338,8 @@ export function InviteMembersModal({
 
             // Attempt to invite
             const hasEmployeeRoleAndNoAdmin =
-              validRoles.includes('employee') && !validRoles.includes('admin');
+              (validRoles.includes('employee') || validRoles.includes('contractor')) &&
+              !validRoles.includes('admin');
             try {
               if (hasEmployeeRoleAndNoAdmin) {
                 await addEmployeeWithoutInvite({
@@ -329,10 +348,26 @@ export function InviteMembersModal({
                   roles: validRoles,
                 });
               } else {
-                await authClient.organization.inviteMember({
+                // Check member status and reactivate if needed
+                const memberStatus = await checkMemberStatus({
                   email: email.toLowerCase(),
-                  role: validRoles,
+                  organizationId,
                 });
+
+                if (memberStatus.memberExists && memberStatus.isActive) {
+                  // Member already exists and is active - send invitation email manually
+                  await sendInvitationEmailToExistingMember({
+                    email: email.toLowerCase(),
+                    organizationId,
+                    roles: validRoles,
+                  });
+                } else {
+                  // Member doesn't exist - use authClient to send the invitation
+                  await authClient.organization.inviteMember({
+                    email: email.toLowerCase(),
+                    role: validRoles,
+                  });
+                }
               }
               successCount++;
             } catch (error) {

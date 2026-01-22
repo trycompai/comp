@@ -1,14 +1,19 @@
 'use client';
 
+import {
+  MAC_APPLE_SILICON_FILENAME,
+  MAC_INTEL_FILENAME,
+  WINDOWS_FILENAME,
+} from '@/app/api/download-agent/constants';
 import { detectOSFromUserAgent, SupportedOS } from '@/utils/os';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Member } from '@db';
-import { CheckCircle2, Circle, Download, Loader2, XCircle } from 'lucide-react';
-import Image from 'next/image';
+import { CheckCircle2, Circle, Download, HelpCircle, Loader2, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { FleetPolicy, Host } from '../../types';
@@ -32,12 +37,30 @@ export function DeviceAgentAccordionItem({
     [detectedOS],
   );
 
+  const mdmEnabledStatus = useMemo(() => {
+    return {
+      id: 'mdm',
+      response: host?.mdm.connected_to_fleet ? 'pass' : 'fail',
+      name: 'MDM Enabled',
+    };
+  }, [host]);
+
   const hasInstalledAgent = host !== null;
-  const allPoliciesPass =
-    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
-  const isCompleted = hasInstalledAgent && allPoliciesPass;
+  const failedPoliciesCount = useMemo(() => {
+    return (
+      fleetPolicies.filter((policy) => policy.response !== 'pass').length +
+      (!isMacOS || mdmEnabledStatus.response === 'pass' ? 0 : 1)
+    );
+  }, [fleetPolicies, mdmEnabledStatus, isMacOS]);
+
+  const isCompleted = hasInstalledAgent && failedPoliciesCount === 0;
 
   const handleDownload = async () => {
+    if (!detectedOS) {
+      toast.error('Could not detect your OS. Please refresh and try again.');
+      return;
+    }
+
     setIsDownloading(true);
 
     try {
@@ -48,6 +71,7 @@ export function DeviceAgentAccordionItem({
         body: JSON.stringify({
           orgId: member.organizationId,
           employeeId: member.id,
+          os: detectedOS,
         }),
       });
 
@@ -60,7 +84,7 @@ export function DeviceAgentAccordionItem({
 
       // Now trigger the actual download using the browser's native download mechanism
       // This will show in the browser's download UI immediately
-      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}&os=${detectedOS}`;
+      const downloadUrl = `/api/download-agent?token=${encodeURIComponent(token)}`;
 
       // Method 1: Using a temporary link (most reliable)
       const a = document.createElement('a');
@@ -68,12 +92,9 @@ export function DeviceAgentAccordionItem({
 
       // Set filename based on OS and architecture
       if (isMacOS) {
-        a.download =
-          detectedOS === 'macos'
-            ? 'Comp AI Agent-1.0.0-arm64.dmg'
-            : 'Comp AI Agent-1.0.0-intel.dmg';
+        a.download = detectedOS === 'macos' ? MAC_APPLE_SILICON_FILENAME : MAC_INTEL_FILENAME;
       } else {
-        a.download = 'compai-device-agent.zip';
+        a.download = WINDOWS_FILENAME;
       }
 
       document.body.appendChild(a);
@@ -130,9 +151,9 @@ export function DeviceAgentAccordionItem({
           <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
             Download and install Comp AI Device Agent
           </span>
-          {hasInstalledAgent && !allPoliciesPass && (
+          {hasInstalledAgent && failedPoliciesCount > 0 && (
             <span className="text-amber-600 dark:text-amber-400 text-xs ml-auto">
-              {fleetPolicies.filter((p) => p.response !== 'pass').length} policies failing
+              {failedPoliciesCount} policies failing
             </span>
           )}
         </div>
@@ -178,35 +199,13 @@ export function DeviceAgentAccordionItem({
                     </Button>
                   </div>
                 </li>
-                {!isMacOS && (
-                  <li>
-                    <strong>Run the "Install Me First" file</strong>
-                    <p className="mt-1">
-                      After extracting the downloaded zip file, locate and run the "Install Me
-                      First" file to prepare your system.
-                    </p>
-                  </li>
-                )}
                 <li>
-                  <strong>
-                    {isMacOS
-                      ? 'Install the Comp AI Device Agent'
-                      : 'Run the Comp AI Device Agent installer'}
-                  </strong>
+                  <strong>Install the Comp AI Device Agent</strong>
                   <p className="mt-1">
                     {isMacOS
                       ? 'Double-click the downloaded DMG file and follow the installation instructions.'
-                      : 'Follow the installation wizard steps. When you reach the introduction screen (as shown below), click "Continue" to proceed through the installation.'}
+                      : 'Double-click the downloaded EXE file and follow the installation instructions.'}
                   </p>
-                  {!isMacOS && (
-                    <Image
-                      src="/osquery-agent.jpeg"
-                      alt="Fleet osquery installer introduction screen"
-                      width={600}
-                      height={400}
-                      className="mt-2 rounded-xs border"
-                    />
-                  )}
                 </li>
                 {isMacOS ? (
                   <li>
@@ -245,28 +244,83 @@ export function DeviceAgentAccordionItem({
               </CardHeader>
               <CardContent className="space-y-3">
                 {fleetPolicies.length > 0 ? (
-                  fleetPolicies.map((policy) => (
-                    <div
-                      key={policy.id}
-                      className={cn(
-                        'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
-                        policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
-                      )}
-                    >
-                      <p className="text-sm font-medium">{policy.name}</p>
-                      {policy.response === 'pass' ? (
-                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                          <CheckCircle2 size={16} />
-                          <span className="text-sm">Pass</span>
+                  <>
+                    {fleetPolicies.map((policy) => (
+                      <div
+                        key={policy.id}
+                        className={cn(
+                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                          policy.response === 'pass' ? 'border-l-green-500' : 'border-l-red-500',
+                        )}
+                      >
+                        <p className="text-sm font-medium">{policy.name}</p>
+                        {policy.response === 'pass' ? (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <CheckCircle2 size={16} />
+                            <span className="text-sm">Pass</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                            <XCircle size={16} />
+                            <span className="text-sm">Fail</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {isMacOS && (
+                      <div
+                        className={cn(
+                          'hover:bg-muted/50 flex items-center justify-between rounded-md border border-l-4 p-3 shadow-sm transition-colors',
+                          mdmEnabledStatus.response === 'pass'
+                            ? 'border-l-green-500'
+                            : 'border-l-red-500',
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{mdmEnabledStatus.name}</p>
+                          {mdmEnabledStatus.response === 'fail' && host?.id && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                  >
+                                    <HelpCircle size={14} />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>
+                                    There are additional steps required to enable MDM. Please check{' '}
+                                    <a
+                                      href="https://trycomp.ai/docs/device-agent#mdm-user-guide"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                                    >
+                                      this documentation
+                                    </a>
+                                    .
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                          <XCircle size={16} />
-                          <span className="text-sm">Fail</span>
-                        </div>
-                      )}
-                    </div>
-                  ))
+                        {mdmEnabledStatus.response === 'pass' ? (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <CheckCircle2 size={16} />
+                            <span className="text-sm">Pass</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                            <XCircle size={16} />
+                            <span className="text-sm">Fail</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <p className="text-muted-foreground text-sm">
                     No policies configured for this device.

@@ -1,13 +1,19 @@
 'use client';
 
 import { useTaskAttachmentActions, useTaskAttachments } from '@/hooks/use-tasks-api';
-import type { AttachmentEntityType } from '@db';
-import { FileIcon, FileText, ImageIcon, Loader2, Plus, X } from 'lucide-react';
+import { Button } from '@comp/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
+import { Camera, FileIcon, FileText, ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-// Removed ApiAttachment interface - using database Attachment type directly
 
 interface TaskBodyProps {
   taskId: string;
@@ -36,6 +42,9 @@ export function TaskBody({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<FileList | File[] | null>(null);
 
   // Auto-resize function for textarea
   const autoResizeTextarea = useCallback(() => {
@@ -77,16 +86,55 @@ export function TaskBody({
     }
   };
 
-  // Handle multiple file uploads using API
-  const handleFileSelectMultiple = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.target.files;
+  // Process files (used by both file input and drag & drop)
+  const processFiles = useCallback(
+    async (files: FileList | File[]) => {
       if (!files || files.length === 0) return;
       setIsUploading(true);
 
+      // Blocked file extensions for security
+      const BLOCKED_EXTENSIONS = [
+        'exe',
+        'bat',
+        'cmd',
+        'com',
+        'scr',
+        'msi', // Windows executables
+        'js',
+        'vbs',
+        'vbe',
+        'wsf',
+        'wsh',
+        'ps1', // Scripts
+        'sh',
+        'bash',
+        'zsh', // Shell scripts
+        'dll',
+        'sys',
+        'drv', // System files
+        'app',
+        'deb',
+        'rpm', // Application packages
+        'jar', // Java archives (can execute)
+        'pif',
+        'lnk',
+        'cpl', // Shortcuts and control panel
+        'hta',
+        'reg', // HTML apps and registry
+      ];
+
       const uploadPromises = Array.from(files).map((file) => {
         return new Promise((resolve) => {
-          const MAX_FILE_SIZE_MB = 10;
+          // Check file extension
+          const fileExt = file.name.split('.').pop()?.toLowerCase();
+          if (fileExt && BLOCKED_EXTENSIONS.includes(fileExt)) {
+            toast.error(
+              `File "${file.name}" has a blocked extension (.${fileExt}) for security reasons.`,
+            );
+            return resolve(null);
+          }
+
+          const MAX_FILE_SIZE_MB = 100;
           const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
           if (file.size > MAX_FILE_SIZE_BYTES) {
             toast.error(`File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
@@ -121,9 +169,79 @@ export function TaskBody({
     [uploadAttachment, refreshAttachments],
   );
 
+  const initiateUpload = useCallback((files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setPendingFiles(files);
+    setShowReminderDialog(true);
+  }, []);
+
+  const handleReminderConfirm = useCallback(() => {
+    setShowReminderDialog(false);
+    if (pendingFiles) {
+      processFiles(pendingFiles);
+      setPendingFiles(null);
+    }
+  }, [pendingFiles, processFiles]);
+
+  const handleReminderClose = useCallback(() => {
+    setShowReminderDialog(false);
+    setPendingFiles(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  const handleFileSelectMultiple = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      initiateUpload(files);
+    },
+    [initiateUpload],
+  );
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
+
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the drop zone itself
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      if (isUploading || busyAttachmentId) return;
+
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        initiateUpload(Array.from(files));
+      }
+    },
+    [isUploading, busyAttachmentId, initiateUpload],
+  );
 
   const handleDownloadClick = async (attachmentId: string) => {
     setBusyAttachmentId(attachmentId);
@@ -166,10 +284,12 @@ export function TaskBody({
         disabled={isUploading || !!busyAttachmentId}
         multiple
       />
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          Attachments
-        </h3>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Attachments
+          </h3>
+        </div>
 
         {/* Show error state if attachments failed to load */}
         {attachmentsError && (
@@ -192,113 +312,144 @@ export function TaskBody({
           </div>
         )}
 
-        {!attachmentsLoading && attachmentsData !== undefined && attachments.length > 0 ? (
-          <div className="space-y-2">
-            <div className="flex flex-wrap gap-2">
-              {attachments.map((attachment) => {
-                const isBusy = busyAttachmentId === attachment.id;
-                // Use attachment directly since it already has the correct structure
-                const attachmentForItem = {
-                  ...attachment,
-                  // Ensure proper date objects and types
-                  createdAt: new Date(attachment.createdAt),
-                  updatedAt: new Date(attachment.updatedAt),
-                  entityType: attachment.entityType as AttachmentEntityType,
-                };
-                const fileExt = attachment.name.split('.').pop()?.toLowerCase() || '';
-                const isPDF = fileExt === 'pdf';
-                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
-                const isDoc = ['doc', 'docx'].includes(fileExt);
+        {!attachmentsLoading && attachmentsData !== undefined && (
+          <div className="space-y-3">
+            {/* Existing attachments list */}
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((attachment) => {
+                  const isBusy = busyAttachmentId === attachment.id;
+                  const fileExt = attachment.name.split('.').pop()?.toLowerCase() || '';
+                  const isPDF = fileExt === 'pdf';
+                  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+                  const isDoc = ['doc', 'docx'].includes(fileExt);
 
-                const getFileTypeStyles = () => {
-                  if (isPDF)
-                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
-                  if (isImage)
-                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
-                  if (isDoc)
-                    return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
-                  return 'bg-muted/50 border-border hover:bg-muted/70';
-                };
+                  const getFileTypeStyles = () => {
+                    if (isPDF)
+                      return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                    if (isImage)
+                      return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                    if (isDoc)
+                      return 'bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/30';
+                    return 'bg-muted/50 border-border hover:bg-muted/70';
+                  };
 
-                const getFileIconColor = () => {
-                  if (isPDF || isImage || isDoc) return 'text-primary';
-                  return 'text-muted-foreground';
-                };
+                  const getFileIconColor = () => {
+                    if (isPDF || isImage || isDoc) return 'text-primary';
+                    return 'text-muted-foreground';
+                  };
 
-                return (
-                  <div
-                    key={attachment.id}
-                    className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all group ${getFileTypeStyles()} `}
-                  >
-                    {isPDF ? (
-                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                    ) : isImage ? (
-                      <ImageIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                    ) : isDoc ? (
-                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                    ) : (
-                      <FileIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
-                    )}
-                    <button
-                      onClick={() => handleDownloadClick(attachment.id)}
-                      disabled={isBusy || isUploading}
-                      className="text-sm hover:underline disabled:opacity-50 disabled:cursor-not-allowed max-w-[200px] truncate"
-                      title={attachment.name}
+                  return (
+                    <div
+                      key={attachment.id}
+                      className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all group ${getFileTypeStyles()} `}
                     >
-                      {attachment.name}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAttachment(attachment.id)}
-                      disabled={isBusy || isUploading}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive disabled:cursor-not-allowed"
-                    >
-                      {isBusy ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                      {isPDF ? (
+                        <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      ) : isImage ? (
+                        <ImageIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      ) : isDoc ? (
+                        <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
                       ) : (
-                        <X className="h-3 w-3" />
+                        <FileIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
                       )}
-                    </button>
-                  </div>
-                );
-              })}
-              {/* Add button inline with attachments */}
-              <button
-                onClick={triggerFileInput}
-                disabled={isUploading || !!busyAttachmentId}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-dashed border-border hover:border-border/80 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUploading ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Plus className="h-3 w-3" />
-                )}
-                Add
-              </button>
-            </div>
-          </div>
-        ) : (
-          !attachmentsLoading &&
-          attachmentsData !== undefined &&
-          attachments.length === 0 && (
-            <button
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => handleDownloadClick(attachment.id)}
+                        disabled={isBusy || isUploading}
+                        className="h-auto p-0 text-sm max-w-[200px] truncate"
+                        title={attachment.name}
+                      >
+                        {attachment.name}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteAttachment(attachment.id)}
+                        disabled={isBusy || isUploading}
+                        className="h-auto w-auto p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-transparent"
+                      >
+                        {isBusy ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Drag and drop zone - always visible */}
+            <Button
+              variant="outline"
               onClick={triggerFileInput}
               disabled={isUploading || !!busyAttachmentId}
-              className="w-full rounded-lg border border-dashed border-border/40 bg-secondary px-4 py-8 text-center hover:border-border/60 hover:bg-muted/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className="group w-full h-auto rounded-md border-dashed border-2 px-6 py-8 text-center transition-all hover:border-primary/50 hover:bg-accent/30"
+              style={{
+                borderColor: isDragging ? 'hsl(var(--primary))' : undefined,
+                backgroundColor: isDragging ? 'hsl(var(--accent))' : undefined,
+              }}
             >
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-3 pointer-events-none">
                 {isUploading ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 ) : (
-                  <Plus className="h-5 w-5 text-muted-foreground" />
+                  <div className="rounded-full bg-muted/50 p-3 transition-colors group-hover:bg-primary/10">
+                    <Upload className="h-6 w-6 text-muted-foreground transition-colors group-hover:text-primary" />
+                  </div>
                 )}
-                <span className="text-sm text-muted-foreground">
-                  {isUploading ? 'Uploading...' : 'Add attachments'}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium transition-colors group-hover:text-foreground">
+                    {isUploading
+                      ? 'Uploading...'
+                      : isDragging
+                        ? 'Drop files here'
+                        : 'Drag and drop files here'}
+                  </span>
+                  {!isUploading && !isDragging && (
+                    <span className="text-xs text-muted-foreground transition-colors group-hover:text-muted-foreground/80">
+                      or click to browse • max 100MB • most file types accepted
+                    </span>
+                  )}
+                </div>
               </div>
-            </button>
-          )
+            </Button>
+          </div>
         )}
       </div>
+
+      <Dialog open={showReminderDialog} onOpenChange={(open) => !open && handleReminderClose()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Camera className="h-5 w-5 text-primary" />
+              </div>
+              <DialogTitle>Screenshot Requirements</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              Ensure your organisation name is clearly visible within the screenshot.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Auditors require this to verify the source of the data; without it, evidence may be
+            rejected.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleReminderClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleReminderConfirm}>Continue Upload</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

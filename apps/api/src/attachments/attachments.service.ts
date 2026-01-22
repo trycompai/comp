@@ -14,25 +14,30 @@ import {
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
+import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
   private s3Client: S3Client;
   private bucketName: string;
-  private readonly MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+  private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
     // AWS configuration is validated at startup via ConfigModule
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
-    this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+
+    if (!s3Client) {
+      console.error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
+      throw new Error(
+        'S3 Client is not initialized. Check AWS S3 configuration.',
+      );
+    }
+
+    this.s3Client = s3Client;
   }
 
   /**
@@ -46,6 +51,69 @@ export class AttachmentsService {
     userId?: string,
   ): Promise<AttachmentResponseDto> {
     try {
+      // Blocked file extensions for security
+      const BLOCKED_EXTENSIONS = [
+        'exe',
+        'bat',
+        'cmd',
+        'com',
+        'scr',
+        'msi', // Windows executables
+        'js',
+        'vbs',
+        'vbe',
+        'wsf',
+        'wsh',
+        'ps1', // Scripts
+        'sh',
+        'bash',
+        'zsh', // Shell scripts
+        'dll',
+        'sys',
+        'drv', // System files
+        'app',
+        'deb',
+        'rpm', // Application packages
+        'jar', // Java archives (can execute)
+        'pif',
+        'lnk',
+        'cpl', // Shortcuts and control panel
+        'hta',
+        'reg', // HTML apps and registry
+      ];
+
+      // Blocked MIME types for security
+      const BLOCKED_MIME_TYPES = [
+        'application/x-msdownload', // .exe
+        'application/x-msdos-program',
+        'application/x-executable',
+        'application/x-sh', // Shell scripts
+        'application/x-bat', // Batch files
+        'text/x-sh',
+        'text/x-python',
+        'text/x-perl',
+        'text/x-ruby',
+        'application/x-httpd-php', // PHP files
+        'application/x-javascript', // Executable JS (not JSON)
+        'application/javascript',
+        'text/javascript',
+      ];
+
+      // Validate file extension
+      const fileExt = uploadDto.fileName.split('.').pop()?.toLowerCase();
+      if (fileExt && BLOCKED_EXTENSIONS.includes(fileExt)) {
+        throw new BadRequestException(
+          `File extension '.${fileExt}' is not allowed for security reasons`,
+        );
+      }
+
+      // Validate MIME type
+      if (BLOCKED_MIME_TYPES.includes(uploadDto.fileType.toLowerCase())) {
+        throw new BadRequestException(
+          `File type '${uploadDto.fileType}' is not allowed for security reasons`,
+        );
+      }
+
       // Validate file size
       const fileBuffer = Buffer.from(uploadDto.fileData, 'base64');
       if (fileBuffer.length > this.MAX_FILE_SIZE_BYTES) {
@@ -58,7 +126,20 @@ export class AttachmentsService {
       const fileId = randomBytes(16).toString('hex');
       const sanitizedFileName = this.sanitizeFileName(uploadDto.fileName);
       const timestamp = Date.now();
-      const s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+
+      // Special S3 path structure for task items: org_{orgId}/attachments/task-item/{entityType}/{entityId}
+      let s3Key: string;
+      if (entityType === 'task_item') {
+        // For task items, extract entityType and entityId from metadata
+        // Metadata should contain taskItemEntityType and taskItemEntityId
+        const taskItemEntityType =
+          uploadDto.description?.split('|')[0] || 'unknown';
+        const taskItemEntityId =
+          uploadDto.description?.split('|')[1] || entityId;
+        s3Key = `${organizationId}/attachments/task-item/${taskItemEntityType}/${taskItemEntityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+      } else {
+        s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+      }
 
       // Upload to S3
       const putCommand = new PutObjectCommand({
@@ -267,9 +348,79 @@ export class AttachmentsService {
     });
   }
 
+  async uploadToS3(
+    fileBuffer: Buffer,
+    fileName: string,
+    contentType: string,
+    organizationId: string,
+    entityType: string,
+    entityId: string,
+  ): Promise<string> {
+    const fileId = randomBytes(16).toString('hex');
+    const sanitizedFileName = this.sanitizeFileName(fileName);
+    const timestamp = Date.now();
+    const s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      Body: fileBuffer,
+      ContentType: contentType,
+      Metadata: {
+        originalFileName: this.sanitizeHeaderValue(fileName),
+        organizationId,
+        entityId,
+        entityType,
+      },
+    });
+
+    await this.s3Client.send(putCommand);
+    return s3Key;
+  }
+
+  async getPresignedDownloadUrl(s3Key: string): Promise<string> {
+    return this.generateSignedUrl(s3Key);
+  }
+
   /**
-   * Sanitize filename for S3 storage
+   * Generate presigned download URL with a custom download filename
    */
+  async getPresignedDownloadUrlWithFilename(
+    s3Key: string,
+    downloadFilename: string,
+  ): Promise<string> {
+    const sanitizedFilename = this.sanitizeHeaderValue(downloadFilename);
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      ResponseContentDisposition: `attachment; filename="${sanitizedFilename}"`,
+    });
+
+    return getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: this.SIGNED_URL_EXPIRY,
+    });
+  }
+
+  async getObjectBuffer(s3Key: string): Promise<Buffer> {
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+    });
+
+    const response = await this.s3Client.send(getCommand);
+    const chunks: Uint8Array[] = [];
+
+    if (!response.Body) {
+      throw new InternalServerErrorException('No file data received from S3');
+    }
+
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+  }
+
   private sanitizeFileName(fileName: string): string {
     return fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   }
@@ -281,6 +432,7 @@ export class AttachmentsService {
    * - Trim whitespace
    */
   private sanitizeHeaderValue(value: string): string {
+    // eslint-disable-next-line no-control-regex
     const withoutControls = value.replace(/[\x00-\x1F\x7F]/g, '');
     const asciiOnly = withoutControls.replace(/[^\x20-\x7E]/g, '_');
     return asciiOnly.trim();

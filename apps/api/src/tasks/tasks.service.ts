@@ -3,7 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { db } from '@trycompai/db';
+import { db, TaskStatus } from '@trycompai/db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 
 @Injectable()
@@ -29,6 +29,7 @@ export class TasksService {
         status: task.status,
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
+        taskTemplateId: task.taskTemplateId,
       }));
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -111,5 +112,45 @@ export class TasksService {
     });
 
     return runs;
+  }
+
+  /**
+   * Update status for multiple tasks
+   */
+  async updateTasksStatus(
+    organizationId: string,
+    taskIds: string[],
+    status: TaskStatus,
+    reviewDate?: Date,
+  ): Promise<{ updatedCount: number }> {
+    try {
+      const result = await db.task.updateMany({
+        where: {
+          id: {
+            in: taskIds,
+          },
+          organizationId,
+        },
+        data: {
+          status,
+          updatedAt: new Date(),
+          ...(reviewDate !== undefined ? { reviewDate } : {}),
+        },
+      });
+
+      if (result.count === 0) {
+        throw new BadRequestException(
+          'No tasks were updated. Check task IDs or organization access.',
+        );
+      }
+
+      return { updatedCount: result.count };
+    } catch (error) {
+      console.error('Error updating task statuses:', error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update task statuses');
+    }
   }
 }

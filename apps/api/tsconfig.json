@@ -12,8 +12,8 @@
     "allowSyntheticDefaultImports": true,
     "target": "esnext",
     "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
+    "outDir": "dist",
+    "baseUrl": ".",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -23,7 +23,10 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@/*": ["./src/*"],
-      "@db": ["./prisma/index"]
-    }
+      "@db": ["./prisma/index"],
+      "@comp/email": ["../../packages/email/index.ts"],
+      "@comp/email/*": ["../../packages/email/*"]
+    },
+    "jsx": "react-jsx"
   }
 }

@@ -1,0 +1,236 @@
+---
+title: 'Contributing Integrations'
+description: 'Guidelines for contributing new integrations to the platform'
+---
+
+## Before You Start
+
+**Check if the integration already exists** by looking in `packages/integration-platform/src/manifests/`.
+
+**Good integration candidates:**
+- Service has a public API
+- Service provides compliance/security data
+- Maps to existing compliance tasks
+- Widely used in B2B/enterprise
+
+**Not a good fit:**
+- Service requires paid enterprise plan for API access
+- No security/compliance data available via API
+- Consumer-focused service with no business use case
+
+## Contribution Checklist
+
+Your PR should include:
+
+### 1. Integration Manifest
+
+**Required:**
+- [ ] Manifest file (`manifests/your-service/index.ts`)
+- [ ] Valid integration ID (kebab-case, unique)
+- [ ] Clear name and description
+- [ ] Working logo URL
+- [ ] Documentation URL
+- [ ] Correct category
+- [ ] Proper auth configuration
+
+### 2. At Least One Check
+
+**Required:**
+- [ ] Check file(s) in `checks/` folder
+- [ ] Descriptive check IDs
+- [ ] Clear error messages
+- [ ] Proper error handling
+- [ ] Task mapping (if applicable)
+- [ ] Evidence includes useful data
+
+### 3. Types
+
+**Required:**
+- [ ] TypeScript types file (`types.ts`)
+- [ ] Types for API responses
+- [ ] Types for credentials
+- [ ] No `any` types
+
+### 4. Testing
+
+**Required:**
+- [ ] Tested with real credentials
+- [ ] OAuth flow works (if OAuth)
+- [ ] Checks run successfully
+- [ ] Error cases handled gracefully
+- [ ] Variables work (if using variables)
+
+**Include in PR description:**
+- Screenshot of successful connection
+- Screenshot of check results
+- Test account details (if applicable)
+
+### 5. Documentation
+
+**Required:**
+- [ ] Setup instructions in manifest (for OAuth)
+- [ ] Clear credential field labels and help text
+- [ ] Variable help text explains what they do
+- [ ] Remediation steps are actionable
+
+**Nice to have:**
+- [ ] MDX doc in `packages/docs/integrations/your-service.mdx`
+- [ ] Examples in PR description
+
+### 6. Code Quality
+
+**Required:**
+- [ ] TypeScript with no errors
+- [ ] ESLint passes
+- [ ] Follows existing code patterns
+- [ ] No hardcoded values
+- [ ] Proper error handling
+
+## PR Template
+
+```markdown
+## Integration: [Service Name]
+
+### Overview
+- **Service**: [Service Name]
+- **Auth Type**: OAuth 2.0 / API Key / Custom
+- **Category**: Cloud / Identity & Access / Developer Tools
+- **Checks**: [List check names]
+
+### What This Integration Does
+[Brief description of what checks are included and what they validate]
+
+### Testing
+- [x] Connected successfully with OAuth/credentials
+- [x] All checks run without errors
+- [x] Error handling works for common failure cases
+- [x] Variables configured and working (if applicable)
+
+**Screenshots:**
+[Add screenshots of connection flow and check results]
+
+### Task Mapping
+- Check: [Check Name] → Task: [Task Template Name]
+- Check: [Check Name] → Task: [Task Template Name]
+
+### Breaking Changes
+None / [Describe any breaking changes]
+
+### Notes
+[Any additional context, limitations, or future improvements]
+```
+
+## Review Criteria
+
+Reviewers will check for:
+
+### Functionality
+- Integration connects successfully
+- Checks run and produce expected results
+- OAuth flow works (if OAuth)
+- Error states are handled
+
+### Code Quality
+- TypeScript types are correct
+- No `any` types
+- Follows existing patterns
+- Proper error handling
+- Code is readable and maintainable
+
+### User Experience
+- Clear, friendly error messages
+- Helpful remediation steps
+- Good variable labels and help text
+- Reasonable defaults
+
+### Security
+- Credentials handled securely
+- API calls use HTTPS
+- No secrets in code
+- Proper scope requests (OAuth)
+
+## Common Review Feedback
+
+### "Add error handling for X"
+
+**Before:**
+```typescript
+const data = await ctx.fetch('/endpoint');
+// Process data
+```
+
+**After:**
+```typescript
+try {
+  const data = await ctx.fetch('/endpoint');
+  // Process data
+} catch (error) {
+  ctx.fail({
+    title: 'Failed to Fetch Data',
+    // ... proper error handling
+  });
+}
+```
+
+### "Make error messages user-friendly"
+
+**Before:**
+```typescript
+description: `API error: ${error.message}` // Raw error
+```
+
+**After:**
+```typescript
+description: 'Your account does not have permission to access this resource',
+remediation: 'Grant the "Admin" role in Service Settings → Users',
+evidence: { error: errorMessage }, // Store raw error in evidence
+```
+
+### "Add task mapping"
+
+**Before:**
+```typescript
+export const check: IntegrationCheck = {
+  id: 'two-factor',
+  // No task mapping
+};
+```
+
+**After:**
+```typescript
+import { TASK_TEMPLATES } from '../../../task-mappings';
+
+export const check: IntegrationCheck = {
+  id: 'two-factor',
+  taskMapping: TASK_TEMPLATES['2fa'], // Maps to 2FA task
+};
+```
+
+## Getting Your PR Merged
+
+1. **Create a draft PR early** - Get feedback before spending too much time
+2. **Test thoroughly** - Include test results in PR
+3. **Follow the template** - Makes review faster
+4. **Respond to feedback** - Reviewers are trying to help
+5. **Keep it focused** - One integration per PR
+
+## After Your PR is Merged
+
+**For OAuth integrations:**
+- Platform admins need to configure OAuth credentials
+- Your integration will show "Coming Soon" until configured
+- Update documentation with OAuth setup steps
+
+**For all integrations:**
+- Integration appears in the integrations page
+- Users can connect and start using it
+- Checks run automatically or on-demand
+
+## Questions?
+
+- Check existing integrations for patterns
+- Ask in discussions/issues
+- Tag maintainers for help
+
+Thank you for contributing!
+

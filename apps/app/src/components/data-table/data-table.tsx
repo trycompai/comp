@@ -14,6 +14,7 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   rowClickBasePath?: string;
   tableId?: string;
   onRowClick?: (row: TData) => void;
+  getRowProps?: (row: TData) => { disabled?: boolean; className?: string };
 }
 
 export function DataTable<TData>({
@@ -25,6 +26,7 @@ export function DataTable<TData>({
   rowClickBasePath,
   tableId,
   onRowClick,
+  getRowProps,
   ...props
 }: DataTableProps<TData>) {
   const router = useRouter();
@@ -45,8 +47,8 @@ export function DataTable<TData>({
   return (
     <div className={cn('space-y-4', className)} {...props}>
       {children}
-      <div className="rounded-md">
-        <Table>
+      <div className="rounded-md w-full overflow-hidden">
+        <Table className="min-w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -74,33 +76,47 @@ export function DataTable<TData>({
           </TableHeader>
           <TableBody>
             {filteredRows.length ? (
-              filteredRows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  className={cn(isRowClickable && 'hover:bg-muted/50 cursor-pointer')}
-                  onClick={isRowClickable ? () => handleRowClick(row.original) : undefined}
-                >
-                  {row.getVisibleCells().map((cell, index) => {
-                    return (
-                      <TableCell
-                        key={cell.id}
-                        className={cn(
-                          index !== 0 && 'hidden md:table-cell',
-                          index === 0 && 'truncate',
-                        )}
-                        style={{
-                          ...getCommonPinningStyles({
-                            column: cell.column,
-                          }),
-                        }}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))
+              filteredRows.map((row) => {
+                const customRowProps = getRowProps?.(row.original);
+                const isDisabled = Boolean(customRowProps?.disabled);
+                const rowClassName = cn(
+                  isRowClickable && 'hover:bg-muted/50 cursor-pointer',
+                  isDisabled && 'pointer-events-none cursor-not-allowed opacity-60',
+                  customRowProps?.className,
+                );
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                    aria-disabled={isDisabled || undefined}
+                    className={rowClassName}
+                    onClick={
+                      isRowClickable && !isDisabled ? () => handleRowClick(row.original) : undefined
+                    }
+                  >
+                    {row.getVisibleCells().map((cell, index) => {
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            index !== 0 && 'hidden md:table-cell',
+                            index === 0 && 'truncate w-[60%]',
+                          )}
+                          style={{
+                            ...getCommonPinningStyles({
+                              column: cell.column,
+                            }),
+                            width: index === 0 ? '60%' : undefined,
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell

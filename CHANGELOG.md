@@ -1,3 +1,298 @@
+# [1.78.0](https://github.com/trycompai/comp/compare/v1.77.0...v1.78.0) (2026-01-19)
+
+
+### Features
+
+* **onboarding:** deduplicate search results in vendor input component ([#2012](https://github.com/trycompai/comp/issues/2012)) ([a7e6543](https://github.com/trycompai/comp/commit/a7e65430d7b4daa73585d58411909653ec1585c1))
+
+# [1.77.0](https://github.com/trycompai/comp/compare/v1.76.1...v1.77.0) (2026-01-14)
+
+
+### Features
+
+* **api:** add functionality to download policies as ZIP with watermarking ([#2005](https://github.com/trycompai/comp/issues/2005)) ([338db04](https://github.com/trycompai/comp/commit/338db04792cff555663b1c9b412404bfa9756c62))
+
+## [1.76.1](https://github.com/trycompai/comp/compare/v1.76.0...v1.76.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* **github:** improve Dependabot alert counting with state filtering ([#1998](https://github.com/trycompai/comp/issues/1998)) ([f1dc9f0](https://github.com/trycompai/comp/commit/f1dc9f0c0dfcb9e59b5df2b582f7dc1875d84446))
+
+# [1.76.0](https://github.com/trycompai/comp/compare/v1.75.0...v1.76.0) (2026-01-12)
+
+
+### Features
+
+* **github:** add advanced security status and enhance code scanning detection ([#1995](https://github.com/trycompai/comp/issues/1995)) ([e54177a](https://github.com/trycompai/comp/commit/e54177ae032cd40e55caee31c76df00499455c81))
+* **github:** add Dependabot alert interface and enhance alert counting ([#1997](https://github.com/trycompai/comp/issues/1997)) ([4d554a4](https://github.com/trycompai/comp/commit/4d554a42c4e24b63845978d8b16573a6059d33cd))
+
+# [1.75.0](https://github.com/trycompai/comp/compare/v1.74.0...v1.75.0) (2026-01-08)
+
+
+### Features
+
+* **trust-access:** add expiration check for access grants and disable resend button ([#1991](https://github.com/trycompai/comp/issues/1991)) ([5425fb3](https://github.com/trycompai/comp/commit/5425fb39f0625e92618b54f50f910510c25dfb0c))
+* **trust-access:** fix trustportal grand access logic and add endpoint to resend access granted email ([#1988](https://github.com/trycompai/comp/issues/1988)) ([96262d1](https://github.com/trycompai/comp/commit/96262d145153bca4654accf0ed0321aa145bfdb2))
+* **trust-access:** update expired grants to inactive status in listGrants ([#1992](https://github.com/trycompai/comp/issues/1992)) ([0654f5d](https://github.com/trycompai/comp/commit/0654f5dc509cd04b0e2789088af697100553bdf5))
+
+# [1.74.0](https://github.com/trycompai/comp/compare/v1.73.0...v1.74.0) (2026-01-08)
+
+
+### Features
+
+* **task:** add task automation helpers and tests for status calculation ([#1984](https://github.com/trycompai/comp/issues/1984)) ([6389517](https://github.com/trycompai/comp/commit/63895179bd83f2218ec551ef78cfbece804ea6d6))
+
+# [1.73.0](https://github.com/trycompai/comp/compare/v1.72.2...v1.73.0) (2026-01-06)
+
+
+### Bug Fixes
+
+* **app:** cloud test results are not showing ([#1982](https://github.com/trycompai/comp/issues/1982)) ([0b6cf11](https://github.com/trycompai/comp/commit/0b6cf118df696d55cf9f509ecaaed9016096d362))
+
+
+### Features
+
+* **comments:** add organization ID support for comment components ([#1980](https://github.com/trycompai/comp/issues/1980)) ([f63164e](https://github.com/trycompai/comp/commit/f63164ed9b4a1a613de8aa072a5f3494c5bc52f0))
+* **editor:** include onSelect and onKeyDownRef for mention component ([#1976](https://github.com/trycompai/comp/issues/1976)) ([921c442](https://github.com/trycompai/comp/commit/921c44273eae06cb3425a541fe88f8d52492c448))
+* **hooks:** add default polling interval for task items updates ([#1981](https://github.com/trycompai/comp/issues/1981)) ([47b8787](https://github.com/trycompai/comp/commit/47b8787e8912b652dfe7be0cd96433fe0a948c63))
+* **risk, vendor:** enhance real-time updates with SWR polling intervals ([#1979](https://github.com/trycompai/comp/issues/1979)) ([002bb3e](https://github.com/trycompai/comp/commit/002bb3e73a31ef5c100c93511abdd41f17f54828))
+
+## [1.72.2](https://github.com/trycompai/comp/compare/v1.72.1...v1.72.2) (2026-01-05)
+
+
+### Bug Fixes
+
+* **integrations:** enhance combobox to support custom values ([#1969](https://github.com/trycompai/comp/issues/1969)) ([4888865](https://github.com/trycompai/comp/commit/488886522639cb26304fb4cd1770b3eae6c45508))
+
+## [1.72.1](https://github.com/trycompai/comp/compare/v1.72.0...v1.72.1) (2026-01-02)
+
+
+### Bug Fixes
+
+* **api:** enhance error handling for encrypted PDFs in NDA processing ([#1966](https://github.com/trycompai/comp/issues/1966)) ([d786d79](https://github.com/trycompai/comp/commit/d786d79d1d20cc5c30d5ad5d56176e2ab56d830b))
+* **api:** handle encrypted PDFs in NDA PDF processing ([#1965](https://github.com/trycompai/comp/issues/1965)) ([2808706](https://github.com/trycompai/comp/commit/28087064e8635f0a8bc4ac174f4dba34a7907b52))
+* **api:** improve text cleaning for PDF rendering by stripping invisible unicode characters ([#1962](https://github.com/trycompai/comp/issues/1962)) ([67a37d5](https://github.com/trycompai/comp/commit/67a37d5a7263ab5269f85e2980892f4ad6d54750))
+
+# [1.72.0](https://github.com/trycompai/comp/compare/v1.71.0...v1.72.0) (2026-01-01)
+
+
+### Bug Fixes
+
+* **email:** update import paths for unsubscribe URL to new package ([#1950](https://github.com/trycompai/comp/issues/1950)) ([a133735](https://github.com/trycompai/comp/commit/a133735712fa2ca2b275d4ff97fb637f483c1f2e))
+
+
+### Features
+
+* **api:** enhance vendor risk assessment task with status handling and skeleton UI ([#1956](https://github.com/trycompai/comp/issues/1956)) ([012cba9](https://github.com/trycompai/comp/commit/012cba98eef37b25a168a27f7d257e3ebd45e912))
+* **api:** increase concurrency limit for vendor risk assessment task ([#1957](https://github.com/trycompai/comp/issues/1957)) ([0a2bd7a](https://github.com/trycompai/comp/commit/0a2bd7acdb80c598e1885c086dbc4ef66573367f))
+* **api:** increase file upload size limits to 100MB ([#1959](https://github.com/trycompai/comp/issues/1959)) ([31da681](https://github.com/trycompai/comp/commit/31da6813b4151064aaf926155d7cc5b95ff95c6f))
+* **email:** add email package and update import paths for notifications ([#1951](https://github.com/trycompai/comp/issues/1951)) ([79407cf](https://github.com/trycompai/comp/commit/79407cfd74068a32eeb5a658c85ed9b1cb782c35))
+
+# [1.71.0](https://github.com/trycompai/comp/compare/v1.70.0...v1.71.0) (2025-12-16)
+
+
+### Features
+
+* Added logout function to onboarding/setup ([#1914](https://github.com/trycompai/comp/issues/1914)) ([d58341b](https://github.com/trycompai/comp/commit/d58341b6f84dbce8309f9059bc845a1846021fa6))
+* **integrations:** update sanitized inputs for github to read monorepo apps ([#1929](https://github.com/trycompai/comp/issues/1929)) ([5912194](https://github.com/trycompai/comp/commit/5912194a1bcd728a09c98d5f15264de00252dc72))
+* **onboarding:** add skip functionality to onboarding steps ([#1925](https://github.com/trycompai/comp/issues/1925)) ([b522c10](https://github.com/trycompai/comp/commit/b522c10231ad82a8391881d66230c3df7c050c58))
+
+
+### Reverts
+
+* Revert "[dev] [Itsnotaka] daniel/ui ([#1915](https://github.com/trycompai/comp/issues/1915))" ([#1928](https://github.com/trycompai/comp/issues/1928)) ([ec93c2e](https://github.com/trycompai/comp/commit/ec93c2ee8add06e598213a17a0eb29eca073d56c))
+
+# [1.70.0](https://github.com/trycompai/comp/compare/v1.69.0...v1.70.0) (2025-12-12)
+
+
+### Bug Fixes
+
+* **auditor:** increase max poll duration to 30 minutes and add limit to scrape ([#1897](https://github.com/trycompai/comp/issues/1897)) ([764d605](https://github.com/trycompai/comp/commit/764d6055fb8a1c7d4fa90d8d41c8234fc55c3de9))
+
+
+### Features
+
+* **api:** add access request notification email functionality ([#1910](https://github.com/trycompai/comp/issues/1910)) ([8d2a811](https://github.com/trycompai/comp/commit/8d2a81127c523e92decc56e29a7ef4f53e28986d))
+
+# [1.69.0](https://github.com/trycompai/comp/compare/v1.68.1...v1.69.0) (2025-12-08)
+
+
+### Features
+
+* **trust:** auto-enable frameworks in trust record for backward compatibility for old organizations ([#1873](https://github.com/trycompai/comp/issues/1873)) ([a289b57](https://github.com/trycompai/comp/commit/a289b573624adf4328dc54044899521b02628251))
+
+## [1.68.1](https://github.com/trycompai/comp/compare/v1.68.0...v1.68.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* **trust:** old org upload certificate problems ([#1871](https://github.com/trycompai/comp/issues/1871)) ([c92a416](https://github.com/trycompai/comp/commit/c92a416161cdd2fe66a885f60a0de96f6a57c132))
+
+# [1.68.0](https://github.com/trycompai/comp/compare/v1.67.1...v1.68.0) (2025-12-05)
+
+
+### Bug Fixes
+
+* **home:** improve error handling in organization page ([#1869](https://github.com/trycompai/comp/issues/1869)) ([e86a2c2](https://github.com/trycompai/comp/commit/e86a2c2bff3f43d6fa52ad3a2d7519d7ce9f3290))
+
+
+### Features
+
+* **auth:** update better-auth to version 1.4.5 and improve login handling ([#1870](https://github.com/trycompai/comp/issues/1870)) ([64c12a7](https://github.com/trycompai/comp/commit/64c12a703386f620b3a509691fafa7383da75388))
+
+## [1.67.1](https://github.com/trycompai/comp/compare/v1.67.0...v1.67.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* **db:** add createdAt column to invitation model ([#1866](https://github.com/trycompai/comp/issues/1866)) ([44a18a2](https://github.com/trycompai/comp/commit/44a18a25facb8a07cd81da2d1f7023f9b7a419cf))
+
+# [1.67.0](https://github.com/trycompai/comp/compare/v1.66.0...v1.67.0) (2025-12-05)
+
+
+### Features
+
+* **api:** add AI-powered question extraction and update dependencies ([#1858](https://github.com/trycompai/comp/issues/1858)) ([33600d0](https://github.com/trycompai/comp/commit/33600d08a7d1229efce5c9b468aa0661ab4d60eb))
+
+# [1.66.0](https://github.com/trycompai/comp/compare/v1.65.0...v1.66.0) (2025-11-26)
+
+
+### Bug Fixes
+
+* **app:** invite the deactivated user again as admin ([#1844](https://github.com/trycompai/comp/issues/1844)) ([3ea5c1f](https://github.com/trycompai/comp/commit/3ea5c1f3b41f09104cfcefc2eecc6f762154cfb2))
+
+
+### Features
+
+* **tasks:** add tab view preference and improve task list UI. ([bdbb14c](https://github.com/trycompai/comp/commit/bdbb14cb783bb24c58d1fe5e098bc638c4f12c5f))
+
+# [1.65.0](https://github.com/trycompai/comp/compare/v1.64.1...v1.65.0) (2025-11-26)
+
+
+### Bug Fixes
+
+* **soa:** enhance EditableSOAFields with justification dialog and save logic, change colors ([#1840](https://github.com/trycompai/comp/issues/1840)) ([8bdd1ad](https://github.com/trycompai/comp/commit/8bdd1adca77bb695f94c5f453de5853d3eb01fa1))
+* **soa:** remove unrelevant text ([#1841](https://github.com/trycompai/comp/issues/1841)) ([02d1919](https://github.com/trycompai/comp/commit/02d191938347d457c6d441b66b08f29f3df9715b))
+
+
+### Features
+
+* **frameworks:** add people score calculation and visualization ([#1842](https://github.com/trycompai/comp/issues/1842)) ([fbbe666](https://github.com/trycompai/comp/commit/fbbe6661f30815c880541167b23d9000ef55d3bf))
+* **SOA:** implement SOA logic and do refactor ([#1836](https://github.com/trycompai/comp/issues/1836)) ([96e115e](https://github.com/trycompai/comp/commit/96e115ed86a3a7c9bb34c9ba24cfbc46e9190445))
+
+## [1.64.1](https://github.com/trycompai/comp/compare/v1.64.0...v1.64.1) (2025-11-25)
+
+
+### Bug Fixes
+
+* **vendors:** update model version from gpt-5.1-mini to gpt-5-mini ([#1833](https://github.com/trycompai/comp/issues/1833)) ([df6e1ad](https://github.com/trycompai/comp/commit/df6e1ad62ae3221f44f3d87042953e5252901a3e))
+
+# [1.64.0](https://github.com/trycompai/comp/compare/v1.63.0...v1.64.0) (2025-11-24)
+
+
+### Bug Fixes
+
+* **app:** remove Demo button on booking-step page ([#1822](https://github.com/trycompai/comp/issues/1822)) ([9e0506e](https://github.com/trycompai/comp/commit/9e0506edd19eef9d0c177097e3d1aae9a2f97391))
+
+
+### Features
+
+* **security-questionnaire:** add action to answer a single question ([#1826](https://github.com/trycompai/comp/issues/1826)) ([d122112](https://github.com/trycompai/comp/commit/d12211254301370a2b79514fb3a35aeae03788a6))
+
+# [1.63.0](https://github.com/trycompai/comp/compare/v1.62.0...v1.63.0) (2025-11-24)
+
+
+### Features
+
+* **tasks:** add localStorage support for task view preference ([#1817](https://github.com/trycompai/comp/issues/1817)) ([4caed2a](https://github.com/trycompai/comp/commit/4caed2aa9eb76267fb77dbea560216beee269b57))
+
+# [1.62.0](https://github.com/trycompai/comp/compare/v1.61.0...v1.62.0) (2025-11-21)
+
+
+### Features
+
+* **trust:** add friendlyUrl parameter for access request methods ([#1813](https://github.com/trycompai/comp/issues/1813)) ([fa97962](https://github.com/trycompai/comp/commit/fa9796212905aa60b533d63f0fe82f6b5a9dc4de))
+
+# [1.61.0](https://github.com/trycompai/comp/compare/v1.60.1...v1.61.0) (2025-11-20)
+
+
+### Features
+
+* **attachments:** add drag and drop for task attachments ([#1805](https://github.com/trycompai/comp/issues/1805)) ([6c2844b](https://github.com/trycompai/comp/commit/6c2844bebd38a86afa183f33ac7056b7b801c090))
+
+## [1.60.1](https://github.com/trycompai/comp/compare/v1.60.0...v1.60.1) (2025-11-20)
+
+
+### Bug Fixes
+
+* **api-env:** added env prevention ([#1793](https://github.com/trycompai/comp/issues/1793)) ([047a448](https://github.com/trycompai/comp/commit/047a448e7ffc4651cdd60d9afe0dab1745fc4d78))
+* **portal:** fix downloading device agent on safari ([#1791](https://github.com/trycompai/comp/issues/1791)) ([699073f](https://github.com/trycompai/comp/commit/699073f945816d7062d32c07f29fcdc942d40aff))
+
+# [1.60.0](https://github.com/trycompai/comp/compare/v1.59.3...v1.60.0) (2025-11-19)
+
+
+### Features
+
+* **api:** update dependencies and refactor email service imports ([#1782](https://github.com/trycompai/comp/issues/1782)) ([5afd2dc](https://github.com/trycompai/comp/commit/5afd2dc234b0378d009209e4465f714788c3ec26))
+* **trust:** add loading skeletons for grants and requests tabs ([#1768](https://github.com/trycompai/comp/issues/1768)) ([fed0f41](https://github.com/trycompai/comp/commit/fed0f41b7f60459142f6e8fdbabc995ebcc5975b))
+
+## [1.59.3](https://github.com/trycompai/comp/compare/v1.59.2...v1.59.3) (2025-11-18)
+
+
+### Bug Fixes
+
+* **api:** update buildspec and Dockerfile to prepare workspace packag… ([#1775](https://github.com/trycompai/comp/issues/1775)) ([22fb0eb](https://github.com/trycompai/comp/commit/22fb0eb434250333ff7758d393f8d24bf13a0168))
+* **portal:** update module to download executable device agent file for windows ([#1766](https://github.com/trycompai/comp/issues/1766)) ([70ff9c7](https://github.com/trycompai/comp/commit/70ff9c7a6951c9558bc91a2ab25de886ec0c3fae))
+
+## [1.59.2](https://github.com/trycompai/comp/compare/v1.59.1...v1.59.2) (2025-11-18)
+
+
+### Bug Fixes
+
+* **tasks:** include 'not_relevant' status in task completion checks ([#1770](https://github.com/trycompai/comp/issues/1770)) ([b5dd9c8](https://github.com/trycompai/comp/commit/b5dd9c8d4976facff39badf5dab19139b581ffde))
+
+## [1.59.1](https://github.com/trycompai/comp/compare/v1.59.0...v1.59.1) (2025-11-17)
+
+
+### Bug Fixes
+
+* **tasks:** increase maxAttempts for answer-question and vendor orchestrator tasks ([#1763](https://github.com/trycompai/comp/issues/1763)) ([ecaadd5](https://github.com/trycompai/comp/commit/ecaadd55ae01cf1c94aa33540aeab7686fff995b))
+
+# [1.59.0](https://github.com/trycompai/comp/compare/v1.58.0...v1.59.0) (2025-11-17)
+
+
+### Features
+
+* **questionnaire:** add security questionnaire feature with AI parsing and auto-answering ([#1755](https://github.com/trycompai/comp/issues/1755)) ([dd4f86c](https://github.com/trycompai/comp/commit/dd4f86c512f40a03b175434877ba6f48059b1bc5))
+* **questionnaire:** enhance S3 client creation on parse action ([#1760](https://github.com/trycompai/comp/issues/1760)) ([4079b73](https://github.com/trycompai/comp/commit/4079b7315af6651c353d5f1d9dff9924a36269a6))
+* **security-questionnaire:** add AI-powered questionnaire parsing an… ([#1751](https://github.com/trycompai/comp/issues/1751)) ([e06bb15](https://github.com/trycompai/comp/commit/e06bb1522a0251b10bfdb00f6b7580c8dc46c6a0))
+* **security-questionnaire:** add support for questionnaire file uploads to S3 ([#1758](https://github.com/trycompai/comp/issues/1758)) ([1ba8866](https://github.com/trycompai/comp/commit/1ba886635839b3e3e9a60cdc34648bee2f60ec13))
+* **security-questionnaire:** add tooltip and disable CTA for unpublished policies ([#1761](https://github.com/trycompai/comp/issues/1761)) ([849966e](https://github.com/trycompai/comp/commit/849966eb4329a17771148add8e970f55c8a2ec95))
+* **tasks:** enhance task management with automation features and UI improvements ([#1752](https://github.com/trycompai/comp/issues/1752)) ([60dfb28](https://github.com/trycompai/comp/commit/60dfb28e6c1727c677571bc3736333fce57b7944))
+* **trust-access:** implement trust access request management system ([#1739](https://github.com/trycompai/comp/issues/1739)) ([2ba3d5d](https://github.com/trycompai/comp/commit/2ba3d5d64591a566c24cc443540bc4e853d9a350))
+
+# [1.58.0](https://github.com/trycompai/comp/compare/v1.57.1...v1.58.0) (2025-11-13)
+
+
+### Features
+
+* **onboarding:** add individual tracking for vendors and risks with auto-expand ([#1748](https://github.com/trycompai/comp/issues/1748)) ([7a85be8](https://github.com/trycompai/comp/commit/7a85be80f4c27da0cef485ad09e7152222dc8c48))
+
+## [1.57.1](https://github.com/trycompai/comp/compare/v1.57.0...v1.57.1) (2025-11-13)
+
+
+### Bug Fixes
+
+* **tasks:** show all task statuses and sort alphabetically ([#1743](https://github.com/trycompai/comp/issues/1743)) ([413b14c](https://github.com/trycompai/comp/commit/413b14ca95d5490a086aecb418a3305c2099534a))
+
+# [1.57.0](https://github.com/trycompai/comp/compare/v1.56.7...v1.57.0) (2025-11-11)
+
+
+### Features
+
+* add contractor role ([#1735](https://github.com/trycompai/comp/issues/1735)) ([2d87914](https://github.com/trycompai/comp/commit/2d87914a25ef5edad2cee3f033e9583dc30b04d2))
+
 ## [1.56.7](https://github.com/trycompai/comp/compare/v1.56.6...v1.56.7) (2025-11-07)
 
 

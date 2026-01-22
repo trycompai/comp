@@ -68,22 +68,34 @@ export const authActionClient = actionClientWithMeta
       },
     });
 
-    const { fileData: _, ...inputForLog } = clientInput as any;
-    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
-    logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    const { fileData: _, ...inputForLog } = (clientInput || {}) as any;
+    // Logger will automatically skip GCP logs to avoid credential exposure
+    logger.info('Input ->', inputForLog);
+    logger.info('Result ->', result.data);
 
     // Also log validation errors if they exist
     if (result.validationErrors) {
-      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+      logger.warn('Validation Errors ->', result.validationErrors);
     }
 
     return result;
   })
-  .use(async ({ next, metadata }) => {
+  .use(async ({ next, metadata, ctx }) => {
     const headersList = await headers();
     let remaining: number | undefined;
 
-    if (ratelimit) {
+    // Exclude answer saving actions from rate limiting
+    // These actions are user-initiated and should not be rate limited
+    const excludedActions = [
+      'save-questionnaire-answer',
+      'update-questionnaire-answer',
+      'save-manual-answer',
+      'save-questionnaire-answers-batch',
+    ];
+
+    const shouldRateLimit = !excludedActions.includes(metadata.name);
+
+    if (ratelimit && shouldRateLimit) {
       const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
         `${headersList.get('x-forwarded-for')}-${metadata.name}`,
       );
@@ -97,6 +109,7 @@ export const authActionClient = actionClientWithMeta
 
     return next({
       ctx: {
+        ...ctx,
         ip: headersList.get('x-forwarded-for'),
         userAgent: headersList.get('user-agent'),
         ratelimit: {
@@ -106,58 +119,51 @@ export const authActionClient = actionClientWithMeta
     });
   })
   .use(async ({ next, metadata, ctx }) => {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
+    // Use user and session from previous middleware instead of re-fetching
+    // This ensures consistency and avoids potential security issues from stale data
+    if (!ctx.user || !ctx.session) {
       throw new Error('Unauthorized');
     }
 
     if (metadata.track) {
-      track(session.user.id, metadata.track.event, {
+      track(ctx.user.id, metadata.track.event, {
         channel: metadata.track.channel,
-        email: session.user.email,
-        name: session.user.name,
-        organizationId: session.session.activeOrganizationId,
+        email: ctx.user.email,
+        name: ctx.user.name,
+        organizationId: ctx.session.activeOrganizationId,
       });
     }
 
-    return next({
-      ctx: {
-        user: session.user,
-      },
-    });
+    return next({ ctx });
   })
-  .use(async ({ next, metadata, clientInput }) => {
+  .use(async ({ next, metadata, clientInput, ctx }) => {
     const headersList = await headers();
-    const session = await auth.api.getSession({
-      headers: headersList,
-    });
+    
+    // Use user and session from previous middleware for consistency
+    // Only fetch activeMember as it may require fresh data
+    if (!ctx.user || !ctx.session) {
+      throw new Error('Unauthorized');
+    }
+
+    if (!ctx.session.activeOrganizationId) {
+      throw new Error('Organization not found');
+    }
 
     const member = await auth.api.getActiveMember({
       headers: headersList,
     });
 
-    if (!session) {
-      throw new Error('Unauthorized');
-    }
-
-    if (!session.session.activeOrganizationId) {
-      throw new Error('Organization not found');
-    }
-
     if (!member) {
       throw new Error('Member not found');
     }
 
-    const { fileData: _, ...inputForAuditLog } = clientInput as any;
+    const { fileData: _, ...inputForAuditLog } = (clientInput || {}) as any;
 
     const data = {
-      userId: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      organizationId: session.session.activeOrganizationId,
+      userId: ctx.user.id,
+      email: ctx.user.email,
+      name: ctx.user.name,
+      organizationId: ctx.session.activeOrganizationId,
       action: metadata.name,
       input: inputForAuditLog,
       ipAddress: headersList.get('x-forwarded-for') || null,
@@ -203,9 +209,9 @@ export const authActionClient = actionClientWithMeta
         data: {
           data: JSON.stringify(data),
           memberId: member.id,
-          userId: session.user.id,
+          userId: ctx.user.id,
           description: metadata.track?.description || null,
-          organizationId: session.session.activeOrganizationId,
+          organizationId: ctx.session.activeOrganizationId,
           entityId,
           entityType,
         },
@@ -220,7 +226,7 @@ export const authActionClient = actionClientWithMeta
 
     revalidatePath(path);
 
-    return next();
+    return next({ ctx });
   });
 
 // New action client that includes organization access check
@@ -237,6 +243,7 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
     where: {
       userId: ctx.user.id,
       organizationId,
+      deactivated: false,
     },
   });
 
@@ -246,6 +253,7 @@ export const authWithOrgAccessClient = authActionClient.use(async ({ next, clien
 
   return next({
     ctx: {
+      ...ctx,
       member,
       organizationId,
     },
@@ -272,22 +280,34 @@ export const authActionClientWithoutOrg = actionClientWithMeta
       },
     });
 
-    const { fileData: _, ...inputForLog } = clientInput as any;
-    logger.info('Input ->', JSON.stringify(inputForLog, null, 2));
-    logger.info('Result ->', JSON.stringify(result.data, null, 2));
+    const { fileData: _, ...inputForLog } = (clientInput || {}) as any;
+    // Logger will automatically skip GCP logs to avoid credential exposure
+    logger.info('Input ->', inputForLog);
+    logger.info('Result ->', result.data);
 
     // Also log validation errors if they exist
     if (result.validationErrors) {
-      logger.warn('Validation Errors ->', JSON.stringify(result.validationErrors, null, 2));
+      logger.warn('Validation Errors ->', result.validationErrors);
     }
 
     return result;
   })
-  .use(async ({ next, metadata }) => {
+  .use(async ({ next, metadata, ctx }) => {
     const headersList = await headers();
     let remaining: number | undefined;
 
-    if (ratelimit) {
+    // Exclude answer saving actions from rate limiting
+    // These actions are user-initiated and should not be rate limited
+    const excludedActions = [
+      'save-questionnaire-answer',
+      'update-questionnaire-answer',
+      'save-manual-answer',
+      'save-questionnaire-answers-batch',
+    ];
+
+    const shouldRateLimit = !excludedActions.includes(metadata.name);
+
+    if (ratelimit && shouldRateLimit) {
       const { success, remaining: rateLimitRemaining } = await ratelimit.limit(
         `${headersList.get('x-forwarded-for')}-${metadata.name}`,
       );
@@ -301,6 +321,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
 
     return next({
       ctx: {
+        ...ctx,
         ip: headersList.get('x-forwarded-for'),
         userAgent: headersList.get('user-agent'),
         ratelimit: {
@@ -330,6 +351,7 @@ export const authActionClientWithoutOrg = actionClientWithMeta
 
     return next({
       ctx: {
+        ...ctx,
         user: session.user,
       },
     });

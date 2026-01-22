@@ -116,9 +116,9 @@ export const PromptSecret = memo(function PromptSecret({
 
   if (isComplete) {
     return (
-      <div className="rounded-xs border bg-green-50 p-4">
+      <div className="rounded-xs border border-primary/20 bg-primary/10 p-4">
         <div className="flex gap-2">
-          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
           <div className="text-sm">
             <p className="font-medium">Secret "{finalSecretName}" added successfully</p>
             <p className="mt-1">The automation can now use this secret.</p>
@@ -187,7 +187,7 @@ export const PromptSecret = memo(function PromptSecret({
         {secretData?.description && (
           <div className="grid gap-2">
             <Label className="text-sm">Description</Label>
-            <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+            <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3 break-words whitespace-pre-wrap max-h-48 overflow-y-auto">
               {secretData.description}
             </div>
           </div>

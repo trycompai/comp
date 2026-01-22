@@ -12,8 +12,8 @@ const STATUS_OPTIONS: { value: EmployeeStatusType; label: string }[] = [
 
 // Status color hex values for charts
 export const EMPLOYEE_STATUS_HEX_COLORS: Record<EmployeeStatusType, string> = {
-  inactive: '#ef4444',
-  active: 'hsl(var(--chart-primary))',
+  inactive: 'var(--color-destructive)',
+  active: 'var(--color-primary)',
 };
 
 export const Status = ({

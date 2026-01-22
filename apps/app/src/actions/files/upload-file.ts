@@ -93,7 +93,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
     console.log('[uploadFile] Converting file data to buffer');
     const fileBuffer = Buffer.from(fileData, 'base64');
 
-    const MAX_FILE_SIZE_MB = 10;
+    const MAX_FILE_SIZE_MB = 100;
     const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
     if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
       logger.warn(

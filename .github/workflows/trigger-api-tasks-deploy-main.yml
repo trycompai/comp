@@ -1,0 +1,48 @@
+name: Deploy API to Trigger.dev (dev)
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: warp-ubuntu-latest-arm64-4x
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x" # Updated to match Node.js w/ Vercel
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Clear cache
+        run: rm -rf node_modules .bun
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || bun install --frozen-lockfile --ignore-scripts
+      - name: Install DB package dependencies
+        working-directory: ./packages/db
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Install Integration Platform package dependencies
+        working-directory: ./packages/integration-platform
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Build Integration Platform package
+        working-directory: ./packages/integration-platform
+        run: bun run build
+      - name: Build DB package
+        working-directory: ./packages/db
+        run: bun run build
+      - name: Copy schema to api and generate client
+        working-directory: ./apps/api
+        run: |
+          mkdir -p prisma
+          cp ../../packages/db/dist/schema.prisma prisma/schema.prisma
+          bunx prisma generate
+      - name: 🚀 Deploy Trigger.dev
+        working-directory: ./apps/api
+        timeout-minutes: 20
+        env:
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+        run: bunx trigger.dev@4.0.6 deploy --env staging --log-level debug

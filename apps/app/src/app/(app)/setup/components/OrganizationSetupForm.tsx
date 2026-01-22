@@ -34,6 +34,7 @@ export function OrganizationSetupForm({
     mounted,
     onSubmit,
     handleBack,
+    handlePrefillAll,
     isLastStep,
   } = useOnboardingForm({
     setupId,
@@ -119,24 +120,36 @@ export function OrganizationSetupForm({
                 className="w-full"
                 autoComplete="off"
               >
-                <FormField
-                  name={step.key}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <OnboardingStepInput
-                          currentStep={step}
-                          form={form}
-                          savedAnswers={savedAnswers}
-                          onLoadingChange={setIsLoadingFrameworks}
-                        />
-                      </FormControl>
-                      <div className="min-h-[20px]">
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
+                {/* Complex fields handle their own validation UI */}
+                {step.key === 'reportSignatory' ||
+                step.key === 'shipping' ||
+                step.key === 'cSuite' ? (
+                  <OnboardingStepInput
+                    currentStep={step}
+                    form={form}
+                    savedAnswers={savedAnswers}
+                    onLoadingChange={setIsLoadingFrameworks}
+                  />
+                ) : (
+                  <FormField
+                    name={step.key}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <OnboardingStepInput
+                            currentStep={step}
+                            form={form}
+                            savedAnswers={savedAnswers}
+                            onLoadingChange={setIsLoadingFrameworks}
+                          />
+                        </FormControl>
+                        <div className="min-h-[20px]">
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </form>
             </Form>
           </AnimatedWrapper>
@@ -152,6 +165,7 @@ export function OrganizationSetupForm({
               isLastStep={isLastStep}
               isOnboarding={isOnboarding}
               isCurrentStepValid={isCurrentStepValid}
+              onPrefillAll={handlePrefillAll}
             />
           </div>
         </AnimatedWrapper>

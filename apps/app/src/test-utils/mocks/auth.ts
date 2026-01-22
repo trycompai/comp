@@ -1,6 +1,13 @@
 import { Departments, type Member, type Session, type User } from '@db';
 import { vi } from 'vitest';
 
+const DEFAULT_EMAIL_PREFERENCES: User['emailPreferences'] = {
+  policyNotifications: true,
+  taskReminders: true,
+  weeklyTaskDigest: true,
+  unassignedItemsNotifications: true,
+};
+
 // Mock auth API structure
 export const mockAuthApi = {
   getSession: vi.fn(),
@@ -49,6 +56,9 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
   lastLogin: null,
   createdAt: new Date(),
   updatedAt: new Date(),
+  emailNotificationsUnsubscribed: false,
+  emailPreferences: DEFAULT_EMAIL_PREFERENCES,
+  isPlatformAdmin: false,
   ...overrides,
 });
 
@@ -62,6 +72,7 @@ export const createMockMember = (overrides?: Partial<Member>): Member => ({
   department: Departments.none,
   isActive: true,
   fleetDmLabelId: null,
+  deactivated: false,
   ...overrides,
 });
 

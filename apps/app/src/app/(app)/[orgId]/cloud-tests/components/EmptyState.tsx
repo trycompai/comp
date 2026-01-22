@@ -22,7 +22,7 @@ const CLOUD_PROVIDERS = [
     description: 'Scan AWS Security Hub for vulnerabilities and compliance issues',
     color: 'from-orange-500 to-yellow-600',
     logoUrl: 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/aws',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/aws',
   },
   {
     id: 'gcp' as const,
@@ -31,7 +31,7 @@ const CLOUD_PROVIDERS = [
     description: 'Monitor GCP Security Command Center for security findings',
     color: 'from-blue-500 to-cyan-600',
     logoUrl: 'https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/gcp',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/gcp',
   },
   {
     id: 'azure' as const,
@@ -40,7 +40,7 @@ const CLOUD_PROVIDERS = [
     description: 'Check Azure Security Center for compliance data',
     color: 'from-blue-600 to-indigo-700',
     logoUrl: 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
-    guideUrl: 'https://trycomp.ai/docs/integrations/azure',
+    guideUrl: 'https://trycomp.ai/docs/cloud-tests/azure',
   },
 ];
 
@@ -49,7 +49,6 @@ interface ProviderFieldBase {
   label: string;
   helpText: string;
   placeholder?: string;
-  example?: string;
 }
 
 interface ProviderFieldWithOptions extends ProviderFieldBase {
@@ -117,12 +116,18 @@ const PROVIDER_FIELDS: Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[
   ],
 };
 
+type TriggerInfo = {
+  taskId?: string;
+  publicAccessToken?: string;
+};
+
 interface EmptyStateProps {
   onBack?: () => void;
   connectedProviders?: string[];
+  onConnected?: (trigger?: TriggerInfo) => void;
 }
 
-export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps = {}) {
+export function EmptyState({ onBack, connectedProviders = [], onConnected }: EmptyStateProps) {
   const [step, setStep] = useState<Step>('choose');
   const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(null);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
@@ -139,7 +144,7 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
   };
 
   const handleBack = () => {
-    if (step === 'connect') {
+    if (step === 'connect' || step === 'validate-aws') {
       setStep('choose');
       setSelectedProvider(null);
       setCredentials({});
@@ -176,7 +181,6 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
   };
 
   const handleValidateAws = async () => {
-    // For AWS, validate credentials first
     if (!credentials.access_key_id || !credentials.secret_access_key) {
       setErrors({
         access_key_id: !credentials.access_key_id ? 'Required' : '',
@@ -224,7 +228,12 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
 
       if (result?.data?.success) {
         setStep('success');
-        // If user already has clouds, automatically return to results after 2 seconds
+        if (result.data?.trigger) {
+          onConnected?.(result.data.trigger);
+        }
+        if (result.data?.runErrors && result.data.runErrors.length > 0) {
+          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
+        }
         if (onBack) {
           setTimeout(() => {
             onBack();
@@ -246,7 +255,7 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
   // AWS Step 2.5: Region Selection (after credential validation)
   if (step === 'validate-aws' && provider && selectedProvider === 'aws') {
     return (
-      <div className="container mx-auto flex min-h-[600px] w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl flex min-h-[600px] w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setStep('connect')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -336,7 +345,7 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
             </Button>
           </div>
         )}
-        <div className="flex flex-col items-center gap-6 text-center max-w-2xl mx-auto">
+        <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
           <div className="relative">
             <div className="absolute inset-0 rounded-full" />
             <div className="relative rounded-2xl p-4">
@@ -348,13 +357,13 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
               {onBack ? 'Add Another Cloud' : 'Continuous Cloud Scanning'}
             </h1>
             <div className="space-y-3">
-              <p className="text-muted-foreground text-lg leading-relaxed max-w-lg mx-auto">
+              <p className="text-muted-foreground mx-auto max-w-lg text-lg leading-relaxed">
                 Automatically monitor your cloud infrastructure for security vulnerabilities and
                 compliance issues.
               </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-medium text-primary">Always-on monitoring</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
+                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                <span className="text-primary text-xs font-medium">Always-on monitoring</span>
               </div>
             </div>
           </div>
@@ -401,7 +410,7 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
     const fields = PROVIDER_FIELDS[provider.id];
 
     return (
-      <div className="container mx-auto flex min-h-[600px] w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto flex min-h-[600px] w-full max-w-7xl flex-col gap-6 py-4 md:py-6 lg:py-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -531,7 +540,7 @@ export function EmptyState({ onBack, connectedProviders = [] }: EmptyStateProps 
     return (
       <div className="container mx-auto flex min-h-[600px] w-full flex-col items-center justify-center gap-8 p-4 md:p-6 lg:p-8">
         <div className="flex flex-col items-center gap-6 text-center">
-          <div className="bg-primary/10 rounded-full p-6">
+          <div className="rounded-full bg-primary/10 p-6">
             <CheckCircle2 className="text-primary h-16 w-16" />
           </div>
           <div className="space-y-2">

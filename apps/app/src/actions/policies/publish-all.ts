@@ -1,6 +1,6 @@
 'use server';
 
-import { sendPublishAllPoliciesEmail } from '@/jobs/tasks/email/publish-all-policies-email';
+import { sendPublishAllPoliciesEmail } from '@/trigger/tasks/email/publish-all-policies-email';
 import { db, PolicyStatus, Role } from '@db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -41,6 +41,7 @@ export const publishAllPoliciesAction = authActionClient
       where: {
         userId: user.id,
         organizationId: parsedInput.organizationId,
+        deactivated: false,
       },
     });
 
@@ -104,9 +105,8 @@ export const publishAllPoliciesAction = authActionClient
         where: {
           organizationId: parsedInput.organizationId,
           isActive: true,
-          role: {
-            contains: Role.employee,
-          },
+          deactivated: false,
+          OR: [{ role: { contains: Role.employee } }, { role: { contains: Role.contractor } }],
         },
         include: {
           user: {

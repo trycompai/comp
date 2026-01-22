@@ -43,3 +43,11 @@ export const employee = ac.newRole({
   invitation: ['create', 'cancel'],
   app: ['read', 'update'],
 });
+
+export const contractor = ac.newRole({
+  portal: ['read', 'update'],
+  organization: ['read', 'update'],
+  member: ['create', 'update'],
+  invitation: ['create', 'cancel'],
+  app: ['read', 'update'],
+});

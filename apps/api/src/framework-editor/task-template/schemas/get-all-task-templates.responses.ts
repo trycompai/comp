@@ -8,7 +8,8 @@ export const GET_ALL_TASK_TEMPLATES_RESPONSES = {
           {
             id: 'frk_tt_abc123def456',
             name: 'Monthly Security Review',
-            description: 'Review and update security policies on a monthly basis',
+            description:
+              'Review and update security policies on a monthly basis',
             frequency: 'monthly',
             department: 'it',
             createdAt: '2025-01-01T00:00:00.000Z',
@@ -45,4 +46,3 @@ export const GET_ALL_TASK_TEMPLATES_RESPONSES = {
     },
   },
 };
-

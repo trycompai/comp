@@ -48,8 +48,9 @@ export default async function TaskPage({ params }: PageProps) {
       where: {
         organizationId: orgId,
         role: {
-          notIn: ['employee'],
+          notIn: ['employee', 'contractor'],
         },
+        deactivated: false,
       },
       include: {
         user: true,

@@ -18,6 +18,11 @@ interface CloudField {
   type?: string;
 }
 
+type TriggerInfo = {
+  taskId?: string;
+  publicAccessToken?: string;
+};
+
 interface CloudConnectionCardProps {
   cloudProvider: 'aws' | 'gcp' | 'azure';
   name: string;
@@ -27,7 +32,7 @@ interface CloudConnectionCardProps {
   guideUrl?: string;
   color?: string;
   logoUrl?: string;
-  onSuccess?: () => void;
+  onSuccess?: (trigger?: TriggerInfo) => void;
 }
 
 export function CloudConnectionCard({
@@ -83,7 +88,11 @@ export function CloudConnectionCard({
       if (result?.data?.success) {
         toast.success(`${name} connected! Running initial scan...`);
         setCredentials({});
-        onSuccess?.();
+        onSuccess?.(result.data?.trigger);
+
+        if (result.data?.runErrors && result.data.runErrors.length > 0) {
+          toast.error(result.data.runErrors[0] || 'Initial scan reported an issue');
+        }
       } else {
         toast.error(result?.data?.error || 'Failed to connect');
       }
@@ -99,13 +108,11 @@ export function CloudConnectionCard({
     <Card className="rounded-xs">
       <CardHeader className="space-y-4">
         <div className="flex items-center gap-3">
-          <div className={`bg-gradient-to-br ${color} flex items-center justify-center rounded-lg p-2`}>
+          <div
+            className={`bg-gradient-to-br ${color} flex items-center justify-center rounded-lg p-2`}
+          >
             {logoUrl && (
-              <img
-                src={logoUrl}
-                alt={`${shortName} logo`}
-                className="h-8 w-8 object-contain"
-              />
+              <img src={logoUrl} alt={`${shortName} logo`} className="h-8 w-8 object-contain" />
             )}
           </div>
           <div>

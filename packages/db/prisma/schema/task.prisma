@@ -1,46 +1,54 @@
 model Task {
-    // Metadata
-    id          String         @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
-    title       String
-    description String
-    status      TaskStatus     @default(todo)
-    frequency   TaskFrequency?
-    department  Departments?   @default(none)
-    order       Int            @default(0)
+  // Metadata
+  id          String         @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
+  title       String
+  description String
+  status           TaskStatus           @default(todo)
+  automationStatus TaskAutomationStatus @default(AUTOMATED)
+  frequency        TaskFrequency?
+  department  Departments?   @default(none)
+  order       Int            @default(0)
 
-    // Dates
-    createdAt       DateTime  @default(now())
-    updatedAt       DateTime  @updatedAt
-    lastCompletedAt DateTime?
-    reviewDate      DateTime?
+  // Dates
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastCompletedAt DateTime?
+  reviewDate      DateTime?
 
-    // Relationships
-    assigneeId          String?
-    assignee            Member?                      @relation(fields: [assigneeId], references: [id])
-    organizationId      String
-    organization        Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    taskTemplateId      String?
-    taskTemplate        FrameworkEditorTaskTemplate? @relation(fields: [taskTemplateId], references: [id])
-    controls            Control[]
-    vendors             Vendor[]
-    risks               Risk[]
-    evidenceAutomations EvidenceAutomation[]
+  // Relationships
+  assigneeId          String?
+  assignee            Member?                      @relation(fields: [assigneeId], references: [id])
+  organizationId      String
+  organization        Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  taskTemplateId      String?
+  taskTemplate        FrameworkEditorTaskTemplate? @relation(fields: [taskTemplateId], references: [id])
+  controls            Control[]
+  vendors             Vendor[]
+  risks               Risk[]
+  evidenceAutomations EvidenceAutomation[]
+  browserAutomations  BrowserAutomation[]
 
-    EvidenceAutomationRun EvidenceAutomationRun[]
+  EvidenceAutomationRun EvidenceAutomationRun[]
+  integrationCheckRuns  IntegrationCheckRun[]
 }
 
 enum TaskStatus {
-    todo
-    in_progress
-    done
-    not_relevant
-    failed
+  todo
+  in_progress
+  done
+  not_relevant
+  failed
 }
 
 enum TaskFrequency {
-    daily
-    weekly
-    monthly
-    quarterly
-    yearly
+  daily
+  weekly
+  monthly
+  quarterly
+  yearly
+}
+
+enum TaskAutomationStatus {
+  AUTOMATED
+  MANUAL
 }

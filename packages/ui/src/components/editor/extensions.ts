@@ -1,19 +1,92 @@
-import CharacterCount from '@tiptap/extension-character-count';
+import { Extension } from '@tiptap/core';
+import '@tiptap/extension-blockquote';
+import '@tiptap/extension-bold';
+import '@tiptap/extension-code';
+import '@tiptap/extension-code-block';
+import '@tiptap/extension-heading';
 import Highlight from '@tiptap/extension-highlight';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import Image from '@tiptap/extension-image';
+import '@tiptap/extension-italic';
 import Link from '@tiptap/extension-link';
-import Placeholder from '@tiptap/extension-placeholder';
-import { Table } from '@tiptap/extension-table';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
-import TableRow from '@tiptap/extension-table-row';
-import TaskItem from '@tiptap/extension-task-item';
-import TaskList from '@tiptap/extension-task-list';
+import { TaskItem, TaskList } from '@tiptap/extension-list';
+import '@tiptap/extension-strike';
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
-import Underline from '@tiptap/extension-underline';
+import { CharacterCount, Placeholder } from '@tiptap/extensions';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
+export * from './extensions/file-attachment';
+export * from './extensions/mention';
+
+/**
+ * Custom extension to preserve empty lines when pasting plain text.
+ * TipTap's default behavior collapses consecutive newlines into a single paragraph break.
+ */
+const PreserveNewlines = Extension.create({
+  name: 'preserveNewlines',
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('preserveNewlines'),
+        props: {
+          handlePaste: (view, event) => {
+            const clipboardData = event.clipboardData;
+            if (!clipboardData) return false;
+
+            // Only handle plain text paste (not HTML)
+            const html = clipboardData.getData('text/html');
+            if (html) return false;
+
+            const text = clipboardData.getData('text/plain');
+            if (!text) return false;
+
+            // Check if text has multiple consecutive newlines (empty lines)
+            if (!text.includes('\n\n')) return false;
+
+            // Split by double newlines to preserve empty paragraphs
+            const paragraphs = text.split(/\n\n+/);
+            const { schema } = view.state;
+
+            // Ensure required node types exist
+            const paragraphType = schema.nodes.paragraph;
+            const docType = schema.nodes.doc;
+            const hardBreakType = schema.nodes.hardBreak;
+            if (!paragraphType || !docType) return false;
+
+            const nodes = paragraphs.map((para) => {
+              const lines = para.split('\n');
+              const content: ReturnType<typeof schema.text>[] = [];
+
+              lines.forEach((line, lineIndex) => {
+                if (line) {
+                  content.push(schema.text(line));
+                }
+                // Add hard break between lines (not after the last line)
+                if (lineIndex < lines.length - 1 && hardBreakType) {
+                  content.push(hardBreakType.create());
+                }
+              });
+
+              // Create paragraph with content, or empty paragraph
+              return paragraphType.create(null, content.length > 0 ? content : null);
+            });
+
+            const fragment = docType.create(null, nodes);
+            const slice = fragment.slice(0, fragment.content.size);
+
+            const tr = view.state.tr.replaceSelection(slice);
+            view.dispatch(tr);
+
+            return true;
+          },
+        },
+      }),
+    ];
+  },
+});
 
 type DefaultExtensionsOptions = {
   placeholder?: string;
@@ -24,6 +97,7 @@ export const defaultExtensions = ({
   placeholder = 'Start writing...',
   openLinksOnClick = false,
 }: DefaultExtensionsOptions = {}) => [
+  PreserveNewlines,
   StarterKit.configure({
     bulletList: {
       HTMLAttributes: {
@@ -62,9 +136,9 @@ export const defaultExtensions = ({
       width: 4,
     },
     gapcursor: false,
+    link: false,
   }),
   // Text styling
-  Underline,
   Highlight.configure({ multicolor: true }),
   // Functionality
   CharacterCount,

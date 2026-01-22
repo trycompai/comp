@@ -1,0 +1,113 @@
+---
+title: 'Integrations'
+description: 'Extensible platform for building compliance check integrations'
+---
+
+## Overview
+
+Integrations let you connect third-party services (GitHub, AWS, Google Cloud, etc.) to automatically run compliance checks and collect evidence.
+
+**Key Features:**
+- Extensible architecture for adding new integrations
+- Multiple auth strategies (OAuth, API keys, custom credentials)
+- Automated compliance checks that map to tasks
+- Background execution via Trigger.dev
+- Type-safe with full TypeScript support
+
+## How It Works
+
+### 1. Integration Manifests
+
+Each integration is defined by a **manifest** that describes:
+- Authentication method (OAuth, API key, custom)
+- Available compliance checks
+- User-configurable variables
+- API endpoints and headers
+
+### 2. Checks
+
+Checks are compliance validations that run against the external service. For example:
+- GitHub: "Are all repos using branch protection?"
+- AWS: "Are there any high-severity findings in Security Hub?"
+- Google Workspace: "Do all users have 2FA enabled?"
+
+### 3. Task Mapping
+
+Checks can map to compliance task templates. When a check passes, the associated task is auto-completed.
+
+Example: The GitHub "Branch Protection" check maps to the "Code Changes" task. When the check passes, the "Code Changes" task is automatically marked as done.
+
+### 4. Connection Flow
+
+**OAuth integrations:**
+1. User clicks "Connect"
+2. Redirected to provider's OAuth screen
+3. User authorizes
+4. Token stored securely (encrypted at rest)
+5. Checks run automatically (if no variables needed) or after user configures variables
+
+**Custom auth integrations:**
+1. User clicks "Connect"
+2. User enters credentials (API keys, service account, etc.)
+3. Credentials stored securely (encrypted at rest)
+4. Checks run automatically (if no variables needed) or after user configures variables
+
+### 5. Auto-Run Logic
+
+After connecting an integration:
+- If all required variables are configured → Checks run automatically via Trigger.dev
+- If variables needed → User configures them → Checks run
+- Checks also run daily via scheduled Trigger.dev task
+
+## Architecture
+
+```
+Integrations
+├── Manifests (define integrations)
+│   ├── Auth config (OAuth, API key, custom)
+│   ├── Checks (compliance validations)
+│   └── Variables (user configuration)
+├── Runtime (execute checks)
+│   ├── Check context (API, logging, reporting)
+│   └── Check runner (orchestration)
+├── API (NestJS backend)
+│   ├── Connections (manage user connections)
+│   ├── OAuth (handle OAuth flow)
+│   ├── Checks (run checks)
+│   └── Variables (manage user settings)
+└── Trigger Tasks (background execution)
+    ├── run-connection-checks (auto-run after connect)
+    ├── run-task-integration-checks (daily scheduled)
+    └── sync-employees-schedule (daily employee sync)
+```
+
+## Built-in Integrations
+
+### Cloud Providers
+- **AWS** - Security Hub findings
+- **Azure** - Microsoft Defender for Cloud
+- **GCP** - Security Command Center
+
+### Identity & Access
+- **Google Workspace** - User compliance, 2FA checks
+- **Rippling** - Employee sync
+
+### Developer Tools
+- **GitHub** - Code security, branch protection, Dependabot
+- **Vercel** - Deployment monitoring
+- **Linear** - Team privacy, SSO checks
+
+## Next Steps
+
+<Card title="Writing Integrations" icon="code" href="/integrations/writing-integrations">
+  Learn how to create your own integration
+</Card>
+
+<Card title="Contributing" icon="git-pull-request" href="/integrations/contributing">
+  Contribute integrations to the platform
+</Card>
+
+<Card title="Self-Hosting OAuth" icon="server" href="/integrations/oauth-setup">
+  Configure OAuth for self-hosted deployments
+</Card>
+

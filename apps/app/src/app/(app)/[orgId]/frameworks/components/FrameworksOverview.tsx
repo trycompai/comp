@@ -48,6 +48,10 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
     return '/badges/nen7510.svg';
   }
 
+  if (framework.framework.name === 'ISO 9001') {
+    return '/badges/iso9001.svg';
+  }
+
   return null;
 }
 
@@ -77,7 +81,7 @@ export function FrameworksOverview({
   );
 
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="flex flex-col overflow-hidden border h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">{'Frameworks'}</CardTitle>
@@ -98,19 +102,28 @@ export function FrameworksOverview({
             <div className="space-y-0 pr-4">
               {frameworksWithControls.map((framework, index) => {
                 const complianceScore = complianceMap.get(framework.id) ?? 0;
+                const badgeSrc = mapFrameworkToBadge(framework);
 
                 return (
                   <div key={framework.id}>
                     <div className="flex items-start justify-between py-4 px-1">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         <div className="flex-shrink-0 mt-1">
-                          <Image
-                            src={mapFrameworkToBadge(framework) ?? ''}
-                            alt={framework.framework.name}
-                            width={400}
-                            height={400}
-                            className="rounded-full w-8 h-8"
-                          />
+                          {badgeSrc ? (
+                            <Image
+                              src={badgeSrc}
+                              alt={framework.framework.name}
+                              width={400}
+                              height={400}
+                              className="rounded-full w-8 h-8"
+                            />
+                          ) : (
+                            <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">
+                                {framework.framework.name.charAt(0)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col flex-1 min-w-0">
                           <span className="text-sm font-medium text-foreground flex flex-col">

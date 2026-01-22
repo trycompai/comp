@@ -13,7 +13,10 @@ export class FleetPolicyDto {
   @ApiProperty({ description: 'Whether policy is critical', example: true })
   critical: boolean;
 
-  @ApiProperty({ description: 'Policy description', example: 'Ensures strong passwords' })
+  @ApiProperty({
+    description: 'Policy description',
+    example: 'Ensures strong passwords',
+  })
   description: string;
 
   @ApiProperty({ description: 'Author ID', example: 456 })
@@ -28,7 +31,10 @@ export class FleetPolicyDto {
   @ApiProperty({ description: 'Team ID', example: 789, nullable: true })
   team_id: number | null;
 
-  @ApiProperty({ description: 'Policy resolution', example: 'Update password settings' })
+  @ApiProperty({
+    description: 'Policy resolution',
+    example: 'Update password settings',
+  })
   resolution: string;
 
   @ApiProperty({ description: 'Platform', example: 'darwin' })
@@ -48,34 +54,62 @@ export class FleetPolicyDto {
 }
 
 export class DeviceResponseDto {
-  @ApiProperty({ description: 'Device created at', example: '2024-01-01T00:00:00Z' })
+  @ApiProperty({
+    description: 'Device created at',
+    example: '2024-01-01T00:00:00Z',
+  })
   created_at: string;
 
-  @ApiProperty({ description: 'Device updated at', example: '2024-01-15T00:00:00Z' })
+  @ApiProperty({
+    description: 'Device updated at',
+    example: '2024-01-15T00:00:00Z',
+  })
   updated_at: string;
 
-  @ApiProperty({ description: 'Software list', type: 'array', items: { type: 'object' } })
+  @ApiProperty({
+    description: 'Software list',
+    type: 'array',
+    items: { type: 'object' },
+  })
   software: object[];
 
-  @ApiProperty({ description: 'Software updated at', example: '2024-01-10T00:00:00Z' })
+  @ApiProperty({
+    description: 'Software updated at',
+    example: '2024-01-10T00:00:00Z',
+  })
   software_updated_at: string;
 
   @ApiProperty({ description: 'Device ID', example: 123 })
   id: number;
 
-  @ApiProperty({ description: 'Detail updated at', example: '2024-01-10T00:00:00Z' })
+  @ApiProperty({
+    description: 'Detail updated at',
+    example: '2024-01-10T00:00:00Z',
+  })
   detail_updated_at: string;
 
-  @ApiProperty({ description: 'Label updated at', example: '2024-01-10T00:00:00Z' })
+  @ApiProperty({
+    description: 'Label updated at',
+    example: '2024-01-10T00:00:00Z',
+  })
   label_updated_at: string;
 
-  @ApiProperty({ description: 'Policy updated at', example: '2024-01-10T00:00:00Z' })
+  @ApiProperty({
+    description: 'Policy updated at',
+    example: '2024-01-10T00:00:00Z',
+  })
   policy_updated_at: string;
 
-  @ApiProperty({ description: 'Last enrolled at', example: '2024-01-01T00:00:00Z' })
+  @ApiProperty({
+    description: 'Last enrolled at',
+    example: '2024-01-01T00:00:00Z',
+  })
   last_enrolled_at: string;
 
-  @ApiProperty({ description: 'Last seen time', example: '2024-01-15T12:00:00Z' })
+  @ApiProperty({
+    description: 'Last seen time',
+    example: '2024-01-15T12:00:00Z',
+  })
   seen_time: string;
 
   @ApiProperty({ description: 'Refetch requested', example: false })
@@ -126,7 +160,10 @@ export class DeviceResponseDto {
   @ApiProperty({ description: 'CPU subtype', example: 'x86_64h' })
   cpu_subtype: string;
 
-  @ApiProperty({ description: 'CPU brand', example: 'Intel(R) Core(TM) i7-9750H' })
+  @ApiProperty({
+    description: 'CPU brand',
+    example: 'Intel(R) Core(TM) i7-9750H',
+  })
   cpu_brand: string;
 
   @ApiProperty({ description: 'CPU physical cores', example: 6 })
@@ -171,13 +208,25 @@ export class DeviceResponseDto {
   @ApiProperty({ description: 'Team ID', example: 1, nullable: true })
   team_id: number | null;
 
-  @ApiProperty({ description: 'Pack stats', type: 'array', items: { type: 'object' } })
+  @ApiProperty({
+    description: 'Pack stats',
+    type: 'array',
+    items: { type: 'object' },
+  })
   pack_stats: object[];
 
-  @ApiProperty({ description: 'Team name', example: 'Engineering', nullable: true })
+  @ApiProperty({
+    description: 'Team name',
+    example: 'Engineering',
+    nullable: true,
+  })
   team_name: string | null;
 
-  @ApiProperty({ description: 'Users', type: 'array', items: { type: 'object' } })
+  @ApiProperty({
+    description: 'Users',
+    type: 'array',
+    items: { type: 'object' },
+  })
   users: object[];
 
   @ApiProperty({ description: 'Disk space available in GB', example: 250.5 })
@@ -206,31 +255,60 @@ export class DeviceResponseDto {
   })
   mdm: Record<string, unknown>;
 
-  @ApiProperty({ description: 'Refetch critical queries until', example: '2024-01-20T00:00:00Z', nullable: true })
+  @ApiProperty({
+    description: 'Refetch critical queries until',
+    example: '2024-01-20T00:00:00Z',
+    nullable: true,
+  })
   refetch_critical_queries_until: string | null;
 
-  @ApiProperty({ description: 'Last restarted at', example: '2024-01-10T08:00:00Z' })
+  @ApiProperty({
+    description: 'Last restarted at',
+    example: '2024-01-10T08:00:00Z',
+  })
   last_restarted_at: string;
 
   @ApiProperty({ description: 'Policies', type: [FleetPolicyDto] })
   policies: FleetPolicyDto[];
 
-  @ApiProperty({ description: 'Labels', type: 'array', items: { type: 'object' } })
+  @ApiProperty({
+    description: 'Labels',
+    type: 'array',
+    items: { type: 'object' },
+  })
   labels: object[];
 
-  @ApiProperty({ description: 'Packs', type: 'array', items: { type: 'object' } })
+  @ApiProperty({
+    description: 'Packs',
+    type: 'array',
+    items: { type: 'object' },
+  })
   packs: object[];
 
-  @ApiProperty({ description: 'Batteries', type: 'array', items: { type: 'object' } })
+  @ApiProperty({
+    description: 'Batteries',
+    type: 'array',
+    items: { type: 'object' },
+  })
   batteries: object[];
 
-  @ApiProperty({ description: 'End users', type: 'array', items: { type: 'object' } })
+  @ApiProperty({
+    description: 'End users',
+    type: 'array',
+    items: { type: 'object' },
+  })
   end_users: object[];
 
-  @ApiProperty({ description: 'Last MDM enrolled at', example: '2024-01-01T00:00:00Z' })
+  @ApiProperty({
+    description: 'Last MDM enrolled at',
+    example: '2024-01-01T00:00:00Z',
+  })
   last_mdm_enrolled_at: string;
 
-  @ApiProperty({ description: 'Last MDM checked in at', example: '2024-01-15T12:00:00Z' })
+  @ApiProperty({
+    description: 'Last MDM checked in at',
+    example: '2024-01-15T12:00:00Z',
+  })
   last_mdm_checked_in_at: string;
 
   @ApiProperty({ description: 'Device status', example: 'online' })

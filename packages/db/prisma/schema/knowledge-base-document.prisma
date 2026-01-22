@@ -1,0 +1,31 @@
+model KnowledgeBaseDocument {
+  id               String                                @id @default(dbgenerated("generate_prefixed_cuid('kbd'::text)"))
+  name             String // Original filename
+  description      String? // Optional user description/notes
+  s3Key            String // S3 storage key (e.g., "org123/knowledge-base-documents/timestamp-file.pdf")
+  fileType         String // MIME type (e.g., "application/pdf")
+  fileSize         Int // File size in bytes
+  processingStatus KnowledgeBaseDocumentProcessingStatus @default(pending) // Track indexing status
+  processedAt      DateTime? // When indexing completed
+  triggerRunId     String? // Trigger.dev run ID for tracking processing progress
+
+  // Dates
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, processingStatus])
+  @@index([s3Key])
+  @@index([triggerRunId])
+}
+
+enum KnowledgeBaseDocumentProcessingStatus {
+  pending // Uploaded but not yet processed/indexed
+  processing // Currently being processed/indexed
+  completed // Successfully indexed in vector database
+  failed // Processing failed
+}

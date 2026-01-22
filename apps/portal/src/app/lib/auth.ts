@@ -1,20 +1,22 @@
+import { env } from '@/env.mjs';
 import { OTPVerificationEmail, sendEmail, sendInviteMemberEmail } from '@comp/email';
 import { db } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { emailOTP, multiSession, organization } from 'better-auth/plugins';
-import { ac, admin, auditor, employee, owner } from './permissions';
-import { env } from '@/env.mjs';
+import { ac, admin, auditor, contractor, employee, owner } from './permissions';
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
   advanced: {
-    // This will enable us to fall back to DB for ID generation.
-    // It's important so we can use custom IDs specified in Prisma Schema.
-    generateId: false,
+    database: {
+      // This will enable us to fall back to DB for ID generation.
+      // It's important so we can use custom IDs specified in Prisma Schema.
+      generateId: false,
+    },
   },
   trustedOrigins: ['http://localhost:3000', 'https://*.trycomp.ai'],
   secret: env.AUTH_SECRET!,
@@ -46,6 +48,7 @@ export const auth = betterAuth({
         admin,
         auditor,
         employee,
+        contractor,
       },
       schema: {
         organization: {
@@ -74,6 +77,16 @@ export const auth = betterAuth({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
     },
+    ...(process.env.AUTH_MICROSOFT_CLIENT_ID && process.env.AUTH_MICROSOFT_CLIENT_SECRET
+      ? {
+          microsoft: {
+            clientId: process.env.AUTH_MICROSOFT_CLIENT_ID,
+            clientSecret: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
+            tenantId: 'common',
+            prompt: 'select_account',
+          },
+        }
+      : {}),
   },
   user: {
     modelName: 'User',
@@ -92,6 +105,10 @@ export const auth = betterAuth({
   },
   account: {
     modelName: 'Account',
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ['google', 'microsoft'],
+    },
   },
   verification: {
     modelName: 'Verification',

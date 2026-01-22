@@ -50,7 +50,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 },
               ]}
             />
-            <CreateVendorSheet assignees={assignees} />
+            {orgId && <CreateVendorSheet assignees={assignees} organizationId={orgId} />}
           </div>
         </Suspense>
       </div>
@@ -94,8 +94,9 @@ const getAssignees = cache(async () => {
     where: {
       organizationId: activeOrganizationId,
       role: {
-        notIn: ['employee'],
+        notIn: ['employee', 'contractor'],
       },
+      deactivated: false,
     },
     include: {
       user: true,

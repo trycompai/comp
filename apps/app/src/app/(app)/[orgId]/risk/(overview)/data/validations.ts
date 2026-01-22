@@ -7,12 +7,12 @@ import {
   parseAsString,
   parseAsStringEnum,
 } from 'nuqs/server';
-import * as z from 'zod';
+import * as z from 'zod/v3';
 
 export const searchParamsCache = createSearchParamsCache({
   page: parseAsInteger.withDefault(1),
   perPage: parseAsInteger.withDefault(50),
-  sort: getSortingStateParser<Risk>().withDefault([{ id: 'title', desc: true }]),
+  sort: getSortingStateParser<Risk>().withDefault([{ id: 'title', desc: false }]),
   title: parseAsString.withDefault(''),
   lastUpdated: parseAsArrayOf(z.coerce.date()).withDefault([]),
   // advanced filter

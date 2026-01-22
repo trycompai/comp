@@ -1,6 +1,7 @@
 'use client';
 
 import { regenerateRiskMitigationAction } from '@/app/(app)/[orgId]/risk/[riskId]/actions/regenerate-risk-mitigation';
+import { useRisk } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -20,11 +21,33 @@ import { Cog } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 
-export function RiskActions({ riskId }: { riskId: string }) {
+export function RiskActions({ riskId, orgId }: { riskId: string; orgId: string }) {
+  const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  
+  // Get SWR mutate function to refresh risk data after mutations
+  // Pass orgId to ensure same cache key as RiskPageClient
+  const { mutate: refreshRisk } = useRisk(riskId, { organizationId: orgId });
+  
   const regenerate = useAction(regenerateRiskMitigationAction, {
-    onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
+    onSuccess: () => {
+      toast.success('Regeneration triggered. This may take a moment.');
+      // Trigger SWR revalidation for risk detail, list views, and comments
+      refreshRisk();
+      globalMutate(
+        (key) => Array.isArray(key) && key[0] === 'risks',
+        undefined,
+        { revalidate: true },
+      );
+      // Invalidate comments cache for this risk
+      globalMutate(
+        (key) => typeof key === 'string' && key.includes(`/v1/comments`) && key.includes(riskId),
+        undefined,
+        { revalidate: true },
+      );
+    },
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
 

@@ -2,7 +2,14 @@ import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
 import { env } from '@/env.mjs';
 import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@comp/ui/card';
 import { Icons } from '@comp/ui/icons';
 import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
@@ -20,6 +27,7 @@ export default async function Page() {
   );
 
   const showGoogle = !!(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
+  const showMicrosoft = !!(env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET);
 
   return (
     <div className="flex min-h-dvh flex-col text-foreground">
@@ -36,7 +44,7 @@ export default async function Page() {
           </CardHeader>
           <CardContent className="space-y-6 pb-6">
             {defaultSignInOptions}
-            <LoginForm showGoogle={showGoogle} />
+            <LoginForm showGoogle={showGoogle} showMicrosoft={showMicrosoft} />
           </CardContent>
           <CardFooter className="pb-10">
             <div className="from-primary/10 via-primary/5 to-primary/5 rounded-sm bg-gradient-to-r p-4">

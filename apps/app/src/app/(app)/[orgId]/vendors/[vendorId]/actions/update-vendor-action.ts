@@ -42,7 +42,7 @@ export const updateVendorAction = authActionClient
       revalidatePath(`/${session.activeOrganizationId}/vendors`);
       revalidatePath(`/${session.activeOrganizationId}/vendors/register`);
       revalidatePath(`/${session.activeOrganizationId}/vendors/${id}`);
-      revalidateTag('vendors');
+      revalidateTag('vendors', 'max');
 
       return {
         success: true,

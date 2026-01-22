@@ -8,7 +8,7 @@ import type { ActionResponse } from '../types';
 
 const inviteMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['owner', 'admin', 'auditor', 'employee']),
+  role: z.enum(['owner', 'admin', 'auditor', 'employee', 'contractor']),
 });
 
 export const inviteMember = authActionClient
@@ -39,7 +39,7 @@ export const inviteMember = authActionClient
       });
 
       revalidatePath(`/${organizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`);
+      revalidateTag(`user_${ctx.user.id}`, 'max');
 
       return {
         success: true,

@@ -1,10 +1,10 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form } from '@comp/ui/form';
 import type { Departments, Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Section, Stack } from '@trycompai/design-system';
 import { Save } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
@@ -102,16 +102,10 @@ export const EmployeeDetails = ({
   };
 
   return (
-    <Card className="p-6">
-      <CardHeader className="px-0 pt-0 pb-6">
-        <CardTitle className="text-2xl font-semibold">Employee Details</CardTitle>
-        <p className="text-muted-foreground">
-          Manage employee information and department assignment
-        </p>
-      </CardHeader>
+    <Section>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="px-0">
+          <Stack gap="lg">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Name control={form.control} disabled={!canEdit} />
               <Email control={form.control} disabled={true} />
@@ -119,24 +113,24 @@ export const EmployeeDetails = ({
               <Status control={form.control} disabled={!canEdit} />
               <JoinDate control={form.control} disabled={!canEdit} />
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-end border-none bg-transparent px-0 py-0 outline-hidden">
-            <Button
-              type="submit"
-              disabled={
-                !form.formState.isDirty ||
-                form.formState.isSubmitting ||
-                actionStatus === 'executing'
-              }
-            >
-              {!(form.formState.isSubmitting || actionStatus === 'executing') && (
-                <Save className="h-4 w-4" />
-              )}
-              {form.formState.isSubmitting || actionStatus === 'executing' ? 'Saving...' : 'Save'}
-            </Button>
-          </CardFooter>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={
+                  !form.formState.isDirty ||
+                  form.formState.isSubmitting ||
+                  actionStatus === 'executing'
+                }
+              >
+                {!(form.formState.isSubmitting || actionStatus === 'executing') && (
+                  <Save className="h-4 w-4" />
+                )}
+                {form.formState.isSubmitting || actionStatus === 'executing' ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </Stack>
         </form>
       </Form>
-    </Card>
+    </Section>
   );
 };

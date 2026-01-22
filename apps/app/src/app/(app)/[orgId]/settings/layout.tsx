@@ -1,50 +1,37 @@
+import { getFeatureFlags } from '@/app/posthog';
 import { auth } from '@/utils/auth';
-import { SecondaryMenu } from '@comp/ui/secondary-menu';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
+import { SettingsTabs } from './components/SettingsTabs';
 
-export default async function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-
-  const orgId = session?.session.activeOrganizationId;
 
   if (!session) {
     return redirect('/');
   }
 
-  return (
-    <div className="m-auto max-w-[1200px] py-8">
-      <Suspense fallback={<div>Loading...</div>}>
-        <SecondaryMenu
-          items={[
-            {
-              path: `/${orgId}/settings`,
-              label: 'General',
-            },
-            {
-              path: `/${orgId}/settings/trust-portal`,
-              label: 'Trust Portal',
-            },
-            {
-              path: `/${orgId}/settings/context-hub`,
-              label: 'Context',
-            },
-            {
-              path: `/${orgId}/settings/api-keys`,
-              label: 'API',
-            },
-            {
-              path: `/${orgId}/settings/secrets`,
-              label: 'Secrets',
-            },
-          ]}
-        />
-      </Suspense>
+  let isWebAutomationsEnabled = false;
+  if (session.user?.id) {
+    const flags = await getFeatureFlags(session.user.id);
+    isWebAutomationsEnabled =
+      flags['is-web-automations-enabled'] === true ||
+      flags['is-web-automations-enabled'] === 'true';
+  }
 
-      <div>{children}</div>
-    </div>
+  return (
+    <SettingsTabs orgId={orgId} showBrowserTab={isWebAutomationsEnabled}>
+      {children}
+    </SettingsTabs>
   );
 }

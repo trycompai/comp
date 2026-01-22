@@ -39,6 +39,7 @@ export const createPolicyAction = authActionClient
       where: {
         userId: user.id,
         organizationId: activeOrganizationId,
+        deactivated: false,
       },
     });
 
@@ -103,9 +104,9 @@ export const createPolicyAction = authActionClient
       // 	);
       // }
 
-      revalidatePath(`/${activeOrganizationId}/policies/all`);
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidateTag('policies');
+      revalidatePath(`/${activeOrganizationId}/policies`);
+      revalidateTag('policies', 'max');
 
       return {
         success: true,

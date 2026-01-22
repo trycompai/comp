@@ -61,7 +61,7 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
     });
 
     setTimeout(() => {
-      router.replace(`/${policy.organizationId}/policies/all`);
+      router.replace(`/${policy.organizationId}/policies`);
     }, 1000);
     toast.info('Policy deleted! Redirecting to policies list...');
   };

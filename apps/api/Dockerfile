@@ -6,19 +6,12 @@ RUN apk add --no-cache wget curl bash libc6-compat openssl
 
 WORKDIR /app
 
-# Copy manifests first and install production deps inside the image (avoid broken bun symlinks)
+# Copy package.json and pre-installed node_modules from buildspec
 COPY package.json ./
+COPY node_modules ./node_modules
 
-# Install bun and deps
-RUN curl -fsSL https://bun.sh/install | bash \
-  && export PATH="/root/.bun/bin:$PATH" \
-  && bun install --production --ignore-scripts
-
-# Now copy the pre-built app contents (dist/, prisma/, etc.)
+# Copy built application and prisma files
 COPY . .
-
-# Generate Prisma client inside the image (ensures runtime client matches installed deps)
-RUN npx prisma generate
 
 # Set environment variables
 ENV NODE_ENV=production
