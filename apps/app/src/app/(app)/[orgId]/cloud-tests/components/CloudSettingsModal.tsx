@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, RotateCw, Trash2, Unplug } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -19,6 +19,7 @@ interface CloudProvider {
   id: string; // Provider slug (aws, gcp, azure)
   connectionId: string; // The actual connection ID
   name: string;
+  status: string;
 }
 
 interface CloudSettingsModalProps {
@@ -103,7 +104,7 @@ export function CloudSettingsModal({
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Connection Status</span>
-                  <span className="text-sm text-green-600 dark:text-green-400">Active</span>
+                  <span className="text-sm capitalize text-green-600 dark:text-green-400">{provider.status}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   To update credentials, disconnect this provider and reconnect with new IAM role settings.
@@ -123,10 +124,18 @@ export function CloudSettingsModal({
                     </>
                   ) : (
                     <>
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <Unplug className="mr-2 h-4 w-4" />
                       Disconnect
                     </>
                   )}
+                </Button>
+                <Button>
+                  <RotateCw className="mr-2 h-4 w-4" />
+                  Reconnect
+                </Button>
+                <Button>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Disconnect
                 </Button>
               </DialogFooter>
             </TabsContent>

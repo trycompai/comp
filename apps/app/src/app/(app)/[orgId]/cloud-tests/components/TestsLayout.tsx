@@ -234,6 +234,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
             id: p.integrationId,
             connectionId: p.id,
             name: p.name,
+            status: p.status,
           }))}
           onUpdate={handleProvidersUpdate}
         />
@@ -340,6 +341,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           id: p.integrationId,
           connectionId: p.id,
           name: p.name,
+          status: p.status,
         }))}
         onUpdate={handleProvidersUpdate}
       />
