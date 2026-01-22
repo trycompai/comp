@@ -65,6 +65,7 @@
     "@uiw/react-json-view": "^2.0.0-alpha.40",
     "@uploadthing/react": "^7.3.0",
     "@upstash/ratelimit": "^2.0.5",
+    "@upstash/vector": "^1.2.2",
     "@vercel/analytics": "^1.5.0",
     "@vercel/sandbox": "^0.0.21",
     "@vercel/sdk": "^1.7.1",

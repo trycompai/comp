@@ -1,8 +1,11 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": ["**/.env"],
+  "globalDependencies": [".env"],
   "ui": "tui",
   "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "prisma:generate": {
       "cache": false,
       "outputs": ["prisma/schema.prisma", "node_modules/.prisma/**"]
@@ -17,9 +20,10 @@
       "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "dist/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["transit"]
     },
     "typecheck": {
+      "dependsOn": ["transit"],
       "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
     "dev": {
