@@ -1,46 +1,68 @@
 'use client';
 
 import { UpdatePolicyForm } from '@/components/forms/policies/update-policy-form';
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
+import type { Policy } from '@db';
 import { useMediaQuery } from '@comp/ui/hooks';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Policy } from '@db';
-import { X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/design-system';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export function PolicyOverviewSheet({ policy }: { policy: Policy }) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('policy-overview-sheet');
-  const isOpen = Boolean(open);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Sync from URL param on mount and when URL changes
+  useEffect(() => {
+    const urlOpen = searchParams.get('policy-overview-sheet') === 'true';
+    setIsOpen(urlOpen);
+  }, [searchParams]);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
+    setIsOpen(open);
+    // Also update URL
+    const params = new URLSearchParams(searchParams.toString());
+    if (open) {
+      params.set('policy-overview-sheet', 'true');
+    } else {
+      params.delete('policy-overview-sheet');
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  };
+
+  const handleSuccess = () => {
+    setIsOpen(false);
+    // Clean up URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('policy-overview-sheet');
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
   };
 
   if (isDesktop) {
     return (
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent stack>
-          <SheetHeader className="mb-8">
-            <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{'Update Policy'}</SheetTitle>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="m-0 size-auto p-0 hover:bg-transparent"
-                onClick={() => setOpen(null)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>{' '}
-            <SheetDescription>{'Update policy details, content and metadata.'}</SheetDescription>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Update Policy</SheetTitle>
+            <SheetDescription>Update policy details, content and metadata.</SheetDescription>
           </SheetHeader>
-
-          <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
-            <UpdatePolicyForm policy={policy} />
-          </ScrollArea>
+          <SheetBody>
+            <UpdatePolicyForm policy={policy} onSuccess={handleSuccess} />
+          </SheetBody>
         </SheetContent>
       </Sheet>
     );
@@ -48,9 +70,9 @@ export function PolicyOverviewSheet({ policy }: { policy: Policy }) {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Update Policy'}</DrawerTitle>
-      <DrawerContent className="p-6">
-        <UpdatePolicyForm policy={policy} />
+      <DrawerTitle hidden>Update Policy</DrawerTitle>
+      <DrawerContent>
+        <UpdatePolicyForm policy={policy} onSuccess={handleSuccess} />
       </DrawerContent>
     </Drawer>
   );
