@@ -28,8 +28,8 @@ vi.mock('next/headers', () => ({
   ),
 }));
 
-// Import middleware after mocks are set up
-const { middleware } = await import('./middleware');
+// Import proxy after mocks are set up
+const { proxy } = await import('./proxy');
 
 describe('Middleware', () => {
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -68,7 +68,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200); // Should pass through
@@ -86,7 +86,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_OTHER/dashboard');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       // TODO: This is currently NOT implemented in the middleware!
@@ -106,7 +106,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(mockAuth.api.setActiveOrganization).not.toHaveBeenCalled();
@@ -128,7 +128,7 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200); // Should allow access
@@ -146,7 +146,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/setup');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -169,7 +169,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -191,7 +191,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200);
@@ -209,7 +209,7 @@ describe('Middleware', () => {
         const request = await createMockRequest(route);
 
         // Act
-        const response = await middleware(request);
+        const response = await proxy(request);
 
         // Assert
         // Some routes might redirect for other reasons (e.g., /auth when already authenticated)
@@ -228,7 +228,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -249,7 +249,7 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -273,7 +273,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(mockAuth.api.setActiveOrganization).toHaveBeenCalledWith({
@@ -304,7 +304,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/frameworks');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -321,7 +321,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/frameworks');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200); // Should pass through
@@ -337,7 +337,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/onboarding/org_123');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200); // Should allow access
@@ -358,7 +358,7 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -381,7 +381,7 @@ describe('Middleware', () => {
         const request = await createMockRequest(route);
 
         // Act
-        const response = await middleware(request);
+        const response = await proxy(request);
 
         // Assert
         // Should not redirect to /onboarding for these routes
@@ -402,7 +402,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/frameworks');
 
       // Act
-      const response = await middleware(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200); // Should allow access (treat null as completed)
@@ -425,7 +425,7 @@ describe('Middleware', () => {
         const request = await createMockRequest(path);
 
         // Act
-        const response = await middleware(request);
+        const response = await proxy(request);
 
         // Assert
         // Should either reject or handle safely
