@@ -14,32 +14,26 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
-import { useQueryState } from 'nuqs';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
 import { UpdateRiskForm } from '../forms/risks/update-risk-form';
 
-export function RiskOverviewSheet({ risk }: { risk: Risk }) {
+interface RiskOverviewSheetProps {
+  risk: Risk;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function RiskOverviewSheet({ risk, open, onOpenChange }: RiskOverviewSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [queryOpen] = useQueryState('risk-overview-sheet');
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Sync with URL query param for initial open
-  useEffect(() => {
-    setIsOpen(Boolean(queryOpen));
-  }, [queryOpen]);
-
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-  };
 
   const handleSuccess = useCallback(() => {
-    setIsOpen(false);
-  }, []);
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   if (isDesktop) {
     return (
-      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+      <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent>
           <SheetHeader>
             <SheetTitle>Update Risk</SheetTitle>
@@ -54,7 +48,7 @@ export function RiskOverviewSheet({ risk }: { risk: Risk }) {
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Update Risk</DrawerTitle>

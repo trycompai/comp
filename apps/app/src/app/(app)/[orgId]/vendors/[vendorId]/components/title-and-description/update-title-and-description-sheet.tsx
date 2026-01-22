@@ -14,32 +14,30 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
-import { useQueryState } from 'nuqs';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
 import { UpdateTitleAndDescriptionForm } from './update-title-and-description-form';
 
-export function UpdateTitleAndDescriptionSheet({ vendor }: { vendor: Vendor }) {
+interface UpdateTitleAndDescriptionSheetProps {
+  vendor: Vendor;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function UpdateTitleAndDescriptionSheet({
+  vendor,
+  open,
+  onOpenChange,
+}: UpdateTitleAndDescriptionSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [queryOpen] = useQueryState('vendor-overview-sheet');
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Sync with URL query param for initial open
-  useEffect(() => {
-    setIsOpen(Boolean(queryOpen));
-  }, [queryOpen]);
-
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-  };
 
   const handleSuccess = useCallback(() => {
-    setIsOpen(false);
-  }, []);
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   if (isDesktop) {
     return (
-      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+      <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent>
           <SheetHeader>
             <SheetTitle>Update Vendor</SheetTitle>
@@ -54,7 +52,7 @@ export function UpdateTitleAndDescriptionSheet({ vendor }: { vendor: Vendor }) {
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Update Vendor</DrawerTitle>
