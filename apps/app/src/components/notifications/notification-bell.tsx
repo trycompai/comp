@@ -76,6 +76,7 @@ export function NotificationBell() {
           <button
             onClick={() => setVisible(!visible)}
             className="relative cursor-pointer text-foreground"
+            style={{ color: 'var(--foreground)' }}
           >
             <Notification size={20} />
             {total > 0 && (
