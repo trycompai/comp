@@ -327,8 +327,7 @@ export function VendorsTable({
         const comparison = (aValue as string).localeCompare(bValue as string);
         return sort.desc ? -comparison : comparison;
       }
-      const comparison =
-        new Date(aValue as Date).getTime() - new Date(bValue as Date).getTime();
+      const comparison = new Date(aValue as Date).getTime() - new Date(bValue as Date).getTime();
       return sort.desc ? -comparison : comparison;
     });
 
@@ -343,11 +342,10 @@ export function VendorsTable({
     : Math.max(1, vendorsData?.pageCount ?? initialPageCount);
 
   // When searching locally, slice the data for client-side pagination
-  // When not searching, show all data from server (server already handles pagination)
-  const startIndex = (page - 1) * perPage;
-  const paginatedVendors = searchQuery
-    ? filteredAndSortedVendors.slice(startIndex, startIndex + perPage)
-    : filteredAndSortedVendors;
+  // When not searching, server returns the correct page, but slice to enforce perPage
+  // (avoids extra rows from onboarding pending/temp vendors)
+  const startIndex = searchQuery ? (page - 1) * perPage : 0;
+  const paginatedVendors = filteredAndSortedVendors.slice(startIndex, startIndex + perPage);
 
   // Keep page in bounds when pageCount changes
   useEffect(() => {
@@ -367,9 +365,7 @@ export function VendorsTable({
       return metadataStatus === 'completed' || vendor.status === 'assessed';
     }).length;
 
-    const completedInMetadata = Object.values(itemStatuses).filter(
-      (s) => s === 'completed',
-    ).length;
+    const completedInMetadata = Object.values(itemStatuses).filter((s) => s === 'completed').length;
 
     const total = Math.max(progress.total, itemsInfo.length, vendors.length);
     const completed = Math.max(completedCount, completedInMetadata);
@@ -429,9 +425,7 @@ export function VendorsTable({
         setVendorToDelete(null);
       } else {
         const errorMsg =
-          typeof result?.data?.error === 'string'
-            ? result.data.error
-            : 'Failed to delete vendor';
+          typeof result?.data?.error === 'string' ? result.data.error : 'Failed to delete vendor';
         toast.error(errorMsg);
       }
     } catch {
