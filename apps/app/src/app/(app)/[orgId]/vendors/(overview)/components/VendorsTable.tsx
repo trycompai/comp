@@ -336,9 +336,18 @@ export function VendorsTable({
   }, [mergedVendors, searchQuery, sort]);
 
   // Calculate pageCount from filtered data and paginate
-  const filteredPageCount = Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage));
+  // When searching locally, calculate pageCount from filtered data
+  // When not searching, use server's pageCount (server handles pagination)
+  const filteredPageCount = searchQuery
+    ? Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage))
+    : (vendorsData?.pageCount ?? initialPageCount);
+
+  // When searching locally, slice the data for pagination
+  // When not searching, server already returns the correct page of data
   const startIndex = (page - 1) * perPage;
-  const paginatedVendors = filteredAndSortedVendors.slice(startIndex, startIndex + perPage);
+  const paginatedVendors = searchQuery
+    ? filteredAndSortedVendors.slice(startIndex, startIndex + perPage)
+    : filteredAndSortedVendors;
 
   // Keep page in bounds when pageCount changes
   useEffect(() => {
