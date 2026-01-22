@@ -1,14 +1,13 @@
 'use client';
 
 import { updateVendorInherentRisk } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/update-vendor-inherent-risk';
-import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { useToast } from '@comp/ui/use-toast';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Select, SelectItem, Stack } from '@trycompai/design-system';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 const formSchema = z.object({
@@ -29,7 +28,6 @@ export function InherentRiskForm({
   initialProbability = Likelihood.very_unlikely,
   initialImpact = Impact.insignificant,
 }: InherentRiskFormProps) {
-  const { toast } = useToast();
   const [_, setOpen] = useQueryState('inherent-risk-sheet');
 
   const form = useForm<FormValues>({
@@ -48,78 +46,64 @@ export function InherentRiskForm({
         inherentImpact: values.inherentImpact,
       });
 
-      toast({
-        title: 'Success',
-        description: 'Inherent risk updated successfully',
-      });
-
-      setOpen('false');
+      toast.success('Inherent risk updated successfully');
+      setOpen(null);
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('An unexpected error occurred');
     }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="inherentProbability"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{'Inherent Probability'}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Stack gap="4">
+          <FormField
+            control={form.control}
+            name="inherentProbability"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Inherent Probability</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={'Select a probability'} />
-                  </SelectTrigger>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectItem value={Likelihood.very_likely}>Very Likely</SelectItem>
+                    <SelectItem value={Likelihood.likely}>Likely</SelectItem>
+                    <SelectItem value={Likelihood.possible}>Possible</SelectItem>
+                    <SelectItem value={Likelihood.unlikely}>Unlikely</SelectItem>
+                    <SelectItem value={Likelihood.very_unlikely}>Very Unlikely</SelectItem>
+                  </Select>
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value={Likelihood.very_likely}>{'Very Likely'}</SelectItem>
-                  <SelectItem value={Likelihood.likely}>{'Likely'}</SelectItem>
-                  <SelectItem value={Likelihood.possible}>{'Possible'}</SelectItem>
-                  <SelectItem value={Likelihood.unlikely}>{'Unlikely'}</SelectItem>
-                  <SelectItem value={Likelihood.very_unlikely}>{'Very Unlikely'}</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="inherentImpact"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{'Inherent Impact'}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+          <FormField
+            control={form.control}
+            name="inherentImpact"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Inherent Impact</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={'Select an impact'} />
-                  </SelectTrigger>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectItem value={Impact.insignificant}>Insignificant</SelectItem>
+                    <SelectItem value={Impact.minor}>Minor</SelectItem>
+                    <SelectItem value={Impact.moderate}>Moderate</SelectItem>
+                    <SelectItem value={Impact.major}>Major</SelectItem>
+                    <SelectItem value={Impact.severe}>Severe</SelectItem>
+                  </Select>
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value={Impact.insignificant}>{'Insignificant'}</SelectItem>
-                  <SelectItem value={Impact.minor}>{'Minor'}</SelectItem>
-                  <SelectItem value={Impact.moderate}>{'Moderate'}</SelectItem>
-                  <SelectItem value={Impact.major}>{'Major'}</SelectItem>
-                  <SelectItem value={Impact.severe}>{'Severe'}</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <div className="flex justify-end">
-          <Button type="submit">{'Save'}</Button>
-        </div>
+          <div className="flex justify-end pt-4">
+            <button type="submit">
+              <Button>Save</Button>
+            </button>
+          </div>
+        </Stack>
       </form>
     </Form>
   );
