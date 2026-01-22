@@ -340,10 +340,10 @@ export function VendorsTable({
   // When not searching, use server's pageCount (server handles pagination)
   const filteredPageCount = searchQuery
     ? Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage))
-    : (vendorsData?.pageCount ?? initialPageCount);
+    : Math.max(1, vendorsData?.pageCount ?? initialPageCount);
 
-  // When searching locally, slice the data for pagination
-  // When not searching, server already returns the correct page of data
+  // When searching locally, slice the data for client-side pagination
+  // When not searching, show all data from server (server already handles pagination)
   const startIndex = (page - 1) * perPage;
   const paginatedVendors = searchQuery
     ? filteredAndSortedVendors.slice(startIndex, startIndex + perPage)
