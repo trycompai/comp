@@ -21,10 +21,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!organizationId) {
-    return NextResponse.json({ error: 'No active organization' }, { status: 400 });
-  }
-
   const results = await db.fleetPolicyResult.findMany({
     where: { organizationId, userId: session.user.id },
     orderBy: { createdAt: 'desc' },
