@@ -28,7 +28,6 @@ import { Check, Circle, FolderTree, List, Search, XCircle } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
-import { CreateTaskSheet } from './CreateTaskSheet';
 import { ModernTaskList } from './ModernTaskList';
 import { TasksByCategory } from './TasksByCategory';
 
@@ -43,7 +42,6 @@ const statuses = [
 export function TaskList({
   tasks: initialTasks,
   members,
-  controls,
   activeTab,
 }: {
   tasks: (Task & {
@@ -63,7 +61,6 @@ export function TaskList({
     }>;
   })[];
   members: (Member & { user: User })[];
-  controls: { id: string; name: string }[];
   activeTab: 'categories' | 'list';
 }) {
   const params = useParams();
@@ -71,7 +68,6 @@ export function TaskList({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useQueryState('status');
   const [assigneeFilter, setAssigneeFilter] = useQueryState('assignee');
-  const [createTaskOpen, setCreateTaskOpen] = useQueryState('create-task');
   const [currentTab, setCurrentTab] = useState<'categories' | 'list'>(activeTab);
 
   // Sync activeTab prop with state when it changes
@@ -669,7 +665,6 @@ export function TaskList({
         </Stack>
       </Tabs>
 
-      <CreateTaskSheet members={members} controls={controls} />
     </Stack>
   );
 }

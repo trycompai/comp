@@ -1,10 +1,8 @@
 import { auth } from '@/utils/auth';
 import { db, Role } from '@db';
-import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
-import { Add } from '@trycompai/design-system/icons';
 import { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
-import { TaskList } from './components/TaskList';
+import { TasksPageClient } from './components/TasksPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -36,17 +34,7 @@ export default async function TasksPage({
   const activeTab = savedView === 'categories' || savedView === 'list' ? savedView : 'categories';
 
   return (
-    <PageLayout
-      header={
-        <PageHeader
-          title="Evidence"
-          actions={<Button iconLeft={<Add />}>Create Evidence</Button>}
-        />
-      }
-      padding="default"
-    >
-      <TaskList tasks={tasks} members={members} controls={controls} activeTab={activeTab} />
-    </PageLayout>
+    <TasksPageClient tasks={tasks} members={members} controls={controls} activeTab={activeTab} />
   );
 }
 
