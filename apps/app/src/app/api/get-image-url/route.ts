@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const organizationId = session.session?.activeOrganizationId;
+  const organizationId = req.nextUrl.searchParams.get('organizationId');
   if (!organizationId) {
     return NextResponse.json({ error: 'No active organization' }, { status: 400 });
   }
