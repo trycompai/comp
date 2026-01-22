@@ -87,18 +87,7 @@ export async function POST(req: NextRequest) {
   if (existing) {
     const previousKeys = existing.attachments ?? [];
 
-    if (previousKeys.length > 0) {
-      await s3Client.send(
-        new DeleteObjectsCommand({
-          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-          Delete: {
-            Objects: previousKeys.map((key) => ({ Key: key })),
-          },
-        }),
-      );
-    }
-
-    await db.fleetPolicyResult.update({
+    const updated = await db.fleetPolicyResult.update({
       where: { id: existing.id },
       data: {
         attachments: uploads.map((upload) => upload.key),
@@ -106,6 +95,21 @@ export async function POST(req: NextRequest) {
         fleetPolicyName: policyName,
       },
     });
+
+    if (previousKeys.length > 0) {
+      try {
+        await s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+            Delete: {
+              Objects: previousKeys.map((key) => ({ Key: key })),
+            },
+          }),
+        );
+      } catch (error) {
+        console.error('Failed to delete previous policy attachments from S3', { error, policyId: updated.fleetPolicyId });
+      }
+    }
   } else {
     await db.fleetPolicyResult.create({
       data: {
