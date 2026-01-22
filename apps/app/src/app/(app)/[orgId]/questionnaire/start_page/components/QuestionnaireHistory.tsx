@@ -93,7 +93,7 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
       {/* Search Input and Source Filter */}
       <div ref={filterSectionRef} className="flex items-center justify-between gap-4 flex-wrap">
         {/* Search Input */}
-        <div className="w-[280px] animate-in fade-in duration-500 ease-out">
+        <div className="relative w-[280px] animate-in fade-in duration-500 ease-out">
           <InputGroup>
             <InputGroupAddon>
               <Search size={16} />
@@ -103,16 +103,17 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            {searchQuery && (
-              <InputGroupAddon
-                as="button"
-                onClick={() => setSearchQuery('')}
-                aria-label="Clear search"
-              >
-                <Close size={16} />
-              </InputGroupAddon>
-            )}
           </InputGroup>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              type="button"
+              aria-label="Clear search"
+            >
+              <Close size={14} />
+            </button>
+          )}
         </div>
 
         {/* Source Filter */}
