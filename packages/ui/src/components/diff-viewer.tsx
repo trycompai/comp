@@ -99,7 +99,12 @@ function DiffLine({ line }: { line: Line }) {
   const isAdd = line.type === 'insert';
 
   return (
-    <div className={cn('flex items-center gap-3 px-4 py-1.5', isAdd ? 'bg-primary/10' : 'bg-destructive/10')}>
+    <div
+      className={cn(
+        'flex items-center gap-3 px-4 py-1.5',
+        isAdd ? 'bg-primary/10' : 'bg-destructive/10',
+      )}
+    >
       <span className="shrink-0">{isAdd ? <AddBadge /> : <RemoveBadge />}</span>
       <span className={cn(!isAdd && 'line-through decoration-destructive')}>{text}</span>
     </div>
