@@ -14,6 +14,7 @@ import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
 import { manifest as jumpcloudManifest } from '../manifests/jumpcloud';
+import { rampManifest } from '../manifests/ramp';
 import { ripplingManifest } from '../manifests/rippling';
 import { vercelManifest } from '../manifests/vercel';
 
@@ -105,6 +106,7 @@ const allManifests: IntegrationManifest[] = [
   googleWorkspaceManifest,
   jumpcloudManifest,
   ripplingManifest,
+  rampManifest,
   vercelManifest,
   aikidoManifest,
 ];

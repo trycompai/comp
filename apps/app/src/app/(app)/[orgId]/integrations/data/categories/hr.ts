@@ -44,6 +44,19 @@ export const hrIntegrations: Integration[] = [
     setupHint: 'Requires Rippling API credentials',
   },
   {
+    id: 'ramp',
+    name: 'Ramp',
+    domain: 'ramp.com',
+    description: 'Corporate cards and expense management with employee directory sync',
+    category: 'HR & People',
+    examplePrompts: [
+      'Sync employees from Ramp',
+      'Check active Ramp cardholders',
+      'Verify employee status from Ramp',
+    ],
+    setupHint: 'Requires Ramp OAuth app with users:read scope',
+  },
+  {
     id: 'gusto',
     name: 'Gusto',
     domain: 'gusto.com',
