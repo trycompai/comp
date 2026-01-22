@@ -47,8 +47,8 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useRef } from 'react';
-import { AppSidebar } from './AppSidebar';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
+import { AppSidebar } from './AppSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
 import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
 
