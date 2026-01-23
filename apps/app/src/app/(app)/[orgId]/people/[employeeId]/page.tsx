@@ -49,6 +49,15 @@ export default async function EmployeeDetailsPage({
     notFound();
   }
 
+  // Get organization for certificate generation
+  const organization = await db.organization.findUnique({
+    where: { id: orgId },
+  });
+
+  if (!organization) {
+    notFound();
+  }
+
   const { fleetPolicies, device } = await getFleetPolicies(employee);
 
   return (
@@ -70,6 +79,7 @@ export default async function EmployeeDetailsPage({
         fleetPolicies={fleetPolicies}
         host={device}
         canEdit={canEditMembers}
+        organization={organization}
       />
     </PageLayout>
   );
