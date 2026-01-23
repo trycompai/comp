@@ -761,7 +761,7 @@ export async function extractRisksFromContext(
           Your mandate is to propose risks that satisfy both ISO 27001:2022 clause 6.1 (risk management) and SOC 2 trust services criteria CC3 and CC4.
           Return the risk name, description, treatment strategy, treatment strategy description, residual probability, residual impact, category, and department.
           
-          IMPORTANT: You must use ONLY these exact category values: ${Object.values(RiskCategory).join(', ')}. Do not invent new categories.`,
+          For the "category" field, you must use ONLY one of these exact values: ${Object.values(RiskCategory).join(', ')}.`,
     prompt: `
           The organization is ${organizationName}.
 
