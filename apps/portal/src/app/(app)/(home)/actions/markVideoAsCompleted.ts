@@ -3,9 +3,14 @@
 import { authActionClient } from '@/actions/safe-action';
 import { logger } from '@/utils/logger';
 import { db } from '@db';
+import { sendTrainingCompletedEmail } from '@comp/email';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+import { generateTrainingCertificatePdf } from './training-certificate';
+
+// Training video IDs - must match what's in training-videos.ts
+const TRAINING_VIDEO_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
 
 export const markVideoAsCompleted = authActionClient
   .inputSchema(z.object({ videoId: z.string(), organizationId: z.string() }))
@@ -116,6 +121,67 @@ export const markVideoAsCompleted = authActionClient
         videoId,
         userId: user.id,
       });
+    }
+
+    // Check if all training videos are now complete
+    const completions = await db.employeeTrainingVideoCompletion.findMany({
+      where: {
+        memberId: member.id,
+        videoId: { in: TRAINING_VIDEO_IDS },
+        completedAt: { not: null },
+      },
+    });
+
+    const allTrainingComplete = completions.length === TRAINING_VIDEO_IDS.length;
+
+    if (allTrainingComplete) {
+      logger('All training videos completed, sending certificate email', {
+        memberId: member.id,
+        userId: user.id,
+      });
+
+      // Get organization name for the certificate
+      const organization = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true },
+      });
+
+      // Get the most recent completion date
+      const mostRecentCompletion = completions.reduce((latest, current) => {
+        if (!latest.completedAt) return current;
+        if (!current.completedAt) return latest;
+        return current.completedAt > latest.completedAt ? current : latest;
+      });
+
+      try {
+        // Generate the certificate PDF
+        const certificatePdf = await generateTrainingCertificatePdf({
+          userName: user.name || 'Team Member',
+          organizationName: organization?.name || 'Your Organization',
+          completedAt: mostRecentCompletion.completedAt || new Date(),
+        });
+
+        // Send the email with certificate attached
+        await sendTrainingCompletedEmail({
+          email: user.email,
+          userName: user.name || 'Team Member',
+          organizationName: organization?.name || 'Your Organization',
+          completedAt: mostRecentCompletion.completedAt || new Date(),
+          certificatePdf,
+        });
+
+        logger('Training completion email sent successfully', {
+          email: user.email,
+          memberId: member.id,
+        });
+      } catch (emailError) {
+        // Log error but don't fail the action - video was still marked complete
+        logger('Failed to send training completion email', {
+          error: emailError instanceof Error ? emailError.message : String(emailError),
+          email: user.email,
+          memberId: member.id,
+        });
+      }
     }
 
     // Revalidate path following cursor rules

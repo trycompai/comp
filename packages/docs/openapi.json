@@ -12843,6 +12843,39 @@
           "Assistant Chat"
         ]
       }
+    },
+    "/v1/training/send-completion-email": {
+      "post": {
+        "description": "Checks if the member has completed all training videos. If so, sends an email with the training certificate attached.",
+        "operationId": "TrainingController_sendTrainingCompletionEmail_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent or reason why it was not sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendTrainingCompletionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send training completion email with certificate",
+        "tags": [
+          "Training"
+        ]
+      }
     }
   },
   "info": {
@@ -16330,6 +16363,43 @@
         },
         "required": [
           "messages"
+        ]
+      },
+      "SendTrainingCompletionDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "description": "The member ID who completed training",
+            "example": "mem_abc123"
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "The organization ID",
+            "example": "org_abc123"
+          }
+        },
+        "required": [
+          "memberId",
+          "organizationId"
+        ]
+      },
+      "SendTrainingCompletionResponseDto": {
+        "type": "object",
+        "properties": {
+          "sent": {
+            "type": "boolean",
+            "description": "Whether the email was sent",
+            "example": true
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason if email was not sent",
+            "example": "training_not_complete"
+          }
+        },
+        "required": [
+          "sent"
         ]
       }
     }
