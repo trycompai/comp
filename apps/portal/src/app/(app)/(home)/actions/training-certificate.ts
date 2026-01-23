@@ -87,14 +87,7 @@ export async function generateTrainingCertificatePdf(params: {
   if (logoDataUrl) {
     const logoWidth = 15;
     const logoHeight = 15;
-    doc.addImage(
-      logoDataUrl,
-      'PNG',
-      pageWidth / 2 - logoWidth / 2,
-      22,
-      logoWidth,
-      logoHeight,
-    );
+    doc.addImage(logoDataUrl, 'PNG', pageWidth / 2 - logoWidth / 2, 22, logoWidth, logoHeight);
   }
 
   // Certificate header
@@ -135,12 +128,7 @@ export async function generateTrainingCertificatePdf(params: {
   const nameWidth = doc.getTextWidth(cleanUserName);
   doc.setDrawColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
   doc.setLineWidth(0.4);
-  doc.line(
-    pageWidth / 2 - nameWidth / 2 - 10,
-    98,
-    pageWidth / 2 + nameWidth / 2 + 10,
-    98,
-  );
+  doc.line(pageWidth / 2 - nameWidth / 2 - 10, 98, pageWidth / 2 + nameWidth / 2 + 10, 98);
 
   // Description
   const cleanOrgName = cleanTextForPDF(organizationName);
@@ -161,7 +149,7 @@ export async function generateTrainingCertificatePdf(params: {
   const orgWidth = doc.getTextWidth(cleanOrgName);
   const totalWidth = forWidth + orgWidth;
   const startX = pageWidth / 2 - totalWidth / 2;
-  
+
   doc.setFont('helvetica', 'normal');
   doc.text(forText, startX, 124);
   doc.setFont('helvetica', 'bold');
@@ -199,7 +187,7 @@ export async function generateTrainingCertificatePdf(params: {
   const gap = 3;
   const totalBrandWidth = logoSize + gap + compAiTextWidth;
   const brandStartX = pageWidth / 2 - totalBrandWidth / 2;
-  
+
   // Add small logo next to text
   if (logoDataUrl) {
     doc.addImage(logoDataUrl, 'PNG', brandStartX, 164, logoSize, logoSize);

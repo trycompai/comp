@@ -1,13 +1,18 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { z } from 'zod';
+import { trainingVideos } from '@/lib/data/training-videos';
+import { db } from '@db';
 import { jsPDF } from 'jspdf';
+import { z } from 'zod';
 
 // Primary brand color (teal/green) - hsl(165, 100%, 15%)
 const PRIMARY_COLOR = { r: 0, g: 77, b: 61 };
 
 const COMP_AI_LOGO_URL = 'https://assets.trycomp.ai/logo.png';
+
+// Derive training video IDs from the canonical source
+const TRAINING_VIDEO_IDS = trainingVideos.map((v) => v.id);
 
 const getLogoDataUrl = async (): Promise<string | null> => {
   try {
@@ -24,9 +29,8 @@ const getLogoDataUrl = async (): Promise<string | null> => {
 };
 
 const downloadCertificateSchema = z.object({
-  userName: z.string(),
-  organizationName: z.string(),
-  completedAt: z.date(),
+  memberId: z.string(),
+  organizationId: z.string(),
 });
 
 /**
@@ -238,13 +242,63 @@ export const downloadTrainingCertificate = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ parsedInput }) => {
-    const { userName, organizationName, completedAt } = parsedInput;
+  .action(async ({ parsedInput, ctx }) => {
+    const { memberId, organizationId } = parsedInput;
+    const { session } = ctx;
+
+    // Verify the caller has access to this organization
+    if (session.activeOrganizationId !== organizationId) {
+      throw new Error('Unauthorized: You do not have access to this organization');
+    }
+
+    // Get the member and verify they belong to the organization
+    const member = await db.member.findFirst({
+      where: {
+        id: memberId,
+        organizationId: organizationId,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!member) {
+      throw new Error('Member not found in this organization');
+    }
+
+    // Verify the member has completed all training videos
+    const completions = await db.employeeTrainingVideoCompletion.findMany({
+      where: {
+        memberId: memberId,
+        videoId: { in: TRAINING_VIDEO_IDS },
+        completedAt: { not: null },
+      },
+    });
+
+    if (completions.length !== TRAINING_VIDEO_IDS.length) {
+      throw new Error('Training not completed: Member has not finished all required training videos');
+    }
+
+    // Get the organization name
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    // Get the most recent completion date
+    const mostRecentCompletion = completions.reduce(
+      (latest, current) => {
+        if (!latest.completedAt) return current;
+        if (!current.completedAt) return latest;
+        return current.completedAt > latest.completedAt ? current : latest;
+      },
+      completions[0],
+    );
 
     const pdfBase64 = await generateTrainingCertificatePdf({
-      userName,
-      organizationName,
-      completedAt,
+      userName: member.user.name || 'Team Member',
+      organizationName: organization?.name || 'Organization',
+      completedAt: mostRecentCompletion.completedAt || new Date(),
     });
 
     return pdfBase64;

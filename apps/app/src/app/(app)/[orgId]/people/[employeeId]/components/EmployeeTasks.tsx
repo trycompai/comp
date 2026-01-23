@@ -54,9 +54,8 @@ export const EmployeeTasks = ({
     if (!trainingCompletionDate) return;
 
     const result = await downloadTrainingCertificate({
-      userName: employee.user.name || 'Team Member',
-      organizationName: organization.name,
-      completedAt: trainingCompletionDate,
+      memberId: employee.id,
+      organizationId: organization.id,
     });
 
     if (result?.data) {

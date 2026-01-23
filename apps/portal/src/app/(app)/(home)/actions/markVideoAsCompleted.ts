@@ -1,16 +1,17 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { trainingVideos } from '@/lib/data/training-videos';
 import { logger } from '@/utils/logger';
-import { db } from '@db';
 import { sendTrainingCompletedEmail } from '@comp/email';
+import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { generateTrainingCertificatePdf } from './training-certificate';
 
-// Training video IDs - must match what's in training-videos.ts
-const TRAINING_VIDEO_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
+// Derive training video IDs from the canonical source
+const TRAINING_VIDEO_IDS = trainingVideos.map((v) => v.id);
 
 export const markVideoAsCompleted = authActionClient
   .inputSchema(z.object({ videoId: z.string(), organizationId: z.string() }))
@@ -153,31 +154,31 @@ export const markVideoAsCompleted = authActionClient
         return current.completedAt > latest.completedAt ? current : latest;
       });
 
-      try {
-        // Generate the certificate PDF
-        const certificatePdf = await generateTrainingCertificatePdf({
-          userName: user.name || 'Team Member',
-          organizationName: organization?.name || 'Your Organization',
-          completedAt: mostRecentCompletion.completedAt || new Date(),
-        });
+      // Generate the certificate PDF
+      const certificatePdf = await generateTrainingCertificatePdf({
+        userName: user.name || 'Team Member',
+        organizationName: organization?.name || 'Your Organization',
+        completedAt: mostRecentCompletion.completedAt || new Date(),
+      });
 
-        // Send the email with certificate attached
-        await sendTrainingCompletedEmail({
-          email: user.email,
-          userName: user.name || 'Team Member',
-          organizationName: organization?.name || 'Your Organization',
-          completedAt: mostRecentCompletion.completedAt || new Date(),
-          certificatePdf,
-        });
+      // Send the email with certificate attached
+      const emailResult = await sendTrainingCompletedEmail({
+        email: user.email,
+        userName: user.name || 'Team Member',
+        organizationName: organization?.name || 'Your Organization',
+        completedAt: mostRecentCompletion.completedAt || new Date(),
+        certificatePdf,
+      });
 
+      if (emailResult.success) {
         logger('Training completion email sent successfully', {
           email: user.email,
           memberId: member.id,
+          emailId: emailResult.id,
         });
-      } catch (emailError) {
+      } else {
         // Log error but don't fail the action - video was still marked complete
         logger('Failed to send training completion email', {
-          error: emailError instanceof Error ? emailError.message : String(emailError),
           email: user.email,
           memberId: member.id,
         });

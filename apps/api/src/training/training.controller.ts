@@ -1,13 +1,23 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
 import { TrainingService } from './training.service';
 import {
   SendTrainingCompletionDto,
   SendTrainingCompletionResponseDto,
 } from './dto/send-training-completion.dto';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 
 @ApiTags('Training')
 @Controller('training')
+@UseGuards(HybridAuthGuard)
+@ApiSecurity('apikey')
 export class TrainingController {
   constructor(private readonly trainingService: TrainingService) {}
 
