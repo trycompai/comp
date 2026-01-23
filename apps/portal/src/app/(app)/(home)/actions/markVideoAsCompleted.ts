@@ -1,14 +1,13 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { env } from '@/env.mjs';
 import { trainingVideos } from '@/lib/data/training-videos';
 import { logger } from '@/utils/logger';
-import { sendTrainingCompletedEmail } from '@comp/email';
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
-import { generateTrainingCertificatePdf } from './training-certificate';
 
 // Derive training video IDs from the canonical source
 const TRAINING_VIDEO_IDS = trainingVideos.map((v) => v.id);
@@ -65,12 +64,13 @@ export const markVideoAsCompleted = authActionClient
     }
 
     // Try to find existing record
-    let organizationTrainingVideo = await db.employeeTrainingVideoCompletion.findFirst({
-      where: {
-        videoId: videoId, // This is the metadata ID like 'sat-1'
-        memberId: member.id,
-      },
-    });
+    let organizationTrainingVideo =
+      await db.employeeTrainingVideoCompletion.findFirst({
+        where: {
+          videoId: videoId, // This is the metadata ID like 'sat-1'
+          memberId: member.id,
+        },
+      });
 
     logger('Searched for existing video completion', {
       videoId,
@@ -86,13 +86,14 @@ export const markVideoAsCompleted = authActionClient
         memberId: member.id,
       });
 
-      organizationTrainingVideo = await db.employeeTrainingVideoCompletion.create({
-        data: {
-          videoId,
-          memberId: member.id,
-          completedAt: new Date(), // Mark as completed immediately
-        },
-      });
+      organizationTrainingVideo =
+        await db.employeeTrainingVideoCompletion.create({
+          data: {
+            videoId,
+            memberId: member.id,
+            completedAt: new Date(), // Mark as completed immediately
+          },
+        });
 
       logger('Video completion record created and marked as completed', {
         videoId,
@@ -109,14 +110,15 @@ export const markVideoAsCompleted = authActionClient
       }
 
       logger('Updating video completion', { videoId, userId: user.id });
-      organizationTrainingVideo = await db.employeeTrainingVideoCompletion.update({
-        where: {
-          id: organizationTrainingVideo.id,
-        },
-        data: {
-          completedAt: new Date(),
-        },
-      });
+      organizationTrainingVideo =
+        await db.employeeTrainingVideoCompletion.update({
+          where: {
+            id: organizationTrainingVideo.id,
+          },
+          data: {
+            completedAt: new Date(),
+          },
+        });
 
       logger('Video successfully marked as completed', {
         videoId,
@@ -136,50 +138,60 @@ export const markVideoAsCompleted = authActionClient
     const allTrainingComplete = completions.length === TRAINING_VIDEO_IDS.length;
 
     if (allTrainingComplete) {
-      logger('All training videos completed, sending certificate email', {
+      logger('All training videos completed, triggering certificate email via API', {
         memberId: member.id,
         userId: user.id,
       });
 
-      // Get organization name for the certificate
-      const organization = await db.organization.findUnique({
-        where: { id: organizationId },
-        select: { name: true },
-      });
+      // Call the API to send the completion email with certificate
+      const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+      const internalToken = env.INTERNAL_API_TOKEN;
 
-      // Get the most recent completion date
-      const mostRecentCompletion = completions.reduce((latest, current) => {
-        if (!latest.completedAt) return current;
-        if (!current.completedAt) return latest;
-        return current.completedAt > latest.completedAt ? current : latest;
-      });
-
-      // Generate the certificate PDF
-      const certificatePdf = await generateTrainingCertificatePdf({
-        userName: user.name || 'Team Member',
-        organizationName: organization?.name || 'Your Organization',
-        completedAt: mostRecentCompletion.completedAt || new Date(),
-      });
-
-      // Send the email with certificate attached
-      const emailResult = await sendTrainingCompletedEmail({
-        email: user.email,
-        userName: user.name || 'Team Member',
-        organizationName: organization?.name || 'Your Organization',
-        completedAt: mostRecentCompletion.completedAt || new Date(),
-        certificatePdf,
-      });
-
-      if (emailResult.success) {
-        logger('Training completion email sent successfully', {
-          email: user.email,
+      if (!internalToken) {
+        logger('INTERNAL_API_TOKEN not configured, skipping API call', {
           memberId: member.id,
-          emailId: emailResult.id,
         });
-      } else {
+        return organizationTrainingVideo;
+      }
+
+      try {
+        const response = await fetch(`${apiUrl}/v1/training/send-completion-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-token': internalToken,
+          },
+          body: JSON.stringify({
+            memberId: member.id,
+            organizationId,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.sent) {
+            logger('Training completion email sent successfully via API', {
+              email: user.email,
+              memberId: member.id,
+            });
+          } else {
+            logger('API declined to send email', {
+              reason: result.reason,
+              memberId: member.id,
+            });
+          }
+        } else {
+          const errorText = await response.text();
+          logger('Failed to send training completion email via API', {
+            status: response.status,
+            error: errorText,
+            memberId: member.id,
+          });
+        }
+      } catch (error) {
         // Log error but don't fail the action - video was still marked complete
-        logger('Failed to send training completion email', {
-          email: user.email,
+        logger('Error calling training completion API', {
+          error: error instanceof Error ? error.message : String(error),
           memberId: member.id,
         });
       }
@@ -187,7 +199,8 @@ export const markVideoAsCompleted = authActionClient
 
     // Revalidate path following cursor rules
     const headersList = await headers();
-    let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+    let path =
+      headersList.get('x-pathname') || headersList.get('referer') || '';
     path = path.replace(/\/[a-z]{2}\//, '/');
     revalidatePath(path);
 

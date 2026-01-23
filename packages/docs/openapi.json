@@ -12848,7 +12848,17 @@
       "post": {
         "description": "Checks if the member has completed all training videos. If so, sends an email with the training certificate attached.",
         "operationId": "TrainingController_sendTrainingCompletionEmail_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-internal-token",
+            "required": true,
+            "in": "header",
+            "description": "Internal API token for service-to-service calls",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -12872,6 +12882,45 @@
           }
         },
         "summary": "Send training completion email with certificate",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/v1/training/generate-certificate": {
+      "post": {
+        "description": "Generates a PDF certificate for a member who has completed all training videos. Returns the PDF as a downloadable file.",
+        "operationId": "TrainingController_generateCertificate_v1",
+        "parameters": [
+          {
+            "name": "x-internal-token",
+            "required": true,
+            "in": "header",
+            "description": "Internal API token for service-to-service calls",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF certificate file"
+          },
+          "400": {
+            "description": "Training not complete or member not found"
+          }
+        },
+        "summary": "Generate training completion certificate PDF",
         "tags": [
           "Training"
         ]
