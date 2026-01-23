@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -19,6 +20,11 @@ export async function GET(req: NextRequest) {
 
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const member = await validateMemberAndOrg(session.user.id, organizationId);
+  if (!member) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const results = await db.fleetPolicyResult.findMany({
