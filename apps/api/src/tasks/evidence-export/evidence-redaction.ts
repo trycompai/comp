@@ -79,7 +79,14 @@ export function redactSensitiveData(
       const result: [unknown, unknown][] = [];
       seen.set(value, result);
       for (const [key, mapValue] of value.entries()) {
-        result.push([key, redact(mapValue)]);
+        // Check if the key is sensitive (only for string keys)
+        if (typeof key === 'string' && isSensitiveKey(key, sensitiveKeys)) {
+          result.push([key, '[REDACTED]']);
+        } else if (typeof mapValue === 'string' && shouldRedactValue(mapValue, valuePatterns)) {
+          result.push([key, '[REDACTED]']);
+        } else {
+          result.push([key, redact(mapValue)]);
+        }
       }
       return result;
     }
