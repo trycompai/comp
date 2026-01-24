@@ -70,24 +70,35 @@ export function redactSensitiveData(
       return value;
     }
 
-    if (value instanceof Map) {
-      return Array.from(value.entries()).map(([key, mapValue]) => [
-        key,
-        redact(mapValue),
-      ]);
-    }
-
-    if (value instanceof Set) {
-      return Array.from(value.values()).map((item) => redact(item));
-    }
-
+    // Check for circular references BEFORE processing any object type
     if (seen.has(value)) {
       return '[Circular]';
     }
 
+    if (value instanceof Map) {
+      const result: [unknown, unknown][] = [];
+      seen.set(value, result);
+      for (const [key, mapValue] of value.entries()) {
+        result.push([key, redact(mapValue)]);
+      }
+      return result;
+    }
+
+    if (value instanceof Set) {
+      const result: unknown[] = [];
+      seen.set(value, result);
+      for (const item of value.values()) {
+        result.push(redact(item));
+      }
+      return result;
+    }
+
     if (Array.isArray(value)) {
-      const redactedArray = value.map((item) => redact(item));
+      const redactedArray: unknown[] = [];
       seen.set(value, redactedArray);
+      for (const item of value) {
+        redactedArray.push(redact(item));
+      }
       return redactedArray;
     }
 
