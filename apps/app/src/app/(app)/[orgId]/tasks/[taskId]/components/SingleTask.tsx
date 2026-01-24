@@ -44,6 +44,7 @@ import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
+import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 
 type AutomationWithRuns = EvidenceAutomation & {
   runs: EvidenceAutomationRun[];
@@ -163,9 +164,12 @@ export function SingleTask({
           <div>
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1">
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">
-                  {task.title}
-                </h1>
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                    {task.title}
+                  </h1>
+                  <TaskAutomationStatusBadge status={task.automationStatus} />
+                </div>
                 {task.description && (
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {task.description}
