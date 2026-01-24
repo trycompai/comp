@@ -180,11 +180,12 @@ export class TrainingService {
     const organizationName = member.organization?.name || 'Organization';
 
     // Generate the PDF
-    const pdf = await this.trainingCertificatePdfService.generateTrainingCertificatePdf({
-      userName,
-      organizationName,
-      completedAt,
-    });
+    const pdf =
+      await this.trainingCertificatePdfService.generateTrainingCertificatePdf({
+        userName,
+        organizationName,
+        completedAt,
+      });
 
     const fileName = `training-certificate-${userName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
 

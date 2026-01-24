@@ -1,7 +1,22 @@
 'use client';
 
+import { downloadAllEvidenceZip } from '@/lib/evidence-download';
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+  Switch,
+} from '@trycompai/design-system';
+import { ArrowDown } from '@trycompai/design-system/icons';
 import { Download } from 'lucide-react';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface AuditorViewProps {
   initialContent: Record<string, string>;
@@ -20,29 +35,80 @@ export function AuditorView({
   cSuite,
   reportSignatory,
 }: AuditorViewProps) {
+  const params = useParams();
+  const orgId = params.orgId as string;
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [includeJson, setIncludeJson] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  const handleDownloadAllEvidence = async () => {
+    setIsDownloading(true);
+    try {
+      await downloadAllEvidenceZip({
+        organizationId: orgId,
+        organizationName,
+        includeJson,
+      });
+      toast.success('Evidence package downloaded successfully');
+      setIsPopoverOpen(false);
+    } catch (err) {
+      toast.error('Failed to download evidence. Please try again.');
+      console.error('Evidence download error:', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-10">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        {logoUrl && (
-          <a
-            href={logoUrl}
-            download={`${organizationName.replace(/[^a-zA-Z0-9]/g, '_')}_logo`}
-            className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border bg-background transition-all hover:shadow-md"
-            title="Download logo"
-          >
-            <Image src={logoUrl} alt={`${organizationName} logo`} fill className="object-contain" />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-              <Download className="h-4 w-4 text-white" />
-            </div>
-          </a>
-        )}
-        <div>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
-            {organizationName}
-          </h1>
-          <p className="text-muted-foreground text-sm">Company Overview</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {logoUrl && (
+            <a
+              href={logoUrl}
+              download={`${organizationName.replace(/[^a-zA-Z0-9]/g, '_')}_logo`}
+              className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border bg-background transition-all hover:shadow-md"
+              title="Download logo"
+            >
+              <Image src={logoUrl} alt={`${organizationName} logo`} fill className="object-contain" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                <Download className="h-4 w-4 text-white" />
+              </div>
+            </a>
+          )}
+          <div>
+            <h1 className="text-foreground text-xl font-semibold tracking-tight">
+              {organizationName}
+            </h1>
+            <p className="text-muted-foreground text-sm">Company Overview</p>
+          </div>
         </div>
+
+        {/* Download All Evidence Button */}
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+          <PopoverTrigger style={{ cursor: 'pointer' }}>
+            <Button variant="outline">Export All Evidence</Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" side="bottom" sideOffset={8}>
+            <PopoverHeader>
+              <PopoverTitle>Export Options</PopoverTitle>
+              <PopoverDescription>Download all task evidence as ZIP</PopoverDescription>
+            </PopoverHeader>
+            <div className="flex items-center justify-between gap-3 py-1">
+              <span className="text-sm">Include raw JSON files</span>
+              <Switch checked={includeJson} onCheckedChange={(checked) => setIncludeJson(checked)} />
+            </div>
+            <Button
+              iconLeft={<ArrowDown />}
+              onClick={handleDownloadAllEvidence}
+              disabled={isDownloading}
+              width="full"
+            >
+              {isDownloading ? 'Preparing…' : 'Export'}
+            </Button>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Company Information */}

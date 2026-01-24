@@ -11,6 +11,10 @@ import { TrainingCertificatePdfService } from './training-certificate-pdf.servic
     TrainingEmailService,
     TrainingCertificatePdfService,
   ],
-  exports: [TrainingService, TrainingEmailService, TrainingCertificatePdfService],
+  exports: [
+    TrainingService,
+    TrainingEmailService,
+    TrainingCertificatePdfService,
+  ],
 })
 export class TrainingModule {}

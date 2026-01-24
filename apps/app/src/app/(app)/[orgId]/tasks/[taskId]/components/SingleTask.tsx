@@ -26,7 +26,8 @@ import {
   type Task,
   type User,
 } from '@db';
-import { ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
+import { ChevronRight, Download, RefreshCw, Trash2 } from 'lucide-react';
+import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -172,6 +173,27 @@ export function SingleTask({
                 )}
               </div>
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={async () => {
+                    try {
+                      await downloadTaskEvidenceZip({
+                        taskId: task.id,
+                        taskTitle: task.title,
+                        organizationId: orgId,
+                        includeJson: true,
+                      });
+                      toast.success('Task evidence downloaded');
+                    } catch (err) {
+                      toast.error('Failed to download evidence');
+                    }
+                  }}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Download task evidence"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
