@@ -589,11 +589,15 @@ export function generateTaskSummaryPDF(summary: TaskEvidenceSummary): Buffer {
 
 /**
  * Sanitize filename for safe file system usage
+ * Falls back to 'export' if name contains only non-ASCII characters
  */
 export function sanitizeFilename(name: string): string {
-  return name
+  const sanitized = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 50);
+
+  // Fallback for names with only non-ASCII characters (e.g., Japanese, Arabic)
+  return sanitized || 'export';
 }
