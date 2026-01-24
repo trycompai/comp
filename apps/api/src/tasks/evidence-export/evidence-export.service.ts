@@ -210,7 +210,9 @@ export class EvidenceExportService {
     for (const automation of summary.automations) {
       const typePrefix =
         automation.type === 'app_automation' ? 'app' : 'custom';
-      const automationFolder = `${folderName}/${typePrefix}-${sanitizeFilename(automation.name)}`;
+      // Include short ID suffix to prevent path collisions when names sanitize identically
+      const idSuffix = automation.id.slice(-8);
+      const automationFolder = `${folderName}/${typePrefix}-${sanitizeFilename(automation.name)}-${idSuffix}`;
 
       // Generate PDF for this automation
       const pdfBuffer = generateAutomationPDF(automation, {
@@ -361,7 +363,9 @@ export class EvidenceExportService {
           continue;
         }
 
-        const taskFolder = `${orgFolder}/${sanitizeFilename(task.title)}`;
+        // Include short task ID suffix to prevent path collisions
+        const taskIdSuffix = task.id.slice(-8);
+        const taskFolder = `${orgFolder}/${sanitizeFilename(task.title)}-${taskIdSuffix}`;
 
         // Add task summary PDF
         const summaryPdf = generateTaskSummaryPDF(summary);
@@ -372,6 +376,8 @@ export class EvidenceExportService {
           const typePrefix =
             automation.type === 'app_automation' ? 'app' : 'custom';
           const automationName = sanitizeFilename(automation.name);
+          // Include short automation ID suffix to prevent path collisions
+          const automationIdSuffix = automation.id.slice(-8);
 
           const pdfBuffer = generateAutomationPDF(automation, {
             organizationName: summary.organizationName,
@@ -379,7 +385,7 @@ export class EvidenceExportService {
           });
 
           zip.addFile(
-            `${taskFolder}/${typePrefix}-${automationName}.pdf`,
+            `${taskFolder}/${typePrefix}-${automationName}-${automationIdSuffix}.pdf`,
             pdfBuffer,
           );
 
@@ -399,7 +405,7 @@ export class EvidenceExportService {
               2,
             );
             zip.addFile(
-              `${taskFolder}/${typePrefix}-${automationName}.json`,
+              `${taskFolder}/${typePrefix}-${automationName}-${automationIdSuffix}.json`,
               Buffer.from(jsonData, 'utf-8'),
             );
           }

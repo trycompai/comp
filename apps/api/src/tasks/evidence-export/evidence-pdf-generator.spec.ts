@@ -27,8 +27,13 @@ describe('Evidence PDF Generator', () => {
       expect(sanitizeFilename(longName).length).toBeLessThanOrEqual(50);
     });
 
-    it('should handle empty strings', () => {
-      expect(sanitizeFilename('')).toBe('');
+    it('should handle empty strings with fallback', () => {
+      expect(sanitizeFilename('')).toBe('export');
+    });
+
+    it('should handle non-ASCII only names with fallback', () => {
+      expect(sanitizeFilename('日本語会社')).toBe('export');
+      expect(sanitizeFilename('شركة عربية')).toBe('export');
     });
   });
 
