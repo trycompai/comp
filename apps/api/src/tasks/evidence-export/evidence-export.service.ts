@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import AdmZip from 'adm-zip';
 import { format } from 'date-fns';
+import { configure as configureStringify } from 'safe-stable-stringify';
 import type {
   TaskEvidenceSummary,
   EvidenceExportResult,
@@ -13,6 +14,13 @@ import {
   sanitizeFilename,
 } from './evidence-pdf-generator';
 import { redactSensitiveData } from './evidence-redaction';
+
+// Configure safe stringify to handle BigInt, circular refs, etc.
+const safeStringify = configureStringify({
+  bigint: true,
+  circularValue: '[Circular]',
+  deterministic: false,
+});
 
 @Injectable()
 export class EvidenceExportService {
@@ -224,7 +232,7 @@ export class EvidenceExportService {
 
       // Optionally include raw JSON
       if (options.includeRawJson) {
-        const jsonData = JSON.stringify(
+        const jsonData = safeStringify(
           redactSensitiveData({
             automation: {
               id: automation.id,
@@ -261,7 +269,7 @@ export class EvidenceExportService {
 
         zip.addFile(
           `${automationFolder}/evidence.json`,
-          Buffer.from(jsonData, 'utf-8'),
+          Buffer.from(jsonData ?? '{}', 'utf-8'),
         );
       }
     }
@@ -348,7 +356,7 @@ export class EvidenceExportService {
     };
     zip.addFile(
       `${orgFolder}/manifest.json`,
-      Buffer.from(JSON.stringify(manifest, null, 2), 'utf-8'),
+      Buffer.from(safeStringify(manifest, null, 2) ?? '{}', 'utf-8'),
     );
 
     // Export each task
@@ -391,7 +399,7 @@ export class EvidenceExportService {
 
           // Optional JSON
           if (options.includeRawJson) {
-            const jsonData = JSON.stringify(
+            const jsonData = safeStringify(
               redactSensitiveData({
                 automation: {
                   id: automation.id,
@@ -406,7 +414,7 @@ export class EvidenceExportService {
             );
             zip.addFile(
               `${taskFolder}/${typePrefix}-${automationName}-${automationIdSuffix}.json`,
-              Buffer.from(jsonData, 'utf-8'),
+              Buffer.from(jsonData ?? '{}', 'utf-8'),
             );
           }
         }
