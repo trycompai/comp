@@ -16,6 +16,7 @@ import {
 } from '@trycompai/design-system';
 import { Add, ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { TaskList } from './TaskList';
 
@@ -66,7 +67,11 @@ export function TasksPageClient({
         organizationName: organizationName ?? undefined,
         includeJson: includeRawJson,
       });
+      toast.success('Evidence package downloaded successfully');
       setIsPopoverOpen(false);
+    } catch (err) {
+      toast.error('Failed to download evidence. Please try again.');
+      console.error('Evidence download error:', err);
     } finally {
       setIsDownloadingAll(false);
     }
