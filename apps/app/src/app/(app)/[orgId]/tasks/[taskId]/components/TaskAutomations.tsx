@@ -3,7 +3,9 @@
 import { cn } from '@/lib/utils';
 import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowRight, Brain, CheckCircle2, Loader2, Plus, TrendingUp, XCircle } from 'lucide-react';
+import { ArrowRight, Brain, CheckCircle2, Download, Loader2, Plus, TrendingUp, XCircle } from 'lucide-react';
+import { downloadAutomationPDF } from '@/lib/evidence-download';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -234,6 +236,30 @@ export const TaskAutomations = ({ automations }: TaskAutomationsProps) => {
                         </p>
                       )}
                     </div>
+
+                    {latestVersionRun && (
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try {
+                            await downloadAutomationPDF({
+                              taskId,
+                              automationId: automation.id,
+                              automationName: automation.name,
+                              organizationId: orgId,
+                            });
+                            toast.success('Evidence PDF downloaded');
+                          } catch (err) {
+                            toast.error('Failed to download evidence');
+                          }
+                        }}
+                        className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0"
+                        title="Download evidence PDF"
+                      >
+                        <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
 
                     <ArrowRight className="w-4 h-4 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
                   </div>

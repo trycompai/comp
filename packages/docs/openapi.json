@@ -7196,6 +7196,206 @@
         ]
       }
     },
+    "/v1/tasks/{taskId}/evidence": {
+      "get": {
+        "description": "Retrieve a summary of all automation evidence for a specific task",
+        "operationId": "EvidenceExportController_getTaskEvidenceSummary_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence summary retrieved successfully"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task evidence summary",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/evidence/automation/{automationId}/pdf": {
+      "get": {
+        "description": "Generate and download a PDF containing all evidence for a specific automation",
+        "operationId": "EvidenceExportController_exportAutomationPDF_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Unique automation identifier (checkId for app automations)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file generated successfully",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "404": {
+            "description": "Task or automation not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export automation evidence as PDF",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/evidence/export": {
+      "get": {
+        "description": "Generate and download a ZIP file containing all automation evidence for a task",
+        "operationId": "EvidenceExportController_exportTaskEvidenceZip_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeJson",
+            "required": false,
+            "in": "query",
+            "description": "Include raw JSON files alongside PDFs",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP file generated successfully",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export task evidence as ZIP",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/evidence-export/all": {
+      "get": {
+        "description": "Generate and download a ZIP file containing all automation evidence across all tasks. Only accessible by auditors.",
+        "operationId": "AuditorEvidenceExportController_exportAllEvidence_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeJson",
+            "required": false,
+            "in": "query",
+            "description": "Include raw JSON files alongside PDFs",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP file generated successfully",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "403": {
+            "description": "Access denied - Auditor role required"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export all organization evidence as ZIP (Auditor only)",
+        "tags": [
+          "Evidence Export (Auditor)"
+        ]
+      }
+    },
     "/v1/comments": {
       "get": {
         "description": "Retrieve all comments for a specific entity (task, policy, vendor, etc.)",
