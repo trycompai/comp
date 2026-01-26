@@ -17,6 +17,7 @@ import { OrganizationModule } from './organization/organization.module';
 import { PoliciesModule } from './policies/policies.module';
 import { RisksModule } from './risks/risks.module';
 import { TasksModule } from './tasks/tasks.module';
+import { EvidenceExportModule } from './tasks/evidence-export/evidence-export.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
@@ -60,6 +61,7 @@ import { TrainingModule } from './training/training.module';
     DeviceAgentModule,
     AttachmentsModule,
     TasksModule,
+    EvidenceExportModule,
     CommentsModule,
     HealthModule,
     TrustPortalModule,

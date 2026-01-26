@@ -14,6 +14,7 @@ import {
   Bot,
   CheckCircle2,
   ChevronDown,
+  Download,
   ExternalLink,
   Loader2,
   Play,
@@ -22,6 +23,7 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
+import { downloadAutomationPDF } from '@/lib/evidence-download';
 import { useActiveOrganization } from '@/utils/auth-client';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -569,6 +571,30 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
                               )}
                               <span className="ml-1.5 text-xs">Run</span>
                             </Button>
+                            {checkRuns.length > 0 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                title="Download evidence PDF"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await downloadAutomationPDF({
+                                      taskId,
+                                      automationId: check.checkId,
+                                      automationName: check.checkName,
+                                      organizationId: orgId,
+                                    });
+                                    toast.success('Evidence PDF downloaded');
+                                  } catch (err) {
+                                    toast.error('Failed to download evidence');
+                                  }
+                                }}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"

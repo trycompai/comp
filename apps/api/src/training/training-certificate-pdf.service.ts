@@ -169,7 +169,7 @@ export class TrainingCertificatePdfService {
     const orgWidth = doc.getTextWidth(cleanOrgName);
     const totalWidth = forWidth + orgWidth;
     const startX = pageWidth / 2 - totalWidth / 2;
-    
+
     doc.setFont('helvetica', 'normal');
     doc.text(forText, startX, 124);
     doc.setFont('helvetica', 'bold');
@@ -207,7 +207,7 @@ export class TrainingCertificatePdfService {
     const gap = 3;
     const totalBrandWidth = logoSize + gap + compAiTextWidth;
     const brandStartX = pageWidth / 2 - totalBrandWidth / 2;
-    
+
     // Add small logo next to text
     if (logoDataUrl) {
       doc.addImage(logoDataUrl, 'PNG', brandStartX, 164, logoSize, logoSize);

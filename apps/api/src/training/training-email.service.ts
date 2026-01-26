@@ -20,11 +20,12 @@ export class TrainingEmailService {
     const { toEmail, toName, organizationName, completedAt } = params;
 
     // Generate the certificate PDF
-    const certificatePdf = await this.certificatePdfService.generateTrainingCertificatePdf({
-      userName: toName,
-      organizationName,
-      completedAt,
-    });
+    const certificatePdf =
+      await this.certificatePdfService.generateTrainingCertificatePdf({
+        userName: toName,
+        organizationName,
+        completedAt,
+      });
 
     this.logger.log(
       `Generated training certificate PDF for ${toEmail} (${certificatePdf.length} bytes)`,
