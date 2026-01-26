@@ -89,7 +89,7 @@ export function FleetPolicyItem({ policy }: FleetPolicyItemProps) {
         </div>
         <div className="flex items-center gap-3">
           {policy.response === 'pass' ? (
-            <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+            <div className="flex items-center gap-1 text-primary">
               <CheckCircle2 size={16} />
               <span className="text-sm">Pass</span>
             </div>

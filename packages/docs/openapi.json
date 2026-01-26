@@ -7196,6 +7196,206 @@
         ]
       }
     },
+    "/v1/tasks/{taskId}/evidence": {
+      "get": {
+        "description": "Retrieve a summary of all automation evidence for a specific task",
+        "operationId": "EvidenceExportController_getTaskEvidenceSummary_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence summary retrieved successfully"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task evidence summary",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/evidence/automation/{automationId}/pdf": {
+      "get": {
+        "description": "Generate and download a PDF containing all evidence for a specific automation",
+        "operationId": "EvidenceExportController_exportAutomationPDF_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Unique automation identifier (checkId for app automations)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file generated successfully",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "404": {
+            "description": "Task or automation not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export automation evidence as PDF",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/evidence/export": {
+      "get": {
+        "description": "Generate and download a ZIP file containing all automation evidence for a task",
+        "operationId": "EvidenceExportController_exportTaskEvidenceZip_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeJson",
+            "required": false,
+            "in": "query",
+            "description": "Include raw JSON files alongside PDFs",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP file generated successfully",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export task evidence as ZIP",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/evidence-export/all": {
+      "get": {
+        "description": "Generate and download a ZIP file containing all automation evidence across all tasks. Only accessible by auditors.",
+        "operationId": "AuditorEvidenceExportController_exportAllEvidence_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeJson",
+            "required": false,
+            "in": "query",
+            "description": "Include raw JSON files alongside PDFs",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP file generated successfully",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "403": {
+            "description": "Access denied - Auditor role required"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export all organization evidence as ZIP (Auditor only)",
+        "tags": [
+          "Evidence Export (Auditor)"
+        ]
+      }
+    },
     "/v1/comments": {
       "get": {
         "description": "Retrieve all comments for a specific entity (task, policy, vendor, etc.)",
@@ -12843,6 +13043,88 @@
           "Assistant Chat"
         ]
       }
+    },
+    "/v1/training/send-completion-email": {
+      "post": {
+        "description": "Checks if the member has completed all training videos. If so, sends an email with the training certificate attached.",
+        "operationId": "TrainingController_sendTrainingCompletionEmail_v1",
+        "parameters": [
+          {
+            "name": "x-internal-token",
+            "required": true,
+            "in": "header",
+            "description": "Internal API token for service-to-service calls",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent or reason why it was not sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendTrainingCompletionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send training completion email with certificate",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/v1/training/generate-certificate": {
+      "post": {
+        "description": "Generates a PDF certificate for a member who has completed all training videos. Returns the PDF as a downloadable file.",
+        "operationId": "TrainingController_generateCertificate_v1",
+        "parameters": [
+          {
+            "name": "x-internal-token",
+            "required": true,
+            "in": "header",
+            "description": "Internal API token for service-to-service calls",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF certificate file"
+          },
+          "400": {
+            "description": "Training not complete or member not found"
+          }
+        },
+        "summary": "Generate training completion certificate PDF",
+        "tags": [
+          "Training"
+        ]
+      }
     }
   },
   "info": {
@@ -16330,6 +16612,43 @@
         },
         "required": [
           "messages"
+        ]
+      },
+      "SendTrainingCompletionDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "description": "The member ID who completed training",
+            "example": "mem_abc123"
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "The organization ID",
+            "example": "org_abc123"
+          }
+        },
+        "required": [
+          "memberId",
+          "organizationId"
+        ]
+      },
+      "SendTrainingCompletionResponseDto": {
+        "type": "object",
+        "properties": {
+          "sent": {
+            "type": "boolean",
+            "description": "Whether the email was sent",
+            "example": true
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason if email was not sent",
+            "example": "training_not_complete"
+          }
+        },
+        "required": [
+          "sent"
         ]
       }
     }

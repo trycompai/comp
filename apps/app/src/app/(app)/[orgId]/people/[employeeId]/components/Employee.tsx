@@ -1,7 +1,7 @@
 'use client';
 
 import type { TrainingVideo } from '@/lib/data/training-videos';
-import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
+import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
 import { Stack } from '@trycompai/design-system';
 import type { FleetPolicy, Host } from '../../devices/types';
 import { EmployeeDetails } from './EmployeeDetails';
@@ -18,6 +18,7 @@ interface EmployeeDetailsProps {
   fleetPolicies: FleetPolicy[];
   host: Host;
   canEdit: boolean;
+  organization: Organization;
 }
 
 export function Employee({
@@ -27,6 +28,7 @@ export function Employee({
   fleetPolicies,
   host,
   canEdit,
+  organization,
 }: EmployeeDetailsProps) {
   return (
     <Stack gap="4">
@@ -37,6 +39,7 @@ export function Employee({
         trainingVideos={trainingVideos}
         fleetPolicies={fleetPolicies}
         host={host}
+        organization={organization}
       />
     </Stack>
   );
