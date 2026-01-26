@@ -123,7 +123,7 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
     );
   }
 
-  // List of automations (disable creation for manual tasks)
+  // List of automations (disable creation for manual tasks, but allow editing)
   return (
     <>
       <BrowserAutomationsList
@@ -134,17 +134,15 @@ export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAuto
         onCreateClick={isManualTask ? undefined : () => setDialogState({ open: true, mode: 'create' })}
         onEditClick={(automation) => setDialogState({ open: true, mode: 'edit', automation })}
       />
-      {!isManualTask && (
-        <BrowserAutomationConfigDialog
-          isOpen={dialogState.open}
-          mode={dialogState.mode}
-          initialValues={dialogState.automation}
-          isSaving={automations.isSaving}
-          onClose={() => setDialogState({ open: false, mode: 'create' })}
-          onCreate={automations.createAutomation}
-          onUpdate={automations.updateAutomation}
-        />
-      )}
+      <BrowserAutomationConfigDialog
+        isOpen={dialogState.open}
+        mode={dialogState.mode}
+        initialValues={dialogState.automation}
+        isSaving={automations.isSaving}
+        onClose={() => setDialogState({ open: false, mode: 'create' })}
+        onCreate={automations.createAutomation}
+        onUpdate={automations.updateAutomation}
+      />
     </>
   );
 }
