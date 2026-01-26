@@ -33,12 +33,15 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useActiveMember } from '@/utils/auth-client';
 import { Comments } from '../../../../../../components/comments/Comments';
 import { updateTask } from '../../actions/updateTask';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
 import { BrowserAutomations } from './BrowserAutomations';
+import { FindingHistoryPanel } from './findings/FindingHistoryPanel';
+import { FindingsList } from './findings/FindingsList';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
@@ -55,12 +58,14 @@ interface SingleTaskProps {
   initialMembers?: (Member & { user: User })[];
   initialAutomations: AutomationWithRuns[];
   isWebAutomationsEnabled: boolean;
+  isPlatformAdmin: boolean;
 }
 
 export function SingleTask({
   initialTask,
   initialAutomations,
   isWebAutomationsEnabled,
+  isPlatformAdmin,
 }: SingleTaskProps) {
   const params = useParams();
   const orgId = params.orgId as string;
@@ -78,8 +83,18 @@ export function SingleTask({
   });
   const { hasMappedChecks } = useTaskIntegrationChecks();
 
+  // Get current member role information for findings permissions
+  const { data: activeMember } = useActiveMember();
+
+  // Parse member roles
+  const memberRoles = activeMember?.role?.split(',').map((r: string) => r.trim()) || [];
+  const isAuditor = memberRoles.includes('auditor');
+  const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
+  // isPlatformAdmin is passed from the server component (page.tsx)
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(null);
 
   const regenerate = useAction(regenerateTaskAction, {
     onSuccess: () => {
@@ -232,6 +247,15 @@ export function SingleTask({
             isManualTask={task.automationStatus === 'MANUAL'}
           />
 
+          {/* Findings Section */}
+          <FindingsList
+            taskId={task.id}
+            isAuditor={isAuditor}
+            isPlatformAdmin={isPlatformAdmin}
+            isAdminOrOwner={isAdminOrOwner}
+            onViewHistory={setSelectedFindingIdForHistory}
+          />
+
           {/* Browser Automations Section */}
           {isWebAutomationsEnabled && (
             <BrowserAutomations
@@ -260,8 +284,16 @@ export function SingleTask({
 
         {/* Right Column - Properties */}
         <div className="lg:col-span-1">
-          <div className="pl-6 border-l border-border">
+          <div className="pl-6 border-l border-border space-y-6">
             <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
+
+            {/* Finding History Panel */}
+            {selectedFindingIdForHistory && (
+              <FindingHistoryPanel
+                findingId={selectedFindingIdForHistory}
+                onClose={() => setSelectedFindingIdForHistory(null)}
+              />
+            )}
           </div>
         </div>
       </div>

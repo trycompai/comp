@@ -55,5 +55,8 @@ model Organization {
   browserbaseContext BrowserbaseContext?
   fleetPolicyResults FleetPolicyResult[]
 
+  // Findings
+  findings Finding[]
+
   @@index([slug])
 }
