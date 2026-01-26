@@ -1,5 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
+import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
 import { DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { Buffer } from 'node:buffer';
@@ -23,14 +24,19 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const policyIdValue = formData.get('policyId');
   const policyName = formData.get('policyName');
+  const organizationId = formData.get('organizationId') as string;
   const files = formData.getAll('files');
 
   const policyId = typeof policyIdValue === 'string' ? Number(policyIdValue) : null;
-  const organizationId = session.session?.activeOrganizationId;
   const userId = session.user.id;
 
   if (!organizationId) {
     return NextResponse.json({ error: 'No active organization' }, { status: 400 });
+  }
+
+  const member = await validateMemberAndOrg(userId, organizationId);
+  if (!member) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   if (!policyId || Number.isNaN(policyId)) {
