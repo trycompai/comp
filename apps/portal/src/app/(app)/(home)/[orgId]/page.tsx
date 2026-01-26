@@ -135,9 +135,16 @@ const getFleetPolicyResults = async (organizationId: string): Promise<FleetPolic
     const portalBase = process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, '');
     const url = `${portalBase}/api/fleet-policy?organizationId=${organizationId}`;
 
+    // Convert ReadonlyHeaders to a plain object for fetch
+    const headersList = await headers();
+    const headersObject: Record<string, string> = {};
+    headersList.forEach((value, key) => {
+      headersObject[key] = value;
+    });
+
     const res = await fetch(url, {
       method: 'GET',
-      headers: await headers(),
+      headers: headersObject,
       cache: 'no-store',
     });
 
