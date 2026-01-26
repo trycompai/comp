@@ -12,7 +12,7 @@ import {
 } from '@comp/ui/dialog';
 import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { FleetPolicy } from '../../types';
 
@@ -27,6 +27,9 @@ export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyIma
   const [files, setFiles] = useState<Array<{ file: File; previewUrl: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const params = useParams<{ orgId: string }>();
+  const orgIdParam = params?.orgId;
+  const organizationId = Array.isArray(orgIdParam) ? orgIdParam[0] : orgIdParam;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
@@ -58,6 +61,10 @@ export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyIma
 
   const handleSubmit = async () => {
     if (files.length === 0 || isLoading) return;
+    if (!organizationId) {
+      toast.error('Missing organization ID from URL');
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -65,6 +72,7 @@ export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyIma
       const formData = new FormData();
       formData.append('policyId', String(policy.id));
       formData.append('policyName', policy.name);
+      formData.append('organizationId', organizationId);
 
       files.forEach(({ file }) => {
         formData.append('files', file, file.name);

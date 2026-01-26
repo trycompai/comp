@@ -2,6 +2,12 @@ import { Resend } from 'resend';
 
 export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer | string;
+  contentType?: string;
+}
+
 export const sendEmail = async ({
   to,
   subject,
@@ -11,6 +17,7 @@ export const sendEmail = async ({
   test,
   cc,
   scheduledAt,
+  attachments,
 }: {
   to: string;
   subject: string;
@@ -20,6 +27,7 @@ export const sendEmail = async ({
   test?: boolean;
   cc?: string | string[];
   scheduledAt?: string;
+  attachments?: EmailAttachment[];
 }) => {
   if (!resend) {
     throw new Error('Resend not initialized - missing API key');
@@ -57,6 +65,11 @@ export const sendEmail = async ({
       // @ts-ignore – React node allowed by the SDK
       react,
       scheduledAt,
+      attachments: attachments?.map((att) => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+      })),
     });
 
     if (error) {

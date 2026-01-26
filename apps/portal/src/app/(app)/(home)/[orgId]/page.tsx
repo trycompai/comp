@@ -107,7 +107,7 @@ const getFleetPolicies = async (
     ];
 
     // Get Policy Results from the database.
-    const fleetPolicyResults = await getFleetPolicyResults();
+    const fleetPolicyResults = await getFleetPolicyResults(member.organizationId);
     return {
       device,
       fleetPolicies: fleetPolicies.map((policy) => {
@@ -130,10 +130,10 @@ const getFleetPolicies = async (
   }
 };
 
-const getFleetPolicyResults = async (): Promise<FleetPolicyResult[]> => {
+const getFleetPolicyResults = async (organizationId: string): Promise<FleetPolicyResult[]> => {
   try {
     const portalBase = process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, '');
-    const url = `${portalBase}/api/fleet-policy`;
+    const url = `${portalBase}/api/fleet-policy?organizationId=${organizationId}`;
 
     const res = await fetch(url, {
       method: 'GET',

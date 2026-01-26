@@ -134,6 +134,7 @@ export const runTaskIntegrationChecks = task({
     // Track overall results across all checks for this task
     let totalFindings = 0;
     let totalPassing = 0;
+    let hasFailedChecks = false;
 
     // Run only the checks that apply to this task
     try {
@@ -159,6 +160,9 @@ export const runTaskIntegrationChecks = task({
         // Accumulate results
         totalFindings += checkResult.result.findings.length;
         totalPassing += checkResult.result.passingResults.length;
+        if (checkResult.status === 'failed' || checkResult.status === 'error') {
+          hasFailedChecks = true;
+        }
 
         // Store check run
         const checkRun = await db.integrationCheckRun.create({
@@ -228,15 +232,15 @@ export const runTaskIntegrationChecks = task({
       });
 
       // Update task status based on check results
-      // If any findings (failures), mark as failed
-      // If all passing and no findings, mark as done (only if not already done)
-      if (totalFindings > 0) {
+      // If any findings or check failures, mark as failed
+      // If all checks pass with no findings, mark as done (only if not already done)
+      if (totalFindings > 0 || hasFailedChecks) {
         await db.task.update({
           where: { id: taskId },
           data: { status: 'failed' },
         });
         logger.info(
-          `Task ${taskId} marked as failed due to ${totalFindings} findings`,
+          `Task ${taskId} marked as failed due to ${totalFindings} findings${hasFailedChecks ? ' and failed checks' : ''}`,
         );
       } else if (totalPassing > 0) {
         // Only update to done if not already done
@@ -282,7 +286,11 @@ export const runTaskIntegrationChecks = task({
         totalPassing,
         totalFindings,
         taskStatus:
-          totalFindings > 0 ? 'failed' : totalPassing > 0 ? 'done' : null,
+          totalFindings > 0 || hasFailedChecks
+            ? 'failed'
+            : totalPassing > 0
+              ? 'done'
+              : null,
       };
     } catch (error) {
       logger.error(`Failed to run checks for task ${taskId}`, {
