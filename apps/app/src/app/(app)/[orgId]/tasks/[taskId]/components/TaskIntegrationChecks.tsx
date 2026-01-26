@@ -3,7 +3,9 @@
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { api } from '@/lib/api-client';
+import { downloadAutomationPDF } from '@/lib/evidence-download';
 import { cn } from '@/lib/utils';
+import { useActiveOrganization } from '@/utils/auth-client';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { addDays, formatDistanceToNow, isBefore, setHours, setMinutes } from 'date-fns';
@@ -23,8 +25,6 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
-import { downloadAutomationPDF } from '@/lib/evidence-download';
-import { useActiveOrganization } from '@/utils/auth-client';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -87,9 +87,15 @@ interface StoredCheckRun {
 interface TaskIntegrationChecksProps {
   taskId: string;
   onTaskUpdated?: () => void;
+  /** When true, disables creating new automations (shows existing ones read-only) */
+  isManualTask?: boolean;
 }
 
-export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegrationChecksProps) {
+export function TaskIntegrationChecks({
+  taskId,
+  onTaskUpdated,
+  isManualTask = false,
+}: TaskIntegrationChecksProps) {
   const params = useParams();
   const searchParams = useSearchParams();
   const orgId = params.orgId as string;
@@ -345,6 +351,7 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
             hasNoMappedChecks={true}
             orgId={orgId}
             taskId={taskId}
+            isManualTask={isManualTask}
           />
         ) : connectedChecks.length === 0 ? (
           <IntegrationEmptyState
@@ -352,6 +359,7 @@ export function TaskIntegrationChecks({ taskId, onTaskUpdated }: TaskIntegration
             hasNoMappedChecks={false}
             orgId={orgId}
             taskId={taskId}
+            isManualTask={isManualTask}
           />
         ) : (
           <div className="space-y-5">
@@ -1017,11 +1025,13 @@ function IntegrationEmptyState({
   hasNoMappedChecks,
   orgId,
   taskId,
+  isManualTask = false,
 }: {
   disconnectedChecks: TaskIntegrationCheck[];
   hasNoMappedChecks: boolean;
   orgId: string;
   taskId?: string;
+  isManualTask?: boolean;
 }) {
   const params = useParams();
   const router = useRouter();
@@ -1098,8 +1108,20 @@ function IntegrationEmptyState({
   };
 
   const handleAutomationClick = () => {
+    if (isManualTask) return;
     router.push(`/${orgId}/tasks/${currentTaskId}/automation/new`);
   };
+
+  // For manual tasks, show a simple message instead of automation prompts
+  if (isManualTask) {
+    return (
+      <div className="py-6 px-6 text-center border-t border-border/40">
+        <p className="text-muted-foreground text-sm">
+          This task requires manual execution and cannot be automated.
+        </p>
+      </div>
+    );
+  }
 
   // If no mapped checks, show simple automation CTA
   if (hasNoMappedChecks) {

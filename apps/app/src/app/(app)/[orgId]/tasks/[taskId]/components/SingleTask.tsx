@@ -1,6 +1,7 @@
 'use client';
 
 import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
+import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,7 +28,6 @@ import {
   type User,
 } from '@db';
 import { ChevronRight, Download, RefreshCw, Trash2 } from 'lucide-react';
-import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -40,11 +40,11 @@ import { useTaskAutomations } from '../hooks/use-task-automations';
 import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
 import { BrowserAutomations } from './BrowserAutomations';
 import { TaskAutomations } from './TaskAutomations';
+import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
-import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 
 type AutomationWithRuns = EvidenceAutomation & {
   runs: EvidenceAutomationRun[];
@@ -226,14 +226,26 @@ export function SingleTask({
           </div>
 
           {/* Integration Checks Section */}
-          <TaskIntegrationChecks taskId={task.id} onTaskUpdated={() => mutateTask()} />
+          <TaskIntegrationChecks
+            taskId={task.id}
+            onTaskUpdated={() => mutateTask()}
+            isManualTask={task.automationStatus === 'MANUAL'}
+          />
 
           {/* Browser Automations Section */}
-          {isWebAutomationsEnabled && <BrowserAutomations taskId={task.id} />}
+          {isWebAutomationsEnabled && (
+            <BrowserAutomations
+              taskId={task.id}
+              isManualTask={task.automationStatus === 'MANUAL'}
+            />
+          )}
 
           {/* Custom Automations Section - always show if automations exist, or show empty state if no integration checks */}
           {((automations && automations.length > 0) || !hasMappedChecks) && (
-            <TaskAutomations automations={automations || []} />
+            <TaskAutomations
+              automations={automations || []}
+              isManualTask={task.automationStatus === 'MANUAL'}
+            />
           )}
 
           {/* Comments Section */}

@@ -86,8 +86,8 @@ export function TasksPageClient({
             <div className="flex items-center gap-2">
               {hasEvidenceExportAccess && (
                 <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                  <PopoverTrigger style={{ cursor: 'pointer' }}>
-                    <Button variant="outline">Export All Evidence</Button>
+                  <PopoverTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 rounded-md">
+                    Export All Evidence
                   </PopoverTrigger>
                   <PopoverContent align="end" side="bottom" sideOffset={8}>
                     <PopoverHeader>

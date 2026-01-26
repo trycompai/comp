@@ -29,7 +29,8 @@ interface BrowserAutomationsListProps {
   hasContext: boolean;
   runningAutomationId: string | null;
   onRun: (automationId: string) => void;
-  onCreateClick: () => void;
+  /** When undefined, the create button is hidden (e.g., for manual tasks) */
+  onCreateClick?: () => void;
   onEditClick: (automation: BrowserAutomation) => void;
 }
 
@@ -100,13 +101,15 @@ export function BrowserAutomationsList({
           ))}
         </div>
 
-        <button
-          onClick={onCreateClick}
-          className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-lg border border-dashed border-border/60 hover:border-border hover:bg-muted/30 transition-all text-xs text-muted-foreground hover:text-foreground"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Create Another
-        </button>
+        {onCreateClick && (
+          <button
+            onClick={onCreateClick}
+            className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-lg border border-dashed border-border/60 hover:border-border hover:bg-muted/30 transition-all text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Create Another
+          </button>
+        )}
       </div>
     </div>
   );
