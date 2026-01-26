@@ -13,6 +13,8 @@ import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { Employee } from './components/Employee';
 
+const MDM_POLICY_ID = -9999;
+
 export default async function EmployeeDetailsPage({
   params,
 }: {
@@ -209,9 +211,38 @@ const getFleetPolicies = async (member: Member & { user: User }) => {
     }
 
     const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
-    const fleetPolicies = deviceWithPolicies.data.host.policies || [];
+    const host = deviceWithPolicies.data.host;
 
-    return { fleetPolicies, device: deviceWithPolicies.data.host };
+    const results = await db.fleetPolicyResult.findMany({
+      where: {
+        organizationId: member.organizationId,
+        userId: member.userId,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const platform = host.platform?.toLowerCase();
+    const osVersion = host.os_version?.toLowerCase();
+    const isMacOS =
+      platform === 'darwin' ||
+      platform === 'macos' ||
+      platform === 'osx' ||
+      osVersion?.includes('mac');
+
+    return {
+      fleetPolicies: [
+        ...(host.policies || []),
+        ...(isMacOS ? [{ id: MDM_POLICY_ID, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
+      ].map((policy) => {
+        const policyResult = results.find((result) => result.fleetPolicyId === policy.id);
+        return {
+          ...policy,
+          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
+          attachments: policyResult?.attachments || [],
+        };
+      }),
+      device: host
+    };
   } catch (error) {
     console.error(
       `Failed to get device using individual fleet label for member: ${member.id}`,
