@@ -1,16 +1,22 @@
 /**
  * Validates that a redirect path is safe (no open redirect vulnerabilities).
+ *
+ * Only checks the path portion (before ?) to allow URLs in query params
+ * like /dashboard?shareUrl=https://example.com
  */
 export const isValidRedirectPath = (path?: string | null): path is string => {
   if (!path || typeof path !== 'string') {
     return false;
   }
 
+  // Must start with single slash (relative path)
   if (!path.startsWith('/') || path.startsWith('//')) {
     return false;
   }
 
-  return !path.includes('://');
+  // Only check the path portion (before query string) for protocol
+  const pathWithoutQuery = path.split('?')[0];
+  return !pathWithoutQuery.includes('://');
 };
 
 /**
