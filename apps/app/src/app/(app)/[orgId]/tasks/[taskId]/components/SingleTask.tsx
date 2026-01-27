@@ -39,7 +39,6 @@ import { Comments } from '../../../../../../components/comments/Comments';
 import { apiClient } from '@/lib/api-client';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
-import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
 import { BrowserAutomations } from './BrowserAutomations';
 import { FindingHistoryPanel } from './findings/FindingHistoryPanel';
 import { FindingsList } from './findings/FindingsList';
@@ -82,7 +81,6 @@ export function SingleTask({
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
-  const { hasMappedChecks } = useTaskIntegrationChecks();
 
   // Get current member role information for findings permissions
   const { data: activeMember } = useActiveMember();
@@ -287,13 +285,11 @@ export function SingleTask({
             />
           )}
 
-          {/* Custom Automations Section - always show if automations exist, or show empty state if no integration checks */}
-          {((automations && automations.length > 0) || !hasMappedChecks) && (
-            <TaskAutomations
-              automations={automations || []}
-              isManualTask={task.automationStatus === 'MANUAL'}
-            />
-          )}
+          {/* Custom Automations Section */}
+          <TaskAutomations
+            automations={automations || []}
+            isManualTask={task.automationStatus === 'MANUAL'}
+          />
 
           {/* Comments Section */}
           <div>

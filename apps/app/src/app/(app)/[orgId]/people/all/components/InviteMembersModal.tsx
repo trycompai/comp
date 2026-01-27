@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import type { ActionResponse } from '@/actions/types';
-import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -33,13 +32,17 @@ import { Input } from '@comp/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
 import { checkMemberStatus } from '../actions/checkMemberStatus';
+import { inviteNewMember } from '../actions/inviteNewMember';
 import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEmail';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
-const ALL_SELECTABLE_ROLES = ['admin', 'auditor', 'employee', 'contractor'] as const satisfies Readonly<
-  [Role, ...Role[]]
->;
+const ALL_SELECTABLE_ROLES = [
+  'admin',
+  'auditor',
+  'employee',
+  'contractor',
+] as const satisfies Readonly<[Role, ...Role[]]>;
 type InviteRole = (typeof ALL_SELECTABLE_ROLES)[number];
 const DEFAULT_ROLES: InviteRole[] = [];
 
@@ -56,7 +59,9 @@ const createFormSchema = (allowedRoles: InviteRole[]) => {
 
   const manualModeSchema = z.object({
     mode: z.literal('manual'),
-    manualInvites: z.array(manualInviteSchema).min(1, { message: 'Please add at least one invite.' }),
+    manualInvites: z
+      .array(manualInviteSchema)
+      .min(1, { message: 'Please add at least one invite.' }),
     csvFile: z.any().optional(), // Optional here, validated by union
   });
 
@@ -100,8 +105,7 @@ export function InviteMembersModal({
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ActionResponse<BulkInviteResultData> | null>(null);
 
-  const normalizedAllowedRoles =
-    allowedRoles.length > 0 ? allowedRoles : [...ALL_SELECTABLE_ROLES];
+  const normalizedAllowedRoles = allowedRoles.length > 0 ? allowedRoles : [...ALL_SELECTABLE_ROLES];
   const formSchema = useMemo(
     () => createFormSchema(normalizedAllowedRoles),
     [normalizedAllowedRoles.join(',')],
@@ -162,7 +166,7 @@ export function InviteMembersModal({
           return;
         }
 
-        // Process invitations client-side using authClient
+        // Process invitations
         let successCount = 0;
         const failedInvites: { email: string; error: string }[] = [];
 
@@ -193,10 +197,11 @@ export function InviteMembersModal({
                   roles: invite.roles,
                 });
               } else {
-                // Member doesn't exist - use authClient to send the invitation
-                await authClient.organization.inviteMember({
+                // Member doesn't exist - use server action to send the invitation
+                await inviteNewMember({
                   email: invite.email.toLowerCase(),
-                  role: invite.roles.length === 1 ? invite.roles[0] : invite.roles,
+                  organizationId,
+                  roles: invite.roles,
                 });
               }
             }
@@ -370,10 +375,11 @@ export function InviteMembersModal({
                     roles: validRoles,
                   });
                 } else {
-                  // Member doesn't exist - use authClient to send the invitation
-                  await authClient.organization.inviteMember({
+                  // Member doesn't exist - use server action to send the invitation
+                  await inviteNewMember({
                     email: email.toLowerCase(),
-                    role: validRoles,
+                    organizationId,
+                    roles: validRoles,
                   });
                 }
               }
