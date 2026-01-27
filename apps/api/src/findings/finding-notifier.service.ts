@@ -482,8 +482,8 @@ export class FindingNotifierService {
     excludeUserId: string,
   ): Promise<Recipient[]> {
     try {
-      // Fetch task assignee and org admins in parallel
-      const [task, adminMembers] = await Promise.all([
+      // Fetch task assignee and org members in parallel
+      const [task, allMembers] = await Promise.all([
         db.task.findUnique({
           where: { id: taskId },
           select: {
@@ -498,13 +498,18 @@ export class FindingNotifierService {
           where: {
             organizationId,
             deactivated: false,
-            role: { in: ['admin', 'owner'] },
           },
           select: {
+            role: true,
             user: { select: { id: true, email: true, name: true } },
           },
         }),
       ]);
+
+      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
+      const adminMembers = allMembers.filter(
+        (member) => member.role.includes('admin') || member.role.includes('owner'),
+      );
 
       const recipients: Recipient[] = [];
       const addedUserIds = new Set<string>();
