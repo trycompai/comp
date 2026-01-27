@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member } from '@db';
-import { CheckCircle2, Circle, Download, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FleetPolicyItem } from './FleetPolicyItem';
@@ -29,7 +30,9 @@ export function DeviceAgentAccordionItem({
   host,
   fleetPolicies = [],
 }: DeviceAgentAccordionItemProps) {
+  const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
 
   const isMacOS = useMemo(
@@ -115,6 +118,22 @@ export function DeviceAgentAccordionItem({
           Download Agent
         </>
       );
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      router.refresh();
+      toast.success('Device information refreshed');
+    } catch (error) {
+      console.error('Error refreshing device information:', error);
+      toast.error('Failed to refresh device information');
+    } finally {
+      // Reset after a short delay to show the refresh animation
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
     }
   };
 
@@ -227,7 +246,19 @@ export function DeviceAgentAccordionItem({
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">{host.computer_name}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg">{host.computer_name}</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    title="Refresh device information"
+                  >
+                    <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {fleetPolicies.length > 0 ? (
