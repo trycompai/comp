@@ -35,6 +35,8 @@ interface TeamMembersClientProps {
   removeMemberAction: typeof removeMember;
   revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
+  canInviteUsers: boolean;
+  isAuditor: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
 }
@@ -57,6 +59,8 @@ export function TeamMembersClient({
   removeMemberAction,
   revokeInvitationAction,
   canManageMembers,
+  canInviteUsers,
+  isAuditor,
   isCurrentUserOwner,
   employeeSyncData,
 }: TeamMembersClientProps) {
@@ -249,6 +253,9 @@ export function TeamMembersClient({
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
         organizationId={organizationId}
+        allowedRoles={
+          canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
+        }
       />
 
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -431,7 +438,7 @@ export function TeamMembersClient({
             </Select>
           </div>
         )}
-        <Button onClick={() => setIsInviteModalOpen(true)} disabled={!canManageMembers}>
+        <Button onClick={() => setIsInviteModalOpen(true)} disabled={!canInviteUsers}>
           <UserPlus className="h-4 w-4" />
           {'Add User'}
         </Button>
@@ -475,7 +482,11 @@ export function TeamMembersClient({
               <p className="text-muted-foreground mt-2 max-w-xs text-sm">
                 {'Get started by inviting your first team member.'}
               </p>
-              <Button className="mt-4" onClick={() => setIsInviteModalOpen(true)}>
+              <Button
+                className="mt-4"
+                onClick={() => setIsInviteModalOpen(true)}
+                disabled={!canInviteUsers}
+              >
                 <UserPlus className="mr-2 h-4 w-4" />
                 {'Add User'}
               </Button>
