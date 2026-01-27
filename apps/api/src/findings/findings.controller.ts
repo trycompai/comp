@@ -194,6 +194,11 @@ export class FindingsController {
     @Body() createDto: CreateFindingDto,
     @AuthContext() authContext: AuthContextType,
   ) {
+    // Validate userId first (required for session auth)
+    if (!authContext.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
     // Verify user has auditor role or is platform admin
     const isAuditor = authContext.userRoles?.includes('auditor');
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
@@ -217,10 +222,6 @@ export class FindingsController {
       throw new BadRequestException(
         'User is not a member of this organization',
       );
-    }
-
-    if (!authContext.userId) {
-      throw new BadRequestException('User ID is required');
     }
 
     return await this.findingsService.create(
@@ -275,6 +276,11 @@ export class FindingsController {
     @Body() updateDto: UpdateFindingDto,
     @AuthContext() authContext: AuthContextType,
   ) {
+    // Validate userId first (required for session auth)
+    if (!authContext.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
 
     // Get member ID for audit logging
@@ -290,10 +296,6 @@ export class FindingsController {
       throw new BadRequestException(
         'User is not a member of this organization',
       );
-    }
-
-    if (!authContext.userId) {
-      throw new BadRequestException('User ID is required');
     }
 
     return await this.findingsService.update(
@@ -338,6 +340,11 @@ export class FindingsController {
     @Param('id', ValidateFindingIdPipe) id: string,
     @AuthContext() authContext: AuthContextType,
   ) {
+    // Validate userId first (required for session auth)
+    if (!authContext.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
     // Verify user has auditor role or is platform admin
     const isAuditor = authContext.userRoles?.includes('auditor');
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
@@ -361,10 +368,6 @@ export class FindingsController {
       throw new BadRequestException(
         'User is not a member of this organization',
       );
-    }
-
-    if (!authContext.userId) {
-      throw new BadRequestException('User ID is required');
     }
 
     return await this.findingsService.delete(
