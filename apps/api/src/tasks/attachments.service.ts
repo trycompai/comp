@@ -193,7 +193,7 @@ export class AttachmentsService {
         entityType,
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
     });
 

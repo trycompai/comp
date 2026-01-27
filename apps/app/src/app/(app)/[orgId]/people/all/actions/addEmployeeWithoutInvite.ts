@@ -29,11 +29,23 @@ export const addEmployeeWithoutInvite = async ({
       },
     });
 
-    if (
-      !currentUserMember ||
-      (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
-    ) {
+    if (!currentUserMember) {
       throw new Error("You don't have permission to add members.");
+    }
+
+    const isAdmin =
+      currentUserMember.role.includes('admin') || currentUserMember.role.includes('owner');
+    const isAuditor = currentUserMember.role.includes('auditor');
+
+    if (!isAdmin && !isAuditor) {
+      throw new Error("You don't have permission to add members.");
+    }
+
+    if (isAuditor && !isAdmin) {
+      const onlyAuditorRole = roles.length === 1 && roles[0] === 'auditor';
+      if (!onlyAuditorRole) {
+        throw new Error("Auditors can only add users with the 'auditor' role.");
+      }
     }
 
     let userId = '';

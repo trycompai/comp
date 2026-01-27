@@ -40,6 +40,8 @@ export const admin = ac.newRole({
 export const auditor = ac.newRole({
   app: ['read'],
   organization: ['read'],
+  invitation: ['create'],
+  member: ['create'],
 });
 
 /**

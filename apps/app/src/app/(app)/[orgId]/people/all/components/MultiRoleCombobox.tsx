@@ -46,6 +46,7 @@ interface MultiRoleComboboxProps {
   placeholder?: string;
   disabled?: boolean;
   lockedRoles?: Role[]; // Roles that cannot be deselected
+  allowedRoles?: Role[];
 }
 
 export function MultiRoleCombobox({
@@ -54,6 +55,7 @@ export function MultiRoleCombobox({
   placeholder,
   disabled = false,
   lockedRoles = [],
+  allowedRoles,
 }: MultiRoleComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -67,10 +69,20 @@ export function MultiRoleCombobox({
 
   const isOwner = selectedRoles.includes('owner');
 
+  const normalizedAllowedRoles = React.useMemo(() => {
+    if (allowedRoles && allowedRoles.length > 0) {
+      return allowedRoles;
+    }
+    return selectableRoles.map((role) => role.value);
+  }, [allowedRoles]);
+
   // Filter out owner role for non-owners
   const availableRoles = React.useMemo(() => {
-    return selectableRoles.filter((role) => role.value !== 'owner' || isOwner);
-  }, [isOwner]);
+    return selectableRoles.filter(
+      (role) =>
+        normalizedAllowedRoles.includes(role.value) && (role.value !== 'owner' || isOwner),
+    );
+  }, [isOwner, normalizedAllowedRoles]);
 
   const handleSelect = (roleValue: Role) => {
     // Never allow owner role to be changed
