@@ -1,5 +1,6 @@
 'use server';
 
+import { maskEmail } from '@/lib/mask-email';
 import { auth } from '@/utils/auth';
 import { createSafeActionClient } from 'next-safe-action';
 import { headers } from 'next/headers';
@@ -16,13 +17,6 @@ interface InviteResult {
   email: string;
   success: boolean;
   error?: string;
-}
-
-function maskEmail(value: string): string {
-  const [name = '', domain = ''] = value.toLowerCase().split('@');
-  if (!domain) return 'invalid-email';
-  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
-  return `${safeName}@${domain}`;
 }
 
 export const bulkInviteEmployees = createSafeActionClient()

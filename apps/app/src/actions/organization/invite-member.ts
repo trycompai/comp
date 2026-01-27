@@ -1,18 +1,12 @@
 'use server';
 
+import { maskEmail } from '@/lib/mask-email';
 import { auth } from '@/utils/auth';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
 import type { ActionResponse } from '../types';
-
-function maskEmail(value: string): string {
-  const [name = '', domain = ''] = value.toLowerCase().split('@');
-  if (!domain) return 'invalid-email';
-  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
-  return `${safeName}@${domain}`;
-}
 
 const inviteMemberSchema = z.object({
   email: z.string().email(),

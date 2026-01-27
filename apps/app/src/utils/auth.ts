@@ -1,4 +1,5 @@
 import { env } from '@/env.mjs';
+import { maskEmail } from '@/lib/mask-email';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
 import { sendEmail } from '@comp/email/lib/resend';
@@ -18,13 +19,6 @@ const dub = env.DUB_API_KEY
   : undefined;
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
-
-function maskEmail(value: string): string {
-  const [name = '', domain = ''] = value.toLowerCase().split('@');
-  if (!domain) return 'invalid-email';
-  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
-  return `${safeName}@${domain}`;
-}
 
 let socialProviders = {};
 

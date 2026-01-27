@@ -1,16 +1,10 @@
 'use server';
 
+import { maskEmail } from '@/lib/mask-email';
 import { auth } from '@/utils/auth';
 import type { Role } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
-
-function maskEmail(value: string): string {
-  const [name = '', domain = ''] = value.toLowerCase().split('@');
-  if (!domain) return 'invalid-email';
-  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
-  return `${safeName}@${domain}`;
-}
 
 export const inviteNewMember = async ({
   email,
