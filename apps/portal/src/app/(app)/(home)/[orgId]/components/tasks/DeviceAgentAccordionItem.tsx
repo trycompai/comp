@@ -121,20 +121,14 @@ export function DeviceAgentAccordionItem({
     }
   };
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     setIsRefreshing(true);
-    try {
-      router.refresh();
-      toast.success('Device information refreshed');
-    } catch (error) {
-      console.error('Error refreshing device information:', error);
-      toast.error('Failed to refresh device information');
-    } finally {
-      // Reset after a short delay to show the refresh animation
-      setTimeout(() => {
-        setIsRefreshing(false);
-      }, 500);
-    }
+    router.refresh();
+    // Reset after a short delay to show the refresh animation
+    // The actual data refresh happens asynchronously via router.refresh()
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
   };
 
   useEffect(() => {
