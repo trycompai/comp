@@ -301,7 +301,7 @@ export class FindingNotifierService {
 
     try {
       // Check unsubscribe preferences
-      const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskReminders');
+      const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'findingNotifications');
 
       if (isUnsubscribed) {
         this.logger.log(`Skipping notification: ${recipient.email} is unsubscribed`);

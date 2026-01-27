@@ -99,16 +99,31 @@ export class FindingsController {
     description: 'List of all findings for the organization',
   })
   @ApiResponse({
+    status: 400,
+    description: 'Invalid status value',
+  })
+  @ApiResponse({
     status: 401,
     description: 'Unauthorized',
   })
   async getOrganizationFindings(
-    @Query('status') status: FindingStatus | undefined,
+    @Query('status') status: string | undefined,
     @AuthContext() authContext: AuthContextType,
   ) {
+    // Validate status enum if provided
+    let validatedStatus: FindingStatus | undefined;
+    if (status) {
+      if (!Object.values(FindingStatus).includes(status as FindingStatus)) {
+        throw new BadRequestException(
+          `Invalid status value. Must be one of: ${Object.values(FindingStatus).join(', ')}`,
+        );
+      }
+      validatedStatus = status as FindingStatus;
+    }
+
     return await this.findingsService.findByOrganizationId(
       authContext.organizationId,
-      status,
+      validatedStatus,
     );
   }
 
