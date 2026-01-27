@@ -36,8 +36,9 @@ export function CloudSettingsModal({
   onUpdate,
 }: CloudSettingsModalProps) {
   const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.id || 'aws');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { disconnectConnection } = useIntegrationMutations();
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { disconnectConnection, deleteConnection } = useIntegrationMutations();
 
   const handleDisconnect = async (provider: CloudProvider) => {
     if (
@@ -49,7 +50,7 @@ export function CloudSettingsModal({
     }
 
     try {
-      setIsDeleting(true);
+      setDisconnecting(true);
       const result = await disconnectConnection(provider.connectionId);
 
       if (result.success) {
@@ -63,7 +64,33 @@ export function CloudSettingsModal({
       console.error('Disconnect error:', error);
       toast.error('An unexpected error occurred');
     } finally {
-      setIsDeleting(false);
+      setDisconnecting(false);
+    }
+  };
+
+  const handleDelete = async (provider: CloudProvider) => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this cloud provider? All scan results will be deleted.',
+      )
+    ) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const result = await deleteConnection(provider.connectionId);
+      if (result.success) {
+        toast.success('Integration removed');
+        onUpdate();
+        onOpenChange(false);
+      } else {
+        toast.error(result.error || 'Failed to remove');
+      }
+    } catch {
+      toast.error('Failed to remove');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -113,11 +140,11 @@ export function CloudSettingsModal({
 
               <DialogFooter className="flex justify-end">
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   onClick={() => handleDisconnect(provider)}
-                  disabled={isDeleting}
+                  disabled={disconnecting}
                 >
-                  {isDeleting ? (
+                  {disconnecting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Disconnecting...
@@ -133,9 +160,22 @@ export function CloudSettingsModal({
                   <RotateCw className="mr-2 h-4 w-4" />
                   Reconnect
                 </Button>
-                <Button>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Disconnect
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(provider)}
+                  disabled={disconnecting || deleting}
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Removing...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Remove
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </TabsContent>
