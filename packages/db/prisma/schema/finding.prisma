@@ -1,0 +1,46 @@
+enum FindingType {
+  soc2
+  iso27001
+}
+
+enum FindingStatus {
+  open
+  ready_for_review
+  needs_revision
+  closed
+}
+
+model FindingTemplate {
+  id        String   @id @default(dbgenerated("generate_prefixed_cuid('fnd_t'::text)"))
+  category  String // e.g., "evidence_issue", "further_evidence", "task_specific", "na_incorrect"
+  title     String // Short title
+  content   String // Full message template
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  findings Finding[]
+}
+
+model Finding {
+  id      String        @id @default(dbgenerated("generate_prefixed_cuid('fnd'::text)"))
+  type    FindingType   @default(soc2)
+  status  FindingStatus @default(open)
+  content String // Custom message or copied from template
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  taskId         String
+  task           Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  templateId     String?
+  template       FindingTemplate? @relation(fields: [templateId], references: [id])
+  createdById    String
+  createdBy      Member           @relation("FindingCreatedBy", fields: [createdById], references: [id])
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([organizationId, status])
+}

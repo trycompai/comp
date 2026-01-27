@@ -2,18 +2,37 @@ import { db } from '@db';
 import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { PlatformIntegrations } from './components/PlatformIntegrations';
 
-export default async function IntegrationsPage() {
-  // Fetch task templates server-side
-  const taskTemplates = await db.frameworkEditorTaskTemplate.findMany({
+interface PageProps {
+  params: Promise<{ orgId: string }>;
+}
+
+export default async function IntegrationsPage({ params }: PageProps) {
+  const { orgId } = await params;
+
+  // Fetch organization's tasks that have a template (can be automated)
+  const orgTasks = await db.task.findMany({
+    where: {
+      organizationId: orgId,
+      taskTemplateId: { not: null },
+    },
     select: {
       id: true,
-      name: true,
+      title: true,
       description: true,
+      taskTemplateId: true,
     },
     orderBy: {
-      name: 'asc',
+      title: 'asc',
     },
   });
+
+  // Map to the format expected by the component
+  const taskTemplates = orgTasks.map((task) => ({
+    id: task.taskTemplateId as string, // Used as taskTemplateId for matching
+    taskId: task.id, // Actual task ID for navigation
+    name: task.title,
+    description: task.description,
+  }));
 
   return (
     <PageLayout>

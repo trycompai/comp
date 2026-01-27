@@ -30,6 +30,7 @@ model Task {
 
   EvidenceAutomationRun EvidenceAutomationRun[]
   integrationCheckRuns  IntegrationCheckRun[]
+  findings              Finding[]
 }
 
 enum TaskStatus {

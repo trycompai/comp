@@ -1,9 +1,10 @@
 'use client';
 
-import { FrameworkEditorFramework, Policy, Task } from '@db';
+import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
 import { FrameworkInstanceWithControls } from '../types';
 import { ComplianceOverview } from './ComplianceOverview';
 import { DraggableCards } from './DraggableCards';
+import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
 import { ToDoOverview } from './ToDoOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
@@ -27,6 +28,13 @@ export interface PeopleScore {
   completedMembers: number;
 }
 
+export interface FindingWithTask extends Finding {
+  task: {
+    id: string;
+    title: string;
+  };
+}
+
 export interface OverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
   frameworksWithCompliance: FrameworkInstanceWithComplianceScore[];
@@ -37,6 +45,7 @@ export interface OverviewProps {
   peopleScore: PeopleScore;
   currentMember: { id: string; role: string } | null;
   onboardingTriggerJobId: string | null;
+  findings: FindingWithTask[];
 }
 
 export const Overview = ({
@@ -49,6 +58,7 @@ export const Overview = ({
   peopleScore,
   currentMember,
   onboardingTriggerJobId,
+  findings,
 }: OverviewProps) => {
   return (
     <DraggableCards>
@@ -81,6 +91,7 @@ export const Overview = ({
         currentMember={currentMember}
         onboardingTriggerJobId={onboardingTriggerJobId}
       />
+      <FindingsOverview findings={findings} organizationId={organizationId} />
     </DraggableCards>
   );
 };

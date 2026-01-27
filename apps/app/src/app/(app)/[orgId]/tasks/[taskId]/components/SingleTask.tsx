@@ -25,6 +25,7 @@ import {
   type Control,
   type Member,
   type Task,
+  type TaskStatus,
   type User,
 } from '@db';
 import { ChevronRight, Download, RefreshCw, Trash2 } from 'lucide-react';
@@ -33,12 +34,14 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useActiveMember } from '@/utils/auth-client';
 import { Comments } from '../../../../../../components/comments/Comments';
-import { updateTask } from '../../actions/updateTask';
+import { apiClient } from '@/lib/api-client';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
-import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
 import { BrowserAutomations } from './BrowserAutomations';
+import { FindingHistoryPanel } from './findings/FindingHistoryPanel';
+import { FindingsList } from './findings/FindingsList';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
@@ -55,12 +58,14 @@ interface SingleTaskProps {
   initialMembers?: (Member & { user: User })[];
   initialAutomations: AutomationWithRuns[];
   isWebAutomationsEnabled: boolean;
+  isPlatformAdmin: boolean;
 }
 
 export function SingleTask({
   initialTask,
   initialAutomations,
   isWebAutomationsEnabled,
+  isPlatformAdmin,
 }: SingleTaskProps) {
   const params = useParams();
   const orgId = params.orgId as string;
@@ -76,10 +81,19 @@ export function SingleTask({
   const { automations } = useTaskAutomations({
     initialData: initialAutomations,
   });
-  const { hasMappedChecks } = useTaskIntegrationChecks();
+
+  // Get current member role information for findings permissions
+  const { data: activeMember } = useActiveMember();
+
+  // Parse member roles
+  const memberRoles = activeMember?.role?.split(',').map((r: string) => r.trim()) || [];
+  const isAuditor = memberRoles.includes('auditor');
+  const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
+  // isPlatformAdmin is passed from the server component (page.tsx)
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(null);
 
   const regenerate = useAction(regenerateTaskAction, {
     onSuccess: () => {
@@ -93,32 +107,54 @@ export function SingleTask({
   const handleUpdateTask = async (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => {
-    const updatePayload: Partial<
-      Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>
-    > = {};
+    if (!task || !orgId) return;
 
-    if (!task) return;
+    const updatePayload: {
+      status?: TaskStatus;
+      assigneeId?: string | null;
+      frequency?: string | null;
+      department?: string | null;
+      reviewDate?: string | null;
+    } = {};
 
     if (data.status !== undefined) {
       updatePayload.status = data.status;
     }
     if (data.department !== undefined) {
-      updatePayload.department = data.department;
+      updatePayload.department = data.department ?? null;
     }
     if (data.assigneeId !== undefined) {
       updatePayload.assigneeId = data.assigneeId;
     }
     if (Object.prototype.hasOwnProperty.call(data, 'frequency')) {
-      updatePayload.frequency = data.frequency;
+      updatePayload.frequency = data.frequency ?? null;
     }
     if (data.reviewDate !== undefined) {
-      updatePayload.reviewDate = data.reviewDate;
+      updatePayload.reviewDate =
+        data.reviewDate instanceof Date
+          ? data.reviewDate.toISOString()
+          : data.reviewDate
+            ? String(data.reviewDate)
+            : null;
     }
+
     if (Object.keys(updatePayload).length > 0) {
-      const result = await updateTask({ id: task.id, ...updatePayload });
-      if (result.success) {
+      try {
+        const response = await apiClient.patch<Task>(
+          `/v1/tasks/${task.id}`,
+          updatePayload,
+          orgId,
+        );
+
+        if (response.error) {
+          throw new Error(response.error);
+        }
+
         // Refresh the task data from the server
         await mutateTask();
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to update task');
       }
     }
   };
@@ -232,6 +268,15 @@ export function SingleTask({
             isManualTask={task.automationStatus === 'MANUAL'}
           />
 
+          {/* Findings Section */}
+          <FindingsList
+            taskId={task.id}
+            isAuditor={isAuditor}
+            isPlatformAdmin={isPlatformAdmin}
+            isAdminOrOwner={isAdminOrOwner}
+            onViewHistory={setSelectedFindingIdForHistory}
+          />
+
           {/* Browser Automations Section */}
           {isWebAutomationsEnabled && (
             <BrowserAutomations
@@ -240,13 +285,11 @@ export function SingleTask({
             />
           )}
 
-          {/* Custom Automations Section - always show if automations exist, or show empty state if no integration checks */}
-          {((automations && automations.length > 0) || !hasMappedChecks) && (
-            <TaskAutomations
-              automations={automations || []}
-              isManualTask={task.automationStatus === 'MANUAL'}
-            />
-          )}
+          {/* Custom Automations Section */}
+          <TaskAutomations
+            automations={automations || []}
+            isManualTask={task.automationStatus === 'MANUAL'}
+          />
 
           {/* Comments Section */}
           <div>
@@ -260,8 +303,16 @@ export function SingleTask({
 
         {/* Right Column - Properties */}
         <div className="lg:col-span-1">
-          <div className="pl-6 border-l border-border">
+          <div className="pl-6 border-l border-border space-y-6">
             <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
+
+            {/* Finding History Panel */}
+            {selectedFindingIdForHistory && (
+              <FindingHistoryPanel
+                findingId={selectedFindingIdForHistory}
+                onClose={() => setSelectedFindingIdForHistory(null)}
+              />
+            )}
           </div>
         </div>
       </div>

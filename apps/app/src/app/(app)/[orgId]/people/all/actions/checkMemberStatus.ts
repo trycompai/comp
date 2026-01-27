@@ -28,7 +28,9 @@ export const checkMemberStatus = async ({
 
     if (
       !currentUserMember ||
-      (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
+      (!currentUserMember.role.includes('admin') &&
+        !currentUserMember.role.includes('owner') &&
+        !currentUserMember.role.includes('auditor'))
     ) {
       throw new Error("You don't have permission to reactivate members.");
     }

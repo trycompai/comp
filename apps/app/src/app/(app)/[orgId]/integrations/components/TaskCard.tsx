@@ -1,13 +1,12 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { Skeleton } from '@comp/ui/skeleton';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface RelevantTask {
+  taskId: string;
   taskTemplateId: string;
   taskName: string;
   reason: string;
@@ -16,45 +15,14 @@ interface RelevantTask {
 
 export function TaskCard({ task, orgId }: { task: RelevantTask; orgId: string }) {
   const [isNavigating, setIsNavigating] = useState(false);
-  const router = useRouter();
 
-  const handleCardClick = async () => {
+  const handleCardClick = () => {
     setIsNavigating(true);
-    toast.loading('Opening task automation...', { id: 'navigating' });
+    toast.success('Opening task automation...', { duration: 1000 });
 
-    try {
-      const response = await api.get<Array<{ id: string; taskTemplateId: string | null }>>(
-        '/v1/tasks',
-        orgId,
-      );
-
-      if (response.error || !response.data) {
-        throw new Error(response.error || 'Failed to fetch tasks');
-      }
-
-      const matchingTask = response.data.find(
-        (t) => t.taskTemplateId && t.taskTemplateId === task.taskTemplateId,
-      );
-
-      if (!matchingTask) {
-        toast.dismiss('navigating');
-        toast.error(`Task "${task.taskName}" not found. Please create it first.`);
-        setIsNavigating(false);
-        await router.push(`/${orgId}/tasks`);
-        return;
-      }
-
-      const url = `/${orgId}/tasks/${matchingTask.id}/automation/new?prompt=${encodeURIComponent(task.prompt)}`;
-      toast.dismiss('navigating');
-      toast.success('Redirecting...', { duration: 1000 });
-
-      window.location.href = url;
-    } catch (error) {
-      console.error('Error finding task:', error);
-      toast.dismiss('navigating');
-      toast.error('Failed to find task');
-      setIsNavigating(false);
-    }
+    // Navigate directly using the task ID we already have
+    const url = `/${orgId}/tasks/${task.taskId}/automation/new?prompt=${encodeURIComponent(task.prompt)}`;
+    window.location.href = url;
   };
 
   return (
@@ -114,4 +82,3 @@ export function TaskCardSkeleton() {
     </div>
   );
 }
-

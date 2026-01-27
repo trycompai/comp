@@ -24,11 +24,20 @@ export default async function TaskPage({
   });
 
   let isWebAutomationsEnabled = false;
+  let isPlatformAdmin = false;
+
   if (session?.user?.id) {
     const flags = await getFeatureFlags(session.user.id);
     isWebAutomationsEnabled =
       flags['is-web-automations-enabled'] === true ||
       flags['is-web-automations-enabled'] === 'true';
+
+    // Check if user is platform admin
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { isPlatformAdmin: true },
+    });
+    isPlatformAdmin = user?.isPlatformAdmin ?? false;
   }
 
   return (
@@ -36,6 +45,7 @@ export default async function TaskPage({
       initialTask={task}
       initialAutomations={automations}
       isWebAutomationsEnabled={isWebAutomationsEnabled}
+      isPlatformAdmin={isPlatformAdmin}
     />
   );
 }

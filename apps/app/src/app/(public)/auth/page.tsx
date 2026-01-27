@@ -1,6 +1,7 @@
 import { LoginForm } from '@/components/login-form';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
+import { getSafeRedirectPath } from '@/utils/auth-callback';
 import {
   Card,
   CardContent,
@@ -22,12 +23,13 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ inviteCode?: string }>;
+  searchParams: Promise<{ inviteCode?: string; redirectTo?: string }>;
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  const { inviteCode } = await searchParams;
+  const { inviteCode, redirectTo } = await searchParams;
+  const safeRedirectTo = getSafeRedirectPath(redirectTo);
 
   const orgId = session?.session?.activeOrganizationId;
 
@@ -57,7 +59,13 @@ export default async function Page({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pb-6 px-8">
-            <LoginForm inviteCode={inviteCode} showGoogle={showGoogle} showGithub={showGithub} showMicrosoft={showMicrosoft} />
+            <LoginForm
+              inviteCode={inviteCode}
+              redirectTo={safeRedirectTo}
+              showGoogle={showGoogle}
+              showGithub={showGithub}
+              showMicrosoft={showMicrosoft}
+            />
           </CardContent>
           <CardFooter className="pb-10">
             <p className="w-full px-6 text-center text-xs text-muted-foreground">

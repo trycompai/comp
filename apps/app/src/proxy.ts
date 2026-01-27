@@ -72,6 +72,10 @@ export async function proxy(request: NextRequest) {
       nextUrl.searchParams.forEach((value, key) => {
         url.searchParams.set(key, value);
       });
+      const originalPath = `${nextUrl.pathname}${nextUrl.search}`;
+      if (originalPath !== '/') {
+        url.searchParams.set('redirectTo', originalPath);
+      }
       return NextResponse.redirect(url);
     }
 
