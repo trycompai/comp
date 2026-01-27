@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent } from '@comp/ui/card';
 import type { Member, User, Vendor } from '@db';
+import { Section } from '@trycompai/design-system';
 import { UpdateSecondaryFieldsForm } from './update-secondary-fields-form';
 
 export function SecondaryFields({
@@ -12,10 +12,8 @@ export function SecondaryFields({
   assignees: (Member & { user: User })[];
 }) {
   return (
-      <Card>
-      <CardContent className="space-y-4 pt-6">
-          <UpdateSecondaryFieldsForm vendor={vendor} assignees={assignees} />
-        </CardContent>
-      </Card>
+    <Section>
+      <UpdateSecondaryFieldsForm vendor={vendor} assignees={assignees} />
+    </Section>
   );
 }

@@ -1,9 +1,6 @@
 'use client';
 
-import { Comments } from '@/components/comments/Comments';
-import { TaskItems } from '@/components/task-items/TaskItems';
 import { useVendor, type VendorResponse } from '@/hooks/use-vendors';
-import { CommentEntityType } from '@db';
 import type { Member, User, Vendor } from '@db';
 import type { Prisma } from '@prisma/client';
 import { useMemo } from 'react';
@@ -101,10 +98,6 @@ export function VendorPageClient({
               <VendorResidualRiskChart vendor={vendor} />
             </div>
           </>
-        )}
-        <TaskItems entityId={vendorId} entityType="vendor" organizationId={orgId} />
-        {!isViewingTask && (
-          <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
         )}
       </div>
     </>

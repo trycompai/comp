@@ -1,6 +1,8 @@
 'use client';
 
+import { Comments } from '@/components/comments/Comments';
 import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
+import { CommentEntityType } from '@db';
 import type { Member, User, Vendor } from '@db';
 import type { Prisma } from '@prisma/client';
 import {
@@ -16,6 +18,7 @@ import {
 import { useState } from 'react';
 import { VendorActions } from './VendorActions';
 import { VendorPageClient } from './VendorPageClient';
+import { TaskItems } from '@/components/task-items/TaskItems';
 
 // Vendor with risk assessment data merged from GlobalVendors
 type VendorWithRiskAssessment = Vendor & {
@@ -73,6 +76,8 @@ export function VendorDetailTabs({
                 <TabsList variant="underline">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="risk-assessment">Risk Assessment</TabsTrigger>
+                  <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                  <TabsTrigger value="comments">Comments</TabsTrigger>
                 </TabsList>
               )
             }
@@ -90,7 +95,6 @@ export function VendorDetailTabs({
             onEditSheetOpenChange={setIsEditSheetOpen}
           />
         </TabsContent>
-
         <TabsContent value="risk-assessment">
           <Stack gap="md">
             {riskAssessmentData ? (
@@ -115,6 +119,16 @@ export function VendorDetailTabs({
             )}
           </Stack>
         </TabsContent>
+        {!isViewingTask && (
+          <TabsContent value="tasks">
+            <TaskItems entityId={vendorId} entityType="vendor" organizationId={orgId} />
+          </TabsContent>
+        )}
+        {!isViewingTask && (
+          <TabsContent value="comments">
+            <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
+          </TabsContent>
+        )}
       </PageLayout>
     </Tabs>
   );

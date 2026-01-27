@@ -63,7 +63,6 @@ const getRiskColor = (level: string) => {
 };
 
 const probabilityLevels = ['Very Likely', 'Likely', 'Possible', 'Unlikely', 'Very Unlikely'];
-const probabilityNumbers = ['5', '4', '3', '2', '1'];
 const probabilityLabels = [
   'Very Likely (5)',
   'Likely (4)',
@@ -183,7 +182,10 @@ export function RiskMatrixChart({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="relative">
+        <div className="relative pl-10">
+          <div className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-muted-foreground">
+            Likelihood
+          </div>
           <div>
             <div className="grid grid-cols-6 rounded-lg">
               <div className="h-12" />
@@ -194,11 +196,8 @@ export function RiskMatrixChart({
               ))}
               {probabilityLevels.map((probability, rowIdx) => (
                 <div key={probability} className="contents">
-                  <div
-                    className="mr-4 flex flex-col items-center justify-center"
-                    title={probabilityLabels[rowIdx]}
-                  >
-                    <span className="text-xs">{probabilityNumbers[rowIdx]}</span>
+                  <div className="mr-4 flex flex-col items-end justify-center text-right">
+                    <span className="text-xs">{probabilityLevels[rowIdx]}</span>
                   </div>
                   {impactLevels.map((impact, colIdx) => {
                     const cell = riskData.find(
@@ -230,8 +229,11 @@ export function RiskMatrixChart({
                 </div>
               ))}
             </div>
-            <div className="mt-2 flex justify-center">
-              <span className="text-xs">{'Impact'}</span>
+            <div className="mt-2 grid grid-cols-6">
+              <div />
+              <div className="col-span-5 flex justify-center">
+                <span className="text-xs">Impact</span>
+              </div>
             </div>
           </div>
         </div>

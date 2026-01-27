@@ -93,55 +93,51 @@ export function VendorHeader({ vendor, isEditSheetOpen, onEditSheetOpenChange }:
 
   return (
     <>
-      <div className="mb-4 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">{vendor.name}</h1>
-          {certifications.filter((cert) => cert.status === 'verified').length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              {certifications
-                .filter((cert) => {
-                  // Only show verified certifications
-                  return cert.status === 'verified';
-                })
-                .map((cert, index) => {
-                  const IconComponent = getCertificationIcon(cert);
+      <div className="mb-4 space-y-2">
+        {certifications.filter((cert) => cert.status === 'verified').length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {certifications
+              .filter((cert) => {
+                // Only show verified certifications
+                return cert.status === 'verified';
+              })
+              .map((cert, index) => {
+                const IconComponent = getCertificationIcon(cert);
 
-                  if (!IconComponent) return null;
+                if (!IconComponent) return null;
 
-                  const iconContent = (
-                    <div
-                      className={cn(
-                        'inline-flex items-center justify-center',
-                        'transition-all duration-300 ease-out',
-                        'w-[24px] h-[28px] shrink-0 overflow-hidden', // Proportionally smaller
-                        cert.url && ['cursor-pointer', 'hover:scale-[1.02]', 'active:scale-[0.99]'],
-                      )}
-                      title={cert.type} // Show full text on hover
+                const iconContent = (
+                  <div
+                    className={cn(
+                      'inline-flex items-center justify-center',
+                      'transition-all duration-300 ease-out',
+                      'w-[24px] h-[28px] shrink-0 overflow-hidden', // Proportionally smaller
+                      cert.url && ['cursor-pointer', 'hover:scale-[1.02]', 'active:scale-[0.99]'],
+                    )}
+                    title={cert.type} // Show full text on hover
+                  >
+                    <IconComponent className="h-[24px] w-[24px] max-h-[24px] max-w-[24px]" />
+                  </div>
+                );
+
+                if (cert.url) {
+                  return (
+                    <Link
+                      key={`${cert.type}-${index}`}
+                      href={cert.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block"
                     >
-                      <IconComponent className="h-[24px] w-[24px] max-h-[24px] max-w-[24px]" />
-                    </div>
+                      {iconContent}
+                    </Link>
                   );
+                }
 
-                  if (cert.url) {
-                    return (
-                      <Link
-                        key={`${cert.type}-${index}`}
-                        href={cert.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block"
-                      >
-                        {iconContent}
-                      </Link>
-                    );
-                  }
-
-                  return <div key={`${cert.type}-${index}`}>{iconContent}</div>;
-                })}
-            </div>
-          )}
-        </div>
-        {vendor.description && <p className="text-sm text-muted-foreground">{vendor.description}</p>}
+                return <div key={`${cert.type}-${index}`}>{iconContent}</div>;
+              })}
+          </div>
+        )}
         {links.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 pt-2">
             {links.map((link, index) => {
