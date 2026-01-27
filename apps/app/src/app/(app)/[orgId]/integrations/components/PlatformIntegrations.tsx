@@ -60,6 +60,7 @@ const providerNeedsConfiguration = (
 };
 
 interface RelevantTask {
+  taskId: string; // Actual task ID for navigation
   taskTemplateId: string;
   taskName: string;
   reason: string;
@@ -72,7 +73,7 @@ type UnifiedIntegration =
 
 interface PlatformIntegrationsProps {
   className?: string;
-  taskTemplates: Array<{ id: string; name: string; description: string }>;
+  taskTemplates: Array<{ id: string; taskId: string; name: string; description: string }>;
 }
 
 export function PlatformIntegrations({ className, taskTemplates }: PlatformIntegrationsProps) {
@@ -289,16 +290,32 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     window.history.replaceState({}, '', url.toString());
   }, [searchParams, connections, providers, loadingConnections, loadingProviders]);
 
+  // Create a map from templateId to taskId for quick lookup
+  const templateToTaskMap = useMemo(
+    () => new Map(taskTemplates.map((t) => [t.id, t.taskId])),
+    [taskTemplates],
+  );
+
   // Custom integration task loading
   useEffect(() => {
-    if (selectedCustomIntegration && orgId && taskTemplates.length > 0) {
+    if (selectedCustomIntegration && orgId && taskTemplates && taskTemplates.length > 0) {
       setIsLoadingTasks(true);
-      getRelevantTasksForIntegration(
-        selectedCustomIntegration.name,
-        selectedCustomIntegration.description,
-        taskTemplates,
-      )
-        .then((tasks) => setRelevantTasks(tasks))
+      getRelevantTasksForIntegration({
+        integrationName: selectedCustomIntegration.name,
+        integrationDescription: selectedCustomIntegration.description,
+        taskTemplates: taskTemplates.map((t) => ({ id: t.id, name: t.name, description: t.description })),
+        examplePrompts: selectedCustomIntegration.examplePrompts,
+      })
+        .then((aiTasks) => {
+          // Map AI results to include actual taskId
+          const tasksWithIds = aiTasks
+            .map((task) => ({
+              ...task,
+              taskId: templateToTaskMap.get(task.taskTemplateId) || '',
+            }))
+            .filter((task) => task.taskId); // Only keep tasks we can navigate to
+          setRelevantTasks(tasksWithIds);
+        })
         .catch((error) => {
           console.error('Error fetching relevant tasks:', error);
           setRelevantTasks([]);
@@ -307,7 +324,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     } else {
       setRelevantTasks([]);
     }
-  }, [selectedCustomIntegration, orgId, taskTemplates]);
+  }, [selectedCustomIntegration, orgId, taskTemplates, templateToTaskMap]);
 
   const handleCopyPrompt = (prompt: string) => {
     navigator.clipboard.writeText(prompt);
@@ -789,6 +806,30 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                     )}
                   </div>
                 </div>
+
+                {selectedCustomIntegration.examplePrompts.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                      </div>
+                      <h4 className="text-base font-semibold text-foreground">Example Prompts</h4>
+                    </div>
+                    <div className="space-y-2">
+                      {selectedCustomIntegration.examplePrompts.map((prompt, index) => (
+                        <button
+                          key={`${selectedCustomIntegration.id}-prompt-${index}`}
+                          onClick={() => handleCopyPrompt(prompt)}
+                          className="w-full p-3 rounded-lg bg-muted/40 border border-border/60 hover:border-primary/30 transition-colors text-left group"
+                        >
+                          <p className="text-sm text-foreground/80 group-hover:text-foreground">
+                            "{prompt}"
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">

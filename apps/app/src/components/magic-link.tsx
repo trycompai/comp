@@ -1,6 +1,7 @@
 'use client';
 
 import { authClient } from '@/utils/auth-client';
+import { buildAuthCallbackUrl } from '@/utils/auth-callback';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
@@ -16,14 +17,19 @@ const formSchema = z.object({
   email: z.string().email(),
 });
 
-type Props = {
+interface MagicLinkSignInProps {
   className?: string;
   inviteCode?: string;
-  searchParams?: URLSearchParams;
+  redirectTo?: string;
   onMagicLinkSubmit?: (email: string) => void;
-};
+}
 
-export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLinkSubmit }: Props) {
+export function MagicLinkSignIn({
+  className,
+  inviteCode,
+  redirectTo,
+  onMagicLinkSubmit,
+}: MagicLinkSignInProps) {
   const [isLoading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -36,31 +42,18 @@ export function MagicLinkSignIn({ className, inviteCode, searchParams, onMagicLi
   async function onSubmit({ email }: z.infer<typeof formSchema>) {
     setLoading(true);
 
-    // Build the callback URL with search params
-    const baseURL = window.location.origin;
-    const path = inviteCode ? `/invite/${inviteCode}` : '/';
-    const callbackURL = new URL(path, baseURL);
+    const callbackURL = buildAuthCallbackUrl({ inviteCode, redirectTo });
 
-    // Append all search params if they exist
-    if (searchParams) {
-      searchParams.forEach((value, key) => {
-        callbackURL.searchParams.append(key, value);
-      });
-    }
-
-    const { data, error } = await authClient.signIn.magicLink({
-      email: email,
-      callbackURL: callbackURL.toString(),
+    const { error } = await authClient.signIn.magicLink({
+      email,
+      callbackURL,
     });
 
     if (error) {
       toast.error('Error sending email - try again?');
       setLoading(false);
-    } else {
-      // Call the callback if provided
-      if (onMagicLinkSubmit) {
-        onMagicLinkSubmit(email);
-      }
+    } else if (onMagicLinkSubmit) {
+      onMagicLinkSubmit(email);
     }
   }
 

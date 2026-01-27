@@ -2,23 +2,25 @@
 
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import type { BrowserAutomation } from '../hooks/types';
 import { useBrowserAutomations } from '../hooks/useBrowserAutomations';
 import { useBrowserContext } from '../hooks/useBrowserContext';
 import { useBrowserExecution } from '../hooks/useBrowserExecution';
-import type { BrowserAutomation } from '../hooks/types';
 import {
+  BrowserAutomationConfigDialog,
   BrowserAutomationsList,
   BrowserLiveView,
-  BrowserAutomationConfigDialog,
   EmptyWithContextState,
   NoContextState,
 } from './browser-automations';
 
 interface BrowserAutomationsProps {
   taskId: string;
+  /** When true, disables creating new automations (shows existing ones read-only) */
+  isManualTask?: boolean;
 }
 
-export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
+export function BrowserAutomations({ taskId, isManualTask = false }: BrowserAutomationsProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const [dialogState, setDialogState] = useState<{
     open: boolean;
@@ -83,8 +85,13 @@ export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
     );
   }
 
-  // No context - show setup prompt
-  if (context.status === 'no-context' && automations.automations.length === 0) {
+  // For manual tasks with no existing automations, don't show empty states
+  if (isManualTask && automations.automations.length === 0) {
+    return null;
+  }
+
+  // No context - show setup prompt (only for non-manual tasks)
+  if (!isManualTask && context.status === 'no-context' && automations.automations.length === 0) {
     return (
       <NoContextState
         isStartingAuth={context.isStartingAuth}
@@ -96,8 +103,8 @@ export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
     );
   }
 
-  // Empty state with context
-  if (automations.automations.length === 0) {
+  // Empty state with context (only for non-manual tasks)
+  if (!isManualTask && automations.automations.length === 0) {
     return (
       <>
         <EmptyWithContextState
@@ -116,7 +123,7 @@ export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
     );
   }
 
-  // List of automations
+  // List of automations (disable creation for manual tasks, but allow editing)
   return (
     <>
       <BrowserAutomationsList
@@ -124,10 +131,8 @@ export function BrowserAutomations({ taskId }: BrowserAutomationsProps) {
         hasContext={context.status === 'has-context'}
         runningAutomationId={execution.runningAutomationId}
         onRun={execution.runAutomation}
-        onCreateClick={() => setDialogState({ open: true, mode: 'create' })}
-        onEditClick={(automation) =>
-          setDialogState({ open: true, mode: 'edit', automation })
-        }
+        onCreateClick={isManualTask ? undefined : () => setDialogState({ open: true, mode: 'create' })}
+        onEditClick={(automation) => setDialogState({ open: true, mode: 'edit', automation })}
       />
       <BrowserAutomationConfigDialog
         isOpen={dialogState.open}

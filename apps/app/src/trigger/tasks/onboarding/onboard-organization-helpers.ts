@@ -759,7 +759,9 @@ export async function extractRisksFromContext(
     }),
     system: `Create a list of 8-12 risks that are relevant to the organization. Use action-oriented language, assume reviewers understand basic termilology - skip definitions.
           Your mandate is to propose risks that satisfy both ISO 27001:2022 clause 6.1 (risk management) and SOC 2 trust services criteria CC3 and CC4.
-          Return the risk name, description, treatment strategy, treatment strategy description, residual probability, residual impact, category, and department.`,
+          Return the risk name, description, treatment strategy, treatment strategy description, residual probability, residual impact, category, and department.
+          
+          For the "category" field, you must use ONLY one of these exact values: ${Object.values(RiskCategory).join(', ')}.`,
     prompt: `
           The organization is ${organizationName}.
 

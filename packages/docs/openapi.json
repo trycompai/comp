@@ -6037,78 +6037,6 @@
         ]
       }
     },
-    "/v1/tasks/{taskId}": {
-      "get": {
-        "description": "Retrieve a specific task by its ID",
-        "operationId": "TasksController_getTask_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "required": true,
-            "in": "path",
-            "description": "Unique task identifier",
-            "schema": {
-              "example": "tsk_abc123def456",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Task retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskResponseDto"
-                },
-                "example": {
-                  "id": "tsk_abc123def456",
-                  "title": "Implement user authentication",
-                  "description": "Add OAuth 2.0 authentication to the platform",
-                  "status": "in_progress",
-                  "createdAt": "2024-01-15T10:30:00Z",
-                  "updatedAt": "2024-01-15T10:30:00Z"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Task not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Task with ID tsk_abc123def456 not found"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get task by ID",
-        "tags": [
-          "Tasks"
-        ]
-      }
-    },
     "/v1/tasks/bulk": {
       "patch": {
         "description": "Bulk update the status of multiple tasks",
@@ -6194,6 +6122,266 @@
           }
         ],
         "summary": "Update status for multiple tasks",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/bulk/assignee": {
+      "patch": {
+        "description": "Bulk update the assignee of multiple tasks",
+        "operationId": "TasksController_updateTasksAssignee_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "tsk_abc123",
+                      "tsk_def456"
+                    ]
+                  },
+                  "assigneeId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "mem_abc123",
+                    "description": "Assignee member ID, or null to unassign"
+                  }
+                },
+                "required": [
+                  "taskIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "updatedCount": {
+                      "type": "number",
+                      "example": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update assignee for multiple tasks",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}": {
+      "get": {
+        "description": "Retrieve a specific task by its ID",
+        "operationId": "TasksController_getTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                },
+                "example": {
+                  "id": "tsk_abc123def456",
+                  "title": "Implement user authentication",
+                  "description": "Add OAuth 2.0 authentication to the platform",
+                  "status": "in_progress",
+                  "createdAt": "2024-01-15T10:30:00Z",
+                  "updatedAt": "2024-01-15T10:30:00Z"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Task with ID tsk_abc123def456 not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task by ID",
+        "tags": [
+          "Tasks"
+        ]
+      },
+      "patch": {
+        "description": "Update an existing task (status, assignee, frequency, department, reviewDate)",
+        "operationId": "TasksController_updateTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "todo",
+                      "in_progress",
+                      "done",
+                      "not_relevant",
+                      "failed"
+                    ],
+                    "example": "in_progress"
+                  },
+                  "assigneeId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "mem_abc123",
+                    "description": "Assignee member ID, or null to unassign"
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "quarterly",
+                      "yearly"
+                    ],
+                    "example": "monthly"
+                  },
+                  "department": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "admin",
+                      "gov",
+                      "hr",
+                      "it",
+                      "itsm",
+                      "qms"
+                    ],
+                    "example": "it"
+                  },
+                  "reviewDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-01-01T00:00:00.000Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or task not found"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a task",
         "tags": [
           "Tasks"
         ]
@@ -7193,6 +7381,206 @@
         "summary": "Get all automation runs for a task",
         "tags": [
           "Task Automations"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/evidence": {
+      "get": {
+        "description": "Retrieve a summary of all automation evidence for a specific task",
+        "operationId": "EvidenceExportController_getTaskEvidenceSummary_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence summary retrieved successfully"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task evidence summary",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/evidence/automation/{automationId}/pdf": {
+      "get": {
+        "description": "Generate and download a PDF containing all evidence for a specific automation",
+        "operationId": "EvidenceExportController_exportAutomationPDF_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Unique automation identifier (checkId for app automations)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file generated successfully",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "404": {
+            "description": "Task or automation not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export automation evidence as PDF",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/evidence/export": {
+      "get": {
+        "description": "Generate and download a ZIP file containing all automation evidence for a task",
+        "operationId": "EvidenceExportController_exportTaskEvidenceZip_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeJson",
+            "required": false,
+            "in": "query",
+            "description": "Include raw JSON files alongside PDFs",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP file generated successfully",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export task evidence as ZIP",
+        "tags": [
+          "Evidence Export"
+        ]
+      }
+    },
+    "/v1/evidence-export/all": {
+      "get": {
+        "description": "Generate and download a ZIP file containing all automation evidence across all tasks. Only accessible by auditors.",
+        "operationId": "AuditorEvidenceExportController_exportAllEvidence_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeJson",
+            "required": false,
+            "in": "query",
+            "description": "Include raw JSON files alongside PDFs",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP file generated successfully",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "403": {
+            "description": "Access denied - Auditor role required"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export all organization evidence as ZIP (Auditor only)",
+        "tags": [
+          "Evidence Export (Auditor)"
         ]
       }
     },
@@ -9201,6 +9589,517 @@
         "summary": "Delete framework editor task template",
         "tags": [
           "Framework Editor Task Templates"
+        ]
+      }
+    },
+    "/v1/finding-template": {
+      "get": {
+        "description": "Retrieve all finding templates ordered by category and order",
+        "operationId": "FindingTemplateController_getAllFindingTemplates_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of all finding templates"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Get all finding templates",
+        "tags": [
+          "Finding Templates"
+        ]
+      },
+      "post": {
+        "description": "Create a new finding template (Platform Admin only)",
+        "operationId": "FindingTemplateController_createFindingTemplate_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Finding template data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFindingTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created finding template"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform admin required"
+          }
+        },
+        "summary": "Create a finding template",
+        "tags": [
+          "Finding Templates"
+        ]
+      }
+    },
+    "/v1/finding-template/{id}": {
+      "get": {
+        "description": "Retrieve a specific finding template by its ID",
+        "operationId": "FindingTemplateController_getFindingTemplateById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Finding template ID",
+            "schema": {
+              "example": "fnd_t_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The finding template"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Finding template not found"
+          }
+        },
+        "summary": "Get finding template by ID",
+        "tags": [
+          "Finding Templates"
+        ]
+      },
+      "patch": {
+        "description": "Update an existing finding template (Platform Admin only)",
+        "operationId": "FindingTemplateController_updateFindingTemplate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Finding template ID",
+            "schema": {
+              "example": "fnd_t_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Finding template update data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFindingTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated finding template"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform admin required"
+          },
+          "404": {
+            "description": "Finding template not found"
+          }
+        },
+        "summary": "Update a finding template",
+        "tags": [
+          "Finding Templates"
+        ]
+      },
+      "delete": {
+        "description": "Delete a finding template (Platform Admin only)",
+        "operationId": "FindingTemplateController_deleteFindingTemplate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Finding template ID",
+            "schema": {
+              "example": "fnd_t_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Finding template deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Platform admin required"
+          },
+          "404": {
+            "description": "Finding template not found"
+          }
+        },
+        "summary": "Delete a finding template",
+        "tags": [
+          "Finding Templates"
+        ]
+      }
+    },
+    "/v1/findings": {
+      "get": {
+        "description": "Retrieve all findings for a specific task",
+        "operationId": "FindingsController_getFindingsByTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "query",
+            "description": "Task ID to get findings for",
+            "schema": {
+              "example": "tsk_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of findings for the task"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get findings for a task",
+        "tags": [
+          "Findings"
+        ]
+      },
+      "post": {
+        "description": "Create a new finding for a task (Auditor or Platform Admin only)",
+        "operationId": "FindingsController_createFinding_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Finding data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFindingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created finding"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Auditor or Platform Admin required"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a finding",
+        "tags": [
+          "Findings"
+        ]
+      }
+    },
+    "/v1/findings/organization": {
+      "get": {
+        "description": "Retrieve all findings for the organization",
+        "operationId": "FindingsController_getOrganizationFindings_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "enum": [
+                "open",
+                "ready_for_review",
+                "needs_revision",
+                "closed"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all findings for the organization"
+          },
+          "400": {
+            "description": "Invalid status value"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all findings for organization",
+        "tags": [
+          "Findings"
+        ]
+      }
+    },
+    "/v1/findings/{id}": {
+      "get": {
+        "description": "Retrieve a specific finding by its ID",
+        "operationId": "FindingsController_getFindingById_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Finding ID",
+            "schema": {
+              "example": "fnd_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The finding"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Finding not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get finding by ID",
+        "tags": [
+          "Findings"
+        ]
+      },
+      "patch": {
+        "description": "Update a finding. Status transition rules apply based on user role.",
+        "operationId": "FindingsController_updateFinding_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Finding ID",
+            "schema": {
+              "example": "fnd_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Finding update data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFindingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated finding"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions for status transition"
+          },
+          "404": {
+            "description": "Finding not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a finding",
+        "tags": [
+          "Findings"
+        ]
+      },
+      "delete": {
+        "description": "Delete a finding (Auditor or Platform Admin only)",
+        "operationId": "FindingsController_deleteFinding_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Finding ID",
+            "schema": {
+              "example": "fnd_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Finding deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Auditor or Platform Admin required"
+          },
+          "404": {
+            "description": "Finding not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a finding",
+        "tags": [
+          "Findings"
+        ]
+      }
+    },
+    "/v1/findings/{id}/history": {
+      "get": {
+        "description": "Retrieve the activity history for a specific finding",
+        "operationId": "FindingsController_getFindingHistory_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Finding ID",
+            "schema": {
+              "example": "fnd_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of audit log entries for the finding"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Finding not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get finding history",
+        "tags": [
+          "Findings"
         ]
       }
     },
@@ -12843,6 +13742,88 @@
           "Assistant Chat"
         ]
       }
+    },
+    "/v1/training/send-completion-email": {
+      "post": {
+        "description": "Checks if the member has completed all training videos. If so, sends an email with the training certificate attached.",
+        "operationId": "TrainingController_sendTrainingCompletionEmail_v1",
+        "parameters": [
+          {
+            "name": "x-internal-token",
+            "required": true,
+            "in": "header",
+            "description": "Internal API token for service-to-service calls",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent or reason why it was not sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendTrainingCompletionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send training completion email with certificate",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/v1/training/generate-certificate": {
+      "post": {
+        "description": "Generates a PDF certificate for a member who has completed all training videos. Returns the PDF as a downloadable file.",
+        "operationId": "TrainingController_generateCertificate_v1",
+        "parameters": [
+          {
+            "name": "x-internal-token",
+            "required": true,
+            "in": "header",
+            "description": "Internal API token for service-to-service calls",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTrainingCompletionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF certificate file"
+          },
+          "400": {
+            "description": "Training not complete or member not found"
+          }
+        },
+        "summary": "Generate training completion certificate PDF",
+        "tags": [
+          "Training"
+        ]
+      }
     }
   },
   "info": {
@@ -15577,6 +16558,125 @@
           }
         }
       },
+      "CreateFindingTemplateDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Category of the finding template",
+            "example": "evidence_issue"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short title of the finding template",
+            "example": "Issue with uploaded evidence"
+          },
+          "content": {
+            "type": "string",
+            "description": "Full message content of the finding template",
+            "example": "The uploaded evidence does not clearly show the Organization Name or URL. Please provide a screenshot showing the context."
+          },
+          "order": {
+            "type": "number",
+            "description": "Display order for the template",
+            "example": 0
+          }
+        },
+        "required": [
+          "category",
+          "title",
+          "content"
+        ]
+      },
+      "UpdateFindingTemplateDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Category of the finding template",
+            "example": "evidence_issue"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short title of the finding template",
+            "example": "Issue with uploaded evidence"
+          },
+          "content": {
+            "type": "string",
+            "description": "Full message content of the finding template",
+            "example": "The uploaded evidence does not clearly show the Organization Name or URL. Please provide a screenshot showing the context."
+          },
+          "order": {
+            "type": "number",
+            "description": "Display order for the template",
+            "example": 0
+          }
+        }
+      },
+      "CreateFindingDto": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "description": "Task ID this finding is associated with",
+            "example": "tsk_abc123"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of finding (SOC 2 or ISO 27001)",
+            "enum": [
+              "soc2",
+              "iso27001"
+            ],
+            "default": "soc2"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "Finding template ID (optional)",
+            "example": "fnd_t_abc123"
+          },
+          "content": {
+            "type": "string",
+            "description": "Finding content/message",
+            "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "taskId",
+          "type",
+          "content"
+        ]
+      },
+      "UpdateFindingDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Finding status",
+            "enum": [
+              "open",
+              "ready_for_review",
+              "needs_revision",
+              "closed"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of finding (SOC 2 or ISO 27001)",
+            "enum": [
+              "soc2",
+              "iso27001"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "Finding content/message",
+            "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
+            "maxLength": 5000
+          }
+        }
+      },
       "ParseQuestionnaireDto": {
         "type": "object",
         "properties": {}
@@ -16330,6 +17430,43 @@
         },
         "required": [
           "messages"
+        ]
+      },
+      "SendTrainingCompletionDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "description": "The member ID who completed training",
+            "example": "mem_abc123"
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "The organization ID",
+            "example": "org_abc123"
+          }
+        },
+        "required": [
+          "memberId",
+          "organizationId"
+        ]
+      },
+      "SendTrainingCompletionResponseDto": {
+        "type": "object",
+        "properties": {
+          "sent": {
+            "type": "boolean",
+            "description": "Whether the email was sent",
+            "example": true
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason if email was not sent",
+            "example": "training_not_complete"
+          }
+        },
+        "required": [
+          "sent"
         ]
       }
     }

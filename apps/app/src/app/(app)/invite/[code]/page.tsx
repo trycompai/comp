@@ -29,6 +29,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
     include: {
       organization: {
         select: {
+          id: true,
           name: true,
         },
       },
@@ -51,6 +52,22 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   if (invitation.status !== 'pending') {
+    // Check if the current user is a member of this organization
+    // If so, this means they just accepted the invite and we should redirect them
+    const membership = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: invitation.organizationId,
+        deactivated: false,
+      },
+    });
+
+    if (membership) {
+      // User is a member - redirect to the organization
+      return redirect(`/${invitation.organizationId}`);
+    }
+
+    // User is not a member - show the appropriate message
     return (
       <OnboardingLayout variant="setup" currentOrganization={null}>
         <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">

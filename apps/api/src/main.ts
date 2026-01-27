@@ -19,6 +19,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: true,
     credentials: true,
+    exposedHeaders: ['Content-Disposition'],
   });
 
   // STEP 2: Security headers

@@ -1,4 +1,5 @@
 import { auth } from '@/app/lib/auth';
+import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -9,16 +10,21 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const organizationId = req.nextUrl.searchParams.get('organizationId');
+
+  if (!organizationId) {
+    return NextResponse.json({ error: 'No organization ID' }, { status: 400 });
+  }
+
   const session = await auth.api.getSession({ headers: req.headers });
 
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const organizationId = session.session?.activeOrganizationId;
-
-  if (!organizationId) {
-    return NextResponse.json({ error: 'No active organization' }, { status: 400 });
+  const member = await validateMemberAndOrg(session.user.id, organizationId);
+  if (!member) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const results = await db.fleetPolicyResult.findMany({

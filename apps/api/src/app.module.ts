@@ -17,10 +17,13 @@ import { OrganizationModule } from './organization/organization.module';
 import { PoliciesModule } from './policies/policies.module';
 import { RisksModule } from './risks/risks.module';
 import { TasksModule } from './tasks/tasks.module';
+import { EvidenceExportModule } from './tasks/evidence-export/evidence-export.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
+import { FindingTemplateModule } from './finding-template/finding-template.module';
+import { FindingsModule } from './findings/findings.module';
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
@@ -30,6 +33,7 @@ import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 import { BrowserbaseModule } from './browserbase/browserbase.module';
 import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
+import { TrainingModule } from './training/training.module';
 
 @Module({
   imports: [
@@ -59,10 +63,13 @@ import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
     DeviceAgentModule,
     AttachmentsModule,
     TasksModule,
+    EvidenceExportModule,
     CommentsModule,
     HealthModule,
     TrustPortalModule,
     TaskTemplateModule,
+    FindingTemplateModule,
+    FindingsModule,
     QuestionnaireModule,
     VectorStoreModule,
     KnowledgeBaseModule,
@@ -72,6 +79,7 @@ import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
     BrowserbaseModule,
     TaskManagementModule,
     AssistantChatModule,
+    TrainingModule,
   ],
   controllers: [AppController],
   providers: [

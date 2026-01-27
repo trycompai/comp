@@ -1,5 +1,5 @@
 import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { db, FindingStatus } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
@@ -67,6 +67,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
   });
 
   const scores = await getScores();
+  const findings = await getOrganizationFindings(organizationId);
 
   return (
     <Overview
@@ -79,6 +80,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
       peopleScore={scores.peopleScore}
       currentMember={member}
       onboardingTriggerJobId={onboarding?.triggerJobId ?? null}
+      findings={findings}
     />
   );
 }
@@ -148,4 +150,26 @@ const getControlTasks = cache(async () => {
   });
 
   return tasks;
+});
+
+const getOrganizationFindings = cache(async (organizationId: string) => {
+  const findings = await db.finding.findMany({
+    where: {
+      organizationId,
+    },
+    include: {
+      task: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+    },
+    orderBy: [
+      { status: 'asc' },
+      { createdAt: 'desc' },
+    ],
+  });
+
+  return findings;
 });

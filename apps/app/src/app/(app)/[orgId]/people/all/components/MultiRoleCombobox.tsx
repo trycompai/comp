@@ -3,7 +3,7 @@
 import type { Role } from '@db';
 import * as React from 'react';
 
-import { Dialog, DialogContent } from '@comp/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
 import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
 
@@ -46,6 +46,7 @@ interface MultiRoleComboboxProps {
   placeholder?: string;
   disabled?: boolean;
   lockedRoles?: Role[]; // Roles that cannot be deselected
+  allowedRoles?: Role[];
 }
 
 export function MultiRoleCombobox({
@@ -54,6 +55,7 @@ export function MultiRoleCombobox({
   placeholder,
   disabled = false,
   lockedRoles = [],
+  allowedRoles,
 }: MultiRoleComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -67,10 +69,20 @@ export function MultiRoleCombobox({
 
   const isOwner = selectedRoles.includes('owner');
 
+  const normalizedAllowedRoles = React.useMemo(() => {
+    if (allowedRoles && allowedRoles.length > 0) {
+      return allowedRoles;
+    }
+    return selectableRoles.map((role) => role.value);
+  }, [allowedRoles]);
+
   // Filter out owner role for non-owners
   const availableRoles = React.useMemo(() => {
-    return selectableRoles.filter((role) => role.value !== 'owner' || isOwner);
-  }, [isOwner]);
+    return selectableRoles.filter(
+      (role) =>
+        normalizedAllowedRoles.includes(role.value) && (role.value !== 'owner' || isOwner),
+    );
+  }, [isOwner, normalizedAllowedRoles]);
 
   const handleSelect = (roleValue: Role) => {
     // Never allow owner role to be changed
@@ -116,30 +128,31 @@ export function MultiRoleCombobox({
   });
 
   return (
-    <>
-      <MultiRoleComboboxTrigger
-        selectedRoles={selectedRoles}
-        lockedRoles={lockedRoles}
-        triggerText={triggerText}
-        disabled={disabled}
-        handleSelect={handleSelect} // For badge clicks
-        getRoleLabel={getRoleLabel}
-        onClick={() => setOpen(true)}
-        ariaExpanded={open}
-      />
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0">
-          <MultiRoleComboboxContent
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            filteredRoles={filteredRoles}
-            handleSelect={handleSelect} // For item selection
-            lockedRoles={lockedRoles}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div>
+          <MultiRoleComboboxTrigger
             selectedRoles={selectedRoles}
-            onCloseDialog={() => setOpen(false)}
+            lockedRoles={lockedRoles}
+            triggerText={triggerText}
+            disabled={disabled}
+            handleSelect={handleSelect}
+            getRoleLabel={getRoleLabel}
+            ariaExpanded={open}
           />
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0" align="start">
+        <MultiRoleComboboxContent
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filteredRoles={filteredRoles}
+          handleSelect={handleSelect}
+          lockedRoles={lockedRoles}
+          selectedRoles={selectedRoles}
+          onCloseDialog={() => setOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }

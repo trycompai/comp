@@ -30,6 +30,12 @@ function getErrorMessage(errorMessage: string): string {
   return errorMessage || 'Failed to upload file. Please try again.';
 }
 
+function formatUploadMonthYear(dateString: string): string {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
 export function TaskBody({
   taskId,
   title,
@@ -323,6 +329,7 @@ export function TaskBody({
                   const isPDF = fileExt === 'pdf';
                   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
                   const isDoc = ['doc', 'docx'].includes(fileExt);
+                  const uploadMonthYear = formatUploadMonthYear(attachment.createdAt);
 
                   const getFileTypeStyles = () => {
                     if (isPDF)
@@ -363,6 +370,9 @@ export function TaskBody({
                       >
                         {attachment.name}
                       </Button>
+                      {uploadMonthYear && (
+                        <span className="text-xs text-muted-foreground">({uploadMonthYear})</span>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

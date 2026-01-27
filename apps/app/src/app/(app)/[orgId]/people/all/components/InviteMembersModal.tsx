@@ -4,13 +4,12 @@ import type { Role } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import type { ActionResponse } from '@/actions/types';
-import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -33,51 +32,57 @@ import { Input } from '@comp/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
 import { checkMemberStatus } from '../actions/checkMemberStatus';
+import { inviteNewMember } from '../actions/inviteNewMember';
 import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEmail';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
-const selectableRoles = ['admin', 'auditor', 'employee', 'contractor'] as const satisfies Readonly<
-  [Role, ...Role[]]
->;
-type InviteRole = (typeof selectableRoles)[number];
+const ALL_SELECTABLE_ROLES = [
+  'admin',
+  'auditor',
+  'employee',
+  'contractor',
+] as const satisfies Readonly<[Role, ...Role[]]>;
+type InviteRole = (typeof ALL_SELECTABLE_ROLES)[number];
 const DEFAULT_ROLES: InviteRole[] = [];
 
-// Type guard to check if a string is a valid InviteRole
-const isInviteRole = (role: string): role is InviteRole => {
-  return role === 'admin' || role === 'auditor' || role === 'employee' || role === 'contractor';
+const isInviteRole = (role: string, allowedRoles: InviteRole[]): role is InviteRole => {
+  return allowedRoles.includes(role as InviteRole);
 };
 
-// --- Schemas ---
-const manualInviteSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
-  roles: z.array(z.enum(selectableRoles)).min(1, { message: 'Please select at least one role.' }),
-});
+const createFormSchema = (allowedRoles: InviteRole[]) => {
+  const roleEnum = z.enum(allowedRoles as [InviteRole, ...InviteRole[]]);
+  const manualInviteSchema = z.object({
+    email: z.string().email({ message: 'Invalid email address.' }),
+    roles: z.array(roleEnum).min(1, { message: 'Please select at least one role.' }),
+  });
 
-// Define base schemas for each mode
-const manualModeSchema = z.object({
-  mode: z.literal('manual'),
-  manualInvites: z.array(manualInviteSchema).min(1, { message: 'Please add at least one invite.' }),
-  csvFile: z.any().optional(), // Optional here, validated by union
-});
+  const manualModeSchema = z.object({
+    mode: z.literal('manual'),
+    manualInvites: z
+      .array(manualInviteSchema)
+      .min(1, { message: 'Please add at least one invite.' }),
+    csvFile: z.any().optional(), // Optional here, validated by union
+  });
 
-const csvModeSchema = z.object({
-  mode: z.literal('csv'),
-  manualInvites: z.array(manualInviteSchema).optional(), // Optional here
-  csvFile: z.any().refine((val) => val instanceof FileList && val.length === 1, {
-    message: 'Please select a single CSV file.',
-  }),
-});
+  const csvModeSchema = z.object({
+    mode: z.literal('csv'),
+    manualInvites: z.array(manualInviteSchema).optional(), // Optional here
+    csvFile: z.any().refine((val) => val instanceof FileList && val.length === 1, {
+      message: 'Please select a single CSV file.',
+    }),
+  });
 
-// Combine using discriminatedUnion
-const formSchema = z.discriminatedUnion('mode', [manualModeSchema, csvModeSchema]);
+  return z.discriminatedUnion('mode', [manualModeSchema, csvModeSchema]);
+};
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 
 interface InviteMembersModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
+  allowedRoles: InviteRole[];
 }
 
 interface BulkInviteResultData {
@@ -92,12 +97,19 @@ export function InviteMembersModal({
   open,
   onOpenChange,
   organizationId,
+  allowedRoles,
 }: InviteMembersModalProps) {
   const router = useRouter();
   const [mode, setMode] = useState<'manual' | 'csv'>('manual');
   const [isLoading, setIsLoading] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ActionResponse<BulkInviteResultData> | null>(null);
+
+  const normalizedAllowedRoles = allowedRoles.length > 0 ? allowedRoles : [...ALL_SELECTABLE_ROLES];
+  const formSchema = useMemo(
+    () => createFormSchema(normalizedAllowedRoles),
+    [normalizedAllowedRoles.join(',')],
+  );
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -113,13 +125,6 @@ export function InviteMembersModal({
     },
     mode: 'onChange',
   });
-
-  // Log form errors on change
-  useEffect(() => {
-    if (Object.keys(form.formState.errors).length > 0) {
-      console.error('Form Validation Errors:', form.formState.errors);
-    }
-  }, [form.formState.errors]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -154,7 +159,7 @@ export function InviteMembersModal({
           return;
         }
 
-        // Process invitations client-side using authClient
+        // Process invitations
         let successCount = 0;
         const failedInvites: { email: string; error: string }[] = [];
 
@@ -185,10 +190,11 @@ export function InviteMembersModal({
                   roles: invite.roles,
                 });
               } else {
-                // Member doesn't exist - use authClient to send the invitation
-                await authClient.organization.inviteMember({
+                // Member doesn't exist - use server action to send the invitation
+                await inviteNewMember({
                   email: invite.email.toLowerCase(),
-                  role: invite.roles.length === 1 ? invite.roles[0] : invite.roles,
+                  organizationId,
+                  roles: invite.roles,
                 });
               }
             }
@@ -206,13 +212,13 @@ export function InviteMembersModal({
         if (successCount > 0) {
           toast.success(`Successfully invited ${successCount} member(s).`);
 
-          // Revalidate the page to refresh the member list
-          router.refresh();
-
           if (failedInvites.length === 0) {
             form.reset();
             onOpenChange(false);
           }
+
+          // Revalidate the page to refresh the member list
+          router.refresh();
         }
 
         if (failedInvites.length > 0) {
@@ -326,12 +332,12 @@ export function InviteMembersModal({
 
             // Validate role(s) - split by pipe for multiple roles
             const roles = roleValue.split('|').map((r) => r.trim());
-            const validRoles = roles.filter(isInviteRole);
+            const validRoles = roles.filter((role) => isInviteRole(role, normalizedAllowedRoles));
 
             if (validRoles.length === 0) {
               failedInvites.push({
                 email,
-                error: `Invalid role(s): ${roleValue}. Must be one of: ${selectableRoles.join(', ')}`,
+                error: `Invalid role(s): ${roleValue}. Must be one of: ${normalizedAllowedRoles.join(', ')}`,
               });
               continue;
             }
@@ -362,10 +368,11 @@ export function InviteMembersModal({
                     roles: validRoles,
                   });
                 } else {
-                  // Member doesn't exist - use authClient to send the invitation
-                  await authClient.organization.inviteMember({
+                  // Member doesn't exist - use server action to send the invitation
+                  await inviteNewMember({
                     email: email.toLowerCase(),
-                    role: validRoles,
+                    organizationId,
+                    roles: validRoles,
                   });
                 }
               }
@@ -383,13 +390,13 @@ export function InviteMembersModal({
           if (successCount > 0) {
             toast.success(`Successfully invited ${successCount} member(s).`);
 
-            // Revalidate the page to refresh the member list
-            router.refresh();
-
             if (failedInvites.length === 0) {
               form.reset();
               onOpenChange(false);
             }
+
+            // Revalidate the page to refresh the member list
+            router.refresh();
           }
 
           if (failedInvites.length > 0) {
@@ -429,12 +436,21 @@ export function InviteMembersModal({
     }
   };
 
-  const csvTemplate = `email,role
-john@company.com,employee
-jane@company.com,employee|admin
-bob@company.com,auditor
-sarah@company.com,employee|auditor
-mike@company.com,admin`;
+  const csvTemplate = useMemo(() => {
+    const primaryRole = normalizedAllowedRoles[0];
+    const secondaryRole = normalizedAllowedRoles[1];
+    const multiRoleExample =
+      normalizedAllowedRoles.length > 1 ? `${primaryRole}|${secondaryRole}` : primaryRole;
+
+    const rows = [
+      'email,role',
+      `john@company.com,${primaryRole}`,
+      `jane@company.com,${multiRoleExample}`,
+    ];
+
+    return rows.join('\n');
+  }, [normalizedAllowedRoles]);
+
   const csvTemplateDataUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csvTemplate)}`;
 
   return (
@@ -488,6 +504,7 @@ mike@company.com,admin`;
                           <MultiRoleCombobox
                             selectedRoles={value || []}
                             onSelectedRolesChange={onChange}
+                            allowedRoles={normalizedAllowedRoles}
                             placeholder={'Select a role'}
                           />
                           <FormMessage>{error?.message}</FormMessage>
