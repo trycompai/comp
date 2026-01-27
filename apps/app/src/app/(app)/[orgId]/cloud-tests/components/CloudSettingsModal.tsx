@@ -19,6 +19,7 @@ interface CloudProvider {
   id: string; // Provider slug (aws, gcp, azure)
   connectionId: string; // The actual connection ID
   name: string;
+  status: string;
 }
 
 interface CloudSettingsModalProps {
@@ -36,7 +37,7 @@ export function CloudSettingsModal({
 }: CloudSettingsModalProps) {
   const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.id || 'aws');
   const [isDeleting, setIsDeleting] = useState(false);
-  const { disconnectConnection } = useIntegrationMutations();
+  const { deleteConnection } = useIntegrationMutations();
 
   const handleDisconnect = async (provider: CloudProvider) => {
     if (
@@ -49,7 +50,7 @@ export function CloudSettingsModal({
 
     try {
       setIsDeleting(true);
-      const result = await disconnectConnection(provider.connectionId);
+      const result = await deleteConnection(provider.connectionId);
 
       if (result.success) {
         toast.success('Cloud provider disconnected');
@@ -103,7 +104,7 @@ export function CloudSettingsModal({
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Connection Status</span>
-                  <span className="text-sm text-green-600 dark:text-green-400">Active</span>
+                  <span className="text-sm capitalize text-green-600 dark:text-green-400">{provider.status}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   To update credentials, disconnect this provider and reconnect with new IAM role settings.
