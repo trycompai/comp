@@ -8,20 +8,25 @@ import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@comp/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@comp/ui/collapsible';
 import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 interface LoginFormProps {
   inviteCode?: string;
+  redirectTo?: string;
   showGoogle: boolean;
   showGithub: boolean;
   showMicrosoft: boolean;
 }
 
-export function LoginForm({ inviteCode, showGoogle, showGithub, showMicrosoft }: LoginFormProps) {
+export function LoginForm({
+  inviteCode,
+  redirectTo,
+  showGoogle,
+  showGithub,
+  showMicrosoft,
+}: LoginFormProps) {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [magicLinkState, setMagicLinkState] = useState({ sent: false, email: '' });
-  const searchParams = useSearchParams();
 
   const handleMagicLinkSent = (email: string) => {
     setMagicLinkState({ sent: true, email });
@@ -51,12 +56,12 @@ export function LoginForm({ inviteCode, showGoogle, showGithub, showMicrosoft }:
   }
 
   const preferredSignInOption = showGoogle ? (
-    <GoogleSignIn inviteCode={inviteCode} searchParams={searchParams as URLSearchParams} />
+    <GoogleSignIn inviteCode={inviteCode} redirectTo={redirectTo} />
   ) : (
     <MagicLinkSignIn
       key="preferred-magic"
       inviteCode={inviteCode}
-      searchParams={searchParams as URLSearchParams}
+      redirectTo={redirectTo}
       onMagicLinkSubmit={handleMagicLinkSent}
     />
   );
@@ -67,27 +72,19 @@ export function LoginForm({ inviteCode, showGoogle, showGithub, showMicrosoft }:
       <MagicLinkSignIn
         key="secondary-magic"
         inviteCode={inviteCode}
-        searchParams={searchParams as URLSearchParams}
+        redirectTo={redirectTo}
         onMagicLinkSubmit={handleMagicLinkSent}
       />,
     );
   }
   if (showMicrosoft) {
     moreOptionsList.push(
-      <MicrosoftSignIn
-        key="microsoft"
-        inviteCode={inviteCode}
-        searchParams={searchParams as URLSearchParams}
-      />,
+      <MicrosoftSignIn key="microsoft" inviteCode={inviteCode} redirectTo={redirectTo} />,
     );
   }
   if (showGithub) {
     moreOptionsList.push(
-      <GithubSignIn
-        key="github"
-        inviteCode={inviteCode}
-        searchParams={searchParams as URLSearchParams}
-      />,
+      <GithubSignIn key="github" inviteCode={inviteCode} redirectTo={redirectTo} />,
     );
   }
 
