@@ -17,6 +17,7 @@ model User {
   invitations        Invitation[]
   members            Member[]
   sessions           Session[]
+  fleetPolicyResults FleetPolicyResult[]
 
   @@unique([email])
 }

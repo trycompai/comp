@@ -8,12 +8,14 @@ interface PolicySettingsCardProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   assignees: (Member & { user: User })[];
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }
 
 export function PolicySettingsCard({
   policy,
   assignees,
   isPendingApproval,
+  onMutate,
 }: PolicySettingsCardProps) {
   if (!policy) {
     return null;
@@ -22,9 +24,11 @@ export function PolicySettingsCard({
   return (
     <Section title="Policy Settings">
       <UpdatePolicyOverview
+        key={`${policy.id}-${policy.status}-${policy.assigneeId ?? 'none'}-${policy.department ?? 'none'}-${policy.frequency ?? 'none'}-${policy.approverId ?? 'none'}`}
         isPendingApproval={isPendingApproval}
         policy={policy}
         assignees={assignees}
+        onMutate={onMutate}
       />
     </Section>
   );

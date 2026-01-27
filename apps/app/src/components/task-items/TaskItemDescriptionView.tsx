@@ -133,7 +133,7 @@ export function TaskItemDescriptionView({
       const currentContent = editor.getJSON();
       // Only update if content actually changed
       if (JSON.stringify(currentContent) !== JSON.stringify(parsedContent)) {
-        editor.commands.setContent(parsedContent, false);
+        editor.commands.setContent(parsedContent, { emitUpdate: false });
       }
     } else if (editor && !parsedContent) {
       // Clear content if no parsed content

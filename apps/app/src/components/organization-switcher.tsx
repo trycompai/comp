@@ -42,6 +42,7 @@ function getOrgColor(name: string | null | undefined): string {
 export function OrganizationSwitcher({
   organizations,
   organization,
+  logoUrls = {},
   modal = true,
 }: OrganizationSwitcherProps) {
   const router = useRouter();
@@ -66,10 +67,13 @@ export function OrganizationSwitcher({
   };
 
   // Transform organizations to DS OrganizationSelector format
+  // logoUrls is fetched server-side and passed as prop
   const selectorOrgs = organizations.map((org) => ({
     id: org.id,
     name: org.name,
     color: getOrgColor(org.name),
+    logoUrl: logoUrls[org.id],
+    createdAt: org.createdAt,
   }));
 
   const isExecuting = status === 'executing';

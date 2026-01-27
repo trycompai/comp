@@ -18,9 +18,9 @@ export const ChatTextarea = ({ input, handleInputChange, isLoading }: InputProps
     router.push(url);
   };
   return (
-    <div className="relative w-full">
+    <div className="relative w-full px-4">
       <ShadcnTextarea
-        className="mb-2 h-12 min-h-12 resize-none  pt-3"
+        className="mb-2 h-12 min-h-12 resize-none pt-3"
         value={input}
         autoFocus
         placeholder={'Ask Comp AI something...'}

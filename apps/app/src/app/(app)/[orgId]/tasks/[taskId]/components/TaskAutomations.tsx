@@ -1,12 +1,23 @@
 'use client';
 
+import { downloadAutomationPDF } from '@/lib/evidence-download';
 import { cn } from '@/lib/utils';
 import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowRight, Brain, CheckCircle2, Loader2, Plus, TrendingUp, XCircle } from 'lucide-react';
+import {
+  ArrowRight,
+  Brain,
+  CheckCircle2,
+  Download,
+  Loader2,
+  Plus,
+  TrendingUp,
+  XCircle,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 
 type AutomationWithLatestRun = EvidenceAutomation & {
@@ -15,19 +26,27 @@ type AutomationWithLatestRun = EvidenceAutomation & {
 
 interface TaskAutomationsProps {
   automations: AutomationWithLatestRun[];
+  /** When true, disables creating new automations (shows existing ones read-only) */
+  isManualTask?: boolean;
 }
 
-export const TaskAutomations = ({ automations }: TaskAutomationsProps) => {
+export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutomationsProps) => {
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
   const { mutate: mutateAutomations } = useTaskAutomations();
 
   const handleCreateAutomation = async () => {
+    if (isManualTask) return;
     // Redirect to automation builder with ephemeral mode
     // The automation will only be created once the user sends their first message
     router.push(`/${orgId}/tasks/${taskId}/automation/new`);
   };
+
+  // For manual tasks with no existing automations, don't show the section
+  if (isManualTask && automations.length === 0) {
+    return null;
+  }
 
   // If there are no automations, show a prominent empty state card
   if (automations.length === 0) {
@@ -40,7 +59,9 @@ export const TaskAutomations = ({ automations }: TaskAutomationsProps) => {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">Custom Automations</h3>
-              <p className="text-xs text-muted-foreground">Build AI-powered automations for this task</p>
+              <p className="text-xs text-muted-foreground">
+                Build AI-powered automations for this task
+              </p>
             </div>
           </div>
         </div>
@@ -235,6 +256,30 @@ export const TaskAutomations = ({ automations }: TaskAutomationsProps) => {
                       )}
                     </div>
 
+                    {latestVersionRun && (
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try {
+                            await downloadAutomationPDF({
+                              taskId,
+                              automationId: automation.id,
+                              automationName: automation.name,
+                              organizationId: orgId,
+                            });
+                            toast.success('Evidence PDF downloaded');
+                          } catch (err) {
+                            toast.error('Failed to download evidence');
+                          }
+                        }}
+                        className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0"
+                        title="Download evidence PDF"
+                      >
+                        <Download className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
+
                     <ArrowRight className="w-4 h-4 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
                   </div>
                 </Link>
@@ -242,23 +287,25 @@ export const TaskAutomations = ({ automations }: TaskAutomationsProps) => {
             })}
           </div>
 
-          <button
-            onClick={handleCreateAutomation}
-            disabled={isCreating}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-border/60 hover:border-border hover:bg-muted/30 transition-all text-xs text-muted-foreground hover:text-foreground"
-          >
-            {isCreating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Plus className="w-3.5 h-3.5" />
-                Create Another
-              </>
-            )}
-          </button>
+          {!isManualTask && (
+            <button
+              onClick={handleCreateAutomation}
+              disabled={isCreating}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-border/60 hover:border-border hover:bg-muted/30 transition-all text-xs text-muted-foreground hover:text-foreground"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  Create Another
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

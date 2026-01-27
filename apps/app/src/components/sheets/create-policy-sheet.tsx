@@ -8,6 +8,7 @@ import {
   DrawerTitle,
   ScrollArea,
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -40,9 +41,11 @@ export function CreatePolicySheet() {
           <SheetHeader>
             <SheetTitle>Create New Policy</SheetTitle>
           </SheetHeader>
-          <ScrollArea>
-            <CreateNewPolicyForm />
-          </ScrollArea>
+          <SheetBody>
+            <ScrollArea>
+              <CreateNewPolicyForm />
+            </ScrollArea>
+          </SheetBody>
         </SheetContent>
       </Sheet>
     );

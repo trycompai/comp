@@ -68,11 +68,20 @@ const WORK_ITEMS: WorkItem[] = [
   },
 ];
 
-const StatusIcon = ({ status, progress }: { status: string; progress: number }) => {
+const StatusIcon = ({ status }: { status: string }) => {
   const baseClass = 'w-4 h-4 flex-shrink-0';
 
   if (status === 'processing') {
-    return <Loader2 className={cn(baseClass, 'text-primary animate-spin')} />;
+    // Sync all spinners by using a fixed animation timing
+    return (
+      <Loader2
+        className={cn(baseClass, 'text-primary')}
+        style={{
+          animation: 'spin 1s linear infinite',
+          animationDelay: `${-(Date.now() % 1000)}ms`,
+        }}
+      />
+    );
   }
 
   if (status === 'complete') {
@@ -200,7 +209,7 @@ export function AiWorkPreviewAuthentic() {
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <span className="text-sm text-muted-foreground">Background job progress</span>
-          <span className="text-lg font-semibold tabular-nums">{overallProgress}%</span>
+          <span className="text-lg font-semibold tabular-nums text-primary">{overallProgress}%</span>
         </div>
         <Progress value={overallProgress} className="h-2" />
         <p className="text-xs text-muted-foreground/70">
@@ -246,7 +255,7 @@ export function AiWorkPreviewAuthentic() {
                 )}
               >
                 <div className="flex items-start gap-3">
-                  <StatusIcon status={item.status} progress={item.progress} />
+                  <StatusIcon status={item.status} />
 
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-start justify-between gap-3">
@@ -256,7 +265,7 @@ export function AiWorkPreviewAuthentic() {
                           <p
                             className={cn(
                               'font-medium text-sm',
-                              isComplete && 'text-muted-foreground',
+                              isComplete && 'text-primary',
                             )}
                           >
                             {item.title}
@@ -284,7 +293,7 @@ export function AiWorkPreviewAuthentic() {
                           <Progress value={item.progress} className="h-1" />
                           <p
                             className={cn(
-                              'text-xs text-muted-foreground/60 tabular-nums',
+                              'text-xs tabular-nums text-primary',
                               isStuck && 'text-amber-600 dark:text-amber-400',
                             )}
                           >

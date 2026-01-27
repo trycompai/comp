@@ -5,7 +5,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
   Stack,
 } from '@trycompai/design-system';
 import { useState } from 'react';
@@ -23,6 +22,15 @@ export function RequestsTab({ orgId }: { orgId: string }) {
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string | 'all'>('all');
+
+  const statusOptions = [
+    { value: 'all', label: 'All statuses' },
+    { value: 'under_review', label: 'Under review' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'denied', label: 'Denied' },
+  ];
+
+  const selectedStatusLabel = statusOptions.find((opt) => opt.value === status)?.label ?? 'Filter status';
 
   const handleResendNda = (requestId: string) => {
     toast.promise(resendNda(requestId), {
@@ -59,23 +67,28 @@ export function RequestsTab({ orgId }: { orgId: string }) {
 
   return (
     <Stack gap="4">
-      <Stack direction="row" gap="2" align="center" justify="between">
-        <Input
-          placeholder="Search by name, email, or company"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Select value={status} onValueChange={(value) => setStatus(value as string)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="under_review">Under review</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="denied">Denied</SelectItem>
-          </SelectContent>
-        </Select>
+      <Stack direction="row" gap="2" align="center">
+        <div className="flex-1 max-w-md">
+          <Input
+            placeholder="Search by name, email, or company"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="w-[200px]">
+          <Select value={status} onValueChange={(value) => setStatus(value as string)}>
+            <SelectTrigger>
+              {selectedStatusLabel}
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </Stack>
 
       <RequestDataTable

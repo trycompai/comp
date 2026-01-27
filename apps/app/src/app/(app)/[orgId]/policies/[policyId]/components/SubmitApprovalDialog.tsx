@@ -1,17 +1,16 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
-import { Button } from '@comp/ui/button';
+import type { Member, User } from '@db';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
-import { Member, User } from '@db';
-import { Loader2 } from 'lucide-react';
+} from '@trycompai/design-system';
 
 interface SubmitApprovalDialogProps {
   isOpen: boolean;
@@ -49,8 +48,11 @@ export const SubmitApprovalDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={onConfirm} disabled={isSubmitting || !selectedApproverId}>
-            {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : null}
+          <Button
+            onClick={onConfirm}
+            disabled={isSubmitting || !selectedApproverId}
+            loading={isSubmitting}
+          >
             Confirm & Submit
           </Button>
         </DialogFooter>

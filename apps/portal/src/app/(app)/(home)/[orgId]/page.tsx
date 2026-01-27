@@ -2,12 +2,14 @@
 
 import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
-import type { Member } from '@db';
+import type { FleetPolicyResult, Member } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { OrganizationDashboard } from './components/OrganizationDashboard';
 import type { FleetPolicy, Host } from './types';
+
+const MDM_POLICY_ID = -9999;
 
 export default async function OrganizationPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
@@ -86,9 +88,37 @@ const getFleetPolicies = async (
       return { fleetPolicies: [], device: null };
     }
 
+    const platform = device.platform?.toLowerCase();
+    const osVersion = device.os_version?.toLowerCase();
+    const isMacOS =
+      platform === 'darwin' ||
+      platform === 'macos' ||
+      platform === 'osx' ||
+      osVersion?.includes('mac');
+    const mdmEnabledStatus = {
+      id: MDM_POLICY_ID,
+      response: device.mdm.connected_to_fleet ? 'pass' : 'fail',
+      name: 'MDM Enabled',
+    };
     const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
-    const fleetPolicies: FleetPolicy[] = deviceWithPolicies.data.host.policies || [];
-    return { fleetPolicies, device };
+    const fleetPolicies: FleetPolicy[] = [
+      ...(deviceWithPolicies.data.host.policies || []),
+      ...(isMacOS ? [mdmEnabledStatus] : []),
+    ];
+
+    // Get Policy Results from the database.
+    const fleetPolicyResults = await getFleetPolicyResults(member.organizationId);
+    return {
+      device,
+      fleetPolicies: fleetPolicies.map((policy) => {
+        const policyResult = fleetPolicyResults.find((result) => result.fleetPolicyId === policy.id);
+        return {
+          ...policy,
+          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
+          attachments: policyResult?.attachments || [],
+        }
+      }),
+    };
   } catch (error: any) {
     // Log more details about the error
     if (error.response?.status === 404) {
@@ -97,5 +127,36 @@ const getFleetPolicies = async (
       console.error('Error fetching fleet policies:', error.message || error);
     }
     return { fleetPolicies: [], device: null };
+  }
+};
+
+const getFleetPolicyResults = async (organizationId: string): Promise<FleetPolicyResult[]> => {
+  try {
+    const portalBase = process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, '');
+    const url = `${portalBase}/api/fleet-policy?organizationId=${organizationId}`;
+
+    // Convert ReadonlyHeaders to a plain object for fetch
+    const headersList = await headers();
+    const headersObject: Record<string, string> = {};
+    headersList.forEach((value, key) => {
+      headersObject[key] = value;
+    });
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: headersObject,
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      console.error('Failed to fetch fleet policy results', res.status, await res.text());
+      return [];
+    }
+
+    const json = (await res.json()) as { success?: boolean; data?: FleetPolicyResult[] };
+    return json.data ?? [];
+  } catch (error) {
+    console.error('Error fetching fleet policy results', error);
+    return [];
   }
 };

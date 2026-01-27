@@ -13,6 +13,7 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
+import { useState } from 'react';
 import { VendorActions } from './VendorActions';
 import { VendorPageClient } from './VendorPageClient';
 
@@ -39,6 +40,8 @@ export function VendorDetailTabs({
   assignees,
   isViewingTask,
 }: VendorDetailTabsProps) {
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+
   const breadcrumbs = [
     { label: 'Vendors', href: `/${orgId}/vendors` },
     {
@@ -58,7 +61,13 @@ export function VendorDetailTabs({
           <PageHeader
             title={vendor?.name ?? 'Vendor'}
             breadcrumbs={breadcrumbs}
-            actions={<VendorActions vendorId={vendorId} orgId={orgId} />}
+            actions={
+              <VendorActions
+                vendorId={vendorId}
+                orgId={orgId}
+                onOpenEditSheet={() => setIsEditSheetOpen(true)}
+              />
+            }
             tabs={
               !isViewingTask && (
                 <TabsList variant="underline">
@@ -77,6 +86,8 @@ export function VendorDetailTabs({
             initialVendor={vendor}
             assignees={assignees}
             isViewingTask={isViewingTask}
+            isEditSheetOpen={isEditSheetOpen}
+            onEditSheetOpenChange={setIsEditSheetOpen}
           />
         </TabsContent>
 

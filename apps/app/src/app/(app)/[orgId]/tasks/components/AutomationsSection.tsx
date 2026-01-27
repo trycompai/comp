@@ -209,7 +209,7 @@ export function AutomationsSection({ automations }: AutomationsSectionProps) {
                             variant={
                               latestRun.evaluationStatus === 'pass' ? 'default' : 'destructive'
                             }
-                            className="text-[10px] px-1.5 py-0"
+                            className="text-[10px] px-1.5 py-0 !text-white"
                           >
                             {latestRun.evaluationStatus === 'pass' ? 'Pass' : 'Fail'}
                           </Badge>

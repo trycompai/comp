@@ -23,9 +23,10 @@ import { toast } from 'sonner';
 interface PolicyAlertsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }
 
-export function PolicyAlerts({ policy, isPendingApproval }: PolicyAlertsProps) {
+export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAlertsProps) {
   const { data: activeMember } = authClient.useActiveMember();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,7 +38,7 @@ export function PolicyAlerts({ policy, isPendingApproval }: PolicyAlertsProps) {
   const denyPolicyChanges = useAction(denyRequestedPolicyChangesAction, {
     onSuccess: () => {
       toast.info('Policy changes denied!');
-      window.location.reload();
+      onMutate?.();
     },
     onError: () => {
       toast.error('Failed to deny policy changes.');
@@ -47,7 +48,7 @@ export function PolicyAlerts({ policy, isPendingApproval }: PolicyAlertsProps) {
   const acceptPolicyChanges = useAction(acceptRequestedPolicyChangesAction, {
     onSuccess: () => {
       toast.success('Policy changes accepted and published!');
-      window.location.reload();
+      onMutate?.();
     },
     onError: () => {
       toast.error('Failed to accept policy changes.');

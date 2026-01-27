@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
   Empty,
   EmptyDescription,
@@ -38,12 +37,11 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { OverflowMenuVertical, Search, TrashCan, View } from '@trycompai/design-system/icons';
+import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   parseAsArrayOf,
-  parseAsInteger,
   parseAsString,
   parseAsStringEnum,
   useQueryState,
@@ -141,9 +139,11 @@ export const RisksTable = ({
     'risks',
   );
 
+  // Pagination state (local, not URL)
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+
   // Read current search params from URL
-  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1));
-  const [perPage, setPerPage] = useQueryState('perPage', parseAsInteger.withDefault(50));
   const [title, setTitle] = useQueryState('title', parseAsString.withDefault(''));
   const [sort, setSort] = useQueryState(
     'sort',
@@ -387,8 +387,6 @@ export const RisksTable = ({
     ? 'Try adjusting your search.'
     : 'Create your first risk to get started.';
   const pageSizeOptions = [10, 25, 50, 100];
-  const canGoPrev = page > 1;
-  const canGoNext = page < pageCount;
 
   if (showEmptyState) {
     return <RisksLoadingAnimation />;
@@ -453,8 +451,20 @@ export const RisksTable = ({
             </EmptyHeader>
           </Empty>
         ) : (
-          <Stack gap="3">
-            <Table variant="bordered">
+          <Table
+            variant="bordered"
+            pagination={{
+              page,
+              pageCount,
+              onPageChange: setPage,
+              pageSize: perPage,
+              pageSizeOptions: pageSizeOptions,
+              onPageSizeChange: (size) => {
+                setPerPage(size);
+                setPage(1);
+              },
+            }}
+          >
               <TableHeader>
                 <TableRow>
                   <TableHead>
@@ -518,14 +528,12 @@ export const RisksTable = ({
                               <OverflowMenuVertical />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleRowClick(risk.id)}>
-                                <View size={16} />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 variant="destructive"
-                                onClick={() => handleDeleteClick(risk)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(risk);
+                                }}
                               >
                                 <TrashCan size={16} />
                                 Delete
@@ -539,51 +547,6 @@ export const RisksTable = ({
                 })}
               </TableBody>
             </Table>
-            <HStack align="center" justify="between">
-              <HStack gap="2" align="center">
-                <Text size="sm" variant="muted">
-                  Page {page} of {Math.max(pageCount, 1)}
-                </Text>
-                <HStack gap="1" align="center">
-                  <Text size="sm" variant="muted">
-                    Rows per page
-                  </Text>
-                  {pageSizeOptions.map((size) => (
-                    <Button
-                      key={size}
-                      size="xs"
-                      variant={perPage === size ? 'default' : 'outline'}
-                      onClick={() => {
-                        if (perPage === size) return;
-                        setPerPage(size);
-                        setPage(1);
-                      }}
-                    >
-                      {size}
-                    </Button>
-                  ))}
-                </HStack>
-              </HStack>
-              <HStack gap="2" align="center">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPage(page - 1)}
-                  disabled={!canGoPrev}
-                >
-                  Previous
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPage(page + 1)}
-                  disabled={!canGoNext}
-                >
-                  Next
-                </Button>
-              </HStack>
-            </HStack>
-          </Stack>
         )}
 
         {/* Delete Confirmation Dialog */}

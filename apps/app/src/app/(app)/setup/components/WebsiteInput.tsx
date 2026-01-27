@@ -1,6 +1,10 @@
 'use client';
 
-import { Input } from '@comp/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@trycompai/design-system';
 import { type InputHTMLAttributes, forwardRef, useCallback, useEffect, useState } from 'react';
 
 interface WebsiteInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'prefix'> {
@@ -96,17 +100,18 @@ export const WebsiteInput = forwardRef<HTMLInputElement, WebsiteInputProps>(
     );
 
     return (
-      <Input
-        ref={ref}
-        type="text"
-        value={displayValue}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        prefix="https://"
-        autoComplete="url"
-        spellCheck={false}
-        {...props}
-      />
+      <InputGroup>
+        <InputGroupAddon>https://</InputGroupAddon>
+        <InputGroupInput
+          ref={ref}
+          value={displayValue}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          autoComplete="url"
+          spellCheck={false}
+          {...props}
+        />
+      </InputGroup>
     );
   },
 );

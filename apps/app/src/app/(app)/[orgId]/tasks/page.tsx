@@ -1,10 +1,8 @@
 import { auth } from '@/utils/auth';
 import { db, Role } from '@db';
-import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
-import { Add } from '@trycompai/design-system/icons';
 import { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
-import { TaskList } from './components/TaskList';
+import { TasksPageClient } from './components/TasksPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -29,6 +27,8 @@ export default async function TasksPage({
   const tasks = await getTasks();
   const members = await getMembersWithMetadata();
   const controls = await getControls();
+  const { hasEvidenceExportAccess, organizationName } =
+    await getEvidenceExportContext(orgId);
 
   // Read tab preference from cookie (server-side, no hydration issues)
   const cookieStore = await cookies();
@@ -36,19 +36,62 @@ export default async function TasksPage({
   const activeTab = savedView === 'categories' || savedView === 'list' ? savedView : 'categories';
 
   return (
-    <PageLayout
-      header={
-        <PageHeader
-          title="Evidence"
-          actions={<Button iconLeft={<Add />}>Create Evidence</Button>}
-        />
-      }
-      padding="default"
-    >
-      <TaskList tasks={tasks} members={members} controls={controls} activeTab={activeTab} />
-    </PageLayout>
+    <TasksPageClient
+      tasks={tasks}
+      members={members}
+      controls={controls}
+      activeTab={activeTab}
+      orgId={orgId}
+      organizationName={organizationName}
+      hasEvidenceExportAccess={hasEvidenceExportAccess}
+    />
   );
 }
+
+// Helper to safely parse comma-separated roles string
+function parseRolesString(rolesStr: string | null | undefined): Role[] {
+  if (!rolesStr) return [];
+  return rolesStr
+    .split(',')
+    .map((r) => r.trim())
+    .filter((r) => r in Role) as Role[];
+}
+
+const getEvidenceExportContext = async (organizationId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return { hasEvidenceExportAccess: false, organizationName: null };
+  }
+
+  const [member, organization] = await Promise.all([
+    db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId,
+        deactivated: false,
+      },
+      select: { role: true },
+    }),
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    }),
+  ]);
+
+  const roles = parseRolesString(member?.role);
+  const hasEvidenceExportAccess =
+    roles.includes(Role.auditor) ||
+    roles.includes(Role.admin) ||
+    roles.includes(Role.owner);
+
+  return {
+    hasEvidenceExportAccess,
+    organizationName: organization?.name ?? null,
+  };
+};
 
 const getTasks = async () => {
   const session = await auth.api.getSession({

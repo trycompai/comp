@@ -1,42 +1,45 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
-import { ScrollArea } from '@comp/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { X } from 'lucide-react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@trycompai/design-system';
 import { useQueryState } from 'nuqs';
-// import { CreateVendorTaskForm } from "./create-vendor-task-form";
+import { useCallback, useEffect, useState } from 'react';
 
 export function CreateVendorTaskSheet() {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [open, setOpen] = useQueryState('create-vendor-task-sheet');
-  const isOpen = Boolean(open);
+  const [queryOpen] = useQueryState('create-vendor-task-sheet');
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    setIsOpen(Boolean(queryOpen));
+  }, [queryOpen]);
 
   const handleOpenChange = (open: boolean) => {
-    setOpen(open ? 'true' : null);
+    setIsOpen(open);
   };
+
+  const _handleSuccess = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
   if (isDesktop) {
     return (
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent stack>
-          <SheetHeader className="mb-8 flex flex-row items-center justify-between">
-            <SheetTitle>{'Create Vendor Task'}</SheetTitle>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="m-0 size-auto p-0 hover:bg-transparent"
-              onClick={() => setOpen(null)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Create Vendor Task</SheetTitle>
           </SheetHeader>
-
-          <ScrollArea className="h-full p-0 pb-[100px]" hideScrollbar>
-            {/* <CreateVendorTaskForm assignees={assignees} /> */}
-          </ScrollArea>
+          <SheetBody>{/* <CreateVendorTaskForm assignees={assignees} onSuccess={handleSuccess} /> */}</SheetBody>
         </SheetContent>
       </Sheet>
     );
@@ -44,9 +47,11 @@ export function CreateVendorTaskSheet() {
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{'Create Vendor Task'}</DrawerTitle>
-      <DrawerContent className="p-6">
-        {/* <CreateVendorTaskForm assignees={assignees} /> */}
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Create Vendor Task</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">{/* <CreateVendorTaskForm assignees={assignees} onSuccess={handleSuccess} /> */}</div>
       </DrawerContent>
     </Drawer>
   );

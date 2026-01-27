@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { env } from '@/env.mjs';
 import { Inbox } from '@novu/nextjs';
 import { useSession } from '@/utils/auth-client';
-import { Bell, Settings } from 'lucide-react';
+import { Notification, Settings } from '@trycompai/design-system/icons';
 import { useState, useRef, useEffect } from 'react';
 
 export function NotificationBell() {
@@ -75,9 +75,10 @@ export function NotificationBell() {
         renderBell={({ total }) => (
           <button
             onClick={() => setVisible(!visible)}
-            className="relative cursor-pointer"
+            className="relative cursor-pointer text-foreground"
+            style={{ color: 'var(--foreground)' }}
           >
-            <Bell size={20} />
+            <Notification size={20} />
             {total > 0 && (
               <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
             )}

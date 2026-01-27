@@ -3,9 +3,8 @@
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { api } from '@/lib/api-client';
-import { Button } from '@comp/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
-import { Plus, Settings } from 'lucide-react';
+import { Button, PageHeader, PageHeaderDescription, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
+import { Add, Settings } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
@@ -188,33 +187,30 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     const provider = connectedProviders[0];
     const providerFindings = findingsByProvider[provider.integrationId] ?? [];
 
+    const description = provider.lastRunAt
+      ? `${provider.name} • ${providerFindings.length} findings • Last scan: ${new Date(provider.lastRunAt).toLocaleString()}`
+      : `${provider.name} • ${providerFindings.length} findings`;
+
     return (
-      <div className="mx-auto max-w-7xl flex w-full flex-col gap-6 py-4 md:py-6 lg:py-8">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Cloud Security Tests</h1>
-            <p className="text-muted-foreground text-sm">
-              {provider.name} • {providerFindings.length} findings
-            </p>
-            {provider.lastRunAt && (
-              <p className="text-muted-foreground text-xs">
-                Last scan: {new Date(provider.lastRunAt).toLocaleString()} • Next scan: Daily at
-                5:00 AM UTC
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
-              <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Cloud
+      <PageLayout>
+        <PageHeader
+          title="Cloud Security Tests"
+          actions={
+            <>
+              {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
+                <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
+                  <Add />
+                  Add Cloud
+                </Button>
+              )}
+              <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
+                <Settings />
               </Button>
-            )}
-            <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <PageHeaderDescription>{description}</PageHeaderDescription>
+        </PageHeader>
 
         <ResultsView
           findings={providerFindings}
@@ -268,38 +264,36 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
             }}
           />
         )}
-      </div>
+      </PageLayout>
     );
   }
 
   const defaultTab = connectedProviders[0]?.integrationId ?? 'aws';
 
+  const multiProviderDescription = connectedProviders.some((p) => p.lastRunAt)
+    ? `${connectedProviders.length} cloud providers connected • Automated scans run daily at 5:00 AM UTC`
+    : `${connectedProviders.length} cloud providers connected`;
+
   return (
-    <div className="container mx-auto flex w-full flex-col gap-6 p-4 md:p-6 lg:p-8">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Cloud Security Tests</h1>
-          <p className="text-muted-foreground text-sm">
-            {connectedProviders.length} cloud providers connected
-          </p>
-          {connectedProviders.some((p) => p.lastRunAt) && (
-            <p className="text-muted-foreground text-xs">
-              Automated scans run daily at 5:00 AM UTC
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
-            <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Cloud
+    <PageLayout>
+      <PageHeader
+        title="Cloud Security Tests"
+        actions={
+          <>
+            {connectedProviders.length < SUPPORTED_PROVIDER_IDS.length && (
+              <Button variant="outline" size="sm" onClick={() => setViewingResults(false)}>
+                <Add />
+                Add Cloud
+              </Button>
+            )}
+            <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
+              <Settings />
             </Button>
-          )}
-          <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      >
+        <PageHeaderDescription>{multiProviderDescription}</PageHeaderDescription>
+      </PageHeader>
 
       <Tabs defaultValue={defaultTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -314,11 +308,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           const providerFindings = findingsByProvider[provider.integrationId] ?? [];
 
           return (
-            <TabsContent
-              key={provider.integrationId}
-              value={provider.integrationId}
-              className="mt-6"
-            >
+            <TabsContent key={provider.integrationId} value={provider.integrationId}>
               <ResultsView
                 findings={providerFindings}
                 onRunScan={() => handleRunScan(provider.integrationId)}
@@ -375,6 +365,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           }}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }

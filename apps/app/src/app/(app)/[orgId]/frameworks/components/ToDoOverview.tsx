@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Policy, Task } from '@db';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import {
   ArrowRight,
   CheckCircle2,
@@ -31,6 +32,7 @@ export function ToDoOverview({
   policiesInReview,
   organizationId,
   currentMember,
+  onboardingTriggerJobId,
 }: {
   totalPolicies: number;
   totalTasks: number;
@@ -41,9 +43,31 @@ export function ToDoOverview({
   policiesInReview: Policy[];
   organizationId: string;
   currentMember: { id: string; role: string } | null;
+  onboardingTriggerJobId: string | null;
 }) {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if onboarding is still in progress
+  const { run: onboardingRun } = useRealtimeRun(onboardingTriggerJobId || '', {
+    enabled: !!onboardingTriggerJobId,
+  });
+
+  const IN_PROGRESS_STATUSES = [
+    'QUEUED',
+    'EXECUTING',
+    'WAITING_FOR_DEPLOY',
+    'REATTEMPTING',
+    'FROZEN',
+    'DELAYED',
+    'WAITING',
+    'PENDING_VERSION',
+    'DEQUEUED',
+  ];
+
+  const isOnboardingInProgress = onboardingRun
+    ? IN_PROGRESS_STATUSES.includes(onboardingRun.status)
+    : false;
 
   const formatStatus = (status: string) => {
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -54,7 +78,7 @@ export function ToDoOverview({
 
   const publishPolicies = useAction(publishAllPoliciesAction, {
     onSuccess: () => {
-      toast.info('Policies published! Redirecting to policies list...');
+      toast.success('All policies published!');
     },
     onError: () => {
       toast.error('Failed to publish policies.');
@@ -128,9 +152,11 @@ export function ToDoOverview({
                   variant="outline"
                   onClick={() => setIsConfirmDialogOpen(true)}
                   className="flex items-center gap-2 w-full"
+                  disabled={isOnboardingInProgress}
+                  title={isOnboardingInProgress ? 'Please wait for onboarding to complete' : undefined}
                 >
                   <Play className="h-3 w-3" />
-                  Publish All Policies
+                  {isOnboardingInProgress ? 'Onboarding in progress...' : 'Publish All Policies'}
                 </Button>
               </div>
             )}

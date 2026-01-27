@@ -1,6 +1,7 @@
 'use client';
 
 import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
+import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -26,7 +27,7 @@ import {
   type Task,
   type User,
 } from '@db';
-import { ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
+import { ChevronRight, Download, RefreshCw, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -39,6 +40,7 @@ import { useTaskAutomations } from '../hooks/use-task-automations';
 import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
 import { BrowserAutomations } from './BrowserAutomations';
 import { TaskAutomations } from './TaskAutomations';
+import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
@@ -162,9 +164,12 @@ export function SingleTask({
           <div>
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1">
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">
-                  {task.title}
-                </h1>
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                    {task.title}
+                  </h1>
+                  <TaskAutomationStatusBadge status={task.automationStatus} />
+                </div>
                 {task.description && (
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {task.description}
@@ -172,6 +177,27 @@ export function SingleTask({
                 )}
               </div>
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={async () => {
+                    try {
+                      await downloadTaskEvidenceZip({
+                        taskId: task.id,
+                        taskTitle: task.title,
+                        organizationId: orgId,
+                        includeJson: true,
+                      });
+                      toast.success('Task evidence downloaded');
+                    } catch (err) {
+                      toast.error('Failed to download evidence');
+                    }
+                  }}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Download task evidence"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -200,14 +226,26 @@ export function SingleTask({
           </div>
 
           {/* Integration Checks Section */}
-          <TaskIntegrationChecks taskId={task.id} onTaskUpdated={() => mutateTask()} />
+          <TaskIntegrationChecks
+            taskId={task.id}
+            onTaskUpdated={() => mutateTask()}
+            isManualTask={task.automationStatus === 'MANUAL'}
+          />
 
           {/* Browser Automations Section */}
-          {isWebAutomationsEnabled && <BrowserAutomations taskId={task.id} />}
+          {isWebAutomationsEnabled && (
+            <BrowserAutomations
+              taskId={task.id}
+              isManualTask={task.automationStatus === 'MANUAL'}
+            />
+          )}
 
           {/* Custom Automations Section - always show if automations exist, or show empty state if no integration checks */}
           {((automations && automations.length > 0) || !hasMappedChecks) && (
-            <TaskAutomations automations={automations || []} />
+            <TaskAutomations
+              automations={automations || []}
+              isManualTask={task.automationStatus === 'MANUAL'}
+            />
           )}
 
           {/* Comments Section */}
