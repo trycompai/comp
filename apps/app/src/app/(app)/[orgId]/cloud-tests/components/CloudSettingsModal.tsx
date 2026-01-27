@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
+import { IntegrationConnectionStatus } from '@db';
 import { Loader2, RotateCw, Trash2, Unplug } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -38,7 +39,8 @@ export function CloudSettingsModal({
   const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.id || 'aws');
   const [disconnecting, setDisconnecting] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const { disconnectConnection, deleteConnection } = useIntegrationMutations();
+  const [resuming, setResuming] = useState(false);
+  const { resumeConnection, deleteConnection, pauseConnection } = useIntegrationMutations();
 
   const handleDisconnect = async (provider: CloudProvider) => {
     if (
@@ -51,7 +53,7 @@ export function CloudSettingsModal({
 
     try {
       setDisconnecting(true);
-      const result = await disconnectConnection(provider.connectionId);
+      const result = await pauseConnection(provider.connectionId);
 
       if (result.success) {
         toast.success('Cloud provider disconnected');
@@ -91,6 +93,28 @@ export function CloudSettingsModal({
       toast.error('Failed to remove');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleResume = async (provider: CloudProvider) => {
+    if (!confirm('Are you sure you want to reconnect this cloud provider?')) {
+      return;
+    }
+
+    setResuming(true);
+    try {
+      const result = await resumeConnection(provider.connectionId);
+      if (result.success) {
+        toast.success('Cloud provider reconnected');
+        onUpdate();
+        onOpenChange(false);
+      } else {
+        toast.error(result.error || 'Failed to reconnect');
+      }
+    } catch (error) {
+      toast.error('Failed to reconnect');
+    } finally {
+      setResuming(false);
     }
   };
 
@@ -139,31 +163,48 @@ export function CloudSettingsModal({
               </div>
 
               <DialogFooter className="flex justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => handleDisconnect(provider)}
-                  disabled={disconnecting}
-                >
-                  {disconnecting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Disconnecting...
-                    </>
-                  ) : (
-                    <>
-                      <Unplug className="mr-2 h-4 w-4" />
-                      Disconnect
-                    </>
-                  )}
-                </Button>
-                <Button>
-                  <RotateCw className="mr-2 h-4 w-4" />
-                  Reconnect
-                </Button>
+                {provider.status === IntegrationConnectionStatus.active && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDisconnect(provider)}
+                    disabled={disconnecting || deleting || resuming}
+                  >
+                    {disconnecting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Disconnecting...
+                      </>
+                    ) : (
+                      <>
+                        <Unplug className="mr-2 h-4 w-4" />
+                        Disconnect
+                      </>
+                    )}
+                  </Button>
+                )}
+                {provider.status === IntegrationConnectionStatus.paused && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleResume(provider)}
+                    disabled={resuming || disconnecting || deleting}
+                  >
+                    {resuming ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Resuming...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCw className="mr-2 h-4 w-4" />
+                        Reconnect
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="destructive"
                   onClick={() => handleDelete(provider)}
-                  disabled={disconnecting || deleting}
+                  disabled={disconnecting || deleting || resuming}
                 >
                   {deleting ? (
                     <>

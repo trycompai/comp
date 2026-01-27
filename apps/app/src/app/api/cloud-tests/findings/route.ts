@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
     const newConnections = await db.integrationConnection.findMany({
       where: {
         organizationId: orgId,
-        status: 'active',
+        status: {
+          in: ['active', 'paused'],
+        },
         provider: {
           slug: {
             in: CLOUD_PROVIDER_SLUGS,
