@@ -1,7 +1,6 @@
 'use server';
 
 import { auth } from '@/utils/auth';
-import { authClient } from '@/utils/auth-client';
 import { createSafeActionClient } from 'next-safe-action';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -19,13 +18,23 @@ interface InviteResult {
   error?: string;
 }
 
+function maskEmail(value: string): string {
+  const [name = '', domain = ''] = value.toLowerCase().split('@');
+  if (!domain) return 'invalid-email';
+  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
+  return `${safeName}@${domain}`;
+}
+
 export const bulkInviteEmployees = createSafeActionClient()
   .inputSchema(schema)
   .action(async ({ parsedInput }) => {
     const { organizationId, emails } = parsedInput;
+    const requestId = crypto.randomUUID();
+    const startTime = Date.now();
 
     const session = await auth.api.getSession({ headers: await headers() });
     if (session?.session.activeOrganizationId !== organizationId) {
+      console.warn('[bulkInviteEmployees] unauthorized', { requestId, organizationId });
       return {
         success: false,
         error: 'Unauthorized or invalid organization.',
@@ -35,20 +44,44 @@ export const bulkInviteEmployees = createSafeActionClient()
     const results: InviteResult[] = [];
     let allSuccess = true;
 
+    console.info('[bulkInviteEmployees] start', {
+      requestId,
+      organizationId,
+      count: emails.length,
+    });
+
     for (const email of emails) {
       try {
-        await authClient.organization.inviteMember({
-          email: email,
-          role: 'employee',
+        await auth.api.createInvitation({
+          headers: await headers(),
+          body: {
+            email,
+            role: 'employee',
+            organizationId,
+          },
         });
         results.push({ email, success: true });
       } catch (error) {
         allSuccess = false;
-        console.error(`Failed to invite ${email}:`, error);
+        console.error('[bulkInviteEmployees] invite failed', {
+          requestId,
+          organizationId,
+          invitedEmail: maskEmail(email),
+          error: error instanceof Error ? error.message : String(error),
+        });
         const errorMessage = error instanceof Error ? error.message : 'Invitation failed';
         results.push({ email, success: false, error: errorMessage });
       }
     }
+
+    console.info('[bulkInviteEmployees] complete', {
+      requestId,
+      organizationId,
+      total: emails.length,
+      successCount: results.filter((result) => result.success).length,
+      failureCount: results.filter((result) => !result.success).length,
+      durationMs: Date.now() - startTime,
+    });
 
     return { success: true, data: results };
   });

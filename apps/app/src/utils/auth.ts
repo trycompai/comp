@@ -17,6 +17,15 @@ const dub = env.DUB_API_KEY
     })
   : undefined;
 
+const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
+
+function maskEmail(value: string): string {
+  const [name = '', domain = ''] = value.toLowerCase().split('@');
+  if (!domain) return 'invalid-email';
+  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
+  return `${safeName}@${domain}`;
+}
+
 let socialProviders = {};
 
 if (env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET) {
@@ -156,16 +165,43 @@ export const auth = betterAuth({
       },
     }),
     magicLink({
-      sendMagicLink: async ({ email, url }, request) => {
+      expiresIn: MAGIC_LINK_EXPIRES_IN_SECONDS,
+      sendMagicLink: async ({ email, url }) => {
+        const requestId = crypto.randomUUID();
+        const startTime = Date.now();
+        const safeEmail = maskEmail(email);
         const urlWithInviteCode = `${url}`;
-        await sendEmail({
-          to: email,
-          subject: 'Login to Comp AI',
-          react: MagicLinkEmail({
-            email,
-            url: urlWithInviteCode,
-          }),
+
+        console.info('[magicLink] send start', {
+          requestId,
+          email: safeEmail,
+          expiresInSec: MAGIC_LINK_EXPIRES_IN_SECONDS,
         });
+
+        try {
+          await sendEmail({
+            to: email,
+            subject: 'Login to Comp AI',
+            react: MagicLinkEmail({
+              email,
+              url: urlWithInviteCode,
+            }),
+          });
+
+          console.info('[magicLink] send success', {
+            requestId,
+            email: safeEmail,
+            durationMs: Date.now() - startTime,
+          });
+        } catch (error) {
+          console.error('[magicLink] send failure', {
+            requestId,
+            email: safeEmail,
+            durationMs: Date.now() - startTime,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          throw error;
+        }
       },
     }),
     emailOTP({
