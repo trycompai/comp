@@ -25,6 +25,7 @@ import {
   type Control,
   type Member,
   type Task,
+  type TaskStatus,
   type User,
 } from '@db';
 import { ChevronRight, Download, RefreshCw, Trash2 } from 'lucide-react';
@@ -35,7 +36,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useActiveMember } from '@/utils/auth-client';
 import { Comments } from '../../../../../../components/comments/Comments';
-import { updateTask } from '../../actions/updateTask';
+import { apiClient } from '@/lib/api-client';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { useTaskIntegrationChecks } from '../hooks/use-task-integration-checks';
@@ -108,32 +109,54 @@ export function SingleTask({
   const handleUpdateTask = async (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => {
-    const updatePayload: Partial<
-      Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>
-    > = {};
+    if (!task || !orgId) return;
 
-    if (!task) return;
+    const updatePayload: {
+      status?: TaskStatus;
+      assigneeId?: string | null;
+      frequency?: string | null;
+      department?: string | null;
+      reviewDate?: string | null;
+    } = {};
 
     if (data.status !== undefined) {
       updatePayload.status = data.status;
     }
     if (data.department !== undefined) {
-      updatePayload.department = data.department;
+      updatePayload.department = data.department ?? null;
     }
     if (data.assigneeId !== undefined) {
       updatePayload.assigneeId = data.assigneeId;
     }
     if (Object.prototype.hasOwnProperty.call(data, 'frequency')) {
-      updatePayload.frequency = data.frequency;
+      updatePayload.frequency = data.frequency ?? null;
     }
     if (data.reviewDate !== undefined) {
-      updatePayload.reviewDate = data.reviewDate;
+      updatePayload.reviewDate =
+        data.reviewDate instanceof Date
+          ? data.reviewDate.toISOString()
+          : data.reviewDate
+            ? String(data.reviewDate)
+            : null;
     }
+
     if (Object.keys(updatePayload).length > 0) {
-      const result = await updateTask({ id: task.id, ...updatePayload });
-      if (result.success) {
+      try {
+        const response = await apiClient.patch<Task>(
+          `/v1/tasks/${task.id}`,
+          updatePayload,
+          orgId,
+        );
+
+        if (response.error) {
+          throw new Error(response.error);
+        }
+
         // Refresh the task data from the server
         await mutateTask();
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to update task');
       }
     }
   };

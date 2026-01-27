@@ -6037,78 +6037,6 @@
         ]
       }
     },
-    "/v1/tasks/{taskId}": {
-      "get": {
-        "description": "Retrieve a specific task by its ID",
-        "operationId": "TasksController_getTask_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "required": true,
-            "in": "path",
-            "description": "Unique task identifier",
-            "schema": {
-              "example": "tsk_abc123def456",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Task retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskResponseDto"
-                },
-                "example": {
-                  "id": "tsk_abc123def456",
-                  "title": "Implement user authentication",
-                  "description": "Add OAuth 2.0 authentication to the platform",
-                  "status": "in_progress",
-                  "createdAt": "2024-01-15T10:30:00Z",
-                  "updatedAt": "2024-01-15T10:30:00Z"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Task not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Task with ID tsk_abc123def456 not found"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get task by ID",
-        "tags": [
-          "Tasks"
-        ]
-      }
-    },
     "/v1/tasks/bulk": {
       "patch": {
         "description": "Bulk update the status of multiple tasks",
@@ -6194,6 +6122,266 @@
           }
         ],
         "summary": "Update status for multiple tasks",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/bulk/assignee": {
+      "patch": {
+        "description": "Bulk update the assignee of multiple tasks",
+        "operationId": "TasksController_updateTasksAssignee_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "tsk_abc123",
+                      "tsk_def456"
+                    ]
+                  },
+                  "assigneeId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "mem_abc123",
+                    "description": "Assignee member ID, or null to unassign"
+                  }
+                },
+                "required": [
+                  "taskIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "updatedCount": {
+                      "type": "number",
+                      "example": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update assignee for multiple tasks",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}": {
+      "get": {
+        "description": "Retrieve a specific task by its ID",
+        "operationId": "TasksController_getTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                },
+                "example": {
+                  "id": "tsk_abc123def456",
+                  "title": "Implement user authentication",
+                  "description": "Add OAuth 2.0 authentication to the platform",
+                  "status": "in_progress",
+                  "createdAt": "2024-01-15T10:30:00Z",
+                  "updatedAt": "2024-01-15T10:30:00Z"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Task with ID tsk_abc123def456 not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task by ID",
+        "tags": [
+          "Tasks"
+        ]
+      },
+      "patch": {
+        "description": "Update an existing task (status, assignee, frequency, department, reviewDate)",
+        "operationId": "TasksController_updateTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "todo",
+                      "in_progress",
+                      "done",
+                      "not_relevant",
+                      "failed"
+                    ],
+                    "example": "in_progress"
+                  },
+                  "assigneeId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "mem_abc123",
+                    "description": "Assignee member ID, or null to unassign"
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "quarterly",
+                      "yearly"
+                    ],
+                    "example": "monthly"
+                  },
+                  "department": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "admin",
+                      "gov",
+                      "hr",
+                      "it",
+                      "itsm",
+                      "qms"
+                    ],
+                    "example": "it"
+                  },
+                  "reviewDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-01-01T00:00:00.000Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or task not found"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a task",
         "tags": [
           "Tasks"
         ]
@@ -9695,6 +9883,9 @@
         "responses": {
           "200": {
             "description": "List of all findings for the organization"
+          },
+          "400": {
+            "description": "Invalid status value"
           },
           "401": {
             "description": "Unauthorized"

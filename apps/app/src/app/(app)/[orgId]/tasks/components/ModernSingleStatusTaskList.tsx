@@ -2,10 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { Member, Task, User } from '@db';
 import { Checkbox } from '@comp/ui/checkbox';
+import { Button } from '@comp/ui/button';
+import { Member, Task, User } from '@db';
+import { RefreshCw, User as UserIcon } from 'lucide-react';
 import { ModernTaskListItem } from './ModernTaskListItem';
 import { TaskBulkActions } from './TaskBulkActions';
+import { BulkTaskStatusChangeModal } from './BulkTaskStatusChangeModal';
+import { BulkTaskAssigneeChangeModal } from './BulkTaskAssigneeChangeModal';
 
 interface ModernSingleStatusTaskListProps {
   config: {
@@ -33,9 +37,16 @@ interface ModernSingleStatusTaskListProps {
   handleTaskClick: (taskId: string) => void;
 }
 
-export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskClick }: ModernSingleStatusTaskListProps) {
+export function ModernSingleStatusTaskList({
+  config,
+  tasks,
+  members,
+  handleTaskClick,
+}: ModernSingleStatusTaskListProps) {
   const [selectable, setSelectable] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [openBulkStatus, setOpenBulkStatus] = useState(false);
+  const [openBulkAssignee, setOpenBulkAssignee] = useState(false);
   const StatusIcon = config.icon;
 
   useEffect(() => {
@@ -71,11 +82,17 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
   };
 
   const handleSelect = (taskId: string, checked: boolean) => {
-    setSelectedTaskIds((prev) => {
-      if (checked) return Array.from(new Set([...prev, taskId]));
-      return prev.filter((id) => id !== taskId);
-    });
+    setSelectedTaskIds((prev) =>
+      checked ? Array.from(new Set([...prev, taskId])) : prev.filter((id) => id !== taskId),
+    );
   };
+
+  const handleBulkActionSuccess = () => {
+    setSelectedTaskIds([]);
+    setSelectable(false);
+  };
+
+  const buttonClassName = 'h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent';
 
   return (
     <div className="space-y-2">
@@ -87,11 +104,9 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
         <span className="text-muted-foreground/60 text-xs font-medium">({tasks.length})</span>
         <TaskBulkActions
           selectedTaskIds={selectedTaskIds}
+          isEditing={selectable}
           onEdit={setSelectable}
-          onClearSelection={() => {
-            setSelectedTaskIds([]);
-            setSelectable(false);
-          }}
+          onClearSelection={handleBulkActionSuccess}
         />
       </div>
       <div className="divide-y divide-border/50 overflow-hidden rounded-lg border border-border/60 bg-card">
@@ -103,6 +118,41 @@ export function ModernSingleStatusTaskList({ config, tasks, members, handleTaskC
               aria-label="Select all tasks"
             />
             <span className="text-sm text-muted-foreground">Select all</span>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenBulkStatus(true)}
+                disabled={selectedTaskIds.length === 0}
+                className={buttonClassName}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Status</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenBulkAssignee(true)}
+                disabled={selectedTaskIds.length === 0}
+                className={buttonClassName}
+              >
+                <UserIcon className="h-3.5 w-3.5" />
+                <span>Assignee</span>
+              </Button>
+            </div>
+            <BulkTaskStatusChangeModal
+              selectedTaskIds={selectedTaskIds}
+              open={openBulkStatus}
+              onOpenChange={setOpenBulkStatus}
+              onSuccess={handleBulkActionSuccess}
+            />
+            <BulkTaskAssigneeChangeModal
+              selectedTaskIds={selectedTaskIds}
+              members={members}
+              open={openBulkAssignee}
+              onOpenChange={setOpenBulkAssignee}
+              onSuccess={handleBulkActionSuccess}
+            />
           </div>
         ) : null}
         {tasks.map((task) => (
