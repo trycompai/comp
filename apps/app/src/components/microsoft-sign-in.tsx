@@ -1,40 +1,30 @@
 'use client';
 
 import { authClient } from '@/utils/auth-client';
+import { buildAuthCallbackUrl } from '@/utils/auth-callback';
 import { Button } from '@comp/ui/button';
 import { Icons } from '@comp/ui/icons';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export function MicrosoftSignIn({
-  inviteCode,
-  searchParams,
-}: {
+interface MicrosoftSignInProps {
   inviteCode?: string;
-  searchParams?: URLSearchParams;
-}) {
+  redirectTo?: string;
+}
+
+export function MicrosoftSignIn({ inviteCode, redirectTo }: MicrosoftSignInProps) {
   const [isLoading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
     setLoading(true);
 
     try {
-      // Build the callback URL with search params
-      const baseURL = window.location.origin;
-      const path = inviteCode ? `/invite/${inviteCode}` : '/';
-      const redirectTo = new URL(path, baseURL);
-
-      // Append all search params if they exist
-      if (searchParams) {
-        searchParams.forEach((value, key) => {
-          redirectTo.searchParams.append(key, value);
-        });
-      }
+      const callbackURL = buildAuthCallbackUrl({ inviteCode, redirectTo });
 
       await authClient.signIn.social({
         provider: 'microsoft',
-        callbackURL: redirectTo.toString(),
+        callbackURL,
       });
     } catch (error) {
       setLoading(false);
@@ -45,7 +35,6 @@ export function MicrosoftSignIn({
         timestamp: new Date().toISOString(),
       });
 
-      // Show specific error messages based on error type
       if (error instanceof Error) {
         if (error.message.includes('redirect_uri_mismatch')) {
           toast.error('Configuration error', {
