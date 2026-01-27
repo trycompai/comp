@@ -8,7 +8,7 @@
  * Note: For user-facing display where domain should also be masked,
  * use the maskEmail function in invite/[code]/utils.ts instead.
  */
-export function maskEmail(value: string): string {
+export function maskEmailForLogs(value: string): string {
   const [name = '', domain = ''] = value.toLowerCase().split('@');
   if (!domain) return 'invalid-email';
   const safeName =

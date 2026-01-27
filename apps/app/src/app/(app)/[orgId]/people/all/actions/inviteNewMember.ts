@@ -1,6 +1,6 @@
 'use server';
 
-import { maskEmail } from '@/lib/mask-email';
+import { maskEmailForLogs } from '@/lib/mask-email';
 import { auth } from '@/utils/auth';
 import type { Role } from '@db';
 import { db } from '@db';
@@ -16,7 +16,7 @@ export const inviteNewMember = async ({
   roles: Role[];
 }) => {
   const requestId = crypto.randomUUID();
-  const safeEmail = maskEmail(email);
+  const safeEmail = maskEmailForLogs(email);
   const roleString = roles.join(',');
   const startTime = Date.now();
 

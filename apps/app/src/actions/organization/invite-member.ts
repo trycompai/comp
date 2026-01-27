@@ -1,6 +1,6 @@
 'use server';
 
-import { maskEmail } from '@/lib/mask-email';
+import { maskEmailForLogs } from '@/lib/mask-email';
 import { auth } from '@/utils/auth';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
@@ -35,7 +35,7 @@ export const inviteMember = authActionClient
     }
 
     const { email, role } = parsedInput;
-    const safeEmail = maskEmail(email);
+    const safeEmail = maskEmailForLogs(email);
     const startTime = Date.now();
 
     console.info('[inviteMember] start', {

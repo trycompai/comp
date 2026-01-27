@@ -1,5 +1,5 @@
 import { env } from '@/env.mjs';
-import { maskEmail } from '@/lib/mask-email';
+import { maskEmailForLogs } from '@/lib/mask-email';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
 import { sendEmail } from '@comp/email/lib/resend';
@@ -163,7 +163,7 @@ export const auth = betterAuth({
       sendMagicLink: async ({ email, url }) => {
         const requestId = crypto.randomUUID();
         const startTime = Date.now();
-        const safeEmail = maskEmail(email);
+        const safeEmail = maskEmailForLogs(email);
         const urlWithInviteCode = `${url}`;
 
         console.info('[magicLink] send start', {

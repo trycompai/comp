@@ -1,6 +1,6 @@
 'use server';
 
-import { maskEmail } from '@/lib/mask-email';
+import { maskEmailForLogs } from '@/lib/mask-email';
 import { auth } from '@/utils/auth';
 import { createSafeActionClient } from 'next-safe-action';
 import { headers } from 'next/headers';
@@ -60,7 +60,7 @@ export const bulkInviteEmployees = createSafeActionClient()
         console.error('[bulkInviteEmployees] invite failed', {
           requestId,
           organizationId,
-          invitedEmail: maskEmail(email),
+          invitedEmail: maskEmailForLogs(email),
           error: error instanceof Error ? error.message : String(error),
         });
         const errorMessage = error instanceof Error ? error.message : 'Invitation failed';
