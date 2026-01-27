@@ -4,7 +4,7 @@ import type { Role } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -126,13 +126,6 @@ export function InviteMembersModal({
     mode: 'onChange',
   });
 
-  // Log form errors on change
-  useEffect(() => {
-    if (Object.keys(form.formState.errors).length > 0) {
-      console.error('Form Validation Errors:', form.formState.errors);
-    }
-  }, [form.formState.errors]);
-
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'manualInvites',
@@ -219,13 +212,13 @@ export function InviteMembersModal({
         if (successCount > 0) {
           toast.success(`Successfully invited ${successCount} member(s).`);
 
-          // Revalidate the page to refresh the member list
-          router.refresh();
-
           if (failedInvites.length === 0) {
             form.reset();
             onOpenChange(false);
           }
+
+          // Revalidate the page to refresh the member list
+          router.refresh();
         }
 
         if (failedInvites.length > 0) {
@@ -397,13 +390,13 @@ export function InviteMembersModal({
           if (successCount > 0) {
             toast.success(`Successfully invited ${successCount} member(s).`);
 
-            // Revalidate the page to refresh the member list
-            router.refresh();
-
             if (failedInvites.length === 0) {
               form.reset();
               onOpenChange(false);
             }
+
+            // Revalidate the page to refresh the member list
+            router.refresh();
           }
 
           if (failedInvites.length > 0) {
