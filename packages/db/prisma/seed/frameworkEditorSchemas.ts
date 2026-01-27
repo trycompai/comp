@@ -168,6 +168,31 @@ export const FrameworkEditorControlTemplateSchema = z.object({
   // controls: Control[] - relational, omitted
 });
 
+export const FindingTemplateSchema = z.object({
+  id: z.string().optional(), // @id @default
+  category: z.string(),
+  title: z.string(),
+  content: z.string(),
+  order: z.number().optional(), // @default(0)
+  createdAt: z
+    .preprocess(
+      datePreprocess,
+      z.string().datetime({
+        message: 'Invalid datetime string for createdAt. Expected ISO 8601 format.',
+      }),
+    )
+    .optional(), // @default(now())
+  updatedAt: z
+    .preprocess(
+      datePreprocess,
+      z.string().datetime({
+        message: 'Invalid datetime string for updatedAt. Expected ISO 8601 format.',
+      }),
+    )
+    .optional(), // @default(now()) @updatedAt
+  // findings: Finding[] - relational, omitted
+});
+
 // For use in seed script validation
 export const frameworkEditorModelSchemas = {
   FrameworkEditorVideo: FrameworkEditorVideoSchema,
@@ -176,4 +201,5 @@ export const frameworkEditorModelSchemas = {
   FrameworkEditorPolicyTemplate: FrameworkEditorPolicyTemplateSchema,
   FrameworkEditorTaskTemplate: FrameworkEditorTaskTemplateSchema,
   FrameworkEditorControlTemplate: FrameworkEditorControlTemplateSchema,
+  FindingTemplate: FindingTemplateSchema,
 };

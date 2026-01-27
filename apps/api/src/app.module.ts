@@ -22,6 +22,8 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ContextModule } from './context/context.module';
 import { TrustPortalModule } from './trust-portal/trust-portal.module';
 import { TaskTemplateModule } from './framework-editor/task-template/task-template.module';
+import { FindingTemplateModule } from './finding-template/finding-template.module';
+import { FindingsModule } from './findings/findings.module';
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
@@ -66,6 +68,8 @@ import { TrainingModule } from './training/training.module';
     HealthModule,
     TrustPortalModule,
     TaskTemplateModule,
+    FindingTemplateModule,
+    FindingsModule,
     QuestionnaireModule,
     VectorStoreModule,
     KnowledgeBaseModule,
