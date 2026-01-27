@@ -1,13 +1,13 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
-import { TasksService } from '../tasks.service';
+import { TasksModule } from '../tasks.module';
 import { AutomationsController } from './automations.controller';
 import { AutomationsService } from './automations.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, forwardRef(() => TasksModule)],
   controllers: [AutomationsController],
-  providers: [AutomationsService, TasksService],
+  providers: [AutomationsService],
   exports: [AutomationsService],
 })
 export class AutomationsModule {}

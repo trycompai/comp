@@ -96,6 +96,166 @@ export class TasksController {
     return await this.tasksService.getTasks(organizationId);
   }
 
+  @Patch('bulk')
+  @ApiOperation({
+    summary: 'Update status for multiple tasks',
+    description: 'Bulk update the status of multiple tasks',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        taskIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['tsk_abc123', 'tsk_def456'],
+        },
+        status: {
+          type: 'string',
+          enum: Object.values(TaskStatus),
+          example: TaskStatus.in_progress,
+        },
+        reviewDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-01-01T00:00:00.000Z',
+          description: 'Optional review date to set on all tasks',
+        },
+      },
+      required: ['taskIds', 'status'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tasks updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        updatedCount: { type: 'number', example: 2 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request body',
+  })
+  async updateTasksStatus(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body()
+    body: {
+      taskIds: string[];
+      status: TaskStatus;
+      reviewDate?: string;
+    },
+  ): Promise<{ updatedCount: number }> {
+    const { taskIds, status, reviewDate } = body;
+
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new BadRequestException('taskIds must be a non-empty array');
+    }
+
+    if (!Object.values(TaskStatus).includes(status)) {
+      throw new BadRequestException('status is invalid');
+    }
+
+    let parsedReviewDate: Date | undefined;
+    if (reviewDate !== undefined) {
+      if (reviewDate === null || typeof reviewDate !== 'string') {
+        throw new BadRequestException('reviewDate is invalid');
+      }
+      parsedReviewDate = new Date(reviewDate);
+      if (Number.isNaN(parsedReviewDate.getTime())) {
+        throw new BadRequestException('reviewDate is invalid');
+      }
+    }
+
+    // Get userId from auth context
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. Bulk operations require authenticated user session.',
+      );
+    }
+    const userId = authContext.userId;
+
+    return await this.tasksService.updateTasksStatus(
+      organizationId,
+      taskIds,
+      status,
+      parsedReviewDate,
+      userId,
+    );
+  }
+
+  @Patch('bulk/assignee')
+  @ApiOperation({
+    summary: 'Update assignee for multiple tasks',
+    description: 'Bulk update the assignee of multiple tasks',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        taskIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['tsk_abc123', 'tsk_def456'],
+        },
+        assigneeId: {
+          type: 'string',
+          nullable: true,
+          example: 'mem_abc123',
+          description: 'Assignee member ID, or null to unassign',
+        },
+      },
+      required: ['taskIds'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tasks updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        updatedCount: { type: 'number', example: 2 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request body',
+  })
+  async updateTasksAssignee(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body()
+    body: {
+      taskIds: string[];
+      assigneeId: string | null;
+    },
+  ): Promise<{ updatedCount: number }> {
+    const { taskIds, assigneeId } = body;
+
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new BadRequestException('taskIds must be a non-empty array');
+    }
+
+    // Get userId from auth context
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. Bulk operations require authenticated user session.',
+      );
+    }
+    const userId = authContext.userId;
+
+    return await this.tasksService.updateTasksAssignee(
+      organizationId,
+      taskIds,
+      assigneeId ?? null,
+      userId,
+    );
+  }
+
   @Get(':taskId')
   @ApiOperation({
     summary: 'Get task by ID',
@@ -147,84 +307,113 @@ export class TasksController {
     return await this.tasksService.getTask(organizationId, taskId);
   }
 
-  @Patch('bulk')
+  @Patch(':taskId')
   @ApiOperation({
-    summary: 'Update status for multiple tasks',
-    description: 'Bulk update the status of multiple tasks',
+    summary: 'Update a task',
+    description: 'Update an existing task (status, assignee, frequency, department, reviewDate)',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
   })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        taskIds: {
-          type: 'array',
-          items: { type: 'string' },
-          example: ['tsk_abc123', 'tsk_def456'],
-        },
         status: {
           type: 'string',
           enum: Object.values(TaskStatus),
           example: TaskStatus.in_progress,
         },
+        assigneeId: {
+          type: 'string',
+          nullable: true,
+          example: 'mem_abc123',
+          description: 'Assignee member ID, or null to unassign',
+        },
+        frequency: {
+          type: 'string',
+          enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+          example: 'monthly',
+        },
+        department: {
+          type: 'string',
+          enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
+          example: 'it',
+        },
         reviewDate: {
           type: 'string',
           format: 'date-time',
           example: '2025-01-01T00:00:00.000Z',
-          description: 'Optional review date to set on all tasks',
         },
       },
-      required: ['taskIds', 'status'],
     },
   })
   @ApiResponse({
     status: 200,
-    description: 'Tasks updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        updatedCount: { type: 'number', example: 2 },
+    description: 'Task updated successfully',
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/TaskResponseDto' },
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid request body',
+    description: 'Invalid request body or task not found',
   })
-  async updateTasksStatus(
+  @ApiResponse({
+    status: 404,
+    description: 'Task not found',
+  })
+  async updateTask(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
     @Body()
     body: {
-      taskIds: string[];
-      status: TaskStatus;
+      status?: TaskStatus;
+      assigneeId?: string | null;
+      frequency?: string;
+      department?: string;
       reviewDate?: string;
     },
-  ): Promise<{ updatedCount: number }> {
-    const { taskIds, status, reviewDate } = body;
-
-    if (!Array.isArray(taskIds) || taskIds.length === 0) {
-      throw new BadRequestException('taskIds must be a non-empty array');
+  ): Promise<TaskResponseDto> {
+    // Get userId from auth context
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. Task updates require authenticated user session.',
+      );
     }
+    const userId = authContext.userId;
 
-    if (!Object.values(TaskStatus).includes(status)) {
-      throw new BadRequestException('status is invalid');
-    }
-
-    let parsedReviewDate: Date | undefined;
-    if (reviewDate !== undefined) {
-      if (reviewDate === null || typeof reviewDate !== 'string') {
+    let parsedReviewDate: Date | null | undefined;
+    if (body.reviewDate !== undefined) {
+      if (body.reviewDate === null) {
+        // null means clear the reviewDate
+        parsedReviewDate = null;
+      } else if (typeof body.reviewDate !== 'string') {
         throw new BadRequestException('reviewDate is invalid');
-      }
-      parsedReviewDate = new Date(reviewDate);
-      if (Number.isNaN(parsedReviewDate.getTime())) {
-        throw new BadRequestException('reviewDate is invalid');
+      } else {
+        parsedReviewDate = new Date(body.reviewDate);
+        if (Number.isNaN(parsedReviewDate.getTime())) {
+          throw new BadRequestException('reviewDate is invalid');
+        }
       }
     }
 
-    return await this.tasksService.updateTasksStatus(
+    return await this.tasksService.updateTask(
       organizationId,
-      taskIds,
-      status,
-      parsedReviewDate,
+      taskId,
+      {
+        status: body.status,
+        assigneeId: body.assigneeId,
+        frequency: body.frequency,
+        department: body.department,
+        reviewDate: parsedReviewDate,
+      },
+      userId,
     );
   }
 

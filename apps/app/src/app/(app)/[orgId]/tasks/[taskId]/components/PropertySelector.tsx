@@ -25,6 +25,8 @@ export interface PropertySelectorProps<T> {
   allowUnassign?: boolean; // Specific flag for assignee-like scenarios
   unassignValue?: string;
   unassignLabel?: string;
+  getSearchValue?: (option: T) => string; // Optional function to get searchable text for filtering
+  showCheck?: boolean; // Whether to show check icon (default: true)
 }
 
 export function PropertySelector<T>({
@@ -41,6 +43,8 @@ export function PropertySelector<T>({
   allowUnassign = false,
   unassignValue = 'unassigned',
   unassignLabel = 'Unassigned',
+  getSearchValue,
+  showCheck = true,
 }: PropertySelectorProps<T>) {
   const [popoverOpen, setPopoverOpen] = useState(false);
 
@@ -64,32 +68,42 @@ export function PropertySelector<T>({
                     onSelect(null); // Pass null for unassignment
                     setPopoverOpen(false);
                   }}
+                  className="flex items-center cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === null || value === undefined ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  <span className="text-muted-foreground">{unassignLabel}</span>
+                  {showCheck && (
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4 shrink-0',
+                        value === null || value === undefined ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                  )}
+                  <span className="text-muted-foreground flex-1">{unassignLabel}</span>
                 </CommandItem>
               )}
               {/* Dynamic Options */}
               {options.map((option) => {
                 const key = getKey(option);
+                // Use searchable value if provided, otherwise fall back to key
+                const searchValue = getSearchValue ? getSearchValue(option) : key;
                 return (
                   <CommandItem
                     key={key}
-                    value={key} // Primarily used for filtering/selection
-                    onSelect={(currentValue) => {
-                      onSelect(currentValue);
+                    value={searchValue} // Used for filtering/searching
+                    onSelect={() => {
+                      onSelect(key); // Always use the key for selection
                       setPopoverOpen(false);
                     }}
+                    className="flex items-center cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
-                    <Check
-                      className={cn('mr-2 h-4 w-4', value === key ? 'opacity-100' : 'opacity-0')}
-                    />
-                    {renderOption(option)}
+                    {showCheck && (
+                      <Check
+                        className={cn('mr-2 h-4 w-4 shrink-0', value === key ? 'opacity-100' : 'opacity-0')}
+                      />
+                    )}
+                    <div className={cn('flex-1 min-w-0 overflow-hidden', !showCheck && 'w-full')}>
+                      {renderOption(option)}
+                    </div>
                   </CommandItem>
                 );
               })}

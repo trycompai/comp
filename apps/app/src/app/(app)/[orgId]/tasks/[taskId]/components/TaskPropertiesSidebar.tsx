@@ -59,7 +59,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             trigger={
               <Button
                 variant="ghost"
-                className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center gap-2 px-2 py-0.5 font-medium capitalize"
+                className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center gap-2 px-2 py-0.5 font-medium capitalize transition-colors cursor-pointer"
               >
                 <TaskStatusIndicator status={task.status} />
                 {task.status.replace('_', ' ')}
@@ -78,15 +78,18 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             value={task.assigneeId}
             options={members ?? []}
             getKey={(member) => member.id}
+            getSearchValue={(member) => `${member.user?.name || ''} ${member.user?.email || ''}`.trim() || member.id}
             renderOption={(member) => (
-              <div className="flex items-center gap-2">
-                <Avatar className="h-5 w-5">
+              <div className="flex items-center gap-2 w-full">
+                <Avatar className="h-5 w-5 shrink-0">
                   {member.user?.image && (
-                    <AvatarImage src={member.user.image} alt={member.user.name ?? ''} />
+                    <AvatarImage src={member.user.image} alt={member.user.name ?? member.user.email ?? ''} />
                   )}
-                  <AvatarFallback>{member.user?.name?.charAt(0) ?? '?'}</AvatarFallback>
+                  <AvatarFallback>
+                    {member.user?.name?.charAt(0) ?? member.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
+                  </AvatarFallback>
                 </Avatar>
-                <span>{member.user.name}</span>
+                <span className="truncate">{member.user.name || member.user.email}</span>
               </div>
             )}
             onSelect={(selectedAssigneeId) => {
@@ -97,7 +100,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             trigger={
               <Button
                 variant="ghost"
-                className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5"
+                className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 transition-colors cursor-pointer"
                 disabled={members?.length === 0}
               >
                 {assignedMember ? (
@@ -106,14 +109,14 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                       {assignedMember.user?.image && (
                         <AvatarImage
                           src={assignedMember.user.image}
-                          alt={assignedMember.user.name ?? ''}
+                          alt={assignedMember.user.name ?? assignedMember.user.email ?? ''}
                         />
                       )}
                       <AvatarFallback className="text-[10px]">
-                        {assignedMember.user?.name?.charAt(0) ?? '?'}
+                        {assignedMember.user?.name?.charAt(0) ?? assignedMember.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">{assignedMember.user.name}</span>
+                    <span className="font-medium">{assignedMember.user.name || assignedMember.user.email}</span>
                   </>
                 ) : (
                   <span className="font-medium">Unassigned</span>
@@ -122,9 +125,10 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             }
             searchPlaceholder="Change assignee..."
             emptyText="No member found."
-            contentWidth="w-56"
+            contentWidth="w-64"
             disabled={members?.length === 0}
             allowUnassign={true} // Enable unassign option
+            showCheck={false} // Hide check icon for assignee selector
           />
         </div>
 
@@ -145,7 +149,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             trigger={
               <Button
                 variant="ghost"
-                className="hover:bg-muted data-[state=open]:bg-muted h-auto w-auto px-2 py-0.5 font-medium capitalize"
+                className="hover:bg-muted data-[state=open]:bg-muted h-auto w-auto px-2 py-0.5 font-medium capitalize transition-colors cursor-pointer"
               >
                 {task.frequency ? task.frequency.replace('_', ' ') : 'None'}
               </Button>
@@ -194,21 +198,20 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             trigger={
               <Button
                 variant="ghost"
-                // Adjust class slightly to handle text vs badge alignment if needed
-                className="flex h-auto w-auto items-center justify-end p-0 px-1 hover:bg-transparent data-[state=open]:bg-transparent"
+                className="flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 hover:bg-muted data-[state=open]:bg-muted transition-colors cursor-pointer"
               >
                 {(() => {
                   const currentDept = task.department ?? 'none';
                   if (currentDept === 'none') {
                     // Render 'None' as plain text for the trigger
-                    return <span className="px-1 font-medium">None</span>;
+                    return <span className="font-medium">None</span>;
                   }
                   // Render other departments as colored badges
                   const mainColor = DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none; // Fallback
                   const lightBgColor = `${mainColor}1A`; // Add opacity
                   return (
                     <Badge
-                      className="border-l-2 px-1.5 py-0.5 text-xs font-normal uppercase hover:opacity-80"
+                      className="border-l-2 px-1.5 py-0 text-xs font-normal uppercase"
                       style={{
                         backgroundColor: lightBgColor,
                         color: mainColor,
