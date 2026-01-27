@@ -2,6 +2,7 @@
 
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,25 @@ interface CloudSettingsModalProps {
   connectedProviders: CloudProvider[];
   onUpdate: () => void;
 }
+
+/**
+ * Get the appropriate text color class based on connection status
+ */
+const getStatusColorClass = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'text-green-600 dark:text-green-400';
+    case 'error':
+      return 'text-red-600 dark:text-red-400';
+    case 'pending':
+      return 'text-amber-600 dark:text-amber-400';
+    case 'paused':
+    case 'disconnected':
+      return 'text-muted-foreground';
+    default:
+      return 'text-muted-foreground';
+  }
+};
 
 export function CloudSettingsModal({
   open,
@@ -104,7 +124,9 @@ export function CloudSettingsModal({
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Connection Status</span>
-                  <span className="text-sm capitalize text-green-600 dark:text-green-400">{provider.status}</span>
+                  <span className={cn('text-sm capitalize', getStatusColorClass(provider.status))}>
+                    {provider.status}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   To update credentials, disconnect this provider and reconnect with new IAM role settings.
