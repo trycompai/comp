@@ -87,6 +87,26 @@ interface ManageIntegrationDialogProps {
   onSaved?: () => void;
 }
 
+const validateTargetRepos = (
+  values: Record<string, string | number | boolean | string[]>,
+): boolean => {
+  const targetReposValue = values.target_repos;
+  if (!Array.isArray(targetReposValue) || targetReposValue.length === 0) {
+    return true;
+  }
+  for (const value of targetReposValue) {
+    const colonIndex = String(value).lastIndexOf(':');
+    if (colonIndex <= 0) {
+      return false;
+    }
+    const branch = String(value).substring(colonIndex + 1).trim();
+    if (!branch) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export function ManageIntegrationDialog({
   open,
   onOpenChange,
@@ -322,9 +342,14 @@ export function ManageIntegrationDialog({
     setDynamicOptions({});
   };
 
+  const hasVariables = variables.length > 0;
+  const hasCredentials = authStrategy === 'custom' && credentialFields.length > 0;
+  const showTabs = hasVariables && hasCredentials;
+  const isTargetReposValid = validateTargetRepos(variableValues);
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center overflow-hidden">
@@ -350,28 +375,43 @@ export function ManageIntegrationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {loadingVariables ? (
-          <div className="py-8 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <ConfigurationContent
-            variables={variables}
-            variableValues={variableValues}
-            setVariableValues={setVariableValues}
-            dynamicOptions={dynamicOptions}
-            loadingDynamicOptions={loadingDynamicOptions}
-            fetchDynamicOptions={fetchDynamicOptions}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {loadingVariables ? (
+            <div className="py-8 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <ConfigurationContent
+              variables={variables}
+              variableValues={variableValues}
+              setVariableValues={setVariableValues}
+              dynamicOptions={dynamicOptions}
+              loadingDynamicOptions={loadingDynamicOptions}
+              fetchDynamicOptions={fetchDynamicOptions}
+              credentialFields={credentialFields}
+              credentialValues={credentialValues}
+              setCredentialValues={setCredentialValues}
+              hasVariables={hasVariables}
+              hasCredentials={hasCredentials}
+              showTabs={showTabs}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          )}
+        </div>
+
+        {!loadingVariables && (
+          <ConfigurationFooterActions
+            hasVariables={hasVariables}
+            hasCredentials={hasCredentials}
+            showTabs={showTabs}
+            activeTab={activeTab}
             savingVariables={savingVariables}
             handleSaveVariables={handleSaveVariables}
-            credentialFields={credentialFields}
-            credentialValues={credentialValues}
-            setCredentialValues={setCredentialValues}
+            isTargetReposValid={isTargetReposValid}
             savingCredentials={savingCredentials}
             handleSaveCredentials={handleSaveCredentials}
-            authStrategy={authStrategy}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            showActionsFooter={!configureOnly}
           />
         )}
 
@@ -428,14 +468,12 @@ function ConfigurationContent({
   dynamicOptions,
   loadingDynamicOptions,
   fetchDynamicOptions,
-  savingVariables,
-  handleSaveVariables,
   credentialFields,
   credentialValues,
   setCredentialValues,
-  savingCredentials,
-  handleSaveCredentials,
-  authStrategy,
+  hasVariables,
+  hasCredentials,
+  showTabs,
   activeTab,
   setActiveTab,
 }: {
@@ -447,44 +485,15 @@ function ConfigurationContent({
   dynamicOptions: Record<string, { value: string; label: string }[]>;
   loadingDynamicOptions: Record<string, boolean>;
   fetchDynamicOptions: (variableId: string) => void;
-  savingVariables: boolean;
-  handleSaveVariables: () => void;
   credentialFields: CredentialField[];
   credentialValues: Record<string, string>;
   setCredentialValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  savingCredentials: boolean;
-  handleSaveCredentials: () => void;
-  authStrategy: string;
+  hasVariables: boolean;
+  hasCredentials: boolean;
+  showTabs: boolean;
   activeTab: 'variables' | 'credentials';
   setActiveTab: (tab: 'variables' | 'credentials') => void;
 }) {
-  const hasVariables = variables.length > 0;
-  const hasCredentials = authStrategy === 'custom' && credentialFields.length > 0;
-  const showTabs = hasVariables && hasCredentials;
-
-  // Validate target_repos - each repo must have at least one branch
-  const validateTargetRepos = (): boolean => {
-    const targetReposValue = variableValues.target_repos;
-    if (!Array.isArray(targetReposValue) || targetReposValue.length === 0) {
-      return true; // No repos selected is OK (will be caught by required check)
-    }
-    // Check that each repo has a branch specified
-    for (const value of targetReposValue) {
-      const colonIndex = String(value).lastIndexOf(':');
-      if (colonIndex <= 0) {
-        // No colon means no branch specified
-        return false;
-      }
-      const branch = String(value).substring(colonIndex + 1).trim();
-      if (!branch) {
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const isTargetReposValid = validateTargetRepos();
-
   // If neither available, show empty state
   if (!hasVariables && !hasCredentials) {
     return (
@@ -601,21 +610,6 @@ function ConfigurationContent({
           </div>
         );
       })}
-
-      <Button
-        onClick={handleSaveVariables}
-        disabled={savingVariables || !isTargetReposValid}
-        className="w-full"
-      >
-        {savingVariables ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          'Save Configuration'
-        )}
-      </Button>
     </div>
   );
 
@@ -723,17 +717,6 @@ function ConfigurationContent({
           )}
         </div>
       ))}
-
-      <Button onClick={handleSaveCredentials} disabled={savingCredentials} className="w-full">
-        {savingCredentials ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Updating...
-          </>
-        ) : (
-          'Update Credentials'
-        )}
-      </Button>
     </div>
   );
 
@@ -763,6 +746,71 @@ function ConfigurationContent({
 
   // Show only what's available
   return <div className="space-y-4">{variablesContent || credentialsContent}</div>;
+}
+
+function ConfigurationFooterActions({
+  hasVariables,
+  hasCredentials,
+  showTabs,
+  activeTab,
+  savingVariables,
+  handleSaveVariables,
+  isTargetReposValid,
+  savingCredentials,
+  handleSaveCredentials,
+  showActionsFooter,
+}: {
+  hasVariables: boolean;
+  hasCredentials: boolean;
+  showTabs: boolean;
+  activeTab: 'variables' | 'credentials';
+  savingVariables: boolean;
+  handleSaveVariables: () => void;
+  isTargetReposValid: boolean;
+  savingCredentials: boolean;
+  handleSaveCredentials: () => void;
+  showActionsFooter: boolean;
+}) {
+  if (!hasVariables && !hasCredentials) {
+    return null;
+  }
+
+  const showVariablesButton = hasVariables && (!showTabs || activeTab === 'variables');
+  const showCredentialsButton = hasCredentials && (!showTabs || activeTab === 'credentials');
+  const footerClassName = showActionsFooter ? 'pt-4' : 'border-t pt-4';
+
+  return (
+    <div className={footerClassName}>
+      {showVariablesButton && (
+        <Button
+          onClick={handleSaveVariables}
+          disabled={savingVariables || !isTargetReposValid}
+          className="w-full"
+        >
+          {savingVariables ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Configuration'
+          )}
+        </Button>
+      )}
+      {showCredentialsButton && (
+        <Button onClick={handleSaveCredentials} disabled={savingCredentials} className="w-full">
+          {savingCredentials ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            'Update Credentials'
+          )}
+        </Button>
+      )}
+    </div>
+  );
 }
 
 /**
