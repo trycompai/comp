@@ -3,7 +3,6 @@
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { authActionClientWithoutOrg } from '../safe-action';
 import type { ActionResponse } from '../types';
@@ -99,8 +98,16 @@ export const completeInvitation = authActionClientWithoutOrg
             });
           }
 
-          // Server redirect to the organization's root
-          redirect(`/${invitation.organizationId}/`);
+          revalidatePath(`/${invitation.organization.id}`);
+          revalidateTag(`user_${user.id}`, 'max');
+
+          return {
+            success: true,
+            data: {
+              accepted: true,
+              organizationId: invitation.organizationId,
+            },
+          };
         }
 
         if (!invitation.role) {
@@ -141,11 +148,16 @@ export const completeInvitation = authActionClientWithoutOrg
         revalidatePath(`/${invitation.organization.id}/settings/users`);
         revalidateTag(`user_${user.id}`, 'max');
 
-        // Server redirect to the organization's root
-        redirect(`/${invitation.organizationId}/`);
+        return {
+          success: true,
+          data: {
+            accepted: true,
+            organizationId: invitation.organizationId,
+          },
+        };
       } catch (error) {
         console.error('Error accepting invitation:', error);
-        throw new Error(error as string);
+        throw new Error(error instanceof Error ? error.message : String(error));
       }
     },
   );

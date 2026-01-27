@@ -45,7 +45,8 @@ export const authClient = createAuthClient({
     },
     auth: {
       type: 'Bearer',
-      token: () => localStorage.getItem('bearer_token') || '',
+      token: () =>
+        typeof window !== 'undefined' ? localStorage.getItem('bearer_token') || '' : '',
     },
   },
 });

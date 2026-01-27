@@ -1,4 +1,5 @@
 import { env } from '@/env.mjs';
+import { maskEmailForLogs } from '@/lib/mask-email';
 import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
 import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
 import { sendEmail } from '@comp/email/lib/resend';
@@ -16,6 +17,8 @@ const dub = env.DUB_API_KEY
       token: env.DUB_API_KEY,
     })
   : undefined;
+
+const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
 let socialProviders = {};
 
@@ -156,16 +159,43 @@ export const auth = betterAuth({
       },
     }),
     magicLink({
-      sendMagicLink: async ({ email, url }, request) => {
+      expiresIn: MAGIC_LINK_EXPIRES_IN_SECONDS,
+      sendMagicLink: async ({ email, url }) => {
+        const requestId = crypto.randomUUID();
+        const startTime = Date.now();
+        const safeEmail = maskEmailForLogs(email);
         const urlWithInviteCode = `${url}`;
-        await sendEmail({
-          to: email,
-          subject: 'Login to Comp AI',
-          react: MagicLinkEmail({
-            email,
-            url: urlWithInviteCode,
-          }),
+
+        console.info('[magicLink] send start', {
+          requestId,
+          email: safeEmail,
+          expiresInSec: MAGIC_LINK_EXPIRES_IN_SECONDS,
         });
+
+        try {
+          await sendEmail({
+            to: email,
+            subject: 'Login to Comp AI',
+            react: MagicLinkEmail({
+              email,
+              url: urlWithInviteCode,
+            }),
+          });
+
+          console.info('[magicLink] send success', {
+            requestId,
+            email: safeEmail,
+            durationMs: Date.now() - startTime,
+          });
+        } catch (error) {
+          console.error('[magicLink] send failure', {
+            requestId,
+            email: safeEmail,
+            durationMs: Date.now() - startTime,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          throw error;
+        }
       },
     }),
     emailOTP({
