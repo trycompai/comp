@@ -3,6 +3,7 @@ import {
   IsString,
   IsEnum,
   IsOptional,
+  IsNotEmpty,
   MaxLength,
 } from 'class-validator';
 import { FindingStatus, FindingType } from '@trycompai/db';
@@ -35,6 +36,7 @@ export class UpdateFindingDto {
   })
   @IsString()
   @IsOptional()
+  @IsNotEmpty({ message: 'Content cannot be empty if provided' })
   @MaxLength(5000)
   content?: string;
 }

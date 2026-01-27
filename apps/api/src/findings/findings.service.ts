@@ -321,9 +321,9 @@ export class FindingsService {
     const updatedFinding = await db.finding.update({
       where: { id: findingId },
       data: {
-        ...(updateDto.status && { status: updateDto.status }),
-        ...(updateDto.type && { type: updateDto.type }),
-        ...(updateDto.content && { content: updateDto.content }),
+        ...(updateDto.status !== undefined && { status: updateDto.status }),
+        ...(updateDto.type !== undefined && { type: updateDto.type }),
+        ...(updateDto.content !== undefined && { content: updateDto.content }),
       },
       include: {
         createdBy: {
