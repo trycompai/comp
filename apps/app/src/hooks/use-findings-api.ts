@@ -97,10 +97,7 @@ export interface UseFindingsOptions extends UseApiSWROptions<Finding[]> {
 /**
  * Hook to fetch findings for a specific task
  */
-export function useTaskFindings(
-  taskId: string | null,
-  options: UseFindingsOptions = {},
-) {
+export function useTaskFindings(taskId: string | null, options: UseFindingsOptions = {}) {
   const endpoint = taskId ? `/v1/findings?taskId=${taskId}` : null;
 
   return useApiSWR<Finding[]>(endpoint, {
@@ -112,10 +109,7 @@ export function useTaskFindings(
 /**
  * Hook to fetch all findings for an organization
  */
-export function useOrganizationFindings(
-  status?: FindingStatus,
-  options: UseFindingsOptions = {},
-) {
+export function useOrganizationFindings(status?: FindingStatus, options: UseFindingsOptions = {}) {
   const endpoint = status
     ? `/v1/findings/organization?status=${status}`
     : '/v1/findings/organization';
@@ -129,9 +123,7 @@ export function useOrganizationFindings(
 /**
  * Hook to fetch all finding templates
  */
-export function useFindingTemplates(
-  options: UseApiSWROptions<FindingTemplate[]> = {},
-) {
+export function useFindingTemplates(options: UseApiSWROptions<FindingTemplate[]> = {}) {
   return useApiSWR<FindingTemplate[]>('/v1/finding-template', options);
 }
 
@@ -199,9 +191,7 @@ export function useFindingActions() {
 /**
  * Grouped finding templates by category
  */
-export function useGroupedFindingTemplates(
-  options: UseApiSWROptions<FindingTemplate[]> = {},
-) {
+export function useGroupedFindingTemplates(options: UseApiSWROptions<FindingTemplate[]> = {}) {
   const { data, ...rest } = useFindingTemplates(options);
 
   const groupedTemplates = data?.data?.reduce(
@@ -239,7 +229,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_evidence_issue_01',
     category: 'evidence_issue',
     title: 'Missing organization context',
-    content: 'The uploaded evidence does not clearly show the Organization Name or URL. Please provide a screenshot showing the context.',
+    content:
+      'The uploaded evidence does not clearly show the Organization Name or URL. Please provide a screenshot showing the context.',
     order: 1,
     createdAt: '',
     updatedAt: '',
@@ -248,7 +239,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_evidence_issue_02',
     category: 'evidence_issue',
     title: 'Evidence outside audit window',
-    content: 'The evidence date falls outside the currently active audit observation window. Please ensure evidence is relevant to the current period.',
+    content:
+      'The evidence date falls outside the currently active audit observation window. Please ensure evidence is relevant to the current period.',
     order: 2,
     createdAt: '',
     updatedAt: '',
@@ -257,7 +249,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_evidence_issue_03',
     category: 'evidence_issue',
     title: 'Unreadable or corrupted file',
-    content: 'The auditor could not open or read the file due to low resolution or corruption. Please re-upload a clear copy.',
+    content:
+      'The auditor could not open or read the file due to low resolution or corruption. Please re-upload a clear copy.',
     order: 3,
     createdAt: '',
     updatedAt: '',
@@ -266,7 +259,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_further_evidence_01',
     category: 'further_evidence',
     title: 'Statement of intent - need proof of operation',
-    content: 'The attached document(s) is a statement of intent. This control requires Evidence of Operation (proof of action). Please upload specific logs, screenshots, system configs, or tickets that demonstrate this policy is currently being enforced.',
+    content:
+      'The attached document(s) is a statement of intent. This control requires Evidence of Operation (proof of action). Please upload specific logs, screenshots, system configs, or tickets that demonstrate this policy is currently being enforced.',
     order: 1,
     createdAt: '',
     updatedAt: '',
@@ -275,7 +269,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_further_evidence_02',
     category: 'further_evidence',
     title: 'No evidence attached',
-    content: "This task was marked as 'Done', but no file was attached. For an external audit, every completed task requires proof of execution. Please upload the specific evidence (screenshot, PDF, or export) and re-submit.",
+    content:
+      "This task was marked as 'Done', but no file was attached. For an external audit, every completed task requires proof of execution. Please upload the specific evidence (screenshot, PDF, or export) and re-submit.",
     order: 2,
     createdAt: '',
     updatedAt: '',
@@ -284,7 +279,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_task_specific_01',
     category: 'task_specific',
     title: 'Pull Request samples required',
-    content: 'Please upload a sample of recently merged Pull Requests (5 examples). The evidence must clearly show: 1. The Author, 2. The Approver (must be different from the author), and 3. The Build/Test Status checks.',
+    content:
+      'Please upload a sample of recently merged Pull Requests (5 examples). The evidence must clearly show: 1. The Author, 2. The Approver (must be different from the author), and 3. The Build/Test Status checks.',
     order: 1,
     createdAt: '',
     updatedAt: '',
@@ -293,7 +289,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_task_specific_02',
     category: 'task_specific',
     title: 'Alert screenshot required',
-    content: 'Please upload a screenshot of an actual triggered alert (e.g., a notification from PagerDuty, Slack, or Email). The evidence must clearly show: 1. The Alert Name, 2. The Timestamp, and 3. The Severity Level.',
+    content:
+      'Please upload a screenshot of an actual triggered alert (e.g., a notification from PagerDuty, Slack, or Email). The evidence must clearly show: 1. The Alert Name, 2. The Timestamp, and 3. The Severity Level.',
     order: 2,
     createdAt: '',
     updatedAt: '',
@@ -302,7 +299,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_task_specific_03',
     category: 'task_specific',
     title: 'System logs sample required',
-    content: 'Please provide a sample of System or Infrastructure Logs (e.g., AWS CloudWatch, Google Cloud Logging, Datadog). The sample must clearly show headers including: Timestamp, Event/Error Message, and Source/User.',
+    content:
+      'Please provide a sample of System or Infrastructure Logs (e.g., AWS CloudWatch, Google Cloud Logging, Datadog). The sample must clearly show headers including: Timestamp, Event/Error Message, and Source/User.',
     order: 3,
     createdAt: '',
     updatedAt: '',
@@ -311,7 +309,8 @@ export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
     id: 'default_na_incorrect_01',
     category: 'na_incorrect',
     title: 'Control required for compliance',
-    content: 'This control is required for SOC 2 compliance, regardless of company size. However, the evidence can be scaled down to fit your stage. Please see the guidance documentation for acceptable lightweight evidence.',
+    content:
+      'This control is required for SOC 2 compliance, regardless of company size. However, the evidence can be scaled down to fit your stage. Please see the guidance documentation for acceptable lightweight evidence.',
     order: 1,
     createdAt: '',
     updatedAt: '',

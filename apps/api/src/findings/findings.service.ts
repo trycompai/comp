@@ -9,12 +9,16 @@ import { db, FindingStatus, FindingType } from '@trycompai/db';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
 import { FindingAuditService } from './finding-audit.service';
+import { FindingNotifierService } from './finding-notifier.service';
 
 @Injectable()
 export class FindingsService {
   private readonly logger = new Logger(FindingsService.name);
 
-  constructor(private readonly findingAuditService: FindingAuditService) {}
+  constructor(
+    private readonly findingAuditService: FindingAuditService,
+    private readonly findingNotifierService: FindingNotifierService,
+  ) {}
 
   /**
    * Get all findings for a specific task
@@ -246,6 +250,22 @@ export class FindingsService {
       type: createDto.type ?? FindingType.soc2,
     });
 
+    // Send notifications (fire-and-forget)
+    const actorName =
+      finding.createdBy?.user?.name ||
+      finding.createdBy?.user?.email ||
+      'Someone';
+    void this.findingNotifierService.notifyFindingCreated({
+      organizationId,
+      findingId: finding.id,
+      taskId: createDto.taskId,
+      taskTitle: task.title,
+      findingContent: createDto.content,
+      findingType: createDto.type ?? FindingType.soc2,
+      actorUserId: userId,
+      actorName,
+    });
+
     this.logger.log(
       `Created finding ${finding.id} for task ${createDto.taskId}`,
     );
@@ -364,6 +384,59 @@ export class FindingsService {
         previousContent,
         newContent: updateDto.content,
       });
+    }
+
+    // Send status change notifications (fire-and-forget)
+    if (updateDto.status && updateDto.status !== previousStatus) {
+      this.logger.log(
+        `Status changed for finding ${findingId}: ${previousStatus} → ${updateDto.status}. Triggering notification.`,
+      );
+
+      const actorUser = await db.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+      const actorName = actorUser?.name || actorUser?.email || 'Someone';
+
+      const notificationParams = {
+        organizationId,
+        findingId,
+        taskId: finding.taskId,
+        taskTitle: finding.task.title,
+        findingContent: updatedFinding.content,
+        findingType: updatedFinding.type as FindingType,
+        actorUserId: userId,
+        actorName,
+      };
+
+      switch (updateDto.status) {
+        case FindingStatus.ready_for_review:
+          this.logger.log(`Triggering 'ready_for_review' notification for finding ${findingId}`);
+          void this.findingNotifierService.notifyReadyForReview({
+            ...notificationParams,
+            findingCreatorMemberId: finding.createdById,
+          });
+          break;
+        case FindingStatus.needs_revision:
+          this.logger.log(`Triggering 'needs_revision' notification for finding ${findingId}`);
+          void this.findingNotifierService.notifyNeedsRevision(notificationParams);
+          break;
+        case FindingStatus.closed:
+          this.logger.log(`Triggering 'closed' notification for finding ${findingId}`);
+          void this.findingNotifierService.notifyFindingClosed(notificationParams);
+          break;
+        case FindingStatus.open:
+          this.logger.log(`Status changed to 'open' for finding ${findingId}. No notification sent.`);
+          break;
+        default:
+          this.logger.warn(
+            `Unknown status ${updateDto.status} for finding ${findingId}. No notification sent.`,
+          );
+      }
+    } else if (updateDto.status && updateDto.status === previousStatus) {
+      this.logger.log(
+        `Status unchanged for finding ${findingId}: ${previousStatus}. Skipping notification.`,
+      );
     }
 
     this.logger.log(

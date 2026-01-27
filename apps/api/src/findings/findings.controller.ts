@@ -11,6 +11,7 @@ import {
   UsePipes,
   ValidationPipe,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -183,7 +184,7 @@ export class FindingsController {
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
 
     if (!isAuditor && !isPlatformAdmin) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         'Only auditors or platform admins can create findings',
       );
     }
@@ -327,7 +328,7 @@ export class FindingsController {
     const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
 
     if (!isAuditor && !isPlatformAdmin) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         'Only auditors or platform admins can delete findings',
       );
     }

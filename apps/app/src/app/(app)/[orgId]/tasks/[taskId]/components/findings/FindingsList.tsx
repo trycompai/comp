@@ -1,12 +1,16 @@
 'use client';
 
 import { useFindingActions, useTaskFindings, type Finding } from '@/hooks/use-findings-api';
+import { Button } from '@comp/ui/button';
 import { FindingStatus } from '@db';
-import { AlertTriangle, FileWarning, Loader2 } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp, FileWarning, Loader2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from './CreateFindingButton';
 import { FindingItem } from './FindingItem';
+
+// Number of findings to show initially
+const INITIAL_DISPLAY_COUNT = 5;
 
 interface FindingsListProps {
   taskId: string;
@@ -36,18 +40,22 @@ export function FindingsList({
   const { data, isLoading, error, mutate } = useTaskFindings(taskId);
   const { updateFinding, deleteFinding } = useFindingActions();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const rawFindings = data?.data || [];
 
   // Sort findings: by status priority, then by updatedAt (most recently updated first)
-  const findings = useMemo(() => {
+  const sortedFindings = useMemo(() => {
     return [...rawFindings].sort((a: Finding, b: Finding) => {
       const statusDiff = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
       if (statusDiff !== 0) return statusDiff;
-      // Secondary sort by updatedAt descending (most recently updated first)
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
   }, [rawFindings]);
+
+  // Determine visible findings based on showAll state
+  const visibleFindings = showAll ? sortedFindings : sortedFindings.slice(0, INITIAL_DISPLAY_COUNT);
+  const hiddenCount = sortedFindings.length - visibleFindings.length;
 
   // Permission checks
   const canCreateFinding = isAuditor || isPlatformAdmin;
@@ -85,7 +93,7 @@ export function FindingsList({
   );
 
   // Count open findings for the alert
-  const openFindingsCount = findings.filter(
+  const openFindingsCount = sortedFindings.filter(
     (f: Finding) => f.status === FindingStatus.open || f.status === FindingStatus.needs_revision,
   ).length;
 
@@ -138,7 +146,7 @@ export function FindingsList({
       </div>
 
       <div className="p-5">
-        {findings.length === 0 ? (
+        {sortedFindings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <FileWarning className="h-10 w-10 mb-3 opacity-50" />
             <p className="text-sm">No findings for this task</p>
@@ -146,7 +154,7 @@ export function FindingsList({
           </div>
         ) : (
           <div className="space-y-2">
-            {findings.map((finding: Finding) => (
+            {visibleFindings.map((finding: Finding) => (
               <FindingItem
                 key={finding.id}
                 finding={finding}
@@ -161,6 +169,28 @@ export function FindingsList({
                 onViewHistory={onViewHistory ? () => onViewHistory(finding.id) : undefined}
               />
             ))}
+
+            {/* Show more / Show less button */}
+            {sortedFindings.length > INITIAL_DISPLAY_COUNT && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowAll(!showAll)}
+              >
+                {showAll ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1.5" />
+                    Show less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1.5" />
+                    Show {hiddenCount} more {hiddenCount === 1 ? 'finding' : 'findings'}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         )}
       </div>
