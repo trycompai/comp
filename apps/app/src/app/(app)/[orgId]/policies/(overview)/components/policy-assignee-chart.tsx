@@ -44,16 +44,22 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
 
   // Calculate totals for footer
   const totalAssignees = data?.length ?? 0;
-  const totalAssignedPolicies = data?.reduce((sum, a) => sum + a.total, 0) ?? 0;
 
   if (!data || data.length === 0) {
     return (
       <Card title="Policies by Assignee" width="full" size="sm" spacing="tight">
-        <div className="flex h-[140px] flex-col items-center justify-center gap-2">
+        <div className="flex h-[120px] flex-col items-center justify-center gap-2">
           <UserMultiple size={20} className="text-muted-foreground opacity-30" />
           <Text size="xs" variant="muted">
             No policies assigned to users
           </Text>
+        </div>
+        <div className="border-t border-border pt-3 mt-3">
+          <HStack justify="end" align="center">
+            <Text size="xs" variant="muted">
+              0 assignees
+            </Text>
+          </HStack>
         </div>
       </Card>
     );
@@ -72,21 +78,27 @@ export function PolicyAssigneeChart({ data }: PolicyAssigneeChartProps) {
     },
   } satisfies ChartConfig;
 
-  // Dynamic height based on number of assignees
-  const barHeight = 28;
-  const chartHeight = Math.max(sortedData.length * barHeight, 80);
+  // Fixed height to match Policy Status chart, with scrolling for many assignees
+  const barHeight = 24;
+  const chartHeight = sortedData.length * barHeight;
+  const containerHeight = 120; // Match Policy Status chart height
+  const actualChartHeight = Math.max(chartHeight, containerHeight);
 
   const showingLimited = totalAssignees > 5;
 
   return (
     <Card title="Policies by Assignee" width="full" size="sm" spacing="tight">
-      <div className="flex h-[120px] items-center px-2">
-        <ChartContainer config={chartConfig} className="w-full">
-          <ResponsiveContainer width="100%" height={chartHeight}>
+      <div className="flex items-center px-2 h-[120px] overflow-y-auto">
+        <ChartContainer
+          config={chartConfig}
+          className="w-full"
+          style={{ height: actualChartHeight }}
+        >
+          <ResponsiveContainer width="100%" height={actualChartHeight}>
             <BarChart
               data={chartData}
               layout="vertical"
-              barSize={18}
+              barSize={16}
               margin={{ top: 0, right: 40, bottom: 0, left: 0 }}
             >
               <XAxis type="number" hide />
