@@ -17,6 +17,7 @@ import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
+import { getStringValue, toStringCredentials } from '../utils/credential-utils';
 
 interface RunChecksDto {
   checkId?: string;
@@ -199,10 +200,12 @@ export class ChecksController {
 
     try {
       // Run checks
+      const accessToken = getStringValue(credentials.access_token);
+      const stringCredentials = toStringCredentials(credentials);
       const result = await runAllChecks({
         manifest,
-        accessToken: credentials.access_token ?? undefined,
-        credentials: credentials,
+        accessToken,
+        credentials: stringCredentials,
         variables,
         connectionId,
         organizationId: connection.organizationId,

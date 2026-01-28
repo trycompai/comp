@@ -23,17 +23,25 @@ import {
   TASK_TEMPLATE_INFO,
   type OAuthConfig,
   type TaskTemplateId,
+  type IntegrationCredentials,
 } from '@comp/integration-platform';
 
 interface CreateConnectionDto {
   providerSlug: string;
   organizationId: string;
-  credentials?: Record<string, string>;
+  credentials?: Record<string, string | string[]>;
 }
 
 interface ListConnectionsQuery {
   organizationId: string;
 }
+
+const hasCredentialValue = (value?: string | string[]): boolean => {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return typeof value === 'string' && value.trim().length > 0;
+};
 
 @Controller({ path: 'integrations/connections', version: '1' })
 export class ConnectionsController {
@@ -402,7 +410,9 @@ export class ConnectionsController {
     }
 
     try {
-      const isValid = await manifest.handler.testConnection(credentials);
+      const isValid = await manifest.handler.testConnection(
+        credentials as IntegrationCredentials,
+      );
 
       if (isValid) {
         await this.connectionService.activateConnection(connection.id);
@@ -575,7 +585,10 @@ export class ConnectionsController {
     }
 
     // For OAuth, validate access_token exists
-    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
+    const accessToken =
+      typeof credentials.access_token === 'string' ? credentials.access_token : undefined;
+
+    if (manifest.auth.type === 'oauth2' && !accessToken) {
       throw new HttpException(
         'No valid OAuth credentials found. Please reconnect.',
         HttpStatus.BAD_REQUEST,
@@ -585,7 +598,7 @@ export class ConnectionsController {
     // For API key auth, validate key exists
     if (manifest.auth.type === 'api_key') {
       const apiKeyField = manifest.auth.config.name;
-      if (!credentials[apiKeyField] && !credentials.api_key) {
+      if (!hasCredentialValue(credentials[apiKeyField]) && !hasCredentialValue(credentials.api_key)) {
         throw new HttpException('API key not found', HttpStatus.BAD_REQUEST);
       }
     }
@@ -594,7 +607,7 @@ export class ConnectionsController {
     if (manifest.auth.type === 'basic') {
       const usernameField = manifest.auth.config.usernameField || 'username';
       const passwordField = manifest.auth.config.passwordField || 'password';
-      if (!credentials[usernameField] || !credentials[passwordField]) {
+      if (!hasCredentialValue(credentials[usernameField]) || !hasCredentialValue(credentials[passwordField])) {
         throw new HttpException(
           'Username and password required',
           HttpStatus.BAD_REQUEST,
@@ -615,7 +628,7 @@ export class ConnectionsController {
 
     return {
       success: true,
-      accessToken: credentials.access_token ?? undefined,
+      accessToken,
       credentials,
     };
   }
@@ -627,7 +640,7 @@ export class ConnectionsController {
   async updateCredentials(
     @Param('id') id: string,
     @Query('organizationId') organizationId: string,
-    @Body() body: { credentials: Record<string, string> },
+    @Body() body: { credentials: Record<string, string | string[]> },
   ) {
     if (!organizationId) {
       throw new HttpException(
