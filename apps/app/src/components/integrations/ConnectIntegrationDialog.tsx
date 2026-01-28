@@ -357,13 +357,15 @@ export function ConnectIntegrationDialog({
       }
 
       setIsDisconnecting(connectionId);
+      // Capture current count before deletion to avoid stale closure issues
+      const currentConnectionCount = existingConnections.length;
       try {
         const result = await deleteConnection(connectionId);
         if (result.success) {
           toast.success('Connection disconnected');
           await refreshConnections();
-          // If no more connections, switch to form view
-          if (existingConnections.length <= 1) {
+          // If this was the last connection, switch to form view
+          if (currentConnectionCount <= 1) {
             setView('form');
           }
         } else {
@@ -375,7 +377,7 @@ export function ConnectIntegrationDialog({
         setIsDisconnecting(null);
       }
     },
-    [deleteConnection, existingConnections.length, refreshConnections],
+    [deleteConnection, existingConnections, refreshConnections],
   );
 
   const handleConfigure = useCallback(

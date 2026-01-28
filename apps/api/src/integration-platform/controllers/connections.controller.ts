@@ -440,16 +440,30 @@ export class ConnectionsController {
   private async validateAwsCredentials(
     credentials: Record<string, string | string[]>,
   ): Promise<{ success: boolean; message: string; details?: unknown }> {
-    const roleArn = credentials.roleArn as string;
-    const externalId = credentials.externalId as string;
-    const regions = credentials.regions as string[];
+    // Validate types before using values
+    const roleArnValue = credentials.roleArn;
+    const externalIdValue = credentials.externalId;
+    const regionsValue = credentials.regions;
 
-    if (!roleArn || !externalId) {
-      return { success: false, message: 'Missing IAM Role ARN or External ID' };
+    if (typeof roleArnValue !== 'string' || !roleArnValue.trim()) {
+      return { success: false, message: 'Missing or invalid IAM Role ARN' };
+    }
+    if (typeof externalIdValue !== 'string' || !externalIdValue.trim()) {
+      return { success: false, message: 'Missing or invalid External ID' };
+    }
+    if (!Array.isArray(regionsValue) || regionsValue.length === 0) {
+      return { success: false, message: 'No AWS regions selected' };
     }
 
-    if (!regions || regions.length === 0) {
-      return { success: false, message: 'No AWS regions selected' };
+    // Now we have validated types
+    const roleArn = roleArnValue.trim();
+    const externalId = externalIdValue.trim();
+    const regions = regionsValue.filter(
+      (r): r is string => typeof r === 'string' && r.trim() !== '',
+    );
+
+    if (regions.length === 0) {
+      return { success: false, message: 'No valid AWS regions selected' };
     }
 
     // Validate ARN format
