@@ -16,6 +16,7 @@ import {
 } from '@comp/ui/dialog';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
+import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -38,19 +39,20 @@ function CredentialInput({
   onChange,
 }: {
   field: CredentialField;
-  value: string;
-  onChange: (value: string) => void;
+  value: string | string[];
+  onChange: (value: string | string[]) => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange(e.target.value);
+  const stringValue = typeof value === 'string' ? value : '';
 
   if (field.type === 'password') {
     return (
       <div className="relative">
         <Input
           type={showPassword ? 'text' : 'password'}
-          value={value}
+          value={stringValue}
           onChange={handleChange}
           placeholder={field.placeholder}
           className="pr-10"
@@ -68,13 +70,18 @@ function CredentialInput({
 
   if (field.type === 'textarea') {
     return (
-      <Textarea value={value} onChange={handleChange} placeholder={field.placeholder} rows={4} />
+      <Textarea
+        value={stringValue}
+        onChange={handleChange}
+        placeholder={field.placeholder}
+        rows={4}
+      />
     );
   }
 
   if (field.type === 'select') {
     return (
-      <Select value={value} onValueChange={onChange}>
+      <Select value={stringValue} onValueChange={onChange}>
         <SelectTrigger>
           <SelectValue placeholder={field.placeholder || 'Select...'} />
         </SelectTrigger>
@@ -97,8 +104,8 @@ function CredentialInput({
       })) || [];
 
     // Find existing item or create synthetic one for custom values
-    const selectedItem = value
-      ? items.find((item) => item.id === value) ?? { id: value, label: value }
+    const selectedItem = stringValue
+      ? items.find((item) => item.id === stringValue) ?? { id: stringValue, label: stringValue }
       : undefined;
 
     return (
@@ -119,10 +126,32 @@ function CredentialInput({
     );
   }
 
+  if (field.type === 'multi-select') {
+    const selectedValues = Array.isArray(value) ? value : [];
+    const options = field.options ?? [];
+
+    return (
+      <MultipleSelector
+        value={selectedValues.map((val) => ({
+          value: val,
+          label: options.find((opt) => opt.value === val)?.label || val,
+        }))}
+        onChange={(selected) => onChange(selected.map((item) => item.value))}
+        defaultOptions={options.map((opt) => ({ value: opt.value, label: opt.label }))}
+        options={options.map((opt) => ({ value: opt.value, label: opt.label }))}
+        placeholder={field.placeholder || 'Select...'}
+        creatable={options.length === 0}
+        emptyIndicator={<p className="text-center text-sm text-muted-foreground">No options</p>}
+      />
+    );
+  }
+
   const inputType = field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : 'text';
   const placeholder = field.type === 'url' ? field.placeholder || 'https://...' : field.placeholder;
 
-  return <Input type={inputType} value={value} onChange={handleChange} placeholder={placeholder} />;
+  return (
+    <Input type={inputType} value={stringValue} onChange={handleChange} placeholder={placeholder} />
+  );
 }
 
 export function ConnectIntegrationDialog({
@@ -136,7 +165,7 @@ export function ConnectIntegrationDialog({
   const { startOAuth, createConnection, testConnection } = useIntegrationMutations();
   const { providers } = useIntegrationProviders(true);
   const [connecting, setConnecting] = useState(false);
-  const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const provider = providers?.find((p) => p.id === integrationId);
@@ -201,7 +230,13 @@ export function ConnectIntegrationDialog({
     // Validate required fields
     const newErrors: Record<string, string> = {};
     for (const field of allFields) {
-      if (field.required && !credentials[field.id]?.trim()) {
+      const value = credentials[field.id];
+      const isMissing =
+        field.type === 'multi-select'
+          ? !Array.isArray(value) || value.length === 0
+          : !String(value ?? '').trim();
+
+      if (field.required && isMissing) {
         newErrors[field.id] = `${field.label} is required`;
       }
     }
@@ -264,7 +299,7 @@ export function ConnectIntegrationDialog({
     testConnection,
   ]);
 
-  const updateCredential = (fieldId: string, value: string) => {
+  const updateCredential = (fieldId: string, value: string | string[]) => {
     setCredentials((prev) => ({ ...prev, [fieldId]: value }));
     // Clear error when user types
     if (errors[fieldId]) {
@@ -310,7 +345,7 @@ export function ConnectIntegrationDialog({
                 </Label>
                 <CredentialInput
                   field={field}
-                  value={credentials[field.id] || ''}
+                  value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
                   onChange={(value) => updateCredential(field.id, value)}
                 />
                 {field.helpText && (
@@ -360,7 +395,7 @@ export function ConnectIntegrationDialog({
                   </Label>
                   <CredentialInput
                     field={field}
-                    value={credentials[field.id] || ''}
+                    value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
                     onChange={(value) => updateCredential(field.id, value)}
                   />
                   {field.helpText && (

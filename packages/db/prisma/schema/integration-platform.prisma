@@ -73,9 +73,9 @@ model IntegrationConnection {
     findings           IntegrationPlatformFinding[]
     checkRuns          IntegrationCheckRun[]
 
-    @@unique([providerId, organizationId])
     @@index([organizationId])
     @@index([providerId])
+    @@index([providerId, organizationId])
     @@index([status])
 }
 

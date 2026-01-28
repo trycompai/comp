@@ -1318,7 +1318,12 @@ export class SyncController {
       type: 'system';
     }
 
-    const apiKey = credentials.api_key;
+    const apiKey = Array.isArray(credentials.api_key)
+      ? credentials.api_key[0]
+      : credentials.api_key;
+    if (!apiKey) {
+      throw new HttpException('API key not found', HttpStatus.BAD_REQUEST);
+    }
     const users: JumpCloudUser[] = [];
 
     try {

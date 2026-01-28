@@ -6,7 +6,12 @@ import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
-export const runTests = async () => {
+/**
+ * Run integration tests.
+ * @param integrationId - Optional. If provided, only run tests for this specific connection.
+ *                        If not provided, run tests for all connections in the organization.
+ */
+export const runTests = async (integrationId?: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -29,6 +34,7 @@ export const runTests = async () => {
   try {
     const handle = await tasks.trigger<typeof runIntegrationTests>('run-integration-tests', {
       organizationId: orgId,
+      ...(integrationId ? { integrationId } : {}),
     });
 
     const headersList = await headers();
