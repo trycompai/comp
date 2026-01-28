@@ -2,7 +2,6 @@
 
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -10,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
+import { Button } from '@comp/ui/button';
 
 interface RemoveMemberAlertProps {
   open: boolean;
@@ -38,9 +38,9 @@ export function RemoveMemberAlert({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
-          <AlertDialogAction onClick={onRemove} disabled={isRemoving}>
+          <Button variant="destructive" onClick={onRemove} disabled={isRemoving}>
             {'Remove'}
-          </AlertDialogAction>
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

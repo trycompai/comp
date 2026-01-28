@@ -27,6 +27,9 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
       organizationId,
       deactivated: false,
     },
+    include: {
+      user: true,
+    },
   });
 
   const labelIdsResponses = await Promise.all(
@@ -34,6 +37,8 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
       .filter((employee) => employee.fleetDmLabelId)
       .map(async (employee) => ({
         userId: employee.userId,
+        userName: employee.user?.name,
+        memberId: employee.id,
         response: await fleet.get(`/labels/${employee.fleetDmLabelId}/hosts`),
       })),
   );
@@ -42,12 +47,16 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
     entry.response.data.hosts.map((host: { id: number }) => ({
       userId: entry.userId,
       hostId: host.id,
+      memberId: entry.memberId,
+      userName: entry.userName,
     })),
   );
 
   // Get all devices by id. in parallel
   const devices = await Promise.all(hostRequests.map(({ hostId }) => fleet.get(`/hosts/${hostId}`)));
   const userIds = hostRequests.map(({ userId }) => userId);
+  const memberIds = hostRequests.map(({ memberId }) => memberId);
+  const userNames = hostRequests.map(({ userName }) => userName);
 
   const results = await db.fleetPolicyResult.findMany({
     where: { organizationId },
@@ -65,6 +74,8 @@ export const getEmployeeDevices: () => Promise<Host[] | null> = async () => {
       osVersion?.includes('mac');
     return {
       ...host,
+      user_name: userNames[index],
+      member_id: memberIds[index],
       policies: [
         ...(host.policies || []),
         ...(isMacOS ? [{ id: MDM_POLICY_ID, name: 'MDM Enabled', response: host.mdm.connected_to_fleet ? 'pass' : 'fail' }] : []),
