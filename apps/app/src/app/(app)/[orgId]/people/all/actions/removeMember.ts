@@ -223,6 +223,19 @@ export const removeMember = authActionClient
         }),
       ]);
 
+      // Remove device host from fleetdm.
+      if (targetMember.fleetDmLabelId) {
+        const fleet = await getFleetInstance();
+        const hostsResponse = await fleet.get(`/labels/${targetMember.fleetDmLabelId}/hosts`);
+        const hostIds = hostsResponse.data.hosts.map((host: { id: number }) => host.id);
+
+        if (hostIds.length > 0) {
+          await Promise.all(hostIds.map(async (hostId: number) => {
+            return fleet.delete(`/hosts/${hostId}`);
+          }));
+        }
+      }
+
       // Mark the member as deactivated instead of deleting
       await db.member.update({
         where: {
@@ -240,19 +253,7 @@ export const removeMember = authActionClient
           userId: targetMember.userId,
         },
       });
-
-      // Remove device host from fleetdm.
-      if (targetMember.fleetDmLabelId) {
-        const fleet = await getFleetInstance();
-        const hostsResponse = await fleet.get(`/labels/${targetMember.fleetDmLabelId}/hosts`);
-        const hostIds = hostsResponse.data.hosts.map((host: { id: number }) => host.id);
-
-        if (hostIds.length > 0) {
-          await Promise.all(hostIds.map(async (hostId: string) => {
-            return fleet.delete(`/hosts/${hostId}`);
-          }));
-        }
-      }
+      
       // Notify admins if there are unassigned items
       if (unassignedItems.length > 0 && organization) {
         const owner = await db.member.findFirst({
