@@ -52,12 +52,11 @@ export interface IntegrationHandler<T> {
 const decryptSettings = async (
   encryptedSettings: Record<string, unknown>,
   decrypt: DecryptFunction,
-): Promise<Record<string, string>> => {
-  const decryptedCredentials: Record<string, string> = {};
+): Promise<Record<string, string | string[]>> => {
+  const decryptedCredentials: Record<string, string | string[]> = {};
 
   for (const [key, value] of Object.entries(encryptedSettings)) {
     try {
-      // Check if the value has the structure of EncryptedData
       if (
         value &&
         typeof value === 'object' &&
@@ -67,10 +66,36 @@ const decryptSettings = async (
         'salt' in value
       ) {
         decryptedCredentials[key] = await decrypt(value as EncryptedData);
-      } else {
-        // If not encrypted, keep the original value
-        decryptedCredentials[key] = String(value);
+        continue;
       }
+
+      if (Array.isArray(value)) {
+        const decryptedItems = await Promise.all(
+          value.map(async (item) => {
+            if (
+              item &&
+              typeof item === 'object' &&
+              'encrypted' in item &&
+              'iv' in item &&
+              'tag' in item &&
+              'salt' in item
+            ) {
+              return decrypt(item as EncryptedData);
+            }
+            return typeof item === 'string' ? item : '';
+          }),
+        );
+        decryptedCredentials[key] = decryptedItems.filter((item) => item.length > 0);
+        continue;
+      }
+
+      if (typeof value === 'string') {
+        decryptedCredentials[key] = value;
+        continue;
+      }
+
+      // If not encrypted, keep the original value
+      decryptedCredentials[key] = String(value ?? '');
     } catch (error) {
       console.error(`Error decrypting field ${key}:`, error);
     }
@@ -88,10 +113,17 @@ handlers.set('aws', {
   fetch: awsFetch,
   processCredentials: async (encryptedSettings, decrypt) => {
     const decrypted = await decryptSettings(encryptedSettings, decrypt);
+    const region = typeof decrypted.region === 'string' ? decrypted.region : undefined;
+    const regions = Array.isArray(decrypted.regions)
+      ? decrypted.regions
+      : region
+        ? [region]
+        : [];
     return {
-      region: decrypted.region,
-      access_key_id: decrypted.access_key_id,
-      secret_access_key: decrypted.secret_access_key,
+      region,
+      regions,
+      access_key_id: String(decrypted.access_key_id || ''),
+      secret_access_key: String(decrypted.secret_access_key || ''),
     } as AWSCredentials;
   },
 });

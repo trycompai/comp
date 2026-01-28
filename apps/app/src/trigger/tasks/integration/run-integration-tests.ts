@@ -4,14 +4,20 @@ import { sendIntegrationResults } from './integration-results';
 
 export const runIntegrationTests = task({
   id: 'run-integration-tests',
-  run: async (payload: { organizationId: string }) => {
-    const { organizationId } = payload;
+  run: async (payload: { organizationId: string; integrationId?: string }) => {
+    const { organizationId, integrationId } = payload;
 
-    logger.info(`Running integration tests for organization: ${organizationId}`);
+    logger.info(
+      integrationId
+        ? `Running integration test for connection: ${integrationId}`
+        : `Running integration tests for organization: ${organizationId}`,
+    );
 
     const integrations = await db.integration.findMany({
       where: {
         organizationId: organizationId,
+        // If integrationId is provided, only run for that specific connection
+        ...(integrationId ? { id: integrationId } : {}),
         integrationId: {
           in: ['aws', 'gcp', 'azure'],
         },

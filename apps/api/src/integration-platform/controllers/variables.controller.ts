@@ -227,7 +227,9 @@ export class VariablesController {
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(connectionId);
 
-    if (!credentials?.access_token) {
+    const accessToken =
+      typeof credentials?.access_token === 'string' ? credentials.access_token : undefined;
+    if (!accessToken) {
       throw new HttpException(
         'No valid credentials found',
         HttpStatus.BAD_REQUEST,
@@ -239,12 +241,12 @@ export class VariablesController {
 
     const buildHeaders = () => ({
       ...defaultHeaders,
-      Authorization: `Bearer ${credentials.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     });
 
     // Create minimal context for fetching options
     const fetchContext = {
-      accessToken: credentials.access_token,
+      accessToken,
 
       fetch: async <T = unknown>(path: string): Promise<T> => {
         const url = new URL(path, baseUrl);

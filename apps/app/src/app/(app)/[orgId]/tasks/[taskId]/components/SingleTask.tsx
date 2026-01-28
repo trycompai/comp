@@ -1,7 +1,9 @@
 'use client';
 
 import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
+import { apiClient } from '@/lib/api-client';
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
+import { useActiveMember } from '@/utils/auth-client';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,9 +36,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useActiveMember } from '@/utils/auth-client';
 import { Comments } from '../../../../../../components/comments/Comments';
-import { apiClient } from '@/lib/api-client';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { BrowserAutomations } from './BrowserAutomations';
@@ -93,7 +93,9 @@ export function SingleTask({
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
-  const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(null);
+  const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(
+    null,
+  );
 
   const regenerate = useAction(regenerateTaskAction, {
     onSuccess: () => {
@@ -140,11 +142,7 @@ export function SingleTask({
 
     if (Object.keys(updatePayload).length > 0) {
       try {
-        const response = await apiClient.patch<Task>(
-          `/v1/tasks/${task.id}`,
-          updatePayload,
-          orgId,
-        );
+        const response = await apiClient.patch<Task>(`/v1/tasks/${task.id}`, updatePayload, orgId);
 
         if (response.error) {
           throw new Error(response.error);
@@ -207,7 +205,7 @@ export function SingleTask({
                   <TaskAutomationStatusBadge status={task.automationStatus} />
                 </div>
                 {task.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     {task.description}
                   </p>
                 )}

@@ -39,7 +39,8 @@ import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 export interface AWSRoleCredentials {
   roleArn: string;
   externalId: string;
-  region: string;
+  region?: string;
+  regions?: string[];
 }
 
 /**
@@ -48,7 +49,8 @@ export interface AWSRoleCredentials {
 export interface AWSAccessKeyCredentials {
   access_key_id: string;
   secret_access_key: string;
-  region: string;
+  region?: string;
+  regions?: string[];
 }
 
 /**
@@ -96,10 +98,19 @@ export async function createAWSClients(
   };
   let region: string;
 
+  const resolvedRegion =
+    Array.isArray(credentials.regions) && credentials.regions.length > 0
+      ? credentials.regions[0]
+      : credentials.region;
+
+  if (!resolvedRegion) {
+    throw new Error('AWS region is required to create service clients');
+  }
+
   if (isRoleCredentials(credentials)) {
     // New method: IAM Role assumption
-    const { roleArn, externalId, region: credRegion } = credentials;
-    region = credRegion;
+    const { roleArn, externalId } = credentials;
+    region = resolvedRegion;
 
     log(`Assuming role ${roleArn} in region ${region}`);
 
@@ -126,8 +137,8 @@ export async function createAWSClients(
     log('Successfully assumed role, creating service clients');
   } else if (isAccessKeyCredentials(credentials)) {
     // Legacy method: Direct access keys
-    const { access_key_id, secret_access_key, region: credRegion } = credentials;
-    region = credRegion;
+    const { access_key_id, secret_access_key } = credentials;
+    region = resolvedRegion;
 
     log(`Using direct access keys in region ${region}`);
 

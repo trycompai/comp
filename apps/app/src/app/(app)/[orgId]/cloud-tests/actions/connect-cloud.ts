@@ -3,6 +3,7 @@
 import { encrypt } from '@/lib/encryption';
 import { getIntegrationHandler } from '@comp/integrations';
 import { db } from '@db';
+import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { z } from 'zod';
@@ -11,7 +12,7 @@ import { runTests } from './run-tests';
 
 const connectCloudSchema = z.object({
   cloudProvider: z.enum(['aws', 'gcp', 'azure']),
-  credentials: z.record(z.string(), z.string()),
+  credentials: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
 });
 
 export const connectCloudAction = authActionClient
@@ -45,7 +46,7 @@ export const connectCloudAction = authActionClient
         // Process credentials to the format expected by the handler
         const typedCredentials = await integrationHandler.processCredentials(
           credentials,
-          async (data: any) => data, // Pass through without encryption for validation
+          async () => '', // Pass through without encryption for validation
         );
 
         // Validate by attempting to fetch (this will throw if credentials are invalid)
@@ -64,43 +65,55 @@ export const connectCloudAction = authActionClient
       // Encrypt all credential fields after validation
       const encryptedCredentials: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(credentials)) {
-        if (value) {
-          encryptedCredentials[key] = await encrypt(value);
+        if (typeof value === 'string') {
+          if (value.trim()) {
+            encryptedCredentials[key] = await encrypt(value);
+          }
+          continue;
+        }
+
+        if (Array.isArray(value)) {
+          const encryptedItems = await Promise.all(
+            value.filter(Boolean).map((item) => encrypt(item)),
+          );
+          encryptedCredentials[key] = encryptedItems;
         }
       }
 
-      // Check if integration already exists
-      const existingIntegration = await db.integration.findFirst({
-        where: {
+      const accountId =
+        typeof credentials.accountId === 'string' ? credentials.accountId.trim() : undefined;
+      const connectionName =
+        typeof credentials.connectionName === 'string'
+          ? credentials.connectionName.trim()
+          : undefined;
+      const regionValues = Array.isArray(credentials.regions)
+        ? credentials.regions
+        : typeof credentials.region === 'string'
+          ? [credentials.region]
+          : [];
+
+      const settings =
+        cloudProvider === 'aws'
+          ? {
+              accountId,
+              connectionName,
+              regions: regionValues,
+            }
+          : {};
+
+      // Create new integration (allow multiple per provider)
+      const newIntegration = await db.integration.create({
+        data: {
+          name: connectionName || cloudProvider.toUpperCase(),
           integrationId: cloudProvider,
           organizationId: session.activeOrganizationId,
+          userSettings: encryptedCredentials as Prisma.JsonObject,
+          settings: settings as Prisma.JsonObject,
         },
       });
 
-      if (existingIntegration) {
-        // Update existing integration
-        await db.integration.update({
-          where: { id: existingIntegration.id },
-          data: {
-            userSettings: encryptedCredentials as any,
-            lastRunAt: null, // Reset to trigger new scan
-          },
-        });
-      } else {
-        // Create new integration
-        await db.integration.create({
-          data: {
-            name: cloudProvider.toUpperCase(),
-            integrationId: cloudProvider,
-            organizationId: session.activeOrganizationId,
-            userSettings: encryptedCredentials as any,
-            settings: {},
-          },
-        });
-      }
-
-      // Trigger immediate scan
-      const runResult = await runTests();
+      // Trigger immediate scan for only this new connection
+      const runResult = await runTests(newIntegration.id);
 
       if (runResult.success && runResult.publicAccessToken) {
         (await cookies()).set('publicAccessToken', runResult.publicAccessToken);
