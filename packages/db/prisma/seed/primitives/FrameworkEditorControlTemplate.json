@@ -280,13 +280,6 @@
     "updatedAt": "2025-06-04 19:41:03.278"
   },
   {
-    "id": "frk_ct_684070f0b4f6c2036306e23c",
-    "name": "Architecture Diagram",
-    "description": "Enforce segmentation and firewalls",
-    "createdAt": "2025-06-04 16:14:40.321",
-    "updatedAt": "2025-06-11 16:02:01.899"
-  },
-  {
     "id": "frk_ct_6849c343d7fbe4e71446ce78",
     "name": "Data Masking",
     "description": "Hide sensitive fields",
@@ -341,5 +334,19 @@
     "description": "Management establishes, with board oversight, structures, reporting lines, authorities, and responsibilities",
     "createdAt": "2025-10-09 19:16:33.433",
     "updatedAt": "2025-10-09 19:16:33.433"
+  },
+  {
+    "id": "frk_ct_684070f0b4f6c2036306e23c",
+    "name": "Network Security",
+    "description": "Enforce segmentation and firewalls",
+    "createdAt": "2025-06-04 16:14:40.321",
+    "updatedAt": "2025-11-19 11:44:13.157"
+  },
+  {
+    "id": "frk_ct_691e53f4024ab9cc096bbc70",
+    "name": "ISO 9001",
+    "description": "ISO 9001 Controls",
+    "createdAt": "2025-11-19 23:34:11.538",
+    "updatedAt": "2025-11-19 23:34:11.538"
   }
 ]
