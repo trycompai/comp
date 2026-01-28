@@ -1,6 +1,21 @@
+import { randomUUID } from 'node:crypto';
 import { Resend } from 'resend';
 
 export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+function maskEmail(value: string): string {
+  const [name = '', domain = ''] = value.toLowerCase().split('@');
+  if (!domain) return 'invalid-email';
+  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
+  return `${safeName}@${domain}`;
+}
+
+function maskEmailList(value: string): string {
+  return value
+    .split(',')
+    .map((email) => maskEmail(email.trim()))
+    .join(', ');
+}
 
 export interface EmailAttachment {
   filename: string;
@@ -55,7 +70,24 @@ export const sendEmail = async ({
     throw new Error('Missing TO address in environment variables');
   }
 
+  const requestId = randomUUID();
+  const startTime = Date.now();
+
   try {
+    console.info('[email] send start', {
+      requestId,
+      provider: 'resend',
+      from: fromAddress,
+      to: maskEmailList(toAddress),
+      subject,
+      scheduledAt,
+      flags: {
+        marketing: Boolean(marketing),
+        system: Boolean(system),
+        test: Boolean(test),
+      },
+    });
+
     const { data, error } = await resend.emails.send({
       from: fromAddress, // now always a string
       to: toAddress, // now always a string
@@ -77,12 +109,26 @@ export const sendEmail = async ({
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
+    console.info('[email] send success', {
+      requestId,
+      provider: 'resend',
+      to: maskEmailList(toAddress),
+      messageId: data?.id,
+      durationMs: Date.now() - startTime,
+    });
+
     return {
       message: 'Email sent successfully',
       id: data?.id,
     };
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error('[email] send failure', {
+      requestId,
+      provider: 'resend',
+      to: maskEmailList(toAddress),
+      durationMs: Date.now() - startTime,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error instanceof Error ? error : new Error('Failed to send email');
   }
 };

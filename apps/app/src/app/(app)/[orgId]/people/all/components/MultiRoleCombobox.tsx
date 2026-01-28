@@ -3,7 +3,7 @@
 import type { Role } from '@db';
 import * as React from 'react';
 
-import { Dialog, DialogContent } from '@comp/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { MultiRoleComboboxContent } from './MultiRoleComboboxContent';
 import { MultiRoleComboboxTrigger } from './MultiRoleComboboxTrigger';
 
@@ -128,30 +128,31 @@ export function MultiRoleCombobox({
   });
 
   return (
-    <>
-      <MultiRoleComboboxTrigger
-        selectedRoles={selectedRoles}
-        lockedRoles={lockedRoles}
-        triggerText={triggerText}
-        disabled={disabled}
-        handleSelect={handleSelect} // For badge clicks
-        getRoleLabel={getRoleLabel}
-        onClick={() => setOpen(true)}
-        ariaExpanded={open}
-      />
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0">
-          <MultiRoleComboboxContent
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            filteredRoles={filteredRoles}
-            handleSelect={handleSelect} // For item selection
-            lockedRoles={lockedRoles}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div>
+          <MultiRoleComboboxTrigger
             selectedRoles={selectedRoles}
-            onCloseDialog={() => setOpen(false)}
+            lockedRoles={lockedRoles}
+            triggerText={triggerText}
+            disabled={disabled}
+            handleSelect={handleSelect}
+            getRoleLabel={getRoleLabel}
+            ariaExpanded={open}
           />
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0" align="start">
+        <MultiRoleComboboxContent
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filteredRoles={filteredRoles}
+          handleSelect={handleSelect}
+          lockedRoles={lockedRoles}
+          selectedRoles={selectedRoles}
+          onCloseDialog={() => setOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
