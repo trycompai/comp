@@ -1,65 +1,65 @@
 'use client';
 
-import { SelectAssignee } from '@/components/SelectAssignee';
+import { SelectAssignee, type AssigneeOption } from '@/components/SelectAssignee';
 import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
-import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Member, type User, type Vendor, VendorCategory } from '@db';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { VendorCategory, type VendorStatus as VendorStatusEnum } from '@db';
+import { useVendor } from '@/hooks/use-vendor';
+import type { VendorResponse } from '@/hooks/use-vendors';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import type { z } from 'zod';
-import { updateVendorSchema } from '../../actions/schema';
-import { updateVendorAction } from '../../actions/update-vendor-action';
+import { useCallback } from 'react';
 
 export function UpdateSecondaryFieldsForm({
   vendor,
   assignees,
+  onMutate,
 }: {
-  vendor: Vendor;
-  assignees: (Member & { user: User })[];
+  vendor: Pick<VendorResponse, 'id' | 'assigneeId' | 'category' | 'status'>;
+  assignees: AssigneeOption[];
+  onMutate?: () => void;
 }) {
-  const updateVendor = useAction(updateVendorAction, {
-    onSuccess: () => {
-      toast.success('Vendor updated successfully');
-    },
-    onError: () => {
-      toast.error('Failed to update vendor');
-    },
-  });
+  const { updateVendor, isUpdating } = useVendor(vendor.id, { enabled: false });
 
-  const form = useForm<z.infer<typeof updateVendorSchema>>({
-    resolver: zodResolver(updateVendorSchema),
+  const form = useForm<{
+    assigneeId: string | null;
+    category: VendorCategory;
+    status: VendorStatusEnum;
+  }>({
     defaultValues: {
-      id: vendor.id,
-      name: vendor.name,
-      description: vendor.description,
       assigneeId: vendor.assigneeId,
       category: vendor.category,
       status: vendor.status,
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorSchema>) => {
-    // Explicitly set assigneeId to null if it's an empty string (representing "None")
-    const finalAssigneeId = data.assigneeId === '' ? null : data.assigneeId;
+  const executeSave = useCallback(
+    async (data: {
+      assigneeId?: string | null;
+      category?: VendorCategory;
+      status?: VendorStatusEnum;
+    }) => {
+      const finalAssigneeId = data.assigneeId === '' ? null : data.assigneeId;
+      try {
+        await updateVendor(vendor.id, {
+          ...(data.assigneeId !== undefined ? { assigneeId: finalAssigneeId } : {}),
+          ...(data.category ? { category: data.category } : {}),
+          ...(data.status ? { status: data.status } : {}),
+        });
+        onMutate?.();
+        toast.success('Vendor updated');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to update vendor');
+      }
+    },
+    [updateVendor, vendor.id],
+  );
 
-    updateVendor.execute({
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      assigneeId: finalAssigneeId, // Use the potentially nulled value
-      category: data.category,
-      status: data.status,
-    });
-  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -69,11 +69,15 @@ export function UpdateSecondaryFieldsForm({
                 <FormLabel>{'Assignee'}</FormLabel>
                 <FormControl>
                   <SelectAssignee
-                    disabled={updateVendor.status === 'executing'}
+                    disabled={isUpdating}
                     withTitle={false}
                     assignees={assignees}
                     assigneeId={field.value}
-                    onAssigneeChange={field.onChange}
+                    onAssigneeChange={(value) => {
+                      field.onChange(value);
+                      if (isUpdating) return;
+                      executeSave({ assigneeId: value === '' ? null : value });
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -87,7 +91,16 @@ export function UpdateSecondaryFieldsForm({
               <FormItem>
                 <FormLabel>{'Status'}</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      const status = value as VendorStatusEnum;
+                      field.onChange(status);
+                      if (isUpdating) return;
+                      executeSave({ status });
+                    }}
+                    disabled={isUpdating}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a status...'}>
                         {field.value && <VendorStatus status={field.value} />}
@@ -113,7 +126,17 @@ export function UpdateSecondaryFieldsForm({
               <FormItem>
                 <FormLabel>{'Category'}</FormLabel>
                 <FormControl>
-                  <Select {...field} value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    {...field}
+                    value={field.value}
+                    onValueChange={(value) => {
+                      const category = value as VendorCategory;
+                      field.onChange(category);
+                      if (isUpdating) return;
+                      executeSave({ category });
+                    }}
+                    disabled={isUpdating}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a category...'} />
                     </SelectTrigger>
@@ -137,15 +160,6 @@ export function UpdateSecondaryFieldsForm({
               </FormItem>
             )}
           />
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateVendor.status === 'executing'}>
-            {updateVendor.status === 'executing' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
-          </Button>
         </div>
       </form>
     </Form>

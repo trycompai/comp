@@ -2,13 +2,15 @@
 
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
 import type { Vendor } from '@db';
-import { updateVendorInherentRisk } from '../actions/update-vendor-inherent-risk';
+import type { UpdateVendorData } from '@/hooks/use-vendors';
+import { toast } from 'sonner';
 
 interface InherentRiskChartProps {
   vendor: Vendor;
+  updateVendor: (vendorId: string, data: UpdateVendorData) => Promise<unknown>;
 }
 
-export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
+export function VendorInherentRiskChart({ vendor, updateVendor }: InherentRiskChartProps) {
   return (
     <RiskMatrixChart
       title={'Inherent Risk'}
@@ -17,11 +19,16 @@ export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
       activeLikelihood={vendor.inherentProbability}
       activeImpact={vendor.inherentImpact}
       saveAction={async ({ id, probability, impact }) => {
-        return updateVendorInherentRisk({
-          vendorId: id,
-          inherentProbability: probability,
-          inherentImpact: impact,
-        });
+        try {
+          await updateVendor(id, {
+            inherentProbability: probability,
+            inherentImpact: impact,
+          });
+          toast.success('Inherent risk updated');
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Failed to update inherent risk');
+          throw error;
+        }
       }}
     />
   );

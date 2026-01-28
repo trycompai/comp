@@ -1,19 +1,16 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
-import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
-import { ApiResponse } from '@/lib/api-client';
-import { useCallback } from 'react';
-import type {
-  VendorCategory,
-  VendorStatus,
-  Likelihood,
-  Impact,
-} from '@db';
+import { UseApiSWROptions } from '@/hooks/use-api-swr';
+import { ApiResponse, apiClient } from '@/lib/api-client';
+import { useCallback, useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import useSWR from 'swr';
+import type { VendorCategory, VendorStatus, Likelihood, Impact } from '@db';
 import type { JsonValue } from '@prisma/client/runtime/library';
+import type { VendorsQuery } from '@/lib/vendors-query';
+import { buildVendorsQueryString } from '@/lib/vendors-query';
 
-// Default polling interval for real-time updates (5 seconds)
-const DEFAULT_POLLING_INTERVAL = 5000;
 
 export interface VendorAssignee {
   id: string;
@@ -46,6 +43,9 @@ export interface Vendor {
 export interface VendorsResponse {
   data: Vendor[];
   count: number;
+  page?: number;
+  perPage?: number;
+  pageCount?: number;
 }
 
 /**
@@ -66,7 +66,7 @@ interface CreateVendorData {
   assigneeId?: string;
 }
 
-interface UpdateVendorData {
+export interface UpdateVendorData {
   name?: string;
   description?: string;
   category?: VendorCategory;
@@ -82,6 +82,7 @@ interface UpdateVendorData {
 export interface UseVendorsOptions extends UseApiSWROptions<VendorsResponse> {
   /** Initial data from server for hydration - avoids loading state on first render */
   initialData?: Vendor[];
+  query?: VendorsQuery;
 }
 
 export interface UseVendorOptions extends UseApiSWROptions<VendorResponse> {
@@ -102,12 +103,27 @@ export interface UseVendorOptions extends UseApiSWROptions<VendorResponse> {
  * const { vendors, isLoading, mutate } = useVendors();
  */
 export function useVendors(options: UseVendorsOptions = {}) {
-  const { initialData, ...restOptions } = options;
+  const api = useApi();
+  const params = useParams();
+  const orgIdFromParams = params?.orgId as string | undefined;
+  const { initialData, query, ...restOptions } = options;
 
-  const swrResponse = useApiSWR<VendorsResponse>('/v1/vendors', {
-    ...restOptions,
+  const endpoint = `/v1/vendors${buildVendorsQueryString(query ?? {})}`;
+  const { organizationId: explicitOrgId, enabled = true, ...swrOptions } = restOptions;
+  const organizationId = orgIdFromParams || explicitOrgId;
+
+  const swrKey = useMemo(() => {
+    if (!endpoint || !organizationId || !enabled) return null;
+    return [endpoint, organizationId] as const;
+  }, [endpoint, organizationId, enabled]);
+
+  const fetcher = async ([url, orgId]: readonly [string, string]) => {
+    return apiClient.get<VendorsResponse>(url, orgId);
+  };
+
+  const swrResponse = useSWR<ApiResponse<VendorsResponse>>(swrKey, fetcher, {
     // Refresh vendors periodically for real-time updates
-    refreshInterval: restOptions.refreshInterval ?? 30000,
+    refreshInterval: swrOptions.refreshInterval ?? 30000,
     // Use initial data as fallback for instant render
     ...(initialData && {
       fallbackData: {
@@ -115,62 +131,8 @@ export function useVendors(options: UseVendorsOptions = {}) {
         status: 200,
       } as ApiResponse<VendorsResponse>,
     }),
+    ...swrOptions,
   });
-
-  return swrResponse;
-}
-
-/**
- * Hook to fetch a single vendor by ID using SWR
- * Provides real-time updates via polling
- * 
- * @example
- * // With server-side initial data (recommended for detail pages)
- * const { data, mutate } = useVendor(vendorId, { initialData: serverVendor });
- * 
- * @example
- * // Without initial data (shows loading state)
- * const { data, isLoading, mutate } = useVendor(vendorId);
- */
-export function useVendor(
-  vendorId: string | null,
-  options: UseVendorOptions = {},
-) {
-  const { initialData, ...restOptions } = options;
-
-  const swrResult = useApiSWR<VendorResponse>(
-    vendorId ? `/v1/vendors/${vendorId}` : null,
-    {
-      ...restOptions,
-      // Enable polling for real-time updates (when trigger.dev tasks complete)
-      refreshInterval: restOptions.refreshInterval ?? DEFAULT_POLLING_INTERVAL,
-      // Continue polling even when window is not focused
-      refreshWhenHidden: false,
-      // Use initial data as fallback for instant render
-      ...(initialData && {
-        fallbackData: {
-          data: initialData,
-          status: 200,
-        } as ApiResponse<VendorResponse>,
-      }),
-    },
-  );
-
-  // Extract vendor data from response
-  const vendor = swrResult.data?.data ?? null;
-
-  return {
-    ...swrResult,
-    vendor,
-  };
-}
-
-/**
- * Hook for vendor CRUD operations (mutations)
- * Use alongside useVendors/useVendor and call mutate() after mutations
- */
-export function useVendorActions() {
-  const api = useApi();
 
   const createVendor = useCallback(
     async (data: CreateVendorData) => {
@@ -178,9 +140,10 @@ export function useVendorActions() {
       if (response.error) {
         throw new Error(response.error);
       }
+      await swrResponse.mutate();
       return response.data!;
     },
-    [api],
+    [api, swrResponse],
   );
 
   const updateVendor = useCallback(
@@ -189,9 +152,10 @@ export function useVendorActions() {
       if (response.error) {
         throw new Error(response.error);
       }
+      await swrResponse.mutate();
       return response.data!;
     },
-    [api],
+    [api, swrResponse],
   );
 
   const deleteVendor = useCallback(
@@ -200,65 +164,19 @@ export function useVendorActions() {
       if (response.error) {
         throw new Error(response.error);
       }
+      await swrResponse.mutate();
       return { success: true, status: response.status };
     },
-    [api],
+    [api, swrResponse],
   );
 
   return {
+    ...swrResponse,
+    vendors: swrResponse.data?.data?.data ?? [],
+    count: swrResponse.data?.data?.count ?? 0,
     createVendor,
     updateVendor,
     deleteVendor,
-  };
-}
-
-/**
- * Combined hook for vendors with data fetching and mutations
- * Provides a complete solution for vendor management with optimistic updates
- */
-export function useVendorsWithMutations(options: UseApiSWROptions<VendorsResponse> = {}) {
-  const { data, error, isLoading, mutate } = useVendors(options);
-  const { createVendor, updateVendor, deleteVendor } = useVendorActions();
-
-  const create = useCallback(
-    async (vendorData: CreateVendorData) => {
-      const result = await createVendor(vendorData);
-      // Revalidate the vendors list after creation
-      await mutate();
-      return result;
-    },
-    [createVendor, mutate],
-  );
-
-  const update = useCallback(
-    async (vendorId: string, vendorData: UpdateVendorData) => {
-      const result = await updateVendor(vendorId, vendorData);
-      // Revalidate the vendors list after update
-      await mutate();
-      return result;
-    },
-    [updateVendor, mutate],
-  );
-
-  const remove = useCallback(
-    async (vendorId: string) => {
-      const result = await deleteVendor(vendorId);
-      // Revalidate the vendors list after deletion
-      await mutate();
-      return result;
-    },
-    [deleteVendor, mutate],
-  );
-
-  return {
-    vendors: data?.data?.data ?? [],
-    count: data?.data?.count ?? 0,
-    isLoading,
-    error,
-    mutate,
-    createVendor: create,
-    updateVendor: update,
-    deleteVendor: remove,
   };
 }
 

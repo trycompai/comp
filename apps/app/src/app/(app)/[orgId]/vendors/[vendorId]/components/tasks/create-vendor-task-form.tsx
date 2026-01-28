@@ -3,52 +3,60 @@
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
-import { Calendar } from '@comp/ui/calendar';
 import { cn } from '@comp/ui/cn';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Textarea } from '@comp/ui/textarea';
 import { Member, User } from '@db';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
 import { ArrowRightIcon, CalendarIcon } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import type { z } from 'zod';
-import { createVendorTaskSchema } from '../../actions/schema';
-import { createVendorTaskAction } from '../../actions/task/create-task-action';
+import { useTaskItemActions } from '@/hooks/use-task-items';
+import { useState } from 'react';
 
 export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { user: User })[] }) {
   const [_, setCreateVendorTaskSheet] = useQueryState('create-vendor-task-sheet');
   const params = useParams<{ vendorId: string }>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { createTaskItem } = useTaskItemActions();
 
-  const createTask = useAction(createVendorTaskAction, {
-    onSuccess: () => {
-      toast.success('Task created successfully');
-      setCreateVendorTaskSheet(null);
-    },
-    onError: () => {
-      toast.error('Failed to create task');
-    },
-  });
-
-  const form = useForm<z.infer<typeof createVendorTaskSchema>>({
-    resolver: zodResolver(createVendorTaskSchema),
+  const form = useForm<{
+    title: string;
+    description: string;
+    assigneeId: string;
+  }>({
     defaultValues: {
       title: '',
       description: '',
-      dueDate: new Date(),
       assigneeId: '',
-      vendorId: params.vendorId,
     },
   });
 
-  const onSubmit = (data: z.infer<typeof createVendorTaskSchema>) => {
-    createTask.execute(data);
+  const onSubmit = async (data: { title: string; description: string; assigneeId: string }) => {
+    if (!params.vendorId) {
+      toast.error('Vendor ID is missing');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createTaskItem({
+        title: data.title.trim(),
+        description: data.description.trim() || undefined,
+        entityId: params.vendorId,
+        entityType: 'vendor',
+        assigneeId: data.assigneeId || undefined,
+      });
+      toast.success('Task created successfully');
+      setCreateVendorTaskSheet(null);
+      form.reset({ title: '', description: '', assigneeId: '' });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create task');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -64,6 +72,7 @@ export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { use
                     <FormField
                       control={form.control}
                       name="title"
+                      rules={{ required: 'Task title is required' }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{'Task Title'}</FormLabel>
@@ -103,46 +112,6 @@ export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { use
 
                     <FormField
                       control={form.control}
-                      name="dueDate"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>{'Due Date'}</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={'outline'}
-                                  className={cn(
-                                    'w-[240px] pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground',
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, 'PPP')
-                                  ) : (
-                                    <span>{'Pick a date'}</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date <= new Date()}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="assigneeId"
                       render={({ field }) => (
                         <FormItem>
@@ -166,7 +135,7 @@ export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { use
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button type="submit" variant="default" disabled={createTask.status === 'executing'}>
+            <Button type="submit" variant="default" disabled={isSubmitting}>
               <div className="flex items-center justify-center">
                 {'Create'}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />

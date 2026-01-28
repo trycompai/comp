@@ -2,7 +2,8 @@
 
 import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
 import { useTaskItems } from '@/hooks/use-task-items';
-import { useVendor, type VendorResponse } from '@/hooks/use-vendors';
+import { useVendor } from '@/hooks/use-vendor';
+import type { VendorResponse } from '@/hooks/use-vendors';
 import { useEffect, useMemo } from 'react';
 
 interface VendorReviewClientProps {

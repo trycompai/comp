@@ -30,6 +30,7 @@ interface VendorHeaderProps {
   vendor: VendorWithRiskAssessment;
   isEditSheetOpen: boolean;
   onEditSheetOpenChange: (open: boolean) => void;
+  onVendorUpdated: () => void;
 }
 
 /**
@@ -74,7 +75,12 @@ function getCertificationIcon(cert: VendorRiskAssessmentCertification) {
   return null;
 }
 
-export function VendorHeader({ vendor, isEditSheetOpen, onEditSheetOpenChange }: VendorHeaderProps) {
+export function VendorHeader({
+  vendor,
+  isEditSheetOpen,
+  onEditSheetOpenChange,
+  onVendorUpdated,
+}: VendorHeaderProps) {
   // Parse risk assessment data to get certifications and links
   // Note: This should come from GlobalVendors, but we're reading from vendor for now
   // TODO: Update to fetch from GlobalVendors via vendor.website lookup
@@ -160,6 +166,7 @@ export function VendorHeader({ vendor, isEditSheetOpen, onEditSheetOpenChange }:
         vendor={vendor}
         open={isEditSheetOpen}
         onOpenChange={onEditSheetOpenChange}
+        onVendorUpdated={onVendorUpdated}
       />
     </>
   );

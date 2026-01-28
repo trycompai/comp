@@ -1,5 +1,5 @@
 import { getFiltersStateParser, getSortingStateParser } from '@/lib/parsers';
-import { Departments, Vendor, VendorStatus } from '@db';
+import { Departments, Vendor, VendorCategory, VendorStatus } from '@db';
 import {
   createSearchParamsCache,
   parseAsInteger,
@@ -9,13 +9,14 @@ import {
 
 export const vendorsSearchParamsCache = createSearchParamsCache({
   page: parseAsInteger.withDefault(1),
-  perPage: parseAsInteger.withDefault(50),
+  perPage: parseAsInteger.withDefault(10),
   sort: getSortingStateParser<Vendor>().withDefault([
     { id: 'name', desc: false }, // Default sort by name ascending
   ]),
   // Basic filters (can be extended)
   name: parseAsString.withDefault(''), // For potential name search filter
   status: parseAsStringEnum<VendorStatus>(Object.values(VendorStatus)),
+  category: parseAsStringEnum<VendorCategory>(Object.values(VendorCategory)),
   department: parseAsStringEnum<Departments>(Object.values(Departments)),
   assigneeId: parseAsString,
 

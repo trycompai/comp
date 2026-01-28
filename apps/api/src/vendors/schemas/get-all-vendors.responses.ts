@@ -123,6 +123,21 @@ export const GET_ALL_VENDORS_RESPONSES: Record<number, ApiResponseOptions> = {
               description: 'Total number of vendors',
               example: 12,
             },
+            page: {
+              type: 'number',
+              description: 'Current page number',
+              example: 1,
+            },
+            perPage: {
+              type: 'number',
+              description: 'Number of vendors per page',
+              example: 50,
+            },
+            pageCount: {
+              type: 'number',
+              description: 'Total number of pages',
+              example: 3,
+            },
             authType: {
               type: 'string',
               enum: ['api-key', 'session'],

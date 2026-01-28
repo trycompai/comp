@@ -1,51 +1,22 @@
 'use client';
 
-import { useVendor, type VendorResponse } from '@/hooks/use-vendors';
-import type { Member, User, Vendor } from '@db';
-import type { Prisma } from '@prisma/client';
 import { useMemo } from 'react';
 import { SecondaryFields } from './secondary-fields/secondary-fields';
 import { VendorHeader } from './VendorHeader';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
-
-// Vendor with risk assessment data merged from GlobalVendors
-type VendorWithRiskAssessment = Vendor & {
-  assignee: { user: User | null } | null;
-  riskAssessmentData?: Prisma.InputJsonValue | null;
-  riskAssessmentVersion?: string | null;
-  riskAssessmentUpdatedAt?: Date | null;
-};
-
-/**
- * Normalize API response to match Prisma types
- * API returns dates as strings, Prisma returns Date objects
- */
-function normalizeVendor(apiVendor: VendorResponse): VendorWithRiskAssessment {
-  return {
-    ...apiVendor,
-    createdAt: new Date(apiVendor.createdAt),
-    updatedAt: new Date(apiVendor.updatedAt),
-    riskAssessmentUpdatedAt: apiVendor.riskAssessmentUpdatedAt
-      ? new Date(apiVendor.riskAssessmentUpdatedAt)
-      : null,
-    assignee: apiVendor.assignee
-      ? {
-          ...apiVendor.assignee,
-          user: apiVendor.assignee.user as User | null,
-        }
-      : null,
-  } as unknown as VendorWithRiskAssessment;
-}
+import type { AssigneeOption } from '@/components/SelectAssignee';
+import type { VendorWithRiskAssessment } from './vendor-utils';
+import type { UpdateVendorData } from '@/hooks/use-vendors';
 
 interface VendorPageClientProps {
-  vendorId: string;
-  orgId: string;
-  initialVendor: VendorWithRiskAssessment;
-  assignees: (Member & { user: User })[];
+  vendor: VendorWithRiskAssessment;
+  assignees: AssigneeOption[];
   isViewingTask: boolean;
   isEditSheetOpen: boolean;
   onEditSheetOpenChange: (open: boolean) => void;
+  onVendorUpdated: () => void;
+  updateVendor: (vendorId: string, data: UpdateVendorData) => Promise<unknown>;
 }
 
 /**
@@ -58,27 +29,15 @@ interface VendorPageClientProps {
  * - Mutations trigger automatic refresh via mutate()
  */
 export function VendorPageClient({
-  vendorId,
-  orgId,
-  initialVendor,
+  vendor: initialVendor,
   assignees,
   isViewingTask,
   isEditSheetOpen,
   onEditSheetOpenChange,
+  onVendorUpdated,
+  updateVendor,
 }: VendorPageClientProps) {
-  // Use SWR for real-time updates with polling
-  const { vendor: swrVendor } = useVendor(vendorId, {
-    organizationId: orgId,
-  });
-
-  // Normalize and memoize the vendor data
-  // Use SWR data when available, fall back to initial data
-  const vendor = useMemo(() => {
-    if (swrVendor) {
-      return normalizeVendor(swrVendor);
-    }
-    return initialVendor;
-  }, [swrVendor, initialVendor]);
+  const vendor = useMemo(() => initialVendor, [initialVendor]);
 
   return (
     <>
@@ -87,15 +46,20 @@ export function VendorPageClient({
           vendor={vendor}
           isEditSheetOpen={isEditSheetOpen}
           onEditSheetOpenChange={onEditSheetOpenChange}
+          onVendorUpdated={onVendorUpdated}
         />
       )}
       <div className="flex flex-col gap-4">
         {!isViewingTask && (
           <>
-            <SecondaryFields vendor={vendor} assignees={assignees} />
+            <SecondaryFields
+              vendor={vendor}
+              assignees={assignees}
+              onVendorUpdated={onVendorUpdated}
+            />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <VendorInherentRiskChart vendor={vendor} />
-              <VendorResidualRiskChart vendor={vendor} />
+              <VendorInherentRiskChart vendor={vendor} updateVendor={updateVendor} />
+              <VendorResidualRiskChart vendor={vendor} updateVendor={updateVendor} />
             </div>
           </>
         )}
@@ -108,4 +72,4 @@ export function VendorPageClient({
  * Export the vendor mutate function for use by mutation components
  * Call this after updating vendor data to trigger SWR revalidation
  */
-export { useVendor } from '@/hooks/use-vendors';
+export { useVendor } from '@/hooks/use-vendor';

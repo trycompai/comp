@@ -2,13 +2,13 @@
 
 import { researchVendorAction } from '@/actions/research-vendor';
 import type { ActionResponse } from '@/types/actions';
-import { SelectAssignee } from '@/components/SelectAssignee';
+import { SelectAssignee, type AssigneeOption } from '@/components/SelectAssignee';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import { type Member, type User, type Vendor, VendorCategory, VendorStatus } from '@db';
+import { type Vendor, VendorCategory, VendorStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
@@ -25,7 +25,7 @@ export function CreateVendorForm({
   organizationId,
   onSuccess,
 }: {
-  assignees: (Member & { user: User })[];
+  assignees: AssigneeOption[];
   organizationId: string;
   onSuccess?: () => void;
 }) {

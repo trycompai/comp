@@ -332,4 +332,21 @@ export class OrganizationService {
       throw error;
     }
   }
+
+  async getOnboardingStatus(organizationId: string) {
+    try {
+      const onboarding = await db.onboarding.findFirst({
+        where: { organizationId },
+        select: { triggerJobId: true },
+      });
+
+      return { triggerJobId: onboarding?.triggerJobId ?? null };
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve onboarding status for organization ${organizationId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }

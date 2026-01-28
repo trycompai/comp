@@ -3,8 +3,6 @@
 import { Comments } from '@/components/comments/Comments';
 import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
 import { CommentEntityType } from '@db';
-import type { Member, User, Vendor } from '@db';
-import type { Prisma } from '@prisma/client';
 import {
   PageHeader,
   PageLayout,
@@ -15,24 +13,20 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { VendorActions } from './VendorActions';
 import { VendorPageClient } from './VendorPageClient';
 import { TaskItems } from '@/components/task-items/TaskItems';
-
-// Vendor with risk assessment data merged from GlobalVendors
-type VendorWithRiskAssessment = Vendor & {
-  assignee: { user: User | null } | null;
-  riskAssessmentData?: Prisma.InputJsonValue | null;
-  riskAssessmentVersion?: string | null;
-  riskAssessmentUpdatedAt?: Date | null;
-};
+import type { VendorResponse } from '@/hooks/use-vendors';
+import type { AssigneeOption } from '@/components/SelectAssignee';
+import { normalizeVendor } from './vendor-utils';
+import { useVendor } from '@/hooks/use-vendor';
 
 interface VendorDetailTabsProps {
   vendorId: string;
   orgId: string;
-  vendor: VendorWithRiskAssessment;
-  assignees: (Member & { user: User })[];
+  vendor: VendorResponse;
+  assignees: AssigneeOption[];
   isViewingTask: boolean;
 }
 
@@ -44,25 +38,33 @@ export function VendorDetailTabs({
   isViewingTask,
 }: VendorDetailTabsProps) {
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const { vendor: swrVendor, mutate: refreshVendor, updateVendor } = useVendor(vendorId, {
+    organizationId: orgId,
+    initialData: vendor,
+  });
+  const normalizedVendor = useMemo(
+    () => normalizeVendor(swrVendor ?? vendor),
+    [swrVendor, vendor],
+  );
 
   const breadcrumbs = [
     { label: 'Vendors', href: `/${orgId}/vendors` },
     {
-      label: vendor?.name ?? '',
+      label: normalizedVendor?.name ?? '',
       href: isViewingTask ? `/${orgId}/vendors/${vendorId}` : undefined,
       isCurrent: !isViewingTask,
     },
   ];
 
-  const riskAssessmentData = vendor.riskAssessmentData;
-  const riskAssessmentUpdatedAt = vendor.riskAssessmentUpdatedAt ?? null;
+  const riskAssessmentData = normalizedVendor.riskAssessmentData;
+  const riskAssessmentUpdatedAt = normalizedVendor.riskAssessmentUpdatedAt ?? null;
 
   return (
     <Tabs defaultValue="overview">
       <PageLayout
         header={
           <PageHeader
-            title={vendor?.name ?? 'Vendor'}
+            title={normalizedVendor?.name ?? 'Vendor'}
             breadcrumbs={breadcrumbs}
             actions={
               <VendorActions
@@ -86,13 +88,13 @@ export function VendorDetailTabs({
       >
         <TabsContent value="overview">
           <VendorPageClient
-            vendorId={vendorId}
-            orgId={orgId}
-            initialVendor={vendor}
+            vendor={normalizedVendor}
             assignees={assignees}
             isViewingTask={isViewingTask}
             isEditSheetOpen={isEditSheetOpen}
             onEditSheetOpenChange={setIsEditSheetOpen}
+            onVendorUpdated={refreshVendor}
+            updateVendor={updateVendor}
           />
         </TabsContent>
         <TabsContent value="risk-assessment">
@@ -102,7 +104,7 @@ export function VendorDetailTabs({
                 source={{
                   title: 'Risk Assessment',
                   description: JSON.stringify(riskAssessmentData),
-                  createdAt: (riskAssessmentUpdatedAt ?? vendor.updatedAt).toISOString(),
+                  createdAt: (riskAssessmentUpdatedAt ?? normalizedVendor.updatedAt).toISOString(),
                   entityType: 'vendor',
                   createdByName: null,
                   createdByEmail: null,
@@ -111,7 +113,7 @@ export function VendorDetailTabs({
             ) : (
               <div className="rounded-lg border border-border bg-card p-8 text-center">
                 <Text variant="muted" size="sm">
-                  {vendor.status === 'in_progress'
+                  {normalizedVendor.status === 'in_progress'
                     ? 'Risk assessment is being generated. Please check back soon.'
                     : 'No risk assessment found yet.'}
                 </Text>

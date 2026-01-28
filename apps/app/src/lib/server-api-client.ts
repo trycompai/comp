@@ -1,6 +1,10 @@
 import { headers } from 'next/headers';
+import { cache } from 'react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+const resolveBetterAuthBaseUrl = (): string => {
+  return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000';
+};
 
 interface ApiResponse<T = unknown> {
   data?: T;
@@ -11,26 +15,56 @@ interface ApiResponse<T = unknown> {
 interface CallOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  organizationId?: string;
 }
+
+const getJwtForRequest = cache(async (): Promise<string | null> => {
+  try {
+    const cookieHeader = (await headers()).get('cookie');
+    if (!cookieHeader) {
+      console.warn('[serverApi] No cookie header present');
+    }
+    if (!cookieHeader) return null;
+
+    const baseUrl = resolveBetterAuthBaseUrl();
+    const response = await fetch(`${baseUrl}/api/auth/get-session`, {
+      method: 'GET',
+      headers: {
+        Cookie: cookieHeader,
+      },
+      cache: 'no-store',
+    });
+
+    const jwtToken = response.headers.get('set-auth-jwt');
+    console.log('[serverApi] Session JWT header present:', Boolean(jwtToken));
+    return jwtToken ?? null;
+  } catch (error) {
+    console.error('[serverApi] Failed to fetch JWT token', error);
+    return null;
+  }
+});
 
 /**
  * Server-side API client for calling our internal NestJS API from server components
- * Forwards cookies for authentication - API handles auth via better-auth
+ * Uses Better Auth session to mint a JWT for API auth
  */
 async function call<T = unknown>(
   endpoint: string,
   options: CallOptions = {},
 ): Promise<ApiResponse<T>> {
-  const { method = 'GET', body } = options;
+  const { method = 'GET', body, organizationId } = options;
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  // Forward cookies for auth - better-auth handles session validation
-  const cookieHeader = (await headers()).get('cookie');
-  if (cookieHeader) {
-    requestHeaders['Cookie'] = cookieHeader;
+  if (organizationId) {
+    requestHeaders['X-Organization-Id'] = organizationId;
+  }
+
+  const jwtToken = await getJwtForRequest();
+  if (jwtToken) {
+    requestHeaders['Authorization'] = `Bearer ${jwtToken}`;
   }
 
   try {
@@ -67,16 +101,18 @@ async function call<T = unknown>(
 }
 
 export const serverApi = {
-  get: <T = unknown>(endpoint: string) => call<T>(endpoint, { method: 'GET' }),
+  get: <T = unknown>(endpoint: string, organizationId?: string) =>
+    call<T>(endpoint, { method: 'GET', organizationId }),
 
-  post: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'POST', body }),
+  post: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    call<T>(endpoint, { method: 'POST', body, organizationId }),
 
-  put: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'PUT', body }),
+  put: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    call<T>(endpoint, { method: 'PUT', body, organizationId }),
 
-  patch: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'PATCH', body }),
+  patch: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    call<T>(endpoint, { method: 'PATCH', body, organizationId }),
 
-  delete: <T = unknown>(endpoint: string) => call<T>(endpoint, { method: 'DELETE' }),
+  delete: <T = unknown>(endpoint: string, organizationId?: string) =>
+    call<T>(endpoint, { method: 'DELETE', organizationId }),
 };

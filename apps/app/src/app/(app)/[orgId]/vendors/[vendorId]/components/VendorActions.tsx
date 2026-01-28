@@ -1,7 +1,7 @@
 'use client';
 
 import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
-import { useVendor } from '@/hooks/use-vendors';
+import { useVendor } from '@/hooks/use-vendor';
 import {
   AlertDialog,
   AlertDialogAction,

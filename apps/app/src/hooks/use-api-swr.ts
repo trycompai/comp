@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient, ApiResponse } from '@/lib/api-client';
-import { useActiveOrganization } from '@/utils/auth-client';
+import { useParams } from 'next/navigation';
 import { useMemo } from 'react';
 import useSWR, { SWRConfiguration, SWRResponse } from 'swr';
 
@@ -20,11 +20,12 @@ export function useApiSWR<T = unknown>(
 ): SWRResponse<ApiResponse<T>, Error> & {
   organizationId?: string;
 } {
-  const activeOrg = useActiveOrganization();
+  const params = useParams();
+  const orgIdFromParams = params?.orgId as string | undefined;
   const { organizationId: explicitOrgId, enabled = true, ...swrOptions } = options;
 
-  // Determine organization context
-  const organizationId = explicitOrgId || activeOrg.data?.id;
+  // Determine organization context (prefer URL params)
+  const organizationId = orgIdFromParams || explicitOrgId;
 
   // Create stable key for SWR
   const swrKey = useMemo(() => {

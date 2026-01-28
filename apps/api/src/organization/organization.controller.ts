@@ -33,6 +33,7 @@ import { UPDATE_ORGANIZATION_RESPONSES } from './schemas/update-organization.res
 import { DELETE_ORGANIZATION_RESPONSES } from './schemas/delete-organization.responses';
 import { TRANSFER_OWNERSHIP_RESPONSES } from './schemas/transfer-ownership.responses';
 import { GET_ORGANIZATION_PRIMARY_COLOR_RESPONSES } from './schemas/get-organization-primary-color';
+import { GET_ORGANIZATION_ONBOARDING_RESPONSES } from './schemas/get-organization-onboarding.responses';
 import {
   UPDATE_ORGANIZATION_BODY,
   TRANSFER_OWNERSHIP_BODY,
@@ -216,6 +217,28 @@ export class OrganizationController {
       authType: token ? 'access-token' : authContext?.authType,
       // Include user context for session auth (helpful for debugging)
       ...(authContext?.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get('onboarding')
+  @ApiOperation(ORGANIZATION_OPERATIONS.getOnboardingStatus)
+  @ApiResponse(GET_ORGANIZATION_ONBOARDING_RESPONSES[200])
+  @ApiResponse(GET_ORGANIZATION_ONBOARDING_RESPONSES[401])
+  async getOnboardingStatus(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const onboarding = await this.organizationService.getOnboardingStatus(organizationId);
+
+    return {
+      ...onboarding,
+      authType: authContext.authType,
+      ...(authContext.userId && {
         authenticatedUser: {
           id: authContext.userId,
           email: authContext.userEmail,

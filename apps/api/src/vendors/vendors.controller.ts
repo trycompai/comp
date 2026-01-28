@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -54,13 +55,41 @@ export class VendorsController {
   async getAllVendors(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+    @Query('name') name?: string,
+    @Query('status') status?: string,
+    @Query('category') category?: string,
+    @Query('department') department?: string,
+    @Query('assigneeId') assigneeId?: string,
+    @Query('sortId') sortId?: string,
+    @Query('sortDesc') sortDesc?: string,
   ) {
-    const vendors =
-      await this.vendorsService.findAllByOrganization(organizationId);
+    const parsedPage = Math.max(1, Number(page) || 1);
+    const parsedPerPage = Math.min(100, Math.max(1, Number(perPage) || 50));
+    const parsedSortId =
+      sortId === 'updatedAt' || sortId === 'createdAt' ? sortId : 'name';
+    const parsedSortDesc = sortDesc === 'true';
+
+    const { data, count, pageCount } =
+      await this.vendorsService.findAllByOrganization(organizationId, {
+        page: parsedPage,
+        perPage: parsedPerPage,
+        name,
+        status,
+        category,
+        department,
+        assigneeId,
+        sortId: parsedSortId,
+        sortDesc: parsedSortDesc,
+      });
 
     return {
-      data: vendors,
-      count: vendors.length,
+      data,
+      count,
+      page: parsedPage,
+      perPage: parsedPerPage,
+      pageCount,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {
