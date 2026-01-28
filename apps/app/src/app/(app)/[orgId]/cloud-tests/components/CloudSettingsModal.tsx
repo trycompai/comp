@@ -2,6 +2,7 @@
 
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ interface CloudProvider {
   id: string; // Provider slug (aws, gcp, azure)
   connectionId: string; // The actual connection ID
   name: string;
+  status: string;
   accountId?: string;
   regions?: string[];
   isLegacy?: boolean;
@@ -33,6 +35,25 @@ interface CloudSettingsModalProps {
   onUpdate: () => void;
 }
 
+/**
+ * Get the appropriate text color class based on connection status
+ */
+const getStatusColorClass = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'text-green-600 dark:text-green-400';
+    case 'error':
+      return 'text-red-600 dark:text-red-400';
+    case 'pending':
+      return 'text-amber-600 dark:text-amber-400';
+    case 'paused':
+    case 'disconnected':
+      return 'text-muted-foreground';
+    default:
+      return 'text-muted-foreground';
+  }
+};
+
 export function CloudSettingsModal({
   open,
   onOpenChange,
@@ -41,7 +62,7 @@ export function CloudSettingsModal({
 }: CloudSettingsModalProps) {
   const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.connectionId || 'aws');
   const [isDeleting, setIsDeleting] = useState(false);
-  const { disconnectConnection } = useIntegrationMutations();
+  const { deleteConnection } = useIntegrationMutations();
 
   const handleDisconnect = async (provider: CloudProvider) => {
     if (
@@ -54,7 +75,9 @@ export function CloudSettingsModal({
 
     try {
       setIsDeleting(true);
+
       if (provider.isLegacy) {
+        // Legacy providers use the old Integration table
         if (!isCloudProviderSlug(provider.id)) {
           toast.error('Unsupported legacy provider');
           return;
@@ -75,7 +98,8 @@ export function CloudSettingsModal({
         return;
       }
 
-      const result = await disconnectConnection(provider.connectionId);
+      // New platform providers use the IntegrationConnection table
+      const result = await deleteConnection(provider.connectionId);
       if (result.success) {
         toast.success('Cloud provider disconnected');
         onUpdate();
@@ -139,7 +163,9 @@ export function CloudSettingsModal({
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Connection Status</span>
-                  <span className="text-sm text-green-600 dark:text-green-400">Active</span>
+                  <span className={cn('text-sm capitalize', getStatusColorClass(provider.status))}>
+                    {provider.status}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   To update credentials, disconnect this provider and reconnect with new IAM role

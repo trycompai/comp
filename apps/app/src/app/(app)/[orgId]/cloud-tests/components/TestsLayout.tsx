@@ -1,7 +1,6 @@
 'use client';
 
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
-import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { api } from '@/lib/api-client';
 import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
 import { Add, Settings } from '@trycompai/design-system/icons';
@@ -41,7 +40,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const [addConnectionProvider, setAddConnectionProvider] = useState<string | null>(null);
   const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
   const [configureProvider, setConfigureProvider] = useState<Provider | null>(null);
-  const { disconnectConnection } = useIntegrationMutations();
 
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
     `/api/cloud-tests/findings?orgId=${orgId}`,
@@ -256,6 +254,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           id: p.integrationId,
           connectionId: p.id,
           name: p.displayName || p.name,
+          status: p.status,
           accountId: p.accountId,
           regions: p.regions,
           isLegacy: p.isLegacy,
