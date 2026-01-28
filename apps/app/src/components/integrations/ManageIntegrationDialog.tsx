@@ -82,7 +82,6 @@ interface ManageIntegrationDialogProps {
     checkName: string;
     checkDescription?: string;
   };
-  onDisconnected?: () => void;
   onDeleted?: () => void;
   onSaved?: () => void;
 }
@@ -116,12 +115,11 @@ export function ManageIntegrationDialog({
   integrationLogoUrl,
   configureOnly = false,
   checkContext,
-  onDisconnected,
   onDeleted,
   onSaved,
 }: ManageIntegrationDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
-  const { disconnectConnection, deleteConnection } = useIntegrationMutations();
+  const { deleteConnection } = useIntegrationMutations();
   const { refresh: refreshConnections } = useIntegrationConnections();
 
   // Variables state
@@ -146,7 +144,6 @@ export function ManageIntegrationDialog({
   const [activeTab, setActiveTab] = useState<'variables' | 'credentials'>('variables');
 
   // Action states
-  const [disconnecting, setDisconnecting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Fetch connection details (for credential fields)
@@ -292,27 +289,6 @@ export function ManageIntegrationDialog({
     }
   };
 
-  const handleDisconnect = async () => {
-    if (!connectionId) return;
-
-    setDisconnecting(true);
-    try {
-      const result = await disconnectConnection(connectionId);
-      if (result.success) {
-        toast.success('Integration disconnected');
-        onOpenChange(false);
-        refreshConnections();
-        onDisconnected?.();
-      } else {
-        toast.error(result.error || 'Failed to disconnect');
-      }
-    } catch {
-      toast.error('Failed to disconnect');
-    } finally {
-      setDisconnecting(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!connectionId) return;
 
@@ -418,38 +394,20 @@ export function ManageIntegrationDialog({
         {!configureOnly && (
           <DialogFooter className="flex-col sm:flex-row gap-2 border-t pt-4">
             <Button
-              variant="outline"
-              onClick={handleDisconnect}
-              disabled={disconnecting || deleting}
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
               className="flex-1"
             >
-              {disconnecting ? (
+              {deleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Disconnecting...
                 </>
               ) : (
                 <>
-                  <Unplug className="h-4 w-4 mr-2" />
-                  Disconnect
-                </>
-              )}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={disconnecting || deleting}
-              className="flex-1"
-            >
-              {deleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Removing...
-                </>
-              ) : (
-                <>
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Remove
+                  Disconnect
                 </>
               )}
             </Button>
