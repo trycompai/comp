@@ -610,8 +610,7 @@ export class ConnectionsController {
       if (
         errorMessage.includes('is not authorized to perform: sts:AssumeRole')
       ) {
-        friendlyMessage =
-          'Cannot assume the IAM role. Please verify: (1) The Role ARN is correct, (2) The trust policy allows our role assumer (arn:aws:iam::684120556289:role/roleAssumer), (3) The External ID matches exactly.';
+        friendlyMessage = `Cannot assume the IAM role. Please verify: (1) The Role ARN is correct, (2) The trust policy allows our role assumer (${roleAssumerArn}), (3) The External ID matches exactly.`;
       } else if (errorMessage.includes('AccessDenied')) {
         friendlyMessage =
           'Access denied. Please check that your IAM role has the required permissions (SecurityAudit policy).';
@@ -1040,8 +1039,13 @@ export class ConnectionsController {
       body.credentials,
     );
 
-    // Activate the connection since validation passed
-    await this.connectionService.activateConnection(id);
+    // Only activate the connection if it was in error state (don't resume paused connections)
+    if (connection.status === 'error') {
+      await this.connectionService.activateConnection(id);
+      this.logger.log(
+        `Activated connection ${id} after credential update (was in error state)`,
+      );
+    }
 
     this.logger.log(`Updated credentials for connection ${id}`);
 

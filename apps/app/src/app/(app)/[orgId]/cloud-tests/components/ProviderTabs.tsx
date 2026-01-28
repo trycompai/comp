@@ -38,7 +38,7 @@ const formatProviderLabel = (providerType: string): string => {
  * AWS region pattern: matches formats like us-east-1, eu-west-2, ap-southeast-1, etc.
  */
 const AWS_REGION_PATTERN =
-  /^(us|eu|ap|sa|ca|me|af)-(north|south|east|west|central|northeast|southeast|northwest|southwest)-\d$/;
+  /^(us|eu|ap|sa|ca|me|af|il)-(north|south|east|west|central|northeast|southeast|northwest|southwest)-\d$/;
 
 const isValidAwsRegion = (value: string): boolean => {
   return AWS_REGION_PATTERN.test(value);

@@ -454,10 +454,15 @@ export function ConnectIntegrationDialog({
       }
 
       if (Object.keys(metadataUpdates).length > 0) {
-        await api.patch(
+        const metadataResult = await api.patch<{ success: boolean }>(
           `/v1/integrations/connections/${configureConnectionId}?organizationId=${orgId}`,
           { metadata: metadataUpdates },
         );
+        if (metadataResult.error) {
+          toast.error(metadataResult.error || 'Failed to update connection details');
+          setSavingCredentials(false);
+          return;
+        }
       }
 
       toast.success('Connection updated and verified!');
