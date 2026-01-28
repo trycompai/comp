@@ -175,8 +175,7 @@ export function ConnectIntegrationDialog({
   onConnected,
 }: ConnectIntegrationDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
-  const { startOAuth, createConnection, testConnection, deleteConnection } =
-    useIntegrationMutations();
+  const { startOAuth, createConnection, deleteConnection } = useIntegrationMutations();
   const { providers } = useIntegrationProviders(true);
   const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
 
@@ -316,8 +315,9 @@ export function ConnectIntegrationDialog({
         return;
       }
 
-      // Connection created successfully (validation already happened on the server)
-      toast.success(`${integrationName} connected and verified!`);
+      // AWS credentials are validated on the server before creation
+      const isVerified = integrationId === 'aws';
+      toast.success(`${integrationName} connected${isVerified ? ' and verified' : ''}!`);
 
       await refreshConnections();
       setCredentials({});
@@ -325,8 +325,9 @@ export function ConnectIntegrationDialog({
       // After connecting, go back to list if multi-connection
       if (supportsMultipleConnections) {
         setView('list');
-      } else {
-        onConnected?.();
+      }
+      onConnected?.();
+      if (!supportsMultipleConnections) {
         onOpenChange(false);
       }
     } catch {
