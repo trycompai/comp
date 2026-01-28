@@ -133,5 +133,23 @@
     "createdAt": "2025-10-04 14:57:19.666",
     "updatedAt": "2025-10-07 20:22:47.176",
     "visible": true
+  },
+  {
+    "id": "frk_6924c5bf34ae90945076508e",
+    "name": "NIST 800-53",
+    "description": "Security and Privacy Controls for Information Systems and Organizations",
+    "version": "1.0.0",
+    "createdAt": "2025-11-24 20:53:18.487",
+    "updatedAt": "2025-11-24 20:53:18.487",
+    "visible": false
+  },
+  {
+    "id": "frk_691e28f5474c5319f1cc70d7",
+    "name": "ISO 9001",
+    "description": "Quality Management Systems",
+    "version": "1.0.0",
+    "createdAt": "2025-11-19 20:30:44.681",
+    "updatedAt": "2025-11-24 21:22:25.364",
+    "visible": true
   }
 ]
