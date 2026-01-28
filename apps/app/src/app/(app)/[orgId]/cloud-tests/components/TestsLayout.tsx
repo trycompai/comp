@@ -8,10 +8,11 @@ import { Add, Settings } from '@trycompai/design-system/icons';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { isCloudProviderSlug } from '../constants';
+import type { Finding, Provider } from '../types';
 import { CloudSettingsModal } from './CloudSettingsModal';
 import { EmptyState } from './EmptyState';
 import { ProviderTabs } from './ProviderTabs';
-import type { Finding, Provider } from '../types';
 
 interface TestsLayoutProps {
   initialFindings: Finding[];
@@ -30,7 +31,6 @@ const needsVariableConfiguration = (provider: Provider): boolean => {
   const currentVars = provider.variables || {};
   return requiredVars.some((varId) => !currentVars[varId]);
 };
-
 
 export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsLayoutProps) {
   const [showSettings, setShowSettings] = useState(false);
@@ -163,9 +163,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     setViewingResults(true);
   };
 
-  const isSupportedAddProvider = (value: string): value is 'aws' | 'gcp' | 'azure' =>
-    ['aws', 'gcp', 'azure'].includes(value);
-
   if (connectedProviders.length === 0 || !viewingResults) {
     return (
       <EmptyState
@@ -180,7 +177,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         connectedProviders={connectedProviders.map((p) => p.integrationId)}
         onConnected={handleCloudConnected}
         initialProvider={
-          addConnectionProvider && isSupportedAddProvider(addConnectionProvider)
+          addConnectionProvider && isCloudProviderSlug(addConnectionProvider)
             ? addConnectionProvider
             : undefined
         }

@@ -4,8 +4,7 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { TestsLayout } from './components/TestsLayout';
-
-const CLOUD_PROVIDER_CATEGORY = 'Cloud';
+import { CLOUD_PROVIDER_CATEGORY } from './constants';
 
 // Get required variables from manifest (both manifest-level and check-level)
 const getRequiredVariables = (providerSlug: string): string[] => {

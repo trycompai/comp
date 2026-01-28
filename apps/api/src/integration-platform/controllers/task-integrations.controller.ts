@@ -21,6 +21,7 @@ import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
+import { getStringValue, toStringCredentials } from '../utils/credential-utils';
 import { db } from '@db';
 import type { Prisma } from '@prisma/client';
 
@@ -60,26 +61,6 @@ export class TaskIntegrationsController {
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
   ) {}
-
-  private getStringValue(value?: string | string[]): string | undefined {
-    if (Array.isArray(value)) {
-      return value[0];
-    }
-    return value;
-  }
-
-  private toStringCredentials(
-    credentials: Record<string, string | string[]>,
-  ): Record<string, string> {
-    const normalized: Record<string, string> = {};
-    for (const [key, value] of Object.entries(credentials)) {
-      const stringValue = this.getStringValue(value);
-      if (typeof stringValue === 'string' && stringValue.length > 0) {
-        normalized[key] = stringValue;
-      }
-    }
-    return normalized;
-  }
 
   /**
    * Get all integration checks that can auto-complete a specific task template
@@ -366,8 +347,8 @@ export class TaskIntegrationsController {
 
     try {
       // Run the specific check
-      const accessToken = this.getStringValue(credentials.access_token);
-      const stringCredentials = this.toStringCredentials(credentials);
+      const accessToken = getStringValue(credentials.access_token);
+      const stringCredentials = toStringCredentials(credentials);
       const result = await runAllChecks({
         manifest,
         accessToken,

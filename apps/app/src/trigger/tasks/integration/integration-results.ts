@@ -73,9 +73,10 @@ export const sendIntegrationResults = schemaTask({
         decrypt as unknown as DecryptFunction,
       );
 
-      let results = await integrationHandler.fetch(typedCredentials);
+      let results: Awaited<ReturnType<typeof integrationHandler.fetch>> = [];
       const regionErrors: Array<{ region: string; error: string }> = [];
 
+      // For AWS, fetch each region individually to capture per-region errors
       if (integrationId === 'aws') {
         const regions: string[] = Array.isArray(
           (typedCredentials as { regions?: string[] }).regions,
@@ -84,7 +85,6 @@ export const sendIntegrationResults = schemaTask({
           : [];
 
         if (regions.length > 0) {
-          results = [];
           for (const region of regions) {
             try {
               const regionResults = await integrationHandler.fetch({
@@ -99,7 +99,50 @@ export const sendIntegrationResults = schemaTask({
               logger.warn(`AWS fetch failed for region ${region}: ${errorMessage}`);
             }
           }
+        } else {
+          // Fallback: no regions specified, fetch with default credentials
+          results = await integrationHandler.fetch(typedCredentials);
         }
+      } else {
+        // Non-AWS integrations: fetch once
+        results = await integrationHandler.fetch(typedCredentials);
+      }
+
+      // If all AWS regions failed, report failure
+      if (integrationId === 'aws' && results.length === 0 && regionErrors.length > 0) {
+        logger.error(`All AWS regions failed for ${integration.name}`);
+
+        // Still record the region errors
+        for (const regionError of regionErrors) {
+          await db.integrationResult.create({
+            data: {
+              title: `${integration.name} (${regionError.region})`,
+              description: 'Integration failed to fetch results for this region',
+              remediation: 'Check region configuration and IAM permissions',
+              status: 'error',
+              severity: 'ERROR',
+              resultDetails: {
+                error: regionError.error,
+                region: regionError.region,
+              },
+              integrationId: integration.id,
+              organizationId: integration.organization.id,
+              completedAt: new Date(),
+            },
+          });
+        }
+
+        // Update lastRunAt even on failure
+        await db.integration.update({
+          where: { id: integration.id },
+          data: { lastRunAt: new Date() },
+        });
+
+        return {
+          success: false,
+          error: `All ${regionErrors.length} AWS region(s) failed to fetch`,
+          regionErrors,
+        };
       }
 
       // Store the integration results using model name that matches the database

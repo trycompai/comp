@@ -15,6 +15,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { disconnectCloudAction } from '../actions/disconnect-cloud';
+import { isCloudProviderSlug } from '../constants';
 
 interface CloudProvider {
   id: string; // Provider slug (aws, gcp, azure)
@@ -38,14 +39,9 @@ export function CloudSettingsModal({
   connectedProviders,
   onUpdate,
 }: CloudSettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<string>(
-    connectedProviders[0]?.connectionId || 'aws',
-  );
+  const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.connectionId || 'aws');
   const [isDeleting, setIsDeleting] = useState(false);
   const { disconnectConnection } = useIntegrationMutations();
-
-  const isLegacyProvider = (value: string): value is 'aws' | 'gcp' | 'azure' =>
-    ['aws', 'gcp', 'azure'].includes(value);
 
   const handleDisconnect = async (provider: CloudProvider) => {
     if (
@@ -59,7 +55,7 @@ export function CloudSettingsModal({
     try {
       setIsDeleting(true);
       if (provider.isLegacy) {
-        if (!isLegacyProvider(provider.id)) {
+        if (!isCloudProviderSlug(provider.id)) {
           toast.error('Unsupported legacy provider');
           return;
         }
@@ -119,10 +115,15 @@ export function CloudSettingsModal({
           </TabsList>
 
           {connectedProviders.map((provider) => (
-            <TabsContent key={provider.connectionId} value={provider.connectionId} className="space-y-4">
+            <TabsContent
+              key={provider.connectionId}
+              value={provider.connectionId}
+              className="space-y-4"
+            >
               <div className="bg-muted/50 rounded-lg border p-4">
                 <p className="text-muted-foreground text-sm">
-                  {provider.name} is connected. Credentials are securely stored and encrypted at rest.
+                  {provider.name} is connected. Credentials are securely stored and encrypted at
+                  rest.
                 </p>
                 {(provider.accountId || provider.regions?.length) && (
                   <div className="mt-2 text-xs text-muted-foreground space-y-1">
@@ -138,7 +139,8 @@ export function CloudSettingsModal({
                   <span className="text-sm text-green-600 dark:text-green-400">Active</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  To update credentials, disconnect this provider and reconnect with new IAM role settings.
+                  To update credentials, disconnect this provider and reconnect with new IAM role
+                  settings.
                 </p>
               </div>
 

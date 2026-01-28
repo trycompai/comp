@@ -1,10 +1,9 @@
+import { CLOUD_PROVIDER_CATEGORY } from '@/app/(app)/[orgId]/cloud-tests/constants';
 import { auth } from '@/utils/auth';
 import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-
-const CLOUD_PROVIDER_CATEGORY = 'Cloud';
 
 // Get required variables from manifest
 const getRequiredVariables = (providerSlug: string): string[] => {
