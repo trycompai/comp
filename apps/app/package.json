@@ -111,7 +111,7 @@
     "sonner": "^2.0.5",
     "stripe": "^20.0.0",
     "swr": "^2.3.4",
-    "three": "^0.177.0",
+    "three": "^0.182.0",
     "ts-pattern": "^5.7.0",
     "use-debounce": "^10.0.4",
     "use-long-press": "^3.3.0",
