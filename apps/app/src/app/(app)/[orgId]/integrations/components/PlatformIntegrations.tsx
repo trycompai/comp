@@ -709,7 +709,6 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
           integrationId={selectedProvider.id}
           integrationName={selectedProvider.name}
           integrationLogoUrl={selectedProvider.logoUrl}
-          onDisconnected={refreshConnections}
           onDeleted={refreshConnections}
           onSaved={refreshConnections}
         />

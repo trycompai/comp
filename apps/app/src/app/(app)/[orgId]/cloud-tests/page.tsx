@@ -4,8 +4,7 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { TestsLayout } from './components/TestsLayout';
-
-const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
+import { CLOUD_PROVIDER_CATEGORY } from './constants';
 
 // Get required variables from manifest (both manifest-level and check-level)
 const getRequiredVariables = (providerSlug: string): string[] => {
@@ -65,9 +64,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       organizationId: orgId,
       status: 'active',
       provider: {
-        slug: {
-          in: CLOUD_PROVIDER_SLUGS,
-        },
+        category: CLOUD_PROVIDER_CATEGORY,
       },
     },
     include: {
@@ -81,17 +78,16 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
   const legacyIntegrations = await db.integration.findMany({
     where: {
       organizationId: orgId,
-      integrationId: {
-        in: CLOUD_PROVIDER_SLUGS,
-      },
     },
   });
 
   // Filter out legacy integrations that have been migrated to new platform
   const newConnectionSlugs = new Set(newConnections.map((c) => c.provider.slug));
-  const activeLegacyIntegrations = legacyIntegrations.filter(
-    (i) => !newConnectionSlugs.has(i.integrationId),
-  );
+  const activeLegacyIntegrations = legacyIntegrations.filter((integration) => {
+    if (newConnectionSlugs.has(integration.integrationId)) return false;
+    const manifest = getManifest(integration.integrationId);
+    return manifest?.category === CLOUD_PROVIDER_CATEGORY;
+  });
 
   // ====================================================================
   // Merge providers from both sources
@@ -100,6 +96,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     id: string;
     integrationId: string;
     name: string;
+    displayName?: string;
     organizationId: string;
     lastRunAt: Date | null;
     status: string;
@@ -108,35 +105,63 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     isLegacy: boolean;
     variables: Record<string, unknown> | null;
     requiredVariables: string[];
+    accountId?: string;
+    regions?: string[];
   };
 
-  const newProviders: Provider[] = newConnections.map((conn) => ({
-    id: conn.id,
-    integrationId: conn.provider.slug,
-    name: conn.provider.name,
-    organizationId: conn.organizationId,
-    lastRunAt: conn.lastSyncAt,
-    status: conn.status,
-    createdAt: conn.createdAt,
-    updatedAt: conn.updatedAt,
-    isLegacy: false,
-    variables: (conn.variables as Record<string, unknown>) ?? null,
-    requiredVariables: getRequiredVariables(conn.provider.slug),
-  }));
+  const newProviders: Provider[] = newConnections.map((conn) => {
+    const metadata = (conn.metadata || {}) as Record<string, unknown>;
+    const displayName =
+      typeof metadata.connectionName === 'string' ? metadata.connectionName : conn.provider.name;
+    const accountId = typeof metadata.accountId === 'string' ? metadata.accountId : undefined;
+    const regions = Array.isArray(metadata.regions)
+      ? metadata.regions.filter((region): region is string => typeof region === 'string')
+      : undefined;
 
-  const legacyProviders: Provider[] = activeLegacyIntegrations.map((integration) => ({
-    id: integration.id,
-    integrationId: integration.integrationId,
-    name: integration.name,
-    organizationId: integration.organizationId,
-    lastRunAt: integration.lastRunAt,
-    status: 'active',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    isLegacy: true,
-    variables: null,
-    requiredVariables: getRequiredVariables(integration.integrationId),
-  }));
+    return {
+      id: conn.id,
+      integrationId: conn.provider.slug,
+      name: conn.provider.name,
+      displayName,
+      organizationId: conn.organizationId,
+      lastRunAt: conn.lastSyncAt,
+      status: conn.status,
+      createdAt: conn.createdAt,
+      updatedAt: conn.updatedAt,
+      isLegacy: false,
+      variables: (conn.variables as Record<string, unknown>) ?? null,
+      requiredVariables: getRequiredVariables(conn.provider.slug),
+      accountId,
+      regions,
+    };
+  });
+
+  const legacyProviders: Provider[] = activeLegacyIntegrations.map((integration) => {
+    const settings = (integration.settings || {}) as Record<string, unknown>;
+    const displayName =
+      typeof settings.connectionName === 'string' ? settings.connectionName : integration.name;
+    const accountId = typeof settings.accountId === 'string' ? settings.accountId : undefined;
+    const regions = Array.isArray(settings.regions)
+      ? settings.regions.filter((region): region is string => typeof region === 'string')
+      : undefined;
+
+    return {
+      id: integration.id,
+      integrationId: integration.integrationId,
+      name: integration.name,
+      displayName,
+      organizationId: integration.organizationId,
+      lastRunAt: integration.lastRunAt,
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isLegacy: true,
+      variables: null,
+      requiredVariables: getRequiredVariables(integration.integrationId),
+      accountId,
+      regions,
+    };
+  });
 
   const providers: Provider[] = [...newProviders, ...legacyProviders];
 
@@ -196,6 +221,8 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       status: result.passed ? 'passed' : 'failed',
       severity: result.severity,
       completedAt: result.collectedAt,
+      connectionId: checkRun?.connectionId ?? '',
+      providerSlug: checkRun ? connectionToSlug[checkRun.connectionId] || 'unknown' : 'unknown',
       integration: {
         integrationId: checkRun ? connectionToSlug[checkRun.connectionId] || 'unknown' : 'unknown',
       },
@@ -226,6 +253,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
             integration: {
               select: {
                 integrationId: true,
+                id: true,
               },
             },
           },
@@ -244,6 +272,8 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     status: result.status,
     severity: result.severity,
     completedAt: result.completedAt,
+    connectionId: result.integration.id,
+    providerSlug: result.integration.integrationId,
     integration: {
       integrationId: result.integration.integrationId,
     },

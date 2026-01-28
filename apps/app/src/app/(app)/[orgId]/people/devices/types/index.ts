@@ -18,6 +18,8 @@ export interface FleetPolicy {
 }
 
 export interface Host {
+  member_id?: string;
+  user_name?: string;
   created_at: string;
   updated_at: string;
   software: object[];

@@ -1,3 +1,19 @@
+# [1.79.0](https://github.com/trycompai/comp/compare/v1.78.0...v1.79.0) (2026-01-27)
+
+
+### Bug Fixes
+
+* **integration:** update task status logic to account for failed checks ([#2044](https://github.com/trycompai/comp/issues/2044)) ([648a06b](https://github.com/trycompai/comp/commit/648a06bea7ff706ccbf080cc98c5a1f811e84eeb))
+* **portal:** convert ReadonlyHeaders to a plain object and pass it to api/fleet-policy endpoint ([#2051](https://github.com/trycompai/comp/issues/2051)) ([7fc77b6](https://github.com/trycompai/comp/commit/7fc77b67cfb79f7aa07eb17fbf742df3aaf5795a))
+
+
+### Features
+
+* **integrations:** add validation for target repositories in integration dialog ([#2065](https://github.com/trycompai/comp/issues/2065)) ([5dbf5ba](https://github.com/trycompai/comp/commit/5dbf5ba2852bf6a81e4417f7bf576fac8bbaa350))
+* **integrations:** enhance task integration logic with example prompts and validation ([#2056](https://github.com/trycompai/comp/issues/2056)) ([b0b3382](https://github.com/trycompai/comp/commit/b0b3382ad55cb4dfb5f876f59e269d3b10746d87))
+* **tasks:** add bulk task status and assignee update functionality with email notifications ([#2054](https://github.com/trycompai/comp/issues/2054)) ([f97258b](https://github.com/trycompai/comp/commit/f97258bd66a1c00163f4ae6e9a9f88b60da8d7b2))
+* **tasks:** add TaskAutomationStatusBadge component to display task status ([#2049](https://github.com/trycompai/comp/issues/2049)) ([31bc3a7](https://github.com/trycompai/comp/commit/31bc3a7dab1c5ceeb62414b5df311b605f75a146))
+
 # [1.78.0](https://github.com/trycompai/comp/compare/v1.77.0...v1.78.0) (2026-01-19)
 
 

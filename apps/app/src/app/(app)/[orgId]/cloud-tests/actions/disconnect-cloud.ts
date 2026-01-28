@@ -8,6 +8,7 @@ import { authActionClient } from '../../../../../actions/safe-action';
 
 const disconnectCloudSchema = z.object({
   cloudProvider: z.enum(['aws', 'gcp', 'azure']),
+  integrationId: z.string().optional(),
 });
 
 export const disconnectCloudAction = authActionClient
@@ -19,7 +20,7 @@ export const disconnectCloudAction = authActionClient
       channel: 'cloud-tests',
     },
   })
-  .action(async ({ parsedInput: { cloudProvider }, ctx: { session } }) => {
+  .action(async ({ parsedInput: { cloudProvider, integrationId }, ctx: { session } }) => {
     try {
       if (!session.activeOrganizationId) {
         return {
@@ -28,15 +29,27 @@ export const disconnectCloudAction = authActionClient
         };
       }
 
-      // Find and delete the integration
-      const integration = await db.integration.findFirst({
-        where: {
-          integrationId: cloudProvider,
-          organizationId: session.activeOrganizationId,
-        },
-      });
+      // Find the integration - use specific ID if provided, otherwise find by provider
+      const integration = integrationId
+        ? await db.integration.findUnique({
+            where: { id: integrationId },
+          })
+        : await db.integration.findFirst({
+            where: {
+              integrationId: cloudProvider,
+              organizationId: session.activeOrganizationId,
+            },
+          });
 
       if (!integration) {
+        return {
+          success: false,
+          error: 'Cloud provider not found',
+        };
+      }
+
+      // Verify the integration belongs to the user's organization
+      if (integration.organizationId !== session.activeOrganizationId) {
         return {
           success: false,
           error: 'Cloud provider not found',

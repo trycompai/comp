@@ -159,16 +159,25 @@ export class CredentialVaultService {
    */
   async storeApiKeyCredentials(
     connectionId: string,
-    credentials: Record<string, string>,
+    credentials: Record<string, string | string[]>,
   ): Promise<void> {
     const encryptedPayload: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(credentials)) {
       if (typeof value === 'string') {
         encryptedPayload[key] = await this.encrypt(value);
-      } else {
-        encryptedPayload[key] = value;
+        continue;
       }
+
+      if (Array.isArray(value)) {
+        const encryptedItems = await Promise.all(
+          value.map((item) => (typeof item === 'string' ? this.encrypt(item) : item)),
+        );
+        encryptedPayload[key] = encryptedItems;
+        continue;
+      }
+
+      encryptedPayload[key] = value;
     }
 
     const credentialVersion = await this.credentialRepository.create({
@@ -190,7 +199,7 @@ export class CredentialVaultService {
    */
   async getDecryptedCredentials(
     connectionId: string,
-  ): Promise<Record<string, string> | null> {
+  ): Promise<Record<string, string | string[]> | null> {
     const latestVersion =
       await this.credentialRepository.findLatestByConnection(connectionId);
     if (!latestVersion) return null;
@@ -199,13 +208,23 @@ export class CredentialVaultService {
       string,
       unknown
     >;
-    const decrypted: Record<string, string> = {};
+    const decrypted: Record<string, string | string[]> = {};
 
     for (const [key, value] of Object.entries(encryptedPayload)) {
       if (this.isEncryptedData(value)) {
         decrypted[key] = await this.decrypt(value);
       } else if (typeof value === 'string') {
         decrypted[key] = value;
+      } else if (Array.isArray(value)) {
+        const decryptedItems = await Promise.all(
+          value.map(async (item) => {
+            if (this.isEncryptedData(item)) {
+              return this.decrypt(item);
+            }
+            return typeof item === 'string' ? item : '';
+          }),
+        );
+        decrypted[key] = decryptedItems.filter((item) => item.length > 0);
       }
     }
 
@@ -228,7 +247,7 @@ export class CredentialVaultService {
    */
   async rotateCredentials(
     connectionId: string,
-    newCredentials: Record<string, string>,
+    newCredentials: Record<string, string | string[]>,
   ): Promise<void> {
     const latestVersion =
       await this.credentialRepository.findLatestByConnection(connectionId);
@@ -270,7 +289,7 @@ export class CredentialVaultService {
    */
   async getRefreshToken(connectionId: string): Promise<string | null> {
     const credentials = await this.getDecryptedCredentials(connectionId);
-    return credentials?.refresh_token || null;
+    return typeof credentials?.refresh_token === 'string' ? credentials.refresh_token : null;
   }
 
   /**
@@ -395,6 +414,6 @@ export class CredentialVaultService {
 
     // Get current credentials
     const credentials = await this.getDecryptedCredentials(connectionId);
-    return credentials?.access_token || null;
+    return typeof credentials?.access_token === 'string' ? credentials.access_token : null;
   }
 }

@@ -28,6 +28,7 @@ import {
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
+import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -55,15 +56,12 @@ interface CreateTaskSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CreateTaskSheet({
-  members,
-  controls,
-  open,
-  onOpenChange,
-}: CreateTaskSheetProps) {
+export function CreateTaskSheet({ members, controls, open, onOpenChange }: CreateTaskSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const params = useParams<{ orgId: string }>();
+  const orgId = params?.orgId;
 
-  const { data: taskTemplates } = useTaskTemplates();
+  const { data: taskTemplates } = useTaskTemplates({ organizationId: orgId });
 
   const createTask = useAction(createTaskAction, {
     onSuccess: () => {
@@ -180,9 +178,7 @@ export function CreateTaskSheet({
           control={form.control}
           name="taskTemplateId"
           render={({ field }) => {
-            const selectedTemplate = frameworkEditorTaskTemplates.find(
-              (t) => t.id === field.value,
-            );
+            const selectedTemplate = frameworkEditorTaskTemplates.find((t) => t.id === field.value);
             return (
               <FormItem className="w-full">
                 <FormLabel>Evidence Template (Optional)</FormLabel>
@@ -190,9 +186,7 @@ export function CreateTaskSheet({
                   value={field.value || 'none'}
                   onValueChange={(value) => handleTaskTemplateChange(value, field.onChange)}
                 >
-                  <SelectTrigger>
-                    {selectedTemplate?.name || 'Select Template'}
-                  </SelectTrigger>
+                  <SelectTrigger>{selectedTemplate?.name || 'Select Template'}</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {frameworkEditorTaskTemplates.map((template) => (
@@ -269,9 +263,7 @@ export function CreateTaskSheet({
           control={form.control}
           name="frequency"
           render={({ field }) => {
-            const displayValue = field.value
-              ? field.value.replace('_', ' ')
-              : 'Select frequency';
+            const displayValue = field.value ? field.value.replace('_', ' ') : 'Select frequency';
             return (
               <FormItem className="w-full">
                 <FormLabel>Frequency (Optional)</FormLabel>
@@ -301,9 +293,7 @@ export function CreateTaskSheet({
           control={form.control}
           name="department"
           render={({ field }) => {
-            const displayValue = field.value
-              ? field.value.toUpperCase()
-              : 'Select department';
+            const displayValue = field.value ? field.value.toUpperCase() : 'Select department';
             return (
               <FormItem className="w-full">
                 <FormLabel>Department (Optional)</FormLabel>

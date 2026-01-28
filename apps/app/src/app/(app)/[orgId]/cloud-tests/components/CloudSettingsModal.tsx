@@ -2,6 +2,7 @@
 
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { Button } from '@comp/ui/button';
+import { cn } from '@comp/ui/cn';
 import {
   Dialog,
   DialogContent,
@@ -14,11 +15,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { disconnectCloudAction } from '../actions/disconnect-cloud';
+import { isCloudProviderSlug } from '../constants';
 
 interface CloudProvider {
   id: string; // Provider slug (aws, gcp, azure)
   connectionId: string; // The actual connection ID
   name: string;
+  status: string;
+  accountId?: string;
+  regions?: string[];
+  isLegacy?: boolean;
 }
 
 interface CloudSettingsModalProps {
@@ -28,15 +35,34 @@ interface CloudSettingsModalProps {
   onUpdate: () => void;
 }
 
+/**
+ * Get the appropriate text color class based on connection status
+ */
+const getStatusColorClass = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'text-green-600 dark:text-green-400';
+    case 'error':
+      return 'text-red-600 dark:text-red-400';
+    case 'pending':
+      return 'text-amber-600 dark:text-amber-400';
+    case 'paused':
+    case 'disconnected':
+      return 'text-muted-foreground';
+    default:
+      return 'text-muted-foreground';
+  }
+};
+
 export function CloudSettingsModal({
   open,
   onOpenChange,
   connectedProviders,
   onUpdate,
 }: CloudSettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.id || 'aws');
+  const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.connectionId || 'aws');
   const [isDeleting, setIsDeleting] = useState(false);
-  const { disconnectConnection } = useIntegrationMutations();
+  const { deleteConnection } = useIntegrationMutations();
 
   const handleDisconnect = async (provider: CloudProvider) => {
     if (
@@ -49,8 +75,31 @@ export function CloudSettingsModal({
 
     try {
       setIsDeleting(true);
-      const result = await disconnectConnection(provider.connectionId);
 
+      if (provider.isLegacy) {
+        // Legacy providers use the old Integration table
+        if (!isCloudProviderSlug(provider.id)) {
+          toast.error('Unsupported legacy provider');
+          return;
+        }
+
+        const legacyResult = await disconnectCloudAction({
+          cloudProvider: provider.id,
+          integrationId: provider.connectionId,
+        });
+        if (legacyResult?.data?.success) {
+          toast.success('Cloud provider disconnected');
+          onUpdate();
+          onOpenChange(false);
+          return;
+        }
+
+        toast.error(legacyResult?.data?.error || 'Failed to disconnect');
+        return;
+      }
+
+      // New platform providers use the IntegrationConnection table
+      const result = await deleteConnection(provider.connectionId);
       if (result.success) {
         toast.success('Cloud provider disconnected');
         onUpdate();
@@ -86,27 +135,41 @@ export function CloudSettingsModal({
             style={{ gridTemplateColumns: `repeat(${connectedProviders.length}, 1fr)` }}
           >
             {connectedProviders.map((provider) => (
-              <TabsTrigger key={provider.id} value={provider.id}>
+              <TabsTrigger key={provider.connectionId} value={provider.connectionId}>
                 {provider.name}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {connectedProviders.map((provider) => (
-            <TabsContent key={provider.id} value={provider.id} className="space-y-4">
+            <TabsContent
+              key={provider.connectionId}
+              value={provider.connectionId}
+              className="space-y-4"
+            >
               <div className="bg-muted/50 rounded-lg border p-4">
                 <p className="text-muted-foreground text-sm">
-                  {provider.name} is connected. Credentials are securely stored using IAM Role assumption.
+                  {provider.name} is connected. Credentials are securely stored and encrypted at
+                  rest.
                 </p>
+                {(provider.accountId || provider.regions?.length) && (
+                  <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                    {provider.accountId && <p>Account: {provider.accountId}</p>}
+                    {provider.regions?.length && <p>Regions: {provider.regions.join(', ')}</p>}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Connection Status</span>
-                  <span className="text-sm text-green-600 dark:text-green-400">Active</span>
+                  <span className={cn('text-sm capitalize', getStatusColorClass(provider.status))}>
+                    {provider.status}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  To update credentials, disconnect this provider and reconnect with new IAM role settings.
+                  To update credentials, disconnect this provider and reconnect with new IAM role
+                  settings.
                 </p>
               </div>
 

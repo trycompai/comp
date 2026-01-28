@@ -6,7 +6,8 @@
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 16:57:08.693",
-    "updatedAt": "2025-06-08 23:07:56.390"
+    "updatedAt": "2025-06-08 23:07:56.390",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_6849c1a1038c3f18cfff47bf",
@@ -15,7 +16,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-06-11 17:49:21.226",
-    "updatedAt": "2025-06-11 17:49:21.226"
+    "updatedAt": "2025-06-11 17:49:21.226",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406951bd282273ebe286cc",
@@ -24,7 +26,8 @@
     "frequency": "yearly",
     "department": "hr",
     "createdAt": "2025-06-04 15:42:08.603",
-    "updatedAt": "2025-09-10 21:06:07.350"
+    "updatedAt": "2025-09-10 21:06:07.350",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406e7abae2a9b16c2cc197",
@@ -33,7 +36,8 @@
     "frequency": "yearly",
     "department": "gov",
     "createdAt": "2025-06-04 16:04:09.896",
-    "updatedAt": "2025-09-18 16:05:16.212"
+    "updatedAt": "2025-09-18 16:05:16.212",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406a514e90bb6e32e0b107",
@@ -42,7 +46,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-06-04 15:46:24.989",
-    "updatedAt": "2025-10-13 23:16:39.485"
+    "updatedAt": "2025-10-13 23:16:39.485",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406f411fe27e47a0d6d5f3",
@@ -51,7 +56,8 @@
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 16:07:28.979",
-    "updatedAt": "2025-10-14 19:26:05.415"
+    "updatedAt": "2025-10-14 19:26:05.415",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406e353df3bc002994acef",
@@ -60,7 +66,8 @@
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 16:03:00.858",
-    "updatedAt": "2025-09-07 09:24:20.453"
+    "updatedAt": "2025-09-07 09:24:20.453",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406af04a4acb93083413b9",
@@ -69,7 +76,18 @@
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 15:49:03.955",
-    "updatedAt": "2025-09-18 16:03:55.086"
+    "updatedAt": "2025-09-18 16:03:55.086",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_68b59e7a29bec89c57014868",
+    "name": "Statement of Applicability",
+    "description": "The Statement of Applicability identifies relevant ISO 27001 Annex A controls, explains their inclusion or exclusion, and shows their implementation status within the ISMS.\n\nReview the Statement of Applicability in the Questionnaire Tab in the Comp AI app",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 13:24:09.841",
+    "updatedAt": "2025-12-02 18:46:36.579",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_686b51339d7e9f8ef2081a70",
@@ -78,7 +96,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-07-07 04:46:43.319",
-    "updatedAt": "2025-09-10 21:12:35.061"
+    "updatedAt": "2025-09-10 21:12:35.061",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406d64f09f13271c14dd01",
@@ -87,16 +106,8 @@
     "frequency": "yearly",
     "department": "gov",
     "createdAt": "2025-06-04 15:59:31.795",
-    "updatedAt": "2025-09-18 16:14:21.813"
-  },
-  {
-    "id": "frk_tt_684076a02261faf3d331289d",
-    "name": "Publish Policies",
-    "description": "Make sure all of the policies in Comp AI have been published and all employees have signed/agreed to them by visiting portal.trycomp.ai .",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 16:38:56.293",
-    "updatedAt": "2025-11-01 21:31:34.464"
+    "updatedAt": "2025-09-18 16:14:21.813",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406903839203801ac8041a",
@@ -105,16 +116,8 @@
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-06-04 15:40:51.392",
-    "updatedAt": "2025-10-02 21:19:41.259"
-  },
-  {
-    "id": "frk_tt_68b59e7a29bec89c57014868",
-    "name": "Statement of Applicability",
-    "description": "The Statement of Applicability identifies relevant ISO 27001 Annex A controls, explains their inclusion or exclusion, and shows their implementation status within the ISMS.\n\nThe Comp AI team will generate this document on behalf of the requesting team, ensuring alignment with the organization’s ISMS scope and risk assessment results.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 13:24:09.841",
-    "updatedAt": "2025-10-06 20:43:03.384"
+    "updatedAt": "2025-10-02 21:19:41.259",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406d2e86acc048d1774ea6",
@@ -123,7 +126,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-06-04 15:58:37.662",
-    "updatedAt": "2025-10-06 20:24:37.179"
+    "updatedAt": "2025-10-06 20:24:37.179",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68406eedf0f0ddd220ea19c2",
@@ -132,16 +136,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-06-04 16:06:05.042",
-    "updatedAt": "2025-10-14 19:27:06.034"
-  },
-  {
-    "id": "frk_tt_6840796f77d8a0dff53f947a",
-    "name": "Secure Devices",
-    "description": "Ensure all devices have BitLocker/FileVault enabled, screen lock enabled after 5 minutes (for mac) or 15 minutes (for windows) of inactivity, a minimum password length of 8+ characters, security updates are automatically installed and Anti-virus enabled (Windows Defender or MacOS XProtect). \n\nUpload screenshots of each device or install the Comp AI agent on devices.\n\nComp AI device agent is located at: portal.trycomp.ai",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-06-04 16:50:54.671",
-    "updatedAt": "2025-10-20 14:18:25.301"
+    "updatedAt": "2025-10-14 19:27:06.034",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68b5ce9dd597ac7d650e4915",
@@ -150,97 +146,8 @@
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-09-01 16:49:32.603",
-    "updatedAt": "2025-09-01 16:49:32.603"
-  },
-  {
-    "id": "frk_tt_68b5ce9b5393ae083c3beadf",
-    "name": "Appoint or Review Data Protection Officer",
-    "description": "Assess whether your organization is required to appoint a Data Protection Officer (DPO) under GDPR (e.g., large-scale monitoring or sensitive data processing). If required, formally appoint a qualified DPO and document their role, responsibilities, and reporting line. Review the necessity of the DPO role if your processing scope or risk profile changes.\n\nIf not required, mark this task as \"Not Relevant\"",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:31.380",
-    "updatedAt": "2025-09-04 20:31:09.037"
-  },
-  {
-    "id": "frk_tt_68e52b2618cb9d9722c6edfd",
-    "name": "Internal Security Audit",
-    "description": "Upload evidence of a recent internal information security audit - e.g., audit plan/scope, auditor independence, completed checklists/workpapers, final report with findings and risk ratings, and documented corrective actions. \nOptional Template link:\nhttps://docs.google.com/spreadsheets/d/12wrY9EqVhBSlHvwEeSt8YTD8drPPr2zb/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-10-07 15:00:54.106",
-    "updatedAt": "2025-10-23 13:15:15.286"
-  },
-  {
-    "id": "frk_tt_68cc327ff5d3130a1b42420b",
-    "name": "AI MS Communication Plan",
-    "description": "Document and maintain a plan outlining internal and external communication relevant to the AI MS: what is communicated, when, to whom, and how. Retain evidence of communication execution.",
-    "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-09-18 16:25:34.676",
-    "updatedAt": "2025-09-18 16:25:34.676"
-  },
-  {
-    "id": "frk_tt_68c3248edf65e750909dfd07",
-    "name": "Attestation of Compliance",
-    "description": "Download and complete the AoC form. Once complete, upload the file here. \n\nFor Merchants - https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Reporting%20Template%20or%20Form/PCI-DSS-v4-0-1-ROC-AOC-Merchants.pdf\n\nFor Service Providers - https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Reporting%20Template%20or%20Form/PCI-DSS-v4-0-1-ROC-AOC-Service-Providers.pdf ",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-09-11 19:35:42.019",
-    "updatedAt": "2025-09-11 19:35:42.019"
-  },
-  {
-    "id": "frk_tt_68c332c3bc6d696bb61e7351",
-    "name": "Self-Assessment Questionnaires",
-    "description": "- SAQ A: For merchants fully outsourcing all card data functions to PCI-validated 3rd parties (you redirect customers to them; you don’t touch card data).\n\n- SAQ A-EP: For ecommerce merchants that don’t store card data but have their own payment pages/components (so they can impact security of card data).\n\n- SAQ B / B-IP: For merchants who use only stand-alone, dial-out terminals (B) or IP-connected payment devices (B-IP).\n\n- SAQ C / C-VT: For merchants with payment application systems (C) or those using web-based virtual terminals (C-VT).\n\n- SAQ D (Merchant/Service Provider): Catch-all for anyone who stores, processes, or transmits cardholder data electronically in ways not covered above. This is the most comprehensive.\n\nDownload the appropriate SAQ from: https://www.pcisecuritystandards.org/document_library/",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-09-11 20:36:18.491",
-    "updatedAt": "2025-09-11 20:36:18.491"
-  },
-  {
-    "id": "frk_tt_68b5ce9d508cacf8e4517b56",
-    "name": "Review International Data Transfers",
-    "description": "Review and document all international data transfers to ensure compliance with GDPR Chapter V. Confirm adequacy decisions, Standard Contractual Clauses (SCCs), or other safeguards are in place. Update documentation when new transfers are added or existing ones change.\n\nTemplate:\nhttps://docs.google.com/spreadsheets/d/1SQ1deyO92SkQ3djMLr_NLux4gDfkFihU/edit?usp=sharing&ouid=109990330435667333191&rtpof=true&sd=true\n\n*If no data sent into or out of the EU, mark this task as not relevant",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 16:49:32.719",
-    "updatedAt": "2025-10-22 19:18:18.470"
-  },
-  {
-    "id": "frk_tt_68cc25658bacb2ccff56adf9",
-    "name": "AI Context Register",
-    "description": "Maintain a register of internal and external issues relevant to AI systems, including organizational roles and intended purposes, as evidence of contextual awareness under Clause 4.1.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-09-18 15:29:40.748",
-    "updatedAt": "2025-09-18 15:29:40.748"
-  },
-  {
-    "id": "frk_tt_6840791cac0a7b780dbaf932",
-    "name": "Public Policies",
-    "description": "Add a comment with links to your privacy policy / terms of service. Ensure Privacy policy has  a form for data deletion requests and make sure you are tracking and logging those requests\n\nFor GDPR:\n\nMaintain clear, transparent, and GDPR-compliant privacy notices and policies. Ensure they include lawful bases for processing, data subject rights, categories of data collected, and how data is used, shared, and retained. Update notices promptly when practices change.\n\nFor ISO 42001:\n\nEnsure policies explicitly identify how stakeholder rights and obligations (customers, regulators, society) are addressed.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:49:31.599",
-    "updatedAt": "2025-09-18 15:36:20.889"
-  },
-  {
-    "id": "frk_tt_68cc27431d1266e3c77d7c0f",
-    "name": "Stakeholder Register / Interested Parties Log",
-    "description": "Document a register of interested parties (e.g., regulators, customers, employees, partners, societal groups), their requirements, and how the AI MS addresses them.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-18 15:37:38.612",
-    "updatedAt": "2025-09-18 15:37:38.612"
-  },
-  {
-    "id": "frk_tt_68e52b26bf0e656af9e4e9c3",
-    "name": "Encryption at Rest",
-    "description": "Upload evidence that all data stores are encrypted at rest -cloud console screenshots showing encryption enabled on volumes/buckets/DBs and KMS/Key Vault key details (key IDs, rotation enabled).",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-10-07 15:00:53.986",
-    "updatedAt": "2025-10-07 15:00:53.986"
+    "updatedAt": "2025-09-01 16:49:32.603",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68b5ce9c6c1bdb171870f623",
@@ -249,7 +156,78 @@
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-09-01 16:49:32.236",
-    "updatedAt": "2025-10-22 19:17:48.653"
+    "updatedAt": "2026-01-14 21:31:38.642",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68c3248edf65e750909dfd07",
+    "name": "Attestation of Compliance",
+    "description": "Download and complete the AoC form. Once complete, upload the file here. \n\nFor Merchants - https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Reporting%20Template%20or%20Form/PCI-DSS-v4-0-1-ROC-AOC-Merchants.pdf\n\nFor Service Providers - https://docs-prv.pcisecuritystandards.org/PCI%20DSS/Reporting%20Template%20or%20Form/PCI-DSS-v4-0-1-ROC-AOC-Service-Providers.pdf ",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-11 19:35:42.019",
+    "updatedAt": "2026-01-14 21:33:57.455",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68cc327ff5d3130a1b42420b",
+    "name": "AI MS Communication Plan",
+    "description": "Document and maintain a plan outlining internal and external communication relevant to the AI MS: what is communicated, when, to whom, and how. Retain evidence of communication execution.",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-09-18 16:25:34.676",
+    "updatedAt": "2025-09-18 16:25:34.676",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_68c332c3bc6d696bb61e7351",
+    "name": "Self-Assessment Questionnaires",
+    "description": "- SAQ A: For merchants fully outsourcing all card data functions to PCI-validated 3rd parties (you redirect customers to them; you don’t touch card data).\n\n- SAQ A-EP: For ecommerce merchants that don’t store card data but have their own payment pages/components (so they can impact security of card data).\n\n- SAQ B / B-IP: For merchants who use only stand-alone, dial-out terminals (B) or IP-connected payment devices (B-IP).\n\n- SAQ C / C-VT: For merchants with payment application systems (C) or those using web-based virtual terminals (C-VT).\n\n- SAQ D (Merchant/Service Provider): Catch-all for anyone who stores, processes, or transmits cardholder data electronically in ways not covered above. This is the most comprehensive.\n\nDownload the appropriate SAQ from: https://www.pcisecuritystandards.org/document_library/",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-11 20:36:18.491",
+    "updatedAt": "2025-09-11 20:36:18.491",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_68cc27431d1266e3c77d7c0f",
+    "name": "Stakeholder Register / Interested Parties Log",
+    "description": "Document a register of interested parties (e.g., regulators, customers, employees, partners, societal groups), their requirements, and how the AI MS addresses them.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-18 15:37:38.612",
+    "updatedAt": "2026-01-14 21:33:57.834",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68cc25658bacb2ccff56adf9",
+    "name": "AI Context Register",
+    "description": "Maintain a register of internal and external issues relevant to AI systems, including organizational roles and intended purposes, as evidence of contextual awareness under Clause 4.1.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-09-18 15:29:40.748",
+    "updatedAt": "2025-09-18 15:29:40.748",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_6840791cac0a7b780dbaf932",
+    "name": "Public Policies",
+    "description": "Add a comment with links to your privacy policy / terms of service. Ensure Privacy policy has  a form for data deletion requests and make sure you are tracking and logging those requests\n\nFor GDPR:\n\nMaintain clear, transparent, and GDPR-compliant privacy notices and policies. Ensure they include lawful bases for processing, data subject rights, categories of data collected, and how data is used, shared, and retained. Update notices promptly when practices change.\n\nFor ISO 42001:\n\nEnsure policies explicitly identify how stakeholder rights and obligations (customers, regulators, society) are addressed.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-04 16:49:31.599",
+    "updatedAt": "2025-09-18 15:36:20.889",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_68e52b2618cb9d9722c6edfd",
+    "name": "Internal Security Audit",
+    "description": "Upload evidence of a recent internal information security audit - e.g., audit plan/scope, auditor independence, completed checklists/workpapers, final report with findings and risk ratings, and documented corrective actions. \nOptional Template link:\nhttps://docs.google.com/spreadsheets/d/12wrY9EqVhBSlHvwEeSt8YTD8drPPr2zb/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-10-07 15:00:54.106",
+    "updatedAt": "2026-01-14 21:33:57.187",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_68e52a484cad0014de7a628f",
@@ -258,7 +236,38 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-10-07 14:57:11.853",
-    "updatedAt": "2025-10-23 13:15:15.440"
+    "updatedAt": "2025-10-23 13:15:15.440",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_68b5ce9b5393ae083c3beadf",
+    "name": "Appoint or Review Data Protection Officer",
+    "description": "Assess whether your organization is required to appoint a Data Protection Officer (DPO) under GDPR (e.g., large-scale monitoring or sensitive data processing). If required, formally appoint a qualified DPO and document their role, responsibilities, and reporting line. Review the necessity of the DPO role if your processing scope or risk profile changes.\n\nIf not required, mark this task as \"Not Relevant\"",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:31.380",
+    "updatedAt": "2026-01-14 21:31:38.375",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68e52b26bf0e656af9e4e9c3",
+    "name": "Encryption at Rest",
+    "description": "Configure all data stores to use encryption at rest to protect the confidentiality and integrity of your data. This includes enabling encryption on databases, object storage (e.g., S3 buckets), and block storage volumes to ensure data is unreadable without the correct decryption keys.\n\nUpload cloud console screenshots showing that encryption is enabled on these resources. ",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-10-07 15:00:53.986",
+    "updatedAt": "2025-11-19 11:20:22.992",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_68b5ce9d508cacf8e4517b56",
+    "name": "Review International Data Transfers",
+    "description": "Review and document all international data transfers to ensure compliance with GDPR Chapter V. Confirm adequacy decisions, Standard Contractual Clauses (SCCs), or other safeguards are in place. Update documentation when new transfers are added or existing ones change.\n\nTemplate:\nhttps://docs.google.com/spreadsheets/d/1SQ1deyO92SkQ3djMLr_NLux4gDfkFihU/edit?usp=sharing&ouid=109990330435667333191&rtpof=true&sd=true\n\n*If no data sent into or out of the EU, mark this task as not relevant",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-01 16:49:32.719",
+    "updatedAt": "2026-01-14 21:33:57.606",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_68406b4f40c87c12ae0479ce",
@@ -267,16 +276,8 @@
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 15:50:38.678",
-    "updatedAt": "2025-10-23 13:29:45.032"
-  },
-  {
-    "id": "frk_tt_68c8309516fdbc514404988d",
-    "name": "Board Meetings & Independence",
-    "description": "Submit the most recent board (or management) meeting agenda and minutes covering security topics. Include evidence (CVs/LinkedIn screenshots) demonstrating that board members include independent directors.\n\nFor ISO 42001:\n\nEnsure board/management reviews discuss internal and external issues relevant to the AI MS and their potential impacts. Document leadership actions (meeting records, signed commitment statements, executive communications) demonstrating that top management ensures AI policy/objectives alignment, provides resources, and promotes continual improvement.",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-15 15:28:21.064",
-    "updatedAt": "2025-09-18 15:53:51.802"
+    "updatedAt": "2026-01-14 21:33:57.967",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_68cc2ce9cb0d2a4774975ace",
@@ -285,16 +286,8 @@
     "frequency": "yearly",
     "department": "hr",
     "createdAt": "2025-09-18 16:01:44.966",
-    "updatedAt": "2025-09-18 16:01:44.966"
-  },
-  {
-    "id": "frk_tt_6849aad98c50d734dd904d98",
-    "name": "Diagramming",
-    "description": "Architecture Diagram: Draw a single‑page diagram (Figma, Draw.io, Lucidchart—whatever is fastest)\n\nFor ISO 27001 and HIPAA :\n\nData Flow Diagram: Show exactly how user and sensitive data travels through your system—so you can spot risks (and impress due‑diligence teams)\n\n*If there is no sensitive data, then the data flow diagram is not needed for ISO 27001\n\nFor ISO 42001:\n\nDocument how internal and external issues, including the intended purpose and scope of AI systems, are reflected in the architecture and data flow diagrams. Link diagrams to AI system impact analysis, showing foreseeable AI misuse and potential effects on individuals/society.\n\nFor GDPR:\n\nMaintain an up-to-date data inventory and data flow map that identifies what personal data is collected, how it is processed, where it is stored, retention periods, and its lifecycle. Update records when systems, vendors, or processing activities change.\n\nFor PCI:\n\nMaintain current CDE network diagram and CHD data flow diagram illustrating where cardholder data enters, traverses, and is stored. Include connected systems and segmentation controls.\n",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-11 16:12:08.468",
-    "updatedAt": "2025-09-18 16:10:28.067"
+    "updatedAt": "2025-09-18 16:01:44.966",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc2f30b51920e5515465e6",
@@ -303,7 +296,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 16:11:27.951",
-    "updatedAt": "2025-09-18 16:11:27.951"
+    "updatedAt": "2025-09-18 16:11:27.951",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc2fa423533e602e4dee25",
@@ -312,7 +306,8 @@
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-09-18 16:13:23.758",
-    "updatedAt": "2025-09-18 16:13:23.758"
+    "updatedAt": "2025-09-18 16:13:23.758",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc301a8fd914534ab95b11",
@@ -321,7 +316,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 16:15:22.389",
-    "updatedAt": "2025-09-18 16:15:22.389"
+    "updatedAt": "2025-09-18 16:15:22.389",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc30fbbeabb8a4c2f56082",
@@ -330,7 +326,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 16:19:07.327",
-    "updatedAt": "2025-09-18 16:19:07.327"
+    "updatedAt": "2025-09-18 16:19:07.327",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc395b90e179fe3209b795",
@@ -339,7 +336,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 16:54:50.964",
-    "updatedAt": "2025-09-18 16:54:50.964"
+    "updatedAt": "2025-09-18 16:54:50.964",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc3f427e309607f1ad5ba4",
@@ -348,7 +346,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 17:20:02.111",
-    "updatedAt": "2025-09-18 17:20:02.111"
+    "updatedAt": "2025-09-18 17:20:02.111",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc3ffab3fb703917f51e19",
@@ -357,7 +356,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 17:23:05.611",
-    "updatedAt": "2025-09-18 17:23:05.611"
+    "updatedAt": "2025-09-18 17:23:05.611",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc4190caf0b458effcee6e",
@@ -366,7 +366,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 17:29:51.770",
-    "updatedAt": "2025-09-18 17:29:51.770"
+    "updatedAt": "2025-09-18 17:29:51.770",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc41ad7cbd2839c0bc7104",
@@ -375,7 +376,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 17:30:21.049",
-    "updatedAt": "2025-09-18 17:30:21.049"
+    "updatedAt": "2025-09-18 17:30:21.049",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc459ed57b70a4cb631e72",
@@ -384,16 +386,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 17:47:10.138",
-    "updatedAt": "2025-09-18 17:47:13.649"
-  },
-  {
-    "id": "frk_tt_68d28f68f117d45c0adcba33",
-    "name": "Legal Proof of Company Registration",
-    "description": "Upload official proof of legal entity registration—e.g., a certificate of incorporation or government registry extractTask Description",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-23 12:15:35.711",
-    "updatedAt": "2025-09-23 12:15:35.711"
+    "updatedAt": "2025-09-18 17:47:13.649",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68cc39efd7916e240451cae5",
@@ -402,16 +396,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-09-18 16:57:19.130",
-    "updatedAt": "2025-09-24 20:04:29.461"
-  },
-  {
-    "id": "frk_tt_68dc1a3a9b92bb4ffb89e334",
-    "name": "Systems Description",
-    "description": "Provide a short paragraph giving a description of your app & any architecture around it.\n\n",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-09-30 17:58:17.967",
-    "updatedAt": "2025-09-30 17:58:17.967"
+    "updatedAt": "2025-09-24 20:04:29.461",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68e1d5667f2b14a9b0c2daf8",
@@ -420,7 +406,8 @@
     "frequency": "yearly",
     "department": "hr",
     "createdAt": "2025-10-05 02:18:14.360",
-    "updatedAt": "2025-10-05 02:19:43.948"
+    "updatedAt": "2025-10-05 02:19:43.948",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68e1d619944625cc1876540c",
@@ -429,25 +416,38 @@
     "frequency": "quarterly",
     "department": "admin",
     "createdAt": "2025-10-05 02:21:12.929",
-    "updatedAt": "2025-10-23 13:15:15.583"
+    "updatedAt": "2025-10-23 13:15:15.583",
+    "automationStatus": "AUTOMATED"
   },
   {
-    "id": "frk_tt_68e52b274a7c38c62db08e80",
-    "name": "Organisation Chart",
-    "description": "Upload a hierarchical organization chart showing reporting lines, with each box including the person’s full name and job title (PDF/image or export from your HR system).\n",
+    "id": "frk_tt_68c8309516fdbc514404988d",
+    "name": "Board Meetings & Independence",
+    "description": "Submit the most recent board (or management) meeting agenda and minutes covering security topics. Include evidence (CVs/LinkedIn screenshots) demonstrating that board members include independent directors.\n\nFor ISO 42001:\n\nEnsure board/management reviews discuss internal and external issues relevant to the AI MS and their potential impacts. Document leadership actions (meeting records, signed commitment statements, executive communications) demonstrating that top management ensures AI policy/objectives alignment, provides resources, and promotes continual improvement.",
     "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-10-07 15:00:54.563",
-    "updatedAt": "2025-10-07 15:00:54.563"
+    "department": "admin",
+    "createdAt": "2025-09-15 15:28:21.064",
+    "updatedAt": "2026-01-14 21:33:58.102",
+    "automationStatus": "MANUAL"
   },
   {
-    "id": "frk_tt_684069a3a0dd8322b2ac3f03",
-    "name": "Employee Descriptions",
-    "description": "We need to make sure every employee has a clear job description. Once a year, you'll meet with each team member to confirm their job description is still accurate and to conduct a performance review.\n\nKeep a brief note evidencing this review, showing the date and time (e.g., an example completed review document or HR system screenshot showing date, reviewer, and employee acknowledgement). \n\nFor PCI: explicitly notate which employees in the org have access to CHD systems, ensure this access aligns with their role.  ",
+    "id": "frk_tt_68dc1a3a9b92bb4ffb89e334",
+    "name": "Systems Description",
+    "description": "Provide a short paragraph giving a description of your app & any architecture around it.\n\n",
     "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-06-04 15:43:30.893",
-    "updatedAt": "2025-10-09 19:38:34.471"
+    "department": "it",
+    "createdAt": "2025-09-30 17:58:17.967",
+    "updatedAt": "2026-01-14 21:33:58.240",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68d28f68f117d45c0adcba33",
+    "name": "Legal Proof of Company Registration",
+    "description": "Upload official proof of legal entity registration which includes proof of company address. The named address will be the one to appear on any final certificate.\n\nExamples include a certificate of incorporation or a government registry extract.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-09-23 12:15:35.711",
+    "updatedAt": "2026-01-19 13:04:25.781",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_68406cd9dde2d8cd4c463fe0",
@@ -456,25 +456,28 @@
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 15:57:13.287",
-    "updatedAt": "2025-10-13 23:15:34.934"
+    "updatedAt": "2025-10-13 23:15:34.934",
+    "automationStatus": "AUTOMATED"
   },
   {
-    "id": "frk_tt_68e80544d9734e0402cfa807",
-    "name": "Role-based Access Controls",
-    "description": "Upload proof that access is managed by roles- RBAC matrix and role definitions or use our template:\nhttps://docs.google.com/spreadsheets/d/1rN2-d0432aBn-F8x-b9YAJecmMiWenaB/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "id": "frk_tt_68e80545a8b432bc59eb8037",
+    "name": "Incident Response Tabletop Exercise",
+    "description": "Conduct a periodic tabletop exercise to test the effectiveness of your incident response plan. Simulate a security incident to ensure all team members understand their roles, communication channels, and procedures during a real event.\n\nUpload evidence of the most recent exercise, including the agenda or scenario, a list of attendees with their roles, and session notes. You must also include an after-action report that lists findings, improvement actions, assigned owners, and due dates.\n\nTemplate available here: https://docs.google.com/document/d/1HwJPsGEO9rX3H0w-Nzy5AbYWh68kCsjg/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
     "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-10-09 18:56:04.980",
+    "updatedAt": "2026-01-14 21:31:39.063",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68e805457c2dcc784e72e3cc",
+    "name": "Access Review Log",
+    "description": "Perform periodic reviews of user access to key systems to ensure compliance with the principle of least privilege. You must verify that all user access is current, necessary, and authorized, revoking any permissions that are no longer required.\n\nUpload the access review log as evidence. Ensure it documents the review dates, reviewers, users and roles checked, actions taken (e.g., removals or changes), any issues identified, and management sign-off.\n\nTemplate available here: https://docs.google.com/spreadsheets/d/1_iPQD7-tED6WpEYh2AJqL_eN1SUcfrcH/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "frequency": "quarterly",
     "department": "it",
-    "createdAt": "2025-10-09 18:56:04.361",
-    "updatedAt": "2025-10-23 13:15:14.621"
-  },
-  {
-    "id": "frk_tt_68e52b27c4bdbf1b24051b8b",
-    "name": "Employee Performance Evaluations",
-    "description": "Employee Performance Evaluations\nUpload one recent employee performance evaluation (anonymized) - either a brief completed review or use our template:\nhttps://docs.google.com/document/d/1dzHOTXlqBORuU9ZVYcsdMJbD0QvLRYxQ/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
-    "frequency": "yearly",
-    "department": "hr",
-    "createdAt": "2025-10-07 15:00:54.648",
-    "updatedAt": "2025-10-23 13:15:14.778"
+    "createdAt": "2025-10-09 18:56:04.778",
+    "updatedAt": "2026-01-14 21:31:39.173",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_68406ca292d9fffb264991b9",
@@ -483,34 +486,38 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-06-04 15:56:18.236",
-    "updatedAt": "2025-10-16 22:03:59.409"
+    "updatedAt": "2025-10-16 22:03:59.409",
+    "automationStatus": "AUTOMATED"
   },
   {
-    "id": "frk_tt_68e80545a8b432bc59eb8037",
-    "name": "Incident Response Tabletop Exercise",
-    "description": "Upload evidence of a recent incident response tabletop exercise - agenda/scenario, attendee list and roles, notes or short recording, and an after-action report with findings, owners, and due dates.\nTemplate available here:\nhttps://docs.google.com/document/d/1HwJPsGEO9rX3H0w-Nzy5AbYWh68kCsjg/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "id": "frk_tt_684069a3a0dd8322b2ac3f03",
+    "name": "Employee Descriptions",
+    "description": "We need to make sure every employee has a clear job description. Once a year, you'll meet with each team member to confirm their job description is still accurate and to conduct a performance review.\n\nKeep a brief note evidencing this review, showing the date and time (e.g., an example completed review document or HR system screenshot showing date, reviewer, and employee acknowledgement). \n\nFor PCI: explicitly notate which employees in the org have access to CHD systems, ensure this access aligns with their role.  ",
     "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-10-09 18:56:04.980",
-    "updatedAt": "2025-10-23 13:15:13.774"
+    "department": "hr",
+    "createdAt": "2025-06-04 15:43:30.893",
+    "updatedAt": "2026-01-14 21:24:52.441",
+    "automationStatus": "MANUAL"
   },
   {
-    "id": "frk_tt_68e805457c2dcc784e72e3cc",
-    "name": "Access Review Log",
-    "description": "Upload an access review log for key systems -showing review dates, reviewers/owners, users/roles reviewed, actions taken (removals/changes), issues found, and management sign-off. Template available here:\nhttps://docs.google.com/spreadsheets/d/1_iPQD7-tED6WpEYh2AJqL_eN1SUcfrcH/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "id": "frk_tt_6901e0aa6d3f2bbab1ea5b84",
+    "name": "Secure Storage",
+    "description": "Secure physical media and sensitive hard-copy documents in locked storage containers to prevent unauthorized access. You must limit access to keys or combinations to authorized personnel only and ensure proper destruction methods are used when items are no longer needed.\n\nUpload a photo of the locked cabinet or storage unit, along with a list of current key-holders (names and roles). If you have disposed of any physical items recently, include proof of secure destruction (e.g., a shredding certificate or disposal log).\n",
     "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-10-29 09:38:49.804",
+    "updatedAt": "2026-01-14 21:33:58.525",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68e80544d9734e0402cfa807",
+    "name": "Role-based Access Controls",
+    "description": "Implement role-based access control (RBAC) to manage user permissions based on job functions rather than individual requests. You must define specific roles with appropriate permissions and assign users to these roles to ensure the principle of least privilege is maintained.\n\nUpload proof that access is managed by roles, such as an RBAC matrix and role definitions. \n\nTemplate available here: https://docs.google.com/spreadsheets/d/1rN2-d0432aBn-F8x-b9YAJecmMiWenaB/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
+    "frequency": "quarterly",
     "department": "it",
-    "createdAt": "2025-10-09 18:56:04.778",
-    "updatedAt": "2025-10-23 13:15:14.157"
-  },
-  {
-    "id": "frk_tt_68e52b269db179c434734766",
-    "name": "Backup Restoration Test",
-    "description": "Provide evidence of a recent backup restoration test - either share a link to a short screen recording showing end-to-end restore and data verification, or complete this template and upload it\nTemplate link: https://docs.google.com/document/d/1uY8OmlNrUu-tXqlEg0Qi3CrNCV2ubvkP/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-10-07 15:00:54.468",
-    "updatedAt": "2025-10-23 13:15:14.927"
+    "createdAt": "2025-10-09 18:56:04.361",
+    "updatedAt": "2026-01-14 21:33:58.664",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_68e52b26b166e2c0a0d11956",
@@ -519,60 +526,217 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-10-07 15:00:54.281",
-    "updatedAt": "2025-10-23 13:15:15.120"
+    "updatedAt": "2025-10-23 13:15:15.120",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_6901e040a21d5e8fdc9736e8",
     "name": "Building / Workplace Rules",
-    "description": "Email or note from your building contact (landlord, building manager, or coworking operator) that includes:\nOpening hours, how people enter (e.g, key, badge, code, staffed reception),visitor process (e.g., sign in at desk, escorted),emergency info (e.g., fire exits, alarms).\nFor a serviced office with staffed reception only -  a short email from the operator confirming hours, entry, visitor process, and emergency info is enough.",
+    "description": "Document the physical security controls and operational rules for your office space to ensure the safety of personnel and the security of physical assets. You must verify how access is restricted, how visitors are managed, and what emergency procedures are in place.\n\nUpload an email or official note from your building contact (e.g., landlord, building manager, or coworking operator) confirming these details. The evidence must include:\n\nOpening hours\n\nEntry methods (e.g., key, badge, code, or staffed reception)\n\nVisitor processes (e.g., sign-in requirements, escorting policies)\n\nEmergency information (e.g., fire exits, alarms)\n\nNote: For serviced offices with a staffed reception, a short email from the operator confirming these points is sufficient.",
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-10-29 09:37:04.181",
-    "updatedAt": "2025-10-29 09:37:04.181"
-  },
-  {
-    "id": "frk_tt_6901e041bb02b41fa3b7dca9",
-    "name": "Office Access & Door Monitoring",
-    "description": "If you use a smart lock/alarm system:\n- Access list (export or simple table): name, role, code/badge ID, date issued.\n- Revocation proof for a leaver (screenshot showing code disabled and time).\nMonthly door report+ a one-line review note (“No issues” or “1 denied at 22:14, ticket #123”)\n\nIf you use physical keys only:\n- Key register > key ID, holder, date issued/returned.\n- Revocation proof a leaver (key return form/photo; if missing, note and rekey receipt).\n- Monthly open/close log (who opened, who locked, any issues).\n\nCoworking with staffed reception:\nYour internal access list (who has the room key/code).\n- Revocation proof for leavers.\n- Monthly check: short note like “Reception manages front door; our room key activity had no issues in Sept.\"",
-    "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-10-29 09:37:04.804",
-    "updatedAt": "2025-10-29 09:37:04.804"
+    "updatedAt": "2026-01-14 21:33:58.363",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_6901e0aa49fb834934748c93",
     "name": "Visitor Control",
-    "description": "Upload a Visitor log sample for a recent week (paper scan or form export).\nPhoto of visitor badge/sticker and door/reception sign (“Visitors must be escorted”).\n\nOR if no visitors - comment below ‘No visitors’",
+    "description": "Establish and maintain procedures for managing visitors to your physical premises to ensure physical security. You must record all visitor entry and exit times, ensure they are identifiable (e.g., badges), and require that they be escorted by an employee at all times while on-site.\n\nUpload a sample of your visitor log covering a recent week (e.g., a scan of a paper log or a digital export). Additionally, provide a photo of a visitor badge or sticker and a door/reception sign stating \"Visitors must be escorted.\"\n\nIf you did not have any visitors during this period, add a comment below stating \"No visitors.\"",
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-10-29 09:38:49.525",
-    "updatedAt": "2025-10-29 09:38:49.525"
+    "updatedAt": "2026-01-14 21:31:38.908",
+    "automationStatus": "MANUAL"
   },
   {
-    "id": "frk_tt_6901e0aa6d3f2bbab1ea5b84",
-    "name": "Secure Storage",
-    "description": "Physical storage (cabinet/media):\n- Photo of locked cabinet\n- Key-holder list (names/roles)\n- Shredding proof (certificate or disposal log) - only if you store/dispose items\n",
+    "id": "frk_tt_68e52b269db179c434734766",
+    "name": "Backup Restoration Test",
+    "description": "Perform regular tests of your backup restoration process to ensure data availability and integrity. You must verify that backed-up data can be successfully recovered and is usable in the event of data loss or corruption.\n\nProvide evidence of a recent restoration test. You may either share a link to a short screen recording showing the end-to-end restore and data verification, or complete and upload the restoration test report using the template below.\n\nTemplate link: https://docs.google.com/document/d/1uY8OmlNrUu-tXqlEg0Qi3CrNCV2ubvkP/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=trueusp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
     "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-10-29 09:38:49.804",
-    "updatedAt": "2025-10-30 10:14:09.540"
+    "department": "it",
+    "createdAt": "2025-10-07 15:00:54.468",
+    "updatedAt": "2026-01-14 21:33:58.854",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_68e52b274a7c38c62db08e80",
+    "name": "Organisation Chart",
+    "description": "Maintain a current organizational chart to clearly define reporting lines, authority, and responsibilities within the company. This ensures that all employees understand their position in the structure and the chain of command for decision-making and escalation.\n\nUpload a hierarchical organization chart that visually maps these reporting lines. The evidence (PDF, image, or HR system export) must include specific boxes for each role containing the person’s full name and job title.",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-10-07 15:00:54.563",
+    "updatedAt": "2025-11-19 11:20:23.305",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_69033a6bfeb4759be36257bc",
     "name": "Infrastructure Inventory",
-    "description": "Upload an up-to-date inventory of infrastructure assets—cloud accounts/resources (compute, DBs, storage), environments, networks, and owners - export or screenshots from AWS/GCP/Azure/CMDB showing names, tags, and last-updated date.\n\nTemplate here: https://docs.google.com/spreadsheets/d/170csMBWNcmKIkyC6TE0H3lqwv3C1e5dc/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "description": "Maintain an up-to-date inventory of all infrastructure assets, including cloud accounts, compute resources, databases, storage, and networks. SOC 2 requires that you identify and track all assets in your environment to ensure they are protected and ownership is assigned.\n\nUpload an export or screenshot from your cloud provider (e.g., AWS, GCP, Azure) or CMDB listing these assets. Ensure the evidence clearly shows asset names, tags, owners, and a last-updated date.\n\nTemplate here: https://docs.google.com/spreadsheets/d/170csMBWNcmKIkyC6TE0H3lqwv3C1e5dc/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-10-30 10:14:03.155",
-    "updatedAt": "2025-10-30 10:16:11.279"
+    "updatedAt": "2025-11-19 11:20:22.122",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_68e52b27c4bdbf1b24051b8b",
+    "name": "Employee Performance Evaluations",
+    "description": "Conduct regular performance evaluations to assess employee competence, provide feedback, and identify areas for professional development. You must demonstrate that the organization actively reviews and manages employee performance to maintain a qualified workforce.\n\nUpload a set (minimum of 5) recent, anonymized performance evaluations to show this process is in place. You may submit existing completed reviews or use the template below.\n\nFor larger teams (more than 10): Upload a small sample (approx. 10%).\n\nTemplate here: https://docs.google.com/document/d/1dzHOTXlqBORuU9ZVYcsdMJbD0QvLRYxQ/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2025-10-07 15:00:54.648",
+    "updatedAt": "2026-01-14 21:31:39.386",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_691e56cccca43b5df5080439",
+    "name": "Supplier Evaluation Records",
+    "description": "Provide records showing that external providers (vendors) have been evaluated, selected, and monitored against defined criteria. This applies to critical vendors such as cloud providers, payment processors, KYC vendors, and AI model providers.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-19 23:46:20.220",
+    "updatedAt": "2025-11-20 01:45:03.574",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e56cc5a52ee1256d5e1d6",
+    "name": "Training / Competence Records",
+    "description": "Upload evidence demonstrating that employees performing work affecting quality are competent based on appropriate education, training, or experience. This must cover role-specific skills (e.g., underwriting, model development, secure coding) and mandatory compliance training.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-19 23:46:19.981",
+    "updatedAt": "2025-11-20 01:45:03.790",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e56cc1b3bb6027f665f8b",
+    "name": "Customer Requirement Review Records",
+    "description": "Upload evidence that the organization reviewed and confirmed it could meet customer requirements before committing to supply the service. This ensures alignment with contracts, SLAs, and regulatory guidelines (e.g., RBI/SEBI rules).",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-19 23:46:20.463",
+    "updatedAt": "2025-11-20 01:45:03.920",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e56cd6fdc3abecbf7e34c",
+    "name": "Design & Development Documents",
+    "description": "If your organization designs your own software or AI models, provide evidence of the design lifecycle including inputs, controls, outputs, and changes. This must demonstrate that requirements (like accuracy, fairness, or user specs) were defined and verified.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-19 23:46:20.599",
+    "updatedAt": "2025-11-20 01:45:04.075",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e56cdc42cb42e48d01ec0",
+    "name": "Service Release Approvals",
+    "description": "Provide records authorizing the release of products or services to the customer. This confirms that verify verification activities (testing) were completed satisfactorily before go-live.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-19 23:46:20.760",
+    "updatedAt": "2025-11-20 01:45:04.239",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e6d9c3d9e14f014b75a7b",
+    "name": "Nonconformity / Defect Records",
+    "description": "Upload logs of nonconforming outputs (defects, service errors, or process failures) and the immediate actions taken to address them. This includes business defects such as incorrect transaction postings, model drift, or misrouted payments.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-20 01:23:39.814",
+    "updatedAt": "2025-11-20 01:45:04.367",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e6d9cb5e878db20e8919e",
+    "name": "Monitoring KPI Data",
+    "description": "Upload results of monitoring and measurement activities used to evaluate the performance and effectiveness of the QMS. This should cover key metrics defined in the Quality Objectives.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-20 01:23:40.256",
+    "updatedAt": "2025-11-20 01:45:04.670",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e6d9df70eabe2354b444d",
+    "name": "Management Review Minutes",
+    "description": "Upload records of management review meetings where top management evaluated the QMS's suitability, adequacy, and effectiveness. This must cover required inputs like customer satisfaction, audit results, and vendor performance.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-20 01:23:40.713",
+    "updatedAt": "2025-11-20 01:45:04.962",
+    "automationStatus": "AUTOMATED"
   },
   {
     "id": "frk_tt_68fa2a852e70f757188f0c39",
     "name": "Production Firewall & No-Public-Access Controls",
-    "description": "Upload proof that production hosts enforce a deny-by-default firewall and that production databases and SSH are not reachable from the public internet - e.g., AWS Security Group screenshots (showing default-deny/least-privilege), firewall/VPC or subnet rules blocking public access, and (optional) SSH access logs showing restricted, internal-only connections.",
+    "description": "Configure your production network to enforce a \"Deny-by-Default\" firewall posture, ensuring no traffic is allowed unless explicitly whitelisted. You must prove that sensitive resources are isolated: your Databases must reject all public internet traffic (0.0.0.0/0), accepting connections only from internal application servers, and your Servers/Hosts must block public access to administrative ports (SSH Port 22 or RDP Port 3389).",
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-10-23 13:15:49.296",
-    "updatedAt": "2025-10-30 10:14:28.363"
+    "updatedAt": "2026-01-13 12:40:19.823",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_691e6d9cd5bf039fdc6d364f",
+    "name": "Internal Audit Reports & Schedule",
+    "description": "Provide the internal audit program (schedule) and the results of audits conducted to ensure QMS conformity. Audits should cover key functions like engineering, operations, and compliance.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-20 01:23:40.409",
+    "updatedAt": "2026-01-14 21:33:59.374",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_6840796f77d8a0dff53f947a",
+    "name": "Secure Devices",
+    "description": "Ensure all devices meet the following security requirements:\n\n• Full disk encryption enabled (BitLocker for Windows, FileVault for macOS)\n\n• Screen lock enabled after 5 minutes of inactivity on macOS and 15 minutes on Windows\n\n• Minimum password length of 8+ characters\n\n• Automatic installation of security updates\n\n• Anti-virus enabled (Windows Defender on Windows or macOS XProtect)\n\nYou may verify compliance by uploading screenshots for each device or by installing the Comp AI device agent.\n\nIf you already use a third-party MDM provider (e.g., Jamf, Intune, Kandji, etc.), it is recommended that you do not install the Comp AI device agent, as running multiple device management agents may cause conflicts. In these cases, please upload screenshots instead.\n\nThe Comp AI device agent can be downloaded from: portal.trycomp.ai",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-06-04 16:50:54.671",
+    "updatedAt": "2026-01-14 21:23:32.061",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_6849aad98c50d734dd904d98",
+    "name": "Diagramming",
+    "description": "Architecture Diagram: Draw a single‑page diagram (Figma, Draw.io, Lucidchart—whatever is fastest)\n\nFor ISO 27001 and HIPAA :\n\nData Flow Diagram: Show exactly how user and sensitive data travels through your system—so you can spot risks (and impress due‑diligence teams)\n\n*If there is no sensitive data, then the data flow diagram is not needed for ISO 27001\n\nFor ISO 42001:\n\nDocument how internal and external issues, including the intended purpose and scope of AI systems, are reflected in the architecture and data flow diagrams. Link diagrams to AI system impact analysis, showing foreseeable AI misuse and potential effects on individuals/society.\n\nFor GDPR:\n\nMaintain an up-to-date data inventory and data flow map that identifies what personal data is collected, how it is processed, where it is stored, retention periods, and its lifecycle. Update records when systems, vendors, or processing activities change.\n\nFor PCI:\n\nMaintain current CDE network diagram and CHD data flow diagram illustrating where cardholder data enters, traverses, and is stored. Include connected systems and segmentation controls.\n",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-11 16:12:08.468",
+    "updatedAt": "2026-01-14 21:31:38.773",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_691e6d9cb17ea23bfc68c57b",
+    "name": "Corrective Action Reports",
+    "description": "Provide evidence of actions taken to eliminate the root cause of nonconformities to prevent recurrence. This is distinct from immediate bug fixes; it addresses systemic improvements.",
+    "frequency": "yearly",
+    "department": "qms",
+    "createdAt": "2025-11-20 01:23:40.043",
+    "updatedAt": "2026-01-14 21:33:59.210",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_6952951fc116ab206e4276d6",
+    "name": "Period Close-Out & Attestation",
+    "description": "Please review the three questions below. Post a comment on this task with your answers (Yes/No) for each. If the answer is \"Yes,\" please follow the specific instructions listed below and upload the required evidence to this task.\n\nQuestion 1: New Hires\nDid any new employees join the organization during this audit period?\n\nIf NO: State \"No new hires.\"\nIf YES:\n  1. Ensure all new hires have been added to the People tab in the platform.\n  2. Confirm they have a compliant device assigned.\n  3. Verify they have approved all policies and completed security training on portal.trycomp.ai.\n  4. Upload Evidence: Please attach employee verification evidence (e.g., background check confirmation or call notes from reference check call) for the hires.\n\nQuestion 2: Terminations\nDid any employees or contractors leave the organization (voluntarily or involuntarily) during this period?\n\nIf NO: State \"No terminations.\"\nIf YES:\n  1. In your comment, list the Name, Termination Date, and Access Revocation Date for each individual.\n  2. Upload Evidence: Please attach the completed Termination Checklist for each leaver showing that access was revoked on time. Ensure it is dated and signed.\n\nQuestion 3: Non-Production Data\nDoes the organization use real customer data (PII) in non-production environments (e.g., Staging/Dev)?\n\nIf NO: State \"No. Non-production environments use synthetic data only.\"\nIf YES:\n  1. Upload Evidence: Please attach proof of your Data Masking or anonymization process (e.g., screenshots of the obfuscation script or database config) showing that sensitive data is protected.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-12-29 14:50:07.058",
+    "updatedAt": "2026-01-14 21:33:59.506",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_6901e041bb02b41fa3b7dca9",
+    "name": "Office Access & Door Monitoring",
+    "description": "Office Access & Door Monitoring\n\nManage and monitor physical access to your office space to prevent unauthorized entry. You must maintain an accurate record of who holds access credentials (keys, badges, or codes), ensure that access is immediately revoked for terminated employees, and review access activity periodically.\n\nUpload evidence corresponding to your specific office setup from the options below:\n\nIf you use a smart lock or alarm system:\n\nAccess List: An export or table showing names, roles, code/badge IDs, and issue dates.\n\nRevocation Proof: A screenshot showing a leaver's code being disabled (including the timestamp).\n\nMonthly Review: A door access report accompanied by a one-line review note (e.g., \"No issues found\" or \"1 denied attempt at 22:14, Ticket #123\").\n\nIf you use physical keys only:\n\nKey Register: A log showing Key ID, holder name, and date issued/returned.\n\nRevocation Proof: A key return form or photo of the returned key. If the key was lost, provide a note regarding the loss and a receipt for rekeying the lock.\n\nMonthly Log: A manual log of open/close times, including who opened/locked and any issues noted.\n\nIf you use a coworking space with a staffed reception:\n\nInternal Access List: A list of who holds the specific key or code to your private office/room.\n\nRevocation Proof: Evidence that the private room key/code was collected or changed for leavers.\n\nMonthly Check: A short note confirming the status (e.g., \"Reception manages front door; our internal room key activity had no issues in Sept.\").\nUpload an email or official note from your building contact (e.g., landlord, building manager, or coworking operator) confirming these details. The evidence must include:\n\nOpening hours\n\nEntry methods (e.g., key, badge, code, or staffed reception)\n\nVisitor processes (e.g., sign-in requirements, escorting policies)\n\nEmergency information (e.g., fire exits, alarms)\n\nNote: For serviced offices with a staffed reception, a short email from the operator confirming these points is sufficient.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2025-10-29 09:37:04.804",
+    "updatedAt": "2026-01-14 21:33:59.041",
+    "automationStatus": "MANUAL"
   }
 ]
