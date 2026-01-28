@@ -21,6 +21,7 @@ import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
+import { getStringValue, toStringCredentials } from '../utils/credential-utils';
 import { db } from '@db';
 import type { Prisma } from '@prisma/client';
 
@@ -346,10 +347,12 @@ export class TaskIntegrationsController {
 
     try {
       // Run the specific check
+      const accessToken = getStringValue(credentials.access_token);
+      const stringCredentials = toStringCredentials(credentials);
       const result = await runAllChecks({
         manifest,
-        accessToken: credentials.access_token ?? undefined,
-        credentials: credentials,
+        accessToken,
+        credentials: stringCredentials,
         variables,
         connectionId,
         organizationId,

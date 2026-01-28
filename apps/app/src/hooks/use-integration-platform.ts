@@ -237,7 +237,7 @@ export function useIntegrationMutations() {
   const createConnection = useCallback(
     async (
       providerSlug: string,
-      credentials?: Record<string, string>,
+      credentials?: Record<string, string | string[]>,
     ): Promise<{ success: boolean; connectionId?: string; error?: string }> => {
       if (!orgId) {
         return { success: false, error: 'No organization selected' };

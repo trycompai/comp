@@ -38,13 +38,9 @@ export class ConnectionRepository {
     providerId: string,
     organizationId: string,
   ): Promise<IntegrationConnection | null> {
-    return db.integrationConnection.findUnique({
-      where: {
-        providerId_organizationId: {
-          providerId,
-          organizationId,
-        },
-      },
+    return db.integrationConnection.findFirst({
+      where: { providerId, organizationId },
+      orderBy: { createdAt: 'desc' },
       include: {
         provider: true,
       },
@@ -146,13 +142,8 @@ export class ConnectionRepository {
     providerId: string,
     organizationId: string,
   ): Promise<void> {
-    await db.integrationConnection.delete({
-      where: {
-        providerId_organizationId: {
-          providerId,
-          organizationId,
-        },
-      },
+    await db.integrationConnection.deleteMany({
+      where: { providerId, organizationId },
     });
   }
 }

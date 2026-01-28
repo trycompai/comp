@@ -5,6 +5,14 @@ import { z } from 'zod';
  */
 export const awsCredentialFields = [
   {
+    id: 'connectionName',
+    label: 'Connection Name',
+    type: 'text' as const,
+    required: true,
+    placeholder: 'Production Account',
+    helpText: 'A friendly name to identify this AWS account',
+  },
+  {
     id: 'roleArn',
     label: 'IAM Role ARN',
     type: 'text' as const,
@@ -22,12 +30,13 @@ export const awsCredentialFields = [
       'A unique identifier you choose. Use the same value here AND in your IAM trust policy. Your organization ID works well for this.',
   },
   {
-    id: 'region',
-    label: 'Primary AWS Region',
-    type: 'combobox' as const,
+    id: 'regions',
+    label: 'AWS Regions',
+    type: 'multi-select' as const,
     required: true,
-    placeholder: 'Select or type a region...',
-    helpText: 'Select a common region or type your own (e.g., us-east-1, eu-west-1)',
+    placeholder: 'Select one or more regions...',
+    helpText:
+      'Select all regions to scan. Tip: If Security Hub cross-region aggregation is enabled, select only your home region.',
     options: [
       // US Regions
       { value: 'us-east-1', label: 'us-east-1 (N. Virginia)' },
@@ -75,6 +84,7 @@ export const awsCredentialFields = [
  * Validation schema for AWS credentials
  */
 export const awsCredentialSchema = z.object({
+  connectionName: z.string().min(1, 'Connection name is required'),
   roleArn: z
     .string()
     .regex(
@@ -82,7 +92,7 @@ export const awsCredentialSchema = z.object({
       'Must be a valid IAM Role ARN (arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME)',
     ),
   externalId: z.string().min(1),
-  region: z.string().min(1),
+  regions: z.array(z.string()).min(1, 'Select at least one region'),
 });
 
 /**
