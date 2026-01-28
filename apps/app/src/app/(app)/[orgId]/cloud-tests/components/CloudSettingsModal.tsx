@@ -60,7 +60,10 @@ export function CloudSettingsModal({
           return;
         }
 
-        const legacyResult = await disconnectCloudAction({ cloudProvider: provider.id });
+        const legacyResult = await disconnectCloudAction({
+          cloudProvider: provider.id,
+          integrationId: provider.connectionId,
+        });
         if (legacyResult?.data?.success) {
           toast.success('Cloud provider disconnected');
           onUpdate();
