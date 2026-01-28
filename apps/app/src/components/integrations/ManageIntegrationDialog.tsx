@@ -52,7 +52,15 @@ interface VariablesResponse {
 interface CredentialField {
   id: string;
   label: string;
-  type: 'text' | 'password' | 'textarea' | 'select' | 'combobox' | 'number' | 'url';
+  type:
+    | 'text'
+    | 'password'
+    | 'textarea'
+    | 'select'
+    | 'combobox'
+    | 'multi-select'
+    | 'number'
+    | 'url';
   required: boolean;
   placeholder?: string;
   helpText?: string;
@@ -138,7 +146,9 @@ export function ManageIntegrationDialog({
 
   // Credentials state (for custom auth integrations)
   const [credentialFields, setCredentialFields] = useState<CredentialField[]>([]);
-  const [credentialValues, setCredentialValues] = useState<Record<string, string>>({});
+  const [credentialValues, setCredentialValues] = useState<
+    Record<string, string | string[]>
+  >({});
   const [savingCredentials, setSavingCredentials] = useState(false);
   const [authStrategy, setAuthStrategy] = useState<string>('');
 
@@ -161,9 +171,9 @@ export function ManageIntegrationDialog({
         setAuthStrategy(response.data.authStrategy || '');
         setCredentialFields(response.data.credentialFields || []);
         // Initialize empty credential values (we don't show existing values for security)
-        const initialValues: Record<string, string> = {};
+        const initialValues: Record<string, string | string[]> = {};
         for (const field of response.data.credentialFields || []) {
-          initialValues[field.id] = '';
+          initialValues[field.id] = field.type === 'multi-select' ? [] : '';
         }
         setCredentialValues(initialValues);
       }
@@ -254,16 +264,22 @@ export function ManageIntegrationDialog({
     if (!connectionId || !orgId) return;
 
     // Check if any credentials were actually entered
-    const hasValues = Object.values(credentialValues).some((v) => v.trim() !== '');
+    const hasValues = Object.values(credentialValues).some((value) =>
+      Array.isArray(value) ? value.length > 0 : value.trim() !== '',
+    );
     if (!hasValues) {
       toast.error('Please enter at least one credential value to update');
       return;
     }
 
     // Only send non-empty values
-    const credentialsToSave: Record<string, string> = {};
+    const credentialsToSave: Record<string, string | string[]> = {};
     for (const [key, value] of Object.entries(credentialValues)) {
-      if (value.trim()) {
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          credentialsToSave[key] = value;
+        }
+      } else if (value.trim()) {
         credentialsToSave[key] = value.trim();
       }
     }
@@ -278,9 +294,9 @@ export function ManageIntegrationDialog({
       refreshConnections();
       // Clear the form
       setCredentialValues((prev) => {
-        const cleared: Record<string, string> = {};
+        const cleared: Record<string, string | string[]> = {};
         for (const key of Object.keys(prev)) {
-          cleared[key] = '';
+          cleared[key] = Array.isArray(prev[key]) ? [] : '';
         }
         return cleared;
       });
@@ -486,8 +502,8 @@ function ConfigurationContent({
   loadingDynamicOptions: Record<string, boolean>;
   fetchDynamicOptions: (variableId: string) => void;
   credentialFields: CredentialField[];
-  credentialValues: Record<string, string>;
-  setCredentialValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  credentialValues: Record<string, string | string[]>;
+  setCredentialValues: React.Dispatch<React.SetStateAction<Record<string, string | string[]>>>;
   hasVariables: boolean;
   hasCredentials: boolean;
   showTabs: boolean;
@@ -643,11 +659,46 @@ function ConfigurationContent({
             {field.required && <span className="text-muted-foreground ml-1">(required)</span>}
           </Label>
           {field.helpText && <p className="text-xs text-muted-foreground">{field.helpText}</p>}
-          {field.type === 'textarea' ? (
+          {field.type === 'multi-select' ? (
+            (() => {
+              const selectedValues: string[] = Array.isArray(credentialValues[field.id])
+                ? (credentialValues[field.id] as string[])
+                : [];
+              return (
+                <MultipleSelector
+                  value={selectedValues.map((val: string) => ({
+                    value: val,
+                    label: field.options?.find((opt) => opt.value === val)?.label || val,
+                  }))}
+                  onChange={(selected) =>
+                    setCredentialValues((prev) => ({
+                      ...prev,
+                      [field.id]: selected.map((item) => item.value),
+                    }))
+                  }
+                  defaultOptions={(field.options || []).map((opt) => ({
+                    value: opt.value,
+                    label: opt.label,
+                  }))}
+                  options={(field.options || []).map((opt) => ({
+                    value: opt.value,
+                    label: opt.label,
+                  }))}
+                  placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`}
+                  creatable={!field.options || field.options.length === 0}
+                  emptyIndicator={
+                    <p className="text-center text-sm text-muted-foreground">No options</p>
+                  }
+                />
+              );
+            })()
+          ) : field.type === 'textarea' ? (
             <textarea
               id={`cred-${field.id}`}
               placeholder={field.placeholder || `Enter new ${field.label.toLowerCase()}`}
-              value={credentialValues[field.id] || ''}
+              value={
+                typeof credentialValues[field.id] === 'string' ? credentialValues[field.id] : ''
+              }
               onChange={(e) =>
                 setCredentialValues((prev) => ({ ...prev, [field.id]: e.target.value }))
               }
@@ -659,7 +710,10 @@ function ConfigurationContent({
                 id: opt.value,
                 label: opt.label,
               }));
-              const currentValue = credentialValues[field.id];
+              const currentValue: string =
+                typeof credentialValues[field.id] === 'string'
+                  ? (credentialValues[field.id] as string)
+                  : '';
               // Find existing item or create synthetic one for custom values
               const selectedItem = currentValue
                 ? (items.find((item) => item.id === currentValue) ?? {
@@ -689,10 +743,18 @@ function ConfigurationContent({
               );
             })()
           ) : field.type === 'select' && field.options ? (
-            <Select
-              value={credentialValues[field.id] || ''}
-              onValueChange={(val) => setCredentialValues((prev) => ({ ...prev, [field.id]: val }))}
-            >
+            (() => {
+              const stringValue: string =
+                typeof credentialValues[field.id] === 'string'
+                  ? (credentialValues[field.id] as string)
+                  : '';
+              return (
+                <Select
+                  value={stringValue}
+                  onValueChange={(val) =>
+                    setCredentialValues((prev) => ({ ...prev, [field.id]: val }))
+                  }
+                >
               <SelectTrigger>
                 <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
               </SelectTrigger>
@@ -703,13 +765,17 @@ function ConfigurationContent({
                   </SelectItem>
                 ))}
               </SelectContent>
-            </Select>
+                </Select>
+              );
+            })()
           ) : (
             <Input
               id={`cred-${field.id}`}
               type={field.type === 'password' ? 'password' : 'text'}
               placeholder={field.placeholder || `Enter new ${field.label.toLowerCase()}`}
-              value={credentialValues[field.id] || ''}
+              value={
+                typeof credentialValues[field.id] === 'string' ? credentialValues[field.id] : ''
+              }
               onChange={(e) =>
                 setCredentialValues((prev) => ({ ...prev, [field.id]: e.target.value }))
               }

@@ -4,7 +4,7 @@ import { db } from '@db';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
+const CLOUD_PROVIDER_CATEGORY = 'Cloud';
 
 // Get required variables from manifest
 const getRequiredVariables = (providerSlug: string): string[] => {
@@ -60,9 +60,7 @@ export async function GET(request: NextRequest) {
         organizationId: orgId,
         status: 'active',
         provider: {
-          slug: {
-            in: CLOUD_PROVIDER_SLUGS,
-          },
+          category: CLOUD_PROVIDER_CATEGORY,
         },
       },
       include: {
@@ -74,47 +72,72 @@ export async function GET(request: NextRequest) {
     const legacyIntegrations = await db.integration.findMany({
       where: {
         organizationId: orgId,
-        integrationId: {
-          in: CLOUD_PROVIDER_SLUGS,
-        },
       },
     });
 
     // Filter out legacy integrations that have been migrated to new platform
     const newConnectionSlugs = new Set(newConnections.map((c) => c.provider.slug));
-    const activeLegacyIntegrations = legacyIntegrations.filter(
-      (i) => !newConnectionSlugs.has(i.integrationId),
-    );
+    const activeLegacyIntegrations = legacyIntegrations.filter((integration) => {
+      if (newConnectionSlugs.has(integration.integrationId)) return false;
+      const manifest = getManifest(integration.integrationId);
+      return manifest?.category === CLOUD_PROVIDER_CATEGORY;
+    });
 
     // Map new connections
-    const newProviders = newConnections.map((conn) => ({
-      id: conn.id,
-      integrationId: conn.provider.slug,
-      name: conn.provider.name,
-      organizationId: conn.organizationId,
-      lastRunAt: conn.lastSyncAt,
-      status: conn.status,
-      createdAt: conn.createdAt,
-      updatedAt: conn.updatedAt,
-      isLegacy: false,
-      variables: conn.variables,
-      requiredVariables: getRequiredVariables(conn.provider.slug),
-    }));
+    const newProviders = newConnections.map((conn) => {
+      const metadata = (conn.metadata || {}) as Record<string, unknown>;
+      const displayName =
+        typeof metadata.connectionName === 'string' ? metadata.connectionName : conn.provider.name;
+      const accountId = typeof metadata.accountId === 'string' ? metadata.accountId : undefined;
+      const regions = Array.isArray(metadata.regions)
+        ? metadata.regions.filter((region): region is string => typeof region === 'string')
+        : undefined;
+
+      return {
+        id: conn.id,
+        integrationId: conn.provider.slug,
+        name: conn.provider.name,
+        displayName,
+        organizationId: conn.organizationId,
+        lastRunAt: conn.lastSyncAt,
+        status: conn.status,
+        createdAt: conn.createdAt,
+        updatedAt: conn.updatedAt,
+        isLegacy: false,
+        variables: conn.variables,
+        requiredVariables: getRequiredVariables(conn.provider.slug),
+        accountId,
+        regions,
+      };
+    });
 
     // Map legacy integrations
-    const legacyProviders = activeLegacyIntegrations.map((integration) => ({
-      id: integration.id,
-      integrationId: integration.integrationId,
-      name: integration.name,
-      organizationId: integration.organizationId,
-      lastRunAt: integration.lastRunAt,
-      status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isLegacy: true,
-      variables: null,
-      requiredVariables: getRequiredVariables(integration.integrationId),
-    }));
+    const legacyProviders = activeLegacyIntegrations.map((integration) => {
+      const settings = (integration.settings || {}) as Record<string, unknown>;
+      const displayName =
+        typeof settings.connectionName === 'string' ? settings.connectionName : integration.name;
+      const accountId = typeof settings.accountId === 'string' ? settings.accountId : undefined;
+      const regions = Array.isArray(settings.regions)
+        ? settings.regions.filter((region): region is string => typeof region === 'string')
+        : undefined;
+
+      return {
+        id: integration.id,
+        integrationId: integration.integrationId,
+        name: integration.name,
+        displayName,
+        organizationId: integration.organizationId,
+        lastRunAt: integration.lastRunAt,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isLegacy: true,
+        variables: null,
+        requiredVariables: getRequiredVariables(integration.integrationId),
+        accountId,
+        regions,
+      };
+    });
 
     return NextResponse.json([...newProviders, ...legacyProviders]);
   } catch (error) {

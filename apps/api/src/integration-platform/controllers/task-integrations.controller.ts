@@ -61,6 +61,26 @@ export class TaskIntegrationsController {
     private readonly oauthCredentialsService: OAuthCredentialsService,
   ) {}
 
+  private getStringValue(value?: string | string[]): string | undefined {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
+  }
+
+  private toStringCredentials(
+    credentials: Record<string, string | string[]>,
+  ): Record<string, string> {
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(credentials)) {
+      const stringValue = this.getStringValue(value);
+      if (typeof stringValue === 'string' && stringValue.length > 0) {
+        normalized[key] = stringValue;
+      }
+    }
+    return normalized;
+  }
+
   /**
    * Get all integration checks that can auto-complete a specific task template
    */
@@ -346,10 +366,12 @@ export class TaskIntegrationsController {
 
     try {
       // Run the specific check
+      const accessToken = this.getStringValue(credentials.access_token);
+      const stringCredentials = this.toStringCredentials(credentials);
       const result = await runAllChecks({
         manifest,
-        accessToken: credentials.access_token ?? undefined,
-        credentials: credentials,
+        accessToken,
+        credentials: stringCredentials,
         variables,
         connectionId,
         organizationId,

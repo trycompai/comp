@@ -160,7 +160,11 @@ export function ResultsView({
           <div />
         )}
 
-        <Button onClick={handleRunScan} disabled={isScanning} className="gap-2 rounded-lg">
+        <Button
+          onClick={handleRunScan}
+          disabled={isScanning}
+          className="cursor-pointer gap-2 rounded-lg text-white"
+        >
           <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
           {isScanning ? 'Scanning...' : 'Run Scan'}
         </Button>

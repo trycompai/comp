@@ -1,9 +1,10 @@
 import { auth } from '@/utils/auth';
+import { getManifest } from '@comp/integration-platform';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'];
+const CLOUD_PROVIDER_CATEGORY = 'Cloud';
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,9 +44,7 @@ export async function GET(request: NextRequest) {
         organizationId: orgId,
         status: 'active',
         provider: {
-          slug: {
-            in: CLOUD_PROVIDER_SLUGS,
-          },
+          category: CLOUD_PROVIDER_CATEGORY,
         },
       },
       include: {
@@ -59,17 +58,16 @@ export async function GET(request: NextRequest) {
     const legacyIntegrations = await db.integration.findMany({
       where: {
         organizationId: orgId,
-        integrationId: {
-          in: CLOUD_PROVIDER_SLUGS,
-        },
       },
     });
 
     // Filter out legacy integrations that have been migrated to new platform
     const newConnectionSlugs = new Set(newConnections.map((c) => c.provider.slug));
-    const activeLegacyIntegrations = legacyIntegrations.filter(
-      (i) => !newConnectionSlugs.has(i.integrationId),
-    );
+    const activeLegacyIntegrations = legacyIntegrations.filter((integration) => {
+      if (newConnectionSlugs.has(integration.integrationId)) return false;
+      const manifest = getManifest(integration.integrationId);
+      return manifest?.category === CLOUD_PROVIDER_CATEGORY;
+    });
 
     // ====================================================================
     // Fetch findings from NEW platform (IntegrationCheckResult)
@@ -127,6 +125,8 @@ export async function GET(request: NextRequest) {
         status: result.passed ? 'passed' : 'failed',
         severity: result.severity,
         completedAt: result.collectedAt,
+        connectionId: checkRun?.connectionId ?? '',
+        providerSlug: checkRun ? connectionToSlug[checkRun.connectionId] || 'unknown' : 'unknown',
         integration: {
           integrationId: checkRun ? connectionToSlug[checkRun.connectionId] || 'unknown' : 'unknown',
         },
@@ -157,6 +157,7 @@ export async function GET(request: NextRequest) {
               integration: {
                 select: {
                   integrationId: true,
+                  id: true,
                 },
               },
             },
@@ -175,6 +176,8 @@ export async function GET(request: NextRequest) {
       status: result.status,
       severity: result.severity,
       completedAt: result.completedAt,
+      connectionId: result.integration.id,
+      providerSlug: result.integration.integrationId,
       integration: {
         integrationId: result.integration.integrationId,
       },
