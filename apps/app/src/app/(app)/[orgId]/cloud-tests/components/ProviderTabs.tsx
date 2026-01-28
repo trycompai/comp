@@ -186,13 +186,16 @@ export function ProviderTabs({
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    size="lg"
-                    iconLeft={<Add size={16} />}
-                    onClick={() => onAddConnection(providerType)}
-                  >
-                    Add connection
-                  </Button>
+                  {/* Only show "Add connection" button for providers that support multiple connections */}
+                  {connections.some((c) => c.supportsMultipleConnections) && (
+                    <Button
+                      size="lg"
+                      iconLeft={<Add size={16} />}
+                      onClick={() => onAddConnection(providerType)}
+                    >
+                      Add connection
+                    </Button>
+                  )}
                 </div>
 
                 {connections.map((connection) => {
