@@ -4,7 +4,7 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 
 interface Finding {
   id: string;
@@ -80,9 +80,8 @@ export function FindingsTable({ findings }: FindingsTableProps) {
             const statusKey = finding.status?.toLowerCase() as keyof typeof statusVariant;
 
             return (
-              <>
+              <Fragment key={finding.id}>
                 <TableRow
-                  key={finding.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => toggleRow(finding.id)}
                 >
@@ -148,7 +147,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </TableBody>

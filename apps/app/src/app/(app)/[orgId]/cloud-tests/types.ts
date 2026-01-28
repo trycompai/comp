@@ -28,6 +28,7 @@ export interface Provider {
   requiredVariables?: string[];
   accountId?: string;
   regions?: string[];
+  supportsMultipleConnections?: boolean;
 }
 export type FailedIntegration = {
   id: string;
@@ -44,5 +45,3 @@ export type IntegrationRunOutput = {
   errors?: string[];
   failedIntegrations?: FailedIntegration[];
 };
-
-

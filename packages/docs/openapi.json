@@ -11594,6 +11594,35 @@
         "tags": [
           "Connections"
         ]
+      },
+      "patch": {
+        "operationId": "ConnectionsController_updateConnection_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Connections"
+        ]
       }
     },
     "/v1/integrations/connections/{id}/test": {
