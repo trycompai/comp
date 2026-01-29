@@ -47,6 +47,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ fleetPolicies: [], device: null });
     }
 
+    // should call refetch endpoint.
+    await fleet.post(`/hosts/${device.id}/refetch`);
+
     const platform = device.platform?.toLowerCase();
     const osVersion = device.os_version?.toLowerCase();
     const isMacOS =
