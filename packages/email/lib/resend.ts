@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { Resend } from 'resend';
+import mailService from './mail-service';
 
-export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 function maskEmail(value: string): string {
   const [name = '', domain = ''] = value.toLowerCase().split('@');
@@ -45,7 +44,7 @@ export const sendEmail = async ({
   scheduledAt?: string;
   attachments?: EmailAttachment[];
 }) => {
-  if (!resend) {
+  if (!mailService) {
     throw new Error('Resend not initialized - missing API key');
   }
 
@@ -89,7 +88,7 @@ export const sendEmail = async ({
       },
     });
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await mailService.send({
       from: fromAddress, // now always a string
       to: toAddress, // now always a string
       cc,
