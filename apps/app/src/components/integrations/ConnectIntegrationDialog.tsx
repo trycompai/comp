@@ -176,8 +176,12 @@ export function ConnectIntegrationDialog({
 }: ConnectIntegrationDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const { startOAuth, createConnection, deleteConnection } = useIntegrationMutations();
-  const { providers } = useIntegrationProviders(true);
-  const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
+  const { providers, isLoading: isProvidersLoading } = useIntegrationProviders(true);
+  const {
+    connections: allConnections,
+    refresh: refreshConnections,
+    isLoading: isConnectionsLoading,
+  } = useIntegrationConnections();
 
   const [connecting, setConnecting] = useState(false);
   const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
@@ -191,6 +195,10 @@ export function ConnectIntegrationDialog({
   const authType = provider?.authType;
   const credentialFields = provider?.credentialFields ?? [];
   const supportsMultipleConnections = provider?.supportsMultipleConnections ?? false;
+
+  // Track if data is still loading - use isLoading flags instead of checking for undefined
+  // since hooks return [] as fallback, not undefined
+  const isDataLoading = isProvidersLoading || isConnectionsLoading;
 
   // Filter connections for this specific integration
   const existingConnections: ExistingConnection[] = useMemo(() => {
@@ -218,11 +226,9 @@ export function ConnectIntegrationDialog({
 
   // Determine initial view based on existing connections (only when opening)
   useEffect(() => {
-    const hasProviders = Boolean(providers);
-    const hasConnections = allConnections !== undefined;
-
     if (open && !didInitializeOnOpen.current) {
-      if (!hasProviders || !hasConnections) {
+      // Wait until data has finished loading before determining view
+      if (isDataLoading) {
         return;
       }
       if (supportsMultipleConnections && existingConnections.length > 0) {
@@ -242,7 +248,7 @@ export function ConnectIntegrationDialog({
     if (!open) {
       didInitializeOnOpen.current = false;
     }
-  }, [open, allConnections, providers, existingConnections.length, supportsMultipleConnections]);
+  }, [open, isDataLoading, existingConnections.length, supportsMultipleConnections]);
 
   const allFields = useMemo(() => {
     if (authType === 'basic') {
@@ -753,9 +759,17 @@ export function ConnectIntegrationDialog({
         </DialogHeader>
 
         <div className="pt-2">
-          {view === 'list' && renderConnectionList()}
-          {view === 'form' && renderAuthForm()}
-          {view === 'configure' && renderConfigureForm()}
+          {isDataLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              {view === 'list' && renderConnectionList()}
+              {view === 'form' && renderAuthForm()}
+              {view === 'configure' && renderConfigureForm()}
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
