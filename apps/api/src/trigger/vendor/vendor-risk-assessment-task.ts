@@ -1,5 +1,7 @@
 import {
   db,
+  Impact,
+  Likelihood,
   TaskItemPriority,
   TaskItemStatus,
   VendorStatus,
@@ -8,7 +10,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import type { Task } from '@trigger.dev/sdk';
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 import { resolveTaskCreatorAndAssignee } from './vendor-risk-assessment/assignee';
 import { VENDOR_RISK_ASSESSMENT_TASK_ID } from './vendor-risk-assessment/constants';
@@ -163,6 +165,48 @@ function parseRiskAssessmentJson(value: string): Prisma.InputJsonValue {
   }
 
   return parsed;
+}
+
+const riskLevelSchema = z
+  .object({
+    riskLevel: z.string().optional(),
+  })
+  .passthrough();
+
+function extractRiskLevel(value: Prisma.InputJsonValue): string | null {
+  const parsed = riskLevelSchema.safeParse(value);
+  if (!parsed.success) {
+    return null;
+  }
+  return parsed.data.riskLevel ?? null;
+}
+
+function mapRiskLevelToLikelihood(
+  riskLevel: string | null | undefined,
+): Likelihood {
+  switch (riskLevel?.toLowerCase()) {
+    case 'high':
+      return Likelihood.likely;
+    case 'medium':
+      return Likelihood.possible;
+    case 'low':
+      return Likelihood.unlikely;
+    default:
+      return Likelihood.very_unlikely;
+  }
+}
+
+function mapRiskLevelToImpact(riskLevel: string | null | undefined): Impact {
+  switch (riskLevel?.toLowerCase()) {
+    case 'high':
+      return Impact.major;
+    case 'medium':
+      return Impact.moderate;
+    case 'low':
+      return Impact.minor;
+    default:
+      return Impact.insignificant;
+  }
 }
 
 /**
@@ -615,11 +659,21 @@ export const vendorRiskAssessmentTask: Task<
       });
     }
 
+    const riskLevel = extractRiskLevel(data);
+    const inherentProbability = mapRiskLevelToLikelihood(riskLevel);
+    const inherentImpact = mapRiskLevelToImpact(riskLevel);
+    const residualProbability = mapRiskLevelToLikelihood(riskLevel);
+    const residualImpact = mapRiskLevelToImpact(riskLevel);
+
     // Mark org-specific vendor as assessed
     await db.vendor.update({
       where: { id: vendor.id },
       data: {
         status: VendorStatus.assessed,
+        inherentProbability,
+        inherentImpact,
+        residualProbability,
+        residualImpact,
       },
     });
 

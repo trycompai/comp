@@ -17,7 +17,7 @@ const getApiBaseUrl = (): string => {
 const triggerRiskAssessmentIfMissing = async (params: {
   organizationId: string;
   vendor: Pick<Vendor, 'id' | 'name' | 'website'>;
-}): Promise<void> => {
+}): Promise<boolean> => {
   const normalizedWebsite = normalizeWebsite(params.vendor.website ?? null);
   if (!normalizedWebsite) {
     console.log('[createVendorAction] Skip risk assessment trigger (no valid website)', {
@@ -26,7 +26,7 @@ const triggerRiskAssessmentIfMissing = async (params: {
       vendorName: params.vendor.name,
       vendorWebsite: params.vendor.website ?? null,
     });
-    return;
+    return false;
   }
 
   // Check if GlobalVendors already has risk assessment data for this domain
@@ -41,12 +41,9 @@ const triggerRiskAssessmentIfMissing = async (params: {
         },
       },
       select: { website: true, riskAssessmentData: true },
-      orderBy: [
-        { riskAssessmentUpdatedAt: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ riskAssessmentUpdatedAt: 'desc' }, { createdAt: 'desc' }],
     });
-    
+
     // Prefer record WITH risk assessment data
     existing = duplicates.find((gv) => gv.riskAssessmentData !== null) ?? duplicates[0] ?? null;
   }
@@ -54,24 +51,30 @@ const triggerRiskAssessmentIfMissing = async (params: {
 
   // Only trigger *research* when GlobalVendors is missing data.
   if (existingHasData) {
-    console.log('[createVendorAction] Skip risk assessment trigger (GlobalVendors already has data)', {
-      organizationId: params.organizationId,
-      vendorId: params.vendor.id,
-      vendorName: params.vendor.name,
-      normalizedWebsite,
-    });
-    return;
+    console.log(
+      '[createVendorAction] Skip risk assessment trigger (GlobalVendors already has data)',
+      {
+        organizationId: params.organizationId,
+        vendorId: params.vendor.id,
+        vendorName: params.vendor.name,
+        normalizedWebsite,
+      },
+    );
+    return false;
   }
 
   const token = process.env.INTERNAL_API_TOKEN;
 
-  console.log('[createVendorAction] Trigger risk assessment research (GlobalVendors missing data)', {
-    organizationId: params.organizationId,
-    vendorId: params.vendor.id,
-    vendorName: params.vendor.name,
-    normalizedWebsite,
-    hasInternalToken: Boolean(token),
-  });
+  console.log(
+    '[createVendorAction] Trigger risk assessment research (GlobalVendors missing data)',
+    {
+      organizationId: params.organizationId,
+      vendorId: params.vendor.id,
+      vendorName: params.vendor.name,
+      normalizedWebsite,
+      hasInternalToken: Boolean(token),
+    },
+  );
 
   await axios.post(
     `${getApiBaseUrl()}/v1/internal/vendors/risk-assessment/trigger-batch`,
@@ -91,14 +94,13 @@ const triggerRiskAssessmentIfMissing = async (params: {
       timeout: 15_000,
     },
   );
+
+  return true;
 };
 
 const schema = z.object({
   organizationId: z.string().min(1, 'Organization ID is required'),
-  name: z
-    .string()
-    .trim()
-    .min(1, 'Name is required'),
+  name: z.string().trim().min(1, 'Name is required'),
   // Treat empty string as "not provided" so the form default doesn't block submission
   website: z
     .union([z.string().url('Must be a valid URL (include https://)'), z.literal('')])
@@ -221,8 +223,9 @@ export const createVendorAction = createSafeActionClient()
 
       // If we don't already have GlobalVendors risk assessment data for this website, trigger research.
       // Best-effort: vendor creation should succeed even if the trigger fails.
+      let didTriggerRiskAssessment = false;
       try {
-        await triggerRiskAssessmentIfMissing({
+        didTriggerRiskAssessment = await triggerRiskAssessmentIfMissing({
           organizationId: input.parsedInput.organizationId,
           vendor,
         });
@@ -232,6 +235,13 @@ export const createVendorAction = createSafeActionClient()
           vendorId: vendor.id,
           vendorName: vendor.name,
           error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      if (didTriggerRiskAssessment && vendor.status === VendorStatus.not_assessed) {
+        await db.vendor.update({
+          where: { id: vendor.id },
+          data: { status: VendorStatus.in_progress },
         });
       }
 

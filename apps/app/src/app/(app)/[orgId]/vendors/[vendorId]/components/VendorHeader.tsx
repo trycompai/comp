@@ -1,13 +1,5 @@
 'use client';
 
-import { filterCertifications } from '@/components/vendor-risk-assessment/filter-certifications';
-import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
-import type { VendorRiskAssessmentCertification } from '@/components/vendor-risk-assessment/vendor-risk-assessment-types';
-import { cn } from '@/lib/utils';
-import type { Vendor } from '@db';
-import type { Prisma } from '@prisma/client';
-import Link from 'next/link';
-import { useMemo } from 'react';
 import {
   HIPAA,
   ISO27001,
@@ -15,9 +7,16 @@ import {
   SOC2Type1,
   SOC2Type2,
 } from '@/app/(app)/[orgId]/trust/portal-settings/components/logos';
+import { filterCertifications } from '@/components/vendor-risk-assessment/filter-certifications';
+import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
+import type { VendorRiskAssessmentCertification } from '@/components/vendor-risk-assessment/vendor-risk-assessment-types';
+import { cn } from '@/lib/utils';
+import type { Vendor } from '@db';
+import type { Prisma } from '@prisma/client';
 import { Button } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
-import { UpdateTitleAndDescriptionSheet } from './title-and-description/update-title-and-description-sheet';
+import Link from 'next/link';
+import { useMemo } from 'react';
 
 // Vendor with risk assessment data merged from GlobalVendors
 type VendorWithRiskAssessment = Vendor & {
@@ -28,8 +27,6 @@ type VendorWithRiskAssessment = Vendor & {
 
 interface VendorHeaderProps {
   vendor: VendorWithRiskAssessment;
-  isEditSheetOpen: boolean;
-  onEditSheetOpenChange: (open: boolean) => void;
 }
 
 /**
@@ -74,7 +71,7 @@ function getCertificationIcon(cert: VendorRiskAssessmentCertification) {
   return null;
 }
 
-export function VendorHeader({ vendor, isEditSheetOpen, onEditSheetOpenChange }: VendorHeaderProps) {
+export function VendorHeader({ vendor }: VendorHeaderProps) {
   // Parse risk assessment data to get certifications and links
   // Note: This should come from GlobalVendors, but we're reading from vendor for now
   // TODO: Update to fetch from GlobalVendors via vendor.website lookup
@@ -92,79 +89,72 @@ export function VendorHeader({ vendor, isEditSheetOpen, onEditSheetOpenChange }:
   }, [vendor.riskAssessmentData]);
 
   return (
-    <>
-      <div className="mb-4 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">{vendor.name}</h1>
-          {certifications.filter((cert) => cert.status === 'verified').length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              {certifications
-                .filter((cert) => {
-                  // Only show verified certifications
-                  return cert.status === 'verified';
-                })
-                .map((cert, index) => {
-                  const IconComponent = getCertificationIcon(cert);
+    <div className="mb-4 space-y-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-lg font-semibold text-foreground">{vendor.name}</h1>
+        {certifications.filter((cert) => cert.status === 'verified').length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {certifications
+              .filter((cert) => {
+                // Only show verified certifications
+                return cert.status === 'verified';
+              })
+              .map((cert, index) => {
+                const IconComponent = getCertificationIcon(cert);
 
-                  if (!IconComponent) return null;
+                if (!IconComponent) return null;
 
-                  const iconContent = (
-                    <div
-                      className={cn(
-                        'inline-flex items-center justify-center',
-                        'transition-all duration-300 ease-out',
-                        'w-[24px] h-[28px] shrink-0 overflow-hidden', // Proportionally smaller
-                        cert.url && ['cursor-pointer', 'hover:scale-[1.02]', 'active:scale-[0.99]'],
-                      )}
-                      title={cert.type} // Show full text on hover
+                const iconContent = (
+                  <div
+                    className={cn(
+                      'inline-flex items-center justify-center',
+                      'transition-all duration-300 ease-out',
+                      'w-[24px] h-[28px] shrink-0 overflow-hidden', // Proportionally smaller
+                      cert.url && ['cursor-pointer', 'hover:scale-[1.02]', 'active:scale-[0.99]'],
+                    )}
+                    title={cert.type} // Show full text on hover
+                  >
+                    <IconComponent className="h-[24px] w-[24px] max-h-[24px] max-w-[24px]" />
+                  </div>
+                );
+
+                if (cert.url) {
+                  return (
+                    <Link
+                      key={`${cert.type}-${index}`}
+                      href={cert.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block"
                     >
-                      <IconComponent className="h-[24px] w-[24px] max-h-[24px] max-w-[24px]" />
-                    </div>
+                      {iconContent}
+                    </Link>
                   );
+                }
 
-                  if (cert.url) {
-                    return (
-                      <Link
-                        key={`${cert.type}-${index}`}
-                        href={cert.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block"
-                      >
-                        {iconContent}
-                      </Link>
-                    );
-                  }
-
-                  return <div key={`${cert.type}-${index}`}>{iconContent}</div>;
-                })}
-            </div>
-          )}
-        </div>
-        {vendor.description && <p className="text-sm text-muted-foreground">{vendor.description}</p>}
-        {links.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            {links.map((link, index) => {
-              return (
-                <Button
-                  key={`${link.url}-${link.label}-${index}`}
-                  variant="outline"
-                  size="sm"
-                  iconRight={<Launch size={12} />}
-                  onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
-                >
-                  {link.label}
-                </Button>
-              );
-            })}
+                return <div key={`${cert.type}-${index}`}>{iconContent}</div>;
+              })}
           </div>
         )}
       </div>
-      <UpdateTitleAndDescriptionSheet
-        vendor={vendor}
-        open={isEditSheetOpen}
-        onOpenChange={onEditSheetOpenChange}
-      />
-    </>
+      {vendor.description && <p className="text-sm text-muted-foreground">{vendor.description}</p>}
+      {links.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pt-2">
+          {links.map((link, index) => {
+            return (
+              <Button
+                key={`${link.url}-${link.label}-${index}`}
+                variant="outline"
+                size="sm"
+                iconRight={<Launch size={12} />}
+                onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
+              >
+                {link.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
