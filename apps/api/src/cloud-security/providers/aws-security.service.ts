@@ -38,33 +38,61 @@ export class AWSSecurityService {
       `Scanning ${configuredRegions.length} region(s): ${configuredRegions.join(', ')}`,
     );
 
-    const allFindings: SecurityFinding[] = [];
+    // Assume role ONCE before scanning all regions (IAM is global, not regional)
+    // This avoids N×2 STS API calls when scanning N regions
+    let awsCredentials: AwsCredentials;
+    const primaryRegion = configuredRegions[0] || 'us-east-1';
 
-    // Scan each region
+    if (isRoleAuth) {
+      awsCredentials = await this.assumeRole(credentials, primaryRegion);
+    } else {
+      awsCredentials = {
+        accessKeyId: credentials.access_key_id as string,
+        secretAccessKey: credentials.secret_access_key as string,
+      };
+    }
+
+    const allFindings: SecurityFinding[] = [];
+    const successfulRegions: string[] = [];
+    const failedRegions: string[] = [];
+
+    // Scan each region using the same credentials
     for (const region of configuredRegions) {
       try {
-        const regionFindings = await this.scanRegion(
-          credentials,
+        const regionFindings = await this.scanRegionWithCredentials(
+          awsCredentials,
           region,
-          isRoleAuth,
-          isKeyAuth,
         );
         allFindings.push(...regionFindings);
+        successfulRegions.push(region);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         // Use warn - per-region failures are expected (e.g., Security Hub not enabled)
         this.logger.warn(`Error scanning region ${region}: ${errorMessage}`);
+        failedRegions.push(region);
         // Continue with other regions
       }
     }
 
-    this.logger.log(`Total findings across all regions: ${allFindings.length}`);
+    // Log summary
+    this.logger.log(
+      `Scan complete: ${allFindings.length} findings from ${successfulRegions.length} regions`,
+    );
+
+    // If ALL regions failed, throw an error so the caller knows the scan failed
+    if (successfulRegions.length === 0 && failedRegions.length > 0) {
+      throw new Error(
+        `All ${failedRegions.length} region(s) failed to scan: ${failedRegions.join(', ')}`,
+      );
+    }
+
     return allFindings;
   }
 
   /**
-   * Get the list of regions to scan from credentials or variables
+   * Get the list of regions to scan from credentials or variables.
+   * Always returns at least one region (defaults to us-east-1).
    */
   private getConfiguredRegions(
     credentials: Record<string, unknown>,
@@ -72,24 +100,36 @@ export class AWSSecurityService {
   ): string[] {
     // Check credentials.regions (array from multi-select)
     if (Array.isArray(credentials.regions) && credentials.regions.length > 0) {
-      return credentials.regions.filter(
-        (r): r is string => typeof r === 'string',
+      const filtered = credentials.regions.filter(
+        (r): r is string => typeof r === 'string' && r.trim().length > 0,
       );
+      // Only use filtered result if it has valid strings
+      if (filtered.length > 0) {
+        return filtered;
+      }
     }
 
     // Check variables.regions (array)
     if (Array.isArray(variables.regions) && variables.regions.length > 0) {
-      return variables.regions.filter(
-        (r): r is string => typeof r === 'string',
+      const filtered = variables.regions.filter(
+        (r): r is string => typeof r === 'string' && r.trim().length > 0,
       );
+      // Only use filtered result if it has valid strings
+      if (filtered.length > 0) {
+        return filtered;
+      }
     }
 
     // Check single region in credentials or variables
     const singleRegion =
       (credentials.region as string) || (variables.region as string);
 
-    if (singleRegion && typeof singleRegion === 'string') {
-      return [singleRegion];
+    if (
+      singleRegion &&
+      typeof singleRegion === 'string' &&
+      singleRegion.trim()
+    ) {
+      return [singleRegion.trim()];
     }
 
     // Default to us-east-1
@@ -97,27 +137,13 @@ export class AWSSecurityService {
   }
 
   /**
-   * Scan a single AWS region for security findings
+   * Scan a single AWS region using pre-obtained credentials.
+   * Credentials are reused across regions since IAM is global.
    */
-  private async scanRegion(
-    credentials: Record<string, unknown>,
+  private async scanRegionWithCredentials(
+    awsCredentials: AwsCredentials,
     region: string,
-    isRoleAuth: boolean,
-    isKeyAuth: boolean,
   ): Promise<SecurityFinding[]> {
-    let awsCredentials: AwsCredentials;
-
-    if (isRoleAuth) {
-      awsCredentials = await this.assumeRole(credentials, region);
-    } else if (isKeyAuth) {
-      awsCredentials = {
-        accessKeyId: credentials.access_key_id as string,
-        secretAccessKey: credentials.secret_access_key as string,
-      };
-    } else {
-      throw new Error('No valid credentials');
-    }
-
     const securityHub = new SecurityHubClient({
       region,
       credentials: awsCredentials,
