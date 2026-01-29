@@ -12,21 +12,21 @@ import {
 } from '@comp/ui/dialog';
 import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { FleetPolicy } from '../../types';
 
 interface PolicyImageUploadModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
   policy: FleetPolicy;
+  onOpenChange: (open: boolean) => void;
+  onRefresh: () => void;
 }
 
-export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyImageUploadModalProps) {
+export function PolicyImageUploadModal({ open, policy, onOpenChange, onRefresh }: PolicyImageUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<Array<{ file: File; previewUrl: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
   const params = useParams<{ orgId: string }>();
   const orgIdParam = params?.orgId;
   const organizationId = Array.isArray(orgIdParam) ? orgIdParam[0] : orgIdParam;
@@ -90,7 +90,7 @@ export function PolicyImageUploadModal({ open, onOpenChange, policy }: PolicyIma
 
       toast.success('Policy images uploaded successfully');
       handleClose(false);
-      router.refresh();
+      onRefresh();
     } catch (error) {
       console.error('Failed to upload policy images', error);
       const message = error instanceof Error ? error.message : 'Failed to upload policy images';

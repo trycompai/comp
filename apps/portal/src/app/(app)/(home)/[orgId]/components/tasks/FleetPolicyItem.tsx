@@ -18,9 +18,10 @@ import { PolicyImagePreviewModal } from './PolicyImagePreviewModal';
 
 interface FleetPolicyItemProps {
   policy: FleetPolicy;
+  onRefresh: () => void;
 }
 
-export function FleetPolicyItem({ policy }: FleetPolicyItemProps) {
+export function FleetPolicyItem({ policy, onRefresh }: FleetPolicyItemProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -132,6 +133,7 @@ export function FleetPolicyItem({ policy }: FleetPolicyItemProps) {
         policy={policy}
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
+        onRefresh={onRefresh}
       />
       <PolicyImagePreviewModal
         images={policy?.attachments || []}

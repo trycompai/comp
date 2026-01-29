@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member } from '@db';
-import { CheckCircle2, Circle, Download, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FleetPolicyItem } from './FleetPolicyItem';
@@ -21,13 +21,17 @@ import type { FleetPolicy, Host } from '../../types';
 interface DeviceAgentAccordionItemProps {
   member: Member;
   host: Host | null;
+  isLoading: boolean;
   fleetPolicies?: FleetPolicy[];
+  fetchFleetPolicies: () => void;
 }
 
 export function DeviceAgentAccordionItem({
   member,
   host,
+  isLoading,
   fleetPolicies = [],
+  fetchFleetPolicies,
 }: DeviceAgentAccordionItemProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
@@ -116,6 +120,10 @@ export function DeviceAgentAccordionItem({
         </>
       );
     }
+  };
+
+  const handleRefresh = () => {
+    fetchFleetPolicies();
   };
 
   useEffect(() => {
@@ -227,13 +235,25 @@ export function DeviceAgentAccordionItem({
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">{host.computer_name}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg">{host.computer_name}</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleRefresh}
+                    disabled={isLoading}
+                    title="Refresh device information"
+                  >
+                    <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {fleetPolicies.length > 0 ? (
                   <>
                     {fleetPolicies.map((policy) => (
-                      <FleetPolicyItem key={policy.id} policy={policy} />
+                      <FleetPolicyItem key={policy.id} policy={policy} onRefresh={handleRefresh} />
                     ))}
                   </>
                 ) : (
