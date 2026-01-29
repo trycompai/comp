@@ -183,6 +183,19 @@ export const removeMember = authActionClient
         });
       }
 
+      // Remove device host from fleetdm.
+      if (targetMember.fleetDmLabelId) {
+        const fleet = await getFleetInstance();
+        const hostsResponse = await fleet.get(`/labels/${targetMember.fleetDmLabelId}/hosts`);
+        const hostIds = hostsResponse.data.hosts.map((host: { id: number }) => host.id);
+
+        if (hostIds.length > 0) {
+          await Promise.all(hostIds.map(async (hostId: number) => {
+            return fleet.delete(`/hosts/${hostId}`);
+          }));
+        }
+      }
+
       // Clear all assignments
       await Promise.all([
         db.task.updateMany({
@@ -222,19 +235,6 @@ export const removeMember = authActionClient
           },
         }),
       ]);
-
-      // Remove device host from fleetdm.
-      if (targetMember.fleetDmLabelId) {
-        const fleet = await getFleetInstance();
-        const hostsResponse = await fleet.get(`/labels/${targetMember.fleetDmLabelId}/hosts`);
-        const hostIds = hostsResponse.data.hosts.map((host: { id: number }) => host.id);
-
-        if (hostIds.length > 0) {
-          await Promise.all(hostIds.map(async (hostId: number) => {
-            return fleet.delete(`/hosts/${hostId}`);
-          }));
-        }
-      }
 
       // Mark the member as deactivated instead of deleting
       await db.member.update({
