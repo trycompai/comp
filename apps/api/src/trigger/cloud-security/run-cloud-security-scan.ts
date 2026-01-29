@@ -4,16 +4,13 @@ import { logger, task } from '@trigger.dev/sdk';
 /**
  * Trigger task that runs a cloud security scan for a single connection.
  * This is the worker task triggered by the scheduled orchestrator.
+ *
+ * Following the legacy pattern: catch all errors and return { success: false }
+ * instead of throwing. This ensures errors are logged but don't cause noise.
  */
 export const runCloudSecurityScan = task({
   id: 'run-cloud-security-scan',
   maxDuration: 1000 * 60 * 15, // 15 minutes (scans can take time for multiple regions)
-  retry: {
-    maxAttempts: 2,
-    factor: 2,
-    minTimeoutInMs: 5000,
-    maxTimeoutInMs: 60_000,
-  },
   run: async (payload: {
     connectionId: string;
     organizationId: string;
@@ -32,26 +29,30 @@ export const runCloudSecurityScan = task({
       },
     );
 
-    // Verify connection is still active
-    const connection = await db.integrationConnection.findUnique({
-      where: { id: connectionId },
-      select: { id: true, status: true },
-    });
-
-    if (!connection) {
-      logger.warn(`Connection not found: ${connectionId}`);
-      return { success: false, error: 'Connection not found' };
-    }
-
-    if (connection.status !== 'active') {
-      logger.info(`Skipping inactive connection: ${connectionId}`);
-      return { success: true, skipped: true, reason: 'Connection not active' };
-    }
-
-    // Call the cloud security scan API endpoint
-    const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
-
     try {
+      // Verify connection is still active
+      const connection = await db.integrationConnection.findUnique({
+        where: { id: connectionId },
+        select: { id: true, status: true },
+      });
+
+      if (!connection) {
+        logger.warn(`Connection not found: ${connectionId}`);
+        return { success: false, error: 'Connection not found' };
+      }
+
+      if (connection.status !== 'active') {
+        logger.info(`Skipping inactive connection: ${connectionId}`);
+        return {
+          success: true,
+          skipped: true,
+          reason: 'Connection not active',
+        };
+      }
+
+      // Call the cloud security scan API endpoint
+      const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
+
       const response = await fetch(
         `${apiUrl}/v1/cloud-security/scan/${connectionId}`,
         {
@@ -71,6 +72,7 @@ export const runCloudSecurityScan = task({
 
         logger.warn(`Cloud security scan failed for ${connectionName}`, {
           connectionId,
+          status: response.status,
           error: errorMessage,
         });
 
@@ -100,12 +102,15 @@ export const runCloudSecurityScan = task({
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      logger.warn(`Cloud security scan error for ${connectionName}`, {
+      logger.error(`Error running cloud security scan for ${connectionName}`, {
         connectionId,
         error: errorMessage,
       });
 
-      return { success: false, error: errorMessage };
+      return {
+        success: false,
+        error: errorMessage,
+      };
     }
   },
 });
