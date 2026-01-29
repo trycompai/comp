@@ -32,6 +32,8 @@ export interface IntegrationProviderResponse {
   mappedTasks?: Array<{ id: string; name: string }>;
   /** Required variables that must be configured after connection */
   requiredVariables?: string[];
+  /** Whether this integration supports multiple connections per organization */
+  supportsMultipleConnections?: boolean;
 }
 
 /**
@@ -72,6 +74,7 @@ export interface ConnectionListItemResponse {
   nextSyncAt: string | null;
   errorMessage: string | null;
   variables: Record<string, string | number | boolean | string[]> | null;
+  metadata: Record<string, unknown> | null;
   createdAt: string;
 }
 

@@ -303,7 +303,11 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
       getRelevantTasksForIntegration({
         integrationName: selectedCustomIntegration.name,
         integrationDescription: selectedCustomIntegration.description,
-        taskTemplates: taskTemplates.map((t) => ({ id: t.id, name: t.name, description: t.description })),
+        taskTemplates: taskTemplates.map((t) => ({
+          id: t.id,
+          name: t.name,
+          description: t.description,
+        })),
         examplePrompts: selectedCustomIntegration.examplePrompts,
       })
         .then((aiTasks) => {
@@ -697,22 +701,40 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
         )}
       </div>
 
-      {/* Manage Connection Dialog */}
-      {selectedConnection && selectedProvider && (
-        <ManageIntegrationDialog
-          open={manageDialogOpen}
-          onOpenChange={(open) => {
-            if (!open) handleCloseManageDialog();
-            else setManageDialogOpen(open);
-          }}
-          connectionId={selectedConnection.id}
-          integrationId={selectedProvider.id}
-          integrationName={selectedProvider.name}
-          integrationLogoUrl={selectedProvider.logoUrl}
-          onDeleted={refreshConnections}
-          onSaved={refreshConnections}
-        />
-      )}
+      {/* Manage Connection Dialog - Use ConnectIntegrationDialog for multi-connection providers */}
+      {selectedConnection &&
+        selectedProvider &&
+        (selectedProvider.supportsMultipleConnections ? (
+          <ConnectIntegrationDialog
+            open={manageDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                handleCloseManageDialog();
+                refreshConnections();
+              } else {
+                setManageDialogOpen(open);
+              }
+            }}
+            integrationId={selectedProvider.id}
+            integrationName={selectedProvider.name}
+            integrationLogoUrl={selectedProvider.logoUrl}
+            onConnected={refreshConnections}
+          />
+        ) : (
+          <ManageIntegrationDialog
+            open={manageDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) handleCloseManageDialog();
+              else setManageDialogOpen(open);
+            }}
+            connectionId={selectedConnection.id}
+            integrationId={selectedProvider.id}
+            integrationName={selectedProvider.name}
+            integrationLogoUrl={selectedProvider.logoUrl}
+            onDeleted={refreshConnections}
+            onSaved={refreshConnections}
+          />
+        ))}
 
       {/* Connect Dialog (for non-OAuth integrations) */}
       {connectingProviderInfo && (

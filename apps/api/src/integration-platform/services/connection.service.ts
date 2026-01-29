@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { getManifest } from '@comp/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionAuthTeardownService } from './connection-auth-teardown.service';
@@ -67,15 +68,20 @@ export class ConnectionService {
       throw new NotFoundException(`Provider ${input.providerSlug} not found`);
     }
 
-    // Check if connection already exists
-    const existing = await this.connectionRepository.findByProviderAndOrg(
-      provider.id,
-      input.organizationId,
-    );
-    if (existing) {
-      throw new ConflictException(
-        `Connection to ${input.providerSlug} already exists for this organization`,
+    // Check if connection already exists (only block if provider doesn't support multiple connections)
+    const manifest = getManifest(input.providerSlug);
+    const supportsMultiple = manifest?.supportsMultipleConnections ?? false;
+
+    if (!supportsMultiple) {
+      const existing = await this.connectionRepository.findByProviderAndOrg(
+        provider.id,
+        input.organizationId,
       );
+      if (existing) {
+        throw new ConflictException(
+          `Connection to ${input.providerSlug} already exists for this organization`,
+        );
+      }
     }
 
     return this.connectionRepository.create({
@@ -156,6 +162,15 @@ export class ConnectionService {
   ): Promise<IntegrationConnection> {
     return this.connectionRepository.update(connectionId, {
       syncCadence,
+    });
+  }
+
+  async updateConnectionMetadata(
+    connectionId: string,
+    metadata: Record<string, unknown>,
+  ): Promise<IntegrationConnection> {
+    return this.connectionRepository.update(connectionId, {
+      metadata,
     });
   }
 }

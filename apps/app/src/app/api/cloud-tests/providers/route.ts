@@ -74,10 +74,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Filter out legacy integrations that have been migrated to new platform
-    const newConnectionSlugs = new Set(newConnections.map((c) => c.provider.slug));
+    // Filter legacy integrations to only include cloud providers
+    // NOTE: We now allow BOTH legacy and new connections to coexist for the same provider
+    // This supports organizations migrating gradually (e.g., adding new AWS accounts while keeping old ones)
     const activeLegacyIntegrations = legacyIntegrations.filter((integration) => {
-      if (newConnectionSlugs.has(integration.integrationId)) return false;
       const manifest = getManifest(integration.integrationId);
       return manifest?.category === CLOUD_PROVIDER_CATEGORY;
     });
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       const regions = Array.isArray(metadata.regions)
         ? metadata.regions.filter((region): region is string => typeof region === 'string')
         : undefined;
+      const manifest = getManifest(conn.provider.slug);
 
       return {
         id: conn.id,
@@ -107,6 +108,7 @@ export async function GET(request: NextRequest) {
         requiredVariables: getRequiredVariables(conn.provider.slug),
         accountId,
         regions,
+        supportsMultipleConnections: manifest?.supportsMultipleConnections ?? false,
       };
     });
 
@@ -119,6 +121,7 @@ export async function GET(request: NextRequest) {
       const regions = Array.isArray(settings.regions)
         ? settings.regions.filter((region): region is string => typeof region === 'string')
         : undefined;
+      const manifest = getManifest(integration.integrationId);
 
       return {
         id: integration.id,
@@ -135,6 +138,7 @@ export async function GET(request: NextRequest) {
         requiredVariables: getRequiredVariables(integration.integrationId),
         accountId,
         regions,
+        supportsMultipleConnections: manifest?.supportsMultipleConnections ?? false,
       };
     });
 
