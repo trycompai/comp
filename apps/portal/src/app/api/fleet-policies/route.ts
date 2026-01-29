@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
     const fleetPolicyResults = await Promise.all(
       results.map(async (result) => {
         const signedAttachments = await Promise.all(
-          result.attachments.map(async (key) => {
+          (result.attachments ?? []).map(async (key) => {
             if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
               return key;
             }
