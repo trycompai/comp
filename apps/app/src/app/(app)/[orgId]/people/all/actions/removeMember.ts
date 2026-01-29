@@ -187,7 +187,7 @@ export const removeMember = authActionClient
       if (targetMember.fleetDmLabelId) {
         const fleet = await getFleetInstance();
         const hostsResponse = await fleet.get(`/labels/${targetMember.fleetDmLabelId}/hosts`);
-        const hostIds = hostsResponse.data.hosts.map((host: { id: number }) => host.id);
+        const hostIds = (hostsResponse.data.hosts ?? []).map((host: { id: number }) => host.id);
 
         if (hostIds.length > 0) {
           await Promise.all(hostIds.map(async (hostId: number) => {
