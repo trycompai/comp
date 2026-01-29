@@ -41,12 +41,16 @@ export const EmployeeTasksList = ({
     },
   );
 
+  if (!response) {
+    return null;
+  }
+
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
-  const hasInstalledAgent = response?.device !== null;
+  const hasInstalledAgent = response.device !== null;
   const allFleetPoliciesPass =
-    response?.fleetPolicies.length === 0 || response?.fleetPolicies.every((policy) => policy.response === 'pass');
+    response.fleetPolicies.length === 0 || response.fleetPolicies.every((policy) => policy.response === 'pass');
   const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
 
   // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
@@ -78,8 +82,8 @@ export const EmployeeTasksList = ({
       content: (
         <DeviceAgentAccordionItem
           member={member}
-          host={response?.device ?? host}
-          fleetPolicies={response?.fleetPolicies ?? fleetPolicies}
+          host={response.device}
+          fleetPolicies={response.fleetPolicies}
           isLoading={isValidating}
           fetchFleetPolicies={fetchFleetPolicies}
         />
