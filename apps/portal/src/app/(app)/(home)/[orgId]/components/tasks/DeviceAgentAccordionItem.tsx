@@ -13,7 +13,6 @@ import { cn } from '@comp/ui/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import type { Member } from '@db';
 import { CheckCircle2, Circle, Download, Loader2, RefreshCw } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FleetPolicyItem } from './FleetPolicyItem';
@@ -22,17 +21,19 @@ import type { FleetPolicy, Host } from '../../types';
 interface DeviceAgentAccordionItemProps {
   member: Member;
   host: Host | null;
+  isLoading: boolean;
   fleetPolicies?: FleetPolicy[];
+  fetchFleetPolicies: () => void;
 }
 
 export function DeviceAgentAccordionItem({
   member,
   host,
+  isLoading,
   fleetPolicies = [],
+  fetchFleetPolicies,
 }: DeviceAgentAccordionItemProps) {
-  const router = useRouter();
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [detectedOS, setDetectedOS] = useState<SupportedOS | null>(null);
 
   const isMacOS = useMemo(
@@ -122,13 +123,7 @@ export function DeviceAgentAccordionItem({
   };
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    router.refresh();
-    // Reset after a short delay to show the refresh animation
-    // The actual data refresh happens asynchronously via router.refresh()
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
+    fetchFleetPolicies();
   };
 
   useEffect(() => {
@@ -247,10 +242,10 @@ export function DeviceAgentAccordionItem({
                     size="icon"
                     className="h-8 w-8"
                     onClick={handleRefresh}
-                    disabled={isRefreshing}
+                    disabled={isLoading}
                     title="Refresh device information"
                   >
-                    <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
+                    <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
                   </Button>
                 </div>
               </CardHeader>
@@ -258,7 +253,7 @@ export function DeviceAgentAccordionItem({
                 {fleetPolicies.length > 0 ? (
                   <>
                     {fleetPolicies.map((policy) => (
-                      <FleetPolicyItem key={policy.id} policy={policy} />
+                      <FleetPolicyItem key={policy.id} policy={policy} onRefresh={handleRefresh} />
                     ))}
                   </>
                 ) : (
