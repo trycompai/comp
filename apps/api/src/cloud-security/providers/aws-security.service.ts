@@ -41,7 +41,8 @@ export class AWSSecurityService {
     // Assume role ONCE before scanning all regions (IAM is global, not regional)
     // This avoids N×2 STS API calls when scanning N regions
     let awsCredentials: AwsCredentials;
-    const primaryRegion = configuredRegions[0] || 'us-east-1';
+    // Note: configuredRegions is guaranteed to have at least one element (defaults to ['us-east-1'])
+    const primaryRegion = configuredRegions[0];
 
     if (isRoleAuth) {
       awsCredentials = await this.assumeRole(credentials, primaryRegion);
