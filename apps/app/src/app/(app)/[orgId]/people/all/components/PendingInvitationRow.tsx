@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@comp/ui/dialog';
 import {
   DropdownMenu,
@@ -20,7 +19,7 @@ import {
 } from '@comp/ui/dropdown-menu';
 import type { Invitation } from '@db';
 import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface PendingInvitationRowProps {
   invitation: Invitation & {
@@ -39,23 +38,15 @@ export function PendingInvitationRow({
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
-  const focusRef = useRef<HTMLButtonElement | null>(null);
-
-  const handleDialogItemSelect = () => {
-    focusRef.current = dropdownTriggerRef.current;
-  };
-
   const [pendingRemove, setPendingRemove] = useState(false);
 
-  const handleDialogOpenChange = (open: boolean) => {
+  const handleCancelDialogOpenChange = (open: boolean) => {
     setIsCancelDialogOpen(open);
-    if (!open) {
-      setDropdownOpen(false);
-      setTimeout(() => {
-        dropdownTriggerRef.current?.focus();
-      }, 0);
-    }
+  };
+
+  const handleOpenCancelDialog = () => {
+    setDropdownOpen(false);
+    setIsCancelDialogOpen(true);
   };
 
   const handleCancelClick = () => {
@@ -111,7 +102,6 @@ export function PendingInvitationRow({
           </div>
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger
-              ref={dropdownTriggerRef}
               asChild
               disabled={isCancelling || !canCancel}
             >
@@ -120,61 +110,42 @@ export function PendingInvitationRow({
                 <span className="sr-only">Open menu</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              hidden={isCancelDialogOpen}
-              onCloseAutoFocus={(event) => {
-                if (focusRef.current) {
-                  focusRef.current.focus();
-                  focusRef.current = null;
-                  event.preventDefault();
-                }
-              }}
-            >
-              <Dialog open={isCancelDialogOpen} onOpenChange={handleDialogOpenChange}>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    onSelect={(event) => {
-                      event.preventDefault();
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Cancel Invitation</span>
-                  </DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent
-                  className="space-y-4 py-4"
-                  onInteractOutside={(e) => e.preventDefault()}
-                  showCloseButton={false}
-                >
-                  <DialogHeader>
-                    <DialogTitle>Cancel Invitation</DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to cancel the invitation for {invitation.email}?
-                    </DialogDescription>
-                  </DialogHeader>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    This action cannot be undone.
-                  </p>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleCancelClick}
-                      disabled={isCancelling}
-                    >
-                      Confirm
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                onSelect={handleOpenCancelDialog}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Cancel Invitation</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      <Dialog open={isCancelDialogOpen} onOpenChange={handleCancelDialogOpenChange}>
+        <DialogContent
+          className="space-y-4 py-4"
+          onInteractOutside={(e) => e.preventDefault()}
+          showCloseButton={false}
+        >
+          <DialogHeader>
+            <DialogTitle>Cancel Invitation</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel the invitation for {invitation.email}?
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-muted-foreground mt-1 text-xs">This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleCancelClick} disabled={isCancelling}>
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

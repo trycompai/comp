@@ -2,8 +2,8 @@
 
 import { Edit, Laptop, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@comp/ui/dialog';
 import {
   DropdownMenu,
@@ -64,9 +63,7 @@ export function MemberRow({
   canEdit,
   isCurrentUserOwner,
 }: MemberRowProps) {
-  const params = useParams<{ orgId: string }>();
-  const router = useRouter();
-  const { orgId } = params;
+  const { orgId } = useParams<{ orgId: string }>();
 
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = useState(false);
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
@@ -78,8 +75,6 @@ export function MemberRow({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
-  const dropdownTriggerRef = useRef<HTMLButtonElement>(null);
-  const focusRef = useRef<HTMLButtonElement | null>(null);
 
   const memberName = member.user.name || member.user.email || 'Member';
   const memberEmail = member.user.email || '';
@@ -95,26 +90,16 @@ export function MemberRow({
 
   const isOwner = currentRoles.includes('owner');
   const canRemove = !isOwner;
-
-  const isEmployee = currentRoles.includes('employee');
-  const isContractor = currentRoles.includes('contractor');
   const isDeactivated = member.deactivated;
   const canViewProfile = !isDeactivated;
   const profileHref = canViewProfile ? `/${orgId}/people/${memberId}` : null;
 
-  const handleDialogItemSelect = () => {
-    focusRef.current = dropdownTriggerRef.current;
-  };
-
-  const handleDialogOpenChange = (open: boolean) => {
-    setIsUpdateRolesOpen(open);
-    if (open === false) {
-      setDropdownOpen(false);
-    }
+  const handleEditRolesClick = () => {
+    setDropdownOpen(false); // Close dropdown first
+    setIsUpdateRolesOpen(true); // Then open dialog
   };
 
   const handleUpdateRolesClick = async () => {
-    console.log('handleUpdateRolesClick');
     let rolesToUpdate = selectedRoles;
     if (isOwner && !rolesToUpdate.includes('owner')) {
       rolesToUpdate = [...rolesToUpdate, 'owner'];
@@ -133,17 +118,20 @@ export function MemberRow({
 
   const handleRemoveClick = async () => {
     if (!canRemove) return;
-    setIsRemoving(true);
-    await onRemove(memberId);
-    setIsRemoving(false);
     setIsRemoveAlertOpen(false);
+    setIsRemoving(true);
+    try {
+      await onRemove(memberId);
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   const handleRemoveDeviceClick = async () => {
     try {
+      setIsRemoveDeviceAlertOpen(false);
       setIsRemovingDevice(true);
       await onRemoveDevice(memberId);
-      setIsRemoveDeviceAlertOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to unlink device');
     } finally {
@@ -232,82 +220,24 @@ export function MemberRow({
           {!isDeactivated && (
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
-                <Button
-                  ref={dropdownTriggerRef}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  disabled={!canEdit}
-                >
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                hidden={isUpdateRolesOpen}
-                onCloseAutoFocus={(event) => {
-                  if (focusRef.current) {
-                    focusRef.current.focus();
-                    focusRef.current = null;
-                    event.preventDefault();
-                  }
-                }}
-              >
+              <DropdownMenuContent align="end">
                 {canEdit && (
-                  <Dialog open={isUpdateRolesOpen} onOpenChange={handleDialogOpenChange}>
-                    <DialogTrigger asChild>
-                      <DropdownMenuItem
-                        onSelect={(event) => {
-                          event.preventDefault();
-                          handleDialogItemSelect();
-                        }}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>{'Edit Roles'}</span>
-                      </DropdownMenuItem>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{'Edit Member Roles'}</DialogTitle>
-                        <DialogDescription>
-                          {'Change roles for'} {memberName}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`role-${memberId}`}>{'Roles'}</Label>
-                          <MultiRoleCombobox
-                            selectedRoles={selectedRoles}
-                            onSelectedRolesChange={setSelectedRoles}
-                            placeholder={'Select a role'}
-                            lockedRoles={isOwner ? ['owner'] : []}
-                          />
-                          {isOwner && (
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              {'The owner role cannot be removed.'}
-                            </p>
-                          )}
-                          <p className="text-muted-foreground mt-1 text-xs">
-                            {'Members must have at least one role.'}
-                          </p>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsUpdateRolesOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleUpdateRolesClick}
-                          disabled={isUpdating || selectedRoles.length === 0}
-                        >
-                          {'Update'}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  <DropdownMenuItem onSelect={handleEditRolesClick}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>{'Edit Roles'}</span>
+                  </DropdownMenuItem>
                 )}
                 {member.fleetDmLabelId && isCurrentUserOwner && (
-                  <DropdownMenuItem onSelect={() => setIsRemoveDeviceAlertOpen(true)}>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setDropdownOpen(false);
+                      setIsRemoveDeviceAlertOpen(true);
+                    }}
+                  >
                     <Laptop className="mr-2 h-4 w-4" />
                     <span>{'Remove Device'}</span>
                   </DropdownMenuItem>
@@ -315,7 +245,10 @@ export function MemberRow({
                 {canRemove && (
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    onSelect={() => setIsRemoveAlertOpen(true)}
+                    onSelect={() => {
+                      setDropdownOpen(false);
+                      setIsRemoveAlertOpen(true);
+                    }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     <span>{'Remove Member'}</span>
@@ -341,6 +274,48 @@ export function MemberRow({
         onRemove={handleRemoveDeviceClick}
         isRemoving={isRemovingDevice}
       />
+
+      {/* Edit Roles Dialog - moved outside DropdownMenu to avoid overlay conflicts */}
+      <Dialog open={isUpdateRolesOpen} onOpenChange={setIsUpdateRolesOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{'Edit Member Roles'}</DialogTitle>
+            <DialogDescription>
+              {'Change roles for'} {memberName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor={`role-${memberId}`}>{'Roles'}</Label>
+              <MultiRoleCombobox
+                selectedRoles={selectedRoles}
+                onSelectedRolesChange={setSelectedRoles}
+                placeholder={'Select a role'}
+                lockedRoles={isOwner ? ['owner'] : []}
+              />
+              {isOwner && (
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {'The owner role cannot be removed.'}
+                </p>
+              )}
+              <p className="text-muted-foreground mt-1 text-xs">
+                {'Members must have at least one role.'}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUpdateRolesOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateRolesClick}
+              disabled={isUpdating || selectedRoles.length === 0}
+            >
+              {'Update'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
