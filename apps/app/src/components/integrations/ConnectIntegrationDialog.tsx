@@ -218,7 +218,13 @@ export function ConnectIntegrationDialog({
 
   // Determine initial view based on existing connections (only when opening)
   useEffect(() => {
+    const hasProviders = Boolean(providers);
+    const hasConnections = allConnections !== undefined;
+
     if (open && !didInitializeOnOpen.current) {
+      if (!hasProviders || !hasConnections) {
+        return;
+      }
       if (supportsMultipleConnections && existingConnections.length > 0) {
         setView('list');
       } else if (existingConnections.length === 0) {
@@ -236,7 +242,7 @@ export function ConnectIntegrationDialog({
     if (!open) {
       didInitializeOnOpen.current = false;
     }
-  }, [open, existingConnections.length, supportsMultipleConnections]);
+  }, [open, allConnections, providers, existingConnections.length, supportsMultipleConnections]);
 
   const allFields = useMemo(() => {
     if (authType === 'basic') {

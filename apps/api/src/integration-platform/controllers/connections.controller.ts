@@ -1021,16 +1021,16 @@ export class ConnectionsController {
       );
     }
 
+    // Merge with existing credentials for fields not being updated
+    const existingCredentials =
+      await this.credentialVaultService.getDecryptedCredentials(id);
+    const mergedCredentials = {
+      ...(existingCredentials ?? {}),
+      ...body.credentials,
+    } as Record<string, string | string[]>;
+
     // For AWS, validate credentials BEFORE saving
     if (providerSlug === 'aws') {
-      // Merge with existing credentials for fields not being updated
-      const existingCredentials =
-        await this.credentialVaultService.getDecryptedCredentials(id);
-      const mergedCredentials = {
-        ...existingCredentials,
-        ...body.credentials,
-      } as Record<string, string | string[]>;
-
       const validationResult =
         await this.validateAwsCredentials(mergedCredentials);
       if (!validationResult.success) {
@@ -1050,7 +1050,7 @@ export class ConnectionsController {
     // Store the new credentials (only after validation passes)
     await this.credentialVaultService.storeApiKeyCredentials(
       id,
-      body.credentials,
+      mergedCredentials,
     );
 
     // Only activate the connection if it was in error state (don't resume paused connections)
