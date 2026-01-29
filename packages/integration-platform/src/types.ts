@@ -804,6 +804,9 @@ export interface IntegrationManifest {
   /** Runtime handler for webhooks */
   handler?: IntegrationHandler;
 
+  /** Whether multiple connections per org are allowed */
+  supportsMultipleConnections?: boolean;
+
   /** Whether this integration is active/available */
   isActive: boolean;
 }
