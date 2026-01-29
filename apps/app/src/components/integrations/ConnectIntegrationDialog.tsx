@@ -24,7 +24,7 @@ import { Textarea } from '@comp/ui/textarea';
 import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Settings, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface ConnectIntegrationDialogProps {
@@ -214,9 +214,11 @@ export function ConnectIntegrationDialog({
       });
   }, [allConnections, integrationId, integrationName]);
 
-  // Determine initial view based on existing connections
+  const didInitializeOnOpen = useRef(false);
+
+  // Determine initial view based on existing connections (only when opening)
   useEffect(() => {
-    if (open) {
+    if (open && !didInitializeOnOpen.current) {
       if (supportsMultipleConnections && existingConnections.length > 0) {
         setView('list');
       } else if (existingConnections.length === 0) {
@@ -228,6 +230,11 @@ export function ConnectIntegrationDialog({
       setCredentials({});
       setErrors({});
       setConfigureConnectionId(null);
+      didInitializeOnOpen.current = true;
+    }
+
+    if (!open) {
+      didInitializeOnOpen.current = false;
     }
   }, [open, existingConnections.length, supportsMultipleConnections]);
 
