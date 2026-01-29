@@ -1,7 +1,7 @@
 'use client';
 
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
-import { VendorStatus } from '@/components/vendor-status';
+import type { AssigneeOption } from '@/components/SelectAssignee';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,9 +24,6 @@ import {
   EmptyHeader,
   EmptyTitle,
   HStack,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
   Spinner,
   Stack,
   Table,
@@ -37,171 +34,128 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
+import { OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, UserIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
-import { deleteVendor } from '../actions/deleteVendor';
-import { getVendorsAction, type GetVendorsActionInput } from '../actions/get-vendors-action';
-import type { GetAssigneesResult, GetVendorsResult } from '../data/queries';
-import type { GetVendorsSchema } from '../data/validations';
+import { useVendors, type Vendor as ApiVendor } from '@/hooks/use-vendors';
 import { useOnboardingStatus } from '../hooks/use-onboarding-status';
-import { VendorOnboardingProvider, useVendorOnboardingStatus } from './vendor-onboarding-context';
+import { VendorOnboardingProvider } from './vendor-onboarding-context';
+import type { VendorCategory, VendorStatus as VendorStatusEnum } from '@db';
+import { ACTIVE_STATUSES, CATEGORY_MAP, VENDOR_STATUS_LABELS } from './vendors-table-constants';
+import { VendorsFilters } from './VendorsFilters';
+import { VendorNameCell, VendorStatusCell } from './VendorCells';
 
-export type VendorRow = GetVendorsResult['data'][number] & {
+export type VendorRow = Omit<ApiVendor, 'createdAt' | 'updatedAt' | 'assignee'> & {
+  createdAt: Date;
+  updatedAt: Date;
+  assignee: AssigneeOption | null;
   isPending?: boolean;
   isAssessing?: boolean;
 };
 
-const callGetVendorsAction = getVendorsAction as unknown as (
-  input: GetVendorsActionInput,
-) => Promise<GetVendorsResult>;
-
-const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'> = [
-  'pending',
-  'processing',
-  'created',
-  'assessing',
-];
-
-const CATEGORY_MAP: Record<string, string> = {
-  cloud: 'Cloud',
-  infrastructure: 'Infrastructure',
-  software_as_a_service: 'SaaS',
-  finance: 'Finance',
-  marketing: 'Marketing',
-  sales: 'Sales',
-  hr: 'HR',
-  other: 'Other',
-};
-
 interface VendorsTableProps {
-  vendors: GetVendorsResult['data'];
-  pageCount: number;
-  assignees: GetAssigneesResult;
+  vendors: ApiVendor[];
+  assignees: AssigneeOption[];
   onboardingRunId?: string | null;
-  searchParams: GetVendorsSchema;
   orgId: string;
-}
-
-function VendorNameCell({ vendor, orgId }: { vendor: VendorRow; orgId: string }) {
-  const onboardingStatus = useVendorOnboardingStatus();
-  const status = onboardingStatus[vendor.id];
-  const isPending = vendor.isPending || status === 'pending' || status === 'processing';
-  const isAssessing = vendor.isAssessing || status === 'assessing';
-  const isResolved = vendor.status === 'assessed';
-
-  if ((isPending || isAssessing) && !isResolved) {
-    return (
-      <HStack gap="2" align="center">
-        <Spinner />
-        <Text variant="muted">{vendor.name}</Text>
-      </HStack>
-    );
-  }
-
-  return <Text>{vendor.name}</Text>;
-}
-
-function VendorStatusCell({ vendor }: { vendor: VendorRow }) {
-  const onboardingStatus = useVendorOnboardingStatus();
-  const status = onboardingStatus[vendor.id];
-  const isPending = vendor.isPending || status === 'pending' || status === 'processing';
-  const isAssessing = vendor.isAssessing || status === 'assessing';
-  const isResolved = vendor.status === 'assessed';
-
-  if (isPending && !isResolved) {
-    return (
-      <HStack gap="2" align="center">
-        <Spinner />
-        <Text variant="muted" size="sm">
-          Creating...
-        </Text>
-      </HStack>
-    );
-  }
-
-  if (isAssessing && !isResolved) {
-    return (
-      <HStack gap="2" align="center">
-        <Spinner />
-        <Text variant="muted" size="sm">
-          Assessing...
-        </Text>
-      </HStack>
-    );
-  }
-
-  return <VendorStatus status={vendor.status} />;
 }
 
 export function VendorsTable({
   vendors: initialVendors,
-  pageCount: initialPageCount,
   assignees,
   onboardingRunId,
   orgId,
 }: VendorsTableProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const urlSearchParams = useSearchParams();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<VendorRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Local state for search, sorting, and pagination
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sort, setSort] = useState<{ id: 'name' | 'updatedAt'; desc: boolean }>({
-    id: 'name',
-    desc: false,
-  });
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
+  const searchQuery = urlSearchParams.get('name') ?? '';
+  const statusFilter = (urlSearchParams.get('status') as VendorStatusEnum | null) ?? 'all';
+  const categoryFilter = (urlSearchParams.get('category') as VendorCategory | null) ?? 'all';
+  const assigneeFilter = urlSearchParams.get('assigneeId') ?? 'all';
+  const page = Math.max(1, Number(urlSearchParams.get('page')) || 1);
+  const perPage = Math.min(100, Math.max(1, Number(urlSearchParams.get('perPage')) || 10));
+  const sort = useMemo<{ id: 'name' | 'updatedAt'; desc: boolean }>(() => {
+    const rawSort = urlSearchParams.get('sort');
+    if (!rawSort) return { id: 'name' as const, desc: false };
+    try {
+      const parsed = JSON.parse(rawSort) as Array<{ id: string; desc: boolean }>;
+      const first = parsed?.[0];
+      if (first?.id === 'name' || first?.id === 'updatedAt') {
+        return { id: first.id, desc: Boolean(first.desc) };
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return { id: 'name' as const, desc: false };
+  }, [urlSearchParams]);
   const pageSizeOptions = [10, 25, 50, 100];
+
+  const updateParams = (updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(urlSearchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value || value === 'all') {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    });
+    const queryString = next.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  };
+
 
   const { itemStatuses, progress, itemsInfo, isActive, isLoading } = useOnboardingStatus(
     onboardingRunId,
     'vendors',
   );
 
-  // Build search params for API
-  const currentSearchParams = useMemo<GetVendorsSchema>(() => {
-    return {
+  const vendorsQuery = useMemo(
+    () => ({
       page,
       perPage,
-      name: '',
-      status: null,
-      department: null,
-      assigneeId: null,
-      sort: [{ id: sort.id, desc: sort.desc }],
-      filters: [],
-      joinOperator: 'and',
-    };
-  }, [page, perPage, sort]);
+      name: searchQuery || undefined,
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      category: categoryFilter === 'all' ? undefined : categoryFilter,
+      assigneeId: assigneeFilter === 'all' ? undefined : assigneeFilter,
+      sortId: sort.id,
+      sortDesc: sort.desc,
+    }),
+    [page, perPage, searchQuery, statusFilter, categoryFilter, assigneeFilter, sort],
+  );
 
-  // Create stable SWR key
-  const swrKey = useMemo(() => {
-    if (!orgId) return null;
-    const key = JSON.stringify(currentSearchParams);
-    return ['vendors', orgId, key] as const;
-  }, [orgId, currentSearchParams]);
-
-  // Fetcher function for SWR
-  const fetcher = useCallback(async () => {
-    if (!orgId) return { data: [], pageCount: 0 };
-    return await callGetVendorsAction({ orgId, searchParams: currentSearchParams });
-  }, [orgId, currentSearchParams]);
-
-  // Use SWR to fetch vendors with polling for real-time updates
-  const { data: vendorsData } = useSWR(swrKey, fetcher, {
-    fallbackData: { data: initialVendors, pageCount: initialPageCount },
+  const { data: vendorsResponse, mutate: refreshVendors, deleteVendor } = useVendors({
+    organizationId: orgId,
+    initialData: initialVendors,
+    query: vendorsQuery,
     refreshInterval: isActive ? 1000 : 5000,
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     keepPreviousData: true,
   });
 
-  const vendors = vendorsData?.data || initialVendors;
+  const apiVendors = vendorsResponse?.data?.data ?? initialVendors;
+  const totalCount = vendorsResponse?.data?.count ?? apiVendors.length;
+  const pageCount =
+    vendorsResponse?.data?.pageCount ??
+    Math.max(1, Math.ceil(totalCount / Math.max(1, perPage)));
+  const assigneeMap = useMemo(() => {
+    return new Map(assignees.map((assignee) => [assignee.id, assignee]));
+  }, [assignees]);
+  const vendors = useMemo<VendorRow[]>(() => {
+    return apiVendors.map((vendor) => ({
+      ...vendor,
+      createdAt: new Date(vendor.createdAt),
+      updatedAt: new Date(vendor.updatedAt),
+      assignee: vendor.assigneeId ? assigneeMap.get(vendor.assigneeId) ?? null : null,
+    }));
+  }, [apiVendors, assigneeMap]);
 
   // Check if all vendors are done assessing
   const allVendorsDoneAssessing = useMemo(() => {
@@ -303,56 +257,29 @@ export function VendorsTable({
     return [...vendorsWithStatus, ...pendingVendors, ...tempVendors];
   }, [vendors, itemsInfo, itemStatuses, orgId, isActive, onboardingRunId]);
 
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery]);
-
-  // Client-side filtering and sorting
-  const filteredAndSortedVendors = useMemo(() => {
+  const filteredVendors = useMemo(() => {
     let result = [...mergedVendors];
-
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter((vendor) => vendor.name.toLowerCase().includes(query));
     }
-
-    // Sort
-    result.sort((a, b) => {
-      const aValue = sort.id === 'name' ? a.name : a.updatedAt;
-      const bValue = sort.id === 'name' ? b.name : b.updatedAt;
-
-      if (sort.id === 'name') {
-        const comparison = (aValue as string).localeCompare(bValue as string);
-        return sort.desc ? -comparison : comparison;
-      }
-      const comparison = new Date(aValue as Date).getTime() - new Date(bValue as Date).getTime();
-      return sort.desc ? -comparison : comparison;
-    });
-
-    return result;
-  }, [mergedVendors, searchQuery, sort]);
-
-  // Calculate pageCount from filtered data and paginate
-  // When searching locally, calculate pageCount from filtered data
-  // When not searching, use server's pageCount (server handles pagination)
-  const filteredPageCount = searchQuery
-    ? Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage))
-    : Math.max(1, vendorsData?.pageCount ?? initialPageCount);
-
-  // When searching locally, slice the data for client-side pagination
-  // When not searching, server returns the correct page, but slice to enforce perPage
-  // (avoids extra rows from onboarding pending/temp vendors)
-  const startIndex = searchQuery ? (page - 1) * perPage : 0;
-  const paginatedVendors = filteredAndSortedVendors.slice(startIndex, startIndex + perPage);
-
-  // Keep page in bounds when pageCount changes
-  useEffect(() => {
-    if (page > filteredPageCount) {
-      setPage(filteredPageCount);
+    if (statusFilter !== 'all') {
+      result = result.filter((vendor) => vendor.status === statusFilter);
     }
-  }, [page, filteredPageCount]);
+    if (categoryFilter !== 'all') {
+      result = result.filter((vendor) => vendor.category === categoryFilter);
+    }
+    if (assigneeFilter === 'unassigned') {
+      result = result.filter((vendor) => !vendor.assigneeId);
+    } else if (assigneeFilter !== 'all') {
+      result = result.filter((vendor) => vendor.assigneeId === assigneeFilter);
+    }
+    return result;
+  }, [mergedVendors, searchQuery, statusFilter, categoryFilter, assigneeFilter]);
+
+  const paginatedVendors = filteredVendors;
+
+  const resolvedPage = page > pageCount ? pageCount : page;
 
   // Calculate assessment progress
   const assessmentProgress = useMemo(() => {
@@ -390,11 +317,11 @@ export function VendorsTable({
   };
 
   const handleSort = (columnId: 'name' | 'updatedAt') => {
-    if (sort.id === columnId) {
-      setSort({ id: columnId, desc: !sort.desc });
-    } else {
-      setSort({ id: columnId, desc: false });
-    }
+    const nextSort = sort.id === columnId ? { id: columnId, desc: !sort.desc } : { id: columnId, desc: false };
+    updateParams({
+      sort: JSON.stringify([nextSort]),
+      page: '1',
+    });
   };
 
   const getSortIcon = (columnId: 'name' | 'updatedAt') => {
@@ -418,28 +345,28 @@ export function VendorsTable({
 
     setIsDeleting(true);
     try {
-      const result = await deleteVendor({ vendorId: vendorToDelete.id });
-      if (result?.data?.success) {
-        toast.success('Vendor deleted successfully');
-        setDeleteDialogOpen(false);
-        setVendorToDelete(null);
-      } else {
-        const errorMsg =
-          typeof result?.data?.error === 'string' ? result.data.error : 'Failed to delete vendor';
-        toast.error(errorMsg);
-      }
-    } catch {
-      toast.error('Failed to delete vendor');
+      await deleteVendor(vendorToDelete.id);
+      toast.success('Vendor deleted successfully');
+      setDeleteDialogOpen(false);
+      setVendorToDelete(null);
+      await refreshVendors();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete vendor');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const isEmpty = mergedVendors.length === 0;
+  const isEmpty = filteredVendors.length === 0;
   const showEmptyState = isEmpty && onboardingRunId && isActive;
-  const emptyTitle = searchQuery ? 'No vendors found' : 'No vendors yet';
-  const emptyDescription = searchQuery
-    ? 'Try adjusting your search.'
+  const hasActiveFilters =
+    Boolean(searchQuery) ||
+    statusFilter !== 'all' ||
+    categoryFilter !== 'all' ||
+    assigneeFilter !== 'all';
+  const emptyTitle = hasActiveFilters ? 'No results' : 'No vendors yet';
+  const emptyDescription = hasActiveFilters
+    ? 'No results match these filters.'
     : 'Create your first vendor to get started.';
 
   if (showEmptyState) {
@@ -455,19 +382,37 @@ export function VendorsTable({
   return (
     <VendorOnboardingProvider statuses={itemStatuses}>
       <Stack gap="4">
-        {/* Search Bar */}
-        <div className="w-full md:max-w-[300px]">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search size={16} />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search vendors..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </InputGroup>
-        </div>
+        <VendorsFilters
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
+          categoryFilter={categoryFilter}
+          assigneeFilter={assigneeFilter}
+          assignees={assignees}
+          onSearchChange={(value) =>
+            updateParams({
+              name: value || null,
+              page: '1',
+            })
+          }
+          onStatusChange={(value) =>
+            updateParams({
+              status: value || null,
+              page: '1',
+            })
+          }
+          onCategoryChange={(value) =>
+            updateParams({
+              category: value || null,
+              page: '1',
+            })
+          }
+          onAssigneeChange={(value) =>
+            updateParams({
+              assigneeId: value || null,
+              page: '1',
+            })
+          }
+        />
 
         {/* Onboarding Progress Banner */}
         {isActive && !allVendorsDoneAssessing && (
@@ -514,14 +459,16 @@ export function VendorsTable({
           <Table
             variant="bordered"
             pagination={{
-              page,
-              pageCount: filteredPageCount,
-              onPageChange: setPage,
+              page: resolvedPage,
+              pageCount,
+              onPageChange: (nextPage) => updateParams({ page: String(nextPage) }),
               pageSize: perPage,
               pageSizeOptions: pageSizeOptions,
               onPageSizeChange: (size) => {
-                setPerPage(size);
-                setPage(1);
+                updateParams({
+                  perPage: String(size),
+                  page: '1',
+                });
               },
             }}
           >
@@ -554,7 +501,7 @@ export function VendorsTable({
                     data-state={blocked ? 'disabled' : undefined}
                   >
                     <TableCell>
-                      <VendorNameCell vendor={vendor} orgId={orgId} />
+                      <VendorNameCell vendor={vendor} />
                     </TableCell>
                     <TableCell>
                       <VendorStatusCell vendor={vendor} />

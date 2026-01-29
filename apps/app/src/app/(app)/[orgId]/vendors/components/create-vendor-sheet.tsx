@@ -1,7 +1,7 @@
 'use client';
 
 import { useMediaQuery } from '@comp/ui/hooks';
-import type { Member, User } from '@db';
+import type { AssigneeOption } from '@/components/SelectAssignee';
 import {
   Button,
   Drawer,
@@ -23,7 +23,7 @@ export function CreateVendorSheet({
   assignees,
   organizationId,
 }: {
-  assignees: (Member & { user: User })[];
+  assignees: AssigneeOption[];
   organizationId: string;
 }) {
   const isDesktop = useMediaQuery('(min-width: 768px)');

@@ -22,18 +22,21 @@ interface UpdateTitleAndDescriptionSheetProps {
   vendor: Vendor;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onVendorUpdated: () => void;
 }
 
 export function UpdateTitleAndDescriptionSheet({
   vendor,
   open,
   onOpenChange,
+  onVendorUpdated,
 }: UpdateTitleAndDescriptionSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const handleSuccess = useCallback(() => {
+    onVendorUpdated();
     onOpenChange(false);
-  }, [onOpenChange]);
+  }, [onOpenChange, onVendorUpdated]);
 
   if (isDesktop) {
     return (

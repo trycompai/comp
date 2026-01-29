@@ -1,17 +1,17 @@
 'use client';
 
+import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
+import { defaultExtensions } from '@comp/ui/editor/extensions';
 import type { JSONContent } from '@tiptap/react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import { useMemo, useEffect, useCallback } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import type { CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 type EditorSizeStyle = CSSProperties & {
   '--editor-min-height': string;
   '--editor-height': string;
 };
-import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
-import { useDebouncedCallback } from 'use-debounce';
-import { defaultExtensions } from '@comp/ui/editor/extensions';
 
 interface CommentRichTextFieldProps {
   value: JSONContent | null;
@@ -30,19 +30,16 @@ export function CommentRichTextField({
   placeholder = 'Leave a comment... Mention users with @',
   onMentionSelect,
 }: CommentRichTextFieldProps) {
-  const editorSizeStyles: EditorSizeStyle = useMemo(
-    () => ({
-      '--editor-min-height': '120px',
-      '--editor-height': 'auto',
-    }),
-    [],
-  );
+  const editorSizeStyles: EditorSizeStyle = {
+    '--editor-min-height': '80px',
+    '--editor-height': 'auto',
+  };
 
   // Search members for mention suggestions - use the members prop directly
   const searchMembers = useCallback(
     (query: string): MentionUser[] => {
       if (!members || members.length === 0) return [];
-      
+
       // Show first 20 members immediately when query is empty
       if (!query || query.trim() === '') {
         return members.slice(0, 20);
@@ -108,7 +105,8 @@ export function CommentRichTextField({
       editorProps: {
         attributes: {
           class:
-            'comment-editor prose-sm max-w-none focus:outline-none px-3 py-2 text-sm [&_p]:m-0 [&_p]:p-0 [&_p]:text-sm [&_p]:leading-normal',
+            'comment-editor prose-sm max-w-none focus:outline-none p-6 text-sm [&_p]:m-0 [&_p]:p-0 [&_p]:text-sm [&_p]:leading-normal',
+          style: 'min-height: var(--editor-min-height, 240px);',
         },
       },
     },
@@ -131,9 +129,11 @@ export function CommentRichTextField({
   }, [value, editor]);
 
   return (
-    <div className="rounded-md bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50" style={editorSizeStyles}>
+    <div
+      className="rounded-md bg-background [&_.ProseMirror_p.is-empty::before]:text-muted-foreground/50"
+      style={editorSizeStyles}
+    >
       <EditorContent editor={editor} />
     </div>
   );
 }
-

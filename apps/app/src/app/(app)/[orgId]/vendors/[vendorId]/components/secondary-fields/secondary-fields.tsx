@@ -1,21 +1,26 @@
 'use client';
 
-import { Card, CardContent } from '@comp/ui/card';
-import type { Member, User, Vendor } from '@db';
+import { Section } from '@trycompai/design-system';
 import { UpdateSecondaryFieldsForm } from './update-secondary-fields-form';
+import type { AssigneeOption } from '@/components/SelectAssignee';
+import type { VendorResponse } from '@/hooks/use-vendors';
 
 export function SecondaryFields({
   vendor,
   assignees,
+  onVendorUpdated,
 }: {
-  vendor: Vendor & { assignee: { user: User | null } | null };
-  assignees: (Member & { user: User })[];
+  vendor: Pick<VendorResponse, 'id' | 'assigneeId' | 'category' | 'status'>;
+  assignees: AssigneeOption[];
+  onVendorUpdated: () => void;
 }) {
   return (
-      <Card>
-      <CardContent className="space-y-4 pt-6">
-          <UpdateSecondaryFieldsForm vendor={vendor} assignees={assignees} />
-        </CardContent>
-      </Card>
+    <Section>
+      <UpdateSecondaryFieldsForm
+        vendor={vendor}
+        assignees={assignees}
+        onMutate={onVendorUpdated}
+      />
+    </Section>
   );
 }

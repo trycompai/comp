@@ -1,12 +1,15 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import type { SearchParams } from '@/types';
-import { db } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
+import { serverApi } from '@/lib/server-api-client';
+import type { VendorResponse } from '@/hooks/use-vendors';
+import type { PeopleResponseDto } from '@/hooks/use-people-api';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 import { VendorsTable } from './components/VendorsTable';
-import { getAssignees, getVendors } from './data/queries';
 import type { GetVendorsSchema } from './data/validations';
 import { vendorsSearchParamsCache } from './data/validations';
+import { toAssigneeOptions } from '../utils/assignees';
+import { buildVendorsQueryString } from '@/lib/vendors-query';
 
 export default async function Page({
   searchParams,
@@ -18,21 +21,48 @@ export default async function Page({
   const { orgId } = await params;
 
   const parsedSearchParams = await vendorsSearchParamsCache.parse(searchParams);
+  const primarySort = parsedSearchParams.sort?.[0];
+  const sortId =
+    primarySort?.id === 'name' || primarySort?.id === 'updatedAt' || primarySort?.id === 'createdAt'
+      ? primarySort.id
+      : undefined;
+  const vendorsQuery = buildVendorsQueryString({
+    page: parsedSearchParams.page,
+    perPage: parsedSearchParams.perPage,
+    name: parsedSearchParams.name || undefined,
+    status: parsedSearchParams.status ?? undefined,
+    category: parsedSearchParams.category ?? undefined,
+    department: parsedSearchParams.department ?? undefined,
+    assigneeId: parsedSearchParams.assigneeId ?? undefined,
+    sortId,
+    sortDesc: typeof primarySort?.desc === 'boolean' ? primarySort.desc : undefined,
+  });
 
-  const [vendorsResult, assignees, onboarding] = await Promise.all([
-    getVendors(orgId, parsedSearchParams),
-    getAssignees(orgId),
-    db.onboarding.findFirst({
-      where: { organizationId: orgId },
-      select: { triggerJobId: true },
-    }),
+  const [vendorsResponse, peopleResponse, onboardingResponse] = await Promise.all([
+    serverApi.get<{
+      data: VendorResponse[];
+      count: number;
+      page?: number;
+      perPage?: number;
+      pageCount?: number;
+    }>(`/v1/vendors${vendorsQuery}`, orgId),
+    serverApi.get<{ data: PeopleResponseDto[]; count: number }>(`/v1/people`, orgId),
+    serverApi.get<{ triggerJobId: string | null }>(`/v1/organization/onboarding`, orgId),
   ]);
+
+  if (!vendorsResponse.data) {
+    throw new Error(vendorsResponse.error ?? 'Failed to load vendors');
+  }
+
+  const vendors = vendorsResponse.data.data ?? [];
+  const assignees = toAssigneeOptions(peopleResponse.data?.data ?? []);
 
   // Helper function to check if the current view is the default, unfiltered one
   function isDefaultView(params: GetVendorsSchema): boolean {
     return (
       params.filters.length === 0 &&
       !params.status &&
+      !params.category &&
       !params.department &&
       !params.assigneeId &&
       params.page === 1 &&
@@ -40,9 +70,10 @@ export default async function Page({
     );
   }
 
-  const isEmpty = vendorsResult.data.length === 0;
+  const isEmpty = vendors.length === 0;
   const isDefault = isDefaultView(parsedSearchParams);
-  const isOnboardingActive = Boolean(onboarding?.triggerJobId);
+  const onboardingRunId = onboardingResponse.data?.triggerJobId ?? null;
+  const isOnboardingActive = Boolean(onboardingRunId);
 
   // Show AppOnboarding only if empty, default view, AND onboarding is not active
   if (isEmpty && isDefault && !isOnboardingActive) {
@@ -95,11 +126,9 @@ export default async function Page({
       }
     >
       <VendorsTable
-        vendors={vendorsResult.data}
-        pageCount={vendorsResult.pageCount}
+        vendors={vendors}
         assignees={assignees}
-        onboardingRunId={onboarding?.triggerJobId ?? null}
-        searchParams={parsedSearchParams}
+        onboardingRunId={onboardingRunId}
         orgId={orgId}
       />
     </PageLayout>

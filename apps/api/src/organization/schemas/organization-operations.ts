@@ -26,4 +26,9 @@ export const ORGANIZATION_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Returns the primary color of the organization. Supports three access methods: 1) API key authentication (X-API-Key header), 2) Session authentication (cookies + X-Organization-Id header), or 3) Public access using an access token query parameter (?token=tok_xxx). When using an access token, no authentication is required.',
   },
+  getOnboardingStatus: {
+    summary: 'Get organization onboarding status',
+    description:
+      'Returns the current onboarding trigger run ID for the organization, if any. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  },
 };

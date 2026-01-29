@@ -1,14 +1,23 @@
 import { authClient } from '@/utils/auth-client';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@comp/ui/select';
-import { Member, User } from '@db';
 import { UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+export interface AssigneeOption {
+  id: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  };
+}
 
 interface SelectAssigneeProps {
   assigneeId: string | null;
   disabled?: boolean;
-  assignees: (Member & { user: User })[];
+  assignees: AssigneeOption[];
   onAssigneeChange: (value: string | null) => void;
   withTitle?: boolean;
 }
@@ -21,7 +30,7 @@ export const SelectAssignee = ({
   withTitle = true,
 }: SelectAssigneeProps) => {
   const { data: activeMember } = authClient.useActiveMember();
-  const [selectedAssignee, setSelectedAssignee] = useState<(Member & { user: User }) | null>(null);
+  const [selectedAssignee, setSelectedAssignee] = useState<AssigneeOption | null>(null);
 
   // Initialize selectedAssignee based on assigneeId prop
   useEffect(() => {

@@ -1,5 +1,12 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db, TaskItemPriority, TaskItemStatus } from '@trycompai/db';
+import {
+  db,
+  TaskItemPriority,
+  TaskItemStatus,
+  VendorStatus,
+  VendorCategory,
+  Departments,
+} from '@trycompai/db';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { tasks } from '@trigger.dev/sdk';
@@ -59,17 +66,75 @@ const VERIFY_RISK_ASSESSMENT_TASK_TITLE = 'Verify risk assessment' as const;
 export class VendorsService {
   private readonly logger = new Logger(VendorsService.name);
 
-  async findAllByOrganization(organizationId: string) {
+  async findAllByOrganization(
+    organizationId: string,
+    params: {
+      page: number;
+      perPage: number;
+      name?: string;
+      status?: string;
+      category?: string;
+      department?: string;
+      assigneeId?: string;
+      sortId: 'name' | 'updatedAt' | 'createdAt';
+      sortDesc: boolean;
+    },
+  ) {
     try {
-      const vendors = await db.vendor.findMany({
-        where: { organizationId },
-        orderBy: { createdAt: 'desc' },
-      });
+      const { page, perPage, name, status, category, department, assigneeId, sortId, sortDesc } = params;
+      const parsedStatus =
+        status && Object.values(VendorStatus).includes(status as VendorStatus)
+          ? (status as VendorStatus)
+          : undefined;
+      const parsedCategory =
+        category && Object.values(VendorCategory).includes(category as VendorCategory)
+          ? (category as VendorCategory)
+          : undefined;
+      const parsedDepartment =
+        department && Object.values(Departments).includes(department as Departments)
+          ? (department as Departments)
+          : undefined;
+      const parsedAssigneeId = assigneeId === 'unassigned' ? null : assigneeId || undefined;
+      const whereClause = {
+        organizationId,
+        ...(parsedStatus ? { status: parsedStatus } : {}),
+        ...(parsedCategory ? { category: parsedCategory } : {}),
+        ...(parsedDepartment ? { department: parsedDepartment } : {}),
+        ...(parsedAssigneeId === null
+          ? { assigneeId: null }
+          : parsedAssigneeId
+            ? { assigneeId: parsedAssigneeId }
+            : {}),
+        ...(name
+          ? {
+              name: {
+                contains: name,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            }
+          : {}),
+      };
+
+      const [count, vendors] = await Promise.all([
+        db.vendor.count({ where: whereClause }),
+        db.vendor.findMany({
+          where: whereClause,
+          orderBy: {
+            [sortId]: sortDesc ? 'desc' : 'asc',
+          },
+          skip: (page - 1) * perPage,
+          take: perPage,
+        }),
+      ]);
 
       this.logger.log(
         `Retrieved ${vendors.length} vendors for organization ${organizationId}`,
       );
-      return vendors;
+      return {
+        data: vendors,
+        count,
+        pageCount: Math.max(1, Math.ceil(count / perPage)),
+      };
     } catch (error) {
       this.logger.error(
         `Failed to retrieve vendors for organization ${organizationId}:`,
