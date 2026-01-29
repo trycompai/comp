@@ -38,6 +38,7 @@ export const EmployeeTasksList = ({
       fallbackData: { device: host, fleetPolicies },
       refreshInterval: 0,
       revalidateOnFocus: false,
+      revalidateOnMount: false
     },
   );
 
