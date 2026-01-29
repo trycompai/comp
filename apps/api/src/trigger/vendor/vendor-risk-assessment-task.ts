@@ -1,14 +1,18 @@
 import {
   db,
+  Impact,
+  Likelihood,
   TaskItemPriority,
   TaskItemStatus,
   VendorStatus,
   type TaskItemEntityType,
 } from '@db';
+import { openai } from '@ai-sdk/openai';
 import type { Prisma } from '@prisma/client';
 import type { Task } from '@trigger.dev/sdk';
 import { logger, queue, schemaTask } from '@trigger.dev/sdk';
-import type { z } from 'zod';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
 import { resolveTaskCreatorAndAssignee } from './vendor-risk-assessment/assignee';
 import { VENDOR_RISK_ASSESSMENT_TASK_ID } from './vendor-risk-assessment/constants';
@@ -163,6 +167,124 @@ function parseRiskAssessmentJson(value: string): Prisma.InputJsonValue {
   }
 
   return parsed;
+}
+
+const riskLevelSchema = z
+  .object({
+    riskLevel: z.string().optional(),
+  })
+  .passthrough();
+
+function extractRiskLevel(value: Prisma.InputJsonValue): string | null {
+  const parsed = riskLevelSchema.safeParse(value);
+  if (!parsed.success) {
+    return null;
+  }
+  return parsed.data.riskLevel ?? null;
+}
+
+/**
+ * Risk level categories that map to database enums:
+ * - critical → Likelihood.very_likely / Impact.severe (highest)
+ * - high → Likelihood.likely / Impact.major
+ * - medium → Likelihood.possible / Impact.moderate
+ * - low → Likelihood.unlikely / Impact.minor
+ * - very_low → Likelihood.very_unlikely / Impact.insignificant (lowest)
+ */
+type NormalizedRiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'very_low';
+
+const normalizedRiskLevelSchema = z.object({
+  riskLevel: z
+    .enum(['critical', 'high', 'medium', 'low', 'very_low'])
+    .describe(
+      'The normalized risk level - must be exactly one of these values',
+    ),
+});
+
+/**
+ * Use AI to normalize any risk level string to one of our exact enum values.
+ * Uses gpt-4o-mini (fast and cheap) with structured output to ensure valid values.
+ */
+async function normalizeRiskLevel(
+  rawRiskLevel: string | null | undefined,
+): Promise<NormalizedRiskLevel | null> {
+  if (!rawRiskLevel?.trim()) {
+    return null;
+  }
+
+  try {
+    const result = await generateObject({
+      model: openai('gpt-4o-mini'),
+      schema: normalizedRiskLevelSchema,
+      prompt: `Classify this vendor security risk level into exactly one of these 5 categories.
+
+Risk level from assessment: "${rawRiskLevel}"
+
+Categories (highest to lowest risk):
+- critical: Highest risk (severe, extreme, very high, critical concerns)
+- high: Significant risk (high, major issues)
+- medium: Moderate risk (medium, moderate, average)
+- low: Low risk (low, minimal, minor)
+- very_low: Minimal risk (very low, negligible, none)
+
+Rules:
+- Return exactly one of: critical, high, medium, low, very_low
+- If ambiguous (e.g., "Low to Moderate"), pick the HIGHER risk to be conservative`,
+    });
+
+    logger.info('Normalized risk level', {
+      rawRiskLevel,
+      normalizedRiskLevel: result.object.riskLevel,
+    });
+
+    return result.object.riskLevel;
+  } catch (error) {
+    logger.warn('Failed to normalize risk level, defaulting to medium', {
+      rawRiskLevel,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return 'medium';
+  }
+}
+
+function mapRiskLevelToLikelihood(
+  normalizedLevel: NormalizedRiskLevel | null,
+): Likelihood {
+  switch (normalizedLevel) {
+    case 'critical':
+      return Likelihood.very_likely;
+    case 'high':
+      return Likelihood.likely;
+    case 'medium':
+      return Likelihood.possible;
+    case 'low':
+      return Likelihood.unlikely;
+    case 'very_low':
+      return Likelihood.very_unlikely;
+    default:
+      // Default to medium (safer than lowest)
+      return Likelihood.possible;
+  }
+}
+
+function mapRiskLevelToImpact(
+  normalizedLevel: NormalizedRiskLevel | null,
+): Impact {
+  switch (normalizedLevel) {
+    case 'critical':
+      return Impact.severe;
+    case 'high':
+      return Impact.major;
+    case 'medium':
+      return Impact.moderate;
+    case 'low':
+      return Impact.minor;
+    case 'very_low':
+      return Impact.insignificant;
+    default:
+      // Default to medium (safer than lowest)
+      return Impact.moderate;
+  }
 }
 
 /**
@@ -615,11 +737,36 @@ export const vendorRiskAssessmentTask: Task<
       });
     }
 
+    const rawRiskLevel = extractRiskLevel(data);
+    const normalizedRiskLevel = await normalizeRiskLevel(rawRiskLevel);
+
+    // Log if risk level is missing (AI fallback already logs for ambiguous values)
+    if (!rawRiskLevel) {
+      logger.info('No risk level in assessment data, defaulting to medium', {
+        vendor: payload.vendorName,
+      });
+    } else if (normalizedRiskLevel) {
+      logger.info('Risk level normalized', {
+        vendor: payload.vendorName,
+        rawRiskLevel,
+        normalizedRiskLevel,
+      });
+    }
+
+    const inherentProbability = mapRiskLevelToLikelihood(normalizedRiskLevel);
+    const inherentImpact = mapRiskLevelToImpact(normalizedRiskLevel);
+    const residualProbability = mapRiskLevelToLikelihood(normalizedRiskLevel);
+    const residualImpact = mapRiskLevelToImpact(normalizedRiskLevel);
+
     // Mark org-specific vendor as assessed
     await db.vendor.update({
       where: { id: vendor.id },
       data: {
         status: VendorStatus.assessed,
+        inherentProbability,
+        inherentImpact,
+        residualProbability,
+        residualImpact,
       },
     });
 

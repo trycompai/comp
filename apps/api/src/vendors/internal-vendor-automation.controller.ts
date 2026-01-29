@@ -2,7 +2,10 @@ import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InternalTokenGuard } from '../auth/internal-token.guard';
 import { VendorsService } from './vendors.service';
-import { TriggerVendorRiskAssessmentBatchDto } from './dto/trigger-vendor-risk-assessment.dto';
+import {
+  TriggerVendorRiskAssessmentBatchDto,
+  TriggerSingleVendorRiskAssessmentDto,
+} from './dto/trigger-vendor-risk-assessment.dto';
 
 @ApiTags('Internal - Vendors')
 @Controller({ path: 'internal/vendors', version: '1' })
@@ -50,6 +53,48 @@ export class InternalVendorAutomationController {
     return {
       success: true,
       ...result,
+    };
+  }
+
+  @Post('risk-assessment/trigger-single')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Trigger vendor risk assessment for a single vendor and return run info (internal)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Task triggered with run info for real-time tracking',
+  })
+  async triggerSingleVendorRiskAssessment(
+    @Body() body: TriggerSingleVendorRiskAssessmentDto,
+  ) {
+    console.log(
+      '[InternalVendorAutomationController] Received single vendor trigger request',
+      {
+        organizationId: body.organizationId,
+        vendorId: body.vendorId,
+        vendorName: body.vendorName,
+      },
+    );
+
+    const result = await this.vendorsService.triggerSingleVendorRiskAssessment({
+      organizationId: body.organizationId,
+      vendorId: body.vendorId,
+      vendorName: body.vendorName,
+      vendorWebsite: body.vendorWebsite,
+      createdByUserId: body.createdByUserId,
+    });
+
+    console.log(
+      '[InternalVendorAutomationController] Single vendor trigger completed',
+      { runId: result.runId },
+    );
+
+    return {
+      success: true,
+      runId: result.runId,
+      publicAccessToken: result.publicAccessToken,
     };
   }
 }

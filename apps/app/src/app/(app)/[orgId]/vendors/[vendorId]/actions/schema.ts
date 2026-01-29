@@ -49,6 +49,9 @@ export const updateVendorSchema = z.object({
   category: z.nativeEnum(VendorCategory),
   status: z.nativeEnum(VendorStatus),
   assigneeId: z.string().nullable(),
+  website: z
+    .union([z.string().url('Must be a valid URL (include https://)'), z.literal('')])
+    .optional(),
 });
 
 export const createVendorCommentSchema = z.object({

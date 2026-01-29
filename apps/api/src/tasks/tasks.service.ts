@@ -155,7 +155,10 @@ export class TasksService {
           changedByUserId,
         })
         .catch((error) => {
-          console.error('Failed to send bulk status change notifications:', error);
+          console.error(
+            'Failed to send bulk status change notifications:',
+            error,
+          );
         });
 
       return { updatedCount: result.count };
@@ -206,7 +209,10 @@ export class TasksService {
           changedByUserId,
         })
         .catch((error) => {
-          console.error('Failed to send bulk assignee change notifications:', error);
+          console.error(
+            'Failed to send bulk assignee change notifications:',
+            error,
+          );
         });
 
       return { updatedCount: result.count };
@@ -216,6 +222,39 @@ export class TasksService {
         throw error;
       }
       throw new InternalServerErrorException('Failed to update task assignees');
+    }
+  }
+
+  /**
+   * Delete multiple tasks
+   */
+  async deleteTasks(
+    organizationId: string,
+    taskIds: string[],
+  ): Promise<{ deletedCount: number }> {
+    try {
+      const result = await db.task.deleteMany({
+        where: {
+          id: {
+            in: taskIds,
+          },
+          organizationId,
+        },
+      });
+
+      if (result.count === 0) {
+        throw new BadRequestException(
+          'No tasks were deleted. Check task IDs or organization access.',
+        );
+      }
+
+      return { deletedCount: result.count };
+    } catch (error) {
+      console.error('Error deleting tasks:', error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete tasks');
     }
   }
 
@@ -267,7 +306,8 @@ export class TasksService {
       }
       if (updateData.assigneeId !== undefined) {
         // Convert null to undefined for Prisma, or keep string value
-        dataToUpdate.assigneeId = updateData.assigneeId === null ? null : updateData.assigneeId;
+        dataToUpdate.assigneeId =
+          updateData.assigneeId === null ? null : updateData.assigneeId;
       }
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
@@ -292,7 +332,10 @@ export class TasksService {
       });
 
       // Send notifications for status changes
-      if (updateData.status !== undefined && existingTask.status !== updateData.status) {
+      if (
+        updateData.status !== undefined &&
+        existingTask.status !== updateData.status
+      ) {
         this.taskNotifierService
           .notifyStatusChange({
             organizationId,
@@ -322,7 +365,10 @@ export class TasksService {
             changedByUserId,
           })
           .catch((error) => {
-            console.error('Failed to send assignee change notifications:', error);
+            console.error(
+              'Failed to send assignee change notifications:',
+              error,
+            );
           });
       }
 
