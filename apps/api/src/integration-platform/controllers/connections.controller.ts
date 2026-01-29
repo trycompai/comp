@@ -633,7 +633,8 @@ export class ConnectionsController {
           'Invalid credentials. Please check your IAM role configuration.';
       }
 
-      this.logger.error(`AWS validation failed: ${errorMessage}`);
+      // Use warn instead of error - this is a user configuration issue, not a system error
+      this.logger.warn(`AWS validation failed: ${errorMessage}`);
       return { success: false, message: friendlyMessage };
     }
   }

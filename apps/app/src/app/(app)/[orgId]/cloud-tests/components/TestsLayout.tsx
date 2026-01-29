@@ -70,7 +70,11 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     },
   );
 
-  const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Provider[]>(
+  const {
+    data: providers = initialProviders,
+    mutate: mutateProviders,
+    isValidating: isProvidersValidating,
+  } = useSWR<Provider[]>(
     `/api/cloud-tests/providers?orgId=${orgId}`,
     async (url) => {
       const res = await fetch(url);
@@ -252,6 +256,10 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         }
         onRunScan={handleRunScan}
         onAddConnection={(providerType) => {
+          if (isProvidersValidating) {
+            toast.message('Loading connections, please try again in a moment.');
+            return;
+          }
           const existingConnections = providerGroups[providerType] || [];
           const supportsMulti = existingConnections.some((connection) =>
             Boolean(connection.supportsMultipleConnections),
@@ -271,18 +279,22 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         needsConfiguration={needsVariableConfiguration}
       />
 
+      {/* CloudSettingsModal only for providers that do NOT support multiple connections */}
+      {/* AWS is managed via ConnectIntegrationDialog since it supports multiple connections */}
       <CloudSettingsModal
         open={showSettings}
         onOpenChange={setShowSettings}
-        connectedProviders={connectedProviders.map((p) => ({
-          id: p.integrationId,
-          connectionId: p.id,
-          name: p.displayName || p.name,
-          status: p.status,
-          accountId: p.accountId,
-          regions: p.regions,
-          isLegacy: p.isLegacy,
-        }))}
+        connectedProviders={connectedProviders
+          .filter((p) => !p.supportsMultipleConnections)
+          .map((p) => ({
+            id: p.integrationId,
+            connectionId: p.id,
+            name: p.displayName || p.name,
+            status: p.status,
+            accountId: p.accountId,
+            regions: p.regions,
+            isLegacy: p.isLegacy,
+          }))}
         onUpdate={handleProvidersUpdate}
       />
 
