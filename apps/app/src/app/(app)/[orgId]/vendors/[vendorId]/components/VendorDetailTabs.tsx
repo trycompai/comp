@@ -1,5 +1,6 @@
 'use client';
 
+import { isFailureRunStatus } from '@/app/(app)/[orgId]/cloud-tests/status';
 import { VendorRiskAssessmentSkeleton } from '@/components/vendor-risk-assessment/VendorRiskAssessmentSkeleton';
 import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
 import { useTaskItems } from '@/hooks/use-task-items';
@@ -18,6 +19,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { VendorActions } from './VendorActions';
 import { VendorPageClient } from './VendorPageClient';
 import { UpdateTitleAndDescriptionSheet } from './title-and-description/update-title-and-description-sheet';
@@ -104,9 +106,18 @@ export function VendorDetailTabs({
     return activeStatuses.includes(assessmentRun.status);
   }, [assessmentRun]);
 
-  // When realtime run completes, refresh data and clear state
+  // When realtime run completes or fails, refresh data and clear state
   useEffect(() => {
-    if (assessmentRun?.status === 'COMPLETED') {
+    if (!assessmentRun?.status) return;
+
+    if (assessmentRun.status === 'COMPLETED') {
+      void refreshVendor();
+      void refreshTaskItems();
+      setAssessmentRunId(null);
+      setAssessmentToken(null);
+    } else if (isFailureRunStatus(assessmentRun.status)) {
+      // Handle failure states: FAILED, CRASHED, CANCELED, SYSTEM_FAILURE, etc.
+      toast.error('Risk assessment failed. Please try again.');
       void refreshVendor();
       void refreshTaskItems();
       setAssessmentRunId(null);
