@@ -181,31 +181,98 @@ function extractRiskLevel(value: Prisma.InputJsonValue): string | null {
   return parsed.data.riskLevel ?? null;
 }
 
-function mapRiskLevelToLikelihood(
+type NormalizedRiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'very_low';
+
+/**
+ * Normalize risk level string to a known category.
+ * Returns null if unrecognized (caller should handle).
+ *
+ * Maps to database enums:
+ * - critical → Likelihood.very_likely / Impact.severe (highest)
+ * - high → Likelihood.likely / Impact.major
+ * - medium → Likelihood.possible / Impact.moderate
+ * - low → Likelihood.unlikely / Impact.minor
+ * - very_low → Likelihood.very_unlikely / Impact.insignificant (lowest)
+ */
+function normalizeRiskLevel(
   riskLevel: string | null | undefined,
+): NormalizedRiskLevel | null {
+  const level = riskLevel?.toLowerCase()?.trim();
+
+  if (!level) {
+    return null;
+  }
+
+  // Critical risk variants (highest - maps to very_likely/severe)
+  if (
+    level === 'critical' ||
+    level === 'severe' ||
+    level === 'extreme' ||
+    level === 'very high'
+  ) {
+    return 'critical';
+  }
+
+  // High risk variants
+  if (level === 'high') {
+    return 'high';
+  }
+
+  // Medium risk variants
+  if (level === 'medium' || level === 'moderate' || level === 'average') {
+    return 'medium';
+  }
+
+  // Low risk variants
+  if (level === 'low' || level === 'minimal' || level === 'minor') {
+    return 'low';
+  }
+
+  // Very low risk variants
+  if (level === 'very low' || level === 'negligible' || level === 'none') {
+    return 'very_low';
+  }
+
+  return null;
+}
+
+function mapRiskLevelToLikelihood(
+  normalizedLevel: NormalizedRiskLevel | null,
 ): Likelihood {
-  switch (riskLevel?.toLowerCase()) {
+  switch (normalizedLevel) {
+    case 'critical':
+      return Likelihood.very_likely;
     case 'high':
       return Likelihood.likely;
     case 'medium':
       return Likelihood.possible;
     case 'low':
       return Likelihood.unlikely;
-    default:
+    case 'very_low':
       return Likelihood.very_unlikely;
+    default:
+      // Default to medium (safer than lowest)
+      return Likelihood.possible;
   }
 }
 
-function mapRiskLevelToImpact(riskLevel: string | null | undefined): Impact {
-  switch (riskLevel?.toLowerCase()) {
+function mapRiskLevelToImpact(
+  normalizedLevel: NormalizedRiskLevel | null,
+): Impact {
+  switch (normalizedLevel) {
+    case 'critical':
+      return Impact.severe;
     case 'high':
       return Impact.major;
     case 'medium':
       return Impact.moderate;
     case 'low':
       return Impact.minor;
-    default:
+    case 'very_low':
       return Impact.insignificant;
+    default:
+      // Default to medium (safer than lowest)
+      return Impact.moderate;
   }
 }
 
@@ -659,11 +726,25 @@ export const vendorRiskAssessmentTask: Task<
       });
     }
 
-    const riskLevel = extractRiskLevel(data);
-    const inherentProbability = mapRiskLevelToLikelihood(riskLevel);
-    const inherentImpact = mapRiskLevelToImpact(riskLevel);
-    const residualProbability = mapRiskLevelToLikelihood(riskLevel);
-    const residualImpact = mapRiskLevelToImpact(riskLevel);
+    const rawRiskLevel = extractRiskLevel(data);
+    const normalizedRiskLevel = normalizeRiskLevel(rawRiskLevel);
+
+    // Log once if risk level is missing or unrecognized
+    if (rawRiskLevel && !normalizedRiskLevel) {
+      logger.warn('Unrecognized risk level value, defaulting to medium', {
+        vendor: payload.vendorName,
+        rawRiskLevel,
+      });
+    } else if (!rawRiskLevel) {
+      logger.info('No risk level in assessment data, defaulting to medium', {
+        vendor: payload.vendorName,
+      });
+    }
+
+    const inherentProbability = mapRiskLevelToLikelihood(normalizedRiskLevel);
+    const inherentImpact = mapRiskLevelToImpact(normalizedRiskLevel);
+    const residualProbability = mapRiskLevelToLikelihood(normalizedRiskLevel);
+    const residualImpact = mapRiskLevelToImpact(normalizedRiskLevel);
 
     // Mark org-specific vendor as assessed
     await db.vendor.update({
