@@ -1,18 +1,42 @@
 'use client';
 
-import { useTaskItems, useTaskItemsStats, type TaskItemSortBy, type TaskItemSortOrder, type TaskItemFilters } from '@/hooks/use-task-items';
-import { Card, CardContent, CardHeader } from '@comp/ui/card';
-import type { TaskItemEntityType } from '@/hooks/use-task-items';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TaskItemFocusView } from './TaskItemFocusView';
-import { TaskItemsHeader } from './TaskItemsHeader';
-import { TaskItemsFilters } from './TaskItemsFilters';
-import { TaskItemCreateDialog } from './TaskItemCreateDialog';
-import { TaskItemsInline } from './TaskItemsInline';
-import { TaskItemsBody } from './TaskItemsBody';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import type { TaskItemEntityType } from '@/hooks/use-task-items';
+import {
+  useTaskItems,
+  useTaskItemsStats,
+  type TaskItemFilters,
+  type TaskItemSortBy,
+  type TaskItemSortOrder,
+} from '@/hooks/use-task-items';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  Button,
+  Card,
+  CardContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  HStack,
+  Section,
+  Stack,
+} from '@trycompai/design-system';
+import { Add, ChevronDown, Close } from '@trycompai/design-system/icons';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { TaskItemCreateDialog } from './TaskItemCreateDialog';
+import { TaskItemFocusView } from './TaskItemFocusView';
+import { TaskItemsBody } from './TaskItemsBody';
+import { TaskItemsFilters } from './TaskItemsFilters';
+import { TaskItemsInline } from './TaskItemsInline';
 
 interface TaskItemsProps {
   entityId: string;
@@ -47,9 +71,7 @@ export const TaskItems = ({
   const [sortBy, setSortBy] = useState<TaskItemSortBy>('createdAt');
   const [sortOrder, setSortOrder] = useState<TaskItemSortOrder>('desc');
   const [filters, setFilters] = useState<TaskItemFilters>({});
-  const [selectedTaskItemId, setSelectedTaskItemId] = useState<string | null>(
-    null,
-  );
+  const [selectedTaskItemId, setSelectedTaskItemId] = useState<string | null>(null);
   const previousDataRef = useRef<typeof taskItemsResponse>(undefined);
 
   const router = useRouter();
@@ -76,14 +98,14 @@ export const TaskItems = ({
   });
 
   const { members } = useOrganizationMembers();
-  
+
   // Filter members to only show owner and admin roles for assignee filter
   // Always include currently filtered assignee even if they're not owner/admin (to preserve active filter)
   const assignableMembers = useMemo(() => {
     if (!members) return [];
-    const currentAssigneeId: string | null = 
-      filters.assigneeId && filters.assigneeId !== '__unassigned__' 
-        ? (filters.assigneeId as string) 
+    const currentAssigneeId: string | null =
+      filters.assigneeId && filters.assigneeId !== '__unassigned__'
+        ? (filters.assigneeId as string)
         : null;
     return filterMembersByOwnerOrAdmin({ members, currentAssigneeId });
   }, [members, filters.assigneeId]);
@@ -95,7 +117,10 @@ export const TaskItems = ({
     setPage(1); // Reset to first page when sorting changes
   };
 
-  const handleFilterChange = (filterType: 'status' | 'priority' | 'assigneeId', value: string | null) => {
+  const handleFilterChange = (
+    filterType: 'status' | 'priority' | 'assigneeId',
+    value: string | null,
+  ) => {
     setFilters((prev) => {
       const newFilters = { ...prev };
       if (value === null || value === 'all') {
@@ -158,10 +183,16 @@ export const TaskItems = ({
   const isFocusMode = Boolean(selectedTaskItemId);
   // When in focus mode, check allTaskItems first (before filtering) to ensure we can show the selected task
   // even if it would be filtered out. Fall back to filtered taskItems if not found.
-  const selectedTaskItem = 
-    allTaskItems.find((t) => t.id === selectedTaskItemId) || 
-    taskItems.find((t) => t.id === selectedTaskItemId) || 
+  const selectedTaskItem =
+    allTaskItems.find((t) => t.id === selectedTaskItemId) ||
+    taskItems.find((t) => t.id === selectedTaskItemId) ||
     null;
+  const taskListHref = useMemo(() => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('taskItemId');
+    const qs = next.toString();
+    return `${pathname}${qs ? `?${qs}` : ''}#${anchorId}`;
+  }, [anchorId, pathname, searchParams]);
 
   // `useApiSWR` doesn't start fetching until organizationId is available, and during that time `isLoading` is false.
   // So we also treat "waiting for org" as initial loading for this section.
@@ -169,7 +200,11 @@ export const TaskItems = ({
   const isInitialLoad =
     isWaitingForOrg || (!taskItemsResponse && !taskItemsError && taskItems.length === 0);
   // Only show empty state if we're not loading AND we have no data AND we've received a response
-  const shouldShowEmptyState = !taskItemsLoading && !taskItemsError && taskItems.length === 0 && taskItemsResponse !== undefined;
+  const shouldShowEmptyState =
+    !taskItemsLoading &&
+    !taskItemsError &&
+    taskItems.length === 0 &&
+    taskItemsResponse !== undefined;
 
   // If the vendor risk assessment is generating, we show a disabled-looking row.
   // We need lightweight polling so the UI flips from in_progress -> todo automatically
@@ -191,8 +226,7 @@ export const TaskItems = ({
     return () => clearInterval(interval);
   }, [hasGeneratingVerifyRiskAssessmentTask, refreshTaskItems, selectedTaskItemId]);
 
-  const defaultDescription =
-    description || `Manage tasks related to this ${entityType}`;
+  const defaultDescription = description || `Manage tasks related to this ${entityType}`;
 
   const handleCreateSuccess = () => {
     setIsCreateOpen(false);
@@ -221,8 +255,44 @@ export const TaskItems = ({
   if (isFocusMode && selectedTaskItem) {
     return (
       <section id={anchorId} className="scroll-mt-24">
+        <div className="mb-3">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink render={<Link href={taskListHref} />}>Tasks</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                {allTaskItems.length > 1 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger variant="menubar">
+                      <HStack gap="xs" align="center">
+                        <BreadcrumbPage>{selectedTaskItem.title}</BreadcrumbPage>
+                        <ChevronDown className="h-4 w-4" />
+                      </HStack>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <div className="max-h-[300px] overflow-auto">
+                        {allTaskItems.map((taskItem) => (
+                          <DropdownMenuItem
+                            key={taskItem.id}
+                            onSelect={() => handleSelectTaskItemId(taskItem.id)}
+                          >
+                            {taskItem.title}
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <BreadcrumbPage>{selectedTaskItem.title}</BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
         <Card>
-          <CardContent className="p-6">
+          <CardContent>
             <TaskItemFocusView
               taskItem={selectedTaskItem}
               entityId={entityId}
@@ -246,26 +316,26 @@ export const TaskItems = ({
   const content = (
     <TaskItemsBody
       isInitialLoad={isInitialLoad}
-            taskItemsError={taskItemsError}
-            shouldShowEmptyState={shouldShowEmptyState}
+      taskItemsError={taskItemsError}
+      shouldShowEmptyState={shouldShowEmptyState}
       hasActiveFilters={hasActiveFilters}
-            taskItems={taskItems}
-            taskItemsLoading={taskItemsLoading}
-            paginationMeta={paginationMeta}
-            entityId={entityId}
-            entityType={entityType}
-            page={page}
-            limit={limit}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            filters={filters}
-            selectedTaskItemId={selectedTaskItemId}
-            onSelectTaskItemId={handleSelectTaskItemId}
-            onStatusOrPriorityChange={refreshStats}
-            onPageChange={handlePageChange}
-            onLimitChange={handleLimitChange}
-            onClearFilters={handleClearFilters}
-          />
+      taskItems={taskItems}
+      taskItemsLoading={taskItemsLoading}
+      paginationMeta={paginationMeta}
+      entityId={entityId}
+      entityType={entityType}
+      page={page}
+      limit={limit}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      filters={filters}
+      selectedTaskItemId={selectedTaskItemId}
+      onSelectTaskItemId={handleSelectTaskItemId}
+      onStatusOrPriorityChange={refreshStats}
+      onPageChange={handlePageChange}
+      onLimitChange={handleLimitChange}
+      onClearFilters={handleClearFilters}
+    />
   );
 
   const createDialog = (
@@ -299,34 +369,36 @@ export const TaskItems = ({
 
   return (
     <section id={anchorId} className="scroll-mt-24">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4">
-            <TaskItemsHeader
-              title={title}
-              description={defaultDescription}
-              statsLoading={statsLoading}
-              stats={stats}
-              isCreateOpen={isCreateOpen}
-              onToggleCreate={() => setIsCreateOpen((prev) => !prev)}
-            />
-            <TaskItemsFilters
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              filters={filters}
-              assignableMembers={assignableMembers}
-              hasTasks={hasTasks ?? false}
-              statsLoading={statsLoading}
-              onSortChange={handleSortChange}
-              onFilterChange={handleFilterChange}
-              onClearFilters={handleClearFilters}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>{content}</CardContent>
-      </Card>
+      <Section
+        title={title}
+        description={defaultDescription}
+        actions={
+          <Button
+            size="icon"
+            onClick={() => setIsCreateOpen((prev) => !prev)}
+            variant={isCreateOpen ? 'outline' : 'default'}
+            aria-label={isCreateOpen ? 'Close create task' : 'Create task'}
+          >
+            {isCreateOpen ? <Close className="h-4 w-4" /> : <Add className="h-4 w-4" />}
+          </Button>
+        }
+      >
+        <Stack gap="sm">
+          <TaskItemsFilters
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            filters={filters}
+            assignableMembers={assignableMembers}
+            hasTasks={hasTasks ?? false}
+            statsLoading={statsLoading}
+            onSortChange={handleSortChange}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
+          />
+          {content}
+        </Stack>
+      </Section>
       {createDialog}
     </section>
   );
 };
-

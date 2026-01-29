@@ -1,10 +1,10 @@
 'use client';
 
 import type { TaskItem, TaskItemEntityType } from '@/hooks/use-task-items';
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
+import { Card, CardContent, CardHeader, HStack, Stack, Text } from '@trycompai/design-system';
 import { TaskItemEditableTitle } from '../TaskItemEditableTitle';
 import { TaskItemEditableDescription } from '../TaskItemEditableDescription';
-import { FileText, AlignLeft } from 'lucide-react';
+import { Document, TextAlignLeft } from '@trycompai/design-system/icons';
 
 interface CustomTaskItemMainContentProps {
   taskItem: TaskItem;
@@ -33,11 +33,11 @@ export function CustomTaskItemMainContent({
   entityType,
 }: CustomTaskItemMainContentProps) {
   return (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-none">
-        <CardContent className="pt-6 px-0 pb-3">
-          <div className="flex items-center gap-3">
-            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+    <Stack gap="lg">
+      <Card>
+        <CardContent>
+          <HStack gap="sm" align="center">
+            <Document className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="flex-1 min-w-0">
               <TaskItemEditableTitle
                 title={taskItem.title}
@@ -47,18 +47,20 @@ export function CustomTaskItemMainContent({
                 className="text-lg"
               />
             </div>
-          </div>
+          </HStack>
         </CardContent>
       </Card>
 
-      <Card className="border-0 shadow-none">
-        <CardHeader className="px-0 pt-1">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <AlignLeft className="h-4 w-4" />
-            Description
-          </CardTitle>
+      <Card>
+        <CardHeader>
+          <HStack gap="xs" align="center">
+            <TextAlignLeft className="h-4 w-4" />
+            <Text size="sm" weight="semibold">
+              Description
+            </Text>
+          </HStack>
         </CardHeader>
-        <CardContent className="px-0">
+        <CardContent>
           <TaskItemEditableDescription
             taskItem={taskItem}
             isUpdating={isUpdating}
@@ -70,7 +72,7 @@ export function CustomTaskItemMainContent({
           />
         </CardContent>
       </Card>
-    </div>
+    </Stack>
   );
 }
 

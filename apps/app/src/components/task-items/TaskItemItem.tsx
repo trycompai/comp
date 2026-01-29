@@ -1,35 +1,7 @@
 'use client';
 
-import { useOptimisticTaskItems } from '@/hooks/use-task-items';
+import { SelectAssignee } from '@/components/SelectAssignee';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
-import { TaskItemDescriptionView } from './TaskItemDescriptionView';
-import { Button } from '@comp/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@comp/ui/select';
-import { Textarea } from '@comp/ui/textarea';
 import type {
   TaskItem,
   TaskItemEntityType,
@@ -39,27 +11,57 @@ import type {
   TaskItemSortOrder,
   TaskItemStatus,
 } from '@/hooks/use-task-items';
+import { useOptimisticTaskItems } from '@/hooks/use-task-items';
+import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import {
-  Pencil,
-  Trash2,
-  List,
-  Clock3,
-  Eye,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  TrendingUp,
-  Gauge,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Grid,
+  HStack,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner,
+  Stack,
+  TableCell,
+  TableRow,
+  Text,
+  Textarea,
+} from '@trycompai/design-system';
+import {
   ArrowDownRight,
-  UserPlus,
-  Loader2,
+  ChartLine,
+  CheckmarkFilled,
   ChevronDown,
-  Circle,
-} from 'lucide-react';
+  DotMark,
+  Edit,
+  Misuse,
+  QOperationGauge,
+  Time,
+  TrashCan,
+  View,
+  Warning,
+} from '@trycompai/design-system/icons';
+import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { SelectAssignee } from '@/components/SelectAssignee';
-import { format } from 'date-fns';
+import { TaskItemDescriptionView } from './TaskItemDescriptionView';
 import { VerifyRiskAssessmentTaskItemSkeletonRow } from './verify-risk-assessment/VerifyRiskAssessmentTaskItemSkeletonRow';
 
 const formatShortDate = (date: string | Date): string => {
@@ -148,7 +150,7 @@ export function TaskItemItem({
     filters,
   );
   const { members } = useOrganizationMembers();
-  
+
   // Filter members to only show owner and admin roles
   // Always include current assignee even if they're not owner/admin (to preserve existing assignments)
   const assignableMembers = useMemo(() => {
@@ -265,17 +267,17 @@ export function TaskItemItem({
   const getStatusIcon = (status: TaskItemStatus) => {
     switch (status) {
       case 'todo':
-        return Circle; // Todo circle (same as Evidence page)
+        return DotMark; // Todo circle (same as Evidence page)
       case 'done':
-        return CheckCircle2; // Clear completed check
+        return CheckmarkFilled; // Clear completed check
       case 'in_progress':
-        return Clock3; // Progress / ongoing (non-spinning)
+        return Time; // Progress / ongoing (non-spinning)
       case 'in_review':
-        return Eye; // Review / needs attention
+        return View; // Review / needs attention
       case 'canceled':
-        return XCircle; // Canceled / stopped
+        return Misuse; // Canceled / stopped
       default:
-        return Circle; // Default to circle
+        return DotMark; // Default to circle
     }
   };
 
@@ -297,15 +299,15 @@ export function TaskItemItem({
   const getPriorityIcon = (priority: TaskItemPriority) => {
     switch (priority) {
       case 'urgent':
-        return AlertTriangle; // Strong warning icon - urgency
+        return Warning; // Strong warning icon - urgency
       case 'high':
-        return TrendingUp; // Clear "higher" indicator
+        return ChartLine; // Clear "higher" indicator
       case 'medium':
-        return Gauge; // Neutral / normal
+        return QOperationGauge; // Neutral / normal
       case 'low':
         return ArrowDownRight; // Lower / de-prioritized
       default:
-        return Gauge;
+        return QOperationGauge;
     }
   };
 
@@ -326,10 +328,8 @@ export function TaskItemItem({
 
   return (
     <>
-      <div 
-        className="flex items-center gap-2 p-4 rounded-lg border border-border bg-card hover:shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-shadow duration-150 group cursor-pointer"
+      <TableRow
         onClick={(e) => {
-          // Don't open detail dialog if clicking on interactive elements
           const target = e.target as HTMLElement;
           if (target.closest('button') || target.closest('[role="menuitem"]')) {
             return;
@@ -337,193 +337,182 @@ export function TaskItemItem({
           onToggleExpanded?.();
         }}
       >
-        <div className="flex-1 flex items-center gap-3 text-sm w-full">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-                {/* Priority Icon - Fixed width */}
-                <div className="w-8 shrink-0 flex items-center justify-center">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={(e) => e.stopPropagation()}
-                        className={`group/priority h-6 px-1.5 rounded-md cursor-pointer select-none transition-colors duration-150 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center justify-center gap-0.5 ${getPriorityColor(taskItem.priority)}`}
-                        aria-label={`Priority: ${taskItem.priority}. Click to change.`}
-                        title={`Priority: ${taskItem.priority}. Click to change.`}
-                      >
-                        {(() => {
-                          const PriorityIcon = getPriorityIcon(taskItem.priority);
-                          return <PriorityIcon className="h-4 w-4 stroke-[2]" />;
-                        })()}
-                        <ChevronDown className="h-2.5 w-2.5 opacity-0 group-hover/priority:opacity-60 transition-opacity duration-150 shrink-0" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-40">
-                      {PRIORITY_OPTIONS.map((option) => {
-                        const isSelected = taskItem.priority === option.value;
-                        return (
-                          <DropdownMenuItem
-                            key={option.value}
-                            onSelect={() => handlePriorityChange(option.value)}
-                            className={`cursor-pointer ${isSelected ? 'bg-accent font-medium' : ''}`}
-                          >
-                            <div className="flex items-center gap-2 w-full">
-                              {(() => {
-                                const PriorityIcon = getPriorityIcon(option.value);
-                                return (
-                                  <PriorityIcon
-                                    className={`h-3.5 w-3.5 stroke-[2] ${
-                                      option.value === 'urgent'
-                                        ? 'text-red-600 dark:text-red-400'
-                                        : option.value === 'high'
-                                          ? 'text-pink-600 dark:text-pink-400'
-                                          : option.value === 'medium'
-                                            ? 'text-amber-600 dark:text-amber-400'
-                                            : option.value === 'low'
-                                              ? 'text-slate-600 dark:text-slate-400'
-                                              : 'text-slate-600 dark:text-slate-400'
-                                    }`}
-                                  />
-                                );
-                              })()}
-                              <span>{option.label}</span>
-                              {isSelected && (
-                                <span className="ml-auto text-xs">✓</span>
-                              )}
-                            </div>
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                {/* Task ID Tag - Fixed width */}
-                <div className="w-14 shrink-0">
-                  <span className="text-[10px] font-mono font-medium text-muted-foreground/70 uppercase tracking-wider">
-                    {getTaskIdShort(taskItem.id)}
-                  </span>
-                </div>
-
-                {/* Status Icon - Fixed width */}
-                <div className="w-8 shrink-0 flex items-center justify-center">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={(e) => e.stopPropagation()}
-                        className={`group/status h-6 px-1.5 rounded-md cursor-pointer select-none transition-colors duration-150 focus:outline-none hover:bg-accent/50 active:bg-accent flex items-center justify-center gap-0.5 ${getStatusColor(taskItem.status)}`}
-                        aria-label={`Status: ${taskItem.status.replace('_', ' ')}. Click to change.`}
-                        title={`Status: ${taskItem.status.replace('_', ' ')}. Click to change.`}
-                      >
-                        {(() => {
-                          const StatusIcon = getStatusIcon(taskItem.status);
-                          return <StatusIcon className="h-4 w-4 stroke-[2]" />;
-                        })()}
-                        <ChevronDown className="h-2.5 w-2.5 opacity-0 group-hover/status:opacity-60 transition-opacity duration-150 shrink-0" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-40">
-                      {STATUS_OPTIONS.map((option) => {
-                        const isSelected = taskItem.status === option.value;
-                        return (
-                          <DropdownMenuItem
-                            key={option.value}
-                            onSelect={() => handleStatusChange(option.value)}
-                            className={`cursor-pointer ${isSelected ? 'bg-accent font-medium' : ''}`}
-                          >
-                            <div className="flex items-center gap-2 w-full">
-                              {(() => {
-                                const StatusIcon = getStatusIcon(option.value);
-                                return (
-                                  <StatusIcon
-                                    className={`h-3.5 w-3.5 stroke-[2] ${
-                                      option.value === 'done'
-                                        ? 'text-primary'
-                                        : option.value === 'in_progress'
-                                          ? 'text-blue-600 dark:text-blue-400'
-                                          : option.value === 'in_review'
-                                            ? 'text-purple-600 dark:text-purple-400'
-                                            : option.value === 'canceled'
-                                              ? 'text-slate-600 dark:text-slate-400'
-                                              : 'text-slate-600 dark:text-slate-400'
-                                    }`}
-                                  />
-                                );
-                              })()}
-                              <span>{option.label}</span>
-                              {isSelected && (
-                                <span className="ml-auto text-xs">✓</span>
-                              )}
-                            </div>
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                {/* Title - Flexible but with max width */}
-                <h4 className="text-sm font-medium flex-1 min-w-0 max-w-[300px] truncate cursor-pointer">{taskItem.title}</h4>
-
-                {/* Spacer */}
-                <div className="flex-1" />
-
-                {/* Assignee Dropdown - Fixed width */}
-                <div onClick={(e) => e.stopPropagation()} className="shrink-0 w-[180px]" onMouseDown={(e) => e.stopPropagation()}>
-                  <div className="[&_button]:h-6 [&_button]:text-sm [&_button]:px-2 [&_button]:w-full [&_button]:border-0 [&_button]:shadow-none [&_button]:bg-transparent hover:[&_button]:bg-accent [&_button]:leading-6 [&_button]:gap-1.5 [&_button>div]:min-w-0 [&_button>div>span]:truncate [&_button>div>span]:max-w-[140px]">
-                    <SelectAssignee
-                      assigneeId={taskItem.assignee?.id || null}
-                      assignees={assignableMembers}
-                      onAssigneeChange={async (newAssigneeId) => {
-                        try {
-                          await optimisticUpdate(taskItem.id, { assigneeId: newAssigneeId });
-                          toast.success('Assignee updated');
-                          onStatusOrPriorityChange?.();
-                        } catch (error) {
-                          toast.error('Failed to update assignee');
-                          console.error('Assignee update error:', error);
-                        }
-                      }}
-                      withTitle={false}
-                      disabled={isUpdating}
-                    />
-                  </div>
-                </div>
-
-                {/* Short Date - Fixed width */}
-                <div className="w-16 shrink-0 text-right">
-                  <span className="text-sm text-muted-foreground whitespace-nowrap cursor-pointer">{formatShortDate(taskItem.createdAt)}</span>
-                </div>
-
-                {/* Delete Button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsDeleteOpen(true);
-                  }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  aria-label="Delete task"
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              variant="menubar"
+              onClick={(e) => e.stopPropagation()}
+              className={getPriorityColor(taskItem.priority)}
+              aria-label={`Priority: ${taskItem.priority}. Click to change.`}
+              title={`Priority: ${taskItem.priority}. Click to change.`}
+            >
+              {(() => {
+                const PriorityIcon = getPriorityIcon(taskItem.priority);
+                return <PriorityIcon className="h-4 w-4 stroke-2" />;
+              })()}
+              <ChevronDown className="h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <div className="w-40">
+                {PRIORITY_OPTIONS.map((option) => {
+                  const isSelected = taskItem.priority === option.value;
+                  return (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onSelect={() => handlePriorityChange(option.value)}
                     >
-                  <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <HStack gap="xs" align="center">
+                        {(() => {
+                          const PriorityIcon = getPriorityIcon(option.value);
+                          return (
+                            <PriorityIcon
+                              className={`h-3.5 w-3.5 stroke-2 ${
+                                option.value === 'urgent'
+                                  ? 'text-red-600 dark:text-red-400'
+                                  : option.value === 'high'
+                                    ? 'text-pink-600 dark:text-pink-400'
+                                    : option.value === 'medium'
+                                      ? 'text-amber-600 dark:text-amber-400'
+                                      : option.value === 'low'
+                                        ? 'text-slate-600 dark:text-slate-400'
+                                        : 'text-slate-600 dark:text-slate-400'
+                              }`}
+                            />
+                          );
+                        })()}
+                        <Text size="sm">{option.label}</Text>
+                        {isSelected && (
+                          <Text size="xs" variant="muted" as="span">
+                            ✓
+                          </Text>
+                        )}
+                      </HStack>
+                    </DropdownMenuItem>
+                  );
+                })}
               </div>
-        </div>
-      </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+        <TableCell>
+          <Stack gap="xs">
+            <Text weight="medium">{taskItem.title}</Text>
+            <Text size="xs" variant="muted">
+              {getTaskIdShort(taskItem.id)}
+            </Text>
+          </Stack>
+        </TableCell>
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              variant="menubar"
+              onClick={(e) => e.stopPropagation()}
+              className={getStatusColor(taskItem.status)}
+              aria-label={`Status: ${taskItem.status.replace('_', ' ')}. Click to change.`}
+              title={`Status: ${taskItem.status.replace('_', ' ')}. Click to change.`}
+            >
+              {(() => {
+                const StatusIcon = getStatusIcon(taskItem.status);
+                return <StatusIcon className="h-4 w-4 stroke-2" />;
+              })()}
+              <ChevronDown className="h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <div className="w-40">
+                {STATUS_OPTIONS.map((option) => {
+                  const isSelected = taskItem.status === option.value;
+                  return (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onSelect={() => handleStatusChange(option.value)}
+                    >
+                      <HStack gap="xs" align="center">
+                        {(() => {
+                          const StatusIcon = getStatusIcon(option.value);
+                          return (
+                            <StatusIcon
+                              className={`h-3.5 w-3.5 stroke-2 ${
+                                option.value === 'done'
+                                  ? 'text-primary'
+                                  : option.value === 'in_progress'
+                                    ? 'text-blue-600 dark:text-blue-400'
+                                    : option.value === 'in_review'
+                                      ? 'text-purple-600 dark:text-purple-400'
+                                      : option.value === 'canceled'
+                                        ? 'text-slate-600 dark:text-slate-400'
+                                        : 'text-slate-600 dark:text-slate-400'
+                              }`}
+                            />
+                          );
+                        })()}
+                        <Text size="sm">{option.label}</Text>
+                        {isSelected && (
+                          <Text size="xs" variant="muted" as="span">
+                            ✓
+                          </Text>
+                        )}
+                      </HStack>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+        <TableCell>
+          <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+            <SelectAssignee
+              assigneeId={taskItem.assignee?.id || null}
+              assignees={assignableMembers}
+              onAssigneeChange={async (newAssigneeId) => {
+                try {
+                  await optimisticUpdate(taskItem.id, { assigneeId: newAssigneeId });
+                  toast.success('Assignee updated');
+                  onStatusOrPriorityChange?.();
+                } catch (error) {
+                  toast.error('Failed to update assignee');
+                  console.error('Assignee update error:', error);
+                }
+              }}
+              withTitle={false}
+              disabled={isUpdating}
+            />
+          </div>
+        </TableCell>
+        <TableCell>
+          <Text size="sm" variant="muted">
+            {formatShortDate(taskItem.createdAt)}
+          </Text>
+        </TableCell>
+        <TableCell>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDeleteOpen(true);
+            }}
+            aria-label="Delete task"
+          >
+            <TrashCan className="h-4 w-4" />
+          </Button>
+        </TableCell>
+      </TableRow>
 
       {/* Edit Task Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
             <DialogDescription>Update task details and settings</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title" className="text-sm font-medium">
-                Title <span className="text-destructive">*</span>
+          <Stack gap="md">
+            <Stack gap="xs">
+              <Label htmlFor="edit-title">
+                Title{' '}
+                <Text as="span" size="sm" variant="destructive">
+                  *
+                </Text>
               </Label>
               <Input
                 id="edit-title"
@@ -532,12 +521,10 @@ export function TaskItemItem({
                 disabled={isUpdating}
                 placeholder="Task title"
               />
-            </div>
+            </Stack>
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-description" className="text-sm font-medium">
-                Description
-              </Label>
+            <Stack gap="xs">
+              <Label htmlFor="edit-description">Description</Label>
               <Textarea
                 id="edit-description"
                 value={editedDescription}
@@ -545,15 +532,12 @@ export function TaskItemItem({
                 disabled={isUpdating}
                 rows={4}
                 placeholder="Task description (optional)"
-                className="resize-none"
               />
-            </div>
+            </Stack>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="edit-status" className="text-sm font-medium">
-                  Status
-                </Label>
+            <Grid cols={{ base: '1', sm: '2' }} gap="4">
+              <Stack gap="xs">
+                <Label htmlFor="edit-status">Status</Label>
                 <Select
                   value={editedStatus}
                   onValueChange={(value) => setEditedStatus(value as TaskItemStatus)}
@@ -570,12 +554,10 @@ export function TaskItemItem({
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </Stack>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-priority" className="text-sm font-medium">
-                  Priority
-                </Label>
+              <Stack gap="xs">
+                <Label htmlFor="edit-priority">Priority</Label>
                 <Select
                   value={editedPriority}
                   onValueChange={(value) => setEditedPriority(value as TaskItemPriority)}
@@ -592,11 +574,11 @@ export function TaskItemItem({
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
+              </Stack>
+            </Grid>
 
             {assignableMembers && assignableMembers.length > 0 && (
-              <div className="space-y-2">
+              <Stack gap="xs">
                 <SelectAssignee
                   assigneeId={editedAssigneeId}
                   assignees={assignableMembers}
@@ -604,15 +586,15 @@ export function TaskItemItem({
                   disabled={isUpdating}
                   withTitle={true}
                 />
-              </div>
+              </Stack>
             )}
-          </div>
+          </Stack>
           <DialogFooter>
             <Button variant="outline" onClick={handleCancelEdit} disabled={isUpdating}>
               Cancel
             </Button>
             <Button onClick={handleSaveEdit} disabled={isUpdating || !editedTitle.trim()}>
-              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isUpdating && <Spinner />}
               Save Changes
             </Button>
           </DialogFooter>
@@ -621,91 +603,107 @@ export function TaskItemItem({
 
       {/* Inline Task Details (no modal) */}
       {isExpanded && (
-        <div className="mt-2 rounded-lg border border-border bg-muted/10 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-medium truncate">{taskItem.title}</h4>
-                <span className="text-[10px] font-mono font-medium text-muted-foreground/70 uppercase tracking-wider">
-                  {getTaskIdShort(taskItem.id)}
-                </span>
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>Created {formatShortDate(taskItem.createdAt)}</span>
-                {taskItem.assignee && (
-                  <span className="flex items-center gap-1.5">
-                    <Avatar className="h-4 w-4 border border-border">
-                      <AvatarImage
-                        src={taskItem.assignee.user.image || undefined}
-                        alt={taskItem.assignee.user.name}
-                      />
-                      <AvatarFallback className="text-[8px] bg-muted">
-                        {taskItem.assignee.user.name?.charAt(0).toUpperCase() ?? '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>Assigned to {taskItem.assignee.user.name}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={onToggleExpanded}>
-                Close
-              </Button>
-              <Button size="sm" onClick={handleEditToggle}>
-                <Pencil className="mr-2 h-3.5 w-3.5" />
-                Edit
-              </Button>
-            </div>
-          </div>
+        <TableRow>
+          <TableCell colSpan={6}>
+            <div className="rounded-lg border border-border bg-muted/10 p-4">
+              <HStack align="start" justify="between" gap="sm">
+                <Stack gap="xs" style={{ minWidth: 0 }}>
+                  <HStack gap="xs" align="center">
+                    <Text weight="medium" size="sm">
+                      {taskItem.title}
+                    </Text>
+                    <span className="text-[10px] font-mono font-medium text-muted-foreground/70 uppercase tracking-wider">
+                      {getTaskIdShort(taskItem.id)}
+                    </span>
+                  </HStack>
+                  <HStack gap="sm" align="center" wrap="wrap">
+                    <Text size="xs" variant="muted">
+                      Created {formatShortDate(taskItem.createdAt)}
+                    </Text>
+                    {taskItem.assignee && (
+                      <HStack gap="xs" align="center">
+                        <Avatar size="xs">
+                          <AvatarImage
+                            src={taskItem.assignee.user.image || undefined}
+                            alt={taskItem.assignee.user.name}
+                          />
+                          <AvatarFallback>
+                            {taskItem.assignee.user.name?.charAt(0).toUpperCase() ?? '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Text size="xs" variant="muted">
+                          Assigned to {taskItem.assignee.user.name}
+                        </Text>
+                      </HStack>
+                    )}
+                  </HStack>
+                </Stack>
+                <HStack gap="xs" align="center">
+                  <Button size="sm" variant="outline" onClick={onToggleExpanded}>
+                    Close
+                  </Button>
+                  <Button size="sm" onClick={handleEditToggle}>
+                    <Edit className="mr-2 h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                </HStack>
+              </HStack>
 
-          <div className="mt-4 space-y-3">
-            {taskItem.description ? (
-              <div>
-                <div className="text-xs font-medium mb-1">Description</div>
-                <TaskItemDescriptionView
-                  description={taskItem.description}
-                  className="text-sm"
-                />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No description provided.
-              </p>
-            )}
-
-            <div className="flex flex-col gap-1.5 text-xs text-muted-foreground pt-3 border-t border-border">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span>Created by {taskItem.createdBy.user.name}</span>
-                {taskItem.updatedBy && taskItem.updatedBy.id !== taskItem.createdBy.id && (
-                  <span>• Updated by {taskItem.updatedBy.user.name}</span>
+              <Stack gap="sm" style={{ marginTop: '16px' }}>
+                {taskItem.description ? (
+                  <div>
+                    <Text size="xs" weight="medium">
+                      Description
+                    </Text>
+                    <TaskItemDescriptionView
+                      description={taskItem.description}
+                      className="text-sm"
+                    />
+                  </div>
+                ) : (
+                  <Text size="sm" variant="muted">
+                    No description provided.
+                  </Text>
                 )}
-              </div>
-              {taskItem.assignee && (
-                <div>
-                  <span>
-                    Assigned by{' '}
-                    {taskItem.updatedBy && taskItem.updatedBy.id !== taskItem.createdBy.id
-                      ? taskItem.updatedBy.user.name
-                      : taskItem.createdBy.user.name}
-                  </span>
+
+                <div className="flex flex-col gap-1.5 text-xs text-muted-foreground pt-3 border-t border-border">
+                  <HStack gap="xs" align="center" wrap="wrap">
+                    <Text size="xs" variant="muted">
+                      Created by {taskItem.createdBy.user.name}
+                    </Text>
+                    {taskItem.updatedBy && taskItem.updatedBy.id !== taskItem.createdBy.id && (
+                      <Text size="xs" variant="muted">
+                        • Updated by {taskItem.updatedBy.user.name}
+                      </Text>
+                    )}
+                  </HStack>
+                  {taskItem.assignee && (
+                    <div>
+                      <Text size="xs" variant="muted">
+                        Assigned by{' '}
+                        {taskItem.updatedBy && taskItem.updatedBy.id !== taskItem.createdBy.id
+                          ? taskItem.updatedBy.user.name
+                          : taskItem.createdBy.user.name}
+                      </Text>
+                    </div>
+                  )}
                 </div>
-              )}
+              </Stack>
             </div>
-          </div>
-        </div>
+          </TableCell>
+        </TableRow>
       )}
 
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Task</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this task? This cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleting}>
               Cancel
             </Button>
@@ -718,4 +716,3 @@ export function TaskItemItem({
     </>
   );
 }
-

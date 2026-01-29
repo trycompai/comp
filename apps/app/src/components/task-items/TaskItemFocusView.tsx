@@ -3,7 +3,6 @@
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
-import { Button } from '@comp/ui/button';
 import type {
   TaskItem,
   TaskItemEntityType,
@@ -13,18 +12,19 @@ import type {
   TaskItemSortOrder,
   TaskItemStatus,
 } from '@/hooks/use-task-items';
-import { ChevronsLeft, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { usePathname } from 'next/navigation';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@comp/ui/dialog';
+  Spinner,
+} from '@trycompai/design-system';
 import { TaskItemActivityTimeline } from './TaskItemActivityTimeline';
 import { TaskItemFocusSidebar } from './TaskItemFocusSidebar';
 import { getTaskIdShort } from './task-item-utils';
@@ -220,14 +220,14 @@ export function TaskItemFocusView({
 
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Task</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this task? This cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsDeleteOpen(false)}
@@ -238,7 +238,7 @@ export function TaskItemFocusView({
             <Button variant="destructive" onClick={handleDeleteTaskItem} disabled={isDeleting}>
               {isDeleting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner />
                   Deleting…
                 </>
               ) : (

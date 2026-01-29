@@ -1,9 +1,7 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Button, Spinner, Stack, Text } from '@trycompai/design-system';
 import { TaskItemList } from './TaskItemList';
-import { TaskItemPagination } from './TaskItemPagination';
 import type { TaskItem, TaskItemEntityType, TaskItemFilters, TaskItemSortBy, TaskItemSortOrder } from '@/hooks/use-task-items';
 
 interface TaskItemsContentProps {
@@ -57,71 +55,75 @@ export function TaskItemsContent({
   onClearFilters,
 }: TaskItemsContentProps) {
   return (
-    <div className="space-y-4">
+    <Stack gap="md">
       {taskItemsError && (
-        <div className="text-destructive text-sm">
+        <Text size="sm" variant="destructive">
           Failed to load tasks. Please try again.
-        </div>
+        </Text>
       )}
 
       {shouldShowEmptyState ? (
-        <div className="text-muted-foreground text-sm text-center py-8">
+        <Stack gap="sm" align="center">
           {hasActiveFilters ? (
-            <div className="flex flex-col items-center gap-2">
-              <p>No tasks match the current filters.</p>
+            <Stack gap="xs" align="center">
+              <Text size="sm" variant="muted">
+                No tasks match the current filters.
+              </Text>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClearFilters}
-                className="h-8"
               >
                 Clear filters
               </Button>
-            </div>
+            </Stack>
           ) : (
-            'No tasks yet. Use the plus button to create one.'
+            <Text size="sm" variant="muted">
+              No tasks yet. Use the plus button to create one.
+            </Text>
           )}
-        </div>
+        </Stack>
       ) : taskItems.length > 0 ? (
         <>
           <div className="relative">
             {taskItemsLoading && taskItems.length > 0 && (
               <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Loading...</span>
-                </div>
+                <Stack gap="xs" align="center">
+                  <Spinner />
+                  <Text size="xs" variant="muted">
+                    Loading...
+                  </Text>
+                </Stack>
               </div>
             )}
-            <TaskItemList
-              taskItems={taskItems}
-              entityId={entityId}
-              entityType={entityType}
-              page={page}
-              limit={limit}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              filters={filters}
-              selectedTaskItemId={selectedTaskItemId}
-              onSelectTaskItemId={onSelectTaskItemId}
-              onStatusOrPriorityChange={onStatusOrPriorityChange}
-            />
-          </div>
-          {paginationMeta && (
-            <TaskItemPagination
-              page={paginationMeta.page}
-              limit={paginationMeta.limit}
-              total={paginationMeta.total}
-              totalPages={paginationMeta.totalPages}
-              hasNextPage={paginationMeta.hasNextPage}
-              hasPrevPage={paginationMeta.hasPrevPage}
-              onPageChange={onPageChange}
-              onLimitChange={onLimitChange}
-            />
-          )}
+          <TaskItemList
+            taskItems={taskItems}
+            entityId={entityId}
+            entityType={entityType}
+            paginationMeta={
+              paginationMeta
+                ? {
+                    page: paginationMeta.page,
+                    limit: paginationMeta.limit,
+                    totalPages: paginationMeta.totalPages,
+                  }
+                : undefined
+            }
+            page={page}
+            limit={limit}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            filters={filters}
+            selectedTaskItemId={selectedTaskItemId}
+            onSelectTaskItemId={onSelectTaskItemId}
+            onStatusOrPriorityChange={onStatusOrPriorityChange}
+            onPageChange={onPageChange}
+            onLimitChange={onLimitChange}
+          />
+        </div>
         </>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 

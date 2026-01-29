@@ -7,10 +7,9 @@ import { createMentionExtension, type MentionUser } from '@comp/ui/editor';
 import { FileAttachment } from '@comp/ui/editor/extensions/file-attachment';
 import { useDebouncedCallback } from 'use-debounce';
 import { defaultExtensions } from '@comp/ui/editor/extensions';
-import { Textarea } from '@comp/ui/textarea';
+import { Button, Spinner } from '@trycompai/design-system';
 import { toast } from 'sonner';
-import { Paperclip, Loader2 } from 'lucide-react';
-import { Button } from '@comp/ui/button';
+import { Attachment } from '@trycompai/design-system/icons';
 import { api } from '@/lib/api-client';
 import { useParams } from 'next/navigation';
 
@@ -632,14 +631,9 @@ export function TaskRichDescriptionField({
             e.stopPropagation();
           }}
           disabled={disabled || isUploading}
-          className="h-7 w-7 pointer-events-auto"
           title={isUploading ? 'Uploading...' : 'Attach file'}
         >
-          {isUploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Paperclip className="h-4 w-4" />
-          )}
+          {isUploading ? <Spinner /> : <Attachment className="h-4 w-4" />}
         </Button>
         <input
           ref={fileInputRef}

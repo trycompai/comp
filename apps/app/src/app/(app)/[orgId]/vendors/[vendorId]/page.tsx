@@ -3,8 +3,8 @@ import type { VendorResponse } from '@/hooks/use-vendors';
 import { serverApi } from '@/lib/server-api-client';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { VendorDetailTabs } from './components/VendorDetailTabs';
 import { toAssigneeOptions } from '../utils/assignees';
+import { VendorDetailTabs } from './components/VendorDetailTabs';
 
 interface PageProps {
   params: Promise<{ vendorId: string; locale: string; orgId: string }>;

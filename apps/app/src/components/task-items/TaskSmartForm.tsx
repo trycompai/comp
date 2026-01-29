@@ -1,17 +1,7 @@
 'use client';
 
-import { useOptimisticTaskItems } from '@/hooks/use-task-items';
+import { SelectAssignee } from '@/components/SelectAssignee';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import { Button } from '@comp/ui/button';
-import { Input } from '@comp/ui/input';
-import { Label } from '@comp/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@comp/ui/select';
 import type {
   TaskItemEntityType,
   TaskItemFilters,
@@ -20,14 +10,28 @@ import type {
   TaskItemSortOrder,
   TaskItemStatus,
 } from '@/hooks/use-task-items';
-import { Loader2 } from 'lucide-react';
-import { useState, useMemo, useCallback } from 'react';
-import { toast } from 'sonner';
-import { SelectAssignee } from '@/components/SelectAssignee';
+import { useOptimisticTaskItems } from '@/hooks/use-task-items';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
+import type { JSONContent } from '@tiptap/react';
+import {
+  Button,
+  Grid,
+  HStack,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner,
+  Stack,
+  Text,
+} from '@trycompai/design-system';
+import { useCallback, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { TaskRichDescriptionField } from './TaskRichDescriptionField';
 import { useTaskItemAttachmentUpload } from './hooks/use-task-item-attachment-upload';
-import type { JSONContent } from '@tiptap/react';
 
 interface TaskSmartFormProps {
   entityId: string;
@@ -79,19 +83,11 @@ export function TaskSmartForm({
 }: TaskSmartFormProps) {
   const [title, setTitle] = useState(initialValues?.title || '');
   const [description, setDescription] = useState<JSONContent | null>(
-    typeof initialValues?.description === 'object'
-      ? initialValues.description
-      : null,
+    typeof initialValues?.description === 'object' ? initialValues.description : null,
   );
-  const [status, setStatus] = useState<TaskItemStatus>(
-    initialValues?.status || 'todo',
-  );
-  const [priority, setPriority] = useState<TaskItemPriority>(
-    initialValues?.priority || 'medium',
-  );
-  const [assigneeId, setAssigneeId] = useState<string | null>(
-    initialValues?.assigneeId ?? null,
-  );
+  const [status, setStatus] = useState<TaskItemStatus>(initialValues?.status || 'todo');
+  const [priority, setPriority] = useState<TaskItemPriority>(initialValues?.priority || 'medium');
+  const [assigneeId, setAssigneeId] = useState<string | null>(initialValues?.assigneeId ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { optimisticCreate, optimisticUpdate } = useOptimisticTaskItems(
@@ -179,9 +175,7 @@ export function TaskSmartForm({
 
     try {
       // Convert description JSON to string for API
-      const descriptionText = description
-        ? JSON.stringify(description)
-        : undefined;
+      const descriptionText = description ? JSON.stringify(description) : undefined;
 
       if (mode === 'create') {
         await optimisticCreate({
@@ -210,9 +204,7 @@ export function TaskSmartForm({
       onSuccess?.();
     } catch (error) {
       console.error('Error creating task item:', error);
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to create task',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to create task');
     } finally {
       setIsSubmitting(false);
     }
@@ -231,123 +223,117 @@ export function TaskSmartForm({
   };
 
   return (
-    <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="task-title" className="text-sm font-medium">
-          Title <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="task-title"
-          placeholder="Enter task title..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          disabled={isSubmitting}
-          onKeyDown={handleKeyDown}
-          className="bg-background"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="task-description" className="text-sm font-medium">
-          Description
-        </Label>
-        <TaskRichDescriptionField
-          value={description}
-          onChange={setDescription}
-          onFileUpload={handleFileUpload}
-          members={mentionMembers}
-          disabled={isSubmitting}
-          placeholder="Enter task description... Mention users with @ or attach files"
-          entityId={entityId}
-          entityType={entityType}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="task-status" className="text-sm font-medium">
-            Status
+    <div className="rounded-lg border border-border bg-muted/10 p-4">
+      <Stack gap="md">
+        <Stack gap="xs">
+          <Label htmlFor="task-title">
+            Title{' '}
+            <Text as="span" size="sm" variant="destructive">
+              *
+            </Text>
           </Label>
-          <Select
-            value={status}
-            onValueChange={(value) => setStatus(value as TaskItemStatus)}
-          >
-            <SelectTrigger id="task-status" className="bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="task-priority" className="text-sm font-medium">
-            Priority
-          </Label>
-          <Select
-            value={priority}
-            onValueChange={(value) => setPriority(value as TaskItemPriority)}
-          >
-            <SelectTrigger id="task-priority" className="bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PRIORITY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {assignableMembers && assignableMembers.length > 0 && (
-        <div className="space-y-2">
-          <SelectAssignee
-            assigneeId={assigneeId}
-            assignees={assignableMembers}
-            onAssigneeChange={setAssigneeId}
+          <Input
+            id="task-title"
+            placeholder="Enter task title..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             disabled={isSubmitting}
-            withTitle={true}
+            onKeyDown={handleKeyDown}
           />
-        </div>
-      )}
+        </Stack>
 
-      <div className="flex justify-end gap-2">
-        {onCancel && (
+        <Stack gap="xs">
+          <Label htmlFor="task-description">Description</Label>
+          <TaskRichDescriptionField
+            value={description}
+            onChange={setDescription}
+            onFileUpload={handleFileUpload}
+            members={mentionMembers}
+            disabled={isSubmitting}
+            placeholder="Enter task description... Mention users with @ or attach files"
+            entityId={entityId}
+            entityType={entityType}
+          />
+        </Stack>
+
+        <Grid cols={{ base: '1', sm: '2' }} gap="4">
+          <Stack gap="xs">
+            <Label htmlFor="task-status">Status</Label>
+            <Select value={status} onValueChange={(value) => setStatus(value as TaskItemStatus)}>
+              <SelectTrigger id="task-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
+
+          <Stack gap="xs">
+            <Label htmlFor="task-priority">Priority</Label>
+            <Select
+              value={priority}
+              onValueChange={(value) => setPriority(value as TaskItemPriority)}
+            >
+              <SelectTrigger id="task-priority">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PRIORITY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Stack>
+        </Grid>
+
+        {assignableMembers && assignableMembers.length > 0 && (
+          <Stack gap="xs">
+            <SelectAssignee
+              assigneeId={assigneeId}
+              assignees={assignableMembers}
+              onAssigneeChange={setAssigneeId}
+              disabled={isSubmitting}
+              withTitle={true}
+            />
+          </Stack>
+        )}
+
+        <HStack justify="end" gap="xs">
+          {onCancel && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting || isUploading}
+            >
+              Cancel
+            </Button>
+          )}
           <Button
             size="sm"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting || isUploading}
-            className="h-8 px-3"
+            onClick={handleSubmit}
+            disabled={isSubmitting || isUploading || !title.trim()}
           >
-            Cancel
+            {isSubmitting ? (
+              <>
+                <Spinner />
+                {mode === 'create' ? 'Creating...' : 'Updating...'}
+              </>
+            ) : mode === 'create' ? (
+              'Create Task'
+            ) : (
+              'Update Task'
+            )}
           </Button>
-        )}
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={isSubmitting || isUploading || !title.trim()}
-          className="h-8 px-3"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-              {mode === 'create' ? 'Creating...' : 'Updating...'}
-            </>
-          ) : (
-            mode === 'create' ? 'Create Task' : 'Update Task'
-          )}
-        </Button>
-      </div>
+        </HStack>
+      </Stack>
     </div>
   );
 }
-

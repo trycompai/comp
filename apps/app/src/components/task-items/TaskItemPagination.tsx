@@ -1,8 +1,16 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Button,
+  HStack,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Text,
+} from '@trycompai/design-system';
+import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 
 interface TaskItemPaginationProps {
   page: number;
@@ -28,13 +36,15 @@ export function TaskItemPagination({
   if (total === 0) return null;
 
   return (
-    <div className="flex items-center justify-between border-t border-border pt-4">
-      <div className="text-muted-foreground flex items-center gap-4 text-sm">
-        <span className="hidden sm:inline">{total} {total === 1 ? 'task' : 'tasks'}</span>
-        <div className="hidden items-center gap-2 sm:flex">
+    <HStack justify="between" align="center" wrap="wrap" gap="sm">
+      <HStack gap="sm" align="center" wrap="wrap">
+        <Text size="sm" variant="muted">
+          {total} {total === 1 ? 'task' : 'tasks'}
+        </Text>
+        <HStack gap="xs" align="center">
           <Select value={limit.toString()} onValueChange={(value) => onLimitChange(Number(value))}>
-            <SelectTrigger className="h-8 w-20">
-              <SelectValue placeholder={limit} />
+            <SelectTrigger size="sm">
+              <SelectValue placeholder={`${limit}`} />
             </SelectTrigger>
             <SelectContent side="top">
               {[5, 10, 20, 50].map((size) => (
@@ -44,11 +54,13 @@ export function TaskItemPagination({
               ))}
             </SelectContent>
           </Select>
-          <span>per page</span>
-        </div>
-      </div>
+          <Text size="sm" variant="muted">
+            per page
+          </Text>
+        </HStack>
+      </HStack>
 
-      <div className="flex items-center gap-2">
+      <HStack gap="xs" align="center">
         <Button
           variant="outline"
           size="sm"
@@ -57,9 +69,9 @@ export function TaskItemPagination({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="text-sm font-medium">
+        <Text size="sm" weight="medium">
           Page {page} of {totalPages}
-        </div>
+        </Text>
         <Button
           variant="outline"
           size="sm"
@@ -68,8 +80,8 @@ export function TaskItemPagination({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
-      </div>
-    </div>
+      </HStack>
+    </HStack>
   );
 }
 

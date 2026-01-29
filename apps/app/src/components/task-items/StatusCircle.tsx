@@ -2,12 +2,7 @@
 
 import type { TaskItemStatus } from '@/hooks/use-task-items';
 import { cn } from '@/lib/utils';
-import {
-  Clock,
-  CheckCircle2,
-  CircleDot,
-  Ban,
-} from 'lucide-react';
+import { CheckmarkFilled, DotMark, Misuse, Time } from '@trycompai/design-system/icons';
 
 interface StatusCircleProps {
   status: TaskItemStatus;
@@ -28,7 +23,7 @@ export function StatusCircle({ status, className }: StatusCircleProps) {
     switch (status) {
       case 'done':
         return {
-          icon: CheckCircle2,
+          icon: CheckmarkFilled,
           iconColor: 'text-white',
           bgColor: 'fill-green-500',
           strokeColor: 'stroke-green-500',
@@ -43,7 +38,7 @@ export function StatusCircle({ status, className }: StatusCircleProps) {
         };
       case 'in_review':
         return {
-          icon: Clock,
+          icon: Time,
           iconColor: 'text-white',
           bgColor: 'fill-green-500',
           strokeColor: 'stroke-green-500',
@@ -51,7 +46,7 @@ export function StatusCircle({ status, className }: StatusCircleProps) {
         };
       case 'canceled':
         return {
-          icon: Ban,
+          icon: Misuse,
           iconColor: 'text-white',
           bgColor: 'fill-slate-500',
           strokeColor: 'stroke-slate-500',
@@ -59,7 +54,7 @@ export function StatusCircle({ status, className }: StatusCircleProps) {
         };
       default: // todo
         return {
-          icon: CircleDot,
+          icon: DotMark,
           iconColor: 'text-slate-400',
           bgColor: 'fill-transparent',
           strokeColor: 'stroke-slate-400',

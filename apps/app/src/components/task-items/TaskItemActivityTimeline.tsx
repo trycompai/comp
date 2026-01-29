@@ -1,12 +1,11 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Circle, Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage, Button, HStack, Spinner, Stack, Text } from '@trycompai/design-system';
+import { DotMark } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskItem } from '@/hooks/use-task-items';
 import { useTaskItemActivity } from './hooks/use-task-item-activity';
 import { useEffect, useState, useMemo } from 'react';
-import { Button } from '@comp/ui/button';
 
 interface TaskItemActivityTimelineProps {
   taskItem: TaskItem;
@@ -38,54 +37,58 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
   }, [activity, showAll]);
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Activity</h3>
-        </div>
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      </div>
+      <Stack gap="md">
+        <Text size="sm" weight="semibold">
+          Activity
+        </Text>
+        <HStack justify="center">
+          <Spinner />
+        </HStack>
+      </Stack>
     );
   }
 
   const renderActivityItem = (log: any) => (
-    <div key={log.id} className="flex items-start gap-3 relative">
-      <Avatar className="h-6 w-6 border border-border relative z-10 bg-background">
+    <HStack key={log.id} gap="sm" align="start">
+      <Avatar size="sm">
         <AvatarImage
           src={log.user.image || undefined}
           alt={log.user.name || log.user.email}
         />
-        <AvatarFallback className="text-[10px] bg-muted">
+        <AvatarFallback>
           {(log.user.name || log.user.email)?.charAt(0).toUpperCase() ?? '?'}
         </AvatarFallback>
       </Avatar>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm">
-          <span className="font-medium">{log.user.name || log.user.email}</span>{' '}
+      <Stack gap="xs">
+        <Text size="sm">
+          <Text as="span" weight="medium">
+            {log.user.name || log.user.email}
+          </Text>{' '}
           {log.description}
-        </p>
-        <p className="text-xs text-muted-foreground">
+        </Text>
+        <Text size="xs" variant="muted">
           {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
-        </p>
-      </div>
-    </div>
+        </Text>
+      </Stack>
+    </HStack>
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Activity</h3>
-      </div>
+    <Stack gap="md">
+      <Text size="sm" weight="semibold">
+        Activity
+      </Text>
       <div className="relative">
         {/* Timeline line */}
         {activity.length > 0 && (
         <div className="absolute left-3 top-6 bottom-0 w-px bg-border" />
         )}
         
-        <div className="space-y-4">
+        <Stack gap="md">
           {activity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity yet</p>
+            <Text size="sm" variant="muted">
+              No activity yet
+            </Text>
           ) : Array.isArray(displayedActivity) ? (
             // Show all items
             displayedActivity.map(renderActivityItem)
@@ -94,26 +97,25 @@ export function TaskItemActivityTimeline({ taskItem, onActivityLoaded }: TaskIte
             <>
               {displayedActivity.firstItems.map(renderActivityItem)}
               
-              <div className="flex items-center gap-3 relative">
-                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center relative z-10">
-                  <Circle className="h-2 w-2 text-muted-foreground fill-current" />
-              </div>
+              <HStack gap="sm" align="center">
+                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                  <DotMark className="h-2 w-2 text-muted-foreground" />
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAll(true)}
-                  className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Show {displayedActivity.hiddenCount} more {displayedActivity.hiddenCount === 1 ? 'activity' : 'activities'}
                 </Button>
-              </div>
+              </HStack>
 
               {displayedActivity.lastItems.map(renderActivityItem)}
             </>
           )}
-        </div>
+        </Stack>
       </div>
-    </div>
+    </Stack>
   );
 }
 
