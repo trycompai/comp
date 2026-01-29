@@ -9,6 +9,7 @@ export const awsManifest: IntegrationManifest = {
   logoUrl: 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   docsUrl:
     'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html',
+  supportsMultipleConnections: true,
   isActive: true,
 
   auth: {

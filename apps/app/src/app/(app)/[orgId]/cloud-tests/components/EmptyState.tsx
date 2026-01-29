@@ -1,12 +1,14 @@
 'use client';
 
+import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
+import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { ArrowLeft, CheckCircle2, Cloud, ExternalLink, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { connectCloudAction } from '../actions/connect-cloud';
 import { validateAwsCredentialsAction } from '../actions/validate-aws-credentials';
@@ -52,12 +54,18 @@ interface ProviderFieldBase {
 }
 
 interface ProviderFieldWithOptions extends ProviderFieldBase {
-  type?: 'password' | 'textarea' | 'select';
+  type?: 'password' | 'textarea' | 'select' | 'multi-select';
   options?: { value: string; label: string }[];
 }
 
 const PROVIDER_FIELDS: Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[]> = {
   aws: [
+    {
+      id: 'connectionName',
+      label: 'Connection Name',
+      placeholder: 'Production Account',
+      helpText: 'A friendly name to identify this AWS account',
+    },
     {
       id: 'access_key_id',
       label: 'Access Key ID',
@@ -125,18 +133,38 @@ interface EmptyStateProps {
   onBack?: () => void;
   connectedProviders?: string[];
   onConnected?: (trigger?: TriggerInfo) => void;
+  initialProvider?: CloudProvider;
 }
 
-export function EmptyState({ onBack, connectedProviders = [], onConnected }: EmptyStateProps) {
-  const [step, setStep] = useState<Step>('choose');
-  const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(null);
-  const [credentials, setCredentials] = useState<Record<string, string>>({});
+export function EmptyState({
+  onBack,
+  connectedProviders = [],
+  onConnected,
+  initialProvider = null,
+}: EmptyStateProps) {
+  const initialIsAws = initialProvider === 'aws';
+  const [step, setStep] = useState<Step>(initialProvider && !initialIsAws ? 'connect' : 'choose');
+  const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(
+    initialProvider && !initialIsAws ? initialProvider : null,
+  );
+  const [showConnectDialog, setShowConnectDialog] = useState(initialIsAws);
+  const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isConnecting, setIsConnecting] = useState(false);
   const [awsRegions, setAwsRegions] = useState<{ value: string; label: string }[]>([]);
   const [awsAccountId, setAwsAccountId] = useState<string>('');
 
+  useEffect(() => {
+    if (initialProvider === 'aws') {
+      setShowConnectDialog(true);
+    }
+  }, [initialProvider]);
+
   const handleProviderSelect = (providerId: CloudProvider) => {
+    if (providerId === 'aws') {
+      setShowConnectDialog(true);
+      return;
+    }
     setSelectedProvider(providerId);
     setStep('connect');
     setCredentials({});
@@ -154,7 +182,7 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
     }
   };
 
-  const handleFieldChange = (fieldId: string, value: string) => {
+  const handleFieldChange = (fieldId: string, value: string | string[]) => {
     setCredentials((prev) => ({ ...prev, [fieldId]: value }));
     if (errors[fieldId]) {
       setErrors((prev) => {
@@ -171,7 +199,12 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
     const newErrors: Record<string, string> = {};
 
     fields.forEach((field) => {
-      if (!credentials[field.id]?.trim()) {
+      const value = credentials[field.id];
+      const isMissing =
+        field.type === 'multi-select'
+          ? !Array.isArray(value) || value.length === 0
+          : !String(value ?? '').trim();
+      if (isMissing) {
         newErrors[field.id] = 'This field is required';
       }
     });
@@ -181,7 +214,12 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
   };
 
   const handleValidateAws = async () => {
-    if (!credentials.access_key_id || !credentials.secret_access_key) {
+    if (
+      typeof credentials.access_key_id !== 'string' ||
+      typeof credentials.secret_access_key !== 'string' ||
+      !credentials.access_key_id ||
+      !credentials.secret_access_key
+    ) {
       setErrors({
         access_key_id: !credentials.access_key_id ? 'Required' : '',
         secret_access_key: !credentials.secret_access_key ? 'Required' : '',
@@ -197,11 +235,16 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
         secretAccessKey: credentials.secret_access_key,
       });
 
-      if (result?.data?.success && result.data.regions) {
-        setAwsRegions(result.data.regions);
-        setAwsAccountId(result.data.accountId || '');
+      const data = result?.data;
+      if (data?.success && data.regions) {
+        setAwsRegions(data.regions);
+        setAwsAccountId(data.accountId || '');
+        setCredentials((prev) => ({
+          ...prev,
+          accountId: data.accountId || '',
+        }));
         setStep('validate-aws');
-        toast.success('Credentials validated! Now select your region.');
+        toast.success('Credentials validated! Now select your regions.');
       } else {
         toast.error(result?.data?.error || 'Failed to validate credentials');
       }
@@ -216,6 +259,13 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
   const handleConnect = async () => {
     if (!validateFields() || !selectedProvider) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+    if (
+      selectedProvider === 'aws' &&
+      (!Array.isArray(credentials.regions) || credentials.regions.length === 0)
+    ) {
+      toast.error('Please select at least one AWS region');
       return;
     }
 
@@ -288,32 +338,50 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
             <CardContent className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="region" className="text-sm font-medium">
-                  Region
+                  Regions
                 </Label>
-                <Select
-                  value={credentials.region || ''}
-                  onValueChange={(value) => handleFieldChange('region', value)}
-                  disabled={isConnecting}
-                >
-                  <SelectTrigger className="h-11 rounded-lg transition-colors focus-visible:ring-primary">
-                    <SelectValue placeholder="Select your AWS region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {awsRegions.map((region) => (
-                      <SelectItem key={region.value} value={region.value}>
-                        {region.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultipleSelector
+                  value={
+                    Array.isArray(credentials.regions)
+                      ? credentials.regions.map((region) => ({
+                          value: region,
+                          label: awsRegions.find((opt) => opt.value === region)?.label || region,
+                        }))
+                      : []
+                  }
+                  onChange={(selected) =>
+                    handleFieldChange(
+                      'regions',
+                      selected.map((item) => item.value),
+                    )
+                  }
+                  defaultOptions={awsRegions.map((region) => ({
+                    value: region.value,
+                    label: region.label,
+                  }))}
+                  options={awsRegions.map((region) => ({
+                    value: region.value,
+                    label: region.label,
+                  }))}
+                  placeholder="Select one or more regions"
+                  emptyIndicator={
+                    <p className="text-center text-sm text-muted-foreground">
+                      No regions available
+                    </p>
+                  }
+                />
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  Choose the region where your resources are located
+                  Choose one or more regions where your resources are located
                 </p>
               </div>
 
               <Button
                 onClick={handleConnect}
-                disabled={isConnecting || !credentials.region}
+                disabled={
+                  isConnecting ||
+                  !Array.isArray(credentials.regions) ||
+                  credentials.regions.length === 0
+                }
                 className="mt-6 h-11 w-full rounded-lg text-base font-medium"
                 size="lg"
               >
@@ -337,6 +405,19 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
   if (step === 'choose') {
     return (
       <div className="container mx-auto flex min-h-[600px] w-full flex-col items-center justify-center gap-8 p-4 md:p-6 lg:p-8">
+        {showConnectDialog && (
+          <ConnectIntegrationDialog
+            open={showConnectDialog}
+            onOpenChange={(open) => setShowConnectDialog(open)}
+            integrationId="aws"
+            integrationName="Amazon Web Services"
+            integrationLogoUrl="https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ"
+            onConnected={() => {
+              setShowConnectDialog(false);
+              onConnected?.();
+            }}
+          />
+        )}
         {onBack && (
           <div className="w-full max-w-4xl">
             <Button variant="ghost" size="sm" onClick={onBack}>
@@ -370,36 +451,36 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
         </div>
 
         <div className="grid w-full max-w-4xl gap-4 md:grid-cols-3">
-          {CLOUD_PROVIDERS.filter((cp) => !connectedProviders.includes(cp.id)).map(
-            (cloudProvider) => (
-              <Card
-                key={cloudProvider.id}
-                className="group relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] hover:border-primary hover:shadow-xl"
-                onClick={() => handleProviderSelect(cloudProvider.id)}
-              >
+          {CLOUD_PROVIDERS.filter(
+            (cp) => cp.id === 'aws' || !connectedProviders.includes(cp.id),
+          ).map((cloudProvider) => (
+            <Card
+              key={cloudProvider.id}
+              className="group relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] hover:border-primary hover:shadow-xl"
+              onClick={() => handleProviderSelect(cloudProvider.id)}
+            >
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${cloudProvider.color} opacity-0 transition-opacity group-hover:opacity-5`}
+              />
+              <CardHeader className="relative space-y-4 pb-4">
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br ${cloudProvider.color} opacity-0 transition-opacity group-hover:opacity-5`}
-                />
-                <CardHeader className="relative space-y-4 pb-4">
-                  <div
-                    className={`bg-gradient-to-br ${cloudProvider.color} w-fit rounded-lg p-2.5 shadow-sm`}
-                  >
-                    <img
-                      src={cloudProvider.logoUrl}
-                      alt={`${cloudProvider.shortName} logo`}
-                      className="h-10 w-10 object-contain"
-                    />
-                  </div>
-                  <CardTitle className="text-lg font-semibold">{cloudProvider.shortName}</CardTitle>
-                </CardHeader>
-                <CardContent className="relative pb-6">
-                  <CardDescription className="text-sm leading-relaxed">
-                    {cloudProvider.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ),
-          )}
+                  className={`bg-gradient-to-br ${cloudProvider.color} w-fit rounded-lg p-2.5 shadow-sm`}
+                >
+                  <img
+                    src={cloudProvider.logoUrl}
+                    alt={`${cloudProvider.shortName} logo`}
+                    className="h-10 w-10 object-contain"
+                  />
+                </div>
+                <CardTitle className="text-lg font-semibold">{cloudProvider.shortName}</CardTitle>
+              </CardHeader>
+              <CardContent className="relative pb-6">
+                <CardDescription className="text-sm leading-relaxed">
+                  {cloudProvider.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -454,64 +535,74 @@ export function EmptyState({ onBack, connectedProviders = [], onConnected }: Emp
             </CardHeader>
 
             <CardContent className="space-y-5">
-              {fields.map((field) => (
-                <div key={field.id} className="space-y-2">
-                  <Label htmlFor={field.id} className="text-sm font-medium">
-                    {field.label}
-                  </Label>
-                  {field.type === 'select' && 'options' in field && field.options ? (
-                    <Select
-                      value={credentials[field.id] || ''}
-                      onValueChange={(value) => handleFieldChange(field.id, value)}
-                      disabled={isConnecting}
-                    >
-                      <SelectTrigger
-                        className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
+              {fields.map((field) => {
+                const stringValue: string =
+                  typeof credentials[field.id] === 'string'
+                    ? (credentials[field.id] as string)
+                    : '';
+                const options = field.type === 'select' ? (field.options ?? []) : [];
+
+                return (
+                  <div key={field.id} className="space-y-2">
+                    <Label htmlFor={field.id} className="text-sm font-medium">
+                      {field.label}
+                    </Label>
+                    {field.type === 'select' && options.length > 0 ? (
+                      <Select
+                        value={stringValue}
+                        onValueChange={(value) => handleFieldChange(field.id, value)}
+                        disabled={isConnecting}
                       >
-                        <SelectValue placeholder="Select a region" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : field.type === 'textarea' ? (
-                    <textarea
-                      id={field.id}
-                      placeholder={field.placeholder}
-                      value={credentials[field.id] || ''}
-                      onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                      disabled={isConnecting}
-                      className={`bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-primary flex min-h-[100px] w-full rounded-lg border px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : ''
-                      }`}
-                    />
-                  ) : (
-                    <Input
-                      id={field.id}
-                      type={field.type || 'text'}
-                      placeholder={field.placeholder}
-                      value={credentials[field.id] || ''}
-                      onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                      disabled={isConnecting}
-                      className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
-                    />
-                  )}
-                  {errors[field.id] && (
-                    <p className="text-destructive flex items-center gap-1 text-xs font-medium">
-                      {errors[field.id]}
-                    </p>
-                  )}
-                  {!errors[field.id] && field.helpText && (
-                    <p className="text-muted-foreground text-xs leading-relaxed">
-                      {field.helpText}
-                    </p>
-                  )}
-                </div>
-              ))}
+                        <SelectTrigger
+                          className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
+                        >
+                          <SelectValue placeholder="Select a region" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {options.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : field.type === 'textarea' ? (
+                      <textarea
+                        id={field.id}
+                        placeholder={field.placeholder}
+                        value={stringValue}
+                        onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                        disabled={isConnecting}
+                        className={`bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-primary flex min-h-[100px] w-full rounded-lg border px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          errors[field.id]
+                            ? 'border-destructive focus-visible:ring-destructive'
+                            : ''
+                        }`}
+                      />
+                    ) : (
+                      <Input
+                        id={field.id}
+                        type={field.type || 'text'}
+                        placeholder={field.placeholder}
+                        value={stringValue}
+                        onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                        disabled={isConnecting}
+                        className={`h-11 rounded-lg transition-colors ${errors[field.id] ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
+                      />
+                    )}
+                    {errors[field.id] && (
+                      <p className="text-destructive flex items-center gap-1 text-xs font-medium">
+                        {errors[field.id]}
+                      </p>
+                    )}
+                    {!errors[field.id] && field.helpText && (
+                      <p className="text-muted-foreground text-xs leading-relaxed">
+                        {field.helpText}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
 
               <Button
                 onClick={selectedProvider === 'aws' ? handleValidateAws : handleConnect}

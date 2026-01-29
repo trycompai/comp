@@ -8485,5 +8485,338 @@
     "identifier": "",
     "createdAt": "2025-10-04 14:58:04.631",
     "updatedAt": "2025-10-04 14:58:04.631"
+  },
+  {
+    "id": "frk_rq_691e2975371cc4f5819c40e1",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Understanding the organization and its context",
+    "description": "Determine internal and external issues relevant to purpose, strategic direction and ability to achieve intended QMS results.",
+    "identifier": "QMS-4.1-01",
+    "createdAt": "2025-11-19 20:32:53.190",
+    "updatedAt": "2025-11-19 20:32:53.190"
+  },
+  {
+    "id": "frk_rq_691e298345d5ab8c17c49be0",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Understanding needs and expectations of interested parties",
+    "description": "Identify relevant interested parties (customers, regulators, partners, employees, investors) and their applicable requirements.",
+    "identifier": "QMS-4.2-01",
+    "createdAt": "2025-11-19 20:33:06.975",
+    "updatedAt": "2025-11-19 20:33:06.975"
+  },
+  {
+    "id": "frk_rq_691e2990f0ee968efe297e27",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Scope of the QMS",
+    "description": "Determine and document the scope of the QMS including products, services, locations and exclusions.",
+    "identifier": "QMS-4.3-01",
+    "createdAt": "2025-11-19 20:33:19.678",
+    "updatedAt": "2025-11-19 20:33:19.678"
+  },
+  {
+    "id": "frk_rq_691e29ac50a133923115a5e5",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "QMS and its processes",
+    "description": "Establish, implement, maintain and continually improve the QMS, including processes, interactions, criteria, methods and resources.",
+    "identifier": "QMS-4.4-01",
+    "createdAt": "2025-11-19 20:33:48.234",
+    "updatedAt": "2025-11-19 20:33:48.234"
+  },
+  {
+    "id": "frk_rq_691e29b816512da0f3f146fc",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Leadership and commitment",
+    "description": "Top management demonstrates leadership and commitment to the QMS and customer focus.",
+    "identifier": "QMS-5.1-01",
+    "createdAt": "2025-11-19 20:33:59.646",
+    "updatedAt": "2025-11-19 20:33:59.646"
+  },
+  {
+    "id": "frk_rq_691e29c635f28a1b3ca06e04",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Quality policy – establishment",
+    "description": "Establish a quality policy appropriate to purpose and context, supporting strategic direction and continual improvement.",
+    "identifier": "QMS-5.2-01",
+    "createdAt": "2025-11-19 20:34:13.857",
+    "updatedAt": "2025-11-19 20:34:13.857"
+  },
+  {
+    "id": "frk_rq_691e29d304e34e75472399c0",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Quality policy – communication",
+    "description": "Ensure the quality policy is communicated, understood, applied and available to interested parties.",
+    "identifier": "QMS-5.2-02",
+    "createdAt": "2025-11-19 20:34:26.573",
+    "updatedAt": "2025-11-19 20:34:26.573"
+  },
+  {
+    "id": "frk_rq_691e29e332d64b8d3c2422f0",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Organizational roles,responsibilities and authorities",
+    "description": "Assign and communicate responsibilities and authorities for QMS roles,including customer satisfaction and conformity.",
+    "identifier": "QMS-5.3-01",
+    "createdAt": "2025-11-19 20:34:42.649",
+    "updatedAt": "2025-11-19 20:34:42.649"
+  },
+  {
+    "id": "frk_rq_691e29fb54cbff615eb60b2e",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Actions to address risks and opportunities",
+    "description": "Determine risks and opportunities that need to be addressed to ensure the QMS can achieve intended results.",
+    "identifier": "QMS-6.1-01",
+    "createdAt": "2025-11-19 20:35:07.251",
+    "updatedAt": "2025-11-19 20:35:07.251"
+  },
+  {
+    "id": "frk_rq_691e2a100561ff9e05d5ff53",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Quality objectives",
+    "description": "Establish measurable quality objectives at relevant functions, levels and processes, consistent with the quality policy.",
+    "identifier": "QMS-6.2-01",
+    "createdAt": "2025-11-19 20:35:28.399",
+    "updatedAt": "2025-11-19 20:35:28.399"
+  },
+  {
+    "id": "frk_rq_691e2a2482dc6e86e3ece153",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Planning to achieve quality objectives",
+    "description": "Plan what will be done, resources, responsible persons, timelines and methods to achieve quality objectives.",
+    "identifier": "QMS-6.2-02",
+    "createdAt": "2025-11-19 20:35:47.582",
+    "updatedAt": "2025-11-19 20:35:47.582"
+  },
+  {
+    "id": "frk_rq_691e2a337ec3e5430de8c93e",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Planning of changes",
+    "description": "Carry out changes to the QMS in a planned manner, considering purpose, consequences, resources and integrity of the system.",
+    "identifier": "QMS-6.3-01",
+    "createdAt": "2025-11-19 20:36:02.548",
+    "updatedAt": "2025-11-19 20:36:02.548"
+  },
+  {
+    "id": "frk_rq_691e2a4cc15cc97073e4201e",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Resources, people, infrastructure and environment",
+    "description": "Determine and provide resources, people, infrastructure and work environment necessary for QMS and process operation.",
+    "identifier": "QMS-7.1-01",
+    "createdAt": "2025-11-19 20:36:27.985",
+    "updatedAt": "2025-11-19 20:36:27.985"
+  },
+  {
+    "id": "frk_rq_691e2a59ca938b59a68c6db4",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Monitoring and measuring resources",
+    "description": "Ensure suitability and maintenance of monitoring and measuring resources (including tools used to assess service and model performance).",
+    "identifier": "QMS-7.1-02",
+    "createdAt": "2025-11-19 20:36:41.233",
+    "updatedAt": "2025-11-19 20:36:41.233"
+  },
+  {
+    "id": "frk_rq_691e2a67b3ba9f95f98c9405",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Organizational knowledge",
+    "description": "Determine and maintain knowledge necessary for process operation and conformity of services.",
+    "identifier": "QMS-7.1-03",
+    "createdAt": "2025-11-19 20:36:55.382",
+    "updatedAt": "2025-11-19 20:36:55.382"
+  },
+  {
+    "id": "frk_rq_691e2a7d304da2e3caea0b16",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Competence",
+    "description": "Determine required competence, ensure personnel are competent, and retain appropriate evidence.",
+    "identifier": "QMS-7.2-01",
+    "createdAt": "2025-11-19 20:37:17.097",
+    "updatedAt": "2025-11-19 20:37:17.097"
+  },
+  {
+    "id": "frk_rq_691e2a8d6006a5f098f3e5ce",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Awareness",
+    "description": "Ensure persons are aware of quality policy, objectives, their contribution and implications of nonconformities.",
+    "identifier": "QMS-7.3-01",
+    "createdAt": "2025-11-19 20:37:32.668",
+    "updatedAt": "2025-11-19 20:37:32.668"
+  },
+  {
+    "id": "frk_rq_691e2a9fcb16d239bd1b9e3c",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Communication",
+    "description": "Determine internal and external QMS-related communications (what, when, with whom, how).",
+    "identifier": "QMS-7.4-01",
+    "createdAt": "2025-11-19 20:37:50.549",
+    "updatedAt": "2025-11-19 20:37:50.549"
+  },
+  {
+    "id": "frk_rq_691e2aab4fefd371003a6a80",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Documented information",
+    "description": "Create, update and control documented information required by the QMS and ISO 9001.",
+    "identifier": "QMS-7.5-01",
+    "createdAt": "2025-11-19 20:38:03.392",
+    "updatedAt": "2025-11-19 20:38:03.392"
+  },
+  {
+    "id": "frk_rq_691e2ae85502ef593493be0e",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Operational planning and control",
+    "description": "Plan, implement and control processes to meet requirements, including criteria, resources and control of changes and outsourced processes.",
+    "identifier": "QMS-8.1-01",
+    "createdAt": "2025-11-19 20:39:03.867",
+    "updatedAt": "2025-11-19 20:39:03.867"
+  },
+  {
+    "id": "frk_rq_691e2afcb2bff2b2f12e4146",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Customer communication and requirements determination",
+    "description": "Ensure effective communication with customers and clear determination of product and service requirements.",
+    "identifier": "QMS-8.2-01",
+    "createdAt": "2025-11-19 20:39:23.540",
+    "updatedAt": "2025-11-19 20:39:23.540"
+  },
+  {
+    "id": "frk_rq_691e2b07fdf76ba7030122a1",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Review of requirements for products and services",
+    "description": "Review customer requirements and ensure capability to meet them before committing.",
+    "identifier": "QMS-8.2-02",
+    "createdAt": "2025-11-19 20:39:34.840",
+    "updatedAt": "2025-11-19 20:39:34.840"
+  },
+  {
+    "id": "frk_rq_691e2b28d52c2ff5636336c9",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Design and development planning, inputs and controls",
+    "description": "Plan and control design and development of products and services, including stages, inputs, reviews, verification and validation.",
+    "identifier": "QMS-8.3-01",
+    "createdAt": "2025-11-19 20:40:07.786",
+    "updatedAt": "2025-11-19 20:40:07.786"
+  },
+  {
+    "id": "frk_rq_691e2b3d69c5caed0e4867bf",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Design outputs and verification/validation",
+    "description": "Ensure design outputs meet input requirements and retain evidence of verification and validation.",
+    "identifier": "QMS-8.3-02",
+    "createdAt": "2025-11-19 20:40:29.281",
+    "updatedAt": "2025-11-19 20:40:29.281"
+  },
+  {
+    "id": "frk_rq_691e2b4b8e0d1b05bfbd6cbe",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Design and development changes",
+    "description": "Identify, review and control changes made during or after design and development.",
+    "identifier": "QMS-8.3-03",
+    "createdAt": "2025-11-19 20:40:42.844",
+    "updatedAt": "2025-11-19 20:40:42.844"
+  },
+  {
+    "id": "frk_rq_691e2b5e4f59ff9ccb0b382a",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Control of externally provided processes, products and services",
+    "description": "Ensure externally provided processes, products and services meet specified requirements.",
+    "identifier": "QMS-8.4-01",
+    "createdAt": "2025-11-19 20:41:02.339",
+    "updatedAt": "2025-11-19 20:41:02.339"
+  },
+  {
+    "id": "frk_rq_691e2b725cbaaf97bdd68011",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Control of production and service provision",
+    "description": "Implement controlled conditions for service provision, including documented information, suitable infrastructure, monitoring and competent people.",
+    "identifier": "QMS-8.5-01",
+    "createdAt": "2025-11-19 20:41:21.819",
+    "updatedAt": "2025-11-19 20:41:21.819"
+  },
+  {
+    "id": "frk_rq_691e2b8edc97c7179946aa7c",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Identification, traceability, customer property and preservation",
+    "description": "Where applicable, ensure identification/traceability, care of customer property and preservation of outputs.",
+    "identifier": "QMS-8.5-02",
+    "createdAt": "2025-11-19 20:41:50.479",
+    "updatedAt": "2025-11-19 20:41:50.479"
+  },
+  {
+    "id": "frk_rq_691e2bb71d8ad874fc263500",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Release of products and services",
+    "description": "Implement planned arrangements to verify that requirements are met prior to release and retain evidence of release authorization.",
+    "identifier": "QMS-8.6-01",
+    "createdAt": "2025-11-19 20:42:30.914",
+    "updatedAt": "2025-11-19 20:42:30.914"
+  },
+  {
+    "id": "frk_rq_691e2c32e8b0f68de9fb5dee",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Continual improvement",
+    "description": "Continually improve the suitability, adequacy and effectiveness of the QMS.",
+    "identifier": "QMS-10.3-01",
+    "createdAt": "2025-11-19 20:44:33.641",
+    "updatedAt": "2025-11-19 20:44:33.641"
+  },
+  {
+    "id": "frk_rq_691e2ba16e1cf0bf4204d4d7",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Control of changes in service provision",
+    "description": "Review and control changes affecting service provision to ensure continuing conformity.",
+    "identifier": "QMS-8.5-03",
+    "createdAt": "2025-11-19 20:42:08.992",
+    "updatedAt": "2025-11-19 20:42:08.992"
+  },
+  {
+    "id": "frk_rq_691e2bcc09e520e8c9547dc6",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Control of nonconforming outputs",
+    "description": "Ensure nonconforming outputs are identified, controlled, corrected and recorded, including customer notification where relevant.",
+    "identifier": "QMS-8.7-01",
+    "createdAt": "2025-11-19 20:42:52.199",
+    "updatedAt": "2025-11-19 20:42:52.199"
+  },
+  {
+    "id": "frk_rq_691e2be870ef253f157e2f24",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Monitoring, measurement, analysis and evaluation",
+    "description": "Determine what needs to be monitored and measured, methods, timing and evaluation of QMS performance and effectiveness.",
+    "identifier": "QMS-9.1-01",
+    "createdAt": "2025-11-19 20:43:19.773",
+    "updatedAt": "2025-11-19 20:43:19.773"
+  },
+  {
+    "id": "frk_rq_691e2bf811c2f9bfafb62346",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Customer satisfaction",
+    "description": "Monitor customers’ perceptions of the degree to which their needs and expectations have been fulfilled.",
+    "identifier": "QMS-9.1-02",
+    "createdAt": "2025-11-19 20:43:35.951",
+    "updatedAt": "2025-11-19 20:43:35.951"
+  },
+  {
+    "id": "frk_rq_691e2c038a7a41f8964efac2",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Internal audit",
+    "description": "Conduct internal audits at planned intervals to provide information on QMS conformity and effectiveness.",
+    "identifier": "QMS-9.2-01",
+    "createdAt": "2025-11-19 20:43:47.168",
+    "updatedAt": "2025-11-19 20:43:47.168"
+  },
+  {
+    "id": "frk_rq_691e2c0fb8b8c0d5d25cb458",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Management review",
+    "description": "Top management reviews the QMS at planned intervals, considering specified inputs and ensuring outputs include decisions and actions.",
+    "identifier": "QMS-9.3-01",
+    "createdAt": "2025-11-19 20:43:59.274",
+    "updatedAt": "2025-11-19 20:43:59.274"
+  },
+  {
+    "id": "frk_rq_691e2c249bab698cc51a078d",
+    "frameworkId": "frk_691e28f5474c5319f1cc70d7",
+    "name": "Nonconformity and corrective action",
+    "description": "React to nonconformities, evaluate causes and implement corrective actions; review effectiveness and update risks.",
+    "identifier": "QMS-10.2-01",
+    "createdAt": "2025-11-19 20:44:19.831",
+    "updatedAt": "2025-11-19 20:44:19.831"
   }
 ]

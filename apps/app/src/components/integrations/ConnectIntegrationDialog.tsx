@@ -2,9 +2,11 @@
 
 import {
   CredentialField,
+  useIntegrationConnections,
   useIntegrationMutations,
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
+import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { ComboboxDropdown } from '@comp/ui/combobox-dropdown';
 import {
@@ -16,11 +18,13 @@ import {
 } from '@comp/ui/dialog';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
+import MultipleSelector from '@comp/ui/multiple-selector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Settings, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-import { useCallback, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface ConnectIntegrationDialogProps {
@@ -32,25 +36,36 @@ interface ConnectIntegrationDialogProps {
   onConnected?: () => void;
 }
 
+interface ExistingConnection {
+  id: string;
+  displayName: string;
+  accountId?: string;
+  regions?: string[];
+  status: string;
+  lastSyncAt?: string | null;
+  isLegacy?: boolean;
+}
+
 function CredentialInput({
   field,
   value,
   onChange,
 }: {
   field: CredentialField;
-  value: string;
-  onChange: (value: string) => void;
+  value: string | string[];
+  onChange: (value: string | string[]) => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange(e.target.value);
+  const stringValue = typeof value === 'string' ? value : '';
 
   if (field.type === 'password') {
     return (
       <div className="relative">
         <Input
           type={showPassword ? 'text' : 'password'}
-          value={value}
+          value={stringValue}
           onChange={handleChange}
           placeholder={field.placeholder}
           className="pr-10"
@@ -68,13 +83,18 @@ function CredentialInput({
 
   if (field.type === 'textarea') {
     return (
-      <Textarea value={value} onChange={handleChange} placeholder={field.placeholder} rows={4} />
+      <Textarea
+        value={stringValue}
+        onChange={handleChange}
+        placeholder={field.placeholder}
+        rows={4}
+      />
     );
   }
 
   if (field.type === 'select') {
     return (
-      <Select value={value} onValueChange={onChange}>
+      <Select value={stringValue} onValueChange={onChange}>
         <SelectTrigger>
           <SelectValue placeholder={field.placeholder || 'Select...'} />
         </SelectTrigger>
@@ -96,9 +116,8 @@ function CredentialInput({
         label: opt.label,
       })) || [];
 
-    // Find existing item or create synthetic one for custom values
-    const selectedItem = value
-      ? items.find((item) => item.id === value) ?? { id: value, label: value }
+    const selectedItem = stringValue
+      ? (items.find((item) => item.id === stringValue) ?? { id: stringValue, label: stringValue })
       : undefined;
 
     return (
@@ -119,10 +138,32 @@ function CredentialInput({
     );
   }
 
+  if (field.type === 'multi-select') {
+    const selectedValues = Array.isArray(value) ? value : [];
+    const options = field.options ?? [];
+
+    return (
+      <MultipleSelector
+        value={selectedValues.map((val) => ({
+          value: val,
+          label: options.find((opt) => opt.value === val)?.label || val,
+        }))}
+        onChange={(selected) => onChange(selected.map((item) => item.value))}
+        defaultOptions={options.map((opt) => ({ value: opt.value, label: opt.label }))}
+        options={options.map((opt) => ({ value: opt.value, label: opt.label }))}
+        placeholder={field.placeholder || 'Select...'}
+        creatable={options.length === 0}
+        emptyIndicator={<p className="text-center text-sm text-muted-foreground">No options</p>}
+      />
+    );
+  }
+
   const inputType = field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : 'text';
   const placeholder = field.type === 'url' ? field.placeholder || 'https://...' : field.placeholder;
 
-  return <Input type={inputType} value={value} onChange={handleChange} placeholder={placeholder} />;
+  return (
+    <Input type={inputType} value={stringValue} onChange={handleChange} placeholder={placeholder} />
+  );
 }
 
 export function ConnectIntegrationDialog({
@@ -133,17 +174,77 @@ export function ConnectIntegrationDialog({
   integrationLogoUrl,
   onConnected,
 }: ConnectIntegrationDialogProps) {
-  const { startOAuth, createConnection, testConnection } = useIntegrationMutations();
+  const { orgId } = useParams<{ orgId: string }>();
+  const { startOAuth, createConnection, deleteConnection } = useIntegrationMutations();
   const { providers } = useIntegrationProviders(true);
+  const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
+
   const [connecting, setConnecting] = useState(false);
-  const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [view, setView] = useState<'list' | 'form' | 'configure'>('list');
+  const [isDisconnecting, setIsDisconnecting] = useState<string | null>(null);
+  const [configureConnectionId, setConfigureConnectionId] = useState<string | null>(null);
+  const [savingCredentials, setSavingCredentials] = useState(false);
 
   const provider = providers?.find((p) => p.id === integrationId);
   const authType = provider?.authType;
   const credentialFields = provider?.credentialFields ?? [];
+  const supportsMultipleConnections = provider?.supportsMultipleConnections ?? false;
 
-  const allFields = (() => {
+  // Filter connections for this specific integration
+  const existingConnections: ExistingConnection[] = useMemo(() => {
+    if (!allConnections) return [];
+    return allConnections
+      .filter((conn) => conn.providerSlug === integrationId)
+      .map((conn) => {
+        const metadata = (conn.metadata || {}) as Record<string, unknown>;
+        return {
+          id: conn.id,
+          displayName:
+            typeof metadata.connectionName === 'string'
+              ? metadata.connectionName
+              : conn.providerName || integrationName,
+          accountId: typeof metadata.accountId === 'string' ? metadata.accountId : undefined,
+          regions: Array.isArray(metadata.regions) ? (metadata.regions as string[]) : undefined,
+          status: conn.status,
+          lastSyncAt: conn.lastSyncAt,
+          isLegacy: false,
+        };
+      });
+  }, [allConnections, integrationId, integrationName]);
+
+  const didInitializeOnOpen = useRef(false);
+
+  // Determine initial view based on existing connections (only when opening)
+  useEffect(() => {
+    const hasProviders = Boolean(providers);
+    const hasConnections = allConnections !== undefined;
+
+    if (open && !didInitializeOnOpen.current) {
+      if (!hasProviders || !hasConnections) {
+        return;
+      }
+      if (supportsMultipleConnections && existingConnections.length > 0) {
+        setView('list');
+      } else if (existingConnections.length === 0) {
+        setView('form');
+      } else {
+        // Non-multi connection provider with existing connection - show list (configure only)
+        setView('list');
+      }
+      setCredentials({});
+      setErrors({});
+      setConfigureConnectionId(null);
+      didInitializeOnOpen.current = true;
+    }
+
+    if (!open) {
+      didInitializeOnOpen.current = false;
+    }
+  }, [open, allConnections, providers, existingConnections.length, supportsMultipleConnections]);
+
+  const allFields = useMemo(() => {
     if (authType === 'basic') {
       return [
         {
@@ -173,12 +274,11 @@ export function ConnectIntegrationDialog({
         },
       ];
     }
-    // For custom auth, use the credential fields from the manifest
     if (authType === 'custom' && credentialFields.length > 0) {
       return credentialFields;
     }
     return credentialFields;
-  })();
+  }, [authType, credentialFields]);
 
   const handleOAuthConnect = useCallback(async () => {
     setConnecting(true);
@@ -198,10 +298,15 @@ export function ConnectIntegrationDialog({
   }, [integrationId, startOAuth]);
 
   const handleCredentialConnect = useCallback(async () => {
-    // Validate required fields
     const newErrors: Record<string, string> = {};
     for (const field of allFields) {
-      if (field.required && !credentials[field.id]?.trim()) {
+      const value = credentials[field.id];
+      const isMissing =
+        field.type === 'multi-select'
+          ? !Array.isArray(value) || value.length === 0
+          : !String(value ?? '').trim();
+
+      if (field.required && isMissing) {
         newErrors[field.id] = `${field.label} is required`;
       }
     }
@@ -223,31 +328,21 @@ export function ConnectIntegrationDialog({
         return;
       }
 
-      // Test the connection (optional - some integrations don't support testing)
-      if (result.connectionId) {
-        try {
-          const testResult = await testConnection(result.connectionId);
-          if (!testResult.success) {
-            // Check if it's just "not supported" vs actual failure
-            if (testResult.message?.includes('does not support')) {
-              toast.success(`${integrationName} connected! Credentials saved.`);
-            } else {
-              toast.warning(`${integrationName} connected but test failed: ${testResult.message}`);
-            }
-          } else {
-            toast.success(`${integrationName} connected and verified!`);
-          }
-        } catch {
-          // Test failed but connection was created
-          toast.success(`${integrationName} connected! Credentials saved.`);
-        }
-      } else {
-        toast.success(`${integrationName} connected!`);
-      }
+      // AWS credentials are validated on the server before creation
+      const isVerified = integrationId === 'aws';
+      toast.success(`${integrationName} connected${isVerified ? ' and verified' : ''}!`);
 
-      onConnected?.();
-      onOpenChange(false);
+      await refreshConnections();
       setCredentials({});
+
+      // After connecting, go back to list if multi-connection
+      if (supportsMultipleConnections) {
+        setView('list');
+      }
+      onConnected?.();
+      if (!supportsMultipleConnections) {
+        onOpenChange(false);
+      }
     } catch {
       toast.error('Failed to create connection');
     } finally {
@@ -261,12 +356,144 @@ export function ConnectIntegrationDialog({
     integrationName,
     onConnected,
     onOpenChange,
-    testConnection,
+    refreshConnections,
+    supportsMultipleConnections,
   ]);
 
-  const updateCredential = (fieldId: string, value: string) => {
+  const handleDisconnect = useCallback(
+    async (connectionId: string) => {
+      if (
+        !confirm(
+          'Are you sure you want to disconnect this connection? All associated data will be removed.',
+        )
+      ) {
+        return;
+      }
+
+      setIsDisconnecting(connectionId);
+      // Capture current count before deletion to avoid stale closure issues
+      const currentConnectionCount = existingConnections.length;
+      try {
+        const result = await deleteConnection(connectionId);
+        if (result.success) {
+          toast.success('Connection disconnected');
+          await refreshConnections();
+          // If this was the last connection, switch to form view
+          if (currentConnectionCount <= 1) {
+            setView('form');
+          }
+        } else {
+          toast.error(result.error || 'Failed to disconnect');
+        }
+      } catch {
+        toast.error('Failed to disconnect');
+      } finally {
+        setIsDisconnecting(null);
+      }
+    },
+    [deleteConnection, existingConnections, refreshConnections],
+  );
+
+  const handleConfigure = useCallback(
+    (connectionId: string) => {
+      // Find the connection to get existing values
+      const connection = allConnections?.find((c) => c.id === connectionId);
+      const metadata = (connection?.metadata || {}) as Record<string, unknown>;
+
+      // Pre-fill credentials from metadata
+      const prefillCredentials: Record<string, string | string[]> = {};
+
+      if (typeof metadata.connectionName === 'string') {
+        prefillCredentials.connectionName = metadata.connectionName;
+      }
+      if (typeof metadata.roleArn === 'string') {
+        prefillCredentials.roleArn = metadata.roleArn;
+      }
+      if (typeof metadata.externalId === 'string') {
+        prefillCredentials.externalId = metadata.externalId;
+      }
+      if (Array.isArray(metadata.regions)) {
+        prefillCredentials.regions = metadata.regions as string[];
+      }
+
+      setConfigureConnectionId(connectionId);
+      setCredentials(prefillCredentials);
+      setErrors({});
+      setView('configure');
+    },
+    [allConnections],
+  );
+
+  const handleSaveCredentials = useCallback(async () => {
+    if (!configureConnectionId || !orgId) return;
+
+    const hasValues = Object.values(credentials).some((value) =>
+      Array.isArray(value) ? value.length > 0 : String(value ?? '').trim() !== '',
+    );
+    if (!hasValues) {
+      toast.error('Please enter at least one value to update');
+      return;
+    }
+
+    setSavingCredentials(true);
+    try {
+      // Update credentials (API validates before saving for AWS)
+      const updateResult = await api.put<{ success: boolean }>(
+        `/v1/integrations/connections/${configureConnectionId}/credentials?organizationId=${orgId}`,
+        { credentials },
+      );
+
+      if (updateResult.error) {
+        // Validation failed on the server - don't proceed
+        toast.error(updateResult.error);
+        setSavingCredentials(false);
+        return;
+      }
+
+      // Also update metadata for display purposes
+      const metadataUpdates: Record<string, unknown> = {};
+      if (typeof credentials.connectionName === 'string' && credentials.connectionName.trim()) {
+        metadataUpdates.connectionName = credentials.connectionName.trim();
+      }
+      if (Array.isArray(credentials.regions) && credentials.regions.length > 0) {
+        metadataUpdates.regions = credentials.regions;
+      }
+      if (typeof credentials.roleArn === 'string' && credentials.roleArn.trim()) {
+        metadataUpdates.roleArn = credentials.roleArn.trim();
+        const arnMatch = credentials.roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
+        if (arnMatch) {
+          metadataUpdates.accountId = arnMatch[1];
+        }
+      }
+      if (typeof credentials.externalId === 'string' && credentials.externalId.trim()) {
+        metadataUpdates.externalId = credentials.externalId.trim();
+      }
+
+      if (Object.keys(metadataUpdates).length > 0) {
+        const metadataResult = await api.patch<{ success: boolean }>(
+          `/v1/integrations/connections/${configureConnectionId}?organizationId=${orgId}`,
+          { metadata: metadataUpdates },
+        );
+        if (metadataResult.error) {
+          toast.error(metadataResult.error || 'Failed to update connection details');
+          setSavingCredentials(false);
+          return;
+        }
+      }
+
+      toast.success('Connection updated and verified!');
+      await refreshConnections();
+      setCredentials({});
+      setView('list');
+    } catch {
+      toast.error('Failed to update connection');
+    } finally {
+      setSavingCredentials(false);
+    }
+  }, [configureConnectionId, credentials, orgId, refreshConnections]);
+
+  const updateCredential = (fieldId: string, value: string | string[]) => {
     setCredentials((prev) => ({ ...prev, [fieldId]: value }));
-    // Clear error when user types
     if (errors[fieldId]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -276,14 +503,92 @@ export function ConnectIntegrationDialog({
     }
   };
 
+  const renderConnectionList = () => {
+    return (
+      <div className="space-y-4">
+        {existingConnections.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No connections yet. Add your first connection below.
+          </p>
+        ) : (
+          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+            {existingConnections.map((conn) => (
+              <div
+                key={conn.id}
+                className="rounded-lg border p-3 flex items-start justify-between gap-3"
+              >
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm truncate">{conn.displayName}</p>
+                    {conn.isLegacy && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground shrink-0">
+                        Legacy
+                      </span>
+                    )}
+                  </div>
+                  {(conn.accountId || conn.regions?.length) && (
+                    <div className="text-xs text-muted-foreground">
+                      {conn.accountId && <span>Account: {conn.accountId}</span>}
+                      {conn.accountId && conn.regions?.length ? ' • ' : ''}
+                      {conn.regions?.length && <span>{conn.regions.length} regions</span>}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {!conn.isLegacy && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleConfigure(conn.id)}
+                      className="cursor-pointer"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDisconnect(conn.id)}
+                    disabled={isDisconnecting === conn.id}
+                    className="cursor-pointer"
+                  >
+                    {isDisconnecting === conn.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 text-white" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(supportsMultipleConnections || existingConnections.length === 0) && (
+          <Button onClick={() => setView('form')} className="w-full">
+            <Plus className="h-4 w-4 mr-2" />
+            {existingConnections.length > 0 ? 'Add Account' : 'Add Connection'}
+          </Button>
+        )}
+      </div>
+    );
+  };
+
   const renderAuthForm = () => {
+    const showBackButton = supportsMultipleConnections && existingConnections.length > 0;
+
     switch (authType) {
       case 'oauth2':
         return (
           <div className="space-y-3">
+            {showBackButton && (
+              <Button variant="ghost" size="sm" onClick={() => setView('list')} className="mb-2">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to connections
+              </Button>
+            )}
             <p className="text-sm text-muted-foreground">
               This integration uses OAuth to securely connect to your {integrationName} account.
-              You'll be asked to authorize access to the required permissions.
             </p>
             <Button onClick={handleOAuthConnect} disabled={connecting} className="w-full">
               {connecting ? (
@@ -300,8 +605,30 @@ export function ConnectIntegrationDialog({
 
       case 'api_key':
       case 'basic':
+      case 'custom':
+        if (allFields.length === 0) {
+          return (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                This integration requires custom configuration.
+              </p>
+            </div>
+          );
+        }
+
         return (
           <div className="space-y-4">
+            {showBackButton && (
+              <Button variant="ghost" size="sm" onClick={() => setView('list')} className="-mt-2">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to connections
+              </Button>
+            )}
+            {provider?.setupInstructions && (
+              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md max-h-32 overflow-y-auto">
+                <p className="whitespace-pre-wrap text-xs">{provider.setupInstructions}</p>
+              </div>
+            )}
             {allFields.map((field) => (
               <div key={field.id} className="space-y-2">
                 <Label htmlFor={field.id}>
@@ -310,7 +637,7 @@ export function ConnectIntegrationDialog({
                 </Label>
                 <CredentialInput
                   field={field}
-                  value={credentials[field.id] || ''}
+                  value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
                   onChange={(value) => updateCredential(field.id, value)}
                 />
                 {field.helpText && (
@@ -332,95 +659,79 @@ export function ConnectIntegrationDialog({
           </div>
         );
 
-      case 'jwt':
-        return (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              This integration requires a service account with JWT authentication. Please contact
-              your administrator to configure this integration.
-            </p>
-          </div>
-        );
-
-      case 'custom':
-        // If custom auth has credential fields, show a form
-        if (allFields.length > 0) {
-          return (
-            <div className="space-y-4">
-              {provider?.setupInstructions && (
-                <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md max-h-48 overflow-y-auto prose prose-sm dark:prose-invert">
-                  <p className="whitespace-pre-wrap text-xs">{provider.setupInstructions}</p>
-                </div>
-              )}
-              {allFields.map((field) => (
-                <div key={field.id} className="space-y-2">
-                  <Label htmlFor={field.id}>
-                    {field.label}
-                    {field.required && <span className="text-destructive ml-1">*</span>}
-                  </Label>
-                  <CredentialInput
-                    field={field}
-                    value={credentials[field.id] || ''}
-                    onChange={(value) => updateCredential(field.id, value)}
-                  />
-                  {field.helpText && (
-                    <p className="text-xs text-muted-foreground">{field.helpText}</p>
-                  )}
-                  {errors[field.id] && (
-                    <p className="text-xs text-destructive">{errors[field.id]}</p>
-                  )}
-                </div>
-              ))}
-              <Button onClick={handleCredentialConnect} disabled={connecting} className="w-full">
-                {connecting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  'Connect'
-                )}
-              </Button>
-            </div>
-          );
-        }
-        // Fallback if no credential fields
-        return (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              This integration requires custom configuration. Please refer to the documentation for
-              setup instructions.
-            </p>
-            {provider?.docsUrl && (
-              <Button variant="outline" className="w-full" asChild>
-                <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer">
-                  View Documentation
-                </a>
-              </Button>
-            )}
-          </div>
-        );
-
       default:
         return (
           <p className="text-sm text-muted-foreground">
-            Unable to determine authentication method for this integration.
+            Unable to determine authentication method.
           </p>
         );
     }
   };
 
-  const descriptions: Record<string, string> = {
-    oauth2: `You'll be redirected to ${integrationName} to authorize the connection.`,
-    api_key: `Enter your ${integrationName} API key to connect.`,
-    basic: `Enter your ${integrationName} credentials to connect.`,
-    jwt: 'This integration requires service account authentication.',
-    custom:
-      allFields.length > 0
-        ? `Configure your ${integrationName} connection.`
-        : 'This integration requires custom configuration.',
+  const renderConfigureForm = () => {
+    const connection = existingConnections.find((c) => c.id === configureConnectionId);
+
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" onClick={() => setView('list')} className="-mt-2">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to connections
+        </Button>
+
+        <div className="rounded-md bg-muted/50 border p-3">
+          <p className="text-xs text-muted-foreground">
+            Configuring: <strong>{connection?.displayName}</strong>
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Current values are pre-filled. Edit any field you want to update.
+          </p>
+        </div>
+
+        {allFields.map((field) => (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>{field.label}</Label>
+            <CredentialInput
+              field={field}
+              value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
+              onChange={(value) => updateCredential(field.id, value)}
+            />
+            {field.helpText && <p className="text-xs text-muted-foreground">{field.helpText}</p>}
+          </div>
+        ))}
+
+        <Button onClick={handleSaveCredentials} disabled={savingCredentials} className="w-full">
+          {savingCredentials ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Update Connection'
+          )}
+        </Button>
+      </div>
+    );
   };
-  const description = (authType && descriptions[authType]) || 'Configure your connection settings.';
+
+  const getDialogTitle = () => {
+    if (view === 'configure') {
+      return `Configure ${integrationName}`;
+    }
+    if (view === 'list' && existingConnections.length > 0) {
+      return `${integrationName} Connections`;
+    }
+    return `Connect ${integrationName}`;
+  };
+
+  const getDialogDescription = () => {
+    if (view === 'configure') {
+      return 'Update your connection credentials.';
+    }
+    if (view === 'list' && existingConnections.length > 0) {
+      return `Manage your ${integrationName} accounts or add a new one.`;
+    }
+    return `Configure your ${integrationName} connection.`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -436,12 +747,16 @@ export function ConnectIntegrationDialog({
                 className="object-contain"
               />
             </div>
-            Connect {integrationName}
+            {getDialogTitle()}
           </DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
 
-        <div className="pt-2">{renderAuthForm()}</div>
+        <div className="pt-2">
+          {view === 'list' && renderConnectionList()}
+          {view === 'form' && renderAuthForm()}
+          {view === 'configure' && renderConfigureForm()}
+        </div>
       </DialogContent>
     </Dialog>
   );

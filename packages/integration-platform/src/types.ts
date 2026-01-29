@@ -133,7 +133,16 @@ export const CustomAuthConfigSchema = z.object({
       z.object({
         id: z.string(),
         label: z.string(),
-        type: z.enum(['text', 'password', 'textarea', 'select', 'combobox', 'number', 'url']),
+        type: z.enum([
+          'text',
+          'password',
+          'textarea',
+          'select',
+          'combobox',
+          'multi-select',
+          'number',
+          'url',
+        ]),
         required: z.boolean().default(true),
         placeholder: z.string().optional(),
         helpText: z.string().optional(),
@@ -163,7 +172,16 @@ export type AuthStrategy =
 export const CredentialFieldSchema = z.object({
   id: z.string(),
   label: z.string(),
-  type: z.enum(['text', 'password', 'textarea', 'select', 'combobox', 'number', 'url']),
+  type: z.enum([
+    'text',
+    'password',
+    'textarea',
+    'select',
+    'combobox',
+    'multi-select',
+    'number',
+    'url',
+  ]),
   required: z.boolean().default(true),
   placeholder: z.string().optional(),
   helpText: z.string().optional(),
@@ -714,7 +732,7 @@ export interface IntegrationCheck {
 // ============================================================================
 
 export interface IntegrationCredentials {
-  [key: string]: string | undefined;
+  [key: string]: string | string[] | undefined;
 }
 
 export interface IntegrationHandler {
@@ -785,6 +803,9 @@ export interface IntegrationManifest {
 
   /** Runtime handler for webhooks */
   handler?: IntegrationHandler;
+
+  /** Whether multiple connections per org are allowed */
+  supportsMultipleConnections?: boolean;
 
   /** Whether this integration is active/available */
   isActive: boolean;
