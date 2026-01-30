@@ -7,37 +7,6 @@ description: "Connect Aikido to automate security evidence in Comp AI"
 
 The Aikido Security integration syncs vulnerability and repository scanning data into Comp AI, so compliance tasks can be automatically satisfied with continuous evidence.
 
-## Setup
-
-### 1. Create API credentials in Aikido
-
-1. Go to **Aikido Settings → Integrations → API**  
-   Or open: https://app.aikido.dev/settings/integrations/api/aikido/rest
-![Aikido API page - Add Client button](/images/where_to_click_to_open_add_client_modal_in_aikido.png)
-2. Click **Add Client**
-![Create API client modal](/images/create_api_client_creredentiols.png)
-3. Select **Private** as the app type
-4. Select the following permissions:
-   - `issues:read`
-   - `repositories:read`
-   - `basics:read`
-5. Click **Create Credentials**
-![Client ID and Client Secret](/images/client_secret_for_api.png)
-
-### 2. Connect in Comp AI
-
-1. In Comp AI, go to **Settings → Integrations → Aikido**
-2. Paste the **Client ID** and **Client Secret**
-![Enter Client ID and Client Secret in Comp AI](/images/setup_aikido_in_comp_ai_write_client_secret.png)
-3. Click **Connect**
-![Click connect for grant permissions](/images/click_to_connect_for_give_grant_permissions.png)
-4. Authorize the app in Aikido when prompted
-![Grant permissions to your app](/images/grant_permissions_to_your_app.png)
-5. You will return to Comp AI and see the integration connected
-![Aikido connected in Comp AI](/images/final_stage_your_settings_for_aikido_in_compai.png)
-
-Comp AI will exchange the credentials for an access token using OAuth 2.0 Client Credentials (server-to-server).
-
 ## What Comp AI Collects
 
 ### Secure Code evidence
@@ -67,11 +36,7 @@ After connecting, you can configure:
 3. You should see a recent run with passing or failing evidence
 ![Example check run](/images/example_where_you_run_aikido.png)
 
-If a check fails with `HTTP 401: Unauthorized`, verify the Client ID and Client Secret and ensure the permissions listed above are enabled in Aikido.
-
-## Screenshots
-
-Screenshots for each step are included above.
+If a check fails with `HTTP 401: Unauthorized`, verify the Client ID and Client Secret and ensure the required permissions are enabled in Aikido.
 
 ## References
 
