@@ -44,4 +44,11 @@ export class DomainStatusResponseDto {
     required: false,
   })
   verification?: DomainVerificationDto[];
+
+  @ApiProperty({
+    description: 'The recommended CNAME target for this domain from Vercel',
+    example: 'cname.vercel-dns.com',
+    required: false,
+  })
+  cnameTarget?: string;
 }

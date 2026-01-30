@@ -16340,6 +16340,11 @@
             "items": {
               "$ref": "#/components/schemas/DomainVerificationDto"
             }
+          },
+          "cnameTarget": {
+            "type": "string",
+            "description": "The recommended CNAME target for this domain from Vercel",
+            "example": "cname.vercel-dns.com"
           }
         },
         "required": [
