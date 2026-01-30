@@ -27,7 +27,7 @@ function UserNameCell({ userName, memberId }: { userName: string | null | undefi
   );
 }
 
-export function getEmployeeDevicesColumns(): ColumnDef<Host>[] {
+export function getEmployeeDevicesColumns(isCurrentUserOwner: boolean): ColumnDef<Host>[] {
   return [
     {
       id: 'computer_name',
@@ -79,7 +79,9 @@ export function getEmployeeDevicesColumns(): ColumnDef<Host>[] {
       header: ({ column }) => <DataTableColumnHeader column={column} title="" />,
       enableColumnFilter: false,
       enableSorting: false,
-      cell: ({ row }) => <DeviceDropdownMenu host={row.original} />,
+      cell: ({ row }) => (
+          <DeviceDropdownMenu host={row.original} isCurrentUserOwner={isCurrentUserOwner} />
+        ),
     }
   ];
 }

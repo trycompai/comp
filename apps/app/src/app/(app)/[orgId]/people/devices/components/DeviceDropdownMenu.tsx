@@ -12,19 +12,34 @@ import { Host } from '../types';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePeopleActions } from '@/hooks/use-people-api';
+import { useRouter } from 'next/navigation';
 
 interface DeviceDropdownMenuProps {
   host: Host;
+  isCurrentUserOwner: boolean;
 }
 
-export const DeviceDropdownMenu = ({ host }: DeviceDropdownMenuProps) => {
+export const DeviceDropdownMenu = ({ host, isCurrentUserOwner }: DeviceDropdownMenuProps) => {
+  const router = useRouter();
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
+  
+  const { removeHostFromFleet } = usePeopleActions();
+
+  if (!isCurrentUserOwner || !host.member_id) {
+    return null;
+  }
 
   const handleRemoveDeviceClick = async () => {
     try {
-      setIsRemoveDeviceAlertOpen(false);
       setIsRemovingDevice(true);
+      if (host.member_id) {
+        await removeHostFromFleet(host.member_id, host.id);
+      }
+      setIsRemoveDeviceAlertOpen(false);
+      toast.success('Device removed successfully');
+      router.refresh(); // Revalidate data to update UI
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to remove device');
     } finally {
