@@ -1,6 +1,7 @@
 'use client';
 
 import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
+import { triggerVendorRiskAssessmentAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/trigger-vendor-risk-assessment';
 import { useVendor } from '@/hooks/use-vendors';
 import {
   AlertDialog,
@@ -26,11 +27,18 @@ interface VendorActionsProps {
   vendorId: string;
   orgId: string;
   onOpenEditSheet: () => void;
+  onAssessmentTriggered?: (runId: string, publicAccessToken: string) => void;
 }
 
-export function VendorActions({ vendorId, orgId, onOpenEditSheet }: VendorActionsProps) {
+export function VendorActions({
+  vendorId,
+  orgId,
+  onOpenEditSheet,
+  onAssessmentTriggered,
+}: VendorActionsProps) {
   const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isAssessmentConfirmOpen, setIsAssessmentConfirmOpen] = useState(false);
 
   // Get SWR mutate function to refresh vendor data after mutations
   // Pass orgId to ensure same cache key as VendorPageClient
@@ -41,11 +49,9 @@ export function VendorActions({ vendorId, orgId, onOpenEditSheet }: VendorAction
       toast.success('Regeneration triggered. This may take a moment.');
       // Trigger SWR revalidation for vendor detail, list views, and comments
       refreshVendor();
-      globalMutate(
-        (key) => Array.isArray(key) && key[0] === 'vendors',
-        undefined,
-        { revalidate: true },
-      );
+      globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
+        revalidate: true,
+      });
       // Invalidate comments cache for this vendor
       globalMutate(
         (key) => typeof key === 'string' && key.includes(`/v1/comments`) && key.includes(vendorId),
@@ -56,10 +62,31 @@ export function VendorActions({ vendorId, orgId, onOpenEditSheet }: VendorAction
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
 
+  const triggerAssessment = useAction(triggerVendorRiskAssessmentAction, {
+    onSuccess: (result) => {
+      toast.success('Assessment regeneration triggered. This may take a moment.');
+      refreshVendor();
+      globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
+        revalidate: true,
+      });
+      // Notify parent with run info for real-time tracking
+      if (result.data?.runId && result.data?.publicAccessToken) {
+        onAssessmentTriggered?.(result.data.runId, result.data.publicAccessToken);
+      }
+    },
+    onError: () => toast.error('Failed to trigger risk assessment regeneration'),
+  });
+
   const handleConfirm = () => {
     setIsConfirmOpen(false);
     toast.info('Regenerating vendor risk mitigation...');
     regenerate.execute({ vendorId });
+  };
+
+  const handleAssessmentConfirm = () => {
+    setIsAssessmentConfirmOpen(false);
+    toast.info('Regenerating vendor risk assessment...');
+    triggerAssessment.execute({ vendorId });
   };
 
   return (
@@ -75,7 +102,11 @@ export function VendorActions({ vendorId, orgId, onOpenEditSheet }: VendorAction
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsConfirmOpen(true)}>
             <Renew size={16} />
-            Regenerate
+            Mitigation
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsAssessmentConfirmOpen(true)}>
+            <Renew size={16} />
+            Assessment
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -93,11 +124,30 @@ export function VendorActions({ vendorId, orgId, onOpenEditSheet }: VendorAction
             <AlertDialogCancel disabled={regenerate.status === 'executing'}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirm}
-              disabled={regenerate.status === 'executing'}
-            >
+            <AlertDialogAction onClick={handleConfirm} disabled={regenerate.status === 'executing'}>
               {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isAssessmentConfirmOpen} onOpenChange={setIsAssessmentConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate Assessment</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will regenerate the risk assessment for this vendor. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={triggerAssessment.status === 'executing'}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAssessmentConfirm}
+              disabled={triggerAssessment.status === 'executing'}
+            >
+              {triggerAssessment.status === 'executing' ? 'Working…' : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

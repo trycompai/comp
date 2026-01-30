@@ -221,8 +221,16 @@ export class ApiClient {
   /**
    * DELETE request
    */
-  async delete<T = unknown>(endpoint: string, organizationId?: string): Promise<ApiResponse<T>> {
-    return this.call<T>(endpoint, { method: 'DELETE', organizationId });
+  async delete<T = unknown>(
+    endpoint: string,
+    organizationId?: string,
+    body?: unknown,
+  ): Promise<ApiResponse<T>> {
+    return this.call<T>(endpoint, {
+      method: 'DELETE',
+      body: body ? JSON.stringify(body) : undefined,
+      organizationId,
+    });
   }
 }
 
@@ -243,6 +251,6 @@ export const api = {
   patch: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
     apiClient.patch<T>(endpoint, body, organizationId),
 
-  delete: <T = unknown>(endpoint: string, organizationId?: string) =>
-    apiClient.delete<T>(endpoint, organizationId),
+  delete: <T = unknown>(endpoint: string, organizationId?: string, body?: unknown) =>
+    apiClient.delete<T>(endpoint, organizationId, body),
 };

@@ -28,6 +28,35 @@ export class TriggerVendorRiskAssessmentVendorDto {
   vendorWebsite?: string | null;
 }
 
+export class TriggerSingleVendorRiskAssessmentDto {
+  @ApiProperty({ description: 'Organization ID', example: 'org_abc123' })
+  @IsString()
+  organizationId: string;
+
+  @ApiProperty({ description: 'Vendor ID', example: 'vnd_abc123' })
+  @IsString()
+  vendorId: string;
+
+  @ApiProperty({ description: 'Vendor name', example: 'CloudTech Solutions' })
+  @IsString()
+  vendorName: string;
+
+  @ApiProperty({
+    description: 'Vendor website',
+    example: 'https://cloudtechsolutions.com',
+  })
+  @IsString()
+  vendorWebsite: string;
+
+  @ApiProperty({
+    description: 'User ID who triggered the assessment (optional)',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  createdByUserId?: string | null;
+}
+
 export class TriggerVendorRiskAssessmentBatchDto {
   @ApiProperty({ description: 'Organization ID', example: 'org_abc123' })
   @IsString()
