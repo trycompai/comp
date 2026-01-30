@@ -1,17 +1,13 @@
 'use client';
 
+import { updateSidebarState } from '@/actions/sidebar';
 import Chat from '@/components/ai/chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
-import { updateSidebarState } from '@/actions/sidebar';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { authClient } from '@/utils/auth-client';
-import {
-  CertificateCheck,
-  Logout,
-  Settings,
-} from '@carbon/icons-react';
+import { CertificateCheck, Logout, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,7 +36,7 @@ import {
   HStack,
   Logo,
   Text,
-  ThemeToggle,
+  ThemeSwitcher,
 } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
@@ -48,8 +44,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useRef } from 'react';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
-import { AppSidebar } from './AppSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
+import { AppSidebar } from './AppSidebar';
 import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
 
 interface AppShellWrapperProps {
@@ -94,7 +90,7 @@ function AppShellWrapperContent({
   isOnlyAuditor,
   user,
 }: AppShellWrapperContentProps) {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -144,7 +140,11 @@ function AppShellWrapperContent({
               />
             </Link>
             <span className="pl-3 pr-1 text-muted-foreground">/</span>
-            <OrganizationSwitcher organizations={organizations} organization={organization} logoUrls={logoUrls} />
+            <OrganizationSwitcher
+              organizations={organizations}
+              organization={organization}
+              logoUrls={logoUrls}
+            />
           </HStack>
         }
         centerContent={<CommandSearch groups={searchGroups} placeholder="Search..." />}
@@ -182,10 +182,12 @@ function AppShellWrapperContent({
                 <DropdownMenuSeparator />
                 <div className="flex items-center justify-between px-2 py-1.5">
                   <Text size="sm">Theme</Text>
-                  <ThemeToggle
+                  <ThemeSwitcher
                     size="sm"
-                    isDark={resolvedTheme === 'dark'}
-                    onChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
+                    value={(theme ?? 'system') as 'light' | 'dark' | 'system'}
+                    defaultValue="system"
+                    onChange={(value) => setTheme(value)}
+                    showSystem
                   />
                 </div>
                 <DropdownMenuSeparator />
