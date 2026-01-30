@@ -35,9 +35,13 @@ class RelayMailService implements MailService {
   }
 
   async send(payload: CreateEmailOptions): Promise<CreateEmailResponse> {
-    const { react } = payload;
+    const { react, scheduledAt } = payload;
     const html = react ? await render(react) : undefined;
     const mailOptions: MailOptions = { ...payload, html };
+
+    if (scheduledAt !== undefined) {
+      console.warn("Scheduling not supported on SMTP relay. Mail will be delivered immediately.");
+    }
 
     return this.transporter
       .sendMail(mailOptions)
