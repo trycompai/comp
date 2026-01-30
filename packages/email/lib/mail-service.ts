@@ -51,6 +51,7 @@ class RelayMailService implements MailService {
 }
 
 let mailService: MailService | null = null;
+let mailServiceProvider: 'none' | 'resend' | 'relay' = 'none';
 
 const initMailService = (env = process.env): MailService => {
   if (mailService) return mailService;
@@ -58,6 +59,7 @@ const initMailService = (env = process.env): MailService => {
   if (env.RESEND_API_KEY) {
     console.info('Using Resend as mail service.');
     mailService = new ResendMailService(env.RESEND_API_KEY);
+    mailServiceProvider = 'resend';
   } else if (
     env.RELAY_SMTP_HOST &&
     env.RELAY_SMTP_PORT &&
@@ -71,6 +73,7 @@ const initMailService = (env = process.env): MailService => {
       env.RELAY_SMTP_USER,
       env.RELAY_SMTP_PASS,
     );
+    mailServiceProvider = 'relay';
   }
 
   if (!mailService || mailService === null) {
@@ -80,11 +83,13 @@ const initMailService = (env = process.env): MailService => {
   return mailService;
 };
 
+export const getMailServiceProvider = (): 'none' | 'resend' | 'relay' => {
+  return mailServiceProvider;
+};
+
 export const getMailService = (): MailService => {
   if (!mailService) {
     mailService = initMailService();
   }
   return mailService;
 };
-
-// export const hasMailService = (): boolean => Boolean(mailService);
