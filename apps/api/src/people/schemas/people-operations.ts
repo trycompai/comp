@@ -36,4 +36,9 @@ export const PEOPLE_OPERATIONS: Record<string, ApiOperationOptions> = {
     description:
       'Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
   },
+  removeHost: {
+    summary: 'Remove host (device) from Fleet',
+    description:
+      'Removes a single host (device) from FleetDM by host ID. Only organization owners can perform this action. Validates that the organization exists and the member exists within the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+  },
 };

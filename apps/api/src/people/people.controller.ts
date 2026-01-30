@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  ParseIntPipe,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -22,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { RequireRoles } from '../auth/role-validator.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
@@ -34,6 +36,7 @@ import { BULK_CREATE_MEMBERS_RESPONSES } from './schemas/bulk-create-members.res
 import { GET_PERSON_BY_ID_RESPONSES } from './schemas/get-person-by-id.responses';
 import { UPDATE_MEMBER_RESPONSES } from './schemas/update-member.responses';
 import { DELETE_MEMBER_RESPONSES } from './schemas/delete-member.responses';
+import { REMOVE_HOST_RESPONSES } from './schemas/remove-host.responses';
 import { PEOPLE_OPERATIONS } from './schemas/people-operations';
 import { PEOPLE_PARAMS } from './schemas/people-params';
 import { PEOPLE_BODIES } from './schemas/people-bodies';
@@ -188,6 +191,41 @@ export class PeopleController {
 
     return {
       ...updatedMember,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Delete(':id/host/:hostId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RequireRoles('owner'))
+  @ApiOperation(PEOPLE_OPERATIONS.removeHost)
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiParam(PEOPLE_PARAMS.hostId)
+  @ApiResponse(REMOVE_HOST_RESPONSES[200])
+  @ApiResponse(REMOVE_HOST_RESPONSES[401])
+  @ApiResponse(REMOVE_HOST_RESPONSES[404])
+  @ApiResponse(REMOVE_HOST_RESPONSES[500])
+  async removeHost(
+    @Param('id') memberId: string,
+    @Param('hostId', ParseIntPipe) hostId: number,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.peopleService.removeHostById(
+      memberId,
+      organizationId,
+      hostId,
+    );
+
+    return {
+      ...result,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {

@@ -338,4 +338,31 @@ export class PeopleService {
       throw new Error(`Failed to unlink device: ${error.message}`);
     }
   }
+
+  async removeHostById(
+    memberId: string,
+    organizationId: string,
+    hostId: number,
+  ): Promise<{ success: true }> {
+    try {
+      await MemberValidator.validateOrganization(organizationId);
+      await MemberValidator.validateMemberExists(memberId, organizationId);
+
+      await this.fleetService.removeHostById(hostId);
+
+      this.logger.log(
+        `Removed host ${hostId} from FleetDM for member ${memberId} in organization ${organizationId}`,
+      );
+      return { success: true };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to remove host ${hostId} for member ${memberId} in organization ${organizationId}:`,
+        error,
+      );
+      throw new Error(`Failed to remove host: ${error.message}`);
+    }
+  }
 }
