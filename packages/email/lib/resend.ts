@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { getMailService } from './mail-service';
+import { getMailService, getMailServiceProvider } from './mail-service';
 
 function maskEmail(value: string): string {
   const [name = '', domain = ''] = value.toLowerCase().split('@');
@@ -73,7 +73,7 @@ export const sendEmail = async ({
   try {
     console.info('[email] send start', {
       requestId,
-      provider: 'resend',
+      provider: getMailServiceProvider(),
       from: fromAddress,
       to: maskEmailList(toAddress),
       subject,
@@ -108,7 +108,7 @@ export const sendEmail = async ({
 
     console.info('[email] send success', {
       requestId,
-      provider: 'resend',
+      provider: getMailServiceProvider(),
       to: maskEmailList(toAddress),
       messageId: data?.id,
       durationMs: Date.now() - startTime,
@@ -121,7 +121,7 @@ export const sendEmail = async ({
   } catch (error) {
     console.error('[email] send failure', {
       requestId,
-      provider: 'resend',
+      provider: getMailServiceProvider(),
       to: maskEmailList(toAddress),
       durationMs: Date.now() - startTime,
       error: error instanceof Error ? error.message : String(error),
