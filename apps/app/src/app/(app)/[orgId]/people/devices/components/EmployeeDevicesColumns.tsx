@@ -75,7 +75,6 @@ export function getEmployeeDevicesColumns(isCurrentUserOwner: boolean): ColumnDe
     },
     {
       id: 'actions',
-      accessorKey: 'actions',
       header: ({ column }) => <DataTableColumnHeader column={column} title="" />,
       enableColumnFilter: false,
       enableSorting: false,
