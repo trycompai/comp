@@ -1,9 +1,9 @@
 'use client';
 
+import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Vendor } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@comp/ui/button';
 import { Input, Stack, Textarea } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
@@ -41,6 +41,7 @@ export function UpdateTitleAndDescriptionForm({
       category: vendor.category,
       status: vendor.status,
       assigneeId: vendor.assigneeId,
+      website: vendor.website ?? '',
     },
   });
 
@@ -52,6 +53,7 @@ export function UpdateTitleAndDescriptionForm({
       category: data.category,
       status: data.status,
       assigneeId: data.assigneeId,
+      website: data.website,
     });
   };
 
@@ -88,6 +90,25 @@ export function UpdateTitleAndDescriptionForm({
                     {...field}
                     value={field.value ?? ''}
                     placeholder="A detailed description of the vendor and its services."
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="website"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Website</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    placeholder="https://example.com"
+                    autoCorrect="off"
+                    inputMode="url"
                   />
                 </FormControl>
                 <FormMessage />

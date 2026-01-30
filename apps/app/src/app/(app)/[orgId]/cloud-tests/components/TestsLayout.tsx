@@ -1,5 +1,6 @@
 'use client';
 
+import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { api } from '@/lib/api-client';
 import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
@@ -12,6 +13,18 @@ import type { Finding, Provider } from '../types';
 import { CloudSettingsModal } from './CloudSettingsModal';
 import { EmptyState } from './EmptyState';
 import { ProviderTabs } from './ProviderTabs';
+
+const PROVIDER_LOGO: Record<string, string> = {
+  aws: 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
+  gcp: 'https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
+  azure: 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
+};
+
+const PROVIDER_NAME: Record<string, string> = {
+  aws: 'Amazon Web Services',
+  gcp: 'Google Cloud Platform',
+  azure: 'Microsoft Azure',
+};
 
 interface TestsLayoutProps {
   initialFindings: Finding[];
@@ -40,6 +53,8 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const [addConnectionProvider, setAddConnectionProvider] = useState<string | null>(null);
   const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
   const [configureProvider, setConfigureProvider] = useState<Provider | null>(null);
+  const [manageProviderType, setManageProviderType] = useState<string | null>(null);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
     `/api/cloud-tests/findings?orgId=${orgId}`,
@@ -55,7 +70,11 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     },
   );
 
-  const { data: providers = initialProviders, mutate: mutateProviders } = useSWR<Provider[]>(
+  const {
+    data: providers = initialProviders,
+    mutate: mutateProviders,
+    isValidating: isProvidersValidating,
+  } = useSWR<Provider[]>(
     `/api/cloud-tests/providers?orgId=${orgId}`,
     async (url) => {
       const res = await fetch(url);
@@ -237,6 +256,19 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         }
         onRunScan={handleRunScan}
         onAddConnection={(providerType) => {
+          if (isProvidersValidating) {
+            toast.message('Loading connections, please try again in a moment.');
+            return;
+          }
+          const existingConnections = providerGroups[providerType] || [];
+          const supportsMulti = existingConnections.some((connection) =>
+            Boolean(connection.supportsMultipleConnections),
+          );
+          if (supportsMulti && existingConnections.length > 0) {
+            setManageProviderType(providerType);
+            setManageDialogOpen(true);
+            return;
+          }
           setAddConnectionProvider(providerType);
           setViewingResults(false);
         }}
@@ -247,20 +279,41 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         needsConfiguration={needsVariableConfiguration}
       />
 
+      {/* CloudSettingsModal only for providers that do NOT support multiple connections */}
+      {/* AWS is managed via ConnectIntegrationDialog since it supports multiple connections */}
       <CloudSettingsModal
         open={showSettings}
         onOpenChange={setShowSettings}
-        connectedProviders={connectedProviders.map((p) => ({
-          id: p.integrationId,
-          connectionId: p.id,
-          name: p.displayName || p.name,
-          status: p.status,
-          accountId: p.accountId,
-          regions: p.regions,
-          isLegacy: p.isLegacy,
-        }))}
+        connectedProviders={connectedProviders
+          .filter((p) => !p.supportsMultipleConnections)
+          .map((p) => ({
+            id: p.integrationId,
+            connectionId: p.id,
+            name: p.displayName || p.name,
+            status: p.status,
+            accountId: p.accountId,
+            regions: p.regions,
+            isLegacy: p.isLegacy,
+          }))}
         onUpdate={handleProvidersUpdate}
       />
+
+      {manageProviderType && (
+        <ConnectIntegrationDialog
+          open={manageDialogOpen}
+          onOpenChange={(open) => {
+            setManageDialogOpen(open);
+            // Refresh data when dialog closes to pick up any changes
+            if (!open) {
+              handleProvidersUpdate();
+            }
+          }}
+          integrationId={manageProviderType}
+          integrationName={PROVIDER_NAME[manageProviderType] || manageProviderType.toUpperCase()}
+          integrationLogoUrl={PROVIDER_LOGO[manageProviderType] || PROVIDER_LOGO.aws}
+          onConnected={handleProvidersUpdate}
+        />
+      )}
 
       {/* Configure dialog for setting variables */}
       {configureProvider && (

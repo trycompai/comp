@@ -34,16 +34,33 @@ const formatProviderLabel = (providerType: string): string => {
     .join(' ');
 };
 
+/**
+ * AWS region pattern: matches formats like us-east-1, eu-west-2, ap-southeast-1, etc.
+ */
+const AWS_REGION_PATTERN =
+  /^(us|eu|ap|sa|ca|me|af|il)-(north|south|east|west|central|northeast|southeast|northwest|southwest)-\d$/;
+
+const isValidAwsRegion = (value: string): boolean => {
+  return AWS_REGION_PATTERN.test(value);
+};
+
 const extractRegionFromTitle = (title: string | null | undefined): string | null => {
   if (!title) return null;
   const match = title.match(/\s\(([-a-z0-9]+)\)\s*$/i);
   if (!match) return null;
-  return match[1].toLowerCase();
+  const candidate = match[1].toLowerCase();
+  // Only return if it's actually an AWS region, not other suffixes like "nacl", "public", etc.
+  return isValidAwsRegion(candidate) ? candidate : null;
 };
 
 const stripRegionSuffix = (title: string | null | undefined): string | null => {
   if (!title) return null;
-  return title.replace(/\s\(([-a-z0-9]+)\)\s*$/i, '').trim();
+  // Only strip the suffix if it's a valid AWS region
+  const match = title.match(/\s\(([-a-z0-9]+)\)\s*$/i);
+  if (!match) return title;
+  const candidate = match[1].toLowerCase();
+  // Keep non-region suffixes like "(nacl)", "(public)" as part of the title
+  return isValidAwsRegion(candidate) ? title.replace(/\s\(([-a-z0-9]+)\)\s*$/i, '').trim() : title;
 };
 
 const buildRegionOptions = (
@@ -169,13 +186,16 @@ export function ProviderTabs({
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    size="lg"
-                    iconLeft={<Add size={16} />}
-                    onClick={() => onAddConnection(providerType)}
-                  >
-                    Add connection
-                  </Button>
+                  {/* Only show "Add connection" button for providers that support multiple connections */}
+                  {connections.some((c) => c.supportsMultipleConnections) && (
+                    <Button
+                      size="lg"
+                      iconLeft={<Add size={16} />}
+                      onClick={() => onAddConnection(providerType)}
+                    >
+                      Add connection
+                    </Button>
+                  )}
                 </div>
 
                 {connections.map((connection) => {

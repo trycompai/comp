@@ -2,14 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { Checkbox } from '@comp/ui/checkbox';
 import { Button } from '@comp/ui/button';
+import { Checkbox } from '@comp/ui/checkbox';
 import { Member, Task, User } from '@db';
-import { RefreshCw, User as UserIcon } from 'lucide-react';
+import { RefreshCw, Trash2, User as UserIcon } from 'lucide-react';
+import { BulkTaskAssigneeChangeModal } from './BulkTaskAssigneeChangeModal';
+import { BulkTaskDeleteModal } from './BulkTaskDeleteModal';
+import { BulkTaskStatusChangeModal } from './BulkTaskStatusChangeModal';
 import { ModernTaskListItem } from './ModernTaskListItem';
 import { TaskBulkActions } from './TaskBulkActions';
-import { BulkTaskStatusChangeModal } from './BulkTaskStatusChangeModal';
-import { BulkTaskAssigneeChangeModal } from './BulkTaskAssigneeChangeModal';
 
 interface ModernSingleStatusTaskListProps {
   config: {
@@ -47,6 +48,7 @@ export function ModernSingleStatusTaskList({
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [openBulkStatus, setOpenBulkStatus] = useState(false);
   const [openBulkAssignee, setOpenBulkAssignee] = useState(false);
+  const [openBulkDelete, setOpenBulkDelete] = useState(false);
   const StatusIcon = config.icon;
 
   useEffect(() => {
@@ -92,7 +94,10 @@ export function ModernSingleStatusTaskList({
     setSelectable(false);
   };
 
-  const buttonClassName = 'h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent';
+  const buttonClassName =
+    'h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent';
+  const deleteButtonClassName =
+    'h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10';
 
   return (
     <div className="space-y-2">
@@ -139,6 +144,16 @@ export function ModernSingleStatusTaskList({
                 <UserIcon className="h-3.5 w-3.5" />
                 <span>Assignee</span>
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenBulkDelete(true)}
+                disabled={selectedTaskIds.length === 0}
+                className={deleteButtonClassName}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete</span>
+              </Button>
             </div>
             <BulkTaskStatusChangeModal
               selectedTaskIds={selectedTaskIds}
@@ -151,6 +166,12 @@ export function ModernSingleStatusTaskList({
               members={members}
               open={openBulkAssignee}
               onOpenChange={setOpenBulkAssignee}
+              onSuccess={handleBulkActionSuccess}
+            />
+            <BulkTaskDeleteModal
+              selectedTaskIds={selectedTaskIds}
+              open={openBulkDelete}
+              onOpenChange={setOpenBulkDelete}
               onSuccess={handleBulkActionSuccess}
             />
           </div>
