@@ -7,6 +7,21 @@ import { Vercel } from '@vercel/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
+/**
+ * Strict pattern to match known Vercel DNS CNAME targets.
+ * Matches formats like:
+ * - cname.vercel-dns.com
+ * - 3a69a5bb27875189.vercel-dns-016.com
+ * - With or without trailing dot
+ */
+const VERCEL_DNS_CNAME_PATTERN = /\.vercel-dns(-\d+)?\.com\.?$/i;
+
+/**
+ * Fallback pattern - more lenient, catches any vercel-dns variation.
+ * Used if strict pattern fails, with logging for monitoring.
+ */
+const VERCEL_DNS_FALLBACK_PATTERN = /vercel-dns[^.]*\.com\.?$/i;
+
 const checkDnsSchema = z.object({
   domain: z
     .string()
@@ -80,16 +95,31 @@ export const checkDnsRecordAction = authActionClient
         vercelVerification: true,
       },
     });
-    const expectedCnameValue = 'cname.vercel-dns.com';
     const expectedTxtValue = `compai-domain-verification=${activeOrgId}`;
     const expectedVercelTxtValue = isVercelDomain?.vercelVerification;
 
     let isCnameVerified = false;
 
     if (cnameRecords) {
-      isCnameVerified = cnameRecords.some(
-        (record: { address: string }) => record.address.toLowerCase() === expectedCnameValue,
+      // First try strict pattern
+      isCnameVerified = cnameRecords.some((record: { address: string }) =>
+        VERCEL_DNS_CNAME_PATTERN.test(record.address),
       );
+
+      // If strict fails, try fallback pattern (catches new Vercel patterns we haven't seen)
+      if (!isCnameVerified) {
+        const fallbackMatch = cnameRecords.find((record: { address: string }) =>
+          VERCEL_DNS_FALLBACK_PATTERN.test(record.address),
+        );
+
+        if (fallbackMatch) {
+          console.warn(
+            `[DNS Check] CNAME matched fallback pattern but not strict pattern. ` +
+              `Address: ${fallbackMatch.address}. Consider updating VERCEL_DNS_CNAME_PATTERN.`,
+          );
+          isCnameVerified = true;
+        }
+      }
     }
 
     let isTxtVerified = false;

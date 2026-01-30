@@ -4,12 +4,14 @@ import { trainingVideos } from '@/lib/data/training-videos';
 import { Accordion } from '@comp/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@db';
+import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
 import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 
 interface EmployeeTasksListProps {
+  organizationId: string;
   policies: Policy[];
   trainingVideos: EmployeeTrainingVideoCompletion[];
   member: Member;
@@ -18,18 +20,38 @@ interface EmployeeTasksListProps {
 }
 
 export const EmployeeTasksList = ({
+  organizationId,
   policies,
   trainingVideos: trainingVideoCompletions,
   member,
   fleetPolicies,
   host,
 }: EmployeeTasksListProps) => {
+  const { data: response, isValidating, mutate: fetchFleetPolicies } = useSWR<{ device: Host | null; fleetPolicies: FleetPolicy[] }>(
+    `/api/fleet-policies?organizationId=${organizationId}`,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    {
+      fallbackData: { device: host, fleetPolicies },
+      refreshInterval: 0,
+      revalidateOnFocus: false,
+      revalidateOnMount: false
+    },
+  );
+
+  if (!response) {
+    return null;
+  }
+
   // Check completion status
   const hasAcceptedPolicies =
     policies.length === 0 || policies.every((p) => p.signedBy.includes(member.id));
-  const hasInstalledAgent = host !== null;
+  const hasInstalledAgent = response.device !== null;
   const allFleetPoliciesPass =
-    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
+    response.fleetPolicies.length === 0 || response.fleetPolicies.every((policy) => policy.response === 'pass');
   const hasCompletedDeviceSetup = hasInstalledAgent && allFleetPoliciesPass;
 
   // Calculate general training completion (matching logic from GeneralTrainingAccordionItem)
@@ -59,7 +81,13 @@ export const EmployeeTasksList = ({
     {
       title: 'Download and install Comp AI Device Agent',
       content: (
-        <DeviceAgentAccordionItem member={member} host={host} fleetPolicies={fleetPolicies} />
+        <DeviceAgentAccordionItem
+          member={member}
+          host={response.device}
+          fleetPolicies={response.fleetPolicies}
+          isLoading={isValidating}
+          fetchFleetPolicies={fetchFleetPolicies}
+        />
       ),
     },
     {
