@@ -37,12 +37,12 @@ class RelayMailService implements MailService {
   async send(payload: CreateEmailOptions): Promise<CreateEmailResponse> {
     const { react } = payload;
     const html = react ? await render(react) : undefined;
-    const mailOptions: MailOptions = { html, ...payload };
+    const mailOptions: MailOptions = { ...payload, html };
 
     return this.transporter
       .sendMail(mailOptions)
-      .then(({ id }) => ({
-        data: { id },
+      .then(({ messageId }) => ({
+        data: { id: messageId },
         error: null,
         headers: null,
       }))
@@ -66,17 +66,22 @@ const initMailService = (env = process.env): MailService => {
     env.RELAY_SMTP_USER &&
     env.RELAY_SMTP_PASS
   ) {
+    const smtpPort = Number(env.RELAY_SMTP_PORT);
+    if (isNaN(smtpPort)) {
+      throw new Error("Mail service not initialized - RELAY_SMTP_PORT is not a number.")
+    }
+
     console.info('Using SMTP-Relay as mail service.');
     mailService = new RelayMailService(
       env.RELAY_SMTP_HOST,
-      Number(env.RELAY_SMTP_PORT),
+      smtpPort,
       env.RELAY_SMTP_USER,
       env.RELAY_SMTP_PASS,
     );
     mailServiceProvider = 'relay';
   }
 
-  if (!mailService || mailService === null) {
+  if (!mailService) {
     throw new Error('Mail service not initialized - check configuration');
   }
 
