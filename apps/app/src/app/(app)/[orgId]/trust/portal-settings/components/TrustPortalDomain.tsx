@@ -231,7 +231,7 @@ export function TrustPortalDomain({
                       <div className="rounded-md border border-amber-200 bg-amber-100 p-4 dark:border-amber-900 dark:bg-amber-950">
                         <div className="flex gap-3">
                           <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                          <p className="text-amber-100 text-sm dark:text-amber-200">
+                          <p className="text-amber-800 text-sm dark:text-amber-200">
                             This domain is linked to another Vercel account. To use it with this
                             project, add a {verificationInfo.type} record at{' '}
                             {verificationInfo.domain} to verify ownership. You can remove the record
