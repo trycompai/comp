@@ -68,6 +68,7 @@ export async function OrganizationDashboard({
   // Display tasks without welcome message for cleaner UI
   return (
     <EmployeeTasksList
+      organizationId={organizationId}
       policies={policies}
       trainingVideos={trainingVideos}
       member={member} // Pass the member object down

@@ -69,6 +69,8 @@ export const customDomainAction = authActionClient
         }
       }
 
+      console.log(`Adding domain to Vercel project: ${domain}`);
+
       const addDomainToProject = await vercel.projects.addProjectDomain({
         idOrName: env.TRUST_PORTAL_PROJECT_ID!,
         teamId: env.VERCEL_TEAM_ID!,
@@ -77,6 +79,8 @@ export const customDomainAction = authActionClient
           name: domain,
         },
       });
+
+      console.log(`Vercel response for ${domain}:`, JSON.stringify(addDomainToProject, null, 2));
 
       const isVercelDomain = addDomainToProject.verified === false;
 
@@ -109,7 +113,25 @@ export const customDomainAction = authActionClient
         needsVerification: !domainVerified,
       };
     } catch (error) {
-      console.error(error);
-      throw new Error('Failed to update custom domain');
+      console.error('Custom domain error:', error);
+
+      // Extract meaningful error message from Vercel SDK errors
+      let errorMessage = 'Failed to update custom domain';
+
+      if (error instanceof Error) {
+        // Check for Vercel API error responses
+        const vercelError = error as Error & {
+          body?: { error?: { code?: string; message?: string } };
+          code?: string;
+        };
+
+        if (vercelError.body?.error?.message) {
+          errorMessage = vercelError.body.error.message;
+        } else if (vercelError.message) {
+          errorMessage = vercelError.message;
+        }
+      }
+
+      throw new Error(errorMessage);
     }
   });

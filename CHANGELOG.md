@@ -1,3 +1,10 @@
+# [1.81.0](https://github.com/trycompai/comp/compare/v1.80.0...v1.81.0) (2026-01-30)
+
+
+### Features
+
+* **trust-portal:** add recommended CNAME target handling and update domain status response ([#2082](https://github.com/trycompai/comp/issues/2082)) ([1b68e6a](https://github.com/trycompai/comp/commit/1b68e6a86c1fcaf95e9f3b0a31ba6e472681659c))
+
 # [1.80.0](https://github.com/trycompai/comp/compare/v1.79.0...v1.80.0) (2026-01-30)
 
 
