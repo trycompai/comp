@@ -346,7 +346,34 @@ export class PeopleService {
   ): Promise<{ success: true }> {
     try {
       await MemberValidator.validateOrganization(organizationId);
-      await MemberValidator.validateMemberExists(memberId, organizationId);
+      const member = await MemberQueries.findByIdInOrganization(
+        memberId,
+        organizationId,
+      );
+
+      if (!member) {
+        throw new NotFoundException(
+          `Member with ID ${memberId} not found in organization ${organizationId}`,
+        );
+      }
+
+      if (!member.fleetDmLabelId) {
+        throw new BadRequestException(
+          `Member ${memberId} has no Fleet label; cannot remove host`,
+        );
+      }
+
+      const labelHosts = await this.fleetService.getHostsByLabel(
+        member.fleetDmLabelId,
+      );
+      const hostIds = (labelHosts?.hosts ?? []).map(
+        (host: { id: number }) => host.id,
+      );
+      if (!hostIds.includes(hostId)) {
+        throw new NotFoundException(
+          `Host ${hostId} not found for member ${memberId} in organization ${organizationId}`,
+        );
+      }
 
       await this.fleetService.removeHostById(hostId);
 
@@ -355,7 +382,10 @@ export class PeopleService {
       );
       return { success: true };
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       this.logger.error(
