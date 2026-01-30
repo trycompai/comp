@@ -5,7 +5,11 @@ export const env = createEnv({
   server: {
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.string(),
-    RESEND_API_KEY: z.string(),
+    RESEND_API_KEY: z.string().optional(),
+    RELAY_SMTP_HOST: z.string().optional(),
+    RELAY_SMTP_PORT: z.string().optional(),
+    RELAY_SMTP_USER: z.string().optional(),
+    RELAY_SMTP_PASS: z.string().optional(),
     UPSTASH_REDIS_REST_URL: z.string().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
     AUTH_GOOGLE_ID: z.string(),

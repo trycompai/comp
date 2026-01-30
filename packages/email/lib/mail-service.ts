@@ -1,9 +1,7 @@
-import { CreateEmailOptions, CreateEmailResponse, Resend } from 'resend';
-import { createTransport, Transporter } from 'nodemailer';
 import { render } from '@react-email/render';
+import { createTransport, Transporter } from 'nodemailer';
 import { MailOptions } from 'nodemailer/lib/smtp-pool';
-
-export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+import { CreateEmailOptions, CreateEmailResponse, Resend } from 'resend';
 
 export interface MailService {
   send(payload: CreateEmailOptions): Promise<CreateEmailResponse>;
@@ -41,29 +39,52 @@ class RelayMailService implements MailService {
     const html = react ? await render(react) : undefined;
     const mailOptions: MailOptions = { html, ...payload };
 
-    return this.transporter.sendMail(mailOptions).then(({ id }) => ({
-      data: { id },
-      error: null,
-    })).catch(e => ({ data: null, error: e }));
+    return this.transporter
+      .sendMail(mailOptions)
+      .then(({ id }) => ({
+        data: { id },
+        error: null,
+        headers: null,
+      }))
+      .catch((e) => ({ data: null, error: e, headers: null }));
   }
 }
 
 let mailService: MailService | null = null;
 
-if (process.env.RESEND_API_KEY) {
-  mailService = new ResendMailService(process.env.RESEND_API_KEY);
-} else if (
-  process.env.RELAY_SMTP_HOST &&
-  process.env.RELAY_SMTP_PORT &&
-  process.env.RELAY_SMTP_USER &&
-  process.env.RELAY_SMTP_PASS
-) {
-  mailService = new RelayMailService(
-    process.env.RELAY_SMTP_HOST,
-    Number(process.env.RELAY_SMTP_PORT),
-    process.env.RELAY_SMTP_USER,
-    process.env.RELAY_SMTP_PASS,
-  );
-}
+const initMailService = (env = process.env): MailService => {
+  if (mailService) return mailService;
 
-export default mailService;
+  if (env.RESEND_API_KEY) {
+    console.info('Using Resend as mail service.');
+    mailService = new ResendMailService(env.RESEND_API_KEY);
+  } else if (
+    env.RELAY_SMTP_HOST &&
+    env.RELAY_SMTP_PORT &&
+    env.RELAY_SMTP_USER &&
+    env.RELAY_SMTP_PASS
+  ) {
+    console.info('Using SMTP-Relay as mail service.');
+    mailService = new RelayMailService(
+      env.RELAY_SMTP_HOST,
+      Number(env.RELAY_SMTP_PORT),
+      env.RELAY_SMTP_USER,
+      env.RELAY_SMTP_PASS,
+    );
+  }
+
+  if (!mailService || mailService === null) {
+    throw new Error('Mail service not initialized - check configuration');
+  }
+
+  return mailService;
+};
+
+export const getMailService = (): MailService => {
+  if (!mailService) {
+    mailService = initMailService();
+  }
+  return mailService;
+};
+
+// export const hasMailService = (): boolean => Boolean(mailService);

@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import mailService from './mail-service';
-
+import { getMailService } from './mail-service';
 
 function maskEmail(value: string): string {
   const [name = '', domain = ''] = value.toLowerCase().split('@');
   if (!domain) return 'invalid-email';
-  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
+  const safeName =
+    name.length <= 2 ? (name[0] ?? '') : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
   return `${safeName}@${domain}`;
 }
 
@@ -43,9 +43,7 @@ export const sendEmail = async ({
   scheduledAt?: string;
   attachments?: EmailAttachment[];
 }) => {
-  if (!mailService) {
-    throw new Error('Resend not initialized - missing API key');
-  }
+  const mailService = getMailService();
 
   // 1) Pull each env var into its own constant
   const fromMarketing = process.env.RESEND_FROM_MARKETING;
