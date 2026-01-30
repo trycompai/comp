@@ -1,3 +1,16 @@
+# [1.80.0](https://github.com/trycompai/comp/compare/v1.79.0...v1.80.0) (2026-01-30)
+
+
+### Bug Fixes
+
+* add line breaks for evidence tasks ([#2068](https://github.com/trycompai/comp/issues/2068)) ([80246bd](https://github.com/trycompai/comp/commit/80246bdb1f83f675faf51628d8c88fa8a52603ed))
+
+
+### Features
+
+* **app:** add user name to Employee Devices tab and make it linkable in the app ([#2062](https://github.com/trycompai/comp/issues/2062)) ([0e10a42](https://github.com/trycompai/comp/commit/0e10a42eb04967cc190ccded2f25df7f37969349))
+* **docs:** add Aikido integration guide and related images ([#2076](https://github.com/trycompai/comp/issues/2076)) ([cb861f9](https://github.com/trycompai/comp/commit/cb861f9f84f3080c5c2617e353a8e5f89a0a0e8c))
+
 # [1.79.0](https://github.com/trycompai/comp/compare/v1.78.0...v1.79.0) (2026-01-27)
 
 
