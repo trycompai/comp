@@ -1,6 +1,6 @@
 'use client';
 
-import { useDomain } from '@/hooks/use-domain';
+import { DEFAULT_CNAME_TARGET, useDomain } from '@/hooks/use-domain';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -63,6 +63,13 @@ export function TrustPortalDomain({
     return null;
   }, [domainStatus]);
 
+  // Get the actual CNAME target from Vercel, with fallback
+  // Normalize to include trailing dot for DNS record display
+  const cnameTarget = useMemo(() => {
+    const target = domainStatus?.data?.cnameTarget || DEFAULT_CNAME_TARGET;
+    return target.endsWith('.') ? target : `${target}.`;
+  }, [domainStatus?.data?.cnameTarget]);
+
   useEffect(() => {
     const isCnameVerified = localStorage.getItem(`${initialDomain}-isCnameVerified`);
     const isTxtVerified = localStorage.getItem(`${initialDomain}-isTxtVerified`);
@@ -74,6 +81,11 @@ export function TrustPortalDomain({
 
   const updateCustomDomain = useAction(customDomainAction, {
     onSuccess: (data) => {
+      // Check if the action returned an error (e.g., domain already in use)
+      if (data?.data?.success === false) {
+        toast.error(data.data.error || 'Failed to update custom domain.');
+        return;
+      }
       toast.success('Custom domain update submitted, please verify your DNS records.');
     },
     onError: (error) => {
@@ -286,12 +298,12 @@ export function TrustPortalDomain({
                               </td>
                               <td>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-words">cname.vercel-dns.com.</span>
+                                  <span className="min-w-0 break-words">{cnameTarget}</span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() => handleCopy('cname.vercel-dns.com.', 'Value')}
+                                    onClick={() => handleCopy(cnameTarget, 'Value')}
                                     className="h-6 w-6 shrink-0"
                                   >
                                     <ClipboardCopy className="h-4 w-4" />
@@ -411,12 +423,12 @@ export function TrustPortalDomain({
                           <div>
                             <div className="mb-1 font-medium">Value:</div>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 break-words">cname.vercel-dns.com.</span>
+                              <span className="min-w-0 break-words">{cnameTarget}</span>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 type="button"
-                                onClick={() => handleCopy('cname.vercel-dns.com.', 'Value')}
+                                onClick={() => handleCopy(cnameTarget, 'Value')}
                                 className="h-6 w-6 shrink-0"
                               >
                                 <ClipboardCopy className="h-4 w-4" />

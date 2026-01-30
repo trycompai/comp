@@ -47,6 +47,17 @@ interface VercelDomainResponse {
   verification?: VercelDomainVerification[];
 }
 
+interface VercelRecommendedCNAME {
+  rank: number;
+  value: string;
+}
+
+interface VercelDomainConfigResponse {
+  configuredBy?: 'CNAME' | 'A' | 'http' | 'dns-01' | null;
+  misconfigured: boolean;
+  recommendedCNAME?: VercelRecommendedCNAME[];
+}
+
 @Injectable()
 export class TrustPortalService {
   private readonly logger = new Logger(TrustPortalService.name);
@@ -170,16 +181,33 @@ export class TrustPortalService {
 
       // Get domain information including verification status
       // Vercel API endpoint: GET /v9/projects/{projectId}/domains/{domain}
-      const response = await this.vercelApi.get<VercelDomainResponse>(
-        `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}`,
-        {
-          params: {
-            teamId: process.env.VERCEL_TEAM_ID,
+      const [domainResponse, configResponse] = await Promise.all([
+        this.vercelApi.get<VercelDomainResponse>(
+          `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${domain}`,
+          {
+            params: {
+              teamId: process.env.VERCEL_TEAM_ID,
+            },
           },
-        },
-      );
+        ),
+        // Get domain config to retrieve the actual CNAME target
+        // Vercel API endpoint: GET /v6/domains/{domain}/config
+        this.vercelApi
+          .get<VercelDomainConfigResponse>(`/v6/domains/${domain}/config`, {
+            params: {
+              teamId: process.env.VERCEL_TEAM_ID,
+            },
+          })
+          .catch((err) => {
+            this.logger.warn(
+              `Failed to get domain config for ${domain}: ${err.message}`,
+            );
+            return null;
+          }),
+      ]);
 
-      const domainInfo = response.data;
+      const domainInfo = domainResponse.data;
+      const configInfo = configResponse?.data;
 
       const verification: DomainVerificationDto[] | undefined =
         domainInfo.verification?.map((v) => ({
@@ -189,10 +217,18 @@ export class TrustPortalService {
           reason: v.reason,
         }));
 
+      // Extract the CNAME target from the config response
+      // Prefer rank=1 (preferred value), fallback to first available
+      const recommendedCNAMEs = configInfo?.recommendedCNAME;
+      const cnameTarget =
+        recommendedCNAMEs?.find((c) => c.rank === 1)?.value ||
+        recommendedCNAMEs?.[0]?.value;
+
       return {
         domain: domainInfo.name,
         verified: domainInfo.verified ?? false,
         verification,
+        cnameTarget,
       };
     } catch (error) {
       this.logger.error(
