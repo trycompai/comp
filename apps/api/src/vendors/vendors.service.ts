@@ -208,6 +208,51 @@ export class VendorsService {
     }
   }
 
+  /**
+   * Trigger a single vendor risk assessment and return run info for real-time tracking.
+   * Use this when you need the runId and publicAccessToken for client-side tracking.
+   */
+  async triggerSingleVendorRiskAssessment(params: {
+    organizationId: string;
+    vendorId: string;
+    vendorName: string;
+    vendorWebsite: string | null;
+    createdByUserId?: string | null;
+  }): Promise<{ runId: string; publicAccessToken: string }> {
+    const {
+      organizationId,
+      vendorId,
+      vendorName,
+      vendorWebsite,
+      createdByUserId,
+    } = params;
+
+    const normalizedWebsite = normalizeWebsite(vendorWebsite);
+    if (!normalizedWebsite) {
+      throw new Error('Vendor website is missing or invalid');
+    }
+
+    const handle = await tasks.trigger('vendor-risk-assessment-task', {
+      vendorId,
+      vendorName,
+      vendorWebsite: normalizedWebsite,
+      organizationId,
+      createdByUserId: createdByUserId ?? null,
+      withResearch: true,
+    });
+
+    this.logger.log(`Triggered single vendor risk assessment task`, {
+      vendorId,
+      vendorName,
+      runId: handle.id,
+    });
+
+    return {
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
+    };
+  }
+
   async triggerVendorRiskAssessments(params: {
     organizationId: string;
     withResearch: boolean;

@@ -256,6 +256,54 @@ export class TasksController {
     );
   }
 
+  @Delete('bulk')
+  @ApiOperation({
+    summary: 'Delete multiple tasks',
+    description: 'Bulk delete multiple tasks by their IDs',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        taskIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['tsk_abc123', 'tsk_def456'],
+        },
+      },
+      required: ['taskIds'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tasks deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        deletedCount: { type: 'number', example: 2 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request body',
+  })
+  async deleteTasks(
+    @OrganizationId() organizationId: string,
+    @Body()
+    body: {
+      taskIds: string[];
+    },
+  ): Promise<{ deletedCount: number }> {
+    const { taskIds } = body;
+
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new BadRequestException('taskIds must be a non-empty array');
+    }
+
+    return await this.tasksService.deleteTasks(organizationId, taskIds);
+  }
+
   @Get(':taskId')
   @ApiOperation({
     summary: 'Get task by ID',
@@ -310,7 +358,8 @@ export class TasksController {
   @Patch(':taskId')
   @ApiOperation({
     summary: 'Update a task',
-    description: 'Update an existing task (status, assignee, frequency, department, reviewDate)',
+    description:
+      'Update an existing task (status, assignee, frequency, department, reviewDate)',
   })
   @ApiParam({
     name: 'taskId',

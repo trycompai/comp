@@ -56,6 +56,12 @@
             ]
           },
           {
+            "group": "Integration Guides",
+            "pages": [
+              "integrations/aikido"
+            ]
+          },
+          {
             "group": "Developer Guides",
             "pages": [
               "integrations/writing-integrations",

@@ -1,0 +1,43 @@
+---
+title: "Aikido Security"
+description: "Connect Aikido to automate security evidence in Comp AI"
+---
+
+## Overview
+
+The Aikido Security integration syncs vulnerability and repository scanning data into Comp AI, so compliance tasks can be automatically satisfied with continuous evidence.
+
+## What Comp AI Collects
+
+### Secure Code evidence
+
+- Open security issues (by severity)
+- Repository scanning activity
+- Stale scans (repos not scanned in over 7 days)
+
+### Monitoring and Alerting evidence
+
+- Issue count thresholds (configurable)
+- Severity breakdown summaries
+
+## Configuration Options
+
+After connecting, you can configure:
+
+- **Minimum severity to fail on** (low, medium, high, critical)
+- **Maximum allowed open issues** (threshold check)
+- **Repositories to monitor** (optional filter)
+- **Include snoozed issues** (optional)
+
+## Verify It Works
+
+1. Open the Aikido integration in Comp AI
+2. Click **Run** on any check
+3. You should see a recent run with passing or failing evidence
+![Example check run](/images/example_where_you_run_aikido.png)
+
+If a check fails with `HTTP 401: Unauthorized`, verify the Client ID and Client Secret and ensure the required permissions are enabled in Aikido.
+
+## References
+
+- Aikido API docs: https://apidocs.aikido.dev/reference

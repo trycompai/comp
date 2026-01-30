@@ -17,8 +17,9 @@ export const updateVendorAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { id, name, description, category, assigneeId, status } = parsedInput;
+    const { id, name, description, category, assigneeId, status, website } = parsedInput;
     const { session } = ctx;
+    const normalizedWebsite = website === '' ? null : website;
 
     if (!session.activeOrganizationId) {
       throw new Error('Invalid user input');
@@ -36,6 +37,7 @@ export const updateVendorAction = authActionClient
           assigneeId,
           category,
           status,
+          website: normalizedWebsite,
         },
       });
 
