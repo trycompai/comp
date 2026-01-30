@@ -31,12 +31,12 @@ export const DeviceDropdownMenu = ({ host, isCurrentUserOwner }: DeviceDropdownM
     return null;
   }
 
+  const memberId = host.member_id;
+
   const handleRemoveDeviceClick = async () => {
     try {
       setIsRemovingDevice(true);
-      if (host.member_id) {
-        await removeHostFromFleet(host.member_id, host.id);
-      }
+      await removeHostFromFleet(memberId, host.id);
       setIsRemoveDeviceAlertOpen(false);
       toast.success('Device removed successfully');
       router.refresh(); // Revalidate data to update UI
