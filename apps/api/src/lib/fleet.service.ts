@@ -118,14 +118,12 @@ export class FleetService {
       // Extract host IDs
       const hostIds = labelHosts.hosts.map((host: { id: number }) => host.id);
 
-      // Delete each host
+      // Delete each host using removeHostById for consistent behavior
       const deletePromises = hostIds.map(async (hostId: number) => {
         try {
-          await this.fleetInstance.delete(`/hosts/${hostId}`);
-          this.logger.debug(`Deleted host ${hostId} from FleetDM`);
+          await this.removeHostById(hostId);
           return { success: true, hostId };
-        } catch (error) {
-          this.logger.error(`Failed to delete host ${hostId}:`, error);
+        } catch {
           return { success: false, hostId };
         }
       });
