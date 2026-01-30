@@ -6,6 +6,7 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import type { FleetPolicy, Host } from '../types';
+import { DeviceDropdownMenu } from './DeviceDropdownMenu';
 
 function UserNameCell({ userName, memberId }: { userName: string | null | undefined; memberId: string | undefined }) {
   const params = useParams();
@@ -72,5 +73,13 @@ export function getEmployeeDevicesColumns(): ColumnDef<Host>[] {
         );
       },
     },
+    {
+      id: 'actions',
+      accessorKey: 'actions',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="" />,
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: ({ row }) => <DeviceDropdownMenu host={row.original} />,
+    }
   ];
 }

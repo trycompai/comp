@@ -269,8 +269,14 @@ export function MemberRow({
       />
       <RemoveDeviceAlert
         open={isRemoveDeviceAlertOpen}
+        title="Remove Device"
+        description={(
+          <>
+            {'Are you sure you want to remove all devices for this user '} <strong>{memberName}</strong>?{' '}
+            {'This will disconnect all devices from the organization.'}
+          </>
+        )}
         onOpenChange={setIsRemoveDeviceAlertOpen}
-        memberName={memberName}
         onRemove={handleRemoveDeviceClick}
         isRemoving={isRemovingDevice}
       />
