@@ -41,7 +41,7 @@ interface FindingItemProps {
   isPlatformAdmin: boolean;
   isTarget?: boolean; // Whether this finding is the navigation target
   onToggleExpand: () => void;
-  onStatusChange: (status: FindingStatus, revisionNote?: string) => void;
+  onStatusChange: (status: FindingStatus, revisionNote?: string) => Promise<void> | void;
   onDelete: () => void;
   onViewHistory?: () => void;
 }
@@ -67,6 +67,7 @@ export function FindingItem({
   const [showHighlight, setShowHighlight] = useState(false);
   const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
   const [revisionNote, setRevisionNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
 
   // Scroll to center and show highlight when this is the target finding
@@ -113,16 +114,26 @@ export function FindingItem({
   };
 
   // Skip adding a note - just change status
-  const handleRevisionSkip = () => {
-    onStatusChange(FindingStatus.needs_revision);
-    setRevisionDialogOpen(false);
+  const handleRevisionSkip = async () => {
+    setIsSubmitting(true);
+    try {
+      await onStatusChange(FindingStatus.needs_revision);
+      setRevisionDialogOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Submit revision status with note
-  const handleRevisionSubmit = () => {
-    onStatusChange(FindingStatus.needs_revision, revisionNote.trim() || undefined);
-    setRevisionDialogOpen(false);
-    setRevisionNote('');
+  const handleRevisionSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await onStatusChange(FindingStatus.needs_revision, revisionNote.trim() || undefined);
+      setRevisionDialogOpen(false);
+      setRevisionNote('');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const author = finding.createdBy?.user;
@@ -309,6 +320,7 @@ export function FindingItem({
       <Dialog
         open={revisionDialogOpen}
         onOpenChange={(open) => {
+          if (isSubmitting) return; // Prevent closing while submitting
           setRevisionDialogOpen(open);
           if (!open) setRevisionNote('');
         }}
@@ -331,14 +343,23 @@ export function FindingItem({
             />
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="ghost" onClick={handleRevisionSkip} className="sm:mr-auto">
+            <Button
+              variant="ghost"
+              onClick={handleRevisionSkip}
+              disabled={isSubmitting}
+              className="sm:mr-auto"
+            >
               Skip
             </Button>
-            <Button variant="outline" onClick={() => setRevisionDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setRevisionDialogOpen(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button onClick={handleRevisionSubmit} disabled={!revisionNote.trim()}>
-              Add Note
+            <Button onClick={handleRevisionSubmit} disabled={!revisionNote.trim() || isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Add Note'}
             </Button>
           </DialogFooter>
         </DialogContent>
