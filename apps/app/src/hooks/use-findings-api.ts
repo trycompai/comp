@@ -11,6 +11,7 @@ export interface Finding {
   type: FindingType;
   status: FindingStatus;
   content: string;
+  revisionNote: string | null;
   createdAt: string;
   updatedAt: string;
   taskId: string;
@@ -58,6 +59,7 @@ interface UpdateFindingData {
   status?: FindingStatus;
   type?: FindingType;
   content?: string;
+  revisionNote?: string | null;
 }
 
 export interface FindingHistoryEntry {

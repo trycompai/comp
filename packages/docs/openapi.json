@@ -16969,6 +16969,13 @@
             "description": "Finding content/message",
             "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
             "maxLength": 5000
+          },
+          "revisionNote": {
+            "type": "object",
+            "description": "Auditor note when requesting revision (only for needs_revision status)",
+            "example": "Please provide clearer screenshots showing the timestamp.",
+            "maxLength": 2000,
+            "nullable": true
           }
         }
       },
