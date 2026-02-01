@@ -23,10 +23,11 @@ model FindingTemplate {
 }
 
 model Finding {
-  id      String        @id @default(dbgenerated("generate_prefixed_cuid('fnd'::text)"))
-  type    FindingType   @default(soc2)
-  status  FindingStatus @default(open)
-  content String // Custom message or copied from template
+  id           String        @id @default(dbgenerated("generate_prefixed_cuid('fnd'::text)"))
+  type         FindingType   @default(soc2)
+  status       FindingStatus @default(open)
+  content      String // Custom message or copied from template
+  revisionNote String? // Auditor's note when requesting revision
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

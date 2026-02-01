@@ -60,7 +60,8 @@ export function FullPolicyHeaderActions() {
             <DialogTitle>Regenerate All Policies</DialogTitle>
             <DialogDescription>
               This will generate new policy content for all policies using your org context and
-              frameworks. Continue?
+              frameworks. It will delete all existing versions and their PDFs for each policy. This
+              cannot be undone. Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

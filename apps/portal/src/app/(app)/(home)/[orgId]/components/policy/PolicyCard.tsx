@@ -9,15 +9,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@comp/ui/card';
-import type { Member, Policy } from '@db';
+import type { Member, Policy, PolicyVersion } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { ArrowRight, Check } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyEditor } from './PolicyEditor';
 import { PortalPdfViewer } from './PortalPdfViewer';
 
+type PolicyWithVersion = Policy & {
+  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
+};
+
 interface PolicyCardProps {
-  policy: Policy;
+  policy: PolicyWithVersion;
   onNext?: () => void;
   onComplete?: () => void;
   onClick?: () => void;
@@ -33,7 +37,10 @@ export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }:
     onComplete?.();
   };
 
-  const isPdfPolicy = policy.displayFormat === 'PDF';
+  // Use currentVersion content/pdfUrl if available, fallback to policy level for backward compatibility
+  const effectivePdfUrl = policy.currentVersion?.pdfUrl ?? policy.pdfUrl;
+  const effectiveContent = policy.currentVersion?.content ?? policy.content;
+  const isPdfPolicy = policy.displayFormat === 'PDF' && effectivePdfUrl;
 
   return (
     <Card className="relative flex max-h-[calc(100vh-450px)] w-full flex-col shadow-md">
@@ -65,9 +72,13 @@ export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }:
         <div className="w-full border-t pt-6">
           <div className="max-w-none">
             {isPdfPolicy ? (
-              <PortalPdfViewer policyId={policy.id} s3Key={policy.pdfUrl} />
+              <PortalPdfViewer
+                policyId={policy.id}
+                s3Key={effectivePdfUrl}
+                versionId={policy.currentVersion?.id}
+              />
             ) : (
-              <PolicyEditor content={policy.content as JSONContent[]} />
+              <PolicyEditor content={effectiveContent as JSONContent[]} />
             )}
           </div>
           <p className="text-muted-foreground mt-4 text-sm">

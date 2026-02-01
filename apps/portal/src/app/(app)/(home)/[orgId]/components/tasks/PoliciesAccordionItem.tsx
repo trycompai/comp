@@ -4,15 +4,19 @@ import { acceptAllPolicies } from '@/actions/accept-policies';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
-import type { Member, Policy } from '@db';
+import type { Member, Policy, PolicyVersion } from '@db';
 import { CheckCircle2, Circle, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+type PolicyWithVersion = Policy & {
+  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
+};
+
 interface PoliciesAccordionItemProps {
-  policies: Policy[];
+  policies: PolicyWithVersion[];
   member: Member;
 }
 

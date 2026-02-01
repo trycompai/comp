@@ -10,9 +10,10 @@ import { getPolicyPdfUrl } from '../../../actions/getPolicyPdfUrl';
 interface PortalPdfViewerProps {
   policyId: string;
   s3Key?: string | null;
+  versionId?: string;
 }
 
-export function PortalPdfViewer({ policyId, s3Key }: PortalPdfViewerProps) {
+export function PortalPdfViewer({ policyId, s3Key, versionId }: PortalPdfViewerProps) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -32,11 +33,11 @@ export function PortalPdfViewer({ policyId, s3Key }: PortalPdfViewerProps) {
 
   useEffect(() => {
     if (s3Key) {
-      getUrl({ policyId });
+      getUrl({ policyId, versionId });
     } else {
       setIsLoading(false);
     }
-  }, [s3Key, policyId, getUrl]);
+  }, [s3Key, policyId, versionId, getUrl]);
 
   if (isLoading) {
     return (

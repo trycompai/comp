@@ -39,4 +39,16 @@ export class UpdateFindingDto {
   @IsNotEmpty({ message: 'Content cannot be empty if provided' })
   @MaxLength(5000)
   content?: string;
+
+  @ApiProperty({
+    description: 'Auditor note when requesting revision (only for needs_revision status)',
+    example: 'Please provide clearer screenshots showing the timestamp.',
+    maxLength: 2000,
+    required: false,
+    nullable: true,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  revisionNote?: string | null;
 }

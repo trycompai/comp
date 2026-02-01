@@ -1,6 +1,10 @@
-import type { Control, Member, Policy, User } from '@db';
+import type { Control, Member, Policy, PolicyVersion, User } from '@db';
 import type { AuditLogWithRelations } from '../data';
 import { PolicyPageTabs } from './PolicyPageTabs';
+
+type PolicyVersionWithPublisher = PolicyVersion & {
+  publishedBy: (Member & { user: User }) | null;
+};
 
 export default function PolicyPage({
   policy,
@@ -11,6 +15,7 @@ export default function PolicyPage({
   policyId,
   organizationId,
   logs,
+  versions,
   showAiAssistant,
 }: {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
@@ -21,6 +26,7 @@ export default function PolicyPage({
   policyId: string;
   organizationId: string;
   logs: AuditLogWithRelations[];
+  versions: PolicyVersionWithPublisher[];
   showAiAssistant: boolean;
 }) {
   return (
@@ -33,6 +39,7 @@ export default function PolicyPage({
       allControls={allControls}
       isPendingApproval={isPendingApproval}
       logs={logs}
+      versions={versions}
       showAiAssistant={showAiAssistant}
     />
   );

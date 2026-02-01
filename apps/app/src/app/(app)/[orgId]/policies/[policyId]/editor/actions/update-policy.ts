@@ -81,14 +81,15 @@ export const updatePolicy = authActionClient
             'content' in cleanedContent &&
             Array.isArray(cleanedContent.content)
           ) {
-            updateData.content = cleanedContent.content;
+            // Save to draftContent instead of content for versioning
+            updateData.draftContent = cleanedContent.content;
           } else if (Array.isArray(cleanedContent)) {
-            updateData.content = cleanedContent;
+            updateData.draftContent = cleanedContent;
           } else {
-            updateData.content = cleanedContent;
+            updateData.draftContent = cleanedContent;
           }
         } else {
-          updateData.content = cleanedContent;
+          updateData.draftContent = cleanedContent;
         }
       }
 

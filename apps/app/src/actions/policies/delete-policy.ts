@@ -1,5 +1,7 @@
 'use server';
 
+import { BUCKET_NAME, s3Client } from '@/app/s3';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
@@ -37,6 +39,11 @@ export const deletePolicyAction = authActionClient
           id,
           organizationId: activeOrganizationId,
         },
+        include: {
+          versions: {
+            select: { pdfUrl: true },
+          },
+        },
       });
 
       if (!policy) {
@@ -46,7 +53,36 @@ export const deletePolicyAction = authActionClient
         };
       }
 
-      // Delete the policy
+      // Clean up S3 files before cascade delete
+      if (s3Client && BUCKET_NAME) {
+        const pdfUrlsToDelete: string[] = [];
+
+        // Add policy-level PDF if exists
+        if (policy.pdfUrl) {
+          pdfUrlsToDelete.push(policy.pdfUrl);
+        }
+
+        // Add all version PDFs
+        for (const version of policy.versions) {
+          if (version.pdfUrl) {
+            pdfUrlsToDelete.push(version.pdfUrl);
+          }
+        }
+
+        // Delete all PDFs from S3
+        await Promise.allSettled(
+          pdfUrlsToDelete.map((pdfUrl) =>
+            s3Client.send(
+              new DeleteObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: pdfUrl,
+              }),
+            ),
+          ),
+        );
+      }
+
+      // Delete the policy (versions are cascade deleted)
       await db.policy.delete({
         where: { id },
       });
@@ -54,6 +90,8 @@ export const deletePolicyAction = authActionClient
       // Revalidate paths to update UI
       revalidatePath(`/${activeOrganizationId}/policies`);
       revalidateTag('policies', 'max');
+
+      return { success: true };
     } catch (error) {
       console.error(error);
       return {

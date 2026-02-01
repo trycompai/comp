@@ -24,11 +24,12 @@ interface PolicyData {
 
 /**
  * Fetch all published policies for an organization
+ * Uses currentVersion.content for versioned policies, falls back to policy.content
  */
 export async function fetchPolicies(
   organizationId: string,
 ): Promise<PolicyData[]> {
-  return db.policy.findMany({
+  const policies = await db.policy.findMany({
     where: {
       organizationId,
       status: 'published',
@@ -40,8 +41,23 @@ export async function fetchPolicies(
       content: true,
       organizationId: true,
       updatedAt: true,
+      currentVersion: {
+        select: {
+          content: true,
+        },
+      },
     },
   });
+
+  // Map to use currentVersion.content when available
+  return policies.map((policy) => ({
+    id: policy.id,
+    name: policy.name,
+    description: policy.description,
+    content: policy.currentVersion?.content ?? policy.content,
+    organizationId: policy.organizationId,
+    updatedAt: policy.updatedAt,
+  }));
 }
 
 interface SyncSingleResult {

@@ -1,6 +1,6 @@
 'use server';
 
-import { db, Departments, Frequency } from '@db';
+import { db, Departments, Frequency, PolicyStatus, type Prisma } from '@db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { createPolicySchema } from '../schema';
@@ -51,60 +51,56 @@ export const createPolicyAction = authActionClient
     }
 
     try {
-      // Create the policy
-      const policy = await db.policy.create({
-        data: {
-          name: title,
-          description,
-          organizationId: activeOrganizationId,
-          assigneeId: member.id,
-          department: Departments.none,
-          frequency: Frequency.monthly,
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: '' }],
-            },
-          ],
-          ...(controlIds &&
-            controlIds.length > 0 && {
-              controls: {
-                connect: controlIds.map((id) => ({ id })),
-              },
-            }),
+      const initialContent = [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: '' }],
         },
+      ] as Prisma.InputJsonValue[];
+
+      // Create the policy with version 1 in a transaction
+      const policy = await db.$transaction(async (tx) => {
+        // Create the policy first (without currentVersionId)
+        const newPolicy = await tx.policy.create({
+          data: {
+            name: title,
+            description,
+            organizationId: activeOrganizationId,
+            assigneeId: member.id,
+            department: Departments.none,
+            frequency: Frequency.monthly,
+            status: PolicyStatus.draft,
+            content: initialContent,
+            draftContent: initialContent, // Sync with content to prevent false "unpublished changes" indicator
+            ...(controlIds &&
+              controlIds.length > 0 && {
+                controls: {
+                  connect: controlIds.map((id) => ({ id })),
+                },
+              }),
+          },
+        });
+
+        // Create version 1 as a draft
+        const version = await tx.policyVersion.create({
+          data: {
+            policyId: newPolicy.id,
+            version: 1,
+            content: initialContent,
+            publishedById: member.id,
+            changelog: 'Initial version',
+          },
+        });
+
+        // Update policy to set currentVersionId
+        const updatedPolicy = await tx.policy.update({
+          where: { id: newPolicy.id },
+          data: { currentVersionId: version.id },
+        });
+
+        return updatedPolicy;
       });
 
-      // Create artifacts for each control
-      // if (controlIds && controlIds.length > 0) {
-      // 	// Create artifacts that link the policy to controls
-      // 	await Promise.all(
-      // 		controlIds.map(async (controlId) => {
-      // 			// Create the artifact
-      // 			const artifact = await db.artifact.create({
-      // 				data: {
-      // 					type: "policy",
-      // 					policyId: policy.id,
-      // 					organizationId: activeOrganizationId,
-      // 				},
-      // 			});
-
-      // 			// Connect the artifact to the control
-      // 			await db.control.update({
-      // 				where: { id: controlId },
-      // 				data: {
-      // 					artifacts: {
-      // 						connect: { id: artifact.id },
-      // 					},
-      // 				},
-      // 			});
-
-      // 			return artifact;
-      // 		}),
-      // 	);
-      // }
-
-      revalidatePath(`/${activeOrganizationId}/policies`);
       revalidatePath(`/${activeOrganizationId}/policies`);
       revalidateTag('policies', 'max');
 

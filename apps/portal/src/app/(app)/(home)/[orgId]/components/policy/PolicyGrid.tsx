@@ -1,11 +1,15 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import type { Member, Policy } from '@db';
+import type { Member, Policy, PolicyVersion } from '@db';
 import { Check } from 'lucide-react';
 
+type PolicyWithVersion = Policy & {
+  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
+};
+
 interface PolicyGridProps {
-  policies: Policy[];
+  policies: PolicyWithVersion[];
   onPolicyClick: (index: number) => void;
   member: Member;
 }

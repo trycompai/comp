@@ -10,19 +10,22 @@ import {
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
+import { ReactNode } from 'react';
 
 interface RemoveDeviceAlertProps {
   open: boolean;
+  title: string;
+  description: ReactNode;
   onOpenChange: (open: boolean) => void;
-  memberName: string;
   onRemove: () => void;
   isRemoving: boolean;
 }
 
 export function RemoveDeviceAlert({
   open,
+  title,
+  description,
   onOpenChange,
-  memberName,
   onRemove,
   isRemoving,
 }: RemoveDeviceAlertProps) {
@@ -30,10 +33,9 @@ export function RemoveDeviceAlert({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{'Remove Device'}</AlertDialogTitle>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
-            {'Are you sure you want to remove the device for this user '} <strong>{memberName}</strong>?{' '}
-            {'This will disconnect the device from the organization.'}
+            {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

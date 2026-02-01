@@ -18,7 +18,7 @@ const STATUS_COLORS: Record<FindingStatus, string> = {
 
 const STATUS_LABELS: Record<FindingStatus, string> = {
   open: 'Open',
-  ready_for_review: 'Review',
+  ready_for_review: 'Auditor Review',
   needs_revision: 'Revision',
   closed: 'Closed',
 };
@@ -215,7 +215,7 @@ export function FindingsOverview({
                         </div>
                       </div>
                       <Button asChild size="icon" variant="outline" className="shrink-0 ml-2">
-                        <Link href={`/${organizationId}/tasks/${finding.task.id}`}>
+                        <Link href={`/${organizationId}/tasks/${finding.task.id}#finding-${finding.id}`}>
                           <ArrowRight className="h-3 w-3" />
                         </Link>
                       </Button>

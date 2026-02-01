@@ -67,6 +67,20 @@ export class FleetService {
     }
   }
 
+  /**
+   * Remove a single host from FleetDM by ID
+   * @param hostId - The FleetDM host ID
+   */
+  async removeHostById(hostId: number): Promise<void> {
+    try {
+      await this.fleetInstance.delete(`/hosts/${hostId}`);
+      this.logger.debug(`Deleted host ${hostId} from FleetDM`);
+    } catch (error) {
+      this.logger.error(`Failed to delete host ${hostId}:`, error);
+      throw new Error(`Failed to remove host ${hostId}`);
+    }
+  }
+
   async getMultipleHosts(hostIds: number[]) {
     try {
       const requests = hostIds.map((id) => this.getHostById(id));
@@ -104,14 +118,12 @@ export class FleetService {
       // Extract host IDs
       const hostIds = labelHosts.hosts.map((host: { id: number }) => host.id);
 
-      // Delete each host
+      // Delete each host using removeHostById for consistent behavior
       const deletePromises = hostIds.map(async (hostId: number) => {
         try {
-          await this.fleetInstance.delete(`/hosts/${hostId}`);
-          this.logger.debug(`Deleted host ${hostId} from FleetDM`);
+          await this.removeHostById(hostId);
           return { success: true, hostId };
-        } catch (error) {
-          this.logger.error(`Failed to delete host ${hostId}:`, error);
+        } catch {
           return { success: false, hostId };
         }
       });

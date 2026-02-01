@@ -31,6 +31,7 @@ export const updatePolicy = schemaTask({
         updatedAt: z.date(),
       }),
     ),
+    memberId: z.string().optional(),
   }),
   run: async (params) => {
     try {

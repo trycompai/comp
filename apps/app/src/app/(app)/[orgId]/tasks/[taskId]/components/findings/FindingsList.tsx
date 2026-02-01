@@ -4,7 +4,7 @@ import { useFindingActions, useTaskFindings, type Finding } from '@/hooks/use-fi
 import { Button } from '@comp/ui/button';
 import { FindingStatus } from '@db';
 import { AlertTriangle, ChevronDown, ChevronUp, FileWarning, Loader2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFindingButton } from './CreateFindingButton';
 import { FindingItem } from './FindingItem';
@@ -41,6 +41,29 @@ export function FindingsList({
   const { updateFinding, deleteFinding } = useFindingActions();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [targetFindingId, setTargetFindingId] = useState<string | null>(null);
+
+  // Detect target finding from URL hash (e.g., #finding-abc123)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const hash = window.location.hash;
+    if (hash.startsWith('#finding-')) {
+      const findingId = hash.replace('#finding-', '');
+      setTargetFindingId(findingId);
+      // Expand all findings so the target is visible
+      setShowAll(true);
+
+      // Clear the target after highlight duration so it returns to normal
+      const timer = setTimeout(() => {
+        setTargetFindingId(null);
+        // Clean up the URL hash
+        window.history.replaceState(null, '', window.location.pathname);
+      }, 2500); // Slightly longer than highlight duration to ensure smooth transition
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const rawFindings = data?.data || [];
 
@@ -63,10 +86,19 @@ export function FindingsList({
   const canSetRestrictedStatus = isAuditor || isPlatformAdmin;
 
   const handleStatusChange = useCallback(
-    async (findingId: string, status: FindingStatus) => {
+    async (findingId: string, status: FindingStatus, revisionNote?: string) => {
       try {
-        await updateFinding(findingId, { status });
-        toast.success('Finding status updated');
+        const updateData: { status: FindingStatus; revisionNote?: string | null } = { status };
+
+        // Only include revisionNote for needs_revision status
+        if (status === FindingStatus.needs_revision && revisionNote) {
+          updateData.revisionNote = revisionNote;
+        }
+
+        await updateFinding(findingId, updateData);
+        toast.success(
+          revisionNote ? 'Finding marked for revision with note' : 'Finding status updated',
+        );
         mutate();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to update status');
@@ -115,7 +147,10 @@ export function FindingsList({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div
+      id="findings"
+      className="rounded-lg border border-border bg-card overflow-hidden scroll-mt-6"
+    >
       <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -161,10 +196,13 @@ export function FindingsList({
                 isAuditor={isAuditor}
                 isPlatformAdmin={isPlatformAdmin}
                 isExpanded={expandedId === finding.id}
+                isTarget={targetFindingId === finding.id}
                 canChangeStatus={canChangeStatus}
                 canSetRestrictedStatus={canSetRestrictedStatus}
                 onToggleExpand={() => setExpandedId(expandedId === finding.id ? null : finding.id)}
-                onStatusChange={(status) => handleStatusChange(finding.id, status)}
+                onStatusChange={(status, revisionNote) =>
+                  handleStatusChange(finding.id, status, revisionNote)
+                }
                 onDelete={() => handleDelete(finding.id)}
                 onViewHistory={onViewHistory ? () => onViewHistory(finding.id) : undefined}
               />

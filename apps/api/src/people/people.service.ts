@@ -338,4 +338,61 @@ export class PeopleService {
       throw new Error(`Failed to unlink device: ${error.message}`);
     }
   }
+
+  async removeHostById(
+    memberId: string,
+    organizationId: string,
+    hostId: number,
+  ): Promise<{ success: true }> {
+    try {
+      await MemberValidator.validateOrganization(organizationId);
+      const member = await MemberQueries.findByIdInOrganization(
+        memberId,
+        organizationId,
+      );
+
+      if (!member) {
+        throw new NotFoundException(
+          `Member with ID ${memberId} not found in organization ${organizationId}`,
+        );
+      }
+
+      if (!member.fleetDmLabelId) {
+        throw new BadRequestException(
+          `Member ${memberId} has no Fleet label; cannot remove host`,
+        );
+      }
+
+      const labelHosts = await this.fleetService.getHostsByLabel(
+        member.fleetDmLabelId,
+      );
+      const hostIds = (labelHosts?.hosts ?? []).map(
+        (host: { id: number }) => host.id,
+      );
+      if (!hostIds.includes(hostId)) {
+        throw new NotFoundException(
+          `Host ${hostId} not found for member ${memberId} in organization ${organizationId}`,
+        );
+      }
+
+      await this.fleetService.removeHostById(hostId);
+
+      this.logger.log(
+        `Removed host ${hostId} from FleetDM for member ${memberId} in organization ${organizationId}`,
+      );
+      return { success: true };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to remove host ${hostId} for member ${memberId} in organization ${organizationId}:`,
+        error,
+      );
+      throw new Error(`Failed to remove host: ${error.message}`);
+    }
+  }
 }

@@ -116,6 +116,7 @@ model Member {
   updatedTaskItems       TaskItem[]           @relation("TaskItemUpdater")
   assignedTaskItems      TaskItem[]           @relation("TaskItemAssignee")
   createdFindings        Finding[]            @relation("FindingCreatedBy")
+  publishedPolicyVersions PolicyVersion[]     @relation("PolicyVersionPublisher")
 }
 
 model Invitation {

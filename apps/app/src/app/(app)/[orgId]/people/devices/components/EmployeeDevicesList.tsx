@@ -8,9 +8,14 @@ import type { Host } from '../types/index';
 import { getEmployeeDevicesColumns } from './EmployeeDevicesColumns';
 import { HostDetails } from './HostDetails';
 
-export const EmployeeDevicesList = ({ devices }: { devices: Host[] }) => {
+export interface EmployeeDevicesListProps {
+  devices: Host[];
+  isCurrentUserOwner: boolean;
+}
+
+export const EmployeeDevicesList = ({ devices, isCurrentUserOwner }: EmployeeDevicesListProps) => {
   const [selectedRow, setSelectedRow] = useState<Host | null>(null);
-  const columns = useMemo(() => getEmployeeDevicesColumns(), []);
+  const columns = useMemo(() => getEmployeeDevicesColumns(isCurrentUserOwner), [isCurrentUserOwner]);
 
   const { table } = useDataTable({
     data: devices,

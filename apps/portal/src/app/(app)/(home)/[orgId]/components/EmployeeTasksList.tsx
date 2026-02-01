@@ -3,16 +3,20 @@
 import { trainingVideos } from '@/lib/data/training-videos';
 import { Accordion } from '@comp/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import type { EmployeeTrainingVideoCompletion, Member, Policy } from '@db';
+import type { EmployeeTrainingVideoCompletion, Member, Policy, PolicyVersion } from '@db';
 import useSWR from 'swr';
 import type { FleetPolicy, Host } from '../types';
 import { DeviceAgentAccordionItem } from './tasks/DeviceAgentAccordionItem';
 import { GeneralTrainingAccordionItem } from './tasks/GeneralTrainingAccordionItem';
 import { PoliciesAccordionItem } from './tasks/PoliciesAccordionItem';
 
+type PolicyWithVersion = Policy & {
+  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
+};
+
 interface EmployeeTasksListProps {
   organizationId: string;
-  policies: Policy[];
+  policies: PolicyWithVersion[];
   trainingVideos: EmployeeTrainingVideoCompletion[];
   member: Member;
   fleetPolicies: FleetPolicy[];

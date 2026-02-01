@@ -71,9 +71,7 @@ export class FindingsService {
       ],
     });
 
-    this.logger.log(
-      `Retrieved ${findings.length} findings for task ${taskId}`,
-    );
+    this.logger.log(`Retrieved ${findings.length} findings for task ${taskId}`);
     return findings;
   }
 
@@ -311,11 +309,29 @@ export class FindingsService {
       }
 
       // ready_for_review can only be set by non-auditor admins/owners (client signals to auditor)
-      if (updateDto.status === FindingStatus.ready_for_review && isAuditor && !isPlatformAdmin) {
+      if (
+        updateDto.status === FindingStatus.ready_for_review &&
+        isAuditor &&
+        !isPlatformAdmin
+      ) {
         throw new ForbiddenException(
           `Auditors cannot set status to 'ready_for_review'. This status is for clients to signal readiness.`,
         );
       }
+    }
+
+    // Handle revisionNote logic:
+    // - Set revisionNote when status is needs_revision and a note is provided
+    // - Clear revisionNote when status changes to anything other than needs_revision
+    let revisionNoteUpdate: { revisionNote?: string | null } = {};
+    if (updateDto.status === FindingStatus.needs_revision) {
+      // Set revision note if provided (can be null to clear)
+      if (updateDto.revisionNote !== undefined) {
+        revisionNoteUpdate = { revisionNote: updateDto.revisionNote || null };
+      }
+    } else if (updateDto.status !== undefined) {
+      // Clear revision note when moving to a different status
+      revisionNoteUpdate = { revisionNote: null };
     }
 
     const updatedFinding = await db.finding.update({
@@ -324,6 +340,7 @@ export class FindingsService {
         ...(updateDto.status !== undefined && { status: updateDto.status }),
         ...(updateDto.type !== undefined && { type: updateDto.type }),
         ...(updateDto.content !== undefined && { content: updateDto.content }),
+        ...revisionNoteUpdate,
       },
       include: {
         createdBy: {
@@ -411,22 +428,34 @@ export class FindingsService {
 
       switch (updateDto.status) {
         case FindingStatus.ready_for_review:
-          this.logger.log(`Triggering 'ready_for_review' notification for finding ${findingId}`);
+          this.logger.log(
+            `Triggering 'ready_for_review' notification for finding ${findingId}`,
+          );
           void this.findingNotifierService.notifyReadyForReview({
             ...notificationParams,
             findingCreatorMemberId: finding.createdById,
           });
           break;
         case FindingStatus.needs_revision:
-          this.logger.log(`Triggering 'needs_revision' notification for finding ${findingId}`);
-          void this.findingNotifierService.notifyNeedsRevision(notificationParams);
+          this.logger.log(
+            `Triggering 'needs_revision' notification for finding ${findingId}`,
+          );
+          void this.findingNotifierService.notifyNeedsRevision(
+            notificationParams,
+          );
           break;
         case FindingStatus.closed:
-          this.logger.log(`Triggering 'closed' notification for finding ${findingId}`);
-          void this.findingNotifierService.notifyFindingClosed(notificationParams);
+          this.logger.log(
+            `Triggering 'closed' notification for finding ${findingId}`,
+          );
+          void this.findingNotifierService.notifyFindingClosed(
+            notificationParams,
+          );
           break;
         case FindingStatus.open:
-          this.logger.log(`Status changed to 'open' for finding ${findingId}. No notification sent.`);
+          this.logger.log(
+            `Status changed to 'open' for finding ${findingId}. No notification sent.`,
+          );
           break;
         default:
           this.logger.warn(
@@ -489,6 +518,9 @@ export class FindingsService {
     // Verify finding exists
     await this.findById(organizationId, findingId);
 
-    return this.findingAuditService.getFindingActivity(findingId, organizationId);
+    return this.findingAuditService.getFindingActivity(
+      findingId,
+      organizationId,
+    );
   }
 }
