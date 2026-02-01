@@ -115,23 +115,84 @@ export const customDomainAction = authActionClient
     } catch (error) {
       console.error('Custom domain error:', error);
 
-      // Extract meaningful error message from Vercel SDK errors
-      let errorMessage = 'Failed to update custom domain';
-
+      // Handle Vercel SDK errors
       if (error instanceof Error) {
-        // Check for Vercel API error responses
         const vercelError = error as Error & {
-          body?: { error?: { code?: string; message?: string } };
-          code?: string;
+          statusCode?: number;
+          body?: string;
         };
 
-        if (vercelError.body?.error?.message) {
-          errorMessage = vercelError.body.error.message;
-        } else if (vercelError.message) {
-          errorMessage = vercelError.message;
+        // Check for 409 domain_already_in_use - domain exists on our project with pending verification
+        if (vercelError.statusCode === 409 && vercelError.body) {
+          try {
+            const errorBody = JSON.parse(vercelError.body);
+            const errorData = errorBody?.error;
+
+            if (
+              errorData?.code === 'domain_already_in_use' &&
+              errorData?.projectId === env.TRUST_PORTAL_PROJECT_ID
+            ) {
+              // Domain already exists on our project - extract verification info and save it
+              const domainInfo = errorData.domain;
+              const vercelVerification = domainInfo?.verification?.[0]?.value || null;
+              const isVercelDomain = domainInfo?.verified === false;
+
+              console.log(
+                `Domain ${domain} already exists on project, extracting verification info:`,
+                vercelVerification,
+              );
+
+              await db.trust.upsert({
+                where: { organizationId: activeOrganizationId },
+                update: {
+                  domain,
+                  domainVerified: false,
+                  isVercelDomain,
+                  vercelVerification,
+                },
+                create: {
+                  organizationId: activeOrganizationId,
+                  domain,
+                  domainVerified: false,
+                  isVercelDomain,
+                  vercelVerification,
+                },
+              });
+
+              revalidatePath(`/${activeOrganizationId}/trust`);
+              revalidatePath(`/${activeOrganizationId}/trust/portal-settings`);
+              revalidateTag(`organization_${activeOrganizationId}`, 'max');
+
+              return {
+                success: true,
+                needsVerification: true,
+              };
+            }
+          } catch (parseError) {
+            console.error('Failed to parse Vercel error body:', parseError);
+          }
         }
+
+        // Extract meaningful error message for other errors
+        let errorMessage = 'Failed to update custom domain';
+        const typedError = error as Error & {
+          body?: string;
+        };
+
+        if (typedError.body) {
+          try {
+            const parsed = JSON.parse(typedError.body);
+            errorMessage = parsed?.error?.message || errorMessage;
+          } catch {
+            errorMessage = typedError.message || errorMessage;
+          }
+        } else if (typedError.message) {
+          errorMessage = typedError.message;
+        }
+
+        throw new Error(errorMessage);
       }
 
-      throw new Error(errorMessage);
+      throw new Error('Failed to update custom domain');
     }
   });
