@@ -3,7 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { updatePolicy } from '@/trigger/tasks/onboarding/update-policy';
 import { db } from '@db';
-import { tasks } from '@trigger.dev/sdk';
+import { auth, tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
 
 export const regeneratePolicyAction = authActionClient
@@ -26,6 +26,15 @@ export const regeneratePolicyAction = authActionClient
     if (!session?.activeOrganizationId) {
       throw new Error('No active organization');
     }
+
+    // Get the member ID for the user triggering the regeneration
+    const member = await db.member.findFirst({
+      where: {
+        organizationId: session.activeOrganizationId,
+        userId: session.userId,
+      },
+      select: { id: true },
+    });
 
     // Load frameworks associated to this organization via instances
     const instances = await db.frameworkInstance.findMany({
@@ -54,13 +63,27 @@ export const regeneratePolicyAction = authActionClient
     });
     const contextHub = contextEntries.map((c) => `${c.question}\n${c.answer}`).join('\n');
 
-    await tasks.trigger<typeof updatePolicy>('update-policy', {
+    const handle = await tasks.trigger<typeof updatePolicy>('update-policy', {
       organizationId: session.activeOrganizationId,
       policyId,
       contextHub,
       frameworks: uniqueFrameworks,
+      memberId: member?.id,
+    });
+
+    // Create a public access token for real-time tracking
+    const publicAccessToken = await auth.createPublicToken({
+      scopes: {
+        read: {
+          runs: [handle.id],
+        },
+      },
     });
 
     // Revalidation handled by safe-action middleware using x-pathname header
-    return { success: true };
+    return {
+      success: true,
+      runId: handle.id,
+      publicAccessToken,
+    };
   });

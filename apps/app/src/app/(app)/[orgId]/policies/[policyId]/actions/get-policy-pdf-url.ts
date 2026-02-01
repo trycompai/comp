@@ -8,7 +8,10 @@ import { db } from '@db';
 import { z } from 'zod';
 
 export const getPolicyPdfUrlAction = authActionClient
-  .inputSchema(z.object({ policyId: z.string() }))
+  .inputSchema(z.object({ 
+    policyId: z.string(),
+    versionId: z.string().optional(), // If provided, get URL for this version's PDF
+  }))
   .metadata({
     name: 'get-policy-pdf-url',
     track: {
@@ -17,7 +20,7 @@ export const getPolicyPdfUrlAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { policyId } = parsedInput;
+    const { policyId, versionId } = parsedInput;
     const { session } = ctx;
     const organizationId = session.activeOrganizationId;
 
@@ -30,19 +33,43 @@ export const getPolicyPdfUrlAction = authActionClient
     }
 
     try {
-      const policy = await db.policy.findUnique({
-        where: { id: policyId, organizationId },
-        select: { pdfUrl: true },
-      });
+      let pdfUrl: string | null = null;
 
-      if (!policy?.pdfUrl) {
-        return { success: false, error: 'No PDF found for this policy.' };
+      if (versionId) {
+        // Get PDF URL from specific version
+        const version = await db.policyVersion.findUnique({
+          where: { id: versionId },
+          select: { pdfUrl: true, policyId: true },
+        });
+
+        if (!version || version.policyId !== policyId) {
+          return { success: false, error: 'Version not found' };
+        }
+
+        pdfUrl = version.pdfUrl;
+      } else {
+        // Legacy: get from policy level
+        const policy = await db.policy.findUnique({
+          where: { id: policyId, organizationId },
+          select: {
+            pdfUrl: true,
+            currentVersion: {
+              select: { pdfUrl: true },
+            },
+          },
+        });
+
+        pdfUrl = policy?.currentVersion?.pdfUrl ?? policy?.pdfUrl ?? null;
+      }
+
+      if (!pdfUrl) {
+        return { success: false, error: 'No PDF found.' };
       }
 
       // Generate a temporary, secure URL for the client to render the PDF from the private bucket.
       const command = new GetObjectCommand({
         Bucket: BUCKET_NAME,
-        Key: policy.pdfUrl,
+        Key: pdfUrl,
         ResponseContentDisposition: 'inline',
         ResponseContentType: 'application/pdf',
       });

@@ -51,14 +51,19 @@ export const denyRequestedPolicyChangesAction = authActionClient
       }
 
       // Update policy status
+      // If there's a current published version, keep status as published
+      // Otherwise, set to draft
+      const newStatus = policy.currentVersionId ? PolicyStatus.published : PolicyStatus.draft;
+      
       await db.policy.update({
         where: {
           id,
           organizationId: session.activeOrganizationId,
         },
         data: {
-          status: PolicyStatus.draft,
+          status: newStatus,
           approverId: null,
+          pendingVersionId: null, // Clear the pending version
         },
       });
 

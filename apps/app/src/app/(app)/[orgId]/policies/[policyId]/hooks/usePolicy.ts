@@ -2,6 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import type { Member, Policy, User } from '@db';
+import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
 
 type PolicyWithApprover = Policy & { approver: (Member & { user: User }) | null };
@@ -39,6 +40,29 @@ export function usePolicy({ policyId, organizationId, initialData }: UsePolicyOp
       revalidateOnFocus: false,
     },
   );
+
+  // Track if this is the first render to avoid unnecessary updates
+  const isFirstRender = useRef(true);
+  const prevInitialDataRef = useRef(initialData);
+
+  // Sync initialData to SWR cache when it changes (e.g., after router.refresh())
+  // This ensures the cache is updated when server component re-fetches data
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    
+    // Only update if initialData actually changed (compare by currentVersionId for efficiency)
+    const prevVersionId = prevInitialDataRef.current?.currentVersionId;
+    const newVersionId = initialData?.currentVersionId;
+    
+    if (initialData && prevVersionId !== newVersionId) {
+      mutate(initialData, false); // Update cache without revalidating
+    }
+    
+    prevInitialDataRef.current = initialData;
+  }, [initialData, mutate]);
 
   return {
     policy: data ?? null,

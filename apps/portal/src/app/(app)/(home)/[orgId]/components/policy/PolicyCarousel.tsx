@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
-import type { Member, Policy } from '@db';
+import type { Member, Policy, PolicyVersion } from '@db';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useRef, useState } from 'react';
@@ -9,8 +9,12 @@ import { toast } from 'sonner';
 import { markPolicyAsCompleted } from '../../../actions/markPolicyAsCompleted';
 import { PolicyCard } from './PolicyCard';
 
+type PolicyWithVersion = Policy & {
+  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
+};
+
 interface PolicyCarouselProps {
-  policies: Policy[];
+  policies: PolicyWithVersion[];
   member: Member;
   initialIndex?: number;
   onIndexChange?: (index: number) => void;

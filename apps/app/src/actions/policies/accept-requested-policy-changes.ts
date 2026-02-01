@@ -1,7 +1,7 @@
 'use server';
 
 import { sendNewPolicyEmail } from '@/trigger/tasks/email/new-policy-email';
-import { db, PolicyStatus } from '@db';
+import { db, PolicyStatus, type Prisma } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
@@ -62,19 +62,36 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       // Check if there were previous signers to determine notification type
       const isNewPolicy = policy.lastPublishedAt === null;
 
-      // Update policy status and clear signedBy field
+      // Build update data
+      const updateData: Prisma.PolicyUpdateInput = {
+        status: PolicyStatus.published,
+        approverId: null,
+        signedBy: [], // Clear the signedBy field
+        lastPublishedAt: new Date(), // Update last published date
+        reviewDate: new Date(), // Update reviewDate to current date
+        pendingVersionId: null, // Clear pending version
+      };
+
+      // If there's a pending version, make it the current version
+      if (policy.pendingVersionId) {
+        const pendingVersion = await db.policyVersion.findUnique({
+          where: { id: policy.pendingVersionId },
+        });
+
+        if (pendingVersion && pendingVersion.policyId === policy.id) {
+          updateData.currentVersionId = pendingVersion.id;
+          updateData.content = pendingVersion.content as Prisma.InputJsonValue[];
+          updateData.draftContent = pendingVersion.content as Prisma.InputJsonValue[];
+        }
+      }
+
+      // Update policy status and apply version changes
       await db.policy.update({
         where: {
           id,
           organizationId: session.activeOrganizationId,
         },
-        data: {
-          status: PolicyStatus.published,
-          approverId: null,
-          signedBy: [], // Clear the signedBy field
-          lastPublishedAt: new Date(), // Update last published date
-          reviewDate: new Date(), // Update reviewDate to current date
-        },
+        data: updateData,
       });
 
       // Get all employees in the organization to send notifications

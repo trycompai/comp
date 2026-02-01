@@ -1,4 +1,5 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
@@ -331,6 +332,44 @@ export class AttachmentsService {
         throw error;
       }
       throw new InternalServerErrorException('Failed to delete attachment');
+    }
+  }
+
+  /**
+   * Copy a policy PDF to a new S3 key for versioning
+   */
+  async copyPolicyVersionPdf(
+    sourceKey: string,
+    destinationKey: string,
+  ): Promise<string | null> {
+    try {
+      await this.s3Client.send(
+        new CopyObjectCommand({
+          Bucket: this.bucketName,
+          CopySource: `${this.bucketName}/${sourceKey}`,
+          Key: destinationKey,
+        }),
+      );
+      return destinationKey;
+    } catch (error) {
+      console.error('Error copying policy PDF:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete a policy version PDF from S3
+   */
+  async deletePolicyVersionPdf(s3Key: string): Promise<void> {
+    try {
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: s3Key,
+        }),
+      );
+    } catch (error) {
+      console.error('Error deleting policy PDF:', error);
     }
   }
 

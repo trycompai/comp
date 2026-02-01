@@ -1,9 +1,10 @@
 'use client';
 
-import type { Control, Member, Policy, User } from '@db';
+import type { Control, Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useMemo } from 'react';
 import { Comments } from '../../../../../../components/comments/Comments';
 import type { AuditLogWithRelations } from '../data';
 import { PolicyContentManager } from '../editor/components/PolicyDetails';
@@ -16,6 +17,10 @@ import { PolicyOverviewSheet } from './PolicyOverviewSheet';
 import { PolicySettingsCard } from './PolicySettingsCard';
 import { RecentAuditLogs } from './RecentAuditLogs';
 
+type PolicyVersionWithPublisher = PolicyVersion & {
+  publishedBy: (Member & { user: User }) | null;
+};
+
 interface PolicyPageTabsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   assignees: (Member & { user: User })[];
@@ -25,6 +30,7 @@ interface PolicyPageTabsProps {
   policyId: string;
   organizationId: string;
   logs: AuditLogWithRelations[];
+  versions: PolicyVersionWithPublisher[];
   showAiAssistant: boolean;
 }
 
@@ -37,6 +43,7 @@ export function PolicyPageTabs({
   policyId,
   organizationId,
   logs,
+  versions,
   showAiAssistant,
 }: PolicyPageTabsProps) {
   const router = useRouter();
@@ -49,6 +56,13 @@ export function PolicyPageTabs({
     organizationId,
     initialData: initialPolicy,
   });
+
+  const hasDraftChanges = useMemo(() => {
+    if (!policy) return false;
+    const draftContent = policy.draftContent ?? [];
+    const publishedContent = policy.content ?? [];
+    return JSON.stringify(draftContent) !== JSON.stringify(publishedContent);
+  }, [policy]);
 
   // Derive isPendingApproval from current policy data
   const isPendingApproval = policy ? !!policy.approverId : initialIsPendingApproval;
@@ -82,6 +96,7 @@ export function PolicyPageTabs({
                 policy={policy}
                 assignees={assignees}
                 isPendingApproval={isPendingApproval}
+                versions={versions}
                 onMutate={mutate}
               />
               <PolicyControlMappings
@@ -96,10 +111,35 @@ export function PolicyPageTabs({
             <PolicyContentManager
               isPendingApproval={isPendingApproval}
               policyId={policyId}
-              policyContent={policy?.content ? (policy.content as JSONContent[]) : []}
+              policyContent={
+                // Priority: 1) Published version content, 2) legacy policy.content, 3) empty array
+                (() => {
+                  // Find the published version content
+                  const currentVersion = versions.find((v) => v.id === policy?.currentVersionId);
+                  if (currentVersion?.content) {
+                    const versionContent = currentVersion.content as JSONContent[];
+                    return Array.isArray(versionContent) ? versionContent : [versionContent];
+                  }
+                  // Fallback to legacy policy.content for backward compatibility
+                  if (policy?.content) {
+                    return policy.content as JSONContent[];
+                  }
+                  return [];
+                })()
+              }
               displayFormat={policy?.displayFormat}
-              pdfUrl={policy?.pdfUrl}
+              pdfUrl={
+                // Use version PDF if available, otherwise fallback to policy PDF
+                versions.find((v) => v.id === policy?.currentVersionId)?.pdfUrl ?? policy?.pdfUrl
+              }
               aiAssistantEnabled={showAiAssistant}
+              hasUnpublishedChanges={hasDraftChanges}
+              currentVersionNumber={
+                versions.find((v) => v.id === policy?.currentVersionId)?.version ?? null
+              }
+              currentVersionId={policy?.currentVersionId ?? null}
+              pendingVersionId={policy?.pendingVersionId ?? null}
+              versions={versions}
               onMutate={mutate}
             />
           </TabsContent>

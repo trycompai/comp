@@ -6,7 +6,13 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { PolicyHeaderActions } from './components/PolicyHeaderActions';
 import PolicyPage from './components/PolicyPage';
-import { getAssignees, getLogsForPolicy, getPolicy, getPolicyControlMappingInfo } from './data';
+import {
+  getAssignees,
+  getLogsForPolicy,
+  getPolicy,
+  getPolicyControlMappingInfo,
+  getPolicyVersions,
+} from './data';
 
 export default async function PolicyDetails({
   params,
@@ -19,6 +25,7 @@ export default async function PolicyDetails({
   const assignees = await getAssignees();
   const { mappedControls, allControls } = await getPolicyControlMappingInfo(policyId);
   const logs = await getLogsForPolicy(policyId);
+  const versions = await getPolicyVersions(policyId);
 
   const isPendingApproval = !!policy?.approverId;
 
@@ -56,6 +63,7 @@ export default async function PolicyDetails({
         allControls={allControls}
         isPendingApproval={isPendingApproval}
         logs={logs}
+        versions={versions}
         showAiAssistant={isAiPolicyEditorEnabled}
       />
     </PageLayout>

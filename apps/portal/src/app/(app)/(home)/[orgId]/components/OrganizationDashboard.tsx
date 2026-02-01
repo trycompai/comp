@@ -24,11 +24,22 @@ export async function OrganizationDashboard({
   host,
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
+  // Include currentVersion to get the published version's content and pdfUrl
   const policies = await db.policy.findMany({
     where: {
       organizationId: organizationId,
       isRequiredToSign: true, // Keep original logic for required policies
       status: 'published',
+    },
+    include: {
+      currentVersion: {
+        select: {
+          id: true,
+          content: true,
+          pdfUrl: true,
+          version: true,
+        },
+      },
     },
   });
 

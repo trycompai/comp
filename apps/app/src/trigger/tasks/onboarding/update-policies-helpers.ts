@@ -372,6 +372,7 @@ export type UpdatePolicyParams = {
   policyId: string;
   contextHub: string;
   frameworks: FrameworkEditorFramework[];
+  memberId?: string;
 };
 
 export type PolicyUpdateResult = {
@@ -500,16 +501,89 @@ Return the complete TipTap document following ALL the above requirements using p
 }
 
 /**
- * Updates policy content in the database
+ * Updates policy content in the database with versioning support.
+ * Creates a new version 1 and sets it as the current (published) version.
+ * Deletes all existing versions first.
  */
 export async function updatePolicyInDatabase(
   policyId: string,
   content: Record<string, unknown>[],
+  memberId?: string,
 ): Promise<void> {
   try {
+    // First, get the policy to check for existing versions and get their PDF URLs
+    const policy = await db.policy.findUnique({
+      where: { id: policyId },
+      include: {
+        versions: {
+          select: { id: true, pdfUrl: true },
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new Error(`Policy not found: ${policyId}`);
+    }
+
+    // Delete S3 files for existing versions if they have PDFs
+    // Note: We import S3 client dynamically to avoid issues with Trigger.dev runtime
+    const pdfUrlsToDelete = policy.versions
+      .map((v) => v.pdfUrl)
+      .filter((url): url is string => !!url);
+
+    if (pdfUrlsToDelete.length > 0) {
+      try {
+        // Dynamic import to work in Trigger.dev context
+        const { BUCKET_NAME, s3Client } = await import('@/app/s3');
+        const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+
+        if (s3Client && BUCKET_NAME) {
+          await Promise.allSettled(
+            pdfUrlsToDelete.map((pdfUrl) =>
+              s3Client.send(
+                new DeleteObjectCommand({
+                  Bucket: BUCKET_NAME,
+                  Key: pdfUrl,
+                }),
+              ),
+            ),
+          );
+        }
+      } catch (s3Error) {
+        logger.error(`Error deleting S3 files during regeneration: ${s3Error}`);
+        // Continue with regeneration even if S3 cleanup fails
+      }
+    }
+
+    // Delete all existing versions
+    if (policy.versions.length > 0) {
+      await db.policyVersion.deleteMany({
+        where: { policyId },
+      });
+    }
+
+    // Create new version 1
+    const newVersion = await db.policyVersion.create({
+      data: {
+        policyId,
+        version: 1,
+        content: content as JSONContent[],
+        publishedById: memberId || null,
+        changelog: 'Regenerated policy content',
+      },
+    });
+
+    // Update policy with new content and set the new version as current
     await db.policy.update({
       where: { id: policyId },
-      data: { content: content as JSONContent[] },
+      data: {
+        content: content as JSONContent[],
+        draftContent: [],
+        currentVersionId: newVersion.id,
+        pendingVersionId: null,
+        pdfUrl: null, // Clear policy-level PDF since we're regenerating
+        displayFormat: 'EDITOR', // Reset to editor format
+      },
     });
   } catch (dbError) {
     logger.error(`Failed to update policy in database: ${dbError}`);
@@ -521,7 +595,7 @@ export async function updatePolicyInDatabase(
  * Complete policy update workflow
  */
 export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<PolicyUpdateResult> {
-  const { organizationId, policyId, contextHub, frameworks } = params;
+  const { organizationId, policyId, contextHub, frameworks, memberId } = params;
 
   // Fetch organization and policy data
   const { organization, policyTemplate } = await fetchOrganizationAndPolicy(
@@ -535,8 +609,8 @@ export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<P
   // Generate new policy content
   const updatedContent = await generatePolicyContent(prompt);
 
-  // Update policy in database
-  await updatePolicyInDatabase(policyId, updatedContent.content);
+  // Update policy in database with versioning support
+  await updatePolicyInDatabase(policyId, updatedContent.content, memberId);
 
   return {
     policyId,

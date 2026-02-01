@@ -1,15 +1,26 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { db } from '@trycompai/db';
-import type { Prisma } from '@trycompai/db';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { db, PolicyStatus, Prisma } from '@trycompai/db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
+import type {
+  CreateVersionDto,
+  PublishVersionDto,
+  SubmitForApprovalDto,
+  UpdateVersionContentDto,
+} from './dto/version.dto';
 
 @Injectable()
 export class PoliciesService {
   private readonly logger = new Logger(PoliciesService.name);
+  private readonly versionCreateRetries = 3;
 
   constructor(
     private readonly attachmentsService: AttachmentsService,
@@ -26,6 +37,7 @@ export class PoliciesService {
           description: true,
           status: true,
           content: true,
+          draftContent: true,
           frequency: true,
           department: true,
           isRequiredToSign: true,
@@ -40,6 +52,10 @@ export class PoliciesService {
           assigneeId: true,
           approverId: true,
           policyTemplateId: true,
+          currentVersionId: true,
+          pendingVersionId: true,
+          displayFormat: true,
+          pdfUrl: true,
           assignee: {
             select: {
               id: true,
@@ -80,6 +96,7 @@ export class PoliciesService {
           description: true,
           status: true,
           content: true,
+          draftContent: true,
           frequency: true,
           department: true,
           isRequiredToSign: true,
@@ -94,6 +111,23 @@ export class PoliciesService {
           assigneeId: true,
           approverId: true,
           policyTemplateId: true,
+          currentVersionId: true,
+          pendingVersionId: true,
+          displayFormat: true,
+          pdfUrl: true,
+          approver: {
+            include: {
+              user: true,
+            },
+          },
+          currentVersion: {
+            select: {
+              id: true,
+              content: true,
+              pdfUrl: true,
+              version: true,
+            },
+          },
         },
       });
 
@@ -114,36 +148,61 @@ export class PoliciesService {
 
   async create(organizationId: string, createData: CreatePolicyDto) {
     try {
-      const policy = await db.policy.create({
-        data: {
-          ...createData,
-          // Ensure JSON[] type compatibility for Prisma
-          content: createData.content as Prisma.InputJsonValue[],
-          organizationId,
-          status: createData.status || 'draft',
-          isRequiredToSign: createData.isRequiredToSign ?? true,
-        },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          status: true,
-          content: true,
-          frequency: true,
-          department: true,
-          isRequiredToSign: true,
-          signedBy: true,
-          reviewDate: true,
-          isArchived: true,
-          createdAt: true,
-          updatedAt: true,
-          lastArchivedAt: true,
-          lastPublishedAt: true,
-          organizationId: true,
-          assigneeId: true,
-          approverId: true,
-          policyTemplateId: true,
-        },
+      const contentValue = createData.content as Prisma.InputJsonValue[];
+
+      // Create policy with version 1 in a transaction
+      const policy = await db.$transaction(async (tx) => {
+        // Create the policy first (without currentVersionId)
+        const newPolicy = await tx.policy.create({
+          data: {
+            ...createData,
+            // Ensure JSON[] type compatibility for Prisma
+            content: contentValue,
+            organizationId,
+            status: createData.status || 'draft',
+            isRequiredToSign: createData.isRequiredToSign ?? true,
+          },
+        });
+
+        // Create version 1 as a draft
+        const version = await tx.policyVersion.create({
+          data: {
+            policyId: newPolicy.id,
+            version: 1,
+            content: contentValue,
+            changelog: 'Initial version',
+          },
+        });
+
+        // Update policy to set currentVersionId
+        const updatedPolicy = await tx.policy.update({
+          where: { id: newPolicy.id },
+          data: { currentVersionId: version.id },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            status: true,
+            content: true,
+            frequency: true,
+            department: true,
+            isRequiredToSign: true,
+            signedBy: true,
+            reviewDate: true,
+            isArchived: true,
+            createdAt: true,
+            updatedAt: true,
+            lastArchivedAt: true,
+            lastPublishedAt: true,
+            organizationId: true,
+            assigneeId: true,
+            approverId: true,
+            policyTemplateId: true,
+            currentVersionId: true,
+          },
+        });
+
+        return updatedPolicy;
       });
 
       this.logger.log(`Created policy: ${policy.name} (${policy.id})`);
@@ -266,6 +325,433 @@ export class PoliciesService {
     }
   }
 
+  async getVersions(policyId: string, organizationId: string) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true, currentVersionId: true, pendingVersionId: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const versions = await db.policyVersion.findMany({
+      where: { policyId },
+      orderBy: { version: 'desc' },
+      include: {
+        publishedBy: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      versions,
+      currentVersionId: policy.currentVersionId,
+      pendingVersionId: policy.pendingVersionId,
+    };
+  }
+
+  async createVersion(
+    policyId: string,
+    organizationId: string,
+    dto: CreateVersionDto,
+    userId?: string,
+  ) {
+    const memberId = await this.getMemberId(organizationId, userId);
+
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      include: {
+        currentVersion: true,
+        versions: {
+          orderBy: { version: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    let sourceVersion = policy.currentVersion;
+    if (dto.sourceVersionId) {
+      const requestedVersion = await db.policyVersion.findUnique({
+        where: { id: dto.sourceVersionId },
+      });
+
+      if (!requestedVersion || requestedVersion.policyId !== policyId) {
+        throw new NotFoundException('Source version not found');
+      }
+
+      sourceVersion = requestedVersion;
+    }
+
+    const contentForVersion = sourceVersion
+      ? (sourceVersion.content as Prisma.InputJsonValue[])
+      : (policy.content as Prisma.InputJsonValue[]);
+    const sourcePdfUrl = sourceVersion?.pdfUrl ?? policy.pdfUrl;
+
+    if (!contentForVersion || contentForVersion.length === 0) {
+      throw new BadRequestException('No content to create version from');
+    }
+
+    for (let attempt = 1; attempt <= this.versionCreateRetries; attempt += 1) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const latestVersion = await tx.policyVersion.findFirst({
+            where: { policyId },
+            orderBy: { version: 'desc' },
+            select: { version: true },
+          });
+          const nextVersion = (latestVersion?.version ?? 0) + 1;
+
+          let newPdfUrl: string | null = null;
+          if (sourcePdfUrl) {
+            const newS3Key = `${organizationId}/policies/${policyId}/v${nextVersion}-${Date.now()}.pdf`;
+            newPdfUrl = await this.attachmentsService.copyPolicyVersionPdf(
+              sourcePdfUrl,
+              newS3Key,
+            );
+          }
+
+          const newVersion = await tx.policyVersion.create({
+            data: {
+              policyId,
+              version: nextVersion,
+              content: contentForVersion,
+              pdfUrl: newPdfUrl,
+              publishedById: memberId,
+              changelog: dto.changelog ?? null,
+            },
+          });
+
+          return {
+            versionId: newVersion.id,
+            version: nextVersion,
+          };
+        });
+      } catch (error) {
+        if (
+          this.isUniqueConstraintError(error) &&
+          attempt < this.versionCreateRetries
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Failed to create policy version after retries');
+  }
+
+  async updateVersionContent(
+    policyId: string,
+    versionId: string,
+    organizationId: string,
+    dto: UpdateVersionContentDto,
+  ) {
+    const version = await db.policyVersion.findUnique({
+      where: { id: versionId },
+      include: {
+        policy: {
+          select: {
+            id: true,
+            organizationId: true,
+            currentVersionId: true,
+            pendingVersionId: true,
+          },
+        },
+      },
+    });
+
+    if (!version || version.policy.organizationId !== organizationId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    if (version.id === version.policy.currentVersionId) {
+      throw new BadRequestException(
+        'Cannot edit the published version. Create a new version to make changes.',
+      );
+    }
+
+    if (version.id === version.policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot edit a version that is pending approval.',
+      );
+    }
+
+    const processedContent = JSON.parse(
+      JSON.stringify(dto.content ?? []),
+    ) as Prisma.InputJsonValue[];
+
+    await db.policyVersion.update({
+      where: { id: versionId },
+      data: { content: processedContent },
+    });
+
+    return { versionId };
+  }
+
+  async deleteVersion(
+    policyId: string,
+    versionId: string,
+    organizationId: string,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      select: {
+        id: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const version = await db.policyVersion.findUnique({
+      where: { id: versionId },
+      select: {
+        id: true,
+        policyId: true,
+        pdfUrl: true,
+        version: true,
+      },
+    });
+
+    if (!version || version.policyId !== policyId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    if (version.id === policy.currentVersionId) {
+      throw new BadRequestException('Cannot delete the published version');
+    }
+
+    if (version.id === policy.pendingVersionId) {
+      throw new BadRequestException('Cannot delete a version pending approval');
+    }
+
+    if (version.pdfUrl) {
+      try {
+        await this.attachmentsService.deletePolicyVersionPdf(version.pdfUrl);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to delete version PDF for version ${version.id}`,
+          error,
+        );
+      }
+    }
+
+    await db.policyVersion.delete({
+      where: { id: versionId },
+    });
+
+    return { deletedVersion: version.version };
+  }
+
+  async publishVersion(
+    policyId: string,
+    organizationId: string,
+    dto: PublishVersionDto,
+    userId?: string,
+  ) {
+    const memberId = await this.getMemberId(organizationId, userId);
+
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      include: {
+        versions: {
+          orderBy: { version: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const contentToPublish = (
+      policy.draftContent && policy.draftContent.length > 0
+        ? policy.draftContent
+        : policy.content
+    ) as Prisma.InputJsonValue[];
+
+    if (!contentToPublish || contentToPublish.length === 0) {
+      throw new BadRequestException('No content to publish');
+    }
+
+    for (let attempt = 1; attempt <= this.versionCreateRetries; attempt += 1) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const latestVersion = await tx.policyVersion.findFirst({
+            where: { policyId },
+            orderBy: { version: 'desc' },
+            select: { version: true },
+          });
+          const nextVersion = (latestVersion?.version ?? 0) + 1;
+
+          const newVersion = await tx.policyVersion.create({
+            data: {
+              policyId,
+              version: nextVersion,
+              content: contentToPublish,
+              pdfUrl: policy.pdfUrl,
+              publishedById: memberId,
+              changelog: dto.changelog ?? null,
+            },
+          });
+
+          await tx.policy.update({
+            where: { id: policyId },
+            data: {
+              content: contentToPublish,
+              draftContent: contentToPublish,
+              lastPublishedAt: new Date(),
+              status: 'published',
+              ...(dto.setAsActive !== false && {
+                currentVersionId: newVersion.id,
+              }),
+            },
+          });
+
+          return {
+            versionId: newVersion.id,
+            version: nextVersion,
+          };
+        });
+      } catch (error) {
+        if (
+          this.isUniqueConstraintError(error) &&
+          attempt < this.versionCreateRetries
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Failed to publish policy version after retries');
+  }
+
+  async setActiveVersion(
+    policyId: string,
+    versionId: string,
+    organizationId: string,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (policy.pendingVersionId && policy.pendingVersionId !== versionId) {
+      throw new BadRequestException(
+        'Another version is already pending approval',
+      );
+    }
+
+    const version = await db.policyVersion.findUnique({
+      where: { id: versionId },
+    });
+
+    if (!version || version.policyId !== policyId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    await db.policy.update({
+      where: { id: policyId },
+      data: {
+        currentVersionId: versionId,
+        content: version.content as Prisma.InputJsonValue[],
+        status: 'published',
+      },
+    });
+
+    return {
+      versionId: version.id,
+      version: version.version,
+    };
+  }
+
+  async submitForApproval(
+    policyId: string,
+    versionId: string,
+    organizationId: string,
+    dto: SubmitForApprovalDto,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const version = await db.policyVersion.findUnique({
+      where: { id: versionId },
+    });
+
+    if (!version || version.policyId !== policyId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    const approver = await db.member.findUnique({
+      where: { id: dto.approverId },
+    });
+
+    if (!approver || approver.organizationId !== organizationId) {
+      throw new NotFoundException('Approver not found');
+    }
+
+    await db.policy.update({
+      where: { id: policyId },
+      data: {
+        pendingVersionId: versionId,
+        status: PolicyStatus.needs_review,
+        approverId: dto.approverId,
+      },
+    });
+
+    return {
+      versionId: version.id,
+      version: version.version,
+    };
+  }
+
+  private async getMemberId(
+    organizationId: string,
+    userId?: string,
+  ): Promise<string | null> {
+    if (!userId) {
+      return null;
+    }
+
+    const member = await db.member.findFirst({
+      where: {
+        userId,
+        organizationId,
+        deactivated: false,
+      },
+      select: { id: true },
+    });
+
+    return member?.id ?? null;
+  }
+
   /**
    * Convert hex color to RGB values (0-1 range for pdf-lib)
    */
@@ -322,7 +808,7 @@ export class PoliciesService {
       throw new NotFoundException('Organization not found');
     }
 
-    // Get all published policies
+    // Get all published policies with currentVersion
     const policies = await db.policy.findMany({
       where: {
         organizationId,
@@ -334,6 +820,12 @@ export class PoliciesService {
         name: true,
         content: true,
         pdfUrl: true,
+        currentVersion: {
+          select: {
+            content: true,
+            pdfUrl: true,
+          },
+        },
       },
       orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
@@ -359,15 +851,23 @@ export class PoliciesService {
       isUploaded: boolean;
     };
 
+    // Helper to get effective content and pdfUrl (version first, fallback to policy)
+    const getEffectiveData = (policy: (typeof policies)[0]) => {
+      const content = policy.currentVersion?.content ?? policy.content;
+      const pdfUrl = policy.currentVersion?.pdfUrl ?? policy.pdfUrl;
+      return { content, pdfUrl };
+    };
+
     const preparePolicy = async (
       policy: (typeof policies)[0],
     ): Promise<PreparedPolicy> => {
-      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+      const { content, pdfUrl } = getEffectiveData(policy);
+      const hasUploadedPdf = pdfUrl && pdfUrl.trim() !== '';
 
       if (hasUploadedPdf) {
         try {
           const pdfBuffer = await this.attachmentsService.getObjectBuffer(
-            policy.pdfUrl!,
+            pdfUrl!,
           );
           return {
             policy,
@@ -384,7 +884,7 @@ export class PoliciesService {
 
       // Render from content (either no pdfUrl or fetch failed)
       const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-        [{ name: policy.name, content: policy.content }],
+        [{ name: policy.name, content }],
         undefined, // We'll add org header during merge
         organization.primaryColor,
         policies.length,
@@ -400,8 +900,9 @@ export class PoliciesService {
       policy: (typeof policies)[0],
       addOrgHeader: boolean,
     ) => {
+      const { content } = getEffectiveData(policy);
       const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-        [{ name: policy.name, content: policy.content }],
+        [{ name: policy.name, content }],
         addOrgHeader ? organizationName : undefined,
         organization.primaryColor,
         policies.length,
@@ -568,5 +1069,12 @@ export class PoliciesService {
       downloadUrl,
       policyCount: policies.length,
     };
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    );
   }
 }
