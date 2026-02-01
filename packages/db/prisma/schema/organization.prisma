@@ -3,6 +3,7 @@ model Organization {
   name                String
   slug                String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
   logo                String?
+  faviconUrl          String?
   createdAt           DateTime    @default(now())
   metadata            String?
   onboarding          Onboarding?

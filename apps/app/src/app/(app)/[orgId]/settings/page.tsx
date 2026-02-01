@@ -2,6 +2,7 @@ import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { DeleteOrganization } from '@/components/forms/organization/delete-organization';
 import { TransferOwnership } from '@/components/forms/organization/transfer-ownership';
 import { UpdateOrganizationAdvancedMode } from '@/components/forms/organization/update-organization-advanced-mode';
+import { UpdateOrganizationFavicon } from '@/components/forms/organization/update-organization-favicon';
 import { UpdateOrganizationLogo } from '@/components/forms/organization/update-organization-logo';
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
@@ -21,6 +22,7 @@ export default async function OrganizationSettings({
 
   const organization = await organizationDetails(orgId);
   const logoUrl = await getLogoUrl(organization?.logo);
+  const faviconUrl = await getFaviconUrl(organization?.faviconUrl);
   const { isOwner, eligibleMembers } = await getOwnershipData(orgId);
 
   return (
@@ -28,6 +30,7 @@ export default async function OrganizationSettings({
       <UpdateOrganizationName organizationName={organization?.name ?? ''} />
       <UpdateOrganizationWebsite organizationWebsite={organization?.website ?? ''} />
       <UpdateOrganizationLogo currentLogoUrl={logoUrl} />
+      <UpdateOrganizationFavicon currentFaviconUrl={faviconUrl} />
       <UpdateOrganizationAdvancedMode
         advancedModeEnabled={organization?.advancedModeEnabled ?? false}
       />
@@ -51,6 +54,20 @@ async function getLogoUrl(logoKey: string | null | undefined): Promise<string | 
   }
 }
 
+async function getFaviconUrl(faviconKey: string | null | undefined): Promise<string | null> {
+  if (!faviconKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) return null;
+
+  try {
+    const command = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: faviconKey,
+    });
+    return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  } catch {
+    return null;
+  }
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'Settings',
@@ -66,6 +83,7 @@ async function organizationDetails(orgId: string) {
       website: true,
       advancedModeEnabled: true,
       logo: true,
+      faviconUrl: true,
     },
   });
 
