@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { Resend } from 'resend';
-
-export const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+import { getMailService, getMailServiceProvider } from './mail-service';
 
 function maskEmail(value: string): string {
   const [name = '', domain = ''] = value.toLowerCase().split('@');
   if (!domain) return 'invalid-email';
-  const safeName = name.length <= 2 ? name[0] ?? '' : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
+  const safeName =
+    name.length <= 2 ? (name[0] ?? '') : `${name[0]}${'*'.repeat(name.length - 2)}${name.at(-1)}`;
   return `${safeName}@${domain}`;
 }
 
@@ -44,9 +43,7 @@ export const sendEmail = async ({
   scheduledAt?: string;
   attachments?: EmailAttachment[];
 }) => {
-  if (!resend) {
-    throw new Error('Resend not initialized - missing API key');
-  }
+  const mailService = getMailService();
 
   // 1) Pull each env var into its own constant
   const fromMarketing = process.env.RESEND_FROM_MARKETING;
@@ -76,7 +73,7 @@ export const sendEmail = async ({
   try {
     console.info('[email] send start', {
       requestId,
-      provider: 'resend',
+      provider: getMailServiceProvider(),
       from: fromAddress,
       to: maskEmailList(toAddress),
       subject,
@@ -88,7 +85,7 @@ export const sendEmail = async ({
       },
     });
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await mailService.send({
       from: fromAddress, // now always a string
       to: toAddress, // now always a string
       cc,
@@ -111,7 +108,7 @@ export const sendEmail = async ({
 
     console.info('[email] send success', {
       requestId,
-      provider: 'resend',
+      provider: getMailServiceProvider(),
       to: maskEmailList(toAddress),
       messageId: data?.id,
       durationMs: Date.now() - startTime,
@@ -124,7 +121,7 @@ export const sendEmail = async ({
   } catch (error) {
     console.error('[email] send failure', {
       requestId,
-      provider: 'resend',
+      provider: getMailServiceProvider(),
       to: maskEmailList(toAddress),
       durationMs: Date.now() - startTime,
       error: error instanceof Error ? error.message : String(error),
