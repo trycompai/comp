@@ -94,6 +94,8 @@ export const publishVersionAction = authActionClient
               // Clear any pending approval since we're publishing directly
               pendingVersionId: null,
               approverId: null,
+              // Clear signatures - employees must re-acknowledge new content
+              signedBy: [],
               ...(setAsActive !== false && { currentVersionId: newVersion.id }),
             },
           });

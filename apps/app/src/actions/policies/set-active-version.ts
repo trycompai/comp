@@ -64,6 +64,8 @@ export const setActiveVersionAction = authActionClient
         status: 'published',
         pendingVersionId: null,
         approverId: null,
+        // Clear signatures - employees must re-acknowledge new content
+        signedBy: [],
       },
     });
 

@@ -101,7 +101,6 @@ export const createPolicyAction = authActionClient
       });
 
       revalidatePath(`/${activeOrganizationId}/policies`);
-      revalidatePath(`/${activeOrganizationId}/policies`);
       revalidateTag('policies', 'max');
 
       return {

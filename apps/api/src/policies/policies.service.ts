@@ -685,6 +685,8 @@ export class PoliciesService {
               // Clear any pending approval since we're publishing directly
               pendingVersionId: null,
               approverId: null,
+              // Clear signatures - employees must re-acknowledge new content
+              signedBy: [],
               ...(dto.setAsActive !== false && {
                 currentVersionId: newVersion.id,
               }),
@@ -747,6 +749,8 @@ export class PoliciesService {
         // Clear pending approval state since we're directly activating a version
         pendingVersionId: null,
         approverId: null,
+        // Clear signatures - employees must re-acknowledge new content
+        signedBy: [],
       },
     });
 
