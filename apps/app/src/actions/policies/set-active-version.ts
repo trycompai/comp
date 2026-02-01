@@ -55,6 +55,7 @@ export const setActiveVersionAction = authActionClient
       data: {
         currentVersionId: versionId,
         content: version.content as Prisma.InputJsonValue[],
+        draftContent: version.content as Prisma.InputJsonValue[], // Sync draft to prevent "unpublished changes" UI bug
         status: 'published',
         pendingVersionId: null,
         approverId: null,

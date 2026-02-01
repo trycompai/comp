@@ -742,6 +742,7 @@ export class PoliciesService {
       data: {
         currentVersionId: versionId,
         content: version.content as Prisma.InputJsonValue[],
+        draftContent: version.content as Prisma.InputJsonValue[], // Sync draft to prevent "unpublished changes" UI bug
         status: 'published',
         // Clear pending approval state since we're directly activating a version
         pendingVersionId: null,

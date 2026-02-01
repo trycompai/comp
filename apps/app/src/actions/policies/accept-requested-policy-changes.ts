@@ -78,11 +78,17 @@ export const acceptRequestedPolicyChangesAction = authActionClient
           where: { id: policy.pendingVersionId },
         });
 
-        if (pendingVersion && pendingVersion.policyId === policy.id) {
-          updateData.currentVersion = { connect: { id: pendingVersion.id } };
-          updateData.content = pendingVersion.content as Prisma.InputJsonValue[];
-          updateData.draftContent = pendingVersion.content as Prisma.InputJsonValue[];
+        if (!pendingVersion || pendingVersion.policyId !== policy.id) {
+          // Pending version is missing or invalid - cannot proceed with approval
+          return {
+            success: false,
+            error: 'The pending version no longer exists. Approval cannot be completed.',
+          };
         }
+
+        updateData.currentVersion = { connect: { id: pendingVersion.id } };
+        updateData.content = pendingVersion.content as Prisma.InputJsonValue[];
+        updateData.draftContent = pendingVersion.content as Prisma.InputJsonValue[];
       }
 
       // Update policy status and apply version changes
