@@ -1,6 +1,7 @@
 'use client';
 
 import { DEFAULT_CNAME_TARGET, useDomain } from '@/hooks/use-domain';
+import { Alert, AlertDescription, AlertTitle } from '@comp/ui/alert';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -240,26 +241,24 @@ export function TrustPortalDomain({
                 !domainVerified && (
                   <div className="space-y-2 pt-2">
                     {verificationInfo && (
-                      <div className="rounded-md border border-amber-200 bg-amber-100 p-4 dark:border-amber-900 dark:bg-amber-950">
-                        <div className="flex gap-3">
-                          <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                          <p className="text-amber-800 text-sm dark:text-amber-200">
-                            This domain is linked to another Vercel account. To use it with this
-                            project, add a {verificationInfo.type} record at{' '}
-                            {verificationInfo.domain} to verify ownership. You can remove the record
-                            after verification is complete.
-                            <a
-                              href="https://vercel.com/docs/domains/troubleshooting#misconfigured-domain-issues"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-white underline dark:text-white ml-2"
-                            >
-                              Learn more
-                              <ExternalLink className="ml-1 mb-0.5 inline-block h-4 w-4 font-bold text-white dark:text-white stroke-2" />
-                            </a>
-                          </p>
-                        </div>
-                      </div>
+                      <Alert>
+                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                        <AlertTitle>Domain verification required</AlertTitle>
+                        <AlertDescription>
+                          This domain is linked to another Vercel account. To use it with this
+                          project, add a {verificationInfo.type} record at {verificationInfo.domain}{' '}
+                          to verify ownership. You can remove the record after verification is complete.
+                          <a
+                            href="https://vercel.com/docs/domains/troubleshooting#misconfigured-domain-issues"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-2 inline-flex items-center gap-1 underline"
+                          >
+                            Learn more
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </AlertDescription>
+                      </Alert>
                     )}
                     <div className="rounded-md border">
                       <div className="text-sm">
