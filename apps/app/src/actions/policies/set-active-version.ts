@@ -49,12 +49,15 @@ export const setActiveVersionAction = authActionClient
     }
 
     // Update policy to set this version as active
+    // Clear pending approval state since we're directly activating a version
     await db.policy.update({
       where: { id: policyId },
       data: {
         currentVersionId: versionId,
         content: version.content as Prisma.InputJsonValue[],
         status: 'published',
+        pendingVersionId: null,
+        approverId: null,
       },
     });
 

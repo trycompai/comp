@@ -53,6 +53,11 @@ export const submitVersionForApprovalAction = authActionClient
       return { success: false, error: 'Version not found' };
     }
 
+    // Cannot submit the already-active version for approval
+    if (versionId === policy.currentVersionId) {
+      return { success: false, error: 'Cannot submit the currently published version for approval' };
+    }
+
     // Verify approver exists and belongs to organization
     const approver = await db.member.findUnique({
       where: { id: approverId },

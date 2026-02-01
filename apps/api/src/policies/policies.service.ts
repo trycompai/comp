@@ -682,6 +682,9 @@ export class PoliciesService {
               draftContent: contentToPublish,
               lastPublishedAt: new Date(),
               status: 'published',
+              // Clear any pending approval since we're publishing directly
+              pendingVersionId: null,
+              approverId: null,
               ...(dto.setAsActive !== false && {
                 currentVersionId: newVersion.id,
               }),
@@ -740,6 +743,9 @@ export class PoliciesService {
         currentVersionId: versionId,
         content: version.content as Prisma.InputJsonValue[],
         status: 'published',
+        // Clear pending approval state since we're directly activating a version
+        pendingVersionId: null,
+        approverId: null,
       },
     });
 
@@ -769,6 +775,13 @@ export class PoliciesService {
 
     if (!version || version.policyId !== policyId) {
       throw new NotFoundException('Version not found');
+    }
+
+    // Cannot submit the already-active version for approval
+    if (versionId === policy.currentVersionId) {
+      throw new BadRequestException(
+        'Cannot submit the currently published version for approval',
+      );
     }
 
     const approver = await db.member.findUnique({

@@ -91,6 +91,9 @@ export const publishVersionAction = authActionClient
               draftContent: contentToPublish,
               lastPublishedAt: new Date(),
               status: 'published',
+              // Clear any pending approval since we're publishing directly
+              pendingVersionId: null,
+              approverId: null,
               ...(setAsActive !== false && { currentVersionId: newVersion.id }),
             },
           });
