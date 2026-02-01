@@ -39,6 +39,11 @@ export const setActiveVersionAction = authActionClient
       return { success: false, error: 'Policy not found' };
     }
 
+    // Prevent activating a different version when another is pending approval
+    if (policy.pendingVersionId && policy.pendingVersionId !== versionId) {
+      return { success: false, error: 'Another version is already pending approval' };
+    }
+
     // Get version to activate
     const version = await db.policyVersion.findUnique({
       where: { id: versionId },
