@@ -37,12 +37,23 @@ export const getPolicyPdfUrlAction = authActionClient
 
       if (versionId) {
         // Get PDF URL from specific version
+        // IMPORTANT: Include organizationId check to prevent cross-org access
         const version = await db.policyVersion.findUnique({
           where: { id: versionId },
-          select: { pdfUrl: true, policyId: true },
+          select: {
+            pdfUrl: true,
+            policyId: true,
+            policy: {
+              select: { organizationId: true },
+            },
+          },
         });
 
-        if (!version || version.policyId !== policyId) {
+        if (
+          !version ||
+          version.policyId !== policyId ||
+          version.policy.organizationId !== organizationId
+        ) {
           return { success: false, error: 'Version not found' };
         }
 
