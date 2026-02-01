@@ -793,6 +793,11 @@ export class PoliciesService {
       throw new NotFoundException('Approver not found');
     }
 
+    // Cannot assign a deactivated member as approver - they can't log in to approve
+    if (approver.deactivated) {
+      throw new BadRequestException('Cannot assign a deactivated member as approver');
+    }
+
     await db.policy.update({
       where: { id: policyId },
       data: {

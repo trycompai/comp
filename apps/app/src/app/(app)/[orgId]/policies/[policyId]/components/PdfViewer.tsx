@@ -44,10 +44,23 @@ interface PdfViewerProps {
   isPendingApproval: boolean;
   /** Whether the current version is read-only (published or pending) */
   isVersionReadOnly?: boolean;
+  /** Whether viewing the currently active/published version */
+  isViewingActiveVersion?: boolean;
+  /** Whether viewing a version pending approval */
+  isViewingPendingVersion?: boolean;
   onMutate?: () => void;
 }
 
-export function PdfViewer({ policyId, versionId, pdfUrl, isPendingApproval, isVersionReadOnly = false, onMutate }: PdfViewerProps) {
+export function PdfViewer({ 
+  policyId, 
+  versionId, 
+  pdfUrl, 
+  isPendingApproval, 
+  isVersionReadOnly = false, 
+  isViewingActiveVersion = false,
+  isViewingPendingVersion = false,
+  onMutate 
+}: PdfViewerProps) {
   // Combine both checks - can't modify if pending approval OR version is read-only
   const isReadOnly = isPendingApproval || isVersionReadOnly;
   const router = useRouter();
@@ -269,7 +282,13 @@ export function PdfViewer({ policyId, versionId, pdfUrl, isPendingApproval, isVe
         <div className="space-y-4">
         {isVersionReadOnly && pdfUrl && (
           <div className="flex items-center gap-4 rounded-lg border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-foreground">
-            <span>This version is published. Create a new version to make changes.</span>
+            <span>
+              {isViewingPendingVersion
+                ? 'This version is pending approval and cannot be edited.'
+                : isViewingActiveVersion
+                  ? 'This version is published. Create a new version to make changes.'
+                  : 'This version cannot be edited.'}
+            </span>
           </div>
         )}
         {pdfUrl ? (

@@ -67,6 +67,11 @@ export const submitVersionForApprovalAction = authActionClient
       return { success: false, error: 'Approver not found' };
     }
 
+    // Cannot assign a deactivated member as approver - they can't log in to approve
+    if (approver.deactivated) {
+      return { success: false, error: 'Cannot assign a deactivated member as approver' };
+    }
+
     // Update policy to set pending version and status
     await db.policy.update({
       where: { id: policyId },

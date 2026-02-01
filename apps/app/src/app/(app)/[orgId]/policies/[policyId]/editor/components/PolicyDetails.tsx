@@ -681,6 +681,8 @@ export function PolicyContentManager({
                     pdfUrl={selectedVersion?.pdfUrl}
                     isPendingApproval={isPendingApproval}
                     isVersionReadOnly={isVersionReadOnly}
+                    isViewingActiveVersion={isViewingActiveVersion}
+                    isViewingPendingVersion={isViewingPendingVersion}
                     onMutate={onMutate}
                   />
                 </TabsContent>
