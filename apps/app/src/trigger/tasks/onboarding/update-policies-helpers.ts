@@ -555,35 +555,40 @@ export async function updatePolicyInDatabase(
       }
     }
 
-    // Delete all existing versions
-    if (policy.versions.length > 0) {
-      await db.policyVersion.deleteMany({
-        where: { policyId },
+    // Use transaction to ensure atomicity - if any step fails, all are rolled back
+    await db.$transaction(async (tx) => {
+      // Delete all existing versions
+      if (policy.versions.length > 0) {
+        await tx.policyVersion.deleteMany({
+          where: { policyId },
+        });
+      }
+
+      // Create new version 1
+      const newVersion = await tx.policyVersion.create({
+        data: {
+          policyId,
+          version: 1,
+          content: content as JSONContent[],
+          publishedById: memberId || null,
+          changelog: 'Regenerated policy content',
+        },
       });
-    }
 
-    // Create new version 1
-    const newVersion = await db.policyVersion.create({
-      data: {
-        policyId,
-        version: 1,
-        content: content as JSONContent[],
-        publishedById: memberId || null,
-        changelog: 'Regenerated policy content',
-      },
-    });
-
-    // Update policy with new content and set the new version as current
-    await db.policy.update({
-      where: { id: policyId },
-      data: {
-        content: content as JSONContent[],
-        draftContent: [],
-        currentVersionId: newVersion.id,
-        pendingVersionId: null,
-        pdfUrl: null, // Clear policy-level PDF since we're regenerating
-        displayFormat: 'EDITOR', // Reset to editor format
-      },
+      // Update policy with new content and set the new version as current
+      await tx.policy.update({
+        where: { id: policyId },
+        data: {
+          content: content as JSONContent[],
+          draftContent: content as JSONContent[], // Sync to prevent false "unpublished changes"
+          currentVersionId: newVersion.id,
+          pendingVersionId: null,
+          approverId: null, // Clear any pending approval
+          signedBy: [], // Clear signatures for new content
+          pdfUrl: null, // Clear policy-level PDF since we're regenerating
+          displayFormat: 'EDITOR', // Reset to editor format
+        },
+      });
     });
   } catch (dbError) {
     logger.error(`Failed to update policy in database: ${dbError}`);
