@@ -294,6 +294,7 @@ export class PoliciesService {
   async deleteById(id: string, organizationId: string) {
     try {
       // First check if the policy exists and belongs to the organization
+      // Include versions to clean up their PDFs from S3
       const policy = await db.policy.findFirst({
         where: {
           id,
@@ -302,6 +303,10 @@ export class PoliciesService {
         select: {
           id: true,
           name: true,
+          pdfUrl: true,
+          versions: {
+            select: { pdfUrl: true },
+          },
         },
       });
 
@@ -309,7 +314,33 @@ export class PoliciesService {
         throw new NotFoundException(`Policy with ID ${id} not found`);
       }
 
-      // Delete the policy
+      // Clean up S3 files before cascade delete
+      const pdfUrlsToDelete: string[] = [];
+
+      // Add policy-level PDF if exists
+      if (policy.pdfUrl) {
+        pdfUrlsToDelete.push(policy.pdfUrl);
+      }
+
+      // Add all version PDFs
+      for (const version of policy.versions) {
+        if (version.pdfUrl) {
+          pdfUrlsToDelete.push(version.pdfUrl);
+        }
+      }
+
+      // Delete all PDFs from S3 (don't fail if S3 delete fails)
+      if (pdfUrlsToDelete.length > 0) {
+        await Promise.allSettled(
+          pdfUrlsToDelete.map((pdfUrl) =>
+            this.attachmentsService.deletePolicyVersionPdf(pdfUrl).catch((err) => {
+              this.logger.warn(`Failed to delete PDF from S3: ${pdfUrl}`, err);
+            }),
+          ),
+        );
+      }
+
+      // Delete the policy (versions are cascade deleted)
       await db.policy.delete({
         where: { id },
       });
@@ -474,7 +505,11 @@ export class PoliciesService {
       },
     });
 
-    if (!version || version.policy.organizationId !== organizationId) {
+    if (
+      !version ||
+      version.policy.id !== policyId ||
+      version.policy.organizationId !== organizationId
+    ) {
       throw new NotFoundException('Version not found');
     }
 
