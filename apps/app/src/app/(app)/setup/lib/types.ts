@@ -34,7 +34,7 @@ export type CompanyDetails = {
   shipping: {
     fullName: string;
     address: string;
-    phone: string;
+    phone?: string;
   };
 };
 
