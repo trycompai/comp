@@ -1,8 +1,16 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { Button, Card } from '@trycompai/design-system';
-import { ImagePlus, Trash2 } from 'lucide-react';
+import { Button } from '@comp/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@comp/ui/card';
+import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -113,17 +121,19 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
 
   return (
     <Card>
-      <Card.Header>
-        <Card.Title>Trust Center Favicon</Card.Title>
-        <Card.Description>
-          Upload a custom favicon for your trust center. This will be displayed in browser tabs
-          when users visit your trust portal.
-        </Card.Description>
-      </Card.Header>
-      <Card.Content>
+      <CardHeader>
+        <CardTitle>Trust Center Favicon</CardTitle>
+        <CardDescription>
+          <div className="max-w-[600px]">
+            Upload a custom favicon for your trust center. This will be displayed in browser tabs
+            when users visit your trust portal.
+          </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <div className="flex items-center gap-4">
           {/* Favicon preview */}
-          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
             {previewUrl ? (
               <Image
                 src={previewUrl}
@@ -132,7 +142,7 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
                 className="object-contain p-2"
               />
             ) : (
-              <ImagePlus size={32} className="text-muted-foreground/50" />
+              <ImagePlus className="h-8 w-8 text-muted-foreground/50" />
             )}
           </div>
 
@@ -148,13 +158,19 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
             />
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              loading={isUploading}
             >
-              Upload favicon
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Upload favicon'
+              )}
             </Button>
             {previewUrl && (
               <Button
@@ -163,20 +179,29 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
                 size="sm"
                 onClick={handleRemove}
                 disabled={isLoading}
-                loading={isRemoving}
-                iconLeft={<Trash2 size={16} />}
+                className="text-destructive hover:text-destructive"
               >
-                Remove
+                {isRemoving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Remove
+                  </>
+                )}
               </Button>
             )}
           </div>
         </div>
-      </Card.Content>
-      <Card.Footer>
-        <p className="text-xs text-muted-foreground">
+      </CardContent>
+      <CardFooter>
+        <div className="text-muted-foreground text-xs">
           Recommended: Square image (e.g., 32x32px or 64x64px). PNG, ICO, or SVG format. Max 1MB.
-        </p>
-      </Card.Footer>
+        </div>
+      </CardFooter>
     </Card>
   );
 }
