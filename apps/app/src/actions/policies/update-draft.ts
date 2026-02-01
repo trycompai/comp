@@ -111,8 +111,8 @@ export const updateDraftAction = authActionClient
         where: { id: policyId },
         data: {
           draftContent: draftContentToSave,
-          // Clear signedBy when draft is updated
-          signedBy: [],
+          // Note: Do NOT clear signedBy here - signatures are for published content,
+          // not drafts. Signatures are only cleared when content is actually published.
         },
       });
 

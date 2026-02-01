@@ -71,6 +71,7 @@ export const createPolicyAction = authActionClient
             frequency: Frequency.monthly,
             status: PolicyStatus.draft,
             content: initialContent,
+            draftContent: initialContent, // Sync with content to prevent false "unpublished changes" indicator
             ...(controlIds &&
               controlIds.length > 0 && {
                 controls: {
