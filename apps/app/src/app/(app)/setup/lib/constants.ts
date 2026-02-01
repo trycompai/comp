@@ -44,7 +44,7 @@ export const companyDetailsSchema = z.object({
   shipping: z.object({
     fullName: z.string().min(1, 'Full name is required'),
     address: z.string().min(1, 'Address is required'),
-    phone: z.string().min(1, 'Phone number is required'),
+    phone: z.string().optional(),
   }),
 });
 
