@@ -65,7 +65,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       // Build update data
       const updateData: Prisma.PolicyUpdateInput = {
         status: PolicyStatus.published,
-        approverId: null,
+        approver: { disconnect: true }, // Clear the approver relation
         signedBy: [], // Clear the signedBy field
         lastPublishedAt: new Date(), // Update last published date
         reviewDate: new Date(), // Update reviewDate to current date
@@ -79,7 +79,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         });
 
         if (pendingVersion && pendingVersion.policyId === policy.id) {
-          updateData.currentVersionId = pendingVersion.id;
+          updateData.currentVersion = { connect: { id: pendingVersion.id } };
           updateData.content = pendingVersion.content as Prisma.InputJsonValue[];
           updateData.draftContent = pendingVersion.content as Prisma.InputJsonValue[];
         }
