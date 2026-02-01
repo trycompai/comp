@@ -74,7 +74,8 @@ async function performSync(organizationId: string): Promise<void> {
     });
 
     // Step 2: Get all published policies with updatedAt (NO LIMITS)
-    const policies = await db.policy.findMany({
+    // Include currentVersion to use published version's content
+    const policiesRaw = await db.policy.findMany({
       where: {
         organizationId,
         status: 'published', // Only published policies
@@ -86,9 +87,24 @@ async function performSync(organizationId: string): Promise<void> {
         content: true,
         organizationId: true,
         updatedAt: true, // Include updatedAt for comparison
+        currentVersion: {
+          select: {
+            content: true,
+          },
+        },
       },
       // NO take: 10 - get ALL policies
     });
+
+    // Map to use currentVersion.content when available
+    const policies = policiesRaw.map((policy) => ({
+      id: policy.id,
+      name: policy.name,
+      description: policy.description,
+      content: policy.currentVersion?.content ?? policy.content,
+      organizationId: policy.organizationId,
+      updatedAt: policy.updatedAt,
+    }));
 
     logger.info('Found policies to sync', {
       organizationId,

@@ -10,7 +10,9 @@ import {
   db,
   Member,
   Organization,
+  PolicyStatus,
   User,
+  type Prisma,
 } from '@db';
 import { headers } from 'next/headers';
 
@@ -92,6 +94,7 @@ export const getPolicy = async (policyId: string) => {
   });
 
   const organizationId = session?.session.activeOrganizationId;
+  const userId = session?.user?.id;
 
   if (!organizationId) {
     return null;
@@ -110,6 +113,15 @@ export const getPolicy = async (policyId: string) => {
           user: true,
         },
       },
+      currentVersion: {
+        include: {
+          publishedBy: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -117,7 +129,153 @@ export const getPolicy = async (policyId: string) => {
     return null;
   }
 
+  // Lazy migration: If policy has no current version or the reference is orphaned
+  if (!policy.currentVersionId || !policy.currentVersion) {
+    try {
+      // First, check if any versions already exist for this policy
+      const latestVersion = await db.policyVersion.findFirst({
+        where: { policyId: policy.id },
+        orderBy: { version: 'desc' },
+        select: { id: true, version: true },
+      });
+
+      // If versions already exist, just set the latest one as current (fix orphaned state)
+      if (latestVersion) {
+        const updatedPolicy = await db.policy.update({
+          where: { id: policy.id },
+          data: { currentVersionId: latestVersion.id },
+          include: {
+            approver: {
+              include: {
+                user: true,
+              },
+            },
+            assignee: {
+              include: {
+                user: true,
+              },
+            },
+            currentVersion: {
+              include: {
+                publishedBy: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+        return updatedPolicy;
+      }
+
+      // No versions exist - create version 1 from policy data
+      // Get member ID for associating with the version
+      let memberId: string | null = null;
+      if (userId) {
+        const member = await db.member.findFirst({
+          where: {
+            userId,
+            organizationId,
+            deactivated: false,
+          },
+          select: { id: true },
+        });
+        memberId = member?.id ?? null;
+      }
+
+      // Create version 1 in a transaction
+      const updatedPolicy = await db.$transaction(async (tx) => {
+        // Create version 1 with all existing policy data
+        const newVersion = await tx.policyVersion.create({
+          data: {
+            policyId: policy.id,
+            version: 1,
+            content: (policy.content as Prisma.InputJsonValue[]) || [],
+            pdfUrl: policy.pdfUrl, // Copy over any existing PDF
+            publishedById: memberId,
+            changelog: 'Migrated from legacy policy',
+          },
+        });
+
+        // Update policy to set currentVersionId
+        const updated = await tx.policy.update({
+          where: { id: policy.id },
+          data: {
+            currentVersionId: newVersion.id,
+          },
+          include: {
+            approver: {
+              include: {
+                user: true,
+              },
+            },
+            assignee: {
+              include: {
+                user: true,
+              },
+            },
+            currentVersion: {
+              include: {
+                publishedBy: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return updated;
+      });
+
+      return updatedPolicy;
+    } catch (error) {
+      // If migration fails, still return the policy without version
+      // This ensures the user can still access their policy
+      console.error('Lazy migration failed for policy:', policyId, error);
+      return policy;
+    }
+  }
+
   return policy;
+};
+
+export const getPolicyVersions = async (policyId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const organizationId = session?.session.activeOrganizationId;
+
+  if (!organizationId) {
+    return [];
+  }
+
+  // Verify policy belongs to organization
+  const policy = await db.policy.findUnique({
+    where: { id: policyId, organizationId },
+    select: { id: true },
+  });
+
+  if (!policy) {
+    return [];
+  }
+
+  const versions = await db.policyVersion.findMany({
+    where: { policyId },
+    orderBy: { version: 'desc' },
+    include: {
+      publishedBy: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  return versions;
 };
 
 export const getAssignees = async () => {

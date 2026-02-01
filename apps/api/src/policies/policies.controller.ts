@@ -31,6 +31,12 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
+import {
+  CreateVersionDto,
+  PublishVersionDto,
+  SubmitForApprovalDto,
+  UpdateVersionContentDto,
+} from './dto/version.dto';
 import { PoliciesService } from './policies.service';
 import { GET_ALL_POLICIES_RESPONSES } from './schemas/get-all-policies.responses';
 import { GET_POLICY_BY_ID_RESPONSES } from './schemas/get-policy-by-id.responses';
@@ -40,6 +46,18 @@ import { DELETE_POLICY_RESPONSES } from './schemas/delete-policy.responses';
 import { POLICY_OPERATIONS } from './schemas/policy-operations';
 import { POLICY_PARAMS } from './schemas/policy-params';
 import { POLICY_BODIES } from './schemas/policy-bodies';
+import { VERSION_OPERATIONS } from './schemas/version-operations';
+import { VERSION_PARAMS } from './schemas/version-params';
+import { VERSION_BODIES } from './schemas/version-bodies';
+import {
+  CREATE_POLICY_VERSION_RESPONSES,
+  DELETE_VERSION_RESPONSES,
+  GET_POLICY_VERSIONS_RESPONSES,
+  PUBLISH_VERSION_RESPONSES,
+  SET_ACTIVE_VERSION_RESPONSES,
+  SUBMIT_VERSION_FOR_APPROVAL_RESPONSES,
+  UPDATE_VERSION_CONTENT_RESPONSES,
+} from './schemas/version-responses';
 import { PolicyResponseDto } from './dto/policy-responses.dto';
 
 @ApiTags('Policies')
@@ -222,6 +240,231 @@ export class PoliciesController {
     };
   }
 
+  @Get(':id/versions')
+  @ApiOperation(VERSION_OPERATIONS.getPolicyVersions)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[200])
+  @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[401])
+  @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[404])
+  async getPolicyVersions(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.getVersions(id, organizationId);
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/versions')
+  @ApiOperation(VERSION_OPERATIONS.createPolicyVersion)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiBody(VERSION_BODIES.createVersion)
+  @ApiResponse(CREATE_POLICY_VERSION_RESPONSES[201])
+  @ApiResponse(CREATE_POLICY_VERSION_RESPONSES[400])
+  @ApiResponse(CREATE_POLICY_VERSION_RESPONSES[401])
+  @ApiResponse(CREATE_POLICY_VERSION_RESPONSES[404])
+  async createPolicyVersion(
+    @Param('id') id: string,
+    @Body() body: CreateVersionDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.createVersion(
+      id,
+      organizationId,
+      body,
+      authContext.userId,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Patch(':id/versions/:versionId')
+  @ApiOperation(VERSION_OPERATIONS.updateVersionContent)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiParam(VERSION_PARAMS.versionId)
+  @ApiBody(VERSION_BODIES.updateVersionContent)
+  @ApiResponse(UPDATE_VERSION_CONTENT_RESPONSES[200])
+  @ApiResponse(UPDATE_VERSION_CONTENT_RESPONSES[400])
+  @ApiResponse(UPDATE_VERSION_CONTENT_RESPONSES[401])
+  @ApiResponse(UPDATE_VERSION_CONTENT_RESPONSES[404])
+  async updateVersionContent(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Body() body: UpdateVersionContentDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.updateVersionContent(
+      id,
+      versionId,
+      organizationId,
+      body,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Delete(':id/versions/:versionId')
+  @ApiOperation(VERSION_OPERATIONS.deletePolicyVersion)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiParam(VERSION_PARAMS.versionId)
+  @ApiResponse(DELETE_VERSION_RESPONSES[200])
+  @ApiResponse(DELETE_VERSION_RESPONSES[400])
+  @ApiResponse(DELETE_VERSION_RESPONSES[401])
+  @ApiResponse(DELETE_VERSION_RESPONSES[404])
+  async deletePolicyVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.deleteVersion(
+      id,
+      versionId,
+      organizationId,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/versions/publish')
+  @ApiOperation(VERSION_OPERATIONS.publishPolicyVersion)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiBody(VERSION_BODIES.publishVersion)
+  @ApiResponse(PUBLISH_VERSION_RESPONSES[200])
+  @ApiResponse(PUBLISH_VERSION_RESPONSES[400])
+  @ApiResponse(PUBLISH_VERSION_RESPONSES[401])
+  @ApiResponse(PUBLISH_VERSION_RESPONSES[404])
+  async publishPolicyVersion(
+    @Param('id') id: string,
+    @Body() body: PublishVersionDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.publishVersion(
+      id,
+      organizationId,
+      body,
+      authContext.userId,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/versions/:versionId/activate')
+  @ApiOperation(VERSION_OPERATIONS.setActivePolicyVersion)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiParam(VERSION_PARAMS.versionId)
+  @ApiResponse(SET_ACTIVE_VERSION_RESPONSES[200])
+  @ApiResponse(SET_ACTIVE_VERSION_RESPONSES[400])
+  @ApiResponse(SET_ACTIVE_VERSION_RESPONSES[401])
+  @ApiResponse(SET_ACTIVE_VERSION_RESPONSES[404])
+  async setActivePolicyVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.setActiveVersion(
+      id,
+      versionId,
+      organizationId,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/versions/:versionId/submit-for-approval')
+  @ApiOperation(VERSION_OPERATIONS.submitVersionForApproval)
+  @ApiParam(VERSION_PARAMS.policyId)
+  @ApiParam(VERSION_PARAMS.versionId)
+  @ApiBody(VERSION_BODIES.submitForApproval)
+  @ApiResponse(SUBMIT_VERSION_FOR_APPROVAL_RESPONSES[200])
+  @ApiResponse(SUBMIT_VERSION_FOR_APPROVAL_RESPONSES[400])
+  @ApiResponse(SUBMIT_VERSION_FOR_APPROVAL_RESPONSES[401])
+  @ApiResponse(SUBMIT_VERSION_FOR_APPROVAL_RESPONSES[404])
+  async submitVersionForApproval(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Body() body: SubmitForApprovalDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.submitForApproval(
+      id,
+      versionId,
+      organizationId,
+      body,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
   @Post(':id/ai-chat')
   @ApiOperation({
     summary: 'Chat with AI about a policy',
@@ -256,7 +499,9 @@ export class PoliciesController {
 
     const policy = await this.policiesService.findById(id, organizationId);
 
-    const policyContentText = this.convertPolicyContentToText(policy.content);
+    // Use currentVersion content if available, fallback to policy.content for backward compatibility
+    const effectiveContent = policy.currentVersion?.content ?? policy.content;
+    const policyContentText = this.convertPolicyContentToText(effectiveContent);
 
     const systemPrompt = `You are an expert GRC (Governance, Risk, and Compliance) policy editor. You help users edit and improve their organizational policies to meet compliance requirements like SOC 2, ISO 27001, and GDPR.
 

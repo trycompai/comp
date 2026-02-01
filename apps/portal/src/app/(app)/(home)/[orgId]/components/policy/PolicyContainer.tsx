@@ -1,14 +1,18 @@
 'use client';
 
 import { Button } from '@comp/ui/button';
-import type { Member, Policy } from '@db';
+import type { Member, Policy, PolicyVersion } from '@db';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { PolicyCarousel } from './PolicyCarousel';
 import { PolicyGrid } from './PolicyGrid';
 
+type PolicyWithVersion = Policy & {
+  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
+};
+
 interface PolicyContainerProps {
-  policies: Policy[];
+  policies: PolicyWithVersion[];
   member: Member;
 }
 

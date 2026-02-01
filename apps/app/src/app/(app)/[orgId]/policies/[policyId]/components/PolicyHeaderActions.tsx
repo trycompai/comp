@@ -1,5 +1,6 @@
 'use client';
 
+import { getPolicyPdfUrlAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/get-policy-pdf-url';
 import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
@@ -19,27 +20,89 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Icons } from '@comp/ui/icons';
-import type { Policy, Member, User } from '@db';
+import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { useRouter } from 'next/navigation';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AuditLogWithRelations } from '../data';
 
-export function PolicyHeaderActions({ 
+type PolicyWithVersion = Policy & {
+  approver: (Member & { user: User }) | null;
+  currentVersion?: PolicyVersion | null;
+};
+
+export function PolicyHeaderActions({
   policy,
-  logs
-}: { 
-  policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
+  logs,
+}: {
+  policy: PolicyWithVersion | null;
   logs: AuditLogWithRelations[];
 }) {
   const router = useRouter();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  // Real-time task tracking
+  const [runInfo, setRunInfo] = useState<{
+    runId: string;
+    accessToken: string;
+  } | null>(null);
+  const toastIdRef = useRef<string | number | null>(null);
+
+  // Subscribe to run status when we have a runId
+  const { run } = useRealtimeRun(runInfo?.runId ?? '', {
+    accessToken: runInfo?.accessToken ?? '',
+    enabled: !!runInfo?.runId && !!runInfo?.accessToken,
+  });
+
+  // Handle run completion
+  useEffect(() => {
+    if (!run) return;
+
+    if (run.status === 'COMPLETED') {
+      if (toastIdRef.current) {
+        toast.dismiss(toastIdRef.current);
+      }
+      toast.success('Policy content updated!');
+      setIsRegenerating(false);
+      setRunInfo(null);
+      toastIdRef.current = null;
+      router.refresh();
+    } else if (run.status === 'FAILED' || run.status === 'CRASHED' || run.status === 'CANCELED') {
+      if (toastIdRef.current) {
+        toast.dismiss(toastIdRef.current);
+      }
+      toast.error('Policy regeneration failed');
+      setIsRegenerating(false);
+      setRunInfo(null);
+      toastIdRef.current = null;
+    }
+  }, [run, router]);
+
   // Delete flows through query param to existing dialog in PolicyOverview
   const regenerate = useAction(regeneratePolicyAction, {
-    onSuccess: () => toast.success('Regeneration triggered. This may take a moment.'),
-    onError: () => toast.error('Failed to trigger policy regeneration'),
+    onSuccess: (result) => {
+      if (result.data?.runId && result.data?.publicAccessToken) {
+        // Show loading toast
+        const toastId = toast.loading('Regenerating policy content...');
+        toastIdRef.current = toastId;
+        setIsRegenerating(true);
+
+        // Start tracking the run
+        setRunInfo({
+          runId: result.data.runId,
+          accessToken: result.data.publicAccessToken,
+        });
+      }
+    },
+    onError: () => {
+      toast.error('Failed to trigger policy regeneration');
+      setIsRegenerating(false);
+    },
   });
 
   const updateQueryParam = ({ key, value }: { key: string; value: string }) => {
@@ -48,19 +111,53 @@ export function PolicyHeaderActions({
     router.push(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
+    if (!policy) {
+      toast.error('Policy not available');
+      return;
+    }
+
+    setIsDownloading(true);
+
     try {
-      if (!policy || !policy.content) {
+      // Check if the published version has a PDF uploaded
+      const publishedVersionPdfUrl = policy.currentVersion?.pdfUrl;
+
+      if (publishedVersionPdfUrl) {
+        // Download the uploaded PDF directly
+        const result = await getPolicyPdfUrlAction({
+          policyId: policy.id,
+          versionId: policy.currentVersion?.id,
+        });
+
+        if (result?.data?.success && result.data.data) {
+          // Create a temporary link and trigger download
+          const link = document.createElement('a');
+          link.href = result.data.data; // data is the signed URL string
+          link.download = `${policy.name || 'Policy'}.pdf`;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        }
+      }
+
+      // Fall back to generating PDF from content
+      // Use published version content if available, otherwise policy content
+      const contentSource = policy.currentVersion?.content ?? policy.content;
+
+      if (!contentSource) {
         toast.error('Policy content not available for download');
         return;
       }
 
-      // Convert policy content to JSONContent array if needed
+      // Convert content to JSONContent array
       let policyContent: JSONContent[];
-      if (Array.isArray(policy.content)) {
-        policyContent = policy.content as JSONContent[];
-      } else if (typeof policy.content === 'object' && policy.content !== null) {
-        policyContent = [policy.content as JSONContent];
+      if (Array.isArray(contentSource)) {
+        policyContent = contentSource as JSONContent[];
+      } else if (typeof contentSource === 'object' && contentSource !== null) {
+        policyContent = [contentSource as JSONContent];
       } else {
         toast.error('Invalid policy content format');
         return;
@@ -71,6 +168,8 @@ export function PolicyHeaderActions({
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
       toast.error('Failed to generate policy PDF');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -87,8 +186,12 @@ export function PolicyHeaderActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setRegenerateConfirmOpen(true)} disabled={isPendingApproval}>
-            <Icons.AI className="mr-2 h-4 w-4" /> Regenerate policy
+          <DropdownMenuItem
+            onClick={() => setRegenerateConfirmOpen(true)}
+            disabled={isPendingApproval || isRegenerating}
+          >
+            <Icons.AI className="mr-2 h-4 w-4" />{' '}
+            {isRegenerating ? 'Regenerating...' : 'Regenerate policy'}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
@@ -98,10 +201,9 @@ export function PolicyHeaderActions({
             <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => handleDownloadPDF()}
-          >
-            <Icons.Download className="mr-2 h-4 w-4" /> Download as PDF
+          <DropdownMenuItem onClick={() => handleDownloadPDF()} disabled={isDownloading}>
+            <Icons.Download className="mr-2 h-4 w-4" />{' '}
+            {isDownloading ? 'Downloading...' : 'Download as PDF'}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
@@ -127,8 +229,9 @@ export function PolicyHeaderActions({
           <DialogHeader>
             <DialogTitle>Regenerate Policy</DialogTitle>
             <DialogDescription>
-              This will generate new policy content using your org context and frameworks and mark
-              it for review. Continue?
+              This will generate new policy content using your org context and frameworks. It will
+              delete all existing versions and their PDFs for this policy. This cannot be undone.
+              Continue?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

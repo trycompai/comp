@@ -1530,6 +1530,12 @@ export class TrustAccessService {
         description: true,
         lastPublishedAt: true,
         updatedAt: true,
+        currentVersion: {
+          select: {
+            id: true,
+            version: true,
+          },
+        },
       },
       orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
@@ -1957,6 +1963,12 @@ export class TrustAccessService {
         name: true,
         content: true,
         pdfUrl: true,
+        currentVersion: {
+          select: {
+            content: true,
+            pdfUrl: true,
+          },
+        },
       },
       orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
@@ -1989,15 +2001,23 @@ export class TrustAccessService {
       isUploaded: boolean;
     };
 
+    // Helper to get effective content and pdfUrl (version first, fallback to policy)
+    const getEffectiveData = (policy: (typeof policies)[0]) => {
+      const content = policy.currentVersion?.content ?? policy.content;
+      const pdfUrl = policy.currentVersion?.pdfUrl ?? policy.pdfUrl;
+      return { content, pdfUrl };
+    };
+
     const preparePolicy = async (
       policy: (typeof policies)[0],
     ): Promise<PreparedPolicy> => {
-      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+      const { content, pdfUrl } = getEffectiveData(policy);
+      const hasUploadedPdf = pdfUrl && pdfUrl.trim() !== '';
 
       if (hasUploadedPdf) {
         try {
           const pdfBuffer = await this.attachmentsService.getObjectBuffer(
-            policy.pdfUrl!,
+            pdfUrl!,
           );
           return {
             policy,
@@ -2014,7 +2034,7 @@ export class TrustAccessService {
 
       // Render from content (either no pdfUrl or fetch failed)
       const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-        [{ name: policy.name, content: policy.content }],
+        [{ name: policy.name, content }],
         undefined, // We'll add org header during merge
         grant.accessRequest.organization.primaryColor,
         policies.length,
@@ -2030,8 +2050,9 @@ export class TrustAccessService {
       policy: (typeof policies)[0],
       addOrgHeader: boolean,
     ) => {
+      const { content } = getEffectiveData(policy);
       const renderedBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-        [{ name: policy.name, content: policy.content }],
+        [{ name: policy.name, content }],
         addOrgHeader ? organizationName : undefined,
         grant.accessRequest.organization.primaryColor,
         policies.length,
@@ -2231,6 +2252,12 @@ export class TrustAccessService {
         name: true,
         content: true,
         pdfUrl: true,
+        currentVersion: {
+          select: {
+            content: true,
+            pdfUrl: true,
+          },
+        },
       },
       orderBy: [{ lastPublishedAt: 'desc' }, { updatedAt: 'desc' }],
     });
@@ -2271,13 +2298,16 @@ export class TrustAccessService {
 
     // Process policies sequentially
     for (const policy of policies) {
-      const hasUploadedPdf = policy.pdfUrl && policy.pdfUrl.trim() !== '';
+      // Use currentVersion content/pdfUrl with fallback to policy level
+      const effectiveContent = policy.currentVersion?.content ?? policy.content;
+      const effectivePdfUrl = policy.currentVersion?.pdfUrl ?? policy.pdfUrl;
+      const hasUploadedPdf = effectivePdfUrl && effectivePdfUrl.trim() !== '';
       let policyPdfBuffer: Buffer;
 
       if (hasUploadedPdf) {
         try {
           const rawBuffer = await this.attachmentsService.getObjectBuffer(
-            policy.pdfUrl!,
+            effectivePdfUrl!,
           );
           policyPdfBuffer = Buffer.from(rawBuffer);
         } catch (error) {
@@ -2286,14 +2316,14 @@ export class TrustAccessService {
             error,
           );
           policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-            [{ name: policy.name, content: policy.content }],
+            [{ name: policy.name, content: effectiveContent }],
             undefined,
             grant.accessRequest.organization.primaryColor,
           );
         }
       } else {
         policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
-          [{ name: policy.name, content: policy.content }],
+          [{ name: policy.name, content: effectiveContent }],
           undefined,
           grant.accessRequest.organization.primaryColor,
         );

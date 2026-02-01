@@ -5,11 +5,11 @@ import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { db, PolicyDisplayFormat } from '@db';
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const deletePolicyPdfSchema = z.object({
   policyId: z.string(),
+  versionId: z.string().optional(), // If provided, delete from this version
 });
 
 export const deletePolicyPdfAction = authActionClient
@@ -22,7 +22,7 @@ export const deletePolicyPdfAction = authActionClient
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const { policyId } = parsedInput;
+    const { policyId, versionId } = parsedInput;
     const { session } = ctx;
     const organizationId = session.activeOrganizationId;
 
@@ -31,26 +31,61 @@ export const deletePolicyPdfAction = authActionClient
     }
 
     try {
-      // Get the policy to find the pdfUrl
+      // Verify policy belongs to organization
       const policy = await db.policy.findUnique({
         where: { id: policyId, organizationId },
-        select: { pdfUrl: true },
+        select: { 
+          id: true, 
+          pdfUrl: true,
+          currentVersionId: true,
+          pendingVersionId: true,
+        },
       });
 
       if (!policy) {
         return { success: false, error: 'Policy not found' };
       }
 
-      const oldPdfUrl = policy.pdfUrl;
+      let oldPdfUrl: string | null = null;
 
-      // Update policy first to remove pdfUrl and switch back to EDITOR format
-      await db.policy.update({
-        where: { id: policyId, organizationId },
-        data: {
-          pdfUrl: null,
-          displayFormat: PolicyDisplayFormat.EDITOR,
-        },
-      });
+      if (versionId) {
+        // Delete PDF from specific version
+        const version = await db.policyVersion.findUnique({
+          where: { id: versionId },
+          select: { id: true, policyId: true, pdfUrl: true },
+        });
+
+        if (!version || version.policyId !== policyId) {
+          return { success: false, error: 'Version not found' };
+        }
+
+        // Don't allow deleting PDF from published or pending versions
+        if (version.id === policy.currentVersionId) {
+          return { success: false, error: 'Cannot delete PDF from the published version' };
+        }
+        if (version.id === policy.pendingVersionId) {
+          return { success: false, error: 'Cannot delete PDF from a version pending approval' };
+        }
+
+        oldPdfUrl = version.pdfUrl;
+
+        // Update version to remove pdfUrl
+        await db.policyVersion.update({
+          where: { id: versionId },
+          data: { pdfUrl: null },
+        });
+      } else {
+        // Legacy: delete from policy level
+        oldPdfUrl = policy.pdfUrl;
+
+        await db.policy.update({
+          where: { id: policyId, organizationId },
+          data: {
+            pdfUrl: null,
+            displayFormat: PolicyDisplayFormat.EDITOR,
+          },
+        });
+      }
 
       // Delete from S3 after database is updated
       if (oldPdfUrl && s3Client && BUCKET_NAME) {
@@ -61,15 +96,11 @@ export const deletePolicyPdfAction = authActionClient
           });
           await s3Client.send(deleteCommand);
         } catch (error) {
-          // Log error but we've already updated the database successfully
           console.error('Error deleting PDF from S3 (orphaned file):', error);
         }
       }
 
-      const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
-      revalidatePath(path);
+      revalidatePath(`/${organizationId}/policies/${policyId}`);
 
       return { success: true };
     } catch (error) {
