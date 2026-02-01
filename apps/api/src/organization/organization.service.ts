@@ -5,9 +5,12 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db, Role } from '@trycompai/db';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipResponseDto } from './dto/transfer-ownership.dto';
+import type { UploadFaviconDto } from './dto/upload-favicon.dto';
 
 @Injectable()
 export class OrganizationService {
@@ -327,6 +330,175 @@ export class OrganizationService {
       }
       this.logger.error(
         `Failed to retrieve organization primary color for organization ${organizationId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async uploadFavicon(
+    organizationId: string,
+    uploadData: UploadFaviconDto,
+  ): Promise<{ faviconUrl: string }> {
+    try {
+      // Validate file type
+      const validImageTypes = [
+        'image/png',
+        'image/jpeg',
+        'image/jpg',
+        'image/x-icon',
+        'image/vnd.microsoft.icon',
+        'image/svg+xml',
+      ];
+
+      if (!validImageTypes.includes(uploadData.fileType)) {
+        throw new BadRequestException(
+          'Only PNG, JPEG, ICO, or SVG files are allowed for favicons',
+        );
+      }
+
+      // Check S3 client
+      if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+        throw new BadRequestException(
+          'File upload service is not available',
+        );
+      }
+
+      // Convert base64 to buffer
+      const fileBuffer = Buffer.from(uploadData.fileData, 'base64');
+
+      // Validate file size (1MB limit for favicons)
+      const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024;
+      if (fileBuffer.length > MAX_FILE_SIZE_BYTES) {
+        throw new BadRequestException('Favicon must be less than 1MB');
+      }
+
+      // Get current organization to check for existing favicon
+      const currentOrg = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { faviconUrl: true },
+      });
+
+      if (!currentOrg) {
+        throw new NotFoundException(
+          `Organization with ID ${organizationId} not found`,
+        );
+      }
+
+      // Delete old favicon from S3 if it exists
+      if (currentOrg.faviconUrl) {
+        try {
+          // Extract the S3 key from the URL
+          const url = new URL(currentOrg.faviconUrl);
+          const key = url.pathname.substring(1); // Remove leading slash
+
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+            Key: key,
+          });
+          await s3Client.send(deleteCommand);
+          this.logger.log(`Deleted old favicon from S3: ${key}`);
+        } catch (error) {
+          this.logger.error('Error deleting old favicon from S3:', error);
+          // Continue with upload even if deletion fails
+        }
+      }
+
+      // Generate S3 key
+      const timestamp = Date.now();
+      const sanitizedFileName = uploadData.fileName.replace(
+        /[^a-zA-Z0-9.-]/g,
+        '_',
+      );
+      const key = `${organizationId}/favicon/${timestamp}-${sanitizedFileName}`;
+
+      // Upload to S3 with public-read ACL so URL doesn't expire
+      const putCommand = new PutObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: key,
+        Body: fileBuffer,
+        ContentType: uploadData.fileType,
+        ACL: 'public-read', // Make publicly accessible
+      });
+      await s3Client.send(putCommand);
+
+      // Generate public URL (no expiration)
+      const publicUrl = `https://${APP_AWS_ORG_ASSETS_BUCKET}.s3.amazonaws.com/${key}`;
+
+      // Update organization with new favicon URL
+      await db.organization.update({
+        where: { id: organizationId },
+        data: { faviconUrl: publicUrl },
+      });
+
+      this.logger.log(
+        `Uploaded favicon for organization ${organizationId}: ${publicUrl}`,
+      );
+
+      return { faviconUrl: publicUrl };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to upload favicon for organization ${organizationId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async deleteFavicon(organizationId: string): Promise<{ success: boolean }> {
+    try {
+      // Get current organization to check for existing favicon
+      const currentOrg = await db.organization.findUnique({
+        where: { id: organizationId },
+        select: { faviconUrl: true },
+      });
+
+      if (!currentOrg) {
+        throw new NotFoundException(
+          `Organization with ID ${organizationId} not found`,
+        );
+      }
+
+      // Delete favicon from S3 if it exists
+      if (currentOrg.faviconUrl && s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
+        try {
+          // Extract the S3 key from the URL
+          const url = new URL(currentOrg.faviconUrl);
+          const key = url.pathname.substring(1); // Remove leading slash
+
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+            Key: key,
+          });
+          await s3Client.send(deleteCommand);
+          this.logger.log(`Deleted favicon from S3: ${key}`);
+        } catch (error) {
+          this.logger.error('Error deleting favicon from S3:', error);
+          // Continue with database update even if S3 deletion fails
+        }
+      }
+
+      // Remove favicon from organization
+      await db.organization.update({
+        where: { id: organizationId },
+        data: { faviconUrl: null },
+      });
+
+      this.logger.log(`Removed favicon for organization ${organizationId}`);
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to remove favicon for organization ${organizationId}:`,
         error,
       );
       throw error;

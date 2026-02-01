@@ -27,6 +27,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipDto } from './dto/transfer-ownership.dto';
+import type { UploadFaviconDto } from './dto/upload-favicon.dto';
 import { OrganizationService } from './organization.service';
 import { GET_ORGANIZATION_RESPONSES } from './schemas/get-organization.responses';
 import { UPDATE_ORGANIZATION_RESPONSES } from './schemas/update-organization.responses';
@@ -222,5 +223,57 @@ export class OrganizationController {
         },
       }),
     };
+  }
+
+  @Post('favicon')
+  @ApiOperation({
+    summary: 'Upload organization favicon',
+    description:
+      'Upload a custom favicon for the organization. The favicon will be displayed in the trust center.',
+  })
+  @ApiBody({ type: UploadFaviconDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Favicon uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        faviconUrl: {
+          type: 'string',
+          description: 'Public URL of the uploaded favicon',
+          example: 'https://bucket.s3.amazonaws.com/org_123/favicon/123456-favicon.png',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
+  async uploadFavicon(
+    @OrganizationId() organizationId: string,
+    @Body() uploadData: UploadFaviconDto,
+  ) {
+    return this.organizationService.uploadFavicon(organizationId, uploadData);
+  }
+
+  @Delete('favicon')
+  @ApiOperation({
+    summary: 'Delete organization favicon',
+    description: 'Remove the custom favicon from the organization.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Favicon deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
+  async deleteFavicon(@OrganizationId() organizationId: string) {
+    return this.organizationService.deleteFavicon(organizationId);
   }
 }

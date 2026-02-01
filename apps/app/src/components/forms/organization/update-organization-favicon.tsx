@@ -52,9 +52,9 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
       reader.onload = async () => {
         const base64 = (reader.result as string).split(',')[1];
 
-        // Upload via API
-        const response = await apiClient.put<{ faviconUrl: string }>(
-          `/api/organization/${orgId}/favicon`,
+        // Upload via NestJS API
+        const response = await apiClient.post<{ faviconUrl: string }>(
+          '/v1/organization/favicon',
           {
             fileName: file.name,
             fileType: file.type,
@@ -92,7 +92,7 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
     setIsRemoving(true);
 
     try {
-      const response = await apiClient.delete(`/api/organization/${orgId}/favicon`, orgId);
+      const response = await apiClient.delete('/v1/organization/favicon', orgId);
 
       if (response.error) {
         toast.error(response.error);
