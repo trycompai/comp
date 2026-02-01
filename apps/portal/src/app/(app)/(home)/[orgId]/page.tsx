@@ -2,61 +2,14 @@
 
 import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { FleetPolicyResult, Member } from '@db';
 import { db } from '@db';
-import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { OrganizationDashboard } from './components/OrganizationDashboard';
 import type { FleetPolicy, Host } from './types';
 
 const MDM_POLICY_ID = -9999;
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}): Promise<Metadata> {
-  const { orgId } = await params;
-
-  // Fetch organization data
-  const organization = await db.organization.findUnique({
-    where: { id: orgId },
-    select: {
-      name: true,
-      faviconUrl: true,
-    },
-  });
-
-  // Get favicon URL if exists
-  let faviconUrl: string | undefined;
-  if (organization?.faviconUrl && s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
-    try {
-      const command = new GetObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: organization.faviconUrl,
-      });
-      faviconUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-    } catch {
-      // Fallback to default favicon if error
-      faviconUrl = undefined;
-    }
-  }
-
-  return {
-    title: organization?.name ? `${organization.name} - Trust Center` : 'Trust Center',
-    icons: faviconUrl
-      ? {
-          icon: faviconUrl,
-          shortcut: faviconUrl,
-          apple: faviconUrl,
-        }
-      : undefined,
-  };
-}
 
 export default async function OrganizationPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
