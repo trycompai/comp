@@ -90,9 +90,12 @@ export const createVersionAction = authActionClient
     }
 
     // Create version with retry logic for race conditions
+    // S3 copy is done AFTER the transaction to prevent orphaned files on retry
+    let createdVersion: { versionId: string; version: number } | null = null;
+
     for (let attempt = 1; attempt <= VERSION_CREATE_RETRIES; attempt++) {
       try {
-        const result = await db.$transaction(async (tx) => {
+        createdVersion = await db.$transaction(async (tx) => {
           const latestVersion = await tx.policyVersion.findFirst({
             where: { policyId },
             orderBy: { version: 'desc' },
@@ -100,18 +103,13 @@ export const createVersionAction = authActionClient
           });
           const nextVersion = (latestVersion?.version ?? 0) + 1;
 
-          let newPdfUrl: string | null = null;
-          if (sourcePdfUrl) {
-            const newS3Key = `${activeOrganizationId}/policies/${policyId}/v${nextVersion}-${Date.now()}.pdf`;
-            newPdfUrl = await copyPolicyVersionPdf(sourcePdfUrl, newS3Key);
-          }
-
+          // Create version WITHOUT PDF first (S3 copy happens after transaction)
           const newVersion = await tx.policyVersion.create({
             data: {
               policyId,
               version: nextVersion,
               content: contentForVersion,
-              pdfUrl: newPdfUrl,
+              pdfUrl: null, // Will be updated after S3 copy
               publishedById: memberId,
               changelog: changelog ?? null,
             },
@@ -123,13 +121,8 @@ export const createVersionAction = authActionClient
           };
         });
 
-        revalidatePath(`/${activeOrganizationId}/policies/${policyId}`);
-        revalidatePath(`/${activeOrganizationId}/policies`);
-
-        return {
-          success: true,
-          data: result,
-        };
+        // Transaction succeeded, break out of retry loop
+        break;
       } catch (error) {
         // Check for unique constraint violation (P2002)
         if (
@@ -144,5 +137,34 @@ export const createVersionAction = authActionClient
       }
     }
 
-    return { success: false, error: 'Failed to create policy version after retries' };
+    if (!createdVersion) {
+      return { success: false, error: 'Failed to create policy version after retries' };
+    }
+
+    // Now copy S3 file OUTSIDE the transaction (no orphaned files on retry)
+    if (sourcePdfUrl) {
+      try {
+        const newS3Key = `${activeOrganizationId}/policies/${policyId}/v${createdVersion.version}-${Date.now()}.pdf`;
+        const newPdfUrl = await copyPolicyVersionPdf(sourcePdfUrl, newS3Key);
+
+        if (newPdfUrl) {
+          // Update the version with the PDF URL
+          await db.policyVersion.update({
+            where: { id: createdVersion.versionId },
+            data: { pdfUrl: newPdfUrl },
+          });
+        }
+      } catch (error) {
+        // Log but don't fail - version was created successfully, just without PDF
+        console.error('Error copying PDF for new version:', error);
+      }
+    }
+
+    revalidatePath(`/${activeOrganizationId}/policies/${policyId}`);
+    revalidatePath(`/${activeOrganizationId}/policies`);
+
+    return {
+      success: true,
+      data: createdVersion,
+    };
   });

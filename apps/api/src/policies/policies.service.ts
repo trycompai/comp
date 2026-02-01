@@ -436,9 +436,12 @@ export class PoliciesService {
       throw new BadRequestException('No content to create version from');
     }
 
+    // S3 copy is done AFTER the transaction to prevent orphaned files on retry
+    let createdVersion: { versionId: string; version: number } | null = null;
+
     for (let attempt = 1; attempt <= this.versionCreateRetries; attempt += 1) {
       try {
-        return await db.$transaction(async (tx) => {
+        createdVersion = await db.$transaction(async (tx) => {
           const latestVersion = await tx.policyVersion.findFirst({
             where: { policyId },
             orderBy: { version: 'desc' },
@@ -446,21 +449,13 @@ export class PoliciesService {
           });
           const nextVersion = (latestVersion?.version ?? 0) + 1;
 
-          let newPdfUrl: string | null = null;
-          if (sourcePdfUrl) {
-            const newS3Key = `${organizationId}/policies/${policyId}/v${nextVersion}-${Date.now()}.pdf`;
-            newPdfUrl = await this.attachmentsService.copyPolicyVersionPdf(
-              sourcePdfUrl,
-              newS3Key,
-            );
-          }
-
+          // Create version WITHOUT PDF first (S3 copy happens after transaction)
           const newVersion = await tx.policyVersion.create({
             data: {
               policyId,
               version: nextVersion,
               content: contentForVersion,
-              pdfUrl: newPdfUrl,
+              pdfUrl: null, // Will be updated after S3 copy
               publishedById: memberId,
               changelog: dto.changelog ?? null,
             },
@@ -471,6 +466,9 @@ export class PoliciesService {
             version: nextVersion,
           };
         });
+
+        // Transaction succeeded, break out of retry loop
+        break;
       } catch (error) {
         if (
           this.isUniqueConstraintError(error) &&
@@ -482,7 +480,36 @@ export class PoliciesService {
       }
     }
 
-    throw new Error('Failed to create policy version after retries');
+    if (!createdVersion) {
+      throw new Error('Failed to create policy version after retries');
+    }
+
+    // Now copy S3 file OUTSIDE the transaction (no orphaned files on retry)
+    if (sourcePdfUrl) {
+      try {
+        const newS3Key = `${organizationId}/policies/${policyId}/v${createdVersion.version}-${Date.now()}.pdf`;
+        const newPdfUrl = await this.attachmentsService.copyPolicyVersionPdf(
+          sourcePdfUrl,
+          newS3Key,
+        );
+
+        if (newPdfUrl) {
+          // Update the version with the PDF URL
+          await db.policyVersion.update({
+            where: { id: createdVersion.versionId },
+            data: { pdfUrl: newPdfUrl },
+          });
+        }
+      } catch (error) {
+        // Log but don't fail - version was created successfully, just without PDF
+        this.logger.warn(
+          `Failed to copy PDF for new version ${createdVersion.versionId}:`,
+          error,
+        );
+      }
+    }
+
+    return createdVersion;
   }
 
   async updateVersionContent(

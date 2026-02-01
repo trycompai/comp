@@ -98,12 +98,19 @@ export const updateDraftAction = authActionClient
       }
 
       // Create a new plain object from the content
-      const processedContent = JSON.parse(JSON.stringify(processContent(content as ContentNode)));
+      const processedContent = JSON.parse(JSON.stringify(processContent(content as ContentNode | ContentNode[])));
+
+      // Handle both array format and TipTap wrapper object format
+      // If processedContent is an array, use it directly
+      // If it's a wrapper object with .content, extract the content array
+      const draftContentToSave = Array.isArray(processedContent)
+        ? processedContent
+        : processedContent.content ?? [processedContent];
 
       await db.policy.update({
         where: { id: policyId },
         data: {
-          draftContent: processedContent.content,
+          draftContent: draftContentToSave,
           // Clear signedBy when draft is updated
           signedBy: [],
         },
