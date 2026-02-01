@@ -2,7 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import { Button, Card } from '@trycompai/design-system';
-import { ImageAdd, Trash } from '@trycompai/design-system/icons';
+import { ImagePlus, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -132,7 +132,7 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
                 className="object-contain p-2"
               />
             ) : (
-              <ImageAdd size={32} className="text-muted-foreground/50" />
+              <ImagePlus size={32} className="text-muted-foreground/50" />
             )}
           </div>
 
@@ -164,7 +164,7 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
                 onClick={handleRemove}
                 disabled={isLoading}
                 loading={isRemoving}
-                iconLeft={<Trash size={16} />}
+                iconLeft={<Trash2 size={16} />}
               >
                 Remove
               </Button>
