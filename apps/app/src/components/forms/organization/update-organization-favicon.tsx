@@ -1,21 +1,10 @@
 'use client';
 
-import {
-  removeOrganizationFaviconAction,
-  updateOrganizationFaviconAction,
-} from '@/actions/organization/update-organization-favicon-action';
-import { Button } from '@comp/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@comp/ui/card';
-import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { apiClient } from '@/lib/api-client';
+import { Button, Card } from '@trycompai/design-system';
+import { ImageAdd, Trash } from '@trycompai/design-system/icons';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -24,30 +13,12 @@ interface UpdateOrganizationFaviconProps {
 }
 
 export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizationFaviconProps) {
+  const params = useParams();
+  const orgId = params.orgId as string;
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentFaviconUrl);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const uploadFavicon = useAction(updateOrganizationFaviconAction, {
-    onSuccess: (result) => {
-      if (result.data?.faviconUrl) {
-        setPreviewUrl(result.data.faviconUrl);
-      }
-      toast.success('Favicon updated');
-    },
-    onError: (error) => {
-      toast.error(error.error.serverError || 'Failed to upload favicon');
-    },
-  });
-
-  const removeFavicon = useAction(removeOrganizationFaviconAction, {
-    onSuccess: () => {
-      setPreviewUrl(null);
-      toast.success('Favicon removed');
-    },
-    onError: () => {
-      toast.error('Failed to remove favicon');
-    },
-  });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,41 +44,86 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
       return;
     }
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = (reader.result as string).split(',')[1];
-      uploadFavicon.execute({
-        fileName: file.name,
-        fileType: file.type,
-        fileData: base64,
-      });
-    };
-    reader.readAsDataURL(file);
+    setIsUploading(true);
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1];
+
+        // Upload via API
+        const response = await apiClient.put<{ faviconUrl: string }>(
+          `/api/organization/${orgId}/favicon`,
+          {
+            fileName: file.name,
+            fileType: file.type,
+            fileData: base64,
+          },
+          orgId,
+        );
+
+        if (response.error) {
+          toast.error(response.error);
+          setIsUploading(false);
+          return;
+        }
+
+        if (response.data?.faviconUrl) {
+          setPreviewUrl(response.data.faviconUrl);
+          toast.success('Favicon updated');
+        }
+
+        setIsUploading(false);
+
+        // Reset input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to upload favicon');
+      setIsUploading(false);
     }
   };
 
-  const isLoading = uploadFavicon.status === 'executing' || removeFavicon.status === 'executing';
+  const handleRemove = async () => {
+    setIsRemoving(true);
+
+    try {
+      const response = await apiClient.delete(`/api/organization/${orgId}/favicon`, orgId);
+
+      if (response.error) {
+        toast.error(response.error);
+        setIsRemoving(false);
+        return;
+      }
+
+      setPreviewUrl(null);
+      toast.success('Favicon removed');
+      setIsRemoving(false);
+    } catch (error) {
+      toast.error('Failed to remove favicon');
+      setIsRemoving(false);
+    }
+  };
+
+  const isLoading = isUploading || isRemoving;
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Trust Center Favicon</CardTitle>
-        <CardDescription>
-          <div className="max-w-[600px]">
-            Upload a custom favicon for your trust center. This will be displayed in browser tabs
-            when users visit your trust portal.
-          </div>
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <Card.Header>
+        <Card.Title>Trust Center Favicon</Card.Title>
+        <Card.Description>
+          Upload a custom favicon for your trust center. This will be displayed in browser tabs
+          when users visit your trust portal.
+        </Card.Description>
+      </Card.Header>
+      <Card.Content>
         <div className="flex items-center gap-4">
           {/* Favicon preview */}
-          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
             {previewUrl ? (
               <Image
                 src={previewUrl}
@@ -116,7 +132,7 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
                 className="object-contain p-2"
               />
             ) : (
-              <ImagePlus className="h-8 w-8 text-muted-foreground/50" />
+              <ImageAdd size={32} className="text-muted-foreground/50" />
             )}
           </div>
 
@@ -132,50 +148,35 @@ export function UpdateOrganizationFavicon({ currentFaviconUrl }: UpdateOrganizat
             />
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
+              loading={isUploading}
             >
-              {uploadFavicon.status === 'executing' ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                'Upload favicon'
-              )}
+              Upload favicon
             </Button>
             {previewUrl && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeFavicon.execute({})}
+                onClick={handleRemove}
                 disabled={isLoading}
-                className="text-destructive hover:text-destructive"
+                loading={isRemoving}
+                iconLeft={<Trash size={16} />}
               >
-                {removeFavicon.status === 'executing' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Removing...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4" />
-                    Remove
-                  </>
-                )}
+                Remove
               </Button>
             )}
           </div>
         </div>
-      </CardContent>
-      <CardFooter>
-        <div className="text-muted-foreground text-xs">
+      </Card.Content>
+      <Card.Footer>
+        <p className="text-xs text-muted-foreground">
           Recommended: Square image (e.g., 32x32px or 64x64px). PNG, ICO, or SVG format. Max 1MB.
-        </div>
-      </CardFooter>
+        </p>
+      </Card.Footer>
     </Card>
   );
 }

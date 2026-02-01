@@ -22,7 +22,6 @@ export default async function OrganizationSettings({
 
   const organization = await organizationDetails(orgId);
   const logoUrl = await getLogoUrl(organization?.logo);
-  const faviconUrl = await getFaviconUrl(organization?.faviconUrl);
   const { isOwner, eligibleMembers } = await getOwnershipData(orgId);
 
   return (
@@ -30,7 +29,7 @@ export default async function OrganizationSettings({
       <UpdateOrganizationName organizationName={organization?.name ?? ''} />
       <UpdateOrganizationWebsite organizationWebsite={organization?.website ?? ''} />
       <UpdateOrganizationLogo currentLogoUrl={logoUrl} />
-      <UpdateOrganizationFavicon currentFaviconUrl={faviconUrl} />
+      <UpdateOrganizationFavicon currentFaviconUrl={organization?.faviconUrl ?? null} />
       <UpdateOrganizationAdvancedMode
         advancedModeEnabled={organization?.advancedModeEnabled ?? false}
       />
@@ -54,19 +53,6 @@ async function getLogoUrl(logoKey: string | null | undefined): Promise<string | 
   }
 }
 
-async function getFaviconUrl(faviconKey: string | null | undefined): Promise<string | null> {
-  if (!faviconKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) return null;
-
-  try {
-    const command = new GetObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: faviconKey,
-    });
-    return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-  } catch {
-    return null;
-  }
-}
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
