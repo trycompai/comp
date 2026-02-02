@@ -30,7 +30,7 @@ const RESTRICTED_ROLES = ['employee', 'contractor'];
 /**
  * Roles that have full access without assignment filtering
  */
-const PRIVILEGED_ROLES = ['owner', 'admin', 'program_manager', 'auditor'];
+const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'];
 
 /**
  * PermissionGuard - Validates user permissions using better-auth's hasPermission API

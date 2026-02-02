@@ -1,7 +1,3 @@
-/**
- * Re-export all permissions from the shared @comp/auth package.
- * This ensures a single source of truth for role definitions.
- */
 export {
   ac,
   owner,
@@ -14,4 +10,6 @@ export {
   RESTRICTED_ROLES,
   PRIVILEGED_ROLES,
   type RoleName,
-} from '@comp/auth';
+} from './permissions';
+
+export { createAuthServer, type CreateAuthServerOptions, type AuthServer } from './server';

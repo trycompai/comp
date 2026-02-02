@@ -3,7 +3,7 @@ import { Departments, Prisma, PolicyVisibility } from '@prisma/client';
 /**
  * Roles that have full access without department visibility filtering
  */
-const PRIVILEGED_ROLES = ['owner', 'admin', 'program_manager', 'auditor'];
+const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'];
 
 /**
  * Check if user has a privileged role that bypasses visibility filtering

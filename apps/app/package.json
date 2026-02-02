@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
+    "@comp/auth": "workspace:*",
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/groq": "^2.0.0",
     "@ai-sdk/openai": "^2.0.80",

@@ -2536,6 +2536,22 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - User does not have permission to access this risk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "You do not have access to view this risk"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "Risk not found",
             "content": {
@@ -5616,6 +5632,22 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - User does not have permission to access this policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "You do not have access to view this policy"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "Policy not found",
             "content": {
@@ -6922,7 +6954,7 @@
     },
     "/v1/tasks": {
       "get": {
-        "description": "Retrieve all tasks for the authenticated organization",
+        "description": "Retrieve all tasks for the authenticated organization. Employees/contractors only see their assigned tasks.",
         "operationId": "TasksController_getTasks_v1",
         "parameters": [
           {
@@ -7268,6 +7300,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Forbidden - Not assigned to this task"
           },
           "404": {
             "description": "Task not found",

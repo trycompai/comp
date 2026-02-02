@@ -146,10 +146,6 @@ describe('PermissionGuard', () => {
       expect(PermissionGuard.isRestrictedRole(['owner'])).toBe(false);
     });
 
-    it('should return false for program_manager role', () => {
-      expect(PermissionGuard.isRestrictedRole(['program_manager'])).toBe(false);
-    });
-
     it('should return false for auditor role', () => {
       expect(PermissionGuard.isRestrictedRole(['auditor'])).toBe(false);
     });

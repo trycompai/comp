@@ -8,7 +8,7 @@ const RESTRICTED_ROLES = ['employee', 'contractor'];
 /**
  * Roles that have full access without assignment filtering
  */
-const PRIVILEGED_ROLES = ['owner', 'admin', 'program_manager', 'auditor'];
+const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'];
 
 /**
  * Check if user roles are restricted (employee/contractor only)
