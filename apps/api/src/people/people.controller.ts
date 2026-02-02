@@ -23,7 +23,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { RequireRoles } from '../auth/role-validator.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
@@ -204,7 +205,8 @@ export class PeopleController {
 
   @Delete(':id/host/:hostId')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(RequireRoles('owner'))
+  @UseGuards(PermissionGuard)
+  @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.removeHost)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiParam(PEOPLE_PARAMS.hostId)

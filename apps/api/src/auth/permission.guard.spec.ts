@@ -75,7 +75,9 @@ describe('PermissionGuard', () => {
       ]);
 
       // Mock fetch to fail so it uses fallback
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
 
       const context = createMockExecutionContext({
         userRoles: null,
@@ -93,7 +95,9 @@ describe('PermissionGuard', () => {
       ]);
 
       // Mock fetch to fail so it uses fallback
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
 
       const context = createMockExecutionContext({
         userRoles: ['admin'],
@@ -110,7 +114,9 @@ describe('PermissionGuard', () => {
       ]);
 
       // Mock fetch to fail so it uses fallback
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
 
       const context = createMockExecutionContext({
         userRoles: ['employee'],
