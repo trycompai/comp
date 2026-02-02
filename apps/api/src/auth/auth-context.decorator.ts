@@ -17,6 +17,7 @@ export const AuthContext = createParamDecorator(
       userEmail,
       userRoles,
       memberId,
+      memberDepartment,
     } = request;
 
     if (!organizationId || !authType) {
@@ -33,6 +34,7 @@ export const AuthContext = createParamDecorator(
       userEmail,
       userRoles,
       memberId,
+      memberDepartment,
     };
   },
 );

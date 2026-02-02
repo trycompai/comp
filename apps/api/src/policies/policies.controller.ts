@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   Param,
@@ -27,7 +28,13 @@ import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import {
+  buildPolicyVisibilityFilter,
+  canViewPolicy,
+} from '../utils/department-visibility';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
@@ -75,6 +82,8 @@ export class PoliciesController {
   constructor(private readonly policiesService: PoliciesService) {}
 
   @Get()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getAllPolicies)
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[200])
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[401])
@@ -82,7 +91,16 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const policies = await this.policiesService.findAll(organizationId);
+    // Build visibility filter for department-specific policies
+    const visibilityFilter = buildPolicyVisibilityFilter(
+      authContext.memberDepartment,
+      authContext.userRoles,
+    );
+
+    const policies = await this.policiesService.findAll(
+      organizationId,
+      visibilityFilter,
+    );
 
     return {
       data: policies,
@@ -131,10 +149,13 @@ export class PoliciesController {
   }
 
   @Get(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getPolicyById)
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[200])
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[401])
+  @ApiResponse(GET_POLICY_BY_ID_RESPONSES[403])
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[404])
   async getPolicy(
     @Param('id') id: string,
@@ -142,6 +163,19 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const policy = await this.policiesService.findById(id, organizationId);
+
+    // Check visibility access for department-specific policies
+    if (
+      !canViewPolicy(
+        policy,
+        authContext.memberDepartment,
+        authContext.userRoles,
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to view this policy',
+      );
+    }
 
     return {
       ...policy,
