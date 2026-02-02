@@ -34,6 +34,7 @@ import { BrowserbaseModule } from './browserbase/browserbase.module';
 import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { TrainingModule } from './training/training.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { TrainingModule } from './training/training.module';
       },
     ]),
     AuthModule,
+    RolesModule,
     OrganizationModule,
     PeopleModule,
     RisksModule,
