@@ -58,5 +58,8 @@ model Organization {
   // Findings
   findings Finding[]
 
+  // Custom roles for dynamic access control
+  organizationRoles OrganizationRole[]
+
   @@index([slug])
 }

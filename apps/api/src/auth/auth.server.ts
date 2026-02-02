@@ -337,9 +337,21 @@ export const auth = betterAuth({
       },
       ac,
       roles: allRoles,
+      // Enable dynamic access control for custom roles
+      // This allows organizations to create custom roles at runtime
+      // Roles are stored in better-auth's internal tables
+      dynamicAccessControl: {
+        enabled: true,
+        // Limit custom roles per organization to prevent abuse
+        maximumRolesPerOrganization: 20,
+      },
       schema: {
         organization: {
           modelName: 'Organization',
+        },
+        // Custom roles table for dynamic access control
+        role: {
+          modelName: 'OrganizationRole',
         },
       },
     }),

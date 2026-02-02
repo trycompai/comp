@@ -142,6 +142,22 @@ enum Role {
   contractor
 }
 
+// Custom roles for dynamic access control
+// This table stores organization-specific custom roles created via better-auth
+// See: https://www.better-auth.com/docs/plugins/organization#dynamic-access-control
+model OrganizationRole {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('rol'::text)"))
+  name           String
+  permissions    Json         // Stores the permission object like { control: ['read'], policy: ['read'] }
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@map("organization_role")
+}
+
 enum PolicyStatus {
   draft
   published
