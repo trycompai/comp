@@ -137,6 +137,7 @@ model Invitation {
 enum Role {
   owner
   admin
+  program_manager
   auditor
   employee
   contractor
