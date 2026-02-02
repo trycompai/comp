@@ -392,6 +392,13 @@ export const auth = betterAuth({
         }),
         expirationTime: '1h',
       },
+      // IMPORTANT: Set rotationInterval to prevent JWKS key regeneration on every request
+      // Without this, new keys are created constantly, invalidating existing JWTs
+      // See: https://github.com/better-auth/better-auth/issues/6215
+      jwks: {
+        rotationInterval: 60 * 60 * 24 * 30, // 30 days - rotate keys monthly
+        gracePeriod: 60 * 60 * 24 * 7, // 7 days - old keys remain valid for a week after rotation
+      },
     }),
     bearer(),
     multiSession(),
