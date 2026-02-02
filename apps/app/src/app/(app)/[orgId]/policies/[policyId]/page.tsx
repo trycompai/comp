@@ -52,19 +52,13 @@ export default async function PolicyDetails({
         ]}
       />
       <PageHeader
-        title={
+        title={policy?.name ?? 'Policy'}
+        actions={
           <div className="flex items-center gap-3">
-            <h1 className="font-medium text-4xl tracking-tight text-foreground">
-              {policy?.name ?? 'Policy'}
-            </h1>
-            {policy && (
-              <div className="mt-1">
-                <PolicyStatusBadge status={policy.status} />
-              </div>
-            )}
+            {policy && <PolicyStatusBadge status={policy.status} />}
+            <PolicyHeaderActions policy={policy} logs={logs} />
           </div>
         }
-        actions={<PolicyHeaderActions policy={policy} logs={logs} />}
       />
       <PolicyPage
         policy={policy}
