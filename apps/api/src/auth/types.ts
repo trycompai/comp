@@ -7,6 +7,7 @@ export interface AuthenticatedRequest extends Request {
   userId?: string;
   userEmail?: string;
   userRoles: string[] | null;
+  memberId?: string; // Member ID for assignment filtering (only available for JWT auth)
 }
 
 export interface AuthContext {
@@ -16,4 +17,5 @@ export interface AuthContext {
   userId?: string; // Only available for JWT auth
   userEmail?: string; // Only available for JWT auth
   userRoles: string[] | null;
+  memberId?: string; // Member ID for assignment filtering (only available for JWT auth)
 }

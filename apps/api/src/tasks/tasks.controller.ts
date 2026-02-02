@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -25,7 +26,13 @@ import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import {
+  buildTaskAssignmentFilter,
+  hasTaskAccess,
+} from '../utils/assignment-filter';
 import {
   AttachmentResponseDto,
   TaskResponseDto,
@@ -52,9 +59,12 @@ export class TasksController {
   // ==================== TASKS ====================
 
   @Get()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get all tasks',
-    description: 'Retrieve all tasks for the authenticated organization',
+    description:
+      'Retrieve all tasks for the authenticated organization. Employees/contractors only see their assigned tasks.',
   })
   @ApiResponse({
     status: 200,
@@ -92,8 +102,15 @@ export class TasksController {
   })
   async getTasks(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
   ): Promise<TaskResponseDto[]> {
-    return await this.tasksService.getTasks(organizationId);
+    // Build assignment filter for restricted roles (employee/contractor)
+    const assignmentFilter = buildTaskAssignmentFilter(
+      authContext.memberId,
+      authContext.userRoles,
+    );
+
+    return await this.tasksService.getTasks(organizationId, assignmentFilter);
   }
 
   @Patch('bulk')
@@ -305,6 +322,8 @@ export class TasksController {
   }
 
   @Get(':taskId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get task by ID',
     description: 'Retrieve a specific task by its ID',
@@ -332,6 +351,10 @@ export class TasksController {
     },
   })
   @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not assigned to this task',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Task not found',
     content: {
@@ -351,8 +374,21 @@ export class TasksController {
   async getTask(
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
+    @AuthContext() authContext: AuthContextType,
   ): Promise<TaskResponseDto> {
-    return await this.tasksService.getTask(organizationId, taskId);
+    // Service returns full task object with assignee info
+    const task = await this.tasksService.getTask(organizationId, taskId);
+
+    // Check assignment access for restricted roles
+    // The task object from service includes assigneeId even though DTO doesn't declare it
+    const taskWithAssignee = task as TaskResponseDto & { assigneeId: string | null };
+    if (
+      !hasTaskAccess(taskWithAssignee, authContext.memberId, authContext.userRoles)
+    ) {
+      throw new ForbiddenException('You do not have access to this task');
+    }
+
+    return task;
   }
 
   @Patch(':taskId')

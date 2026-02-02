@@ -180,6 +180,7 @@ export class HybridAuthGuard implements CanActivate {
           deactivated: false,
         },
         select: {
+          id: true,
           role: true,
         },
       });
@@ -190,6 +191,7 @@ export class HybridAuthGuard implements CanActivate {
       request.userId = userId;
       request.userEmail = userEmail;
       request.userRoles = userRoles;
+      request.memberId = member?.id; // Set member ID for assignment filtering
       request.organizationId = explicitOrgId;
       request.authType = 'jwt';
       request.isApiKey = false;

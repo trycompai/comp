@@ -9,8 +9,15 @@ export const AuthContext = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): AuthContextType => {
     const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    const { organizationId, authType, isApiKey, userId, userEmail, userRoles } =
-      request;
+    const {
+      organizationId,
+      authType,
+      isApiKey,
+      userId,
+      userEmail,
+      userRoles,
+      memberId,
+    } = request;
 
     if (!organizationId || !authType) {
       throw new Error(
@@ -25,6 +32,7 @@ export const AuthContext = createParamDecorator(
       userId,
       userEmail,
       userRoles,
+      memberId,
     };
   },
 );
@@ -66,6 +74,16 @@ export const UserId = createParamDecorator(
     }
 
     return userId;
+  },
+);
+
+/**
+ * Parameter decorator to extract the member ID (only available for session auth)
+ */
+export const MemberId = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): string | undefined => {
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
+    return request.memberId;
   },
 );
 
