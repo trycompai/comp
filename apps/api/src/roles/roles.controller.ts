@@ -77,7 +77,7 @@ export class RolesController {
     return this.rolesService.createRole(
       organizationId,
       dto,
-      authContext.userRoles?.[0] || 'employee',
+      authContext.userRoles || ['employee'],
     );
   }
 
@@ -194,7 +194,7 @@ export class RolesController {
       organizationId,
       roleId,
       dto,
-      authContext.userRoles?.[0] || 'employee',
+      authContext.userRoles || ['employee'],
     );
   }
 

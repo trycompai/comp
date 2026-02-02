@@ -51,14 +51,15 @@ export class RolesService {
   /**
    * Check if caller has all the permissions they're trying to grant
    * Prevents privilege escalation
+   * @param callerRoles Array of roles the caller has (supports multiple roles)
    */
   private async validateNoPrivilegeEscalation(
-    callerRole: string,
+    callerRoles: string[],
     permissions: Record<string, string[]>,
     organizationId: string,
   ): Promise<void> {
-    // Get the caller's effective permissions
-    const callerPermissions = await this.getEffectivePermissions(callerRole, organizationId);
+    // Get the caller's combined effective permissions from all their roles
+    const callerPermissions = await this.getCombinedPermissions(callerRoles, organizationId);
 
     for (const [resource, actions] of Object.entries(permissions)) {
       const callerActions = callerPermissions[resource] || [];
@@ -73,11 +74,40 @@ export class RolesService {
     }
 
     // Special check: only owners can grant organization:delete
-    if (permissions.organization?.includes('delete') && callerRole !== 'owner') {
+    if (permissions.organization?.includes('delete') && !callerRoles.includes('owner')) {
       throw new ForbiddenException(
         'Only organization owners can grant organization:delete permission'
       );
     }
+  }
+
+  /**
+   * Get combined permissions from multiple roles
+   * Merges permissions from all roles (union of all permissions)
+   */
+  private async getCombinedPermissions(
+    roleNames: string[],
+    organizationId: string,
+  ): Promise<Record<string, string[]>> {
+    const combined: Record<string, string[]> = {};
+
+    for (const roleName of roleNames) {
+      const rolePermissions = await this.getEffectivePermissions(roleName, organizationId);
+
+      for (const [resource, actions] of Object.entries(rolePermissions)) {
+        if (!combined[resource]) {
+          combined[resource] = [];
+        }
+        // Add unique actions
+        for (const action of actions) {
+          if (!combined[resource].includes(action)) {
+            combined[resource].push(action);
+          }
+        }
+      }
+    }
+
+    return combined;
   }
 
   /**
@@ -148,11 +178,12 @@ export class RolesService {
 
   /**
    * Create a new custom role
+   * @param callerRoles Array of roles the caller has (supports multiple roles)
    */
   async createRole(
     organizationId: string,
     dto: CreateRoleDto,
-    callerRole: string,
+    callerRoles: string[],
   ) {
     // Validate role name isn't a built-in role
     if (BUILT_IN_ROLES.includes(dto.name)) {
@@ -163,7 +194,7 @@ export class RolesService {
     this.validatePermissions(dto.permissions);
 
     // Check for privilege escalation
-    await this.validateNoPrivilegeEscalation(callerRole, dto.permissions, organizationId);
+    await this.validateNoPrivilegeEscalation(callerRoles, dto.permissions, organizationId);
 
     // Check if role already exists
     const existing = await db.organizationRole.findFirst({
@@ -255,12 +286,13 @@ export class RolesService {
 
   /**
    * Update a custom role
+   * @param callerRoles Array of roles the caller has (supports multiple roles)
    */
   async updateRole(
     organizationId: string,
     roleId: string,
     dto: UpdateRoleDto,
-    callerRole: string,
+    callerRoles: string[],
   ) {
     const role = await db.organizationRole.findFirst({
       where: {
@@ -295,7 +327,7 @@ export class RolesService {
     // Validate and check permissions if provided
     if (dto.permissions) {
       this.validatePermissions(dto.permissions);
-      await this.validateNoPrivilegeEscalation(callerRole, dto.permissions, organizationId);
+      await this.validateNoPrivilegeEscalation(callerRoles, dto.permissions, organizationId);
     }
 
     // Update the role
