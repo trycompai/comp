@@ -323,6 +323,26 @@ describe('RolesService', () => {
         service.updateRole(organizationId, roleId, { name: 'new-name' }, ['owner']),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('should prevent privilege escalation when updating permissions', async () => {
+      const existingRole = {
+        id: roleId,
+        name: 'limited-role',
+        permissions: { task: ['read'] },
+      };
+
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
+
+      // Employee trying to add organization:delete to a role
+      await expect(
+        service.updateRole(
+          organizationId,
+          roleId,
+          { permissions: { organization: ['delete'] } },
+          ['employee'],
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 
   describe('deleteRole', () => {
