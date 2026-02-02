@@ -4,7 +4,7 @@ import { IsObject, IsOptional, IsString, MaxLength, MinLength, Matches } from 'c
 export class UpdateRoleDto {
   @ApiProperty({
     description: 'New name for the custom role',
-    example: 'compliance-manager',
+    example: 'Compliance Manager',
     minLength: 2,
     maxLength: 50,
     required: false,
@@ -13,8 +13,8 @@ export class UpdateRoleDto {
   @IsOptional()
   @MinLength(2)
   @MaxLength(50)
-  @Matches(/^[a-z][a-z0-9-]*$/, {
-    message: 'Role name must start with a letter and contain only lowercase letters, numbers, and hyphens',
+  @Matches(/^[a-zA-Z][a-zA-Z0-9\s-]*$/, {
+    message: 'Role name must start with a letter and contain only letters, numbers, spaces, and hyphens',
   })
   name?: string;
 

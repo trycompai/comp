@@ -8,6 +8,7 @@ import { removeMember } from '../actions/removeMember';
 import { revokeInvitation } from '../actions/revokeInvitation';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
+import type { CustomRoleOption } from './MultiRoleCombobox';
 
 export interface MemberWithUser extends Member {
   user: User;
@@ -75,6 +76,24 @@ export async function TeamMembers(props: TeamMembersProps) {
   // Fetch employee sync connections server-side
   const employeeSyncData = await getEmployeeSyncConnections(organizationId);
 
+  // Fetch custom roles for the organization
+  let customRoles: CustomRoleOption[] = [];
+  const organizationRoles = await db.organizationRole.findMany({
+    where: {
+      organizationId: organizationId,
+    },
+    select: {
+      id: true,
+      name: true,
+      permissions: true,
+    },
+  });
+  customRoles = organizationRoles.map((role) => ({
+    id: role.id,
+    name: role.name,
+    permissions: role.permissions as Record<string, string[]>,
+  }));
+
   return (
     <TeamMembersClient
       data={data}
@@ -86,6 +105,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       isAuditor={isAuditor}
       isCurrentUserOwner={isCurrentUserOwner}
       employeeSyncData={employeeSyncData}
+      customRoles={customRoles}
     />
   );
 }

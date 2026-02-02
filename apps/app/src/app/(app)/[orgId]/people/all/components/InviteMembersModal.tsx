@@ -34,6 +34,7 @@ import { addEmployeeWithoutInvite } from '../actions/addEmployeeWithoutInvite';
 import { checkMemberStatus } from '../actions/checkMemberStatus';
 import { inviteNewMember } from '../actions/inviteNewMember';
 import { sendInvitationEmailToExistingMember } from '../actions/sendInvitationEmail';
+import type { CustomRoleOption } from './MultiRoleCombobox';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
 // --- Constants for Roles ---
@@ -83,6 +84,7 @@ interface InviteMembersModalProps {
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   allowedRoles: InviteRole[];
+  customRoles?: CustomRoleOption[];
 }
 
 interface BulkInviteResultData {
@@ -98,6 +100,7 @@ export function InviteMembersModal({
   onOpenChange,
   organizationId,
   allowedRoles,
+  customRoles = [],
 }: InviteMembersModalProps) {
   const router = useRouter();
   const [mode, setMode] = useState<'manual' | 'csv'>('manual');
@@ -505,6 +508,7 @@ export function InviteMembersModal({
                             selectedRoles={value || []}
                             onSelectedRolesChange={onChange}
                             allowedRoles={normalizedAllowedRoles}
+                            customRoles={customRoles}
                             placeholder={'Select a role'}
                           />
                           <FormMessage>{error?.message}</FormMessage>

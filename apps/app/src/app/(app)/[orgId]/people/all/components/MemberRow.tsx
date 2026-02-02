@@ -26,7 +26,7 @@ import { Label } from '@comp/ui/label';
 import type { Role } from '@db';
 
 import { toast } from 'sonner';
-import { MultiRoleCombobox } from './MultiRoleCombobox';
+import { MultiRoleCombobox, type CustomRoleOption } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { MemberWithUser } from './TeamMembers';
@@ -38,6 +38,7 @@ interface MemberRowProps {
   onUpdateRole: (memberId: string, roles: Role[]) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
+  customRoles?: CustomRoleOption[];
 }
 
 // Helper to get initials
@@ -62,6 +63,7 @@ export function MemberRow({
   onUpdateRole,
   canEdit,
   isCurrentUserOwner,
+  customRoles = [],
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -191,30 +193,37 @@ export function MemberRow({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex flex-wrap gap-1 max-w-[120px] sm:max-w-none">
-            {currentRoles.map((role) => (
-              <Badge
-                key={role}
-                variant="secondary"
-                className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}
-              >
-                {(() => {
-                  switch (role) {
-                    case 'owner':
-                      return 'Owner';
-                    case 'admin':
-                      return 'Admin';
-                    case 'auditor':
-                      return 'Auditor';
-                    case 'employee':
-                      return 'Employee';
-                    case 'contractor':
-                      return 'Contractor';
-                    default:
-                      return '???';
-                  }
-                })()}
-              </Badge>
-            ))}
+            {currentRoles.map((role) => {
+              const builtInRoles = ['owner', 'admin', 'auditor', 'employee', 'contractor'];
+              const isCustom = !builtInRoles.includes(role);
+              const customRole = customRoles.find((r) => r.name === role);
+
+              return (
+                <Badge
+                  key={role}
+                  variant={isCustom ? 'outline' : 'secondary'}
+                  className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''} ${isCustom ? 'border-blue-300 bg-blue-50 text-blue-700' : ''}`}
+                >
+                  {(() => {
+                    if (customRole) return customRole.name;
+                    switch (role) {
+                      case 'owner':
+                        return 'Owner';
+                      case 'admin':
+                        return 'Admin';
+                      case 'auditor':
+                        return 'Auditor';
+                      case 'employee':
+                        return 'Employee';
+                      case 'contractor':
+                        return 'Contractor';
+                      default:
+                        return role;
+                    }
+                  })()}
+                </Badge>
+              );
+            })}
           </div>
 
           {!isDeactivated && (
@@ -298,6 +307,7 @@ export function MemberRow({
                 onSelectedRolesChange={setSelectedRoles}
                 placeholder={'Select a role'}
                 lockedRoles={isOwner ? ['owner'] : []}
+                customRoles={customRoles}
               />
               {isOwner && (
                 <p className="text-muted-foreground mt-1 text-xs">

@@ -4,7 +4,7 @@ import { IsNotEmpty, IsObject, IsString, MaxLength, MinLength, Matches } from 'c
 export class CreateRoleDto {
   @ApiProperty({
     description: 'Name of the custom role',
-    example: 'compliance-lead',
+    example: 'Compliance Lead',
     minLength: 2,
     maxLength: 50,
   })
@@ -12,8 +12,8 @@ export class CreateRoleDto {
   @IsNotEmpty()
   @MinLength(2)
   @MaxLength(50)
-  @Matches(/^[a-z][a-z0-9-]*$/, {
-    message: 'Role name must start with a letter and contain only lowercase letters, numbers, and hyphens',
+  @Matches(/^[a-zA-Z][a-zA-Z0-9\s-]*$/, {
+    message: 'Role name must start with a letter and contain only letters, numbers, spaces, and hyphens',
   })
   name: string;
 

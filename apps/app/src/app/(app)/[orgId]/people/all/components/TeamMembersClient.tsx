@@ -16,6 +16,7 @@ import type { Invitation, Role } from '@db';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
 
 import { MemberRow } from './MemberRow';
+import type { CustomRoleOption } from './MultiRoleCombobox';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
@@ -39,6 +40,7 @@ interface TeamMembersClientProps {
   isAuditor: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
+  customRoles?: CustomRoleOption[];
 }
 
 // Define a simplified type for merged list items
@@ -63,6 +65,7 @@ export function TeamMembersClient({
   isAuditor,
   isCurrentUserOwner,
   employeeSyncData,
+  customRoles = [],
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
@@ -145,6 +148,20 @@ export function TeamMembersClient({
         processedRoles: roles,
       };
     }),
+  ];
+
+  // All available roles: built-in roles (type-safe from Role enum) + custom roles
+  const builtInRoleOptions: { value: Role; label: string }[] = [
+    { value: 'owner', label: 'Owner' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'auditor', label: 'Auditor' },
+    { value: 'employee', label: 'Employee' },
+    { value: 'contractor', label: 'Contractor' },
+  ] satisfies { value: Role; label: string }[];
+
+  const allRoleOptions = [
+    ...builtInRoleOptions,
+    ...customRoles.map((role) => ({ value: role.name, label: role.name })),
   ];
 
   const filteredItems = allItems.filter((item) => {
@@ -256,6 +273,7 @@ export function TeamMembersClient({
         allowedRoles={
           canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
         }
+        customRoles={customRoles}
       />
 
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -305,10 +323,11 @@ export function TeamMembersClient({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{'All Roles'}</SelectItem>
-            <SelectItem value="owner">{'Owner'}</SelectItem>
-            <SelectItem value="admin">{'Admin'}</SelectItem>
-            <SelectItem value="auditor">{'Auditor'}</SelectItem>
-            <SelectItem value="employee">{'Employee'}</SelectItem>
+            {allRoleOptions.map((role) => (
+              <SelectItem key={role.value} value={role.value}>
+                {role.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {hasAnyConnection && (
@@ -455,6 +474,7 @@ export function TeamMembersClient({
                 onUpdateRole={handleUpdateRole}
                 canEdit={canManageMembers}
                 isCurrentUserOwner={isCurrentUserOwner}
+                customRoles={customRoles}
               />
             ))}
           </div>

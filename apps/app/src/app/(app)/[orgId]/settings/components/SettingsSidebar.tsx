@@ -24,6 +24,7 @@ export function SettingsSidebar({ orgId, showBrowserTab }: SettingsSidebarProps)
     { id: 'context', label: 'Context', path: `/${orgId}/settings/context-hub` },
     { id: 'api', label: 'API Keys', path: `/${orgId}/settings/api-keys` },
     { id: 'secrets', label: 'Secrets', path: `/${orgId}/settings/secrets` },
+    { id: 'roles', label: 'Roles', path: `/${orgId}/settings/roles` },
     {
       id: 'browser',
       label: 'Browser',
