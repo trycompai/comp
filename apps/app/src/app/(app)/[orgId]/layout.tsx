@@ -11,13 +11,31 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShellWrapper } from './components/AppShellWrapper';
 
-// Helper to safely parse comma-separated roles string
+// Helper to safely parse comma-separated roles string (used for UI display only)
 function parseRolesString(rolesStr: string | null | undefined): Role[] {
   if (!rolesStr) return [];
   return rolesStr
     .split(',')
     .map((r) => r.trim())
     .filter((r) => r in Role) as Role[];
+}
+
+/**
+ * Check if a role string includes any role with app access permission.
+ * Handles comma-separated role strings (e.g., "owner" or "owner,admin").
+ */
+function checkAppAccessForRole(roleString: string | null | undefined): boolean {
+  if (!roleString) return false;
+
+  // Roles that have app:read permission
+  // Based on the role definitions in @comp/auth/permissions.ts:
+  // - owner, admin, auditor have app: ['read']
+  // - employee, contractor do NOT have app access (portal only)
+  const rolesWithAppAccess = ['owner', 'admin', 'auditor'];
+
+  // Parse comma-separated roles and check if any have app access
+  const userRoles = roleString.split(',').map((r) => r.trim().toLowerCase());
+  return userRoles.some((role) => rolesWithAppAccess.includes(role));
 }
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
@@ -73,30 +91,17 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  // Sync activeOrganizationId BEFORE any redirects that might use it
-  // This ensures session.activeOrganizationId is always correct for users with multiple orgs
-  const currentActiveOrgId = session.session.activeOrganizationId;
-  if (!currentActiveOrgId || currentActiveOrgId !== requestedOrgId) {
-    try {
-      await auth.api.setActiveOrganization({
-        headers: requestHeaders,
-        body: {
-          organizationId: requestedOrgId,
-        },
-      });
-    } catch (error) {
-      console.error('[Layout] Failed to sync activeOrganizationId:', error);
-      // Continue anyway - the URL params are the source of truth for this request
-    }
-  }
+  // Check if user has app:read permission based on their role
+  // We use the URL's orgId + member lookup for RBAC, not activeOrganizationId
+  // This is more reliable and avoids session sync issues
+  const hasAppAccess = checkAppAccessForRole(member.role);
 
-  const roles = parseRolesString(member.role);
-  const hasAccess =
-    roles.includes(Role.owner) || roles.includes(Role.admin) || roles.includes(Role.auditor);
-
-  if (!hasAccess) {
+  if (!hasAppAccess) {
     return redirect('/no-access');
   }
+
+  // Parse roles for UI display purposes (auditor-specific UI)
+  const roles = parseRolesString(member.role);
 
   // If this org is not accessible on current plan, redirect to upgrade
   if (!organization.hasAccess) {

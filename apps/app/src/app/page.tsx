@@ -33,10 +33,35 @@ export default async function RootPage({
   }
 
   const intent = (await searchParams)?.intent;
-  const orgId = session.session.activeOrganizationId;
 
-  if (!orgId) {
-    // If the user has no active org, check for pending invitations for this email
+  // If user is explicitly creating an additional org, go to setup
+  if (intent === 'create-additional') {
+    return redirect(await buildUrlWithParams('/setup'));
+  }
+
+  // Find all organizations the user belongs to (not relying on activeOrganizationId)
+  const memberships = await db.member.findMany({
+    where: {
+      userId: session.user.id,
+      deactivated: false,
+    },
+    select: {
+      organizationId: true,
+      organization: {
+        select: {
+          id: true,
+          onboardingCompleted: true,
+          hasAccess: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  // No memberships - check for pending invites or go to setup
+  if (memberships.length === 0) {
     const pendingInvite = await db.invitation.findFirst({
       where: {
         email: session.user.email,
@@ -51,31 +76,24 @@ export default async function RootPage({
     return redirect(await buildUrlWithParams('/setup'));
   }
 
-  // If user is explicitly creating an additional org, go to setup regardless of current org state
-  if (intent === 'create-additional') {
-    return redirect(await buildUrlWithParams('/setup'));
+  // Find the best org to redirect to:
+  // 1. Prefer orgs with completed onboarding and access
+  // 2. Fall back to first org (most recently joined)
+  const readyOrg = memberships.find(
+    (m) => m.organization.onboardingCompleted && m.organization.hasAccess
+  );
+
+  const targetOrg = readyOrg?.organization || memberships[0].organization;
+
+  // If org hasn't completed onboarding, route to onboarding flow
+  if (!targetOrg.onboardingCompleted) {
+    return redirect(await buildUrlWithParams(`/onboarding/${targetOrg.id}`));
   }
 
-  // If org exists but hasn't completed onboarding, route to onboarding flow
-  const org = await db.organization.findUnique({
-    where: { id: orgId },
-    select: { onboardingCompleted: true },
-  });
-  if (org && org.onboardingCompleted === false) {
-    return redirect(await buildUrlWithParams(`/onboarding/${orgId}`));
+  // If org doesn't have access, route to upgrade
+  if (!targetOrg.hasAccess) {
+    return redirect(await buildUrlWithParams(`/upgrade/${targetOrg.id}`));
   }
 
-  const member = await db.member.findFirst({
-    where: {
-      organizationId: orgId,
-      userId: session.user.id,
-      deactivated: false,
-    },
-  });
-
-  if (!member) {
-    return redirect(await buildUrlWithParams('/setup'));
-  }
-
-  return redirect(await buildUrlWithParams(`/${orgId}/frameworks`));
+  return redirect(await buildUrlWithParams(`/${targetOrg.id}/frameworks`));
 }

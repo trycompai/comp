@@ -1,270 +1,605 @@
-import { env } from '@/env.mjs';
-import { maskEmailForLogs } from '@/lib/mask-email';
-import { MagicLinkEmail, OTPVerificationEmail } from '@comp/email';
-import { sendInviteMemberEmail } from '@comp/email/lib/invite-member';
-import { sendEmail } from '@comp/email/lib/resend';
-import { db } from '@db';
-import { dubAnalytics } from '@dub/better-auth';
-import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { nextCookies } from 'better-auth/next-js';
-import { bearer, emailOTP, jwt, magicLink, multiSession, organization } from 'better-auth/plugins';
-import { Dub } from 'dub';
+/**
+ * Server-side auth utilities for the App.
+ *
+ * This module provides server-side session validation by calling the API's
+ * auth endpoints. The actual auth server runs on the API - this app only
+ * consumes auth services.
+ *
+ * For browser-side auth (login, logout, hooks), use auth-client.ts instead.
+ */
+
+import type { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
 import { ac, allRoles } from './permissions';
 
-const dub = env.DUB_API_KEY
-  ? new Dub({
-      token: env.DUB_API_KEY,
-    })
-  : undefined;
+// Re-export permissions for convenience
+export { ac, allRoles };
 
-const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
+// IMPORTANT: This must point to the actual API server, not the app itself.
+// Use BACKEND_API_URL for server-to-server communication, or fall back to NEXT_PUBLIC_API_URL.
+// Do NOT use BETTER_AUTH_URL here - that may be the app's URL for the client-side auth.
+const API_URL =
+  process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
-let socialProviders = {};
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
-if (env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET) {
-  socialProviders = {
-    ...socialProviders,
-    google: {
-      clientId: env.AUTH_GOOGLE_ID,
-      clientSecret: env.AUTH_GOOGLE_SECRET,
-    },
-  };
-}
-
-if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
-  socialProviders = {
-    ...socialProviders,
-    github: {
-      clientId: env.AUTH_GITHUB_ID,
-      clientSecret: env.AUTH_GITHUB_SECRET,
-    },
-  };
-}
-
-if (env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET) {
-  socialProviders = {
-    ...socialProviders,
-    microsoft: {
-      clientId: env.AUTH_MICROSOFT_CLIENT_ID,
-      clientSecret: env.AUTH_MICROSOFT_CLIENT_SECRET,
-      tenantId: 'common', // Allows any Microsoft account
-      prompt: 'select_account', // Forces account selection
-    },
-  };
-}
-
-export const auth = betterAuth({
-  database: prismaAdapter(db, {
-    provider: 'postgresql',
-  }),
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-  trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS
-    ? process.env.AUTH_TRUSTED_ORIGINS.split(',').map((o) => o.trim())
-    : ['http://localhost:3000', 'https://*.trycomp.ai', 'http://localhost:3002'],
-  emailAndPassword: {
-    enabled: true,
-  },
-  advanced: {
-    database: {
-      // This will enable us to fall back to DB for ID generation.
-      // It's important so we can use custom IDs specified in Prisma Schema.
-      generateId: false,
-    },
-  },
-  databaseHooks: {
-    session: {
-      create: {
-        before: async (session) => {
-          console.log('[Better Auth] Session creation hook called for user:', session.userId);
-          try {
-            // Find the user's first organization to set as active
-            const userOrganization = await db.organization.findFirst({
-              where: {
-                members: {
-                  some: {
-                    userId: session.userId,
-                  },
-                },
-              },
-              orderBy: {
-                createdAt: 'desc', // Get the most recently joined organization
-              },
-              select: {
-                id: true,
-                name: true,
-              },
-            });
-
-            if (userOrganization) {
-              console.log(
-                `[Better Auth] Setting activeOrganizationId to ${userOrganization.id} (${userOrganization.name}) for user ${session.userId}`,
-              );
-              return {
-                data: {
-                  ...session,
-                  activeOrganizationId: userOrganization.id,
-                },
-              };
-            } else {
-              console.log(`[Better Auth] No organization found for user ${session.userId}`);
-              return {
-                data: session,
-              };
-            }
-          } catch (error) {
-            console.error('[Better Auth] Session creation hook error:', error);
-            // Fallback: create session without organization
-            return {
-              data: session,
-            };
-          }
-        },
-      },
-    },
-  },
-  secret: process.env.AUTH_SECRET!,
-  plugins: [
-    organization({
-      membershipLimit: 100000000000,
-      async sendInvitationEmail(data) {
-        const isLocalhost = process.env.NODE_ENV === 'development';
-        const protocol = isLocalhost ? 'http' : 'https';
-
-        const betterAuthUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL;
-        const isDevEnv = betterAuthUrl?.includes('dev.trycomp.ai');
-        const isProdEnv = betterAuthUrl?.includes('app.trycomp.ai');
-
-        const domain = isDevEnv
-          ? 'dev.trycomp.ai'
-          : isProdEnv
-            ? 'app.trycomp.ai'
-            : 'localhost:3000';
-        const inviteLink = `${protocol}://${domain}/invite/${data.invitation.id}`;
-
-        const url = `${protocol}://${domain}/auth`;
-
-        await sendInviteMemberEmail({
-          inviteeEmail: data.email,
-          inviteLink,
-          organizationName: data.organization.name,
-        });
-      },
-      ac,
-      roles: allRoles,
-      // Enable dynamic access control for custom roles (Sprint 2)
-      // This allows creating organization-specific roles at runtime
-      // dynamicAccessControl: {
-      //   enabled: true,
-      //   maximumRolesPerOrganization: 20,
-      // },
-      schema: {
-        organization: {
-          modelName: 'Organization',
-        },
-      },
-    }),
-    magicLink({
-      expiresIn: MAGIC_LINK_EXPIRES_IN_SECONDS,
-      sendMagicLink: async ({ email, url }) => {
-        const requestId = crypto.randomUUID();
-        const startTime = Date.now();
-        const safeEmail = maskEmailForLogs(email);
-        const urlWithInviteCode = `${url}`;
-
-        console.info('[magicLink] send start', {
-          requestId,
-          email: safeEmail,
-          expiresInSec: MAGIC_LINK_EXPIRES_IN_SECONDS,
-        });
-
-        try {
-          await sendEmail({
-            to: email,
-            subject: 'Login to Comp AI',
-            react: MagicLinkEmail({
-              email,
-              url: urlWithInviteCode,
-            }),
-          });
-
-          console.info('[magicLink] send success', {
-            requestId,
-            email: safeEmail,
-            durationMs: Date.now() - startTime,
-          });
-        } catch (error) {
-          console.error('[magicLink] send failure', {
-            requestId,
-            email: safeEmail,
-            durationMs: Date.now() - startTime,
-            error: error instanceof Error ? error.message : String(error),
-          });
-          throw error;
-        }
-      },
-    }),
-    emailOTP({
-      otpLength: 6,
-      expiresIn: 10 * 60,
-      async sendVerificationOTP({ email, otp }) {
-        await sendEmail({
-          to: email,
-          subject: 'One-Time Password for Comp AI',
-          react: OTPVerificationEmail({ email, otp }),
-        });
-      },
-    }),
-    jwt({
-      jwt: {
-        definePayload: ({ user }) => {
-          // Only include essential user information for API authentication
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            emailVerified: user.emailVerified,
-          };
-        },
-        expirationTime: '1h', // Extend from default 15 minutes to 1 hour for better UX
-      },
-    }), // Enable JWT token generation and JWKS endpoints
-    bearer(), // Enable Bearer token authentication for client-side API calls
-    nextCookies(),
-    ...(dub ? [dubAnalytics({ dubClient: dub })] : []),
-    multiSession(),
-  ],
-  socialProviders,
-  user: {
-    modelName: 'User',
-  },
-  organization: {
-    modelName: 'Organization',
-  },
-  member: {
-    modelName: 'Member',
-  },
-  invitation: {
-    modelName: 'Invitation',
-  },
+/**
+ * Session type matching better-auth's session structure
+ */
+export interface Session {
   session: {
-    modelName: 'Session',
-  },
-  account: {
-    modelName: 'Account',
-    accountLinking: {
-      enabled: true,
-      trustedProviders: ['google', 'github', 'microsoft'],
-    },
-  },
-  verification: {
-    modelName: 'Verification',
-  },
-});
+    id: string;
+    userId: string;
+    expiresAt: Date;
+    token: string;
+    createdAt: Date;
+    updatedAt: Date;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+    activeOrganizationId?: string | null;
+  };
+  user: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    name: string;
+    image?: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+}
 
-export type Session = typeof auth.$Infer.Session;
-export type ActiveOrganization = typeof auth.$Infer.ActiveOrganization;
-export type Member = typeof auth.$Infer.Member;
-export type Organization = typeof auth.$Infer.Organization;
-export type Invitation = typeof auth.$Infer.Invitation;
-export type Role = typeof auth.$Infer.Member.role;
+/**
+ * Active organization type
+ */
+export interface ActiveOrganization {
+  id: string;
+  name: string;
+  slug?: string | null;
+  logo?: string | null;
+  createdAt: Date;
+  metadata?: Record<string, unknown> | null;
+}
+
+/**
+ * Member type with role information
+ */
+export interface Member {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: string;
+  createdAt: Date;
+}
+
+/**
+ * Organization type
+ */
+export interface Organization {
+  id: string;
+  name: string;
+  slug?: string | null;
+  logo?: string | null;
+  createdAt: Date;
+  metadata?: Record<string, unknown> | null;
+}
+
+/**
+ * Invitation type
+ */
+export interface Invitation {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: Date;
+  inviterId: string;
+}
+
+/**
+ * Role type - matches the roles defined in permissions
+ */
+export type Role = keyof typeof allRoles;
+
+/**
+ * Full session response including organization context
+ */
+export interface FullSession extends Session {
+  activeOrganization?: ActiveOrganization | null;
+  activeMember?: Member | null;
+}
+
+/**
+ * Convert Headers to a plain object for fetch
+ */
+function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, string> {
+  const obj: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    // Forward cookies and other relevant headers
+    if (key.toLowerCase() === 'cookie' || key.toLowerCase().startsWith('x-')) {
+      obj[key] = value;
+    }
+  });
+  return obj;
+}
+
+/**
+ * Get the current session from the API.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @returns The session data or null if not authenticated
+ */
+async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/get-session`, {
+      method: 'GET',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data as Session;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to get session:', error);
+    }
+    return null;
+  }
+}
+
+/**
+ * Get the full session including active organization and member.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @returns The full session data or null if not authenticated
+ */
+async function getFullSession(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<FullSession | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/get-full-session`, {
+      method: 'GET',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data as FullSession;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to get full session:', error);
+    }
+    return null;
+  }
+}
+
+/**
+ * Get the active member for the current session.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @returns The active member or null
+ */
+async function getActiveMember(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<Member | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/get-active-member`, {
+      method: 'GET',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data as Member;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to get active member:', error);
+    }
+    return null;
+  }
+}
+
+/**
+ * Check if the current user has a specific permission.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @param options.body.permission - The permission to check
+ * @returns Object with success boolean
+ */
+async function hasPermission(options: {
+  headers: ReadonlyHeaders | Headers;
+  body: {
+    permission: Record<string, string[]>;
+  };
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/has-permission`, {
+      method: 'POST',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(options.body),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return { success: false, error: 'Request failed' };
+    }
+
+    const data = await response.json();
+    return { success: data.success === true };
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to check permission:', error);
+    }
+    return { success: false, error: 'Request failed' };
+  }
+}
+
+/**
+ * List organizations for the current user.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @returns Array of organizations or empty array
+ */
+async function listOrganizations(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<Organization[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/list`, {
+      method: 'GET',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    return (data as Organization[]) || [];
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to list organizations:', error);
+    }
+    return [];
+  }
+}
+
+/**
+ * Set the active organization for the current session.
+ */
+function setActiveOrganization(options: {
+  headers: ReadonlyHeaders | Headers;
+  body: { organizationId: string };
+  asResponse: true;
+}): Promise<Response>;
+function setActiveOrganization(options: {
+  headers: ReadonlyHeaders | Headers;
+  body: { organizationId: string };
+  asResponse?: false;
+}): Promise<Session | null>;
+async function setActiveOrganization(options: {
+  headers: ReadonlyHeaders | Headers;
+  body: { organizationId: string };
+  asResponse?: boolean;
+}): Promise<Response | Session | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/set-active`, {
+      method: 'POST',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(options.body),
+      cache: 'no-store',
+    });
+
+    if (options.asResponse) {
+      return response;
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data as Session;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to set active organization:', error);
+    }
+    if (options.asResponse) {
+      return new Response(JSON.stringify({ error: 'Failed to set active organization' }), { status: 500 });
+    }
+    return null;
+  }
+}
+
+/**
+ * Full organization response including members
+ */
+export interface FullOrganization extends Organization {
+  members: Member[];
+  invitations?: Invitation[];
+}
+
+/**
+ * Get the full organization including members.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @returns The full organization or null
+ */
+async function getFullOrganization(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<FullOrganization | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/get-full-organization`, {
+      method: 'GET',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data as FullOrganization;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to get full organization:', error);
+    }
+    return null;
+  }
+}
+
+/**
+ * Create an invitation to an organization.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @param options.body - The invitation data
+ * @returns The created invitation or null
+ */
+async function createInvitation(options: {
+  headers: ReadonlyHeaders | Headers;
+  body: {
+    email: string;
+    role: string;
+    organizationId: string;
+  };
+}): Promise<Invitation | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/invite-member`, {
+      method: 'POST',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(options.body),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to create invitation');
+    }
+
+    const data = await response.json();
+    return data as Invitation;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to create invitation:', error);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Add a member to an organization.
+ *
+ * @param options.headers - The request headers (must include cookies)
+ * @param options.body - The member data
+ * @returns The created member or null
+ */
+async function addMember(options: {
+  headers: ReadonlyHeaders | Headers;
+  body: {
+    userId: string;
+    role: string;
+    organizationId: string;
+  };
+}): Promise<Member | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/organization/add-member`, {
+      method: 'POST',
+      headers: {
+        ...headersToObject(options.headers),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(options.body),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to add member');
+    }
+
+    const data = await response.json();
+    return data as Member;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to add member:', error);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Sign up with email and password.
+ * Note: This is mainly for testing. In production, use the auth client.
+ */
+function signUpEmail(options: {
+  body: { email: string; password: string; name: string };
+  headers?: ReadonlyHeaders | Headers;
+  asResponse: true;
+}): Promise<Response>;
+function signUpEmail(options: {
+  body: { email: string; password: string; name: string };
+  headers?: ReadonlyHeaders | Headers;
+  asResponse?: false;
+}): Promise<Session | null>;
+async function signUpEmail(options: {
+  body: { email: string; password: string; name: string };
+  headers?: ReadonlyHeaders | Headers;
+  asResponse?: boolean;
+}): Promise<Response | Session | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/sign-up/email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers ? headersToObject(options.headers) : {}),
+      },
+      body: JSON.stringify(options.body),
+    });
+
+    if (options.asResponse) {
+      return response;
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data as Session;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to sign up:', error);
+    }
+    if (options.asResponse) {
+      return new Response(JSON.stringify({ error: 'Failed to sign up' }), { status: 500 });
+    }
+    return null;
+  }
+}
+
+/**
+ * Sign in with email and password.
+ * Note: This is mainly for testing. In production, use the auth client.
+ */
+function signInEmail(options: {
+  body: { email: string; password: string };
+  headers?: ReadonlyHeaders | Headers;
+  asResponse: true;
+}): Promise<Response>;
+function signInEmail(options: {
+  body: { email: string; password: string };
+  headers?: ReadonlyHeaders | Headers;
+  asResponse?: false;
+}): Promise<Session | null>;
+async function signInEmail(options: {
+  body: { email: string; password: string };
+  headers?: ReadonlyHeaders | Headers;
+  asResponse?: boolean;
+}): Promise<Response | Session | null> {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/sign-in/email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers ? headersToObject(options.headers) : {}),
+      },
+      body: JSON.stringify(options.body),
+    });
+
+    if (options.asResponse) {
+      return response;
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data as Session;
+  } catch (error) {
+    if (IS_DEVELOPMENT) {
+      console.error('[auth] Failed to sign in:', error);
+    }
+    if (options.asResponse) {
+      return new Response(JSON.stringify({ error: 'Failed to sign in' }), { status: 500 });
+    }
+    return null;
+  }
+}
+
+/**
+ * Server-side auth API object that mirrors the better-auth server API.
+ *
+ * Usage:
+ * ```ts
+ * import { auth } from '@/utils/auth';
+ *
+ * const session = await auth.api.getSession({ headers: await headers() });
+ * ```
+ */
+export const auth = {
+  api: {
+    getSession,
+    getFullSession,
+    getActiveMember,
+    hasPermission,
+    listOrganizations,
+    setActiveOrganization,
+    getFullOrganization,
+    createInvitation,
+    addMember,
+    signUpEmail,
+    signInEmail,
+  },
+  /**
+   * Type inference helpers for compatibility with existing code.
+   * These mirror the better-auth $Infer types.
+   */
+  $Infer: {
+    Session: {} as Session,
+    ActiveOrganization: {} as ActiveOrganization,
+    Member: {} as Member,
+    Organization: {} as Organization,
+    Invitation: {} as Invitation,
+  },
+};
+
+// Re-export types for convenience (maintains compatibility with existing imports)
+export type { ReadonlyHeaders };
