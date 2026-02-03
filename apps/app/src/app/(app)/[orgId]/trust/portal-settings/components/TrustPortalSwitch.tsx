@@ -3,19 +3,16 @@
 import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem } from '@comp/ui/form';
+import { Form } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
-import { Download, ExternalLink, Eye, FileCheck2, Upload } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Download, Eye, FileCheck2, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
 import {
   TrustPortalAdditionalDocumentsSection,
@@ -35,9 +32,8 @@ import {
   SOC2Type2,
 } from './logos';
 
-// Client-side form schema (includes all fields for form state)
-const trustPortalSwitchSchema = z.object({
-  enabled: z.boolean(),
+// Client-side form schema for framework state
+const trustPortalFormSchema = z.object({
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
   iso27001: z.boolean(),
@@ -84,10 +80,6 @@ interface ComplianceResourceUrlResponse {
 }
 
 export function TrustPortalSwitch({
-  enabled,
-  slug,
-  domainVerified,
-  domain,
   orgId,
   soc2type1,
   soc2type2,
@@ -108,7 +100,6 @@ export function TrustPortalSwitch({
   iso9001,
   iso9001Status,
   faqs,
-  // File props - will be passed from page.tsx later
   iso27001FileName,
   iso42001FileName,
   gdprFileName,
@@ -120,10 +111,6 @@ export function TrustPortalSwitch({
   iso9001FileName,
   additionalDocuments,
 }: {
-  enabled: boolean;
-  slug: string;
-  domainVerified: boolean;
-  domain: string;
   orgId: string;
   soc2type1: boolean;
   soc2type2: boolean;
@@ -265,23 +252,9 @@ export function TrustPortalSwitch({
 
     window.open(payload.signedUrl, '_blank', 'noopener,noreferrer');
   };
-  const trustPortalSwitch = useAction(trustPortalSwitchAction, {
-    onSuccess: () => {
-      toast.success('Trust portal status updated');
-    },
-    onError: () => {
-      toast.error('Failed to update trust portal status');
-    },
-  });
-
-  // Use ref to store latest trustPortalSwitch to avoid stale closures
-  const trustPortalSwitchRef = useRef(trustPortalSwitch);
-  trustPortalSwitchRef.current = trustPortalSwitch;
-
-  const form = useForm<z.infer<typeof trustPortalSwitchSchema>>({
-    resolver: zodResolver(trustPortalSwitchSchema),
+  const form = useForm<z.infer<typeof trustPortalFormSchema>>({
+    resolver: zodResolver(trustPortalFormSchema),
     defaultValues: {
-      enabled: enabled,
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
@@ -303,82 +276,16 @@ export function TrustPortalSwitch({
     },
   });
 
-  const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
-
-  const lastSaved = useRef<{ enabled: boolean }>({
-    enabled: enabled,
-  });
-
-  const savingRef = useRef<{ enabled: boolean }>({
-    enabled: false,
-  });
-
-  const handleEnabledChange = useCallback(
-    async (val: boolean) => {
-      if (savingRef.current.enabled) {
-        return;
-      }
-
-      if (lastSaved.current.enabled !== val) {
-        savingRef.current.enabled = true;
-        form.setValue('enabled', val);
-        try {
-          await trustPortalSwitchRef.current.execute({ enabled: val });
-          lastSaved.current.enabled = val;
-        } finally {
-          savingRef.current.enabled = false;
-        }
-      }
-    },
-    [form],
-  );
-
   return (
     <Form {...form}>
-      <form className="space-y-4">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between pb-4">
-            <div className="space-y-1">
-              <h2 className="flex items-center gap-2">
-                <Link
-                  href={portalUrl}
-                  target="_blank"
-                  className="hover:underline flex items-center gap-2"
-                >
-                  Trust Portal
-                  <ExternalLink className="size-4 hover:underline" />
-                </Link>
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Create a public trust portal for your organization.
-              </p>
-            </div>
-            <FormField
-              control={form.control}
-              name="enabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-y-0 space-x-2">
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={handleEnabledChange}
-                      disabled={trustPortalSwitch.status === 'executing'}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="space-y-6">
-            {form.watch('enabled') && (
-              <div className="pt-2">
-                {/* Compliance Frameworks Section */}
-                <div>
-                  <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
-                  <p className="text-muted-foreground mb-4 text-sm">
-                    Share the frameworks your organization is compliant with or working towards.
-                  </p>
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <form className="space-y-6">
+        {/* Compliance Frameworks Section */}
+        <div>
+          <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
+          <p className="text-muted-foreground mb-4 text-sm">
+            Share the frameworks your organization is compliant with or working towards.
+          </p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                     {/* ISO 27001 */}
                     <ComplianceFramework
                       title="ISO 27001"
@@ -685,27 +592,18 @@ export function TrustPortalSwitch({
                       frameworkKey="iso9001"
                       orgId={orgId}
                     />
-                  </div>
-                </div>
-              </div>
-            )}
-            {form.watch('enabled') && (
-              <div className="pt-6">
-                {/* FAQ Section */}
-                <TrustPortalFaqBuilder initialFaqs={faqs} orgId={orgId} />
-              </div>
-            )}
-            {form.watch('enabled') && (
-              <div className="pt-6">
-                <TrustPortalAdditionalDocumentsSection
-                  organizationId={orgId}
-                  enabled={true}
-                  documents={additionalDocuments}
-                />
-              </div>
-            )}
           </div>
         </div>
+
+        {/* FAQ Section */}
+        <TrustPortalFaqBuilder initialFaqs={faqs} orgId={orgId} />
+
+        {/* Additional Documents Section */}
+        <TrustPortalAdditionalDocumentsSection
+          organizationId={orgId}
+          enabled={true}
+          documents={additionalDocuments}
+        />
       </form>
     </Form>
   );
