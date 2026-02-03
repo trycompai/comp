@@ -32,7 +32,8 @@ export const policySchedule = schedules.task({
             name: true,
             members: {
               where: {
-                role: { contains: 'owner' },
+                deactivated: false,
+                user: { isPlatformAdmin: false },
               },
               select: {
                 user: {
@@ -42,17 +43,6 @@ export const policySchedule = schedules.task({
                     email: true,
                   },
                 },
-              },
-            },
-          },
-        },
-        assignee: {
-          select: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
               },
             },
           },
@@ -122,7 +112,8 @@ export const policySchedule = schedules.task({
         },
       });
 
-      // Build array of recipients (org owner(s) and policy assignee(s)) for each overdue policy
+      // Build array of all org members as recipients for each overdue policy.
+      // The notification matrix (isUserUnsubscribed) handles role-based filtering.
       const recipientsMap = new Map<
         string,
         {
@@ -152,21 +143,21 @@ export const policySchedule = schedules.task({
         }
       };
 
-      // trigger notification for each policy
+      // Add all org members as potential recipients for each policy
       for (const policy of overduePolicies) {
-        // Org owners
         if (policy.organization && Array.isArray(policy.organization.members)) {
           addRecipients(policy.organization.members, policy);
-        }
-        // Policy assignee
-        if (policy.assignee) {
-          addRecipients([policy.assignee], policy);
         }
       }
 
       // Final deduplicated recipients array
       const recipients = Array.from(recipientsMap.values());
-      novu.triggerBulk({
+
+      logger.info(
+        `Sending notifications to ${recipients.length} recipients: ${recipients.map((r) => r.email).join(', ')}`,
+      );
+
+      await novu.triggerBulk({
         events: recipients.map((recipient) => ({
           workflowId: 'policy-review-required',
           to: {

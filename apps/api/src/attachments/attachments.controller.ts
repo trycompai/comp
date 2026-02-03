@@ -9,11 +9,13 @@ import {
 } from '@nestjs/swagger';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { AttachmentsService } from './attachments.service';
 
 @ApiTags('Attachments')
 @Controller({ path: 'attachments', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -25,6 +27,7 @@ export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 
   @Get(':attachmentId/download')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get attachment download URL',
     description: 'Generate a fresh signed URL for downloading any attachment',

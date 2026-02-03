@@ -21,6 +21,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import { AuthenticatedRequest } from '../auth/types';
 import {
@@ -77,7 +79,8 @@ export class TrustAccessController {
   }
 
   @Get('admin/requests')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -101,7 +104,8 @@ export class TrustAccessController {
   }
 
   @Get('admin/requests/:id')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -125,7 +129,8 @@ export class TrustAccessController {
   }
 
   @Post('admin/requests/:id/approve')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -164,7 +169,8 @@ export class TrustAccessController {
   }
 
   @Post('admin/requests/:id/deny')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -200,7 +206,8 @@ export class TrustAccessController {
   }
 
   @Get('admin/grants')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -218,7 +225,8 @@ export class TrustAccessController {
   }
 
   @Post('admin/grants/:id/revoke')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -254,7 +262,8 @@ export class TrustAccessController {
   }
 
   @Post('admin/grants/:id/resend-access-email')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -345,7 +354,8 @@ export class TrustAccessController {
   }
 
   @Post('admin/requests/:id/resend-nda')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',
@@ -369,7 +379,8 @@ export class TrustAccessController {
   }
 
   @Post('admin/requests/:id/preview-nda')
-  @UseGuards(HybridAuthGuard)
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
   @ApiHeader({
     name: 'X-Organization-Id',

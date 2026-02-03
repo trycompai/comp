@@ -82,6 +82,14 @@ export const removeMember = authActionClient
         };
       }
 
+      // Prevent removing platform admin members (CX team)
+      if (targetMember.user.isPlatformAdmin) {
+        return {
+          success: false,
+          error: 'This member is managed by Comp AI and cannot be removed.',
+        };
+      }
+
       // Prevent self-removal
       if (targetMember.userId === ctx.user.id) {
         return {
@@ -275,6 +283,7 @@ export const removeMember = authActionClient
             db,
             owner.user.email,
             'unassignedItemsNotifications',
+            ctx.session.activeOrganizationId,
           );
 
           if (!unsubscribed) {

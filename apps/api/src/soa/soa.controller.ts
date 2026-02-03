@@ -31,6 +31,8 @@ import { AuthContext } from '@/auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '@/auth/types';
 import { UseGuards } from '@nestjs/common';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { ApiSecurity, ApiHeader } from '@nestjs/swagger';
 import {
   createSafeSSESender,
@@ -43,7 +45,7 @@ import {
   path: 'soa',
   version: '1',
 })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -58,6 +60,7 @@ export class SOAController {
 
   @Post('save-answer')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('audit', 'update')
   @ApiOperation({ summary: 'Save a SOA answer' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
@@ -82,6 +85,7 @@ export class SOAController {
   }
 
   @Post('auto-fill')
+  @RequirePermission('audit', 'update')
   @ApiConsumes('application/json')
   @ApiProduces('text/event-stream')
   @ApiOperation({
@@ -315,6 +319,7 @@ export class SOAController {
 
   @Post('create-document')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('audit', 'create')
   @ApiOperation({ summary: 'Create a new SOA document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
@@ -329,6 +334,7 @@ export class SOAController {
 
   @Post('ensure-setup')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('audit', 'create')
   @ApiOperation({ summary: 'Ensure SOA configuration and document exist' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
@@ -343,6 +349,7 @@ export class SOAController {
 
   @Post('approve')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('audit', 'update')
   @ApiOperation({ summary: 'Approve a SOA document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
@@ -362,6 +369,7 @@ export class SOAController {
 
   @Post('decline')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('audit', 'update')
   @ApiOperation({ summary: 'Decline a SOA document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
@@ -381,6 +389,7 @@ export class SOAController {
 
   @Post('submit-for-approval')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('audit', 'update')
   @ApiOperation({ summary: 'Submit SOA document for approval' })
   @ApiConsumes('application/json')
   @ApiOkResponse({

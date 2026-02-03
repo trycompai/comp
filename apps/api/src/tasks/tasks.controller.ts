@@ -114,6 +114,8 @@ export class TasksController {
   }
 
   @Patch('bulk')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Update status for multiple tasks',
     description: 'Bulk update the status of multiple tasks',
@@ -205,6 +207,8 @@ export class TasksController {
   }
 
   @Patch('bulk/assignee')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'assign')
   @ApiOperation({
     summary: 'Update assignee for multiple tasks',
     description: 'Bulk update the assignee of multiple tasks',
@@ -274,6 +278,8 @@ export class TasksController {
   }
 
   @Delete('bulk')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'delete')
   @ApiOperation({
     summary: 'Delete multiple tasks',
     description: 'Bulk delete multiple tasks by their IDs',
@@ -392,6 +398,8 @@ export class TasksController {
   }
 
   @Patch(':taskId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Update a task',
     description:
@@ -505,6 +513,8 @@ export class TasksController {
   // ==================== TASK ATTACHMENTS ====================
 
   @Get(':taskId/attachments')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get task attachments',
     description: 'Retrieve all attachments for a specific task',
@@ -581,6 +591,8 @@ export class TasksController {
   }
 
   @Post(':taskId/attachments')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('evidence', 'upload')
   @ApiOperation({
     summary: 'Upload attachment to task',
     description: 'Upload a file attachment to a specific task',
@@ -695,6 +707,8 @@ export class TasksController {
   }
 
   @Get(':taskId/attachments/:attachmentId/download')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get attachment download URL',
     description: 'Generate a signed URL for downloading a task attachment',
@@ -777,6 +791,8 @@ export class TasksController {
   }
 
   @Delete(':taskId/attachments/:attachmentId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('evidence', 'delete')
   @ApiOperation({
     summary: 'Delete task attachment',
     description: 'Delete a specific attachment from a task',

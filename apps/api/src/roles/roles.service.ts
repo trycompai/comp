@@ -6,7 +6,7 @@ import type { UpdateRoleDto } from './dto/update-role.dto';
 // Valid resources and their actions based on our permission system
 const VALID_RESOURCES: Record<string, string[]> = {
   organization: ['read', 'update', 'delete'],
-  member: ['create', 'update', 'delete'],
+  member: ['create', 'read', 'update', 'delete'],
   invitation: ['create', 'cancel'],
   control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
   evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
@@ -128,7 +128,7 @@ export class RolesService {
         },
         auditor: {
           organization: ['read'],
-          member: ['create'],
+          member: ['create', 'read'],
           invitation: ['create'],
           control: ['read', 'export'],
           evidence: ['read', 'export'],
@@ -170,7 +170,10 @@ export class RolesService {
     });
 
     if (customRole) {
-      return customRole.permissions as Record<string, string[]>;
+      const perms = typeof customRole.permissions === 'string'
+        ? JSON.parse(customRole.permissions)
+        : customRole.permissions;
+      return perms as Record<string, string[]>;
     }
 
     return {};
@@ -221,12 +224,15 @@ export class RolesService {
     const role = await db.organizationRole.create({
       data: {
         name: dto.name,
-        permissions: dto.permissions,
+        permissions: JSON.stringify(dto.permissions),
         organizationId,
       },
     });
 
-    return role;
+    return {
+      ...role,
+      permissions: JSON.parse(role.permissions),
+    };
   }
 
   /**
@@ -251,7 +257,7 @@ export class RolesService {
       customRoles: customRoles.map(r => ({
         id: r.id,
         name: r.name,
-        permissions: r.permissions,
+        permissions: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions,
         isBuiltIn: false,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
@@ -277,7 +283,7 @@ export class RolesService {
     return {
       id: role.id,
       name: role.name,
-      permissions: role.permissions,
+      permissions: typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions,
       isBuiltIn: false,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
@@ -335,14 +341,14 @@ export class RolesService {
       where: { id: roleId },
       data: {
         ...(dto.name && { name: dto.name }),
-        ...(dto.permissions && { permissions: dto.permissions }),
+        ...(dto.permissions && { permissions: JSON.stringify(dto.permissions) }),
       },
     });
 
     return {
       id: updated.id,
       name: updated.name,
-      permissions: updated.permissions,
+      permissions: typeof updated.permissions === 'string' ? JSON.parse(updated.permissions) : updated.permissions,
       isBuiltIn: false,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,

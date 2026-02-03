@@ -51,6 +51,12 @@ export class UserResponseDto {
     nullable: true,
   })
   lastLogin: Date | null;
+
+  @ApiProperty({
+    description: 'Whether the user is a platform admin (Comp AI team member)',
+    example: false,
+  })
+  isPlatformAdmin: boolean;
 }
 
 export class PeopleResponseDto {

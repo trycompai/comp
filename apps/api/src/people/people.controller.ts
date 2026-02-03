@@ -45,7 +45,7 @@ import { PEOPLE_BODIES } from './schemas/people-bodies';
 @ApiTags('People')
 @ApiExtraModels(PeopleResponseDto, UserResponseDto)
 @Controller({ path: 'people', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -57,6 +57,7 @@ export class PeopleController {
   constructor(private readonly peopleService: PeopleService) {}
 
   @Get()
+  @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getAllPeople)
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[401])
@@ -84,6 +85,7 @@ export class PeopleController {
   }
 
   @Post()
+  @RequirePermission('member', 'create')
   @ApiOperation(PEOPLE_OPERATIONS.createMember)
   @ApiBody(PEOPLE_BODIES.createMember)
   @ApiResponse(CREATE_MEMBER_RESPONSES[201])
@@ -112,6 +114,7 @@ export class PeopleController {
   }
 
   @Post('bulk')
+  @RequirePermission('member', 'create')
   @ApiOperation(PEOPLE_OPERATIONS.bulkCreateMembers)
   @ApiBody(PEOPLE_BODIES.bulkCreateMembers)
   @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[201])
@@ -143,6 +146,7 @@ export class PeopleController {
   }
 
   @Get(':id')
+  @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getPersonById)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[200])
@@ -170,6 +174,7 @@ export class PeopleController {
   }
 
   @Patch(':id')
+  @RequirePermission('member', 'update')
   @ApiOperation(PEOPLE_OPERATIONS.updateMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiBody(PEOPLE_BODIES.updateMember)
@@ -205,7 +210,6 @@ export class PeopleController {
 
   @Delete(':id/host/:hostId')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(PermissionGuard)
   @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.removeHost)
   @ApiParam(PEOPLE_PARAMS.memberId)
@@ -240,6 +244,7 @@ export class PeopleController {
   }
 
   @Delete(':id')
+  @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.deleteMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(DELETE_MEMBER_RESPONSES[200])
@@ -271,6 +276,7 @@ export class PeopleController {
 
   @Patch(':id/unlink-device')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('member', 'update')
   @ApiOperation(PEOPLE_OPERATIONS.unlinkDevice)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(UPDATE_MEMBER_RESPONSES[200])

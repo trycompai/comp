@@ -22,6 +22,8 @@ import {
 } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { AuthContext } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import {
@@ -54,7 +56,7 @@ class ListComplianceResourcesDto {
 
 @ApiTags('Trust Portal')
 @Controller({ path: 'trust-portal', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -67,6 +69,7 @@ export class TrustPortalController {
 
   @Get('domain/status')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'read')
   @ApiOperation({
     summary: 'Get domain verification status',
     description:
@@ -99,6 +102,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/upload')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Upload or replace a compliance certificate (PDF only)',
     description:
@@ -125,6 +129,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/signed-url')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'read')
   @ApiOperation({
     summary: 'Generate a temporary signed URL for a compliance certificate',
   })
@@ -144,6 +149,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/list')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'read')
   @ApiOperation({
     summary: 'List uploaded compliance certificates for the organization',
   })
@@ -163,6 +169,7 @@ export class TrustPortalController {
 
   @Post('documents/upload')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Upload an additional trust portal document',
     description:
@@ -184,6 +191,7 @@ export class TrustPortalController {
 
   @Post('documents/list')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'read')
   @ApiOperation({
     summary: 'List additional trust portal documents for the organization',
   })
@@ -203,6 +211,7 @@ export class TrustPortalController {
 
   @Post('documents/:documentId/download')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'read')
   @ApiOperation({
     summary: 'Generate a temporary signed URL for a trust portal document',
   })
@@ -223,6 +232,7 @@ export class TrustPortalController {
 
   @Post('documents/:documentId/delete')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Delete (deactivate) a trust portal document',
   })

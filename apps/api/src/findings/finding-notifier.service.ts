@@ -96,7 +96,7 @@ export class FindingNotifierService {
 
   /**
    * Notify when a new finding is created.
-   * Recipients: Task assignee + Organization admins/owners
+   * Recipients: All org members (filtered by notification matrix)
    */
   async notifyFindingCreated(params: NotificationParams): Promise<void> {
     const { organizationId, taskId, taskTitle, findingType, actorUserId, actorName } = params;
@@ -157,7 +157,7 @@ export class FindingNotifierService {
 
   /**
    * Notify when status changes to Needs Revision.
-   * Recipients: Task assignee + Organization admins/owners
+   * Recipients: All org members (filtered by notification matrix)
    */
   async notifyNeedsRevision(params: NotificationParams): Promise<void> {
     const { organizationId, taskId, taskTitle, actorUserId, actorName } = params;
@@ -182,7 +182,7 @@ export class FindingNotifierService {
 
   /**
    * Notify when finding is closed.
-   * Recipients: Task assignee + Organization admins/owners
+   * Recipients: All org members (filtered by notification matrix)
    */
   async notifyFindingClosed(params: NotificationParams): Promise<void> {
     const { organizationId, taskId, taskTitle, actorUserId, actorName } = params;
@@ -301,7 +301,7 @@ export class FindingNotifierService {
 
     try {
       // Check unsubscribe preferences
-      const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'findingNotifications');
+      const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'findingNotifications', organizationId);
 
       if (isUnsubscribed) {
         this.logger.log(`Skipping notification: ${recipient.email} is unsubscribed`);
@@ -473,8 +473,9 @@ export class FindingNotifierService {
   // ==========================================================================
 
   /**
-   * Get task assignee and organization admins/owners as recipients.
+   * Get all organization members as potential recipients.
    * Excludes the actor (person who triggered the action).
+   * The notification matrix (isUserUnsubscribed) handles role-based filtering.
    */
   private async getTaskAssigneeAndAdmins(
     organizationId: string,
@@ -498,35 +499,20 @@ export class FindingNotifierService {
           where: {
             organizationId,
             deactivated: false,
+            user: { isPlatformAdmin: false },
           },
           select: {
-            role: true,
             user: { select: { id: true, email: true, name: true } },
           },
         }),
       ]);
 
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) => member.role.includes('admin') || member.role.includes('owner'),
-      );
-
+      // Build recipient list: all members excluding actor.
+      // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
       const recipients: Recipient[] = [];
       const addedUserIds = new Set<string>();
 
-      // Add task assignee
-      const assigneeUser = task?.assignee?.user;
-      if (assigneeUser && assigneeUser.id !== excludeUserId && assigneeUser.email) {
-        recipients.push({
-          userId: assigneeUser.id,
-          email: assigneeUser.email,
-          name: assigneeUser.name || assigneeUser.email,
-        });
-        addedUserIds.add(assigneeUser.id);
-      }
-
-      // Add org admins/owners (deduplicated)
-      for (const member of adminMembers) {
+      for (const member of allMembers) {
         const user = member.user;
         if (user.id !== excludeUserId && user.email && !addedUserIds.has(user.id)) {
           recipients.push({

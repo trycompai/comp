@@ -1,15 +1,14 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@comp/ui/card';
-import { Checkbox } from '@comp/ui/checkbox';
+  Button,
+  Checkbox,
+  HStack,
+  Section,
+  Stack,
+  Text,
+} from '@trycompai/design-system';
+import { Lock } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -24,14 +23,75 @@ interface EmailPreferences {
   taskAssignments: boolean;
 }
 
+interface RoleNotifications {
+  policyNotifications: boolean;
+  taskReminders: boolean;
+  taskAssignments: boolean;
+  taskMentions: boolean;
+  weeklyTaskDigest: boolean;
+  findingNotifications: boolean;
+}
+
 interface Props {
   initialPreferences: EmailPreferences;
   email: string;
+  isAdminOrOwner?: boolean;
+  roleNotifications?: RoleNotifications | null;
 }
 
-export function EmailNotificationPreferences({ initialPreferences, email }: Props) {
-  // Normal logic: true = subscribed (checked), false = unsubscribed (unchecked)
-  const [preferences, setPreferences] = useState<EmailPreferences>(initialPreferences);
+const NOTIFICATION_ITEMS: {
+  key: keyof EmailPreferences;
+  roleKey?: keyof RoleNotifications;
+  label: string;
+  description: string;
+}[] = [
+  {
+    key: 'policyNotifications',
+    roleKey: 'policyNotifications',
+    label: 'Policy Notifications',
+    description:
+      'Receive emails when new policies are published or existing policies are updated',
+  },
+  {
+    key: 'taskReminders',
+    roleKey: 'taskReminders',
+    label: 'Task Reminders',
+    description: 'Receive reminders when tasks are due soon or overdue',
+  },
+  {
+    key: 'weeklyTaskDigest',
+    roleKey: 'weeklyTaskDigest',
+    label: 'Weekly Task Digest',
+    description: 'Receive a weekly summary of pending tasks',
+  },
+  {
+    key: 'unassignedItemsNotifications',
+    label: 'Unassigned Items Notifications',
+    description:
+      'Receive notifications when items need reassignment after a member is removed',
+  },
+  {
+    key: 'taskMentions',
+    roleKey: 'taskMentions',
+    label: 'Task Mentions',
+    description: 'Receive notifications when someone mentions you in a task',
+  },
+  {
+    key: 'taskAssignments',
+    roleKey: 'taskAssignments',
+    label: 'Task Assignments',
+    description: 'Receive notifications when someone assigns a task to you',
+  },
+];
+
+export function EmailNotificationPreferences({
+  initialPreferences,
+  email,
+  isAdminOrOwner = true,
+  roleNotifications,
+}: Props) {
+  const [preferences, setPreferences] =
+    useState<EmailPreferences>(initialPreferences);
   const [saving, setSaving] = useState(false);
 
   const { execute } = useAction(updateEmailPreferencesAction, {
@@ -53,8 +113,6 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
   };
 
   const handleSelectAll = () => {
-    // If all are enabled (all true), disable all (set all to false)
-    // If any are disabled (some false), enable all (set all to true)
     const allEnabled = Object.values(preferences).every((v) => v === true);
     setPreferences({
       policyNotifications: !allEnabled,
@@ -71,127 +129,106 @@ export function EmailNotificationPreferences({ initialPreferences, email }: Prop
     execute({ preferences });
   };
 
-  // Check if all are disabled (all false)
-  const allDisabled = Object.values(preferences).every((v) => v === false);
+  // Check if a notification is locked by role settings (non-admin users only)
+  const isLocked = (item: (typeof NOTIFICATION_ITEMS)[number]): boolean => {
+    if (isAdminOrOwner) return false;
+    if (!roleNotifications || !item.roleKey) return false;
+    return true; // Non-admin users can't change role-controlled notifications
+  };
+
+  // Get effective checked state considering role settings
+  const isChecked = (item: (typeof NOTIFICATION_ITEMS)[number]): boolean => {
+    if (!isAdminOrOwner && roleNotifications && item.roleKey) {
+      return roleNotifications[item.roleKey];
+    }
+    return preferences[item.key];
+  };
+
+  const description = isAdminOrOwner
+    ? `Manage which email notifications you receive at ${email}.`
+    : `Email notification settings for ${email}. Most settings are managed by your organization admin.`;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Email Notifications</CardTitle>
-        <CardDescription>
-          Manage which email notifications you receive at{' '}
-          <span className="font-medium">{email}</span>. These preferences apply to all organizations
-          you're a member of.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between border-b pb-4">
-          <div>
-            <label className="text-base font-medium text-foreground">Enable All</label>
-            <p className="text-sm text-muted-foreground">Toggle all notifications</p>
-          </div>
-          <Button onClick={handleSelectAll} variant="outline" size="sm">
-            {Object.values(preferences).every((v) => v === true) ? 'Disable All' : 'Enable All'}
+    <Section
+      title="Email Notifications"
+      description={description}
+      actions={
+        isAdminOrOwner ? (
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save'}
           </Button>
-        </div>
-
-        <div className="space-y-4">
-          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-            <Checkbox
-              checked={preferences.policyNotifications}
-              onCheckedChange={(checked) => handleToggle('policyNotifications', checked === true)}
-              className="mt-1 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground">Policy Notifications</div>
-              <div className="text-sm text-muted-foreground">
-                Receive emails when new policies are published or existing policies are updated
-              </div>
+        ) : undefined
+      }
+    >
+      <Stack>
+        {isAdminOrOwner && (
+          <HStack align="center" justify="between">
+            <div>
+              <Text size="base" weight="medium">
+                Enable All
+              </Text>
+              <Text size="sm" variant="muted">
+                Toggle all notifications
+              </Text>
             </div>
-          </label>
+            <Button onClick={handleSelectAll} variant="outline" size="sm">
+              {Object.values(preferences).every((v) => v === true)
+                ? 'Disable All'
+                : 'Enable All'}
+            </Button>
+          </HStack>
+        )}
 
-          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-            <Checkbox
-              checked={preferences.taskReminders}
-              onCheckedChange={(checked) => handleToggle('taskReminders', checked === true)}
-              className="mt-1 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground">Task Reminders</div>
-              <div className="text-sm text-muted-foreground">
-                Receive reminders when tasks are due soon or overdue
-              </div>
-            </div>
-          </label>
+        <Stack>
+          {NOTIFICATION_ITEMS.map((item) => {
+            const locked = isLocked(item);
+            const checked = isChecked(item);
 
-          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-            <Checkbox
-              checked={preferences.weeklyTaskDigest}
-              onCheckedChange={(checked) => handleToggle('weeklyTaskDigest', checked === true)}
-              className="mt-1 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground">Weekly Task Digest</div>
-              <div className="text-sm text-muted-foreground">
-                Receive a weekly summary of pending tasks
-              </div>
-            </div>
-          </label>
+            return (
+              <label
+                key={item.key}
+                className={`flex items-start gap-4 rounded-lg border p-4 transition-colors ${
+                  locked
+                    ? 'opacity-60 cursor-default'
+                    : 'cursor-pointer hover:bg-muted/50'
+                }`}
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={
+                    locked
+                      ? undefined
+                      : (c) => handleToggle(item.key, c === true)
+                  }
+                  disabled={locked}
+                />
+                <div className="flex-1 min-w-0">
+                  <HStack align="center" gap="xs">
+                    <Text weight="medium">{item.label}</Text>
+                    {locked && (
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </HStack>
+                  <Text size="sm" variant="muted">
+                    {item.description}
+                  </Text>
+                  {locked && (
+                    <Text size="xs" variant="muted">
+                      Managed by your organization admin
+                    </Text>
+                  )}
+                </div>
+              </label>
+            );
+          })}
+        </Stack>
 
-          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-            <Checkbox
-              checked={preferences.unassignedItemsNotifications}
-              onCheckedChange={(checked) =>
-                handleToggle('unassignedItemsNotifications', checked === true)
-              }
-              className="mt-1 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground">Unassigned Items Notifications</div>
-              <div className="text-sm text-muted-foreground">
-                Receive notifications when items need reassignment after a member is removed
-              </div>
-            </div>
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-            <Checkbox
-              checked={preferences.taskMentions}
-              onCheckedChange={(checked) => handleToggle('taskMentions', checked === true)}
-              className="mt-1 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground">Task Mentions</div>
-              <div className="text-sm text-muted-foreground">
-                Receive notifications when someone mentions you in a task
-              </div>
-            </div>
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-            <Checkbox
-              checked={preferences.taskAssignments}
-              onCheckedChange={(checked) => handleToggle('taskAssignments', checked === true)}
-              className="mt-1 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground">Task Assignments</div>
-              <div className="text-sm text-muted-foreground">
-                Receive notifications when someone assigns a task to you
-              </div>
-            </div>
-          </label>
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <div className="text-muted-foreground text-xs">
-          You can also manage these preferences by clicking the unsubscribe link in any email
-          notification.
-        </div>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save'}
-        </Button>
-      </CardFooter>
-    </Card>
+        <Text size="xs" variant="muted">
+          {isAdminOrOwner
+            ? 'You can also manage these preferences by clicking the unsubscribe link in any email notification.'
+            : 'Contact your admin to change locked notification settings.'}
+        </Text>
+      </Stack>
+    </Section>
   );
 }

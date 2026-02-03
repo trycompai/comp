@@ -19,6 +19,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -34,7 +36,7 @@ import { DELETE_VENDOR_RESPONSES } from './schemas/delete-vendor.responses';
 
 @ApiTags('Vendors')
 @Controller({ path: 'vendors', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -46,6 +48,7 @@ export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
   @Get()
+  @RequirePermission('vendor', 'read')
   @ApiOperation(VENDOR_OPERATIONS.getAllVendors)
   @ApiResponse(GET_ALL_VENDORS_RESPONSES[200])
   @ApiResponse(GET_ALL_VENDORS_RESPONSES[401])
@@ -73,6 +76,7 @@ export class VendorsController {
   }
 
   @Get(':id')
+  @RequirePermission('vendor', 'read')
   @ApiOperation(VENDOR_OPERATIONS.getVendorById)
   @ApiParam(VENDOR_PARAMS.vendorId)
   @ApiResponse(GET_VENDOR_BY_ID_RESPONSES[200])
@@ -100,6 +104,7 @@ export class VendorsController {
   }
 
   @Post()
+  @RequirePermission('vendor', 'create')
   @ApiOperation(VENDOR_OPERATIONS.createVendor)
   @ApiBody(VENDOR_BODIES.createVendor)
   @ApiResponse(CREATE_VENDOR_RESPONSES[201])
@@ -132,6 +137,7 @@ export class VendorsController {
   }
 
   @Patch(':id')
+  @RequirePermission('vendor', 'update')
   @ApiOperation(VENDOR_OPERATIONS.updateVendor)
   @ApiParam(VENDOR_PARAMS.vendorId)
   @ApiBody(VENDOR_BODIES.updateVendor)
@@ -166,6 +172,7 @@ export class VendorsController {
   }
 
   @Delete(':id')
+  @RequirePermission('vendor', 'delete')
   @ApiOperation(VENDOR_OPERATIONS.deleteVendor)
   @ApiParam(VENDOR_PARAMS.vendorId)
   @ApiResponse(DELETE_VENDOR_RESPONSES[200])

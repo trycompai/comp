@@ -115,6 +115,8 @@ export class PoliciesController {
   }
 
   @Get('download-all')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Download all published policies as a single PDF',
@@ -190,6 +192,8 @@ export class PoliciesController {
   }
 
   @Post()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'create')
   @ApiOperation(POLICY_OPERATIONS.createPolicy)
   @ApiBody(POLICY_BODIES.createPolicy)
   @ApiResponse(CREATE_POLICY_RESPONSES[201])
@@ -218,6 +222,8 @@ export class PoliciesController {
   }
 
   @Patch(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
   @ApiOperation(POLICY_OPERATIONS.updatePolicy)
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiBody(POLICY_BODIES.updatePolicy)
@@ -250,6 +256,8 @@ export class PoliciesController {
   }
 
   @Delete(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'delete')
   @ApiOperation(POLICY_OPERATIONS.deletePolicy)
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiResponse(DELETE_POLICY_RESPONSES[200])
@@ -275,6 +283,8 @@ export class PoliciesController {
   }
 
   @Get(':id/versions')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation(VERSION_OPERATIONS.getPolicyVersions)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[200])
@@ -300,6 +310,8 @@ export class PoliciesController {
   }
 
   @Post(':id/versions')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.createPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.createVersion)
@@ -333,6 +345,8 @@ export class PoliciesController {
   }
 
   @Patch(':id/versions/:versionId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.updateVersionContent)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -368,6 +382,8 @@ export class PoliciesController {
   }
 
   @Delete(':id/versions/:versionId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'delete')
   @ApiOperation(VERSION_OPERATIONS.deletePolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -400,6 +416,8 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/publish')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'publish')
   @ApiOperation(VERSION_OPERATIONS.publishPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.publishVersion)
@@ -433,6 +451,8 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/:versionId/activate')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'publish')
   @ApiOperation(VERSION_OPERATIONS.setActivePolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -465,6 +485,8 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/:versionId/submit-for-approval')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'approve')
   @ApiOperation(VERSION_OPERATIONS.submitVersionForApproval)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -500,6 +522,8 @@ export class PoliciesController {
   }
 
   @Post(':id/ai-chat')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation({
     summary: 'Chat with AI about a policy',
     description:

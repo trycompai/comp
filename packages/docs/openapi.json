@@ -11564,7 +11564,17 @@
     "/v1/questionnaire/parse": {
       "post": {
         "operationId": "QuestionnaireController_parseQuestionnaire_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11587,6 +11597,11 @@
             }
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11595,7 +11610,17 @@
     "/v1/questionnaire/answer-single": {
       "post": {
         "operationId": "QuestionnaireController_answerSingleQuestion_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11648,6 +11673,11 @@
             }
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11656,7 +11686,17 @@
     "/v1/questionnaire/save-answer": {
       "post": {
         "operationId": "QuestionnaireController_saveAnswer_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11688,6 +11728,11 @@
             }
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11696,7 +11741,17 @@
     "/v1/questionnaire/delete-answer": {
       "post": {
         "operationId": "QuestionnaireController_deleteAnswer_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11728,6 +11783,11 @@
             }
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11736,7 +11796,17 @@
     "/v1/questionnaire/export": {
       "post": {
         "operationId": "QuestionnaireController_exportById_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11752,6 +11822,11 @@
             "description": "Export questionnaire by ID to specified format"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11760,7 +11835,17 @@
     "/v1/questionnaire/upload-and-parse": {
       "post": {
         "operationId": "QuestionnaireController_uploadAndParse_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11791,6 +11876,11 @@
             }
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11799,7 +11889,17 @@
     "/v1/questionnaire/upload-and-parse/upload": {
       "post": {
         "operationId": "QuestionnaireController_uploadAndParseUpload_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11854,6 +11954,11 @@
             }
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11862,7 +11967,17 @@
     "/v1/questionnaire/parse/upload": {
       "post": {
         "operationId": "QuestionnaireController_parseQuestionnaireUpload_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11912,6 +12027,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11921,6 +12041,15 @@
       "post": {
         "operationId": "QuestionnaireController_parseQuestionnaireUploadByToken_v1",
         "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "token",
             "required": true,
@@ -11966,6 +12095,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11974,7 +12108,17 @@
     "/v1/questionnaire/answers/export": {
       "post": {
         "operationId": "QuestionnaireController_autoAnswerAndExport_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -11990,6 +12134,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -11998,7 +12147,17 @@
     "/v1/questionnaire/answers/export/upload": {
       "post": {
         "operationId": "QuestionnaireController_autoAnswerAndExportUpload_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -12039,6 +12198,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -12047,7 +12211,17 @@
     "/v1/questionnaire/auto-answer": {
       "post": {
         "operationId": "QuestionnaireController_autoAnswer_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -12063,6 +12237,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
           "Questionnaire"
         ]
@@ -15453,6 +15632,11 @@
             "description": "Last login time",
             "example": "2024-01-15T12:00:00Z",
             "nullable": true
+          },
+          "isPlatformAdmin": {
+            "type": "boolean",
+            "description": "Whether the user is a platform admin (Comp AI team member)",
+            "example": false
           }
         },
         "required": [
@@ -15463,7 +15647,8 @@
           "image",
           "createdAt",
           "updatedAt",
-          "lastLogin"
+          "lastLogin",
+          "isPlatformAdmin"
         ]
       },
       "PeopleResponseDto": {

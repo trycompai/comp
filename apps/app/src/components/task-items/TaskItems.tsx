@@ -10,7 +10,7 @@ import { TaskItemsFilters } from './TaskItemsFilters';
 import { TaskItemCreateDialog } from './TaskItemCreateDialog';
 import { TaskItemsInline } from './TaskItemsInline';
 import { TaskItemsBody } from './TaskItemsBody';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useAssignableMembers } from '@/hooks/use-organization-members';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -75,7 +75,7 @@ export const TaskItems = ({
     organizationId,
   });
 
-  const { members } = useOrganizationMembers();
+  const { members } = useAssignableMembers();
   
   // Filter members to only show owner and admin roles for assignee filter
   // Always include currently filtered assignee even if they're not owner/admin (to preserve active filter)

@@ -1,7 +1,7 @@
 'use client';
 
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useAssignableMembers } from '@/hooks/use-organization-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { TaskItemDescriptionView } from './TaskItemDescriptionView';
@@ -147,7 +147,7 @@ export function TaskItemItem({
     sortOrder,
     filters,
   );
-  const { members } = useOrganizationMembers();
+  const { members } = useAssignableMembers();
   
   // Filter members to only show owner and admin roles
   // Always include current assignee even if they're not owner/admin (to preserve existing assignments)

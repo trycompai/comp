@@ -26,7 +26,7 @@ import { TasksService } from '../tasks.service';
 
 @ApiTags('Evidence Export')
 @Controller({ path: 'tasks', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -46,6 +46,7 @@ export class EvidenceExportController {
    * Get evidence summary for a task
    */
   @Get(':taskId/evidence')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get task evidence summary',
     description:
@@ -80,6 +81,7 @@ export class EvidenceExportController {
    * Export a single automation's evidence as PDF
    */
   @Get(':taskId/evidence/automation/:automationId/pdf')
+  @RequirePermission('evidence', 'export')
   @ApiOperation({
     summary: 'Export automation evidence as PDF',
     description:
@@ -135,6 +137,7 @@ export class EvidenceExportController {
    * Export all evidence for a task as ZIP
    */
   @Get(':taskId/evidence/export')
+  @RequirePermission('evidence', 'export')
   @ApiOperation({
     summary: 'Export task evidence as ZIP',
     description:
@@ -194,7 +197,7 @@ export class EvidenceExportController {
  */
 @ApiTags('Evidence Export (Auditor)')
 @Controller({ path: 'evidence-export', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -211,7 +214,6 @@ export class AuditorEvidenceExportController {
    * Export all evidence for the organization (auditor only)
    */
   @Get('all')
-  @UseGuards(PermissionGuard)
   @RequirePermission('evidence', 'export')
   @ApiOperation({
     summary: 'Export all organization evidence as ZIP (Auditor only)',

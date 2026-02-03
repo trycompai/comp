@@ -24,6 +24,8 @@ import {
   OrganizationId,
 } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipDto } from './dto/transfer-ownership.dto';
@@ -41,7 +43,7 @@ import { ORGANIZATION_OPERATIONS } from './schemas/organization-operations';
 
 @ApiTags('Organization')
 @Controller({ path: 'organization', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey') // Still document API key for external customers
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -53,6 +55,7 @@ export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
   @Get()
+  @RequirePermission('organization', 'read')
   @ApiOperation(ORGANIZATION_OPERATIONS.getOrganization)
   @ApiResponse(GET_ORGANIZATION_RESPONSES[200])
   @ApiResponse(GET_ORGANIZATION_RESPONSES[401])
@@ -77,6 +80,7 @@ export class OrganizationController {
   }
 
   @Patch()
+  @RequirePermission('organization', 'update')
   @ApiOperation(ORGANIZATION_OPERATIONS.updateOrganization)
   @ApiBody(UPDATE_ORGANIZATION_BODY)
   @ApiResponse(UPDATE_ORGANIZATION_RESPONSES[200])
@@ -107,6 +111,7 @@ export class OrganizationController {
   }
 
   @Post('transfer-ownership')
+  @RequirePermission('organization', 'update')
   @ApiOperation(ORGANIZATION_OPERATIONS.transferOwnership)
   @ApiBody(TRANSFER_OWNERSHIP_BODY)
   @ApiResponse(TRANSFER_OWNERSHIP_RESPONSES[200])
@@ -158,6 +163,7 @@ export class OrganizationController {
   }
 
   @Delete()
+  @RequirePermission('organization', 'delete')
   @ApiOperation(ORGANIZATION_OPERATIONS.deleteOrganization)
   @ApiResponse(DELETE_ORGANIZATION_RESPONSES[200])
   @ApiResponse(DELETE_ORGANIZATION_RESPONSES[401])
@@ -182,6 +188,7 @@ export class OrganizationController {
   }
 
   @Get('primary-color')
+  @RequirePermission('organization', 'read')
   @ApiOperation(ORGANIZATION_OPERATIONS.getPrimaryColor)
   @ApiQuery({
     name: 'token',

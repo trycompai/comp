@@ -1,7 +1,7 @@
 'use server';
 
 import { sendPublishAllPoliciesEmail } from '@/trigger/tasks/email/publish-all-policies-email';
-import { db, PolicyStatus, Role } from '@db';
+import { db, PolicyStatus } from '@db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
@@ -106,7 +106,7 @@ export const publishAllPoliciesAction = authActionClient
           organizationId: parsedInput.organizationId,
           isActive: true,
           deactivated: false,
-          OR: [{ role: { contains: Role.employee } }, { role: { contains: Role.contractor } }],
+          user: { isPlatformAdmin: false },
         },
         include: {
           user: {
@@ -118,7 +118,9 @@ export const publishAllPoliciesAction = authActionClient
         },
       });
 
-      // Trigger email tasks for all employees using batchTrigger
+      // Trigger email tasks for all members — the downstream
+      // isUserUnsubscribed check handles role-based notification
+      // filtering via the organization's notification matrix.
       const emailPayloads = members
         .filter((orgMember) => orgMember.user.email)
         .map((orgMember) => ({

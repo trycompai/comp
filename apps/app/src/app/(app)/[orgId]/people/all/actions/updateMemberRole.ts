@@ -81,12 +81,25 @@ export const updateMemberRole = authActionClient
       // Get target member
       const targetMember = await db.member.findFirst({
         where: { id: memberId, organizationId: orgId },
+        include: {
+          user: {
+            select: { isPlatformAdmin: true },
+          },
+        },
       });
 
       if (!targetMember) {
         return {
           success: false,
           error: 'Member not found in this organization',
+        };
+      }
+
+      // Prevent modifying platform admin members (CX team)
+      if (targetMember.user.isPlatformAdmin) {
+        return {
+          success: false,
+          error: 'This member is managed by Comp AI and cannot be modified.',
         };
       }
 

@@ -91,7 +91,8 @@ export function MemberRow({
   ) as Role[];
 
   const isOwner = currentRoles.includes('owner');
-  const canRemove = !isOwner;
+  const isPlatformAdmin = member.user.isPlatformAdmin === true;
+  const canRemove = !isOwner && !isPlatformAdmin;
   const isDeactivated = member.deactivated;
   const canViewProfile = !isDeactivated;
   const profileHref = canViewProfile ? `/${orgId}/people/${memberId}` : null;
@@ -193,16 +194,25 @@ export function MemberRow({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex flex-wrap gap-1 max-w-[120px] sm:max-w-none">
+            {isPlatformAdmin && (
+              <Badge
+                variant="outline"
+                className="text-xs whitespace-nowrap text-indigo-700 border-indigo-300 bg-indigo-50 dark:text-indigo-300 dark:border-indigo-700 dark:bg-indigo-950"
+              >
+                Comp AI
+              </Badge>
+            )}
             {currentRoles.map((role) => {
               const builtInRoles = ['owner', 'admin', 'auditor', 'employee', 'contractor'];
-              const isCustom = !builtInRoles.includes(role);
-              const customRole = customRoles.find((r) => r.name === role);
+              const customRole = !builtInRoles.includes(role)
+                ? customRoles.find((r) => r.name === role)
+                : undefined;
 
               return (
                 <Badge
                   key={role}
-                  variant={isCustom ? 'outline' : 'secondary'}
-                  className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''} ${isCustom ? 'border-blue-300 bg-blue-50 text-blue-700' : ''}`}
+                  variant="secondary"
+                  className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}
                 >
                   {(() => {
                     if (customRole) return customRole.name;
@@ -226,7 +236,7 @@ export function MemberRow({
             })}
           </div>
 
-          {!isDeactivated && (
+          {!isDeactivated && !isPlatformAdmin && (
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>

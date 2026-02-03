@@ -61,5 +61,8 @@ model Organization {
   // Custom roles for dynamic access control
   organizationRoles OrganizationRole[]
 
+  // Role-based notification settings
+  roleNotificationSettings RoleNotificationSetting[]
+
   @@index([slug])
 }

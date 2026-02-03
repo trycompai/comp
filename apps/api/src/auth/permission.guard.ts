@@ -144,9 +144,12 @@ export class PermissionGuard implements CanActivate {
       );
 
       if (!response.ok) {
-        this.logger.warn(
-          `[PermissionGuard] hasPermission API returned ${response.status}`,
-        );
+        // 401 is expected for stale/invalid tokens — don't log it
+        if (response.status !== 401) {
+          this.logger.warn(
+            `[PermissionGuard] hasPermission API returned ${response.status}`,
+          );
+        }
         // Fall back to role-based check if better-auth is unavailable
         return this.fallbackRoleCheck(request.userRoles, permissions);
       }

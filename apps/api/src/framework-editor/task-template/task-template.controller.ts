@@ -20,6 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../../auth/types';
 import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
 import { TaskTemplateService } from './task-template.service';
@@ -34,7 +36,7 @@ import { DELETE_TASK_TEMPLATE_RESPONSES } from './schemas/delete-task-template.r
 
 @ApiTags('Framework Editor Task Templates')
 @Controller({ path: 'framework-editor/task-template', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
@@ -46,6 +48,7 @@ export class TaskTemplateController {
   constructor(private readonly taskTemplateService: TaskTemplateService) {}
 
   @Get()
+  @RequirePermission('framework', 'read')
   @ApiOperation(TASK_TEMPLATE_OPERATIONS.getAllTaskTemplates)
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[200])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[401])
@@ -55,6 +58,7 @@ export class TaskTemplateController {
   }
 
   @Get(':id')
+  @RequirePermission('framework', 'read')
   @ApiOperation(TASK_TEMPLATE_OPERATIONS.getTaskTemplateById)
   @ApiParam(TASK_TEMPLATE_PARAMS.taskTemplateId)
   @ApiResponse(GET_TASK_TEMPLATE_BY_ID_RESPONSES[200])
@@ -82,6 +86,7 @@ export class TaskTemplateController {
   }
 
   @Patch(':id')
+  @RequirePermission('framework', 'update')
   @ApiOperation(TASK_TEMPLATE_OPERATIONS.updateTaskTemplate)
   @ApiParam(TASK_TEMPLATE_PARAMS.taskTemplateId)
   @ApiBody(TASK_TEMPLATE_BODIES.updateTaskTemplate)
@@ -121,6 +126,7 @@ export class TaskTemplateController {
   }
 
   @Delete(':id')
+  @RequirePermission('framework', 'delete')
   @ApiOperation(TASK_TEMPLATE_OPERATIONS.deleteTaskTemplate)
   @ApiParam(TASK_TEMPLATE_PARAMS.taskTemplateId)
   @ApiResponse(DELETE_TASK_TEMPLATE_RESPONSES[200])

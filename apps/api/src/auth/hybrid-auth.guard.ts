@@ -119,9 +119,7 @@ export class HybridAuthGuard implements CanActivate {
           verifyError.message?.includes('no applicable key found') ||
           verifyError.message?.includes('JWKSNoMatchingKey')
         ) {
-          console.log(
-            '[HybridAuthGuard] Key mismatch detected, fetching fresh JWKS and retrying...',
-          );
+          // Key mismatch — retry with fresh JWKS (handles key rotation)
 
           // Create a fresh JWKS instance with no cache to force immediate fetch
           const freshJWKS = createRemoteJWKSet(new URL(jwksUrl), {
@@ -137,9 +135,7 @@ export class HybridAuthGuard implements CanActivate {
             })
           ).payload;
 
-          console.log(
-            '[HybridAuthGuard] Successfully verified token with fresh JWKS',
-          );
+          // Token verified after JWKS refresh (key was rotated)
         } else {
           // Re-throw if it's not a key mismatch error
           throw verifyError;
@@ -200,42 +196,38 @@ export class HybridAuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      console.error('JWT verification failed:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
 
-      // Provide more helpful error messages
       if (error instanceof Error) {
-        // Connection errors
+        // Connection errors — worth logging as errors
         if (
           error.message.includes('ECONNREFUSED') ||
           error.message.includes('fetch failed')
         ) {
           console.error(
-            `[HybridAuthGuard] Cannot connect to Better Auth JWKS endpoint at ${this.betterAuthUrl}/api/auth/jwks`,
-          );
-          console.error(
-            '[HybridAuthGuard] Make sure BETTER_AUTH_URL is set correctly and the Better Auth server is running',
+            `[HybridAuthGuard] Cannot connect to Better Auth JWKS endpoint at ${this.betterAuthUrl}/api/auth/jwks. Make sure BETTER_AUTH_URL is set correctly and the Better Auth server is running.`,
           );
           throw new UnauthorizedException(
             `Cannot connect to authentication service. Please check BETTER_AUTH_URL configuration.`,
           );
         }
 
-        // Key mismatch errors should have been handled by retry logic above
-        // If we still get one here, it means the retry also failed (token truly invalid)
+        // Key mismatch after retry — expected when user has stale session
         if (
           (error as any).code === 'ERR_JWKS_NO_MATCHING_KEY' ||
           error.message.includes('no applicable key found') ||
           error.message.includes('JWKSNoMatchingKey')
         ) {
-          console.error(
-            '[HybridAuthGuard] Token key not found even after fetching fresh JWKS. Token may be from a different environment or truly invalid.',
-          );
           throw new UnauthorizedException(
             'Authentication token is invalid. Please log out and log back in to refresh your session.',
           );
         }
       }
 
+      // Unexpected errors — log these
+      console.error('[HybridAuthGuard] JWT verification failed:', error);
       throw new UnauthorizedException('Invalid or expired JWT token');
     }
   }

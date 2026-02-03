@@ -50,7 +50,7 @@ describe('RolesService', () => {
       const mockRole = {
         id: 'rol_123',
         name: validDto.name,
-        permissions: validDto.permissions,
+        permissions: JSON.stringify(validDto.permissions),
         organizationId,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -62,11 +62,11 @@ describe('RolesService', () => {
 
       const result = await service.createRole(organizationId, validDto, ['owner']);
 
-      expect(result).toEqual(mockRole);
+      expect(result.permissions).toEqual(validDto.permissions);
       expect(mockDb.organizationRole.create).toHaveBeenCalledWith({
         data: {
           name: validDto.name,
-          permissions: validDto.permissions,
+          permissions: JSON.stringify(validDto.permissions),
           organizationId,
         },
       });
@@ -163,7 +163,8 @@ describe('RolesService', () => {
       (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
       (mockDb.organizationRole.create as jest.Mock).mockResolvedValue({
         id: 'rol_123',
-        ...dto,
+        name: dto.name,
+        permissions: JSON.stringify(dto.permissions),
         organizationId,
       });
 
@@ -204,7 +205,8 @@ describe('RolesService', () => {
       (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
       (mockDb.organizationRole.create as jest.Mock).mockResolvedValue({
         id: 'rol_123',
-        ...dto,
+        name: dto.name,
+        permissions: JSON.stringify(dto.permissions),
         organizationId,
       });
 
@@ -221,7 +223,7 @@ describe('RolesService', () => {
         {
           id: 'rol_1',
           name: 'custom-role-1',
-          permissions: { control: ['read'] },
+          permissions: JSON.stringify({ control: ['read'] }),
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -249,7 +251,7 @@ describe('RolesService', () => {
       const mockRole = {
         id: 'rol_123',
         name: 'custom-role',
-        permissions: { control: ['read'] },
+        permissions: JSON.stringify({ control: ['read'] }),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -279,7 +281,7 @@ describe('RolesService', () => {
       const existingRole = {
         id: roleId,
         name: 'old-name',
-        permissions: { control: ['read'] },
+        permissions: JSON.stringify({ control: ['read'] }),
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock)
@@ -306,7 +308,7 @@ describe('RolesService', () => {
       const existingRole = {
         id: roleId,
         name: 'old-name',
-        permissions: { control: ['read'] },
+        permissions: JSON.stringify({ control: ['read'] }),
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
@@ -328,7 +330,7 @@ describe('RolesService', () => {
       const existingRole = {
         id: roleId,
         name: 'limited-role',
-        permissions: { task: ['read'] },
+        permissions: JSON.stringify({ task: ['read'] }),
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
@@ -353,7 +355,7 @@ describe('RolesService', () => {
       const existingRole = {
         id: roleId,
         name: 'custom-role',
-        permissions: { control: ['read'] },
+        permissions: JSON.stringify({ control: ['read'] }),
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
@@ -372,7 +374,7 @@ describe('RolesService', () => {
       const existingRole = {
         id: roleId,
         name: 'custom-role',
-        permissions: { control: ['read'] },
+        permissions: JSON.stringify({ control: ['read'] }),
       };
 
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);

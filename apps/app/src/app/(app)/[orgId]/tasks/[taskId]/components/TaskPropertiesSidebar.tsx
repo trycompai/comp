@@ -1,6 +1,6 @@
 'use client';
 
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useAssignableMembers } from '@/hooks/use-organization-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
@@ -22,7 +22,7 @@ interface TaskPropertiesSidebarProps {
 export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSidebarProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
-  const { members } = useOrganizationMembers();
+  const { members } = useAssignableMembers();
 
   console.log('members', members);
 

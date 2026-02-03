@@ -36,7 +36,7 @@ export async function getRole(roleId: string, organizationId: string): Promise<C
   return {
     id: role.id,
     name: role.name,
-    permissions: role.permissions as Record<string, string[]>,
+    permissions: (typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions) as Record<string, string[]>,
     isBuiltIn: false,
     createdAt: role.createdAt.toISOString(),
     updatedAt: role.updatedAt.toISOString(),

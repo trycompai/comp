@@ -9,13 +9,16 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { DevicesByMemberResponseDto } from './dto/devices-by-member-response.dto';
 import { DevicesService } from './devices.service';
 
 @ApiTags('Devices')
 @Controller({ path: 'devices', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@RequirePermission('app', 'read')
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',

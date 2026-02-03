@@ -49,6 +49,8 @@ export class FindingsController {
   constructor(private readonly findingsService: FindingsService) {}
 
   @Get()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get findings for a task',
     description: 'Retrieve all findings for a specific task',
@@ -85,6 +87,8 @@ export class FindingsController {
   }
 
   @Get('organization')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get all findings for organization',
     description: 'Retrieve all findings for the organization',
@@ -129,6 +133,8 @@ export class FindingsController {
   }
 
   @Get(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get finding by ID',
     description: 'Retrieve a specific finding by its ID',
@@ -383,6 +389,8 @@ export class FindingsController {
   }
 
   @Get(':id/history')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get finding history',
     description: 'Retrieve the activity history for a specific finding',

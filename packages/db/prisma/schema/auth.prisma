@@ -78,10 +78,11 @@ model Verification {
 // JWT Plugin - Required by Better Auth JWT plugin
 // https://www.better-auth.com/docs/plugins/jwt
 model Jwks {
-  id         String   @id @default(dbgenerated("generate_prefixed_cuid('jwk'::text)"))
+  id         String    @id @default(dbgenerated("generate_prefixed_cuid('jwk'::text)"))
   publicKey  String
   privateKey String
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
 
   @@map("jwks")
 }
@@ -148,7 +149,7 @@ enum Role {
 model OrganizationRole {
   id             String       @id @default(dbgenerated("generate_prefixed_cuid('rol'::text)"))
   name           String
-  permissions    Json         // Stores the permission object like { control: ['read'], policy: ['read'] }
+  permissions    String       @db.Text // Stored as serialized JSON string for better-auth compatibility
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())

@@ -91,7 +91,7 @@ export async function TeamMembers(props: TeamMembersProps) {
   customRoles = organizationRoles.map((role) => ({
     id: role.id,
     name: role.name,
-    permissions: role.permissions as Record<string, string[]>,
+    permissions: (typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions) as Record<string, string[]>,
   }));
 
   return (

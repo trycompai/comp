@@ -125,6 +125,8 @@ export class RisksController {
   }
 
   @Post()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('risk', 'create')
   @ApiOperation(RISK_OPERATIONS.createRisk)
   @ApiBody(RISK_BODIES.createRisk)
   @ApiResponse(CREATE_RISK_RESPONSES[201])
@@ -153,6 +155,8 @@ export class RisksController {
   }
 
   @Patch(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('risk', 'update')
   @ApiOperation(RISK_OPERATIONS.updateRisk)
   @ApiParam(RISK_PARAMS.riskId)
   @ApiBody(RISK_BODIES.updateRisk)
@@ -187,6 +191,8 @@ export class RisksController {
   }
 
   @Delete(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('risk', 'delete')
   @ApiOperation(RISK_OPERATIONS.deleteRisk)
   @ApiParam(RISK_PARAMS.riskId)
   @ApiResponse(DELETE_RISK_RESPONSES[200])
