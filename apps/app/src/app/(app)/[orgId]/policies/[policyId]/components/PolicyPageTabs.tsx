@@ -167,6 +167,7 @@ export function PolicyPageTabs({
               pendingVersionId={policy?.pendingVersionId ?? null}
               versions={versions}
               policyStatus={policy?.status}
+              lastPublishedAt={policy?.lastPublishedAt}
               assignees={assignees}
               initialVersionId={versionIdFromUrl || undefined}
               onMutate={mutate}

@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import type { Member, Policy, PolicyVersion, User } from '@db';
+import { PolicyStatus, type Member, type Policy, type PolicyVersion, type User } from '@db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -233,7 +233,7 @@ export function PolicyVersionsTab({
               // Can publish other versions (not current, not pending)
               const canPublishOther = !isCurrentVersion && !isPendingVersion && !isPendingApproval;
               // Can publish current version if it's in draft or needs_review status
-              const canPublishCurrent = isCurrentVersion && (policy.status === 'draft' || policy.status === 'needs_review') && !isPendingApproval;
+              const canPublishCurrent = isCurrentVersion && (policy.status === PolicyStatus.draft || policy.status === PolicyStatus.needs_review) && !isPendingApproval;
               const canPublish = canPublishOther || canPublishCurrent;
               const publisher = version.publishedBy?.user;
 

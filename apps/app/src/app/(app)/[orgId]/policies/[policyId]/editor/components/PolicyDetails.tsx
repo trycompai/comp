@@ -145,6 +145,8 @@ interface PolicyContentManagerProps {
   versions?: PolicyVersionWithPublisher[];
   /** The current policy status (draft, published, needs_review) */
   policyStatus?: string;
+  /** When the policy was last published (null if never published) */
+  lastPublishedAt?: Date | null;
   /** Assignees for approval selection */
   assignees?: (Member & { user: User })[];
   /** Initial version ID to view (from URL param) */
@@ -165,6 +167,7 @@ export function PolicyContentManager({
   pendingVersionId,
   versions = [],
   policyStatus,
+  lastPublishedAt,
   assignees = [],
   initialVersionId,
   onMutate,
@@ -318,6 +321,10 @@ export function PolicyContentManager({
   const isPublishedPolicy = policyStatus === PolicyStatus.published;
   const isVersionReadOnly =
     (isViewingActiveVersion && isPublishedPolicy) || isViewingPendingVersion;
+
+  // For badge display: use lastPublishedAt to determine if the current version was ever published
+  // This correctly shows "Published" for the current version even when policy is in needs_review status
+  const wasEverPublished = !!lastPublishedAt;
 
   // Handle version selection - load version content into editor
   const handleVersionSelect = (versionId: string) => {
@@ -577,7 +584,7 @@ export function PolicyContentManager({
                       {selectedVersion ? (
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs">v{selectedVersion.version}</span>
-                          {selectedVersion.id === currentVersionId && (
+                          {selectedVersion.id === currentVersionId && wasEverPublished && (
                             <Badge
                               variant="secondary"
                               className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary hover:bg-primary/10"
@@ -585,16 +592,40 @@ export function PolicyContentManager({
                               Published
                             </Badge>
                           )}
+                          {selectedVersion.id === currentVersionId && !wasEverPublished && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                            >
+                              Draft
+                            </Badge>
+                          )}
+                          {selectedVersion.id === pendingVersionId && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-amber-500 text-amber-600"
+                            >
+                              Pending
+                            </Badge>
+                          )}
                         </div>
                       ) : versions.length > 0 ? (
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs">v{versions[0].version}</span>
-                          {versions[0].id === currentVersionId && (
+                          {versions[0].id === currentVersionId && wasEverPublished && (
                             <Badge
                               variant="secondary"
                               className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary hover:bg-primary/10"
                             >
                               Published
+                            </Badge>
+                          )}
+                          {versions[0].id === currentVersionId && !wasEverPublished && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                            >
+                              Draft
                             </Badge>
                           )}
                         </div>
@@ -639,7 +670,7 @@ export function PolicyContentManager({
                                     <FileText className="h-4 w-4 shrink-0" />
                                     <span className="flex-1 flex items-center gap-1.5">
                                       <span className="text-xs">v{version.version}</span>
-                                      {isActive && isPublishedPolicy && (
+                                      {isActive && wasEverPublished && (
                                         <Badge
                                           variant="secondary"
                                           className="text-[10px] px-1 py-0 bg-primary/10 text-primary hover:bg-primary/10"
@@ -647,7 +678,7 @@ export function PolicyContentManager({
                                           Published
                                         </Badge>
                                       )}
-                                      {isActive && !isPublishedPolicy && !isPending && (
+                                      {isActive && !wasEverPublished && !isPending && (
                                         <Badge
                                           variant="secondary"
                                           className="text-[10px] px-1 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
@@ -709,7 +740,7 @@ export function PolicyContentManager({
                               <FileText className="h-4 w-4 shrink-0" />
                               <span className="flex-1 flex items-center gap-1.5">
                                 <span className="text-xs">v{version.version}</span>
-                                {isActive && isPublishedPolicy && (
+                                {isActive && wasEverPublished && (
                                   <Badge
                                     variant="secondary"
                                     className="text-[10px] px-1 py-0 bg-primary/10 text-primary hover:bg-primary/10"
@@ -717,7 +748,7 @@ export function PolicyContentManager({
                                     Published
                                   </Badge>
                                 )}
-                                {isActive && !isPublishedPolicy && !isPending && (
+                                {isActive && !wasEverPublished && !isPending && (
                                   <Badge
                                     variant="secondary"
                                     className="text-[10px] px-1 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
