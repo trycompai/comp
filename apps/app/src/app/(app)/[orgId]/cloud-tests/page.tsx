@@ -107,6 +107,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     requiredVariables: string[];
     accountId?: string;
     regions?: string[];
+    supportsMultipleConnections?: boolean;
   };
 
   const newProviders: Provider[] = newConnections.map((conn) => {
@@ -117,6 +118,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     const regions = Array.isArray(metadata.regions)
       ? metadata.regions.filter((region): region is string => typeof region === 'string')
       : undefined;
+    const manifest = getManifest(conn.provider.slug);
 
     return {
       id: conn.id,
@@ -133,6 +135,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       requiredVariables: getRequiredVariables(conn.provider.slug),
       accountId,
       regions,
+      supportsMultipleConnections: manifest?.supportsMultipleConnections ?? false,
     };
   });
 
@@ -144,6 +147,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     const regions = Array.isArray(settings.regions)
       ? settings.regions.filter((region): region is string => typeof region === 'string')
       : undefined;
+    const manifest = getManifest(integration.integrationId);
 
     return {
       id: integration.id,
@@ -160,6 +164,7 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
       requiredVariables: getRequiredVariables(integration.integrationId),
       accountId,
       regions,
+      supportsMultipleConnections: manifest?.supportsMultipleConnections ?? false,
     };
   });
 
@@ -231,8 +236,16 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
 
   // ====================================================================
   // Fetch findings from OLD platform (IntegrationResult)
+  // Only show results from the most recent scan for each integration
   // ====================================================================
   const legacyIntegrationIds = activeLegacyIntegrations.map((i) => i.id);
+
+  // Create a map of integration ID to lastRunAt for filtering
+  const integrationLastRunMap = new Map(
+    activeLegacyIntegrations
+      .filter((i) => i.lastRunAt)
+      .map((i) => [i.id, i.lastRunAt!]),
+  );
 
   const legacyResults =
     legacyIntegrationIds.length > 0
@@ -254,17 +267,33 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
               select: {
                 integrationId: true,
                 id: true,
+                lastRunAt: true,
               },
             },
           },
           orderBy: {
             completedAt: 'desc',
           },
-          take: 500,
         })
       : [];
 
-  const legacyFindings = legacyResults.map((result) => ({
+  // Filter to only include results from the most recent scan
+  // Results are considered from the "latest scan" if they were completed
+  // within 5 minutes of the integration's lastRunAt
+  const SCAN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+  const filteredLegacyResults = legacyResults.filter((result) => {
+    const lastRunAt = integrationLastRunMap.get(result.integration.id);
+    if (!lastRunAt || !result.completedAt) return false;
+
+    const lastRunTime = lastRunAt.getTime();
+    const completedTime = result.completedAt.getTime();
+
+    // Include if completed within the scan window of the last run
+    return Math.abs(completedTime - lastRunTime) <= SCAN_WINDOW_MS;
+  });
+
+  const legacyFindings = filteredLegacyResults.map((result) => ({
     id: result.id,
     title: result.title,
     description: result.description,

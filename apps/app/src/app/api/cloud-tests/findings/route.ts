@@ -136,8 +136,16 @@ export async function GET(request: NextRequest) {
 
     // ====================================================================
     // Fetch findings from OLD platform (IntegrationResult)
+    // Only show results from the most recent scan for each integration
     // ====================================================================
     const legacyIntegrationIds = activeLegacyIntegrations.map((i) => i.id);
+
+    // Create a map of integration ID to lastRunAt for filtering
+    const integrationLastRunMap = new Map(
+      activeLegacyIntegrations
+        .filter((i) => i.lastRunAt)
+        .map((i) => [i.id, i.lastRunAt!]),
+    );
 
     const legacyResults =
       legacyIntegrationIds.length > 0
@@ -159,17 +167,33 @@ export async function GET(request: NextRequest) {
                 select: {
                   integrationId: true,
                   id: true,
+                  lastRunAt: true,
                 },
               },
             },
             orderBy: {
               completedAt: 'desc',
             },
-            take: 500,
           })
         : [];
 
-    const legacyFindings = legacyResults.map((result) => ({
+    // Filter to only include results from the most recent scan
+    // Results are considered from the "latest scan" if they were completed
+    // within 5 minutes of the integration's lastRunAt
+    const SCAN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+    const filteredLegacyResults = legacyResults.filter((result) => {
+      const lastRunAt = integrationLastRunMap.get(result.integration.id);
+      if (!lastRunAt || !result.completedAt) return false;
+
+      const lastRunTime = lastRunAt.getTime();
+      const completedTime = result.completedAt.getTime();
+
+      // Include if completed within the scan window of the last run
+      return Math.abs(completedTime - lastRunTime) <= SCAN_WINDOW_MS;
+    });
+
+    const legacyFindings = filteredLegacyResults.map((result) => ({
       id: result.id,
       title: result.title,
       description: result.description,
