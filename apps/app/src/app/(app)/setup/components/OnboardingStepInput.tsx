@@ -77,7 +77,7 @@ export function OnboardingStepInput({
               )}
             </div>
             <div className="flex-1 space-y-1.5">
-              <Label>Phone</Label>
+              <Label>Phone (optional)</Label>
               <Input
                 {...form.register('shipping.phone')}
                 placeholder="+1 (555) 123-4567"

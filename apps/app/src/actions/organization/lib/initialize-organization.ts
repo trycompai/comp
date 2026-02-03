@@ -207,6 +207,46 @@ export const _upsertOrgFrameworkStructureCore = async ({
         policyTemplateId: policyTemplate.id,
       })),
     });
+
+    // Fetch newly created policies to create versions for them
+    const newlyCreatedPolicies = await tx.policy.findMany({
+      where: {
+        organizationId: organizationId,
+        policyTemplateId: {
+          in: policyTemplatesForCreation.map((t) => t.id),
+        },
+      },
+      select: { id: true, policyTemplateId: true, content: true },
+    });
+
+    // Create version 1 for each newly created policy
+    if (newlyCreatedPolicies.length > 0) {
+      await tx.policyVersion.createMany({
+        data: newlyCreatedPolicies.map((policy) => ({
+          policyId: policy.id,
+          version: 1,
+          content: policy.content as Prisma.InputJsonValue[],
+          changelog: 'Initial version from template',
+        })),
+      });
+
+      // Fetch the created versions to update policies with currentVersionId
+      const createdVersions = await tx.policyVersion.findMany({
+        where: {
+          policyId: { in: newlyCreatedPolicies.map((p) => p.id) },
+          version: 1,
+        },
+        select: { id: true, policyId: true },
+      });
+
+      // Update each policy with its currentVersionId
+      for (const version of createdVersions) {
+        await tx.policy.update({
+          where: { id: version.policyId },
+          data: { currentVersionId: version.id },
+        });
+      }
+    }
   }
 
   /**

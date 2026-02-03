@@ -1,12 +1,19 @@
 import { getFeatureFlags } from '@/app/posthog';
 import { auth } from '@/utils/auth';
-import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
+import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { PolicyHeaderActions } from './components/PolicyHeaderActions';
 import PolicyPage from './components/PolicyPage';
-import { getAssignees, getLogsForPolicy, getPolicy, getPolicyControlMappingInfo } from './data';
+import { PolicyStatusBadge } from './components/PolicyStatusBadge';
+import {
+  getAssignees,
+  getLogsForPolicy,
+  getPolicy,
+  getPolicyControlMappingInfo,
+  getPolicyVersions,
+} from './data';
 
 export default async function PolicyDetails({
   params,
@@ -19,6 +26,7 @@ export default async function PolicyDetails({
   const assignees = await getAssignees();
   const { mappedControls, allControls } = await getPolicyControlMappingInfo(policyId);
   const logs = await getLogsForPolicy(policyId);
+  const versions = await getPolicyVersions(policyId);
 
   const isPendingApproval = !!policy?.approverId;
 
@@ -43,10 +51,13 @@ export default async function PolicyDetails({
           { label: policy?.name ?? 'Policy', isCurrent: true },
         ]}
       />
-      <PageHeader
-        title={policy?.name ?? 'Policy'}
-        actions={<PolicyHeaderActions policy={policy} logs={logs} />}
-      />
+      <div className="flex items-center justify-between pb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">{policy?.name ?? 'Policy'}</h1>
+          {policy && <PolicyStatusBadge status={policy.status} />}
+        </div>
+        <PolicyHeaderActions policy={policy} logs={logs} />
+      </div>
       <PolicyPage
         policy={policy}
         policyId={policyId}
@@ -56,6 +67,7 @@ export default async function PolicyDetails({
         allControls={allControls}
         isPendingApproval={isPendingApproval}
         logs={logs}
+        versions={versions}
         showAiAssistant={isAiPolicyEditorEnabled}
       />
     </PageLayout>

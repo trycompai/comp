@@ -1,10 +1,14 @@
 'use client';
 
-import type { Member, Policy } from '@db';
+import type { Member, Policy, PolicyVersion } from '@db';
 import { PolicyContainer } from './PolicyContainer';
 
+type PolicyWithVersion = Policy & {
+  currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
+};
+
 interface PolicyListProps {
-  policies: Policy[];
+  policies: PolicyWithVersion[];
   member: Member;
 }
 

@@ -22,6 +22,18 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     return redirect('/');
   }
 
+  const currentUserMember = await db.member.findFirst({
+    where: {
+      organizationId: orgId,
+      userId: session.user.id,
+    },
+  });
+  const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
+  const canManageMembers = currentUserRoles.some((role) => ['owner', 'admin'].includes(role));
+  const isAuditor = currentUserRoles.includes('auditor');
+  const canInviteUsers = canManageMembers || isAuditor;
+  const isCurrentUserOwner = currentUserRoles.includes('owner');
+
   // Check if there are employees to show the Employee Tasks tab
   const allMembers = await db.member.findMany({
     where: {
@@ -49,12 +61,19 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
 
   return (
     <PeoplePageTabs
-      peopleContent={<TeamMembers />}
+      peopleContent={
+        <TeamMembers
+          canManageMembers={canManageMembers}
+          canInviteUsers={canInviteUsers}
+          isAuditor={isAuditor}
+          isCurrentUserOwner={isCurrentUserOwner}
+        />
+      }
       employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
       devicesContent={
         <>
           <DeviceComplianceChart devices={devices} />
-          <EmployeeDevicesList devices={devices} />
+          <EmployeeDevicesList devices={devices} isCurrentUserOwner={isCurrentUserOwner} />
         </>
       }
       showEmployeeTasks={showEmployeeTasks}

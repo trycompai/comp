@@ -1,31 +1,25 @@
 'use client';
 
-import { useDebounce } from '@/hooks/useDebounce';
 import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
-import { Input } from '@comp/ui/input';
+import { Form } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
-import { Download, ExternalLink, Eye, FileCheck2, Upload } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Download, Eye, FileCheck2, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
 import {
   TrustPortalAdditionalDocumentsSection,
   type TrustPortalDocument,
 } from './TrustPortalAdditionalDocumentsSection';
-import { TrustPortalDomain } from './TrustPortalDomain';
 import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
-import { AllowedDomainsManager } from './AllowedDomainsManager';
+import type { FaqItem } from '../types/faq';
 import {
   GDPR,
   HIPAA,
@@ -38,11 +32,8 @@ import {
   SOC2Type2,
 } from './logos';
 
-// Client-side form schema (includes all fields for form state)
-const trustPortalSwitchSchema = z.object({
-  enabled: z.boolean(),
-  contactEmail: z.string().email().or(z.literal('')).optional(),
-  primaryColor: z.string().optional(),
+// Client-side form schema for framework state
+const trustPortalFormSchema = z.object({
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
   iso27001: z.boolean(),
@@ -62,13 +53,6 @@ const trustPortalSwitchSchema = z.object({
   nen7510Status: z.enum(['started', 'in_progress', 'compliant']),
   iso9001Status: z.enum(['started', 'in_progress', 'compliant']),
 });
-
-// Server action input schema (only fields that the server accepts)
-type TrustPortalSwitchActionInput = {
-  enabled: boolean;
-  contactEmail?: string | '';
-  primaryColor?: string;
-};
 
 const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
   iso27001: 'iso_27001',
@@ -96,12 +80,6 @@ interface ComplianceResourceUrlResponse {
 }
 
 export function TrustPortalSwitch({
-  enabled,
-  slug,
-  domainVerified,
-  domain,
-  contactEmail,
-  primaryColor,
   orgId,
   soc2type1,
   soc2type2,
@@ -122,9 +100,6 @@ export function TrustPortalSwitch({
   iso9001,
   iso9001Status,
   faqs,
-  isVercelDomain,
-  vercelVerification,
-  // File props - will be passed from page.tsx later
   iso27001FileName,
   iso42001FileName,
   gdprFileName,
@@ -135,14 +110,7 @@ export function TrustPortalSwitch({
   nen7510FileName,
   iso9001FileName,
   additionalDocuments,
-  allowedDomains,
 }: {
-  enabled: boolean;
-  slug: string;
-  domainVerified: boolean;
-  domain: string;
-  contactEmail: string | null;
-  primaryColor: string | null;
   orgId: string;
   soc2type1: boolean;
   soc2type2: boolean;
@@ -162,9 +130,7 @@ export function TrustPortalSwitch({
   nen7510Status: 'started' | 'in_progress' | 'compliant';
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
-  faqs: any[] | null;
-  isVercelDomain?: boolean;
-  vercelVerification?: string | null;
+  faqs: FaqItem[] | null;
   iso27001FileName?: string | null;
   iso42001FileName?: string | null;
   gdprFileName?: string | null;
@@ -175,7 +141,6 @@ export function TrustPortalSwitch({
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
   additionalDocuments: TrustPortalDocument[];
-  allowedDomains: string[];
 }) {
   const [certificateFiles, setCertificateFiles] = useState<Record<string, string | null>>({
     iso27001: iso27001FileName ?? null,
@@ -287,25 +252,9 @@ export function TrustPortalSwitch({
 
     window.open(payload.signedUrl, '_blank', 'noopener,noreferrer');
   };
-  const trustPortalSwitch = useAction(trustPortalSwitchAction, {
-    onSuccess: () => {
-      toast.success('Trust portal status updated');
-    },
-    onError: () => {
-      toast.error('Failed to update trust portal status');
-    },
-  });
-
-  // Use ref to store latest trustPortalSwitch to avoid stale closures
-  const trustPortalSwitchRef = useRef(trustPortalSwitch);
-  trustPortalSwitchRef.current = trustPortalSwitch;
-
-  const form = useForm<z.infer<typeof trustPortalSwitchSchema>>({
-    resolver: zodResolver(trustPortalSwitchSchema),
+  const form = useForm<z.infer<typeof trustPortalFormSchema>>({
+    resolver: zodResolver(trustPortalFormSchema),
     defaultValues: {
-      enabled: enabled,
-      contactEmail: contactEmail ?? undefined,
-      primaryColor: primaryColor ?? undefined,
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
@@ -327,266 +276,16 @@ export function TrustPortalSwitch({
     },
   });
 
-  const onSubmit = useCallback(
-    async (data: TrustPortalSwitchActionInput) => {
-      await trustPortalSwitchRef.current.execute(data);
-    },
-    [], // Safe to use empty array because we use ref
-  );
-
-  const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
-
-  const lastSaved = useRef<{ [key: string]: string | boolean | null }>({
-    contactEmail: contactEmail ?? '',
-    enabled: enabled,
-    primaryColor: primaryColor ?? null,
-  });
-
-  const savingRef = useRef<{ [key: string]: boolean }>({
-    contactEmail: false,
-    enabled: false,
-    primaryColor: false,
-  });
-
-  const autoSave = useCallback(
-    async (field: string, value: unknown) => {
-      // Prevent concurrent saves for the same field
-      if (savingRef.current[field]) {
-        return;
-      }
-
-      const current = form.getValues();
-      if (lastSaved.current[field] !== value) {
-        savingRef.current[field] = true;
-        try {
-          // Only send fields that trustPortalSwitchAction accepts
-          // Server schema accepts: enabled, contactEmail, primaryColor
-          const data: TrustPortalSwitchActionInput = {
-            enabled: field === 'enabled' ? (value as boolean) : current.enabled,
-            contactEmail:
-              field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
-            primaryColor:
-              field === 'primaryColor' ? (value as string) : (current.primaryColor ?? undefined),
-          };
-          await onSubmit(data);
-          lastSaved.current[field] = value as string | boolean | null;
-        } finally {
-          savingRef.current[field] = false;
-        }
-      }
-    },
-    [form, onSubmit],
-  );
-
-  const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');
-  const debouncedContactEmail = useDebounce(contactEmailValue, 800);
-
-  const [primaryColorValue, setPrimaryColorValue] = useState(form.getValues('primaryColor') || '');
-  const debouncedPrimaryColor = useDebounce(primaryColorValue, 800);
-
-  useEffect(() => {
-    if (
-      debouncedContactEmail !== undefined &&
-      debouncedContactEmail !== lastSaved.current.contactEmail &&
-      !savingRef.current.contactEmail
-    ) {
-      form.setValue('contactEmail', debouncedContactEmail);
-      void autoSave('contactEmail', debouncedContactEmail);
-    }
-  }, [debouncedContactEmail, autoSave, form]);
-
-  useEffect(() => {
-    if (
-      debouncedPrimaryColor !== undefined &&
-      debouncedPrimaryColor !== lastSaved.current.primaryColor &&
-      !savingRef.current.primaryColor
-    ) {
-      form.setValue('primaryColor', debouncedPrimaryColor || undefined);
-      void autoSave('primaryColor', debouncedPrimaryColor || null);
-    }
-  }, [debouncedPrimaryColor, autoSave, form]);
-
-  const handleContactEmailBlur = useCallback(
-    (e: React.FocusEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      form.setValue('contactEmail', value);
-      autoSave('contactEmail', value);
-    },
-    [form, autoSave],
-  );
-
-  const handlePrimaryColorBlur = useCallback(
-    (e: React.FocusEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (value) {
-        form.setValue('primaryColor', value);
-      }
-      void autoSave('primaryColor', value || null);
-    },
-    [form, autoSave],
-  );
-
-  const handleEnabledChange = useCallback(
-    (val: boolean) => {
-      form.setValue('enabled', val);
-      autoSave('enabled', val);
-    },
-    [form, autoSave],
-  );
-
   return (
     <Form {...form}>
-      <form className="space-y-4">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between pb-4">
-            <div className="space-y-1">
-              <h2 className="text-lg font-medium flex items-center gap-2">
-                <Link
-                  href={portalUrl}
-                  target="_blank"
-                  className="text-primary hover:underline flex items-center gap-2"
-                >
-                  Trust Portal
-                  <ExternalLink className="h-4 w-4" />
-                </Link>
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Create a public trust portal for your organization.
-              </p>
-            </div>
-            <FormField
-              control={form.control}
-              name="enabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-y-0 space-x-2">
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={handleEnabledChange}
-                      disabled={trustPortalSwitch.status === 'executing'}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="space-y-6">
-            {form.watch('enabled') && (
-              <div className="pt-2">
-                <h3 className="mb-4 text-sm font-medium">Trust Portal Settings</h3>
-                <div className="grid grid-cols-1 gap-x-4 gap-y-4 lg:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="primaryColor"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Brand Color</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <div className="flex items-center gap-2">
-                              {/* Color Swatch */}
-                              <div className="relative">
-                                <input
-                                  {...field}
-                                  value={primaryColorValue ?? '#000000'}
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    setPrimaryColorValue(e.target.value);
-                                  }}
-                                  onBlur={handlePrimaryColorBlur}
-                                  type="color"
-                                  className="sr-only"
-                                  id="color-picker"
-                                />
-                                <label
-                                  htmlFor="color-picker"
-                                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
-                                  style={{ backgroundColor: primaryColorValue || '#000000' }}
-                                >
-                                  <span className="sr-only">Pick a color</span>
-                                </label>
-                              </div>
-                              {/* Hex Input */}
-                              <div className="flex-1">
-                                <Input
-                                  value={primaryColorValue?.toUpperCase() || '#000000'}
-                                  onChange={(e) => {
-                                    let value = e.target.value;
-                                    if (!value.startsWith('#')) {
-                                      value = '#' + value;
-                                    }
-                                    field.onChange(value);
-                                    setPrimaryColorValue(value);
-                                  }}
-                                  onBlur={handlePrimaryColorBlur}
-                                  placeholder="#000000"
-                                  className="font-mono"
-                                  maxLength={7}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contactEmail"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Contact Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={contactEmailValue}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              setContactEmailValue(e.target.value);
-                            }}
-                            onBlur={handleContactEmailBlur}
-                            placeholder="contact@example.com"
-                            autoComplete="off"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            spellCheck="false"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="w-full lg:col-span-2 mt-1.5">
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Used for branding across your trust portal
-                  </p>
-                </div>
-              </div>
-            )}
-            {form.watch('enabled') && (
-              <div className="pt-6">
-                {/* FAQ Section */}
-                <TrustPortalFaqBuilder initialFaqs={faqs} orgId={orgId} />
-              </div>
-            )}
-            {form.watch('enabled') && (
-              <div className="pt-6">
-                {/* NDA Bypass - Allowed Domains Section */}
-                <AllowedDomainsManager
-                  initialDomains={allowedDomains}
-                  orgId={orgId}
-                />
-              </div>
-            )}
-            {form.watch('enabled') && (
-              <div className="pt-6">
-                {/* Compliance Frameworks Section */}
-                <div>
-                  <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
-                  <p className="text-muted-foreground mb-4 text-sm">
-                    Share the frameworks your organization is compliant with or working towards.
-                  </p>
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <form className="space-y-6">
+        {/* Compliance Frameworks Section */}
+        <div>
+          <h3 className="mb-2 text-sm font-medium">Compliance Frameworks</h3>
+          <p className="text-muted-foreground mb-4 text-sm">
+            Share the frameworks your organization is compliant with or working towards.
+          </p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                     {/* ISO 27001 */}
                     <ComplianceFramework
                       title="ISO 27001"
@@ -893,33 +592,19 @@ export function TrustPortalSwitch({
                       frameworkKey="iso9001"
                       orgId={orgId}
                     />
-                  </div>
-                </div>
-              </div>
-            )}
-            {form.watch('enabled') && (
-              <div className="pt-6">
-                <TrustPortalAdditionalDocumentsSection
-                  organizationId={orgId}
-                  enabled={true}
-                  documents={additionalDocuments}
-                />
-              </div>
-            )}
           </div>
         </div>
+
+        {/* FAQ Section */}
+        <TrustPortalFaqBuilder initialFaqs={faqs} orgId={orgId} />
+
+        {/* Additional Documents Section */}
+        <TrustPortalAdditionalDocumentsSection
+          organizationId={orgId}
+          enabled={true}
+          documents={additionalDocuments}
+        />
       </form>
-      {form.watch('enabled') && (
-        <div className="pt-6">
-          <TrustPortalDomain
-            domain={domain}
-            domainVerified={domainVerified}
-            orgId={orgId}
-            isVercelDomain={isVercelDomain ?? false}
-            vercelVerification={vercelVerification ?? null}
-          />
-        </div>
-      )}
     </Form>
   );
 }

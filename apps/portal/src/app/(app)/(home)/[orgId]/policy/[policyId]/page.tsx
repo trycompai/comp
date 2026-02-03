@@ -32,6 +32,16 @@ export default async function PolicyPage({
 
   const policy = await db.policy.findUnique({
     where: { id: policyId },
+    include: {
+      currentVersion: {
+        select: {
+          id: true,
+          content: true,
+          pdfUrl: true,
+          version: true,
+        },
+      },
+    },
   });
 
   if (!policy) {

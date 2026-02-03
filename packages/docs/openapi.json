@@ -1577,6 +1577,127 @@
         ]
       }
     },
+    "/v1/people/{id}/host/{hostId}": {
+      "delete": {
+        "description": "Removes a single host (device) from FleetDM by host ID. Only organization owners can perform this action. Validates that the organization exists and the member exists within the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "operationId": "PeopleController_removeHost_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "path",
+            "description": "FleetDM host ID",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Host removed from Fleet successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates successful removal",
+                      "example": true
+                    },
+                    "authType": {
+                      "type": "string",
+                      "enum": [
+                        "api-key",
+                        "session"
+                      ],
+                      "description": "How the request was authenticated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication, insufficient permissions, or not organization owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization or member not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Member with ID mem_abc123def456 not found in organization org_abc123def456"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to remove host"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Remove host (device) from Fleet",
+        "tags": [
+          "People"
+        ]
+      }
+    },
     "/v1/people/{id}/unlink-device": {
       "patch": {
         "description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
@@ -5764,6 +5885,800 @@
           }
         ],
         "summary": "Delete policy",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/versions": {
+      "get": {
+        "description": "Returns all versions for a policy in descending order. Supports both API key authentication and session authentication.",
+        "operationId": "PoliciesController_getPolicyVersions_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy versions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "currentVersionId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "pendingVersionId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get policy versions",
+        "tags": [
+          "Policies"
+        ]
+      },
+      "post": {
+        "description": "Creates a new draft version based on the current published version (or a specified source version).",
+        "operationId": "PoliciesController_createPolicyVersion_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Create a new policy version draft",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Policy version created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create policy version",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/versions/{versionId}": {
+      "patch": {
+        "description": "Updates content for a non-published, non-pending version. Published and pending versions are immutable.",
+        "operationId": "PoliciesController_updateVersionContent_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "description": "Policy version ID",
+            "schema": {
+              "type": "string",
+              "example": "pv_abc123def456"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update content for a policy version",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVersionContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Version content updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update version content",
+        "tags": [
+          "Policies"
+        ]
+      },
+      "delete": {
+        "description": "Deletes a non-published, non-pending version. Published and pending versions cannot be deleted.",
+        "operationId": "PoliciesController_deletePolicyVersion_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "description": "Policy version ID",
+            "schema": {
+              "type": "string",
+              "example": "pv_abc123def456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deletedVersion": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete policy version",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/versions/publish": {
+      "post": {
+        "description": "Publishes draft content as a new version and optionally sets it as active.",
+        "operationId": "PoliciesController_publishPolicyVersion_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Publish a new policy version",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Version published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Publish new policy version",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/versions/{versionId}/activate": {
+      "post": {
+        "description": "Marks a version as the active (published) version and updates the policy content.",
+        "operationId": "PoliciesController_setActivePolicyVersion_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "description": "Policy version ID",
+            "schema": {
+              "type": "string",
+              "example": "pv_abc123def456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active version updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Set active policy version",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/versions/{versionId}/submit-for-approval": {
+      "post": {
+        "description": "Submits a version for approval by setting pendingVersionId and updating policy status.",
+        "operationId": "PoliciesController_submitVersionForApproval_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "type": "string",
+              "example": "pol_abc123def456"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "description": "Policy version ID",
+            "schema": {
+              "type": "string",
+              "example": "pv_abc123def456"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Submit a policy version for approval",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitForApprovalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Version submitted for approval",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Resource not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Submit version for approval",
         "tags": [
           "Policies"
         ]
@@ -14607,6 +15522,11 @@
             "description": "Vendor website URL",
             "example": "https://www.cloudtechsolutions.com"
           },
+          "isSubProcessor": {
+            "type": "boolean",
+            "description": "Whether the vendor is a sub-processor",
+            "default": false
+          },
           "assigneeId": {
             "type": "string",
             "description": "ID of the user assigned to manage this vendor",
@@ -14720,6 +15640,11 @@
             "type": "string",
             "description": "Vendor website URL",
             "example": "https://www.cloudtechsolutions.com"
+          },
+          "isSubProcessor": {
+            "type": "boolean",
+            "description": "Whether the vendor is a sub-processor",
+            "default": false
           },
           "assigneeId": {
             "type": "string",
@@ -15914,6 +16839,80 @@
           }
         }
       },
+      "CreateVersionDto": {
+        "type": "object",
+        "properties": {
+          "sourceVersionId": {
+            "type": "string",
+            "description": "Optional version ID to base the new version on",
+            "example": "pv_abc123def456"
+          },
+          "changelog": {
+            "type": "string",
+            "description": "Optional changelog to associate with the new version",
+            "example": "Initial draft for quarterly updates"
+          }
+        }
+      },
+      "UpdateVersionContentDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "description": "Content of the policy version as TipTap JSON (array of nodes)",
+            "example": [
+              {
+                "type": "heading",
+                "attrs": {
+                  "level": 2,
+                  "textAlign": null
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Purpose"
+                  }
+                ]
+              }
+            ],
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "PublishVersionDto": {
+        "type": "object",
+        "properties": {
+          "setAsActive": {
+            "type": "boolean",
+            "description": "Whether to set this version as the active version",
+            "example": true
+          },
+          "changelog": {
+            "type": "string",
+            "description": "Optional changelog to associate with the published version",
+            "example": "Updated access controls section"
+          }
+        }
+      },
+      "SubmitForApprovalDto": {
+        "type": "object",
+        "properties": {
+          "approverId": {
+            "type": "string",
+            "description": "Member ID of the approver",
+            "example": "mem_abc123def456"
+          }
+        },
+        "required": [
+          "approverId"
+        ]
+      },
       "AISuggestPolicyRequestDto": {
         "type": "object",
         "properties": {
@@ -16848,6 +17847,13 @@
             "description": "Finding content/message",
             "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
             "maxLength": 5000
+          },
+          "revisionNote": {
+            "type": "object",
+            "description": "Auditor note when requesting revision (only for needs_revision status)",
+            "example": "Please provide clearer screenshots showing the timestamp.",
+            "maxLength": 2000,
+            "nullable": true
           }
         }
       },

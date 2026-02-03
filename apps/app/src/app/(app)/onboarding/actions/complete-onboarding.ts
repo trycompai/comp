@@ -46,7 +46,7 @@ const onboardingCompletionSchema = z.object({
   shipping: z.object({
     fullName: z.string(),
     address: z.string(),
-    phone: z.string(),
+    phone: z.string().optional(),
   }),
 });
 
