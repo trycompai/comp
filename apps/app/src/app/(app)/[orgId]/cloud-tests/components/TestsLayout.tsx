@@ -83,7 +83,9 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     },
     {
       fallbackData: initialProviders,
+      refreshInterval: 10000, // Refresh providers every 10 seconds
       revalidateOnFocus: true,
+      revalidateOnMount: true, // Always revalidate on mount to get fresh data
     },
   );
 
@@ -134,16 +136,22 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     }
 
     setIsScanning(true);
+    const startTime = Date.now();
     toast.message(`Starting ${targetProvider.name} security scan...`);
 
     try {
       if (targetProvider.isLegacy) {
         // Run legacy check for this specific connection
+        // runTests now waits for completion (uses triggerAndPoll)
         const { runTests } = await import('../actions/run-tests');
-        // Pass the unique connection ID to only scan this specific connection
         const result = await runTests(targetProvider.id);
+
         if (!result.success) {
           console.error('Legacy scan error:', result.errors);
+          toast.error(
+            `Scan failed: ${result.errors?.join(', ') || 'Unknown error'}`,
+          );
+          return null;
         }
       } else {
         // Use dedicated cloud security endpoint
@@ -155,9 +163,11 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         }
       }
 
-      toast.success('Scan completed! Results updated.');
-      await mutateProviders(); // Refresh to get updated lastRunAt
-      await mutateFindings();
+      // Refresh data to get updated results
+      await Promise.all([mutateProviders(), mutateFindings()]);
+
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      toast.success(`Scan completed in ${elapsed}s! Results updated.`);
       return 'completed';
     } catch (error) {
       console.error('Scan error:', error);
