@@ -141,42 +141,47 @@ export function UpdateSecondaryFieldsForm({
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="isSubProcessor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="inline-flex items-center gap-1.5">
+                  Sub-processor
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="text-muted-foreground h-3.5 w-3.5 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>
+                          A sub-processor is a third party engaged by a vendor to process personal
+                          data on behalf of your organization.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </FormLabel>
+                <FormControl>
+                  <label
+                    htmlFor="isSubProcessor"
+                    className="flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3"
+                  >
+                    <Checkbox
+                      id="isSubProcessor"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={updateVendor.status === 'executing'}
+                    />
+                    <span className="text-sm">
+                      Display on Trust Center
+                    </span>
+                  </label>
+                </FormControl>
+              </FormItem>
+            )}
+          />
         </div>
-        <FormField
-          control={form.control}
-          name="isSubProcessor"
-          render={({ field }) => (
-            <FormItem className="mt-4 flex flex-row items-center gap-2 space-y-0">
-              <FormControl>
-                <Checkbox
-                  id="isSubProcessor"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  disabled={updateVendor.status === 'executing'}
-                />
-              </FormControl>
-              <label
-                htmlFor="isSubProcessor"
-                className="cursor-pointer text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Sub-processor
-              </label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="text-muted-foreground h-4 w-4 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>
-                      A sub-processor is a third party engaged by a vendor to process personal data
-                      on behalf of your organization.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </FormItem>
-          )}
-        />
         <div className="mt-4 flex justify-end">
           <Button type="submit" variant="default" disabled={updateVendor.status === 'executing'}>
             {updateVendor.status === 'executing' ? (
