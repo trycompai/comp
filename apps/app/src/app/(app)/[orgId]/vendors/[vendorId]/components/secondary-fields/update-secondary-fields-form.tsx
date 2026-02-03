@@ -20,13 +20,16 @@ import { updateVendorAction } from '../../actions/update-vendor-action';
 export function UpdateSecondaryFieldsForm({
   vendor,
   assignees,
+  onUpdate,
 }: {
   vendor: Vendor;
   assignees: (Member & { user: User })[];
+  onUpdate?: () => void;
 }) {
   const updateVendor = useAction(updateVendorAction, {
     onSuccess: () => {
       toast.success('Vendor updated successfully');
+      onUpdate?.();
     },
     onError: () => {
       toast.error('Failed to update vendor');
