@@ -207,9 +207,18 @@ export function PolicyContentManager({
   const [editingFromVersion, setEditingFromVersion] = useState<number | null>(null);
   // Track pending version to switch to (set when creating new version, before data is refetched)
   const [pendingVersionSwitch, setPendingVersionSwitch] = useState<string | null>(null);
+  // Track previous initialVersionId to detect actual changes (not just data refreshes)
+  const prevInitialVersionIdRef = useRef<string | undefined>(initialVersionId);
 
   // Sync viewingVersion when initialVersionId changes (e.g., navigating from Versions tab)
+  // Only runs when initialVersionId actually changes, not on versions data refresh
   useEffect(() => {
+    // Skip if initialVersionId hasn't actually changed
+    if (prevInitialVersionIdRef.current === initialVersionId) {
+      return;
+    }
+    prevInitialVersionIdRef.current = initialVersionId;
+
     if (initialVersionId && versions.some((v) => v.id === initialVersionId)) {
       setViewingVersion(initialVersionId);
       const version = versions.find((v) => v.id === initialVersionId);
