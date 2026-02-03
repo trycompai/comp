@@ -110,6 +110,12 @@ export const publishAllPoliciesAction = authActionClient
             });
           } else {
             // Policy already has a version, just update status
+            // Get the current version content to sync draftContent
+            const currentVersion = await db.policyVersion.findUnique({
+              where: { id: policy.currentVersionId },
+              select: { content: true },
+            });
+
             await db.policy.update({
               where: { id: policy.id },
               data: {
@@ -117,6 +123,8 @@ export const publishAllPoliciesAction = authActionClient
                 assigneeId: member.id,
                 reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
                 lastPublishedAt: new Date(),
+                // Sync draftContent with the published version content
+                draftContent: (currentVersion?.content as Prisma.InputJsonValue[]) || (policy.content as Prisma.InputJsonValue[]) || [],
                 // Clear approval fields (in case policy was in needs_review)
                 approverId: null,
                 pendingVersionId: null,

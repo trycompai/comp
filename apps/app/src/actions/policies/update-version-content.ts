@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { db } from '@db';
+import { db, PolicyStatus } from '@db';
 import type { Prisma } from '@db';
 import { authActionClient } from '../safe-action';
 
@@ -106,7 +106,7 @@ export const updateVersionContentAction = authActionClient
     }
 
     // Cannot edit published version (only if the policy is actually published)
-    if (version.id === version.policy.currentVersionId && version.policy.status === 'published') {
+    if (version.id === version.policy.currentVersionId && version.policy.status === PolicyStatus.published) {
       return {
         success: false,
         error: 'Cannot edit the published version. Create a new version to make changes.',

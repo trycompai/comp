@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
-import type { Member, PolicyDisplayFormat, PolicyVersion, User } from '@db';
+import { PolicyStatus, type Member, type PolicyDisplayFormat, type PolicyVersion, type User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import {
   AlertDialog,
@@ -306,7 +306,7 @@ export function PolicyContentManager({
   // - Published policy's active version = read-only
   // - Pending version = read-only (awaiting approval)
   // - Draft/needs_review policy = editable
-  const isPublishedPolicy = policyStatus === 'published';
+  const isPublishedPolicy = policyStatus === PolicyStatus.published;
   const isVersionReadOnly =
     (isViewingActiveVersion && isPublishedPolicy) || isViewingPendingVersion;
 
@@ -404,12 +404,12 @@ export function PolicyContentManager({
     if (isViewingPendingVersion) return false;
 
     // For published policies, can only publish if viewing a different version
-    if (policyStatus === 'published') {
+    if (policyStatus === PolicyStatus.published) {
       return !isViewingActiveVersion;
     }
 
     // For draft/needs_review, can publish the current version
-    return policyStatus === 'draft' || policyStatus === 'needs_review';
+    return policyStatus === PolicyStatus.draft || policyStatus === PolicyStatus.needs_review;
   }, [isPendingApproval, isViewingPendingVersion, policyStatus, isViewingActiveVersion]);
 
   // Content to display is always currentContent (editable)
@@ -1115,19 +1115,19 @@ function PolicyEditorWrapper({
 
     // Status-based messages
     // Only show "published" banner when viewing the current version of a published policy
-    if (isViewingActiveVersion && policyStatus === 'published') {
+    if (isViewingActiveVersion && policyStatus === PolicyStatus.published) {
       return {
         message: 'This version is published. Create a new version to make changes.',
         className: 'border-primary/20 bg-primary/10',
       };
     }
-    if (policyStatus === 'draft') {
+    if (policyStatus === PolicyStatus.draft) {
       return {
         message: 'This policy is a draft.',
         className: 'border-muted-foreground/20 bg-muted/50',
       };
     }
-    if (policyStatus === 'needs_review') {
+    if (policyStatus === PolicyStatus.needs_review) {
       return {
         message: 'This policy needs review. Update the content and submit for approval.',
         className: 'border-blue-500/30 bg-blue-500/10',
