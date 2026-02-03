@@ -3,11 +3,13 @@
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
 import { Button } from '@comp/ui/button';
+import { Checkbox } from '@comp/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { Member, type User, type Vendor, VendorCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { HelpCircle, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -40,6 +42,7 @@ export function UpdateSecondaryFieldsForm({
       assigneeId: vendor.assigneeId,
       category: vendor.category,
       status: vendor.status,
+      isSubProcessor: vendor.isSubProcessor,
     },
   });
 
@@ -54,6 +57,7 @@ export function UpdateSecondaryFieldsForm({
       assigneeId: finalAssigneeId, // Use the potentially nulled value
       category: data.category,
       status: data.status,
+      isSubProcessor: data.isSubProcessor,
     });
   };
 
@@ -138,6 +142,41 @@ export function UpdateSecondaryFieldsForm({
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="isSubProcessor"
+          render={({ field }) => (
+            <FormItem className="mt-4 flex flex-row items-center gap-2 space-y-0">
+              <FormControl>
+                <Checkbox
+                  id="isSubProcessor"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  disabled={updateVendor.status === 'executing'}
+                />
+              </FormControl>
+              <label
+                htmlFor="isSubProcessor"
+                className="cursor-pointer text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Sub-processor
+              </label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="text-muted-foreground h-4 w-4 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>
+                      A sub-processor is a third party engaged by a vendor to process personal data
+                      on behalf of your organization.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </FormItem>
+          )}
+        />
         <div className="mt-4 flex justify-end">
           <Button type="submit" variant="default" disabled={updateVendor.status === 'executing'}>
             {updateVendor.status === 'executing' ? (
