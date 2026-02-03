@@ -81,32 +81,35 @@ export const publishAllPoliciesAction = authActionClient
         try {
           // Check if policy has a current version, if not create version 1
           if (!policy.currentVersionId) {
-            // Create version 1 from current policy content
-            const newVersion = await db.policyVersion.create({
-              data: {
-                policyId: policy.id,
-                version: 1,
-                content: (policy.content as Prisma.InputJsonValue[]) || [],
-                pdfUrl: policy.pdfUrl,
-                publishedById: member.id,
-                changelog: 'Initial published version',
-              },
-            });
+            // Use transaction to prevent orphaned versions on partial failure
+            await db.$transaction(async (tx) => {
+              // Create version 1 from current policy content
+              const newVersion = await tx.policyVersion.create({
+                data: {
+                  policyId: policy.id,
+                  version: 1,
+                  content: (policy.content as Prisma.InputJsonValue[]) || [],
+                  pdfUrl: policy.pdfUrl,
+                  publishedById: member.id,
+                  changelog: 'Initial published version',
+                },
+              });
 
-            // Update policy with the new version and publish
-            await db.policy.update({
-              where: { id: policy.id },
-              data: {
-                status: PolicyStatus.published,
-                currentVersionId: newVersion.id,
-                assigneeId: member.id,
-                reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
-                lastPublishedAt: new Date(),
-                draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
-                // Clear approval fields (in case policy was in needs_review)
-                approverId: null,
-                pendingVersionId: null,
-              },
+              // Update policy with the new version and publish
+              await tx.policy.update({
+                where: { id: policy.id },
+                data: {
+                  status: PolicyStatus.published,
+                  currentVersionId: newVersion.id,
+                  assigneeId: member.id,
+                  reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
+                  lastPublishedAt: new Date(),
+                  draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
+                  // Clear approval fields (in case policy was in needs_review)
+                  approverId: null,
+                  pendingVersionId: null,
+                },
+              });
             });
           } else {
             // Policy already has a version, just update status

@@ -653,9 +653,12 @@ export function PolicyContentManager({
                               (v) => v.id === currentVersionId,
                             );
                             const pendingVersion = versions.find((v) => v.id === pendingVersionId);
-                            const pinnedVersions = [publishedVersion, pendingVersion].filter(
-                              Boolean,
-                            ) as PolicyVersionWithPublisher[];
+                            // Deduplicate: if currentVersionId === pendingVersionId, only include once
+                            const pinnedVersions = [
+                              publishedVersion,
+                              // Only add pending if it's different from published
+                              pendingVersion && pendingVersion.id !== publishedVersion?.id ? pendingVersion : null,
+                            ].filter(Boolean) as PolicyVersionWithPublisher[];
                             return pinnedVersions.map((version) => {
                               const isActive = version.id === currentVersionId;
                               const isPending = version.id === pendingVersionId;

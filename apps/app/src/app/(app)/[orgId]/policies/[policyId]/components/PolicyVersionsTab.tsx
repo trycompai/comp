@@ -3,6 +3,7 @@
 import { deleteVersionAction } from '@/actions/policies/delete-version';
 import { submitVersionForApprovalAction } from '@/actions/policies/submit-version-for-approval';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import {
@@ -110,16 +111,6 @@ export function PolicyVersionsTab({
       setCurrentPage(1);
     }
   }, [totalPages, currentPage]);
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const handleRequestSetActive = (version: PolicyVersionWithPublisher) => {
     setPendingSetActiveVersion(version);
@@ -256,7 +247,7 @@ export function PolicyVersionsTab({
                         alt={publisher?.name || 'User'}
                       />
                       <AvatarFallback className="text-xs">
-                        {getInitials(publisher?.name)}
+                        {publisher?.name ? getInitials(publisher.name) : 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-1">
