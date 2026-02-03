@@ -639,12 +639,20 @@ export function PolicyContentManager({
                                     <FileText className="h-4 w-4 shrink-0" />
                                     <span className="flex-1 flex items-center gap-1.5">
                                       <span className="text-xs">v{version.version}</span>
-                                      {isActive && (
+                                      {isActive && isPublishedPolicy && (
                                         <Badge
                                           variant="secondary"
                                           className="text-[10px] px-1 py-0 bg-primary/10 text-primary hover:bg-primary/10"
                                         >
                                           Published
+                                        </Badge>
+                                      )}
+                                      {isActive && !isPublishedPolicy && !isPending && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-[10px] px-1 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                                        >
+                                          Draft
                                         </Badge>
                                       )}
                                       {isPending && (
@@ -701,12 +709,20 @@ export function PolicyContentManager({
                               <FileText className="h-4 w-4 shrink-0" />
                               <span className="flex-1 flex items-center gap-1.5">
                                 <span className="text-xs">v{version.version}</span>
-                                {isActive && (
+                                {isActive && isPublishedPolicy && (
                                   <Badge
                                     variant="secondary"
                                     className="text-[10px] px-1 py-0 bg-primary/10 text-primary hover:bg-primary/10"
                                   >
                                     Published
+                                  </Badge>
+                                )}
+                                {isActive && !isPublishedPolicy && !isPending && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] px-1 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                                  >
+                                    Draft
                                   </Badge>
                                 )}
                                 {isPending && (
