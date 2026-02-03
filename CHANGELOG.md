@@ -1,3 +1,17 @@
+# [1.82.0](https://github.com/trycompai/comp/compare/v1.81.0...v1.82.0) (2026-02-03)
+
+
+### Bug Fixes
+
+* make S2 onboarding phone optional ([#2088](https://github.com/trycompai/comp/issues/2088)) ([3a37196](https://github.com/trycompai/comp/commit/3a37196b28c27a9b0c3c4c2073afc440fa9743ff))
+
+
+### Features
+
+* **cloud-security:** implement transaction for scan run and results creation ([#2101](https://github.com/trycompai/comp/issues/2101)) ([0cfbce6](https://github.com/trycompai/comp/commit/0cfbce682050386ee25b64681fabe8a4079b0cbf))
+* **cloud-tests:** enhance legacy integration filtering and add suppo… ([#2100](https://github.com/trycompai/comp/issues/2100)) ([3f33e84](https://github.com/trycompai/comp/commit/3f33e842c5a9fb04cf31e550ef192a28fd32312c))
+* **settings:** moved AddSecretDialog to settings header for secrets page to conform with UI pattern ([#2098](https://github.com/trycompai/comp/issues/2098)) ([ee568f6](https://github.com/trycompai/comp/commit/ee568f6877f70405d2b3224527943f5955c2b401))
+
 # [1.81.0](https://github.com/trycompai/comp/compare/v1.80.0...v1.81.0) (2026-01-30)
 
 
