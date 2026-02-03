@@ -86,7 +86,8 @@ export const publishAllPoliciesAction = authActionClient
               data: {
                 policyId: policy.id,
                 version: 1,
-                content: policy.content as Prisma.InputJsonValue[],
+                content: (policy.content as Prisma.InputJsonValue[]) || [],
+                pdfUrl: policy.pdfUrl,
                 publishedById: member.id,
                 changelog: 'Initial published version',
               },
@@ -101,7 +102,7 @@ export const publishAllPoliciesAction = authActionClient
                 assigneeId: member.id,
                 reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
                 lastPublishedAt: new Date(),
-                draftContent: policy.content as Prisma.InputJsonValue[],
+                draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
               },
             });
           } else {

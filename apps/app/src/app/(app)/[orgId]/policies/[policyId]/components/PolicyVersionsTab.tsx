@@ -39,7 +39,7 @@ import { format } from 'date-fns';
 import { Edit, FileText, MoreVertical, Plus, Trash2, Upload } from 'lucide-react';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const VERSIONS_PER_PAGE = 10;
 import { toast } from 'sonner';
@@ -104,8 +104,8 @@ export function PolicyVersionsTab({
     return sortedVersions.slice(startIndex, endIndex);
   }, [sortedVersions, currentPage]);
 
-  // Reset to page 1 when versions change
-  useMemo(() => {
+  // Reset to page 1 when versions change and current page is out of bounds
+  useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
