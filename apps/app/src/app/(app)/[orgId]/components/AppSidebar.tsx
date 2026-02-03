@@ -10,7 +10,6 @@ import {
   Policy,
   Security,
   ShoppingBag,
-  Task,
   TaskComplete,
   Warning,
 } from '@carbon/icons-react';
@@ -30,7 +29,6 @@ interface NavItem {
 interface AppSidebarProps {
   organization: Organization;
   isQuestionnaireEnabled: boolean;
-  isTrustNdaEnabled: boolean;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
 }
@@ -38,7 +36,6 @@ interface AppSidebarProps {
 export function AppSidebar({
   organization,
   isQuestionnaireEnabled,
-  isTrustNdaEnabled,
   hasAuditorRole,
   isOnlyAuditor,
 }: AppSidebarProps) {
@@ -76,13 +73,6 @@ export function AppSidebar({
       path: `/${organization.id}/tasks`,
       name: 'Evidence',
       icon: <ListChecked className="size-4" />,
-    },
-    {
-      id: 'trust',
-      path: `/${organization.id}/trust`,
-      name: 'Trust',
-      icon: <Task className="size-4" />,
-      hidden: !isTrustNdaEnabled,
     },
     {
       id: 'people',
