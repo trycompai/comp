@@ -75,13 +75,15 @@ export const runTests = async (integrationId?: string) => {
           };
         }
 
-        if (run.isFailed || run.isCancelled) {
-          return {
-            success: false,
-            errors: ['Task failed or was canceled'],
-            taskId: run.id,
-          };
-        }
+        // Handle all other terminal states (failed, cancelled, or unexpected)
+        // This ensures we don't continue polling after the run has completed
+        return {
+          success: false,
+          errors: run.isFailed || run.isCancelled 
+            ? ['Task failed or was canceled'] 
+            : ['Task completed with unexpected status'],
+          taskId: run.id,
+        };
       }
 
       // Wait before polling again

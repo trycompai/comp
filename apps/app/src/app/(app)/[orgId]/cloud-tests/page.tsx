@@ -279,7 +279,8 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
 
   // Filter to only include results from the most recent scan
   // Results are considered from the "latest scan" if they were completed
-  // within 5 minutes of the integration's lastRunAt
+  // within 5 minutes BEFORE the integration's lastRunAt (one-sided window)
+  // This prevents including results from previous scans
   const SCAN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
   const filteredLegacyResults = legacyResults.filter((result) => {
@@ -289,8 +290,9 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     const lastRunTime = lastRunAt.getTime();
     const completedTime = result.completedAt.getTime();
 
-    // Include if completed within the scan window of the last run
-    return Math.abs(completedTime - lastRunTime) <= SCAN_WINDOW_MS;
+    // Include if completed within the scan window BEFORE lastRunAt
+    // (results should be from the scan that just completed, not future or old scans)
+    return completedTime <= lastRunTime && completedTime >= lastRunTime - SCAN_WINDOW_MS;
   });
 
   const legacyFindings = filteredLegacyResults.map((result) => ({
