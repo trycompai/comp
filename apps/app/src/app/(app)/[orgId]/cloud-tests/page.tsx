@@ -279,9 +279,10 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
 
   // Filter to only include results from the most recent scan
   // Results are considered from the "latest scan" if they were completed
-  // within 5 minutes BEFORE the integration's lastRunAt (one-sided window)
+  // within 10 minutes BEFORE the integration's lastRunAt (one-sided window)
+  // This matches the maxDuration of the sendIntegrationResults task (10 minutes)
   // This prevents including results from previous scans
-  const SCAN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+  const SCAN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
   const filteredLegacyResults = legacyResults.filter((result) => {
     const lastRunAt = integrationLastRunMap.get(result.integration.id);
