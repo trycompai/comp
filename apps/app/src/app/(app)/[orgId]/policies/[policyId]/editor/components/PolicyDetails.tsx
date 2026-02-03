@@ -314,18 +314,13 @@ export function PolicyContentManager({
   const handleVersionSelect = (versionId: string) => {
     setIsVersionDropdownOpen(false);
     setViewingVersion(versionId);
-    if (versionId !== 'draft') {
-      const version = versions.find((v) => v.id === versionId);
-      if (version) {
-        const versionContent = version.content as JSONContent[];
-        const content = Array.isArray(versionContent) ? versionContent : [versionContent];
-        setCurrentContent(content);
-        setEditingFromVersion(version.version);
-        setEditorKey((prev) => prev + 1);
-      }
-    } else {
-      // When switching back to draft, we keep the current content (which may have been modified)
-      setEditingFromVersion(null);
+    const version = versions.find((v) => v.id === versionId);
+    if (version) {
+      const versionContent = version.content as JSONContent[];
+      const content = Array.isArray(versionContent) ? versionContent : [versionContent];
+      setCurrentContent(content);
+      setEditingFromVersion(version.version);
+      setEditorKey((prev) => prev + 1);
     }
   };
 

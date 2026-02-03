@@ -103,6 +103,9 @@ export const publishAllPoliciesAction = authActionClient
                 reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
                 lastPublishedAt: new Date(),
                 draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
+                // Clear approval fields (in case policy was in needs_review)
+                approverId: null,
+                pendingVersionId: null,
               },
             });
           } else {
@@ -114,6 +117,9 @@ export const publishAllPoliciesAction = authActionClient
                 assigneeId: member.id,
                 reviewDate: new Date(new Date().setDate(new Date().getDate() + 90)),
                 lastPublishedAt: new Date(),
+                // Clear approval fields (in case policy was in needs_review)
+                approverId: null,
+                pendingVersionId: null,
               },
             });
           }
