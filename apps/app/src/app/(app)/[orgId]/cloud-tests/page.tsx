@@ -81,10 +81,10 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
     },
   });
 
-  // Filter out legacy integrations that have been migrated to new platform
-  const newConnectionSlugs = new Set(newConnections.map((c) => c.provider.slug));
+  // Filter legacy integrations to cloud providers only
+  // NOTE: We now allow BOTH legacy and new connections to coexist for providers
+  // that support multiple connections (e.g., AWS with multiple accounts)
   const activeLegacyIntegrations = legacyIntegrations.filter((integration) => {
-    if (newConnectionSlugs.has(integration.integrationId)) return false;
     const manifest = getManifest(integration.integrationId);
     return manifest?.category === CLOUD_PROVIDER_CATEGORY;
   });
