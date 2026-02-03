@@ -1,17 +1,19 @@
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { PageHeader, PageLayout } from '@trycompai/design-system';
+import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
+import { Launch } from '@trycompai/design-system/icons';
 import { Prisma } from '@prisma/client';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { TrustPortalSwitch } from './portal-settings/components/TrustPortalSwitch';
 
 export default async function TrustPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  // Fetch portal settings data
-  await ensureFriendlyUrlIfEnabled(orgId);
+  // Ensure Trust record exists with default friendlyUrl
+  await ensureTrustRecord(orgId);
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
   const faqs = await fetchOrganizationFaqs(orgId);
@@ -21,13 +23,28 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
     orderBy: { createdAt: 'desc' },
   });
 
+  // Build the public trust portal URL
+  const portalUrl =
+    trustPortal?.domainVerified && trustPortal.domain
+      ? `https://${trustPortal.domain}`
+      : `https://trust.inc/${trustPortal?.friendlyUrl ?? orgId}`;
+
   return (
-    <PageLayout header={<PageHeader title="Portal Settings" />}>
+    <PageLayout
+      header={
+        <PageHeader
+          title="Trust Portal"
+          actions={
+            <Button iconRight={<Launch />}>
+              <Link href={portalUrl} target="_blank" rel="noopener noreferrer">
+                Visit Trust Portal
+              </Link>
+            </Button>
+          }
+        />
+      }
+    >
       <TrustPortalSwitch
-        enabled={trustPortal?.enabled ?? false}
-        slug={trustPortal?.friendlyUrl ?? orgId}
-        domain={trustPortal?.domain ?? ''}
-        domainVerified={trustPortal?.domainVerified ?? false}
         orgId={orgId}
         soc2type1={trustPortal?.soc2type1 ?? false}
         soc2type2={trustPortal?.soc2type2 ?? false}
@@ -85,7 +102,6 @@ const getTrustPortal = async (orgId: string) => {
   });
 
   return {
-    enabled: trustPortal?.status === 'published',
     domain: trustPortal?.domain,
     domainVerified: trustPortal?.domainVerified,
     soc2type1: trustPortal?.soc2type1,
@@ -114,66 +130,32 @@ const getTrustPortal = async (orgId: string) => {
 };
 
 /**
- * Create a URL-friendly slug from organization name
+ * Ensure Trust record exists with friendlyUrl defaulting to organizationId
  */
-const slugifyOrganizationName = (name: string): string => {
-  const cleaned = name
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-  return cleaned.slice(0, 60);
-};
-
-/**
- * Ensure friendlyUrl exists for enabled trust portals
- * This auto-heals cases where portal was enabled before friendlyUrl was required
- */
-const ensureFriendlyUrlIfEnabled = async (organizationId: string): Promise<void> => {
+const ensureTrustRecord = async (organizationId: string): Promise<void> => {
   const trust = await db.trust.findUnique({
     where: { organizationId },
-    select: { status: true, friendlyUrl: true },
+    select: { friendlyUrl: true },
   });
 
-  // Only sync if portal is enabled and friendlyUrl is missing
-  if (!trust || trust.status !== 'published' || trust.friendlyUrl) {
+  // If trust record exists with friendlyUrl, nothing to do
+  if (trust?.friendlyUrl) {
     return;
   }
 
-  const org = await db.organization.findUnique({
-    where: { id: organizationId },
-    select: { name: true },
-  });
-
-  if (!org) return;
-
-  const baseCandidate = slugifyOrganizationName(org.name) || `org-${organizationId.slice(-8)}`;
-
-  for (let i = 0; i < 25; i += 1) {
-    const candidate = i === 0 ? baseCandidate : `${baseCandidate}-${i + 1}`;
-
-    const taken = await db.trust.findUnique({
-      where: { friendlyUrl: candidate },
-      select: { organizationId: true },
+  // Create or update trust record with organizationId as default friendlyUrl
+  try {
+    await db.trust.upsert({
+      where: { organizationId },
+      update: { friendlyUrl: organizationId },
+      create: { organizationId, friendlyUrl: organizationId, status: 'published' },
     });
-
-    if (taken && taken.organizationId !== organizationId) continue;
-
-    try {
-      await db.trust.update({
-        where: { organizationId },
-        data: { friendlyUrl: candidate },
-      });
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      // Conflict on unique constraint - record already exists
       return;
-    } catch (error: unknown) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        continue;
-      }
-      throw error;
     }
+    throw error;
   }
 };
 
