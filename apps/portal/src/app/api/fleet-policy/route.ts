@@ -61,3 +61,41 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ success: true, data: withSignedUrls });
 }
+
+export async function DELETE(req: NextRequest) {
+  const organizationId = req.nextUrl.searchParams.get('organizationId');
+  const policyIdParam = req.nextUrl.searchParams.get('policyId');
+
+  if (!organizationId) {
+    return NextResponse.json({ error: 'No organization ID' }, { status: 400 });
+  }
+
+  const policyId = policyIdParam ? parseInt(policyIdParam, 10) : NaN;
+  if (Number.isNaN(policyId)) {
+    return NextResponse.json({ error: 'Invalid or missing policy ID' }, { status: 400 });
+  }
+
+  const session = await auth.api.getSession({ headers: req.headers });
+
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const member = await validateMemberAndOrg(session.user.id, organizationId);
+  if (!member) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const result = await db.fleetPolicyResult.deleteMany({
+    where: {
+      organizationId,
+      fleetPolicyId: policyId,
+      userId: session.user.id,
+    },
+  });
+
+  return NextResponse.json({
+    success: true,
+    deletedCount: result.count,
+  });
+}
