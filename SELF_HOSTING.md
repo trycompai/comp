@@ -26,6 +26,7 @@ For a functional deployment:
 - **Email**: `RESEND_API_KEY` in app and portal
 - **Workflows**: `TRIGGER_SECRET_KEY` in app
 - **Misc**: `REVALIDATION_SECRET`, `NEXT_PUBLIC_PORTAL_URL` in app
+- **Images**: `SELF_HOSTING=true` in app (disables Next.js image optimization for self-hosted deployments)
 
 ### Prerequisites
 
