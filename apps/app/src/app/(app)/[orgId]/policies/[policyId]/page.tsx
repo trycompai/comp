@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { PolicyHeaderActions } from './components/PolicyHeaderActions';
 import PolicyPage from './components/PolicyPage';
+import { PolicyStatusBadge } from './components/PolicyStatusBadge';
 import {
   getAssignees,
   getLogsForPolicy,
@@ -52,7 +53,12 @@ export default async function PolicyDetails({
       />
       <PageHeader
         title={policy?.name ?? 'Policy'}
-        actions={<PolicyHeaderActions policy={policy} logs={logs} />}
+        actions={
+          <div className="flex items-center gap-3">
+            {policy && <PolicyStatusBadge status={policy.status} />}
+            <PolicyHeaderActions policy={policy} logs={logs} />
+          </div>
+        }
       />
       <PolicyPage
         policy={policy}

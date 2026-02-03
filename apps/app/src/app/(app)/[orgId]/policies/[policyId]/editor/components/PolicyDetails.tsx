@@ -1,19 +1,30 @@
 'use client';
 
+import { deleteVersionAction } from '@/actions/policies/delete-version';
+import { submitVersionForApprovalAction } from '@/actions/policies/submit-version-for-approval';
+import { updateVersionContentAction } from '@/actions/policies/update-version-content';
+import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import '@/styles/editor.css';
 import { useChat } from '@ai-sdk/react';
 import { Badge } from '@comp/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@comp/ui/dialog';
 import { DiffViewer } from '@comp/ui/diff-viewer';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { validateAndFixTipTapContent } from '@comp/ui/editor';
-import type { Member, PolicyDisplayFormat, PolicyVersion, User } from '@db';
+import { PolicyStatus, type Member, type PolicyDisplayFormat, type PolicyVersion, type User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import {
   AlertDialog,
@@ -26,6 +37,7 @@ import {
   AlertDialogTitle,
   Button,
   HStack,
+  Label,
   Section,
   Stack,
   Tabs,
@@ -37,13 +49,19 @@ import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
 import { format } from 'date-fns';
 import { structuredPatch } from 'diff';
-import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, FileText, Trash2, Upload } from 'lucide-react';
+import {
+  ArrowDownUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { deleteVersionAction } from '@/actions/policies/delete-version';
-import { updateVersionContentAction } from '@/actions/policies/update-version-content';
 import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
 import { PdfViewer } from '../../components/PdfViewer';
 import { PublishVersionDialog } from '../../components/PublishVersionDialog';
@@ -125,6 +143,14 @@ interface PolicyContentManagerProps {
   pendingVersionId?: string | null;
   /** All versions for this policy */
   versions?: PolicyVersionWithPublisher[];
+  /** The current policy status (draft, published, needs_review) */
+  policyStatus?: string;
+  /** When the policy was last published (null if never published) */
+  lastPublishedAt?: Date | null;
+  /** Assignees for approval selection */
+  assignees?: (Member & { user: User })[];
+  /** Initial version ID to view (from URL param) */
+  initialVersionId?: string;
   onMutate?: () => void;
 }
 
@@ -140,6 +166,10 @@ export function PolicyContentManager({
   currentVersionId,
   pendingVersionId,
   versions = [],
+  policyStatus,
+  lastPublishedAt,
+  assignees = [],
+  initialVersionId,
   onMutate,
 }: PolicyContentManagerProps) {
   const router = useRouter();
@@ -160,8 +190,17 @@ export function PolicyContentManager({
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const [localHasChanges, setLocalHasChanges] = useState(hasUnpublishedChanges);
 
+  // Publish approval state
+  const [isPublishApprovalDialogOpen, setIsPublishApprovalDialogOpen] = useState(false);
+  const [publishApproverId, setPublishApproverId] = useState<string | null>(null);
+  const [isSubmittingForApproval, setIsSubmittingForApproval] = useState(false);
+
   // Version viewing state: version ID (defaults to latest/active version)
   const [viewingVersion, setViewingVersion] = useState<string>(() => {
+    // Use initialVersionId from URL if provided
+    if (initialVersionId && versions.some((v) => v.id === initialVersionId)) {
+      return initialVersionId;
+    }
     // Default to active version if exists, otherwise first version
     if (currentVersionId) return currentVersionId;
     if (versions.length > 0) return versions[0].id;
@@ -169,9 +208,52 @@ export function PolicyContentManager({
   });
   // Track if we're editing from a version (for publish button visibility)
   const [editingFromVersion, setEditingFromVersion] = useState<number | null>(null);
+  // Track pending version to switch to (set when creating new version, before data is refetched)
+  const [pendingVersionSwitch, setPendingVersionSwitch] = useState<string | null>(null);
+  // Track previous initialVersionId to detect actual changes (not just data refreshes)
+  const prevInitialVersionIdRef = useRef<string | undefined>(initialVersionId);
+
+  // Sync viewingVersion when initialVersionId changes (e.g., navigating from Versions tab)
+  // Only runs when initialVersionId actually changes, not on versions data refresh
+  useEffect(() => {
+    // Skip if initialVersionId hasn't actually changed
+    if (prevInitialVersionIdRef.current === initialVersionId) {
+      return;
+    }
+    prevInitialVersionIdRef.current = initialVersionId;
+
+    if (initialVersionId && versions.some((v) => v.id === initialVersionId)) {
+      setViewingVersion(initialVersionId);
+      const version = versions.find((v) => v.id === initialVersionId);
+      if (version) {
+        const versionContent = version.content as JSONContent[];
+        const content = Array.isArray(versionContent) ? versionContent : [versionContent];
+        setCurrentContent(content);
+        setEditorKey((prev) => prev + 1);
+      }
+    }
+  }, [initialVersionId, versions]);
+
+  // Switch to pending version when it becomes available in versions array
+  useEffect(() => {
+    if (pendingVersionSwitch) {
+      const pendingVersion = versions.find((v) => v.id === pendingVersionSwitch);
+      if (pendingVersion) {
+        setViewingVersion(pendingVersionSwitch);
+        const versionContent = pendingVersion.content as JSONContent[];
+        const content = Array.isArray(versionContent) ? versionContent : [versionContent];
+        setCurrentContent(content);
+        setEditorKey((prev) => prev + 1);
+        setPendingVersionSwitch(null);
+      }
+    }
+  }, [versions, pendingVersionSwitch]);
 
   // Sync viewingVersion when versions change (e.g., after regeneration)
   useEffect(() => {
+    // Don't reset if we're waiting for a pending version switch
+    if (pendingVersionSwitch) return;
+    
     // If the currently viewed version no longer exists, switch to current version
     const viewedVersionExists = versions.some((v) => v.id === viewingVersion);
     if (!viewedVersionExists) {
@@ -188,8 +270,8 @@ export function PolicyContentManager({
         }
       }
     }
-  }, [versions, currentVersionId, viewingVersion]);
-  
+  }, [versions, currentVersionId, viewingVersion, pendingVersionSwitch]);
+
   // Version list state
   const [versionPage, setVersionPage] = useState(0);
   const [versionSortAsc, setVersionSortAsc] = useState(false);
@@ -197,20 +279,17 @@ export function PolicyContentManager({
   const [versionToDelete, setVersionToDelete] = useState<PolicyVersionWithPublisher | null>(null);
   const [isDeletingVersion, setIsDeletingVersion] = useState(false);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
-  
+
   const VERSIONS_PER_PAGE = 5;
 
   const pinnedVersionIds = useMemo(
-    () =>
-      new Set(
-        [currentVersionId, pendingVersionId].filter(Boolean) as string[]
-      ),
-    [currentVersionId, pendingVersionId]
+    () => new Set([currentVersionId, pendingVersionId].filter(Boolean) as string[]),
+    [currentVersionId, pendingVersionId],
   );
-  
+
   const sortedVersions = useMemo(() => {
-    return [...versions].sort((a, b) => 
-      versionSortAsc ? a.version - b.version : b.version - a.version
+    return [...versions].sort((a, b) =>
+      versionSortAsc ? a.version - b.version : b.version - a.version,
     );
   }, [versions, versionSortAsc]);
 
@@ -220,12 +299,12 @@ export function PolicyContentManager({
     }
     return sortedVersions.filter((version) => !pinnedVersionIds.has(version.id));
   }, [sortedVersions, pinnedVersionIds]);
-  
+
   const paginatedVersions = useMemo(() => {
     const start = versionPage * VERSIONS_PER_PAGE;
     return unpinnedVersions.slice(start, start + VERSIONS_PER_PAGE);
   }, [unpinnedVersions, versionPage]);
-  
+
   const totalVersionPages = Math.ceil(unpinnedVersions.length / VERSIONS_PER_PAGE);
 
   // Get the version being viewed
@@ -234,54 +313,55 @@ export function PolicyContentManager({
   const isViewingActiveVersion = selectedVersion?.id === currentVersionId;
   // Check if viewing the pending version (awaiting approval)
   const isViewingPendingVersion = selectedVersion?.id === pendingVersionId;
-  
+
   // Determine if the version is editable:
-  // - Published version = read-only
+  // - Published policy's active version = read-only
   // - Pending version = read-only (awaiting approval)
-  // - Draft versions = editable
-  const isVersionReadOnly = isViewingActiveVersion || isViewingPendingVersion;
+  // - Draft/needs_review policy = editable
+  const isPublishedPolicy = policyStatus === PolicyStatus.published;
+  const isVersionReadOnly =
+    (isViewingActiveVersion && isPublishedPolicy) || isViewingPendingVersion;
+
+  // For badge display: use lastPublishedAt to determine if the current version was ever published
+  // This correctly shows "Published" for the current version even when policy is in needs_review status
+  const wasEverPublished = !!lastPublishedAt;
 
   // Handle version selection - load version content into editor
   const handleVersionSelect = (versionId: string) => {
     setIsVersionDropdownOpen(false);
     setViewingVersion(versionId);
-    if (versionId !== 'draft') {
-      const version = versions.find((v) => v.id === versionId);
-      if (version) {
-        const versionContent = version.content as JSONContent[];
-        const content = Array.isArray(versionContent) ? versionContent : [versionContent];
-        setCurrentContent(content);
-        setEditingFromVersion(version.version);
-        setEditorKey((prev) => prev + 1);
-      }
-    } else {
-      // When switching back to draft, we keep the current content (which may have been modified)
-      setEditingFromVersion(null);
+    const version = versions.find((v) => v.id === versionId);
+    if (version) {
+      const versionContent = version.content as JSONContent[];
+      const content = Array.isArray(versionContent) ? versionContent : [versionContent];
+      setCurrentContent(content);
+      setEditingFromVersion(version.version);
+      setEditorKey((prev) => prev + 1);
     }
   };
 
   const handleDeleteVersion = async () => {
     if (!versionToDelete) return;
-    
+
     setIsDeletingVersion(true);
     try {
       const result = await deleteVersionAction({
         versionId: versionToDelete.id,
         policyId,
       });
-      
+
       if (!result?.data?.success) {
         throw new Error(result?.data?.error || 'Failed to delete version');
       }
-      
+
       toast.success(`Version ${versionToDelete.version} deleted`);
-      
+
       // If we deleted the selected version, switch to another one
       if (viewingVersion === versionToDelete.id) {
-        const remainingVersions = versions.filter(v => v.id !== versionToDelete.id);
+        const remainingVersions = versions.filter((v) => v.id !== versionToDelete.id);
         setViewingVersion(currentVersionId ?? remainingVersions[0]?.id ?? '');
       }
-      
+
       setDeleteVersionDialogOpen(false);
       setVersionToDelete(null);
       onMutate?.();
@@ -293,11 +373,65 @@ export function PolicyContentManager({
     }
   };
 
+  // Handle submit for approval
+  const handleSubmitForApproval = async () => {
+    if (!viewingVersion || !publishApproverId) {
+      toast.error('Please select an approver');
+      return;
+    }
+
+    const versionToPublish = versions.find((v) => v.id === viewingVersion);
+    if (!versionToPublish) {
+      toast.error('Version not found');
+      return;
+    }
+
+    setIsSubmittingForApproval(true);
+    try {
+      const result = await submitVersionForApprovalAction({
+        policyId,
+        versionId: viewingVersion,
+        approverId: publishApproverId,
+        entityId: policyId,
+      });
+      if (!result?.data?.success) {
+        throw new Error(result?.data?.error || 'Failed to submit version for approval');
+      }
+
+      toast.success(`Version ${versionToPublish.version} submitted for approval`);
+      setIsPublishApprovalDialogOpen(false);
+      setPublishApproverId(null);
+      onMutate?.();
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to submit version for approval');
+    } finally {
+      setIsSubmittingForApproval(false);
+    }
+  };
+
+  // Determine if we can publish the current version
+  // Can publish if:
+  // 1. Not currently pending approval
+  // 2. Viewing a version that's not the published one (for published policies)
+  // 3. OR policy is draft/needs_review
+  const canPublishCurrentVersion = useMemo(() => {
+    if (isPendingApproval) return false;
+    if (isViewingPendingVersion) return false;
+
+    // For published policies, can only publish if viewing a different version
+    if (policyStatus === PolicyStatus.published) {
+      return !isViewingActiveVersion;
+    }
+
+    // For draft/needs_review, can publish the current version
+    return policyStatus === PolicyStatus.draft || policyStatus === PolicyStatus.needs_review;
+  }, [isPendingApproval, isViewingPendingVersion, policyStatus, isViewingActiveVersion]);
+
   // Content to display is always currentContent (editable)
   const displayContent = useMemo(() => {
     return currentContent;
   }, [currentContent]);
-
 
   const {
     messages,
@@ -385,11 +519,11 @@ export function PolicyContentManager({
         content: jsonContent,
         entityId: policyId,
       });
-      
+
       if (!result?.data?.success) {
         throw new Error(result?.data?.error || 'Failed to apply changes');
       }
-      
+
       setCurrentContent(jsonContent);
       setEditorKey((prev) => prev + 1);
       setDismissedProposalKey(key);
@@ -408,215 +542,8 @@ export function PolicyContentManager({
     setLocalHasChanges(true);
   };
 
-
   return (
     <Stack gap="md">
-      {/* Version Selector */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Viewing:</span>
-          <DropdownMenu open={isVersionDropdownOpen} onOpenChange={setIsVersionDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                <FileText className="h-4 w-4" />
-                {selectedVersion ? (
-                  <>
-                    <span className="font-medium">v{selectedVersion.version}</span>
-                    {selectedVersion.id === currentVersionId && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        Published
-                      </Badge>
-                    )}
-                  </>
-                ) : versions.length > 0 ? (
-                  <>
-                    <span className="font-medium">v{versions[0].version}</span>
-                    {versions[0].id === currentVersionId && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        Published
-                      </Badge>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">No versions yet</span>
-                )}
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[300px] max-h-[400px] overflow-y-auto">
-              {versions.length > 0 && (
-                <>
-                  {/* Pinned versions - Published and Pending */}
-                  {(currentVersionId || pendingVersionId) && (
-                    <>
-                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                        Pinned
-                      </div>
-                      {(() => {
-                        const publishedVersion = versions.find(v => v.id === currentVersionId);
-                        const pendingVersion = versions.find(v => v.id === pendingVersionId);
-                        const pinnedVersions = [publishedVersion, pendingVersion].filter(Boolean) as PolicyVersionWithPublisher[];
-                        return pinnedVersions.map((version) => {
-                          const isActive = version.id === currentVersionId;
-                          const isPending = version.id === pendingVersionId;
-                          const isSelected = version.id === viewingVersion;
-                          return (
-                            <div
-                              key={`pinned-${version.id}`}
-                              className={`px-2 py-1.5 hover:bg-muted/50 rounded-sm cursor-pointer border-l-2 ${isActive ? 'border-l-primary' : 'border-l-amber-500'} ${isSelected ? 'bg-muted' : ''}`}
-                              onClick={() => handleVersionSelect(version.id)}
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <FileText className="h-4 w-4 shrink-0" />
-                                <span className="flex-1 flex items-center gap-1">
-                                  v{version.version}
-                                  {isActive && (
-                                    <Badge variant="secondary" className="text-[10px] px-1 py-0">Published</Badge>
-                                  )}
-                                  {isPending && (
-                                    <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500 text-amber-600">Pending</Badge>
-                                  )}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(version.createdAt), 'MMM d')}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-
-                  {/* All versions with pagination */}
-                  <div className="px-2 py-1.5 flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      All Versions ({versions.length})
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setVersionSortAsc(!versionSortAsc);
-                        setVersionPage(0);
-                      }}
-                      className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                      title={versionSortAsc ? 'Sorted oldest first' : 'Sorted newest first'}
-                    >
-                      <ArrowDownUp className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  {paginatedVersions.map((version) => {
-                    const isActive = version.id === currentVersionId;
-                    const isPending = version.id === pendingVersionId;
-                    const isSelected = version.id === viewingVersion;
-                    const canDelete = !isActive && !isPending;
-                    return (
-                      <div
-                        key={version.id}
-                        className={`group px-2 py-1.5 hover:bg-muted/50 rounded-sm cursor-pointer flex items-center justify-between ${isSelected ? 'bg-muted' : ''}`}
-                        onClick={() => handleVersionSelect(version.id)}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="h-4 w-4 shrink-0" />
-                          <span className="flex-1 flex items-center gap-1">
-                            v{version.version}
-                            {isActive && (
-                              <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                                Published
-                              </Badge>
-                            )}
-                            {isPending && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500 text-amber-600">
-                                Pending
-                              </Badge>
-                            )}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(version.createdAt), 'MMM d')}
-                          </span>
-                        </div>
-                        {canDelete && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              // Close dropdown first, then open dialog
-                              setIsVersionDropdownOpen(false);
-                              setVersionToDelete(version);
-                              setTimeout(() => {
-                                setDeleteVersionDialogOpen(true);
-                              }, 100);
-                            }}
-                            className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity ml-1"
-                            title="Delete version"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {/* Pagination */}
-                  {totalVersionPages > 1 && (
-                    <div className="flex items-center justify-between px-2 py-2 border-t mt-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVersionPage(Math.max(0, versionPage - 1));
-                        }}
-                        disabled={versionPage === 0}
-                        className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <span className="text-xs text-muted-foreground">
-                        {versionPage + 1} / {totalVersionPages}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVersionPage(Math.min(totalVersionPages - 1, versionPage + 1));
-                        }}
-                        disabled={versionPage >= totalVersionPages - 1}
-                        className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                Edit any draft version directly. Published versions are read-only.
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* For read-only versions (published/pending), show button to create new version */}
-          {isVersionReadOnly && !isPendingApproval && (
-            <Button
-              size="sm"
-              onClick={() => setIsPublishDialogOpen(true)}
-              iconLeft={<Upload size={14} />}
-            >
-              Create new version
-            </Button>
-          )}
-        </div>
-      </div>
-
-
       <Tabs
         defaultValue={displayFormat}
         value={activeTab}
@@ -631,8 +558,9 @@ export function PolicyContentManager({
       >
         <Stack gap="md">
           <HStack justify="between" align="center">
-            <div className="max-w-md">
-              <TabsList>
+            {/* Left side: Tabs */}
+            <div>
+              <TabsList variant="default">
                 <TabsTrigger value="EDITOR" disabled={isPendingApproval}>
                   Editor View
                 </TabsTrigger>
@@ -641,16 +569,301 @@ export function PolicyContentManager({
                 </TabsTrigger>
               </TabsList>
             </div>
-            {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
-              <Button
-                variant={showAiAssistant ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowAiAssistant((prev) => !prev)}
-                iconLeft={<MagicWand size={16} />}
-              >
-                AI Assistant
-              </Button>
-            )}
+
+            {/* Right side: Version selector + Action buttons */}
+            <div className="flex items-center gap-2">
+              {/* Version Selector */}
+              <DropdownMenu open={isVersionDropdownOpen} onOpenChange={setIsVersionDropdownOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-8 w-[200px] items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      {selectedVersion ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs">v{selectedVersion.version}</span>
+                          {selectedVersion.id === currentVersionId && wasEverPublished && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary hover:bg-primary/10"
+                            >
+                              Published
+                            </Badge>
+                          )}
+                          {selectedVersion.id === currentVersionId && !wasEverPublished && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                            >
+                              Draft
+                            </Badge>
+                          )}
+                          {selectedVersion.id === pendingVersionId && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-amber-500 text-amber-600"
+                            >
+                              Pending
+                            </Badge>
+                          )}
+                        </div>
+                      ) : versions.length > 0 ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs">v{versions[0].version}</span>
+                          {versions[0].id === currentVersionId && wasEverPublished && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary hover:bg-primary/10"
+                            >
+                              Published
+                            </Badge>
+                          )}
+                          {versions[0].id === currentVersionId && !wasEverPublished && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                            >
+                              Draft
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">No versions yet</span>
+                      )}
+                    </div>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-[200px] max-h-[400px] overflow-y-auto"
+                >
+                  {versions.length > 0 && (
+                    <>
+                      {/* Pinned versions - Published and Pending */}
+                      {(currentVersionId || pendingVersionId) && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                            Pinned
+                          </div>
+                          {(() => {
+                            const publishedVersion = versions.find(
+                              (v) => v.id === currentVersionId,
+                            );
+                            const pendingVersion = versions.find((v) => v.id === pendingVersionId);
+                            // Deduplicate: if currentVersionId === pendingVersionId, only include once
+                            const pinnedVersions = [
+                              publishedVersion,
+                              // Only add pending if it's different from published
+                              pendingVersion && pendingVersion.id !== publishedVersion?.id ? pendingVersion : null,
+                            ].filter(Boolean) as PolicyVersionWithPublisher[];
+                            return pinnedVersions.map((version) => {
+                              const isActive = version.id === currentVersionId;
+                              const isPending = version.id === pendingVersionId;
+                              const isSelected = version.id === viewingVersion;
+                              return (
+                                <div
+                                  key={`pinned-${version.id}`}
+                                  className={`px-2 py-1.5 hover:bg-muted/50 rounded-sm cursor-pointer border-l-2 ${isActive ? 'border-l-primary' : 'border-l-amber-500'} ${isSelected ? 'bg-muted' : ''}`}
+                                  onClick={() => handleVersionSelect(version.id)}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <FileText className="h-4 w-4 shrink-0" />
+                                    <span className="flex-1 flex items-center gap-1.5">
+                                      <span className="text-xs">v{version.version}</span>
+                                      {isActive && wasEverPublished && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-[10px] px-1 py-0 bg-primary/10 text-primary hover:bg-primary/10"
+                                        >
+                                          Published
+                                        </Badge>
+                                      )}
+                                      {isActive && !wasEverPublished && !isPending && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-[10px] px-1 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                                        >
+                                          Draft
+                                        </Badge>
+                                      )}
+                                      {isPending && (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[10px] px-1 py-0 border-amber-500 text-amber-600"
+                                        >
+                                          Pending
+                                        </Badge>
+                                      )}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {format(new Date(version.createdAt), 'MMM d')}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
+
+                      {/* All versions with pagination */}
+                      <div className="px-2 py-1.5 flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Other versions ({unpinnedVersions.length})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVersionSortAsc(!versionSortAsc);
+                            setVersionPage(0);
+                          }}
+                          className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                          title={versionSortAsc ? 'Sorted oldest first' : 'Sorted newest first'}
+                        >
+                          <ArrowDownUp className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {paginatedVersions.map((version) => {
+                        const isActive = version.id === currentVersionId;
+                        const isPending = version.id === pendingVersionId;
+                        const isSelected = version.id === viewingVersion;
+                        const canDelete = !isActive && !isPending;
+                        return (
+                          <div
+                            key={version.id}
+                            className={`group px-2 py-1.5 hover:bg-muted/50 rounded-sm cursor-pointer flex items-center justify-between ${isSelected ? 'bg-muted' : ''}`}
+                            onClick={() => handleVersionSelect(version.id)}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileText className="h-4 w-4 shrink-0" />
+                              <span className="flex-1 flex items-center gap-1.5">
+                                <span className="text-xs">v{version.version}</span>
+                                {isActive && wasEverPublished && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] px-1 py-0 bg-primary/10 text-primary hover:bg-primary/10"
+                                  >
+                                    Published
+                                  </Badge>
+                                )}
+                                {isActive && !wasEverPublished && !isPending && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] px-1 py-0 border-warning/30 bg-warning/10 text-warning hover:bg-warning/10"
+                                  >
+                                    Draft
+                                  </Badge>
+                                )}
+                                {isPending && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1 py-0 border-amber-500 text-amber-600"
+                                  >
+                                    Pending
+                                  </Badge>
+                                )}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(version.createdAt), 'MMM d')}
+                              </span>
+                            </div>
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  // Close dropdown first, then open dialog
+                                  setIsVersionDropdownOpen(false);
+                                  setVersionToDelete(version);
+                                  setTimeout(() => {
+                                    setDeleteVersionDialogOpen(true);
+                                  }, 100);
+                                }}
+                                className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+                                title="Delete version"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {/* Pagination */}
+                      {totalVersionPages > 1 && (
+                        <div className="flex items-center justify-between px-2 py-2 border-t mt-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVersionPage(Math.max(0, versionPage - 1));
+                            }}
+                            disabled={versionPage === 0}
+                            className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+                          <span className="text-xs text-muted-foreground">
+                            {versionPage + 1} / {totalVersionPages}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVersionPage(Math.min(totalVersionPages - 1, versionPage + 1));
+                            }}
+                            disabled={versionPage >= totalVersionPages - 1}
+                            className="p-1 hover:bg-muted rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    Edit any draft version directly. Published versions are read-only.
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* For draft versions, show Publish button */}
+              {canPublishCurrentVersion && (
+                <Button
+                  size="default"
+                  onClick={() => setIsPublishApprovalDialogOpen(true)}
+                  iconLeft={<Upload size={14} />}
+                >
+                  Publish
+                </Button>
+              )}
+              {/* For read-only versions (published/pending), show button to create new version */}
+              {isVersionReadOnly && !isPendingApproval && (
+                <Button
+                  size="default"
+                  onClick={() => setIsPublishDialogOpen(true)}
+                  iconLeft={<Upload size={14} />}
+                >
+                  Create new version
+                </Button>
+              )}
+              {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
+                <Button
+                  variant={showAiAssistant ? 'default' : 'outline'}
+                  size="default"
+                  onClick={() => setShowAiAssistant((prev) => !prev)}
+                  iconLeft={<MagicWand size={16} />}
+                >
+                  AI Assistant
+                </Button>
+              )}
+            </div>
           </HStack>
 
           <div
@@ -670,6 +883,7 @@ export function PolicyContentManager({
                     isVersionReadOnly={isVersionReadOnly}
                     isViewingActiveVersion={isViewingActiveVersion}
                     isViewingPendingVersion={isViewingPendingVersion}
+                    policyStatus={policyStatus}
                     onContentChange={handleContentSaved}
                   />
                 </TabsContent>
@@ -742,8 +956,8 @@ export function PolicyContentManager({
         isOpen={isPublishDialogOpen}
         onClose={() => setIsPublishDialogOpen(false)}
         onSuccess={(newVersionId) => {
-          // Switch to the newly created version
-          setViewingVersion(newVersionId);
+          // Set pending version switch - will switch when data is refetched
+          setPendingVersionSwitch(newVersionId);
           setLocalHasChanges(false);
           onMutate?.();
           router.refresh();
@@ -756,7 +970,8 @@ export function PolicyContentManager({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Version?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete version {versionToDelete?.version}? This action cannot be undone.
+              Are you sure you want to delete version {versionToDelete?.version}? This action cannot
+              be undone.
               {versionToDelete?.pdfUrl && ' The associated PDF file will also be deleted.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -772,6 +987,58 @@ export function PolicyContentManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Publish Version Approval Dialog */}
+      <Dialog
+        open={isPublishApprovalDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsPublishApprovalDialogOpen(false);
+            setPublishApproverId(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Publish Version {versions.find((v) => v.id === viewingVersion)?.version}
+            </DialogTitle>
+            <DialogDescription>
+              Select an approver to review and publish this version. Once approved, this version
+              will become the active published version.
+            </DialogDescription>
+          </DialogHeader>
+          <Stack gap="md">
+            <Stack gap="sm">
+              <Label htmlFor="version-approver">Approver</Label>
+              <SelectAssignee
+                assignees={assignees}
+                onAssigneeChange={(id) => setPublishApproverId(id)}
+                assigneeId={publishApproverId || ''}
+                withTitle={false}
+              />
+            </Stack>
+          </Stack>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsPublishApprovalDialogOpen(false);
+                setPublishApproverId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitForApproval}
+              disabled={isSubmittingForApproval || !publishApproverId}
+              loading={isSubmittingForApproval}
+            >
+              Submit for Approval
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Stack>
   );
 }
@@ -836,6 +1103,7 @@ function PolicyEditorWrapper({
   isVersionReadOnly,
   isViewingActiveVersion,
   isViewingPendingVersion,
+  policyStatus,
   onContentChange,
 }: {
   policyId: string;
@@ -845,6 +1113,7 @@ function PolicyEditorWrapper({
   isVersionReadOnly: boolean;
   isViewingActiveVersion: boolean;
   isViewingPendingVersion: boolean;
+  policyStatus?: string;
   onContentChange?: (content: Array<JSONContent>) => void;
 }) {
   const formattedContent = Array.isArray(policyContent)
@@ -869,11 +1138,11 @@ function PolicyEditorWrapper({
         content,
         entityId: policyId,
       });
-      
+
       if (!result?.data?.success) {
         throw new Error(result?.data?.error || 'Failed to save');
       }
-      
+
       onContentChange?.(content);
     } catch (error) {
       console.error('Error saving policy version:', error);
@@ -884,28 +1153,59 @@ function PolicyEditorWrapper({
   // Determine if editor should be read-only
   const isReadOnly = isPendingApproval || isVersionReadOnly;
 
-  // Get the reason for read-only mode
-  const getReadOnlyMessage = () => {
+  // Get status message and styling for all states
+  const getStatusInfo = (): {
+    message: string;
+    className: string;
+  } | null => {
+    // Read-only states (higher priority)
     if (isPendingApproval) {
-      return 'This policy is pending approval and cannot be edited.';
-    }
-    if (isViewingActiveVersion) {
-      return 'This version is published. Create a new version to make changes.';
+      return {
+        message: 'This policy is pending approval and cannot be edited.',
+        className: 'border-warning/30 bg-warning/10',
+      };
     }
     if (isViewingPendingVersion) {
-      return 'This version is pending approval and cannot be edited.';
+      return {
+        message: 'This version is pending approval and cannot be edited.',
+        className: 'border-warning/30 bg-warning/10',
+      };
     }
+
+    // Status-based messages
+    // Only show "published" banner when viewing the current version of a published policy
+    if (isViewingActiveVersion && policyStatus === PolicyStatus.published) {
+      return {
+        message: 'This version is published. Create a new version to make changes.',
+        className: 'border-primary/20 bg-primary/10',
+      };
+    }
+    if (policyStatus === PolicyStatus.draft) {
+      return {
+        message: 'This policy is a draft.',
+        className: 'border-muted-foreground/20 bg-muted/50',
+      };
+    }
+    if (policyStatus === PolicyStatus.needs_review) {
+      return {
+        message: 'This policy needs review. Update the content and submit for approval.',
+        className: 'border-blue-500/30 bg-blue-500/10',
+      };
+    }
+
     return null;
   };
 
-  const readOnlyMessage = getReadOnlyMessage();
+  const statusInfo = getStatusInfo();
 
   return (
     <Section>
       <Stack gap="sm">
-        {isReadOnly && readOnlyMessage && (
-          <div className="flex items-center gap-4 rounded-lg border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-foreground">
-            <span>{readOnlyMessage}</span>
+        {statusInfo && (
+          <div
+            className={`flex items-center gap-4 rounded-lg border px-4 py-3 text-sm text-foreground ${statusInfo.className}`}
+          >
+            <span>{statusInfo.message}</span>
           </div>
         )}
         <PolicyEditor content={normalizedContent} onSave={savePolicy} readOnly={isReadOnly} />

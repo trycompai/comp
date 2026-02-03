@@ -91,15 +91,17 @@ export const migratePoliciesAction = authActionClient
           });
 
           // Update policy to set currentVersionId
+          // Preserve the original status (draft, needs_review, or published)
+          const isPublished = policy.status === PolicyStatus.published;
+
           await tx.policy.update({
             where: { id: policy.id },
             data: {
               currentVersionId: version.id,
-              // Ensure status is set properly
-              status:
-                policy.status === PolicyStatus.published
-                  ? PolicyStatus.published
-                  : PolicyStatus.draft,
+              draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
+              // Only set lastPublishedAt if policy is published
+              ...(isPublished ? { lastPublishedAt: new Date() } : {}),
+              // Status is preserved - no change needed
             },
           });
 
@@ -153,6 +155,8 @@ export async function ensurePolicyHasVersion(
   }
 
   // Create version 1
+  const isPublished = policy.status === PolicyStatus.published;
+
   const version = await db.$transaction(async (tx) => {
     const newVersion = await tx.policyVersion.create({
       data: {
@@ -169,6 +173,9 @@ export async function ensurePolicyHasVersion(
       where: { id: policy.id },
       data: {
         currentVersionId: newVersion.id,
+        draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
+        // Only set lastPublishedAt if policy is published
+        ...(isPublished ? { lastPublishedAt: new Date() } : {}),
       },
     });
 

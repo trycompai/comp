@@ -1,4 +1,4 @@
-import { db, type Prisma } from '@db';
+import { db, PolicyStatus, type Prisma } from '@db';
 import { logger, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 
@@ -20,6 +20,7 @@ export const migratePoliciesForOrg = schemaTask({
         id: true,
         content: true,
         pdfUrl: true,
+        status: true,
       },
     });
 
@@ -86,9 +87,17 @@ export const migratePoliciesForOrg = schemaTask({
                 },
               });
 
+              // Update policy - respect current policy status
+              const isPublished = policy.status === PolicyStatus.published;
+              
               await tx.policy.update({
                 where: { id: policy.id },
-                data: { currentVersionId: version.id },
+                data: {
+                  currentVersionId: version.id,
+                  draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
+                  // Only set lastPublishedAt if policy is published
+                  ...(isPublished ? { lastPublishedAt: new Date() } : {}),
+                },
               });
 
               migrated++;
