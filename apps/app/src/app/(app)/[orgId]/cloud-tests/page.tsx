@@ -285,7 +285,14 @@ export default async function CloudTestsPage({ params }: { params: Promise<{ org
 
   const filteredLegacyResults = legacyResults.filter((result) => {
     const lastRunAt = integrationLastRunMap.get(result.integration.id);
-    if (!lastRunAt || !result.completedAt) return false;
+    
+    // If no lastRunAt (old integration or never scanned), show all results with completedAt
+    // This preserves backward compatibility
+    if (!lastRunAt) {
+      return result.completedAt !== null;
+    }
+    
+    if (!result.completedAt) return false;
 
     const lastRunTime = lastRunAt.getTime();
     const completedTime = result.completedAt.getTime();
