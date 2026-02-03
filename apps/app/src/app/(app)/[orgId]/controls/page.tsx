@@ -12,6 +12,7 @@ import { searchParamsCache } from './data/validations';
 
 interface ControlTableProps {
   searchParams: Promise<SearchParams>;
+  params: Promise<{ orgId: string }>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,6 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ControlsPage({ ...props }: ControlTableProps) {
+  const { orgId } = await props.params;
+
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
   const validFilters = getValidFilters(search.filters);

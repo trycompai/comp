@@ -8,6 +8,6 @@ export default async function Layout({
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
-  await requireRoutePermission('people', orgId);
-  return children;
+  await requireRoutePermission('vendors', orgId);
+  return <>{children}</>;
 }

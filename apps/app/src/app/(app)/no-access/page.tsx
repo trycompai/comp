@@ -38,11 +38,11 @@ export default async function NoAccess() {
         <h1 className="text-2xl font-bold">Access Denied</h1>
         <div className="flex flex-col text-center">
           <p>
-            <b>Employees</b> and <b>Contractors</b> don&apos;t have access to app.trycomp.ai, did you mean to go to{' '}
+            Your current role doesn&apos;t have access to the app. If you&apos;re looking for the employee portal, go to{' '}
             <Link href="https://portal.trycomp.ai" className="text-primary underline">
               portal.trycomp.ai
             </Link>
-            ?
+            .
           </p>
           <p>Please select another organization or contact your organization administrator.</p>
         </div>

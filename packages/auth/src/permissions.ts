@@ -17,8 +17,11 @@ import {
  */
 const statement = {
   ...defaultStatements,
-  // Override organization to add 'read' action
+  // Override better-auth defaults to add 'read' action
   organization: ['read', 'update', 'delete'],
+  member: ['create', 'read', 'update', 'delete'],
+  invitation: ['create', 'read', 'cancel'],
+  team: ['create', 'read', 'update', 'delete'],
   // GRC Resources
   control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
   evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
@@ -45,6 +48,9 @@ export const ac = createAccessControl(statement);
 export const owner = ac.newRole({
   ...ownerAc.statements,
   organization: ['read', 'update', 'delete'],
+  member: ['create', 'read', 'update', 'delete'],
+  invitation: ['create', 'read', 'cancel'],
+  team: ['create', 'read', 'update', 'delete'],
   // Full GRC access
   control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
   evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
@@ -69,6 +75,9 @@ export const owner = ac.newRole({
 export const admin = ac.newRole({
   ...adminAc.statements,
   organization: ['read', 'update'], // No delete
+  member: ['create', 'read', 'update', 'delete'],
+  invitation: ['create', 'read', 'cancel'],
+  team: ['create', 'read', 'update', 'delete'],
   // Full GRC access
   control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
   evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
@@ -92,8 +101,8 @@ export const admin = ac.newRole({
  */
 export const auditor = ac.newRole({
   organization: ['read'],
-  member: ['create'], // Can invite other auditors
-  invitation: ['create'],
+  member: ['create', 'read'], // Can invite other auditors + view people for audit context
+  invitation: ['create', 'read'],
   // Read + export access to GRC resources
   control: ['read', 'export'],
   evidence: ['read', 'export'],

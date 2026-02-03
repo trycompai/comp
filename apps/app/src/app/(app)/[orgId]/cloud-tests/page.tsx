@@ -40,6 +40,7 @@ const getRequiredVariables = (providerSlug: string): string[] => {
 
 export default async function CloudTestsPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
+
   const session = await betterAuth.api.getSession({
     headers: await headers(),
   });

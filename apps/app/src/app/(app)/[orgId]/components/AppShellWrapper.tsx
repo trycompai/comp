@@ -3,6 +3,7 @@
 import { updateSidebarState } from '@/actions/sidebar';
 import Chat from '@/components/ai/chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
+import { canAccessRoute, type UserPermissions } from '@/lib/permissions';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
@@ -60,6 +61,7 @@ interface AppShellWrapperProps {
   isWebAutomationsEnabled: boolean;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
+  permissions: UserPermissions;
   user: {
     name: string | null;
     email: string;
@@ -88,6 +90,7 @@ function AppShellWrapperContent({
   isWebAutomationsEnabled,
   hasAuditorRole,
   isOnlyAuditor,
+  permissions,
   user,
 }: AppShellWrapperContentProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
@@ -121,6 +124,7 @@ function AppShellWrapperContent({
     isQuestionnaireEnabled,
     isTrustNdaEnabled,
     isAdvancedModeEnabled: organization.advancedModeEnabled,
+    permissions,
   });
 
   return (
@@ -219,7 +223,7 @@ function AppShellWrapperContent({
               label="Compliance"
             />
           </Link>
-          {!isOnlyAuditor && (
+          {canAccessRoute(permissions, 'settings') && (
             <Link href={`/${organization.id}/settings`}>
               <AppShellRailItem
                 isActive={isSettingsActive}
@@ -233,7 +237,7 @@ function AppShellWrapperContent({
           <AppShellSidebar collapsible>
             <AppShellSidebarHeader title={isSettingsActive ? 'Settings' : 'Compliance'} />
             {isSettingsActive ? (
-              <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} />
+              <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} permissions={permissions} />
             ) : (
               <AppSidebar
                 organization={organization}
@@ -241,6 +245,7 @@ function AppShellWrapperContent({
                 isTrustNdaEnabled={isTrustNdaEnabled}
                 hasAuditorRole={hasAuditorRole}
                 isOnlyAuditor={isOnlyAuditor}
+                permissions={permissions}
               />
             )}
           </AppShellSidebar>

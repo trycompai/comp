@@ -22,7 +22,7 @@ export default async function SetupLayout({ children }: { children: React.ReactN
       if (userOrg.onboardingCompleted === false) {
         return redirect(`/onboarding/${userOrg.id}`);
       }
-      return redirect(`/${userOrg.id}/frameworks`);
+      return redirect(`/${userOrg.id}`);
     }
   }
 

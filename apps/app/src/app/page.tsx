@@ -1,3 +1,4 @@
+import { getDefaultRoute, mergePermissions, resolveBuiltInPermissions } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -47,6 +48,7 @@ export default async function RootPage({
     },
     select: {
       organizationId: true,
+      role: true,
       organization: {
         select: {
           id: true,
@@ -80,7 +82,7 @@ export default async function RootPage({
   // 1. Prefer orgs with completed onboarding and access
   // 2. Fall back to first org (most recently joined)
   const readyOrg = memberships.find(
-    (m) => m.organization.onboardingCompleted && m.organization.hasAccess
+    (m) => m.organization.onboardingCompleted && m.organization.hasAccess,
   );
 
   const targetOrg = readyOrg?.organization || memberships[0].organization;
@@ -95,5 +97,29 @@ export default async function RootPage({
     return redirect(await buildUrlWithParams(`/upgrade/${targetOrg.id}`));
   }
 
-  return redirect(await buildUrlWithParams(`/${targetOrg.id}/frameworks`));
+  // Resolve user's default route based on their permissions
+  const targetMembership = memberships.find((m) => m.organization.id === targetOrg.id);
+  const { permissions, customRoleNames } = resolveBuiltInPermissions(targetMembership?.role);
+
+  if (customRoleNames.length > 0) {
+    const customRoles = await db.organizationRole.findMany({
+      where: {
+        organizationId: targetOrg.id,
+        name: { in: customRoleNames },
+      },
+      select: { permissions: true },
+    });
+    for (const role of customRoles) {
+      if (!role.permissions) continue;
+      const parsed =
+        typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions;
+      if (parsed && typeof parsed === 'object') {
+        mergePermissions(permissions, parsed as Record<string, string[]>);
+      }
+    }
+  }
+
+  const defaultRoute = getDefaultRoute(permissions, targetOrg.id);
+
+  return redirect(await buildUrlWithParams(defaultRoute ?? '/no-access'));
 }

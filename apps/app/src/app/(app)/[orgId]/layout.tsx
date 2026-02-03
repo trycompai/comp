@@ -2,6 +2,8 @@ import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { getOrganizations } from '@/data/getOrganizations';
+import { canAccessApp } from '@/lib/permissions';
+import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -18,24 +20,6 @@ function parseRolesString(rolesStr: string | null | undefined): Role[] {
     .split(',')
     .map((r) => r.trim())
     .filter((r) => r in Role) as Role[];
-}
-
-/**
- * Check if a role string includes any role with app access permission.
- * Handles comma-separated role strings (e.g., "owner" or "owner,admin").
- */
-function checkAppAccessForRole(roleString: string | null | undefined): boolean {
-  if (!roleString) return false;
-
-  // Roles that have app:read permission
-  // Based on the role definitions in @comp/auth/permissions.ts:
-  // - owner, admin, auditor have app: ['read']
-  // - employee, contractor do NOT have app access (portal only)
-  const rolesWithAppAccess = ['owner', 'admin', 'auditor'];
-
-  // Parse comma-separated roles and check if any have app access
-  const userRoles = roleString.split(',').map((r) => r.trim().toLowerCase());
-  return userRoles.some((role) => rolesWithAppAccess.includes(role));
 }
 
 const HotKeys = dynamic(() => import('@/components/hot-keys').then((mod) => mod.HotKeys), {
@@ -91,11 +75,11 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  // Check if user has app:read permission based on their role
-  // We use the URL's orgId + member lookup for RBAC, not activeOrganizationId
-  // This is more reliable and avoids session sync issues
-  const hasAppAccess = checkAppAccessForRole(member.role);
+  // Resolve effective permissions from all roles (built-in + custom)
+  const permissions = await resolveUserPermissions(member.role, requestedOrgId);
 
+  // Check if user can access the main app (has app:read or any app route permission)
+  const hasAppAccess = canAccessApp(permissions);
   if (!hasAppAccess) {
     return redirect('/no-access');
   }
@@ -183,6 +167,7 @@ export default async function Layout({
         isWebAutomationsEnabled={isWebAutomationsEnabled}
         hasAuditorRole={hasAuditorRole}
         isOnlyAuditor={isOnlyAuditor}
+        permissions={permissions}
         user={user}
       >
         {children}

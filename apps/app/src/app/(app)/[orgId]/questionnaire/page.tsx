@@ -13,7 +13,13 @@ import {
 } from './knowledge-base/data/queries';
 import { getQuestionnaires } from './start_page/data/queries';
 
-export default async function SecurityQuestionnairePage() {
+export default async function SecurityQuestionnairePage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });

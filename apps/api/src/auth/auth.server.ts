@@ -364,7 +364,7 @@ export const auth = betterAuth({
       dynamicAccessControl: {
         enabled: true,
         // Limit custom roles per organization to prevent abuse
-        maximumRolesPerOrganization: 20,
+        maximumRolesPerOrganization: 100,
       },
       schema: {
         organization: {

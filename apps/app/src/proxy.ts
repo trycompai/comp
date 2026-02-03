@@ -79,20 +79,6 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // 2. Authenticated users (avoid DB calls in middleware)
-    if (hasToken) {
-      const isRootPath = nextUrl.pathname === '/';
-
-      // If user hits root: route based on active org presence
-      if (isRootPath) {
-        const url = new URL('/setup', request.url);
-        nextUrl.searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-        return NextResponse.redirect(url);
-      }
-    }
-
     return response;
   } catch (err) {
     console.error('[Proxy] error', err);
