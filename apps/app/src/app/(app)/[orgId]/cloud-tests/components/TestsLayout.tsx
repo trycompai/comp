@@ -2,7 +2,6 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
-import { api } from '@/lib/api-client';
 import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
 import { Add, Settings } from '@trycompai/design-system/icons';
 import { useMemo, useState } from 'react';
@@ -65,8 +64,8 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     },
     {
       fallbackData: initialFindings,
-      refreshInterval: 5000,
       revalidateOnFocus: true,
+      // No automatic polling - we manually refresh after scans via mutateFindings()
     },
   );
 
@@ -83,9 +82,8 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     },
     {
       fallbackData: initialProviders,
-      refreshInterval: 10000, // Refresh providers every 10 seconds
       revalidateOnFocus: true,
-      revalidateOnMount: true, // Always revalidate on mount to get fresh data
+      // No automatic polling - we manually refresh after scans via mutateProviders()
     },
   );
 
@@ -137,7 +135,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
 
     setIsScanning(true);
     const startTime = Date.now();
-    toast.message(`Starting ${targetProvider.name} security scan...`);
+    toast.message(`Starting ${targetProvider.displayName || targetProvider.name} security scan...`);
 
     try {
       if (targetProvider.isLegacy) {
@@ -154,16 +152,19 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           return null;
         }
       } else {
-        // Use dedicated cloud security endpoint
-        const response = await api.post(`/v1/cloud-security/scan/${targetProvider.id}`, {}, orgId);
-        if (response.error) {
-          console.error(`Error scanning ${targetProvider.name}:`, response.error);
-          toast.error(`Failed to scan ${targetProvider.name}`);
+        // Use server action for new platform connections (same pattern as legacy)
+        // This ensures proper cache revalidation and consistent behavior
+        const { runPlatformScan } = await import('../actions/run-platform-scan');
+        const result = await runPlatformScan(targetProvider.id);
+
+        if (!result.success) {
+          console.error('Platform scan error:', result.error);
+          toast.error(`Scan failed: ${result.error || 'Unknown error'}`);
           return null;
         }
       }
 
-      // Refresh data to get updated results
+      // Refresh data to get updated results (SWR cache + server cache already revalidated)
       await Promise.all([mutateProviders(), mutateFindings()]);
 
       const elapsed = Math.round((Date.now() - startTime) / 1000);
