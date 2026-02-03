@@ -8,7 +8,6 @@ import { format } from 'date-fns';
 import { Copy, Edit, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { AddSecretDialog } from '../AddSecretDialog';
 import { EditSecretDialog } from '../EditSecretDialog';
 
 interface Secret {
@@ -93,17 +92,6 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Organization Secrets</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Secure storage for API keys and credentials used by AI automations
-          </p>
-        </div>
-        <AddSecretDialog />
-      </div>
-
       {/* Table */}
       <div className="rounded-md border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
         <Table>
