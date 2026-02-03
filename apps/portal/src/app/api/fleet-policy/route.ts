@@ -1,7 +1,7 @@
 import { auth } from '@/app/lib/auth';
 import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectsCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '@db';
 import { NextRequest, NextResponse } from 'next/server';
@@ -86,13 +86,40 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const result = await db.fleetPolicyResult.deleteMany({
-    where: {
-      organizationId,
-      fleetPolicyId: policyId,
-      userId: session.user.id,
-    },
+  const where = {
+    organizationId,
+    fleetPolicyId: policyId,
+    userId: session.user.id,
+  };
+
+  const recordsToDelete = await db.fleetPolicyResult.findMany({
+    where,
+    select: { attachments: true },
   });
+
+  const allKeys = recordsToDelete.flatMap((r) => r.attachments ?? []).filter(Boolean);
+
+  if (s3Client && APP_AWS_ORG_ASSETS_BUCKET && allKeys.length > 0) {
+    try {
+      await s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Delete: {
+            Objects: allKeys.map((key) => ({ Key: key })),
+          },
+        }),
+      );
+    } catch (error) {
+      console.error('Failed to delete policy attachment objects from S3', {
+        error,
+        policyId,
+        organizationId,
+        keyCount: allKeys.length,
+      });
+    }
+  }
+
+  const result = await db.fleetPolicyResult.deleteMany({ where });
 
   return NextResponse.json({
     success: true,
