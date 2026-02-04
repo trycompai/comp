@@ -17,7 +17,11 @@ const NOVU_CONTENT_MAX_LENGTH = 100;
 // Types
 // ============================================================================
 
-type FindingAction = 'created' | 'ready_for_review' | 'needs_revision' | 'closed';
+type FindingAction =
+  | 'created'
+  | 'ready_for_review'
+  | 'needs_revision'
+  | 'closed';
 
 interface Recipient {
   userId: string;
@@ -99,9 +103,20 @@ export class FindingNotifierService {
    * Recipients: Task assignee + Organization admins/owners
    */
   async notifyFindingCreated(params: NotificationParams): Promise<void> {
-    const { organizationId, taskId, taskTitle, findingType, actorUserId, actorName } = params;
+    const {
+      organizationId,
+      taskId,
+      taskTitle,
+      findingType,
+      actorUserId,
+      actorName,
+    } = params;
 
-    const recipients = await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId);
+    const recipients = await this.getTaskAssigneeAndAdmins(
+      organizationId,
+      taskId,
+      actorUserId,
+    );
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding created notification');
@@ -125,13 +140,22 @@ export class FindingNotifierService {
   async notifyReadyForReview(
     params: NotificationParams & { findingCreatorMemberId: string },
   ): Promise<void> {
-    const { findingId, taskTitle, actorUserId, actorName, findingCreatorMemberId } = params;
+    const {
+      findingId,
+      taskTitle,
+      actorUserId,
+      actorName,
+      findingCreatorMemberId,
+    } = params;
 
     this.logger.log(
       `[notifyReadyForReview] Finding ${findingId}: Looking for creator (memberId: ${findingCreatorMemberId}), excluding actor (userId: ${actorUserId})`,
     );
 
-    const recipients = await this.getFindingCreator(findingCreatorMemberId, actorUserId);
+    const recipients = await this.getFindingCreator(
+      findingCreatorMemberId,
+      actorUserId,
+    );
 
     if (recipients.length === 0) {
       this.logger.warn(
@@ -160,9 +184,14 @@ export class FindingNotifierService {
    * Recipients: Task assignee + Organization admins/owners
    */
   async notifyNeedsRevision(params: NotificationParams): Promise<void> {
-    const { organizationId, taskId, taskTitle, actorUserId, actorName } = params;
+    const { organizationId, taskId, taskTitle, actorUserId, actorName } =
+      params;
 
-    const recipients = await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId);
+    const recipients = await this.getTaskAssigneeAndAdmins(
+      organizationId,
+      taskId,
+      actorUserId,
+    );
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for needs revision notification');
@@ -185,9 +214,14 @@ export class FindingNotifierService {
    * Recipients: Task assignee + Organization admins/owners
    */
   async notifyFindingClosed(params: NotificationParams): Promise<void> {
-    const { organizationId, taskId, taskTitle, actorUserId, actorName } = params;
+    const { organizationId, taskId, taskTitle, actorUserId, actorName } =
+      params;
 
-    const recipients = await this.getTaskAssigneeAndAdmins(organizationId, taskId, actorUserId);
+    const recipients = await this.getTaskAssigneeAndAdmins(
+      organizationId,
+      taskId,
+      actorUserId,
+    );
 
     if (recipients.length === 0) {
       this.logger.log('No recipients for finding closed notification');
@@ -213,7 +247,9 @@ export class FindingNotifierService {
    * Send notifications to all recipients via email and in-app (Novu).
    * Failures are logged but don't throw - fire-and-forget pattern.
    */
-  private async sendNotifications(params: SendNotificationParams): Promise<void> {
+  private async sendNotifications(
+    params: SendNotificationParams,
+  ): Promise<void> {
     const {
       organizationId,
       findingId,
@@ -301,10 +337,16 @@ export class FindingNotifierService {
 
     try {
       // Check unsubscribe preferences
-      const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'findingNotifications');
+      const isUnsubscribed = await isUserUnsubscribed(
+        db,
+        recipient.email,
+        'findingNotifications',
+      );
 
       if (isUnsubscribed) {
-        this.logger.log(`Skipping notification: ${recipient.email} is unsubscribed`);
+        this.logger.log(
+          `Skipping notification: ${recipient.email} is unsubscribed`,
+        );
         return;
       }
 
@@ -320,7 +362,10 @@ export class FindingNotifierService {
           taskTitle,
           organizationName,
           findingType,
-          findingContent: truncateContent(findingContent, EMAIL_CONTENT_MAX_LENGTH),
+          findingContent: truncateContent(
+            findingContent,
+            EMAIL_CONTENT_MAX_LENGTH,
+          ),
           newStatus,
           findingUrl,
         }),
@@ -332,7 +377,10 @@ export class FindingNotifierService {
           taskId,
           taskTitle,
           findingType,
-          findingContent: truncateContent(findingContent, NOVU_CONTENT_MAX_LENGTH),
+          findingContent: truncateContent(
+            findingContent,
+            NOVU_CONTENT_MAX_LENGTH,
+          ),
           action,
           heading,
           message,
@@ -508,7 +556,8 @@ export class FindingNotifierService {
 
       // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
       const adminMembers = allMembers.filter(
-        (member) => member.role.includes('admin') || member.role.includes('owner'),
+        (member) =>
+          member.role.includes('admin') || member.role.includes('owner'),
       );
 
       const recipients: Recipient[] = [];
@@ -516,7 +565,11 @@ export class FindingNotifierService {
 
       // Add task assignee
       const assigneeUser = task?.assignee?.user;
-      if (assigneeUser && assigneeUser.id !== excludeUserId && assigneeUser.email) {
+      if (
+        assigneeUser &&
+        assigneeUser.id !== excludeUserId &&
+        assigneeUser.email
+      ) {
         recipients.push({
           userId: assigneeUser.id,
           email: assigneeUser.email,
@@ -528,7 +581,11 @@ export class FindingNotifierService {
       // Add org admins/owners (deduplicated)
       for (const member of adminMembers) {
         const user = member.user;
-        if (user.id !== excludeUserId && user.email && !addedUserIds.has(user.id)) {
+        if (
+          user.id !== excludeUserId &&
+          user.email &&
+          !addedUserIds.has(user.id)
+        ) {
           recipients.push({
             userId: user.id,
             email: user.email,
@@ -552,7 +609,10 @@ export class FindingNotifierService {
    * Get the finding creator as recipient (for Ready for Review notifications).
    * Excludes the actor (person who triggered the action).
    */
-  private async getFindingCreator(creatorMemberId: string, excludeUserId: string): Promise<Recipient[]> {
+  private async getFindingCreator(
+    creatorMemberId: string,
+    excludeUserId: string,
+  ): Promise<Recipient[]> {
     try {
       const member = await db.member.findUnique({
         where: { id: creatorMemberId },

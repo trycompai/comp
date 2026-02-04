@@ -89,12 +89,13 @@ export const migratePoliciesForOrg = schemaTask({
 
               // Update policy - respect current policy status
               const isPublished = policy.status === PolicyStatus.published;
-              
+
               await tx.policy.update({
                 where: { id: policy.id },
                 data: {
                   currentVersionId: version.id,
-                  draftContent: (policy.content as Prisma.InputJsonValue[]) || [],
+                  draftContent:
+                    (policy.content as Prisma.InputJsonValue[]) || [],
                   // Only set lastPublishedAt if policy is published
                   ...(isPublished ? { lastPublishedAt: new Date() } : {}),
                 },
@@ -117,7 +118,8 @@ export const migratePoliciesForOrg = schemaTask({
           );
         }
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error';
         logger.error(
           `Batch ${batchNumber}/${totalBatches} failed for org ${organizationId}: ${errorMsg}`,
         );
