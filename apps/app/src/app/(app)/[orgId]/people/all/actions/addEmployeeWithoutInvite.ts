@@ -2,6 +2,7 @@
 
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
+import { sendInviteMemberEmail } from '@comp/email';
 import type { Role } from '@db';
 import { db } from '@db';
 import { headers } from 'next/headers';
@@ -46,6 +47,16 @@ export const addEmployeeWithoutInvite = async ({
       if (!onlyAuditorRole) {
         throw new Error("Auditors can only add users with the 'auditor' role.");
       }
+    }
+
+    // Get organization name
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    if (!organization) {
+      throw new Error('Organization not found.');
     }
 
     let userId = '';
@@ -111,6 +122,23 @@ export const addEmployeeWithoutInvite = async ({
     if (member?.id && !existingMember) {
       await createTrainingVideoEntries(member.id);
     }
+
+    // Generate invite link
+    const isLocalhost = process.env.NODE_ENV === 'development';
+    const protocol = isLocalhost ? 'http' : 'https';
+
+    const betterAuthUrl = process.env.NEXT_PUBLIC_PORTAL_URL;
+    const isProdEnv = betterAuthUrl?.includes('portal.trycomp.ai');
+
+    const domain = isProdEnv ? 'app.trycomp.ai' : 'localhost:3002';
+    const inviteLink = `${protocol}://${domain}/${organizationId}`;
+
+    // Send the invitation email
+    await sendInviteMemberEmail({
+      inviteeEmail: email.toLowerCase(),
+      inviteLink,
+      organizationName: organization.name,
+    });
 
     return { success: true, data: member };
   } catch (error) {
