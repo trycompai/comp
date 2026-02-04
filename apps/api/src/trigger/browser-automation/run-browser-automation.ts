@@ -304,14 +304,20 @@ export const runBrowserAutomation = task({
           data: { status: 'failed' },
         });
 
-        // Send email notifications
-        await sendTaskStatusChangeEmails({
-          organizationId,
-          taskId,
-          taskTitle,
-          oldStatus,
-          newStatus: 'failed',
-        });
+        // Only send email notifications if status actually changed
+        if (oldStatus !== 'failed') {
+          await sendTaskStatusChangeEmails({
+            organizationId,
+            taskId,
+            taskTitle,
+            oldStatus,
+            newStatus: 'failed',
+          });
+        } else {
+          logger.info(
+            `Skipping notification: task ${taskId} was already in failed status`,
+          );
+        }
       }
     }
 

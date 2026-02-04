@@ -407,14 +407,20 @@ export const runTaskIntegrationChecks = task({
           `Task ${taskId} marked as failed due to ${totalFindings} findings${hasFailedChecks ? ' and failed checks' : ''}`,
         );
 
-        // Send email notifications
-        await sendTaskStatusChangeEmails({
-          organizationId,
-          taskId,
-          taskTitle,
-          oldStatus,
-          newStatus: 'failed',
-        });
+        // Only send email notifications if status actually changed
+        if (oldStatus !== 'failed') {
+          await sendTaskStatusChangeEmails({
+            organizationId,
+            taskId,
+            taskTitle,
+            oldStatus,
+            newStatus: 'failed',
+          });
+        } else {
+          logger.info(
+            `Skipping notification: task ${taskId} was already in failed status`,
+          );
+        }
       } else if (totalPassing > 0) {
         // Only update to done if not already done
         const currentTask = await db.task.findUnique({
