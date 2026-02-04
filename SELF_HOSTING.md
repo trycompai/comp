@@ -27,6 +27,11 @@ For a functional deployment:
 - **Workflows**: `TRIGGER_SECRET_KEY` in app
 - **Misc**: `REVALIDATION_SECRET`, `NEXT_PUBLIC_PORTAL_URL` in app
 
+**Self-Hosted Mode:**
+- Set `NEXT_PUBLIC_SELF_HOSTED=true` in `apps/app/.env` to mark the instance as self-hosted
+- When enabled, organizations are automatically approved and bypass the payment/booking flow
+- `STRIPE_SECRET_KEY` is not required for self-hosted instances
+
 ### Prerequisites
 
 - Docker Desktop or Docker Engine
