@@ -1,7 +1,7 @@
 import { db } from '@db';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
-import { sendEmail, TaskStatusNotificationEmail } from '@trycompai/email';
+import { isUserUnsubscribed, sendEmail, TaskStatusNotificationEmail } from '@trycompai/email';
 
 import { getTargetStatus } from './task-schedule-helpers';
 
@@ -239,6 +239,16 @@ export const taskSchedule = schedules.task({
           const taskStatus = tasksToFailed.some((t) => t.id === recipient.task.id)
             ? ('failed' as const)
             : ('todo' as const);
+
+          // Check if user is unsubscribed
+          const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskAssignments');
+
+          if (isUnsubscribed) {
+            logger.info(
+              `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+            );
+            return;
+          }
 
           try {
             await sendEmail({

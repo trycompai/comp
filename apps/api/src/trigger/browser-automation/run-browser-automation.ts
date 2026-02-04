@@ -3,6 +3,7 @@ import { logger, task } from '@trigger.dev/sdk';
 import { BrowserbaseService } from '../../browserbase/browserbase.service';
 import { sendEmail } from '../../email/resend';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
+import { isUserUnsubscribed } from '@trycompai/email';
 
 const browserbaseService = new BrowserbaseService();
 
@@ -13,9 +14,10 @@ async function sendTaskStatusChangeEmails(params: {
   organizationId: string;
   taskId: string;
   taskTitle: string;
+  oldStatus: string;
   newStatus: 'done' | 'failed';
 }) {
-  const { organizationId, taskId, taskTitle, newStatus } = params;
+  const { organizationId, taskId, taskTitle, oldStatus, newStatus } = params;
 
   try {
     // Get organization, task assignee, and org owners
@@ -59,7 +61,10 @@ async function sendTaskStatusChangeEmails(params: {
     ]);
 
     const organizationName = organization?.name ?? 'your organization';
-    const appUrl = process.env.BASE_URL || 'https://app.trycomp.ai';
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      'https://app.trycomp.ai';
     const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
 
     // Filter for admins/owners
@@ -103,6 +108,20 @@ async function sendTaskStatusChangeEmails(params: {
     // Send emails to each recipient
     await Promise.allSettled(
       recipients.map(async (recipient) => {
+        // Check if user is unsubscribed
+        const isUnsubscribed = await isUserUnsubscribed(
+          db,
+          recipient.email,
+          'taskAssignments',
+        );
+
+        if (isUnsubscribed) {
+          logger.info(
+            `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+          );
+          return;
+        }
+
         try {
           await sendEmail({
             to: recipient.email,
@@ -111,7 +130,7 @@ async function sendTaskStatusChangeEmails(params: {
               toName: recipient.name,
               toEmail: recipient.email,
               taskTitle,
-              oldStatus: 'done',
+              oldStatus: oldStatus.charAt(0).toUpperCase() + oldStatus.slice(1),
               newStatus: newStatus === 'failed' ? 'Failed' : 'Done',
               changedByName: 'Automation',
               organizationName,
@@ -273,6 +292,13 @@ export const runBrowserAutomation = task({
 
       // Mark task as failed if auth issue
       if (result.needsReauth) {
+        // Get current status before updating
+        const taskBeforeUpdate = await db.task.findUnique({
+          where: { id: taskId },
+          select: { status: true },
+        });
+        const oldStatus = taskBeforeUpdate?.status ?? 'todo';
+
         await db.task.update({
           where: { id: taskId },
           data: { status: 'failed' },
@@ -283,6 +309,7 @@ export const runBrowserAutomation = task({
           organizationId,
           taskId,
           taskTitle,
+          oldStatus,
           newStatus: 'failed',
         });
       }
