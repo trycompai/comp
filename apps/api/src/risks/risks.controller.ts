@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -43,12 +42,6 @@ import { DELETE_RISK_RESPONSES } from './schemas/delete-risk.responses';
 @Controller({ path: 'risks', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class RisksController {
   constructor(private readonly risksService: RisksService) {}
 

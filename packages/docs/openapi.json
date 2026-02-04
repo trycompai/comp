@@ -5,17 +5,7 @@
       "post": {
         "description": "Create a new custom role with specified permissions. Only admins and owners can create roles.",
         "operationId": "RolesController_createRole_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -91,17 +81,7 @@
       "get": {
         "description": "List all roles for the organization, including built-in and custom roles.",
         "operationId": "RolesController_listRoles_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "List of roles",
@@ -181,15 +161,6 @@
         "operationId": "RolesController_getRole_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "roleId",
             "required": true,
             "in": "path",
@@ -254,15 +225,6 @@
         "description": "Update the name or permissions of a custom role. Cannot modify built-in roles.",
         "operationId": "RolesController_updateRole_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "roleId",
             "required": true,
@@ -345,15 +307,6 @@
         "operationId": "RolesController_deleteRole_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "roleId",
             "required": true,
             "in": "path",
@@ -406,19 +359,9 @@
     },
     "/v1/organization": {
       "get": {
-        "description": "Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "OrganizationController_getOrganization_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Organization information retrieved successfully",
@@ -533,19 +476,9 @@
         ]
       },
       "patch": {
-        "description": "Partially updates the authenticated organization. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Partially updates the authenticated organization. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "OrganizationController_updateOrganization_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Organization update data",
@@ -756,19 +689,9 @@
         ]
       },
       "delete": {
-        "description": "Permanently deletes the authenticated organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Permanently deletes the authenticated organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "OrganizationController_deleteOrganization_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Organization deleted successfully",
@@ -856,19 +779,9 @@
     },
     "/v1/organization/transfer-ownership": {
       "post": {
-        "description": "Transfers organization ownership to another member. The current owner will become an admin and keep all other roles. The new owner will receive the owner role while keeping their existing roles. Only the current organization owner can perform this action. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Transfers organization ownership to another member. The current owner will become an admin and keep all other roles. The new owner will receive the owner role while keeping their existing roles. Only the current organization owner can perform this action. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "OrganizationController_transferOwnership_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Transfer organization ownership to another member",
@@ -986,20 +899,84 @@
         ]
       }
     },
+    "/v1/organization/role-notifications": {
+      "put": {
+        "operationId": "OrganizationController_updateRoleNotifications_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "settings"
+                ],
+                "properties": {
+                  "settings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "role",
+                        "policyNotifications",
+                        "taskReminders",
+                        "taskAssignments",
+                        "taskMentions",
+                        "weeklyTaskDigest",
+                        "findingNotifications"
+                      ],
+                      "properties": {
+                        "role": {
+                          "type": "string"
+                        },
+                        "policyNotifications": {
+                          "type": "boolean"
+                        },
+                        "taskReminders": {
+                          "type": "boolean"
+                        },
+                        "taskAssignments": {
+                          "type": "boolean"
+                        },
+                        "taskMentions": {
+                          "type": "boolean"
+                        },
+                        "weeklyTaskDigest": {
+                          "type": "boolean"
+                        },
+                        "findingNotifications": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update role notification settings",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
     "/v1/organization/primary-color": {
       "get": {
-        "description": "Returns the primary color of the organization. Supports three access methods: 1) API key authentication (X-API-Key header), 2) Session authentication (cookies + X-Organization-Id header), or 3) Public access using an access token query parameter (?token=tok_xxx). When using an access token, no authentication is required.",
+        "description": "Returns the primary color of the organization. Supports three access methods: 1) API key authentication (X-API-Key header), 2) Session authentication (Bearer token or cookies), or 3) Public access using an access token query parameter (?token=tok_xxx). When using an access token, no authentication is required.",
         "operationId": "OrganizationController_getPrimaryColor_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "token",
             "required": false,
@@ -1081,21 +1058,89 @@
         ]
       }
     },
-    "/v1/people": {
-      "get": {
-        "description": "Returns all members for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
-        "operationId": "PeopleController_getAllPeople_v1",
-        "parameters": [
+    "/v1/organization/logo": {
+      "post": {
+        "operationId": "OrganizationController_uploadLogo_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
+            "apikey": []
           }
         ],
+        "summary": "Upload organization logo",
+        "tags": [
+          "Organization"
+        ]
+      },
+      "delete": {
+        "operationId": "OrganizationController_removeLogo_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Remove organization logo",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/organization/api-keys": {
+      "post": {
+        "operationId": "OrganizationController_createApiKey_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a new API key",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/organization/api-keys/revoke": {
+      "post": {
+        "operationId": "OrganizationController_revokeApiKey_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Revoke an API key",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/people": {
+      "get": {
+        "description": "Returns all members for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
+        "operationId": "PeopleController_getAllPeople_v1",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "People retrieved successfully",
@@ -1233,19 +1278,9 @@
         ]
       },
       "post": {
-        "description": "Adds a new member to the authenticated organization. The user must already exist in the system. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Adds a new member to the authenticated organization. The user must already exist in the system. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_createMember_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Member creation data",
@@ -1366,19 +1401,9 @@
     },
     "/v1/people/bulk": {
       "post": {
-        "description": "Bulk adds multiple members to the authenticated organization. Each member must have a valid user ID that exists in the system. Members who already exist in the organization or have invalid data will be skipped with error details returned. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Bulk adds multiple members to the authenticated organization. Each member must have a valid user ID that exists in the system. Members who already exist in the organization or have invalid data will be skipped with error details returned. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_bulkCreateMembers_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Bulk member creation data",
@@ -1596,18 +1621,9 @@
     },
     "/v1/people/{id}": {
       "get": {
-        "description": "Returns a specific member by ID for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns a specific member by ID for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_getPersonById_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -1710,18 +1726,9 @@
         ]
       },
       "patch": {
-        "description": "Partially updates a member. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Partially updates a member. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_updateMember_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -1851,18 +1858,9 @@
         ]
       },
       "delete": {
-        "description": "Permanently removes a member from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Permanently removes a member from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_deleteMember_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -1982,18 +1980,9 @@
     },
     "/v1/people/{id}/host/{hostId}": {
       "delete": {
-        "description": "Removes a single host (device) from FleetDM by host ID. Only organization owners can perform this action. Validates that the organization exists and the member exists within the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Removes a single host (device) from FleetDM by host ID. Only organization owners can perform this action. Validates that the organization exists and the member exists within the organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_removeHost_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -2103,18 +2092,9 @@
     },
     "/v1/people/{id}/unlink-device": {
       "patch": {
-        "description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_unlinkDevice_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -2233,21 +2213,77 @@
         ]
       }
     },
-    "/v1/risks": {
-      "get": {
-        "description": "Returns all risks for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
-        "operationId": "RisksController_getAllRisks_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
+    "/v1/people/me/email-preferences": {
+      "put": {
+        "operationId": "PeopleController_updateEmailPreferences_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "preferences"
+                ],
+                "properties": {
+                  "preferences": {
+                    "type": "object",
+                    "required": [
+                      "policyNotifications",
+                      "taskReminders",
+                      "weeklyTaskDigest",
+                      "unassignedItemsNotifications",
+                      "taskMentions",
+                      "taskAssignments"
+                    ],
+                    "properties": {
+                      "policyNotifications": {
+                        "type": "boolean"
+                      },
+                      "taskReminders": {
+                        "type": "boolean"
+                      },
+                      "weeklyTaskDigest": {
+                        "type": "boolean"
+                      },
+                      "unassignedItemsNotifications": {
+                        "type": "boolean"
+                      },
+                      "taskMentions": {
+                        "type": "boolean"
+                      },
+                      "taskAssignments": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
         ],
+        "summary": "Update current user email notification preferences",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/risks": {
+      "get": {
+        "description": "Returns all risks for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
+        "operationId": "RisksController_getAllRisks_v1",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Risks retrieved successfully",
@@ -2445,19 +2481,9 @@
         ]
       },
       "post": {
-        "description": "Creates a new risk for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Creates a new risk for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "RisksController_createRisk_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Risk creation data",
@@ -2731,18 +2757,9 @@
     },
     "/v1/risks/{id}": {
       "get": {
-        "description": "Returns a specific risk by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns a specific risk by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "RisksController_getRiskById_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -2999,18 +3016,9 @@
         ]
       },
       "patch": {
-        "description": "Partially updates a risk. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Partially updates a risk. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "RisksController_updateRisk_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -3293,18 +3301,9 @@
         ]
       },
       "delete": {
-        "description": "Permanently removes a risk from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Permanently removes a risk from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "RisksController_deleteRisk_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -3430,21 +3429,41 @@
         ]
       }
     },
-    "/v1/vendors": {
+    "/v1/vendors/global/search": {
       "get": {
-        "description": "Returns all vendors for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
-        "operationId": "VendorsController_getAllVendors_v1",
+        "operationId": "VendorsController_searchGlobalVendors_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "name": "name",
             "required": false,
+            "in": "query",
+            "description": "Vendor name to search for",
             "schema": {
               "type": "string"
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Search global vendors database",
+        "tags": [
+          "Vendors"
+        ]
+      }
+    },
+    "/v1/vendors": {
+      "get": {
+        "description": "Returns all vendors for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
+        "operationId": "VendorsController_getAllVendors_v1",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Vendors retrieved successfully",
@@ -3656,19 +3675,9 @@
         ]
       },
       "post": {
-        "description": "Creates a new vendor for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Creates a new vendor for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "VendorsController_createVendor_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Vendor creation data",
@@ -3916,18 +3925,9 @@
     },
     "/v1/vendors/{id}": {
       "get": {
-        "description": "Returns a specific vendor by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns a specific vendor by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "VendorsController_getVendorById_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -4141,18 +4141,9 @@
         ]
       },
       "patch": {
-        "description": "Partially updates a vendor. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Partially updates a vendor. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "VendorsController_updateVendor_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -4409,18 +4400,9 @@
         ]
       },
       "delete": {
-        "description": "Permanently removes a vendor from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Permanently removes a vendor from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "VendorsController_deleteVendor_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -4546,6 +4528,37 @@
         ]
       }
     },
+    "/v1/vendors/{id}/trigger-assessment": {
+      "post": {
+        "operationId": "VendorsController_triggerAssessment_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Vendor ID",
+            "schema": {
+              "example": "vnd_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Trigger vendor risk assessment",
+        "tags": [
+          "Vendors"
+        ]
+      }
+    },
     "/v1/internal/vendors/risk-assessment/trigger-batch": {
       "post": {
         "operationId": "InternalVendorAutomationController_triggerVendorRiskAssessmentBatch_v1",
@@ -4618,19 +4631,9 @@
     },
     "/v1/context": {
       "get": {
-        "description": "Returns all context entries for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns all context entries for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "ContextController_getAllContext_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Context entries retrieved successfully",
@@ -4803,19 +4806,9 @@
         ]
       },
       "post": {
-        "description": "Creates a new context entry for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Creates a new context entry for the authenticated organization. All required fields must be provided. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "ContextController_createContext_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Context entry data",
@@ -5029,18 +5022,9 @@
     },
     "/v1/context/{id}": {
       "get": {
-        "description": "Returns a specific context entry by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns a specific context entry by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "ContextController_getContextById_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -5201,18 +5185,9 @@
         ]
       },
       "patch": {
-        "description": "Partially updates a context entry. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Partially updates a context entry. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "ContextController_updateContext_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -5336,18 +5311,9 @@
         ]
       },
       "delete": {
-        "description": "Permanently removes a context entry from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Permanently removes a context entry from the organization. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "ContextController_deleteContext_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -5484,19 +5450,9 @@
     },
     "/v1/devices": {
       "get": {
-        "description": "Returns all devices for the authenticated organization from FleetDM. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns all devices for the authenticated organization from FleetDM. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "DevicesController_getAllDevices_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Devices retrieved successfully",
@@ -5606,18 +5562,9 @@
     },
     "/v1/devices/member/{memberId}": {
       "get": {
-        "description": "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "DevicesController_getDevicesByMember_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "memberId",
             "required": true,
@@ -5689,19 +5636,9 @@
     },
     "/v1/policies": {
       "get": {
-        "description": "Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PoliciesController_getAllPolicies_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Policies retrieved successfully",
@@ -5821,19 +5758,9 @@
         ]
       },
       "post": {
-        "description": "Creates a new policy for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Creates a new policy for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PoliciesController_createPolicy_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Policy creation data",
@@ -5932,17 +5859,7 @@
       "get": {
         "description": "Generates a PDF bundle containing all published policies with organization branding and returns a signed download URL",
         "operationId": "PoliciesController_downloadAllPolicies_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Signed URL for PDF bundle returned"
@@ -5964,18 +5881,9 @@
     },
     "/v1/policies/{id}": {
       "get": {
-        "description": "Returns a specific policy by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Returns a specific policy by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PoliciesController_getPolicy_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -6079,18 +5987,9 @@
         ]
       },
       "patch": {
-        "description": "Partially updates a policy. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Partially updates a policy. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PoliciesController_updatePolicy_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -6217,18 +6116,9 @@
         ]
       },
       "delete": {
-        "description": "Permanently deletes a policy. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Permanently deletes a policy. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PoliciesController_deletePolicy_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -6331,15 +6221,6 @@
         "operationId": "PoliciesController_getPolicyVersions_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -6424,15 +6305,6 @@
         "description": "Creates a new draft version based on the current published version (or a specified source version).",
         "operationId": "PoliciesController_createPolicyVersion_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -6539,15 +6411,6 @@
         "description": "Updates content for a non-published, non-pending version. Published and pending versions are immutable.",
         "operationId": "PoliciesController_updateVersionContent_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -6660,15 +6523,6 @@
         "operationId": "PoliciesController_deletePolicyVersion_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -6770,15 +6624,6 @@
         "description": "Publishes draft content as a new version and optionally sets it as active.",
         "operationId": "PoliciesController_publishPolicyVersion_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -6886,15 +6731,6 @@
         "operationId": "PoliciesController_setActivePolicyVersion_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -6999,15 +6835,6 @@
         "description": "Submits a version for approval by setting pendingVersionId and updating policy status.",
         "operationId": "PoliciesController_submitVersionForApproval_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -7125,15 +6952,6 @@
         "operationId": "PoliciesController_aiChatPolicy_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -7183,20 +7001,253 @@
         ]
       }
     },
+    "/v1/policies/{id}/deny-changes": {
+      "post": {
+        "operationId": "PoliciesController_denyPolicyChanges_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Deny requested policy changes",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/pdf/signed-url": {
+      "get": {
+        "operationId": "PoliciesController_getPdfSignedUrl_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a signed URL for viewing a policy PDF inline",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/pdf/upload": {
+      "post": {
+        "operationId": "PoliciesController_uploadPdf_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadPolicyPdfDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload a PDF for a policy or policy version",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/pdf": {
+      "delete": {
+        "operationId": "PoliciesController_deletePdf_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a PDF from a policy or policy version",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/controls": {
+      "post": {
+        "operationId": "PoliciesController_mapControls_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "controlIds"
+                ],
+                "properties": {
+                  "controlIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Map controls to a policy",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/controls/{controlId}": {
+      "delete": {
+        "operationId": "PoliciesController_unmapControl_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "controlId",
+            "required": true,
+            "in": "path",
+            "description": "Control ID to unmap",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Unmap a control from a policy",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/attachments/{attachmentId}/download": {
       "get": {
         "description": "Generate a fresh signed URL for downloading any attachment",
         "operationId": "AttachmentsController_getAttachmentDownloadUrl_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "attachmentId",
             "required": true,
@@ -7245,19 +7296,9 @@
     },
     "/v1/device-agent/mac": {
       "get": {
-        "description": "Downloads the Comp AI Device Agent installer for macOS as a DMG file. The agent helps monitor device compliance and security policies. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Downloads the Comp AI Device Agent installer for macOS as a DMG file. The agent helps monitor device compliance and security policies. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "DeviceAgentController_downloadMacAgent_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "default": {
             "description": "macOS agent DMG file download",
@@ -7301,19 +7342,9 @@
     },
     "/v1/device-agent/windows": {
       "get": {
-        "description": "Downloads a ZIP package containing the Comp AI Device Agent installer for Windows, along with setup scripts and instructions. The package includes an MSI installer, setup batch script customized for the organization and user, and a README with installation instructions. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+        "description": "Downloads a ZIP package containing the Comp AI Device Agent installer for Windows, along with setup scripts and instructions. The package includes an MSI installer, setup batch script customized for the organization and user, and a README with installation instructions. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "DeviceAgentController_downloadWindowsAgent_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "default": {
             "description": "Windows agent ZIP file download containing MSI installer and setup scripts",
@@ -7359,17 +7390,7 @@
       "get": {
         "description": "Retrieve all tasks for the authenticated organization. Employees/contractors only see their assigned tasks.",
         "operationId": "TasksController_getTasks_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Tasks retrieved successfully",
@@ -7420,23 +7441,117 @@
         "tags": [
           "Tasks"
         ]
+      },
+      "post": {
+        "description": "Create a new task for the organization",
+        "operationId": "TasksController_createTask_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Implement access controls"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Set up role-based access controls for the platform"
+                  },
+                  "assigneeId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "mem_abc123"
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "quarterly",
+                      "yearly"
+                    ],
+                    "nullable": true,
+                    "example": "monthly"
+                  },
+                  "department": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "admin",
+                      "gov",
+                      "hr",
+                      "it",
+                      "itsm",
+                      "qms"
+                    ],
+                    "nullable": true,
+                    "example": "it"
+                  },
+                  "controlIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "ctrl_abc123"
+                    ]
+                  },
+                  "taskTemplateId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "tmpl_abc123"
+                  },
+                  "vendorId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "vnd_abc123",
+                    "description": "Vendor ID to connect this task to"
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a task",
+        "tags": [
+          "Tasks"
+        ]
       }
     },
     "/v1/tasks/bulk": {
       "patch": {
         "description": "Bulk update the status of multiple tasks",
         "operationId": "TasksController_updateTasksStatus_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -7514,17 +7629,7 @@
       "delete": {
         "description": "Bulk delete multiple tasks by their IDs",
         "operationId": "TasksController_deleteTasks_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -7586,17 +7691,7 @@
       "patch": {
         "description": "Bulk update the assignee of multiple tasks",
         "operationId": "TasksController_updateTasksAssignee_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -7666,15 +7761,6 @@
         "operationId": "TasksController_getTask_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -7735,18 +7821,9 @@
         ]
       },
       "patch": {
-        "description": "Update an existing task (status, assignee, frequency, department, reviewDate)",
+        "description": "Update an existing task (title, description, status, assignee, frequency, department, reviewDate)",
         "operationId": "TasksController_updateTask_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -7765,6 +7842,16 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Review access controls",
+                    "description": "Task title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Review and update access control policies",
+                    "description": "Task description"
+                  },
                   "status": {
                     "type": "string",
                     "enum": [
@@ -7843,6 +7930,56 @@
         "tags": [
           "Tasks"
         ]
+      },
+      "delete": {
+        "description": "Delete a single task by its ID",
+        "operationId": "TasksController_deleteTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Task deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a task",
+        "tags": [
+          "Tasks"
+        ]
       }
     },
     "/v1/tasks/{taskId}/attachments": {
@@ -7850,15 +7987,6 @@
         "description": "Retrieve all attachments for a specific task",
         "operationId": "TasksController_getTaskAttachments_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -7941,15 +8069,6 @@
         "description": "Upload a file attachment to a specific task",
         "operationId": "TasksController_uploadTaskAttachment_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -8058,15 +8177,6 @@
         "operationId": "TasksController_getTaskAttachmentDownloadUrl_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -8159,15 +8269,6 @@
         "description": "Delete a specific attachment from a task",
         "operationId": "TasksController_deleteTaskAttachment_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -8264,15 +8365,6 @@
         "operationId": "AutomationsController_getTaskAutomations_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -8302,15 +8394,6 @@
         "description": "Create an automation for collecting evidence for a specific task",
         "operationId": "AutomationsController_createAutomation_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -8418,15 +8501,6 @@
         "operationId": "AutomationsController_getAutomation_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -8466,15 +8540,6 @@
         "description": "Update the name or description of an existing automation",
         "operationId": "AutomationsController_updateAutomation_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -8604,15 +8669,6 @@
         "operationId": "AutomationsController_deleteAutomation_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -8654,15 +8710,6 @@
         "description": "Retrieve all published versions of an automation script",
         "operationId": "AutomationsController_getAutomationVersions_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -8761,15 +8808,6 @@
         "operationId": "AutomationsController_getTaskAutomationRuns_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -8848,15 +8886,6 @@
         "operationId": "EvidenceExportController_getTaskEvidenceSummary_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -8891,15 +8920,6 @@
         "description": "Generate and download a PDF containing all evidence for a specific automation",
         "operationId": "EvidenceExportController_exportAutomationPDF_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -8947,15 +8967,6 @@
         "operationId": "EvidenceExportController_exportTaskEvidenceZip_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "path",
@@ -9002,15 +9013,6 @@
         "operationId": "AuditorEvidenceExportController_exportAllEvidence_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "includeJson",
             "required": false,
             "in": "query",
@@ -9047,15 +9049,6 @@
         "description": "Retrieve all comments for a specific entity (task, policy, vendor, etc.)",
         "operationId": "CommentsController_getComments_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "entityId",
             "required": true,
@@ -9110,17 +9103,7 @@
       "post": {
         "description": "Create a comment on an entity with optional file attachments",
         "operationId": "CommentsController_createComment_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -9159,15 +9142,6 @@
         "description": "Update the content of an existing comment (author only)",
         "operationId": "CommentsController_updateComment_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "commentId",
             "required": true,
@@ -9215,15 +9189,6 @@
         "description": "Delete a comment and all its attachments (author only)",
         "operationId": "CommentsController_deleteComment_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "commentId",
             "required": true,
@@ -9369,15 +9334,6 @@
         "operationId": "TrustPortalController_getDomainStatus_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "domain",
             "required": true,
             "in": "query",
@@ -9421,17 +9377,7 @@
       "post": {
         "description": "Stores the compliance certificate in the organization assets bucket and replaces any previous file for the same framework.",
         "operationId": "TrustPortalController_uploadComplianceResource_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -9471,17 +9417,7 @@
     "/v1/trust-portal/compliance-resources/signed-url": {
       "post": {
         "operationId": "TrustPortalController_getComplianceResourceUrl_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -9518,17 +9454,7 @@
     "/v1/trust-portal/compliance-resources/list": {
       "post": {
         "operationId": "TrustPortalController_listComplianceResources_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -9569,17 +9495,7 @@
       "post": {
         "description": "Stores a document in the organization assets bucket and registers it for the trust portal.",
         "operationId": "TrustPortalController_uploadTrustDocument_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -9616,17 +9532,7 @@
     "/v1/trust-portal/documents/list": {
       "post": {
         "operationId": "TrustPortalController_listTrustDocuments_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -9667,15 +9573,6 @@
       "post": {
         "operationId": "TrustPortalController_getTrustDocumentUrl_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "documentId",
             "required": true,
@@ -9723,15 +9620,6 @@
         "operationId": "TrustPortalController_deleteTrustDocument_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "documentId",
             "required": true,
             "in": "path",
@@ -9773,6 +9661,126 @@
           }
         ],
         "summary": "Delete (deactivate) a trust portal document",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/toggle": {
+      "put": {
+        "operationId": "TrustPortalController_togglePortal_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Enable or disable the trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/custom-domain": {
+      "post": {
+        "operationId": "TrustPortalController_addCustomDomain_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Add or update a custom domain for the trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/check-dns": {
+      "post": {
+        "operationId": "TrustPortalController_checkDnsRecords_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Check DNS records for a custom domain",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/faqs": {
+      "put": {
+        "operationId": "TrustPortalController_updateFaqs_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update trust portal FAQs",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/allowed-domains": {
+      "put": {
+        "operationId": "TrustPortalController_updateAllowedDomains_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update allowed domains for the trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/frameworks": {
+      "put": {
+        "operationId": "TrustPortalController_updateFrameworks_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update trust portal framework settings",
         "tags": [
           "Trust Portal"
         ]
@@ -9832,15 +9840,6 @@
                 "canceled"
               ]
             }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -9871,15 +9870,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -9907,15 +9897,6 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -9959,15 +9940,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
@@ -10000,17 +9972,7 @@
       "get": {
         "description": "Get all active and expired grants",
         "operationId": "TrustAccessController_listGrants_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Grants retrieved"
@@ -10036,15 +9998,6 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -10085,15 +10038,6 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -10212,15 +10156,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -10248,15 +10183,6 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID",
-            "required": true,
             "schema": {
               "type": "string"
             }
@@ -10654,17 +10580,7 @@
       "get": {
         "description": "Retrieve all framework editor task templates",
         "operationId": "TaskTemplateController_getAllTaskTemplates_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successfully retrieved all framework editor task templates",
@@ -10737,15 +10653,6 @@
         "description": "Retrieve a specific framework editor task template by its ID",
         "operationId": "TaskTemplateController_getTaskTemplateById_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -10835,15 +10742,6 @@
         "description": "Update a framework editor task template by ID",
         "operationId": "TaskTemplateController_updateTaskTemplate_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -10957,15 +10855,6 @@
         "description": "Delete a framework editor task template by ID",
         "operationId": "TaskTemplateController_deleteTaskTemplate_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -11218,15 +11107,6 @@
         "operationId": "FindingsController_getFindingsByTask_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "taskId",
             "required": true,
             "in": "query",
@@ -11261,17 +11141,7 @@
       "post": {
         "description": "Create a new finding for a task (Auditor or Platform Admin only)",
         "operationId": "FindingsController_createFinding_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Finding data",
@@ -11313,15 +11183,6 @@
         "description": "Retrieve all findings for the organization",
         "operationId": "FindingsController_getOrganizationFindings_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "status",
             "required": false,
@@ -11366,15 +11227,6 @@
         "operationId": "FindingsController_getFindingById_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -11410,15 +11262,6 @@
         "description": "Update a finding. Status transition rules apply based on user role.",
         "operationId": "FindingsController_updateFinding_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -11470,15 +11313,6 @@
         "operationId": "FindingsController_deleteFinding_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -11520,15 +11354,6 @@
         "operationId": "FindingsController_getFindingHistory_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -11564,17 +11389,7 @@
     "/v1/questionnaire/parse": {
       "post": {
         "operationId": "QuestionnaireController_parseQuestionnaire_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11610,17 +11425,7 @@
     "/v1/questionnaire/answer-single": {
       "post": {
         "operationId": "QuestionnaireController_answerSingleQuestion_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11686,17 +11491,7 @@
     "/v1/questionnaire/save-answer": {
       "post": {
         "operationId": "QuestionnaireController_saveAnswer_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11741,17 +11536,7 @@
     "/v1/questionnaire/delete-answer": {
       "post": {
         "operationId": "QuestionnaireController_deleteAnswer_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11796,17 +11581,7 @@
     "/v1/questionnaire/export": {
       "post": {
         "operationId": "QuestionnaireController_exportById_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11835,17 +11610,7 @@
     "/v1/questionnaire/upload-and-parse": {
       "post": {
         "operationId": "QuestionnaireController_uploadAndParse_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11889,17 +11654,7 @@
     "/v1/questionnaire/upload-and-parse/upload": {
       "post": {
         "operationId": "QuestionnaireController_uploadAndParseUpload_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11967,17 +11722,7 @@
     "/v1/questionnaire/parse/upload": {
       "post": {
         "operationId": "QuestionnaireController_parseQuestionnaireUpload_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12042,15 +11787,6 @@
         "operationId": "QuestionnaireController_parseQuestionnaireUploadByToken_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "token",
             "required": true,
             "in": "query",
@@ -12108,17 +11844,7 @@
     "/v1/questionnaire/answers/export": {
       "post": {
         "operationId": "QuestionnaireController_autoAnswerAndExport_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12147,17 +11873,7 @@
     "/v1/questionnaire/answers/export/upload": {
       "post": {
         "operationId": "QuestionnaireController_autoAnswerAndExportUpload_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12211,17 +11927,7 @@
     "/v1/questionnaire/auto-answer": {
       "post": {
         "operationId": "QuestionnaireController_autoAnswer_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12671,17 +12377,7 @@
     "/v1/soa/save-answer": {
       "post": {
         "operationId": "SOAController_saveAnswer_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12724,17 +12420,7 @@
       "post": {
         "description": "Streams SOA answers via Server-Sent Events (SSE)",
         "operationId": "SOAController_autoFill_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12764,17 +12450,7 @@
     "/v1/soa/create-document": {
       "post": {
         "operationId": "SOAController_createDocument_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12804,17 +12480,7 @@
     "/v1/soa/ensure-setup": {
       "post": {
         "operationId": "SOAController_ensureSetup_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12844,17 +12510,7 @@
     "/v1/soa/approve": {
       "post": {
         "operationId": "SOAController_approveDocument_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12884,17 +12540,7 @@
     "/v1/soa/decline": {
       "post": {
         "operationId": "SOAController_declineDocument_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12924,17 +12570,7 @@
     "/v1/soa/submit-for-approval": {
       "post": {
         "operationId": "SOAController_submitForApproval_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -14078,17 +13714,7 @@
       "post": {
         "description": "Gets the existing browser context for the org or creates a new one",
         "operationId": "BrowserbaseController_getOrCreateOrgContext_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": "Context retrieved or created",
@@ -14114,17 +13740,7 @@
       "get": {
         "description": "Gets the current browser context for the org if it exists",
         "operationId": "BrowserbaseController_getOrgContextStatus_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Context status"
@@ -14145,17 +13761,7 @@
       "post": {
         "description": "Creates a new browser session using the org context",
         "operationId": "BrowserbaseController_createSession_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -14192,17 +13798,7 @@
     "/v1/browserbase/session/close": {
       "post": {
         "operationId": "BrowserbaseController_closeSession_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -14233,17 +13829,7 @@
       "post": {
         "description": "Navigates the browser session to the specified URL",
         "operationId": "BrowserbaseController_navigateToUrl_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -14274,17 +13860,7 @@
       "post": {
         "description": "Checks if the user is logged in on the specified site",
         "operationId": "BrowserbaseController_checkAuth_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -14321,17 +13897,7 @@
     "/v1/browserbase/automations": {
       "post": {
         "operationId": "BrowserbaseController_createAutomation_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -14369,15 +13935,6 @@
       "get": {
         "operationId": "BrowserbaseController_getAutomationsForTask_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "taskId",
             "required": true,
@@ -14419,15 +13976,6 @@
         "operationId": "BrowserbaseController_getAutomation_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "automationId",
             "required": true,
             "in": "path",
@@ -14462,15 +14010,6 @@
       "patch": {
         "operationId": "BrowserbaseController_updateAutomation_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "automationId",
             "required": true,
@@ -14517,15 +14056,6 @@
         "operationId": "BrowserbaseController_deleteAutomation_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "automationId",
             "required": true,
             "in": "path",
@@ -14556,15 +14086,6 @@
         "description": "Creates a session and returns live view URL for watching execution",
         "operationId": "BrowserbaseController_startAutomationLive_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "automationId",
             "required": true,
@@ -14597,15 +14118,6 @@
         "operationId": "BrowserbaseController_executeAutomationOnSession_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "automationId",
             "required": true,
             "in": "path",
@@ -14636,15 +14148,6 @@
         "description": "Executes the automation and returns the result",
         "operationId": "BrowserbaseController_runAutomation_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "automationId",
             "required": true,
@@ -14682,15 +14185,6 @@
       "get": {
         "operationId": "BrowserbaseController_getAutomationRuns_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "automationId",
             "required": true,
@@ -14732,15 +14226,6 @@
         "operationId": "BrowserbaseController_getRunById_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "runId",
             "required": true,
             "in": "path",
@@ -14778,15 +14263,6 @@
         "description": "Retrieve task items statistics (total count, counts by status) for a specific entity",
         "operationId": "TaskManagementController_getTaskItemsStats_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "entityId",
             "required": true,
@@ -14864,15 +14340,6 @@
         "description": "Retrieve paginated task items for a specific entity (vendor, risk)",
         "operationId": "TaskManagementController_getTaskItems_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "entityId",
             "required": true,
@@ -15024,17 +14491,7 @@
       "post": {
         "description": "Create a task item for an entity",
         "operationId": "TaskManagementController_createTaskItem_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -15073,15 +14530,6 @@
         "description": "Update an existing task item",
         "operationId": "TaskManagementController_updateTaskItem_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -15130,15 +14578,6 @@
         "operationId": "TaskManagementController_deleteTaskItem_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -15169,17 +14608,7 @@
       "post": {
         "description": "Upload a file attachment for a task item with proper S3 path structure: org_{orgId}/attachments/task-item/{entityType}/{entityId}/files",
         "operationId": "TaskManagementController_uploadTaskItemAttachment_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -15219,15 +14648,6 @@
         "operationId": "TaskManagementController_deleteTaskItemAttachment_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "attachmentId",
             "required": true,
             "in": "path",
@@ -15260,15 +14680,6 @@
         "operationId": "TaskManagementController_getTaskItemActivity_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -15299,17 +14710,7 @@
       "get": {
         "description": "Returns the current user-scoped assistant chat history (ephemeral session context).",
         "operationId": "AssistantChatController_getHistory_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for JWT auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Chat history retrieved",
@@ -15343,17 +14744,7 @@
       "put": {
         "description": "Replaces the current user-scoped assistant chat history (ephemeral session context).",
         "operationId": "AssistantChatController_saveHistory_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for JWT auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -15382,17 +14773,7 @@
       "delete": {
         "description": "Deletes the current user-scoped assistant chat history.",
         "operationId": "AssistantChatController_clearHistory_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for JWT auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -15488,6 +14869,94 @@
         "summary": "Generate training completion certificate PDF",
         "tags": [
           "Training"
+        ]
+      }
+    },
+    "/v1/v1/controls": {
+      "post": {
+        "operationId": "ControlsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateControlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/v1/controls/{id}": {
+      "delete": {
+        "operationId": "ControlsController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/v1/frameworks/{id}": {
+      "delete": {
+        "operationId": "FrameworksController_delete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a framework instance",
+        "tags": [
+          "Frameworks"
         ]
       }
     }
@@ -15835,6 +15304,21 @@
             "type": "number",
             "description": "FleetDM label ID for member devices",
             "example": 123
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the associated user",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email of the associated user",
+            "example": "john@example.com"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Member join date (createdAt override)",
+            "example": "2024-01-15T00:00:00.000Z"
           }
         }
       },
@@ -17516,6 +17000,15 @@
             "type": "boolean",
             "description": "Whether to archive this policy",
             "example": false
+          },
+          "displayFormat": {
+            "type": "string",
+            "description": "Display format for this policy",
+            "enum": [
+              "EDITOR",
+              "PDF"
+            ],
+            "example": "EDITOR"
           }
         }
       },
@@ -17634,6 +17127,10 @@
         "required": [
           "instructions"
         ]
+      },
+      "UploadPolicyPdfDto": {
+        "type": "object",
+        "properties": {}
       },
       "TaskResponseDto": {
         "type": "object",
@@ -19327,6 +18824,63 @@
         },
         "required": [
           "sent"
+        ]
+      },
+      "RequirementMappingDto": {
+        "type": "object",
+        "properties": {
+          "requirementId": {
+            "type": "string",
+            "description": "Requirement ID"
+          },
+          "frameworkInstanceId": {
+            "type": "string",
+            "description": "Framework instance ID"
+          }
+        },
+        "required": [
+          "requirementId",
+          "frameworkInstanceId"
+        ]
+      },
+      "CreateControlDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Control name",
+            "example": "Access Control"
+          },
+          "description": {
+            "type": "string",
+            "description": "Control description",
+            "example": "Manages user access to systems"
+          },
+          "policyIds": {
+            "description": "Policy IDs to connect",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "taskIds": {
+            "description": "Task IDs to connect",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requirementMappings": {
+            "description": "Requirement mappings",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequirementMappingDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "description"
         ]
       }
     }

@@ -21,7 +21,7 @@ export function EditRolePageClient({ orgId, roleId, initialData }: EditRolePageC
   const handleSubmit = async (values: RoleFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await api.patch(`/v1/roles/${roleId}`, values, orgId);
+      const response = await api.patch(`/v1/roles/${roleId}`, values);
 
       if (response.error) {
         toast.error(response.error);

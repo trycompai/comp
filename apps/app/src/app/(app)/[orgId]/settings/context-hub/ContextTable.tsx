@@ -1,7 +1,6 @@
 'use client';
 
-import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
-import { updateContextEntryAction } from '@/actions/context-hub/update-context-entry-action';
+import { useApi } from '@/hooks/use-api';
 import { isJSON } from '@/lib/utils';
 import { useMediaQuery } from '@comp/ui/hooks';
 import type { Context } from '@db';
@@ -52,29 +51,19 @@ import {
   TrashCan,
 } from '@trycompai/design-system/icons';
 import { Check, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ContextForm } from './components/context-form';
 
 // Editable answer cell - click to edit
 function EditableAnswerCell({ context }: { context: Context }) {
+  const api = useApi();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [value, setValue] = useState(context.answer);
   const [structuredValue, setStructuredValue] = useState<Record<string, string> | null>(null);
   const [arrayValue, setArrayValue] = useState<Record<string, string>[] | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const { execute, status } = useAction(updateContextEntryAction, {
-    onSuccess: () => {
-      setIsEditing(false);
-      toast.success('Answer updated');
-    },
-    onError: () => {
-      setValue(context.answer);
-      toast.error('Failed to update answer');
-    },
-  });
 
   // Parse structured data when entering edit mode
   useEffect(() => {
@@ -102,7 +91,7 @@ function EditableAnswerCell({ context }: { context: Context }) {
     setValue(context.answer);
   }, [context.answer]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     let finalValue = value;
 
     // Convert structured data back to JSON
@@ -113,12 +102,26 @@ function EditableAnswerCell({ context }: { context: Context }) {
     }
 
     if (finalValue.trim() && finalValue !== context.answer) {
-      execute({ id: context.id, question: context.question, answer: finalValue });
+      setIsSubmitting(true);
+      const response = await api.patch(`/v1/context/${context.id}`, {
+        question: context.question,
+        answer: finalValue,
+      });
+      setIsSubmitting(false);
+
+      if (response.error) {
+        setValue(context.answer);
+        toast.error('Failed to update answer');
+        return;
+      }
+
+      setIsEditing(false);
+      toast.success('Answer updated');
     } else {
       setIsEditing(false);
       setValue(context.answer);
     }
-  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, execute]);
+  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, api]);
 
   const handleCancel = useCallback(() => {
     setValue(context.answer);
@@ -193,7 +196,7 @@ function EditableAnswerCell({ context }: { context: Context }) {
                       onChange={(e) => updateArrayItem(index, key, e.target.value)}
                       placeholder={key}
                       className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm"
-                      disabled={status === 'executing'}
+                      disabled={isSubmitting}
                     />
                   ))}
                   {arrayValue.length > 1 && (
@@ -201,7 +204,7 @@ function EditableAnswerCell({ context }: { context: Context }) {
                       variant="ghost"
                       size="icon"
                       onClick={() => removeArrayItem(index)}
-                      disabled={status === 'executing'}
+                      disabled={isSubmitting}
                     >
                       <TrashCan size={14} />
                     </Button>
@@ -214,7 +217,7 @@ function EditableAnswerCell({ context }: { context: Context }) {
             variant="outline"
             size="sm"
             onClick={addArrayItem}
-            disabled={status === 'executing'}
+            disabled={isSubmitting}
           >
             <Add size={14} />
             Add Item
@@ -224,12 +227,12 @@ function EditableAnswerCell({ context }: { context: Context }) {
               size="sm"
               variant="outline"
               onClick={handleCancel}
-              disabled={status === 'executing'}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={status === 'executing'}>
-              {status === 'executing' ? (
+            <Button size="sm" onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
                 <Check className="mr-1 h-4 w-4" />
@@ -256,7 +259,7 @@ function EditableAnswerCell({ context }: { context: Context }) {
                   value={val || ''}
                   onChange={(e) => updateStructuredField(key, e.target.value)}
                   className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm"
-                  disabled={status === 'executing'}
+                  disabled={isSubmitting}
                 />
               </div>
             ))}
@@ -266,12 +269,12 @@ function EditableAnswerCell({ context }: { context: Context }) {
               size="sm"
               variant="outline"
               onClick={handleCancel}
-              disabled={status === 'executing'}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={status === 'executing'}>
-              {status === 'executing' ? (
+            <Button size="sm" onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
                 <Check className="mr-1 h-4 w-4" />
@@ -291,19 +294,19 @@ function EditableAnswerCell({ context }: { context: Context }) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          disabled={status === 'executing'}
+          disabled={isSubmitting}
         />
         <HStack gap="2">
           <Button
             size="sm"
             variant="outline"
             onClick={handleCancel}
-            disabled={status === 'executing'}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={status === 'executing'}>
-            {status === 'executing' ? (
+          <Button size="sm" onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting ? (
               <Loader2 className="mr-1 h-4 w-4 animate-spin" />
             ) : (
               <Check className="mr-1 h-4 w-4" />
@@ -375,17 +378,23 @@ function EditableAnswerCell({ context }: { context: Context }) {
 
 // Actions cell with dropdown
 function ActionsCell({ context }: { context: Context }) {
+  const api = useApi();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { execute, status } = useAction(deleteContextEntryAction, {
-    onSuccess: () => {
-      setDeleteOpen(false);
-      toast.success('Entry deleted');
-    },
-    onError: () => {
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    const response = await api.delete(`/v1/context/${context.id}`);
+    setIsDeleting(false);
+
+    if (response.error) {
       toast.error('Failed to delete entry');
-    },
-  });
+      return;
+    }
+
+    setDeleteOpen(false);
+    toast.success('Entry deleted');
+  };
 
   return (
     <>
@@ -413,10 +422,10 @@ function ActionsCell({ context }: { context: Context }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => execute({ id: context.id })}
-              disabled={status === 'executing'}
+              onClick={handleDelete}
+              disabled={isDeleting}
             >
-              {status === 'executing' ? 'Deleting...' : 'Delete'}
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

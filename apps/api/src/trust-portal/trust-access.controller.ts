@@ -12,7 +12,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -82,11 +81,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'List access requests',
@@ -107,11 +101,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get access request details',
@@ -132,11 +121,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Approve access request',
@@ -172,11 +156,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Deny access request',
@@ -209,11 +188,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'List access grants',
@@ -228,11 +202,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Revoke access grant',
@@ -265,11 +234,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Resend access granted email',
@@ -357,11 +321,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'update')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Resend NDA email',
@@ -382,11 +341,6 @@ export class TrustAccessController {
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('portal', 'read')
   @ApiSecurity('apikey')
-  @ApiHeader({
-    name: 'X-Organization-Id',
-    description: 'Organization ID',
-    required: true,
-  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Preview NDA PDF',

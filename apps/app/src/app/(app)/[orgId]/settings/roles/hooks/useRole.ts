@@ -6,15 +6,14 @@ import type { CustomRole } from '../components/RolesTable';
 
 interface UseRoleOptions {
   roleId: string;
-  organizationId: string;
   initialData?: CustomRole | null;
 }
 
-export function useRole({ roleId, organizationId, initialData }: UseRoleOptions) {
+export function useRole({ roleId, initialData }: UseRoleOptions) {
   const { data, error, isLoading, mutate } = useSWR(
-    ['/v1/roles', roleId, organizationId],
-    async ([endpoint, id, orgId]) => {
-      const response = await apiClient.get<CustomRole>(`${endpoint}/${id}`, orgId);
+    ['/v1/roles', roleId],
+    async ([endpoint, id]) => {
+      const response = await apiClient.get<CustomRole>(`${endpoint}/${id}`);
       if (response.error) throw new Error(response.error);
       return response.data ?? null;
     },

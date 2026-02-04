@@ -66,7 +66,6 @@ export function EditNameDialog({ open, onOpenChange, onSuccess }: EditNameDialog
       const response = await api.patch(
         `/v1/tasks/${taskId}/automations/${realAutomationId}`,
         { name: name.trim() },
-        orgId,
       );
 
       if (response.error) {
@@ -144,7 +143,6 @@ export function EditDescriptionDialog({
       const response = await api.patch(
         `/v1/tasks/${taskId}/automations/${automationId}`,
         { description: description.trim() },
-        orgId,
       );
 
       if (response.error) {
@@ -210,7 +208,7 @@ export function DeleteAutomationDialog({ open, onOpenChange, onSuccess }: Delete
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const response = await api.delete(`/v1/tasks/${taskId}/automations/${automationId}`, orgId);
+      const response = await api.delete(`/v1/tasks/${taskId}/automations/${automationId}`);
 
       if (response.error) {
         throw new Error(response.error);

@@ -14,15 +14,14 @@ interface RolesResponse {
 }
 
 interface UseRolesOptions {
-  organizationId: string;
   initialData?: CustomRole[];
 }
 
-export function useRoles({ organizationId, initialData }: UseRolesOptions) {
+export function useRoles({ initialData }: UseRolesOptions = {}) {
   const { data, error, isLoading, mutate } = useSWR(
-    ['/v1/roles', organizationId],
-    async ([endpoint, orgId]) => {
-      const response = await apiClient.get<RolesResponse>(endpoint, orgId);
+    ['/v1/roles'],
+    async ([endpoint]) => {
+      const response = await apiClient.get<RolesResponse>(endpoint);
       if (response.error) throw new Error(response.error);
       return response.data?.customRoles ?? [];
     },

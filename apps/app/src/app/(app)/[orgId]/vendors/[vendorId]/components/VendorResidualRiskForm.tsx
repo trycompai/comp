@@ -1,13 +1,14 @@
 'use client';
 
-import { updateResidualRiskAction } from '@/actions/risk/update-residual-risk-action';
 import { updateResidualRiskSchema } from '@/actions/schema';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Slider } from '@comp/ui/slider';
+import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -25,11 +26,29 @@ interface FormData {
   impact: number;
 }
 
+function mapNumericToImpact(value: number): Impact {
+  if (value <= 2) return Impact.insignificant;
+  if (value <= 4) return Impact.minor;
+  if (value <= 6) return Impact.moderate;
+  if (value <= 8) return Impact.major;
+  return Impact.severe;
+}
+
+function mapNumericToLikelihood(value: number): Likelihood {
+  if (value <= 2) return Likelihood.very_unlikely;
+  if (value <= 4) return Likelihood.unlikely;
+  if (value <= 6) return Likelihood.possible;
+  if (value <= 8) return Likelihood.likely;
+  return Likelihood.very_likely;
+}
+
 export function VendorResidualRiskForm({
   riskId,
   initialProbability,
   initialImpact,
 }: ResidualRiskFormProps) {
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('residual-risk-sheet');
 
   const form = useForm<z.infer<typeof updateResidualRiskSchema>>({
@@ -41,18 +60,21 @@ export function VendorResidualRiskForm({
     },
   });
 
-  const updateResidualRisk = useAction(updateResidualRiskAction, {
-    onSuccess: () => {
-      toast.success('Residual risk updated successfully');
-      setOpen(null);
-    },
-    onError: () => {
-      toast.error('Failed to update residual risk');
-    },
-  });
+  const onSubmit = async (data: z.infer<typeof updateResidualRiskSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/risks/${data.id}`, {
+      residualLikelihood: mapNumericToLikelihood(data.probability),
+      residualImpact: mapNumericToImpact(data.impact),
+    });
+    setIsSubmitting(false);
 
-  const onSubmit = (data: z.infer<typeof updateResidualRiskSchema>) => {
-    updateResidualRisk.execute(data);
+    if (response.error) {
+      toast.error('Failed to update residual risk');
+      return;
+    }
+
+    toast.success('Residual risk updated successfully');
+    setOpen(null);
   };
 
   return (
@@ -104,9 +126,9 @@ export function VendorResidualRiskForm({
           <Button
             type="submit"
             variant="default"
-            disabled={updateResidualRisk.status === 'executing'}
+            disabled={isSubmitting}
           >
-            {updateResidualRisk.status === 'executing' ? (
+            {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               'Save'

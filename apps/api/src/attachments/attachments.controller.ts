@@ -1,6 +1,5 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -17,12 +16,6 @@ import { AttachmentsService } from './attachments.service';
 @Controller({ path: 'attachments', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 

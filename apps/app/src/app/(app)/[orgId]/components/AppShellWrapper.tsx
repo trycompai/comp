@@ -1,6 +1,5 @@
 'use client';
 
-import { updateSidebarState } from '@/actions/sidebar';
 import Chat from '@/components/ai/chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { canAccessRoute, type UserPermissions } from '@/lib/permissions';
@@ -39,11 +38,10 @@ import {
   Text,
   ThemeSwitcher,
 } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Suspense, useCallback, useRef } from 'react';
+import { Suspense, useCallback } from 'react';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
 import { AppSidebar } from './AppSidebar';
@@ -97,23 +95,18 @@ function AppShellWrapperContent({
   const pathname = usePathname();
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
-  const previousIsCollapsedRef = useRef(isCollapsed);
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
-
-  const { execute } = useAction(updateSidebarState, {
-    onError: () => {
-      setIsCollapsed(previousIsCollapsedRef.current);
-    },
-  });
 
   const handleSidebarOpenChange = useCallback(
     (open: boolean) => {
       const nextIsCollapsed = !open;
-      previousIsCollapsedRef.current = isCollapsed;
       setIsCollapsed(nextIsCollapsed);
-      execute({ isCollapsed: nextIsCollapsed });
+      // Persist via cookie (1 year expiry)
+      const expires = new Date();
+      expires.setFullYear(expires.getFullYear() + 1);
+      document.cookie = `sidebar-collapsed=${JSON.stringify(nextIsCollapsed)};path=/;expires=${expires.toUTCString()}`;
     },
-    [execute, isCollapsed, setIsCollapsed],
+    [isCollapsed, setIsCollapsed],
   );
 
   const searchGroups = getAppShellSearchGroups({

@@ -110,7 +110,7 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
         downloadUrl: string;
         policyCount: number;
         name: string;
-      }>('/v1/policies/download-all', orgId);
+      }>('/v1/policies/download-all');
 
       if (response.error) {
         toast.error(response.error);

@@ -25,7 +25,6 @@ export function usePolicy({ policyId, organizationId, initialData }: UsePolicyOp
     async () => {
       const response = await apiClient.get<PolicyApiResponse>(
         `/v1/policies/${policyId}`,
-        organizationId,
       );
       if (response.error) throw new Error(response.error);
       if (!response.data) return null;

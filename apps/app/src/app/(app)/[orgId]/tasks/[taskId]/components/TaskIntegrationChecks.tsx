@@ -592,7 +592,6 @@ export function TaskIntegrationChecks({
                                       taskId,
                                       automationId: check.checkId,
                                       automationName: check.checkName,
-                                      organizationId: orgId,
                                     });
                                     toast.success('Evidence PDF downloaded');
                                   } catch (err) {

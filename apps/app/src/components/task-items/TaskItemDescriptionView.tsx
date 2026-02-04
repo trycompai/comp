@@ -8,7 +8,6 @@ import { createMentionExtension, type MentionUser, validateAndFixTipTapContent }
 import { FileAttachment } from '@comp/ui/editor/extensions/file-attachment';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { api } from '@/lib/api-client';
-import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 interface TaskItemDescriptionViewProps {
@@ -21,9 +20,6 @@ export function TaskItemDescriptionView({
   className,
 }: TaskItemDescriptionViewProps) {
   const { members } = useOrganizationMembers();
-  const params = useParams<{ orgId: string }>();
-  const organizationId = params?.orgId;
-
   // Parse description - could be JSON string or plain string
   const parsedContent = useMemo(() => {
     if (!description) return null;
@@ -77,7 +73,6 @@ export function TaskItemDescriptionView({
       try {
         const response = await api.get<{ downloadUrl: string }>(
           `/v1/attachments/${attachmentId}/download`,
-          organizationId,
         );
         if (response.error || !response.data?.downloadUrl) {
           throw new Error(response.error || 'Download URL not available');
@@ -89,7 +84,7 @@ export function TaskItemDescriptionView({
         return null;
       }
     },
-    [organizationId],
+    [],
   );
 
   // File attachment extension for read-only view

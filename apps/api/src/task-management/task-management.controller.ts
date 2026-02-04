@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -44,12 +43,6 @@ import { TaskItemAuditService } from './task-item-audit.service';
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @RequirePermission('task', ['create', 'read', 'update', 'delete', 'assign'])
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class TaskManagementController {
   constructor(
     private readonly taskManagementService: TaskManagementService,

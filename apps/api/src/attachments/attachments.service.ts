@@ -440,6 +440,40 @@ export class AttachmentsService {
     });
   }
 
+  /**
+   * Generate a presigned URL for viewing a PDF inline in the browser
+   */
+  async getPresignedInlinePdfUrl(s3Key: string): Promise<string> {
+    const getCommand = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      ResponseContentDisposition: 'inline',
+      ResponseContentType: 'application/pdf',
+    });
+
+    return getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: this.SIGNED_URL_EXPIRY,
+    });
+  }
+
+  /**
+   * Upload a buffer to S3 with a specific key (no auto-generated path)
+   */
+  async uploadBuffer(
+    s3Key: string,
+    buffer: Buffer,
+    contentType: string,
+  ): Promise<void> {
+    const putCommand = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      Body: buffer,
+      ContentType: contentType,
+    });
+
+    await this.s3Client.send(putCommand);
+  }
+
   async getObjectBuffer(s3Key: string): Promise<Buffer> {
     const getCommand = new GetObjectCommand({
       Bucket: this.bucketName,

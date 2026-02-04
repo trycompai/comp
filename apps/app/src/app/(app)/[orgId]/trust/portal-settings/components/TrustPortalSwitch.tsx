@@ -11,14 +11,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
 import { Download, ExternalLink, Eye, FileCheck2, Upload } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
-import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
 import {
   TrustPortalAdditionalDocumentsSection,
   type TrustPortalDocument,
@@ -240,7 +237,6 @@ export function TrustPortalSwitch({
         fileType: file.type || 'application/pdf',
         fileData,
       },
-      orgId,
     );
 
     if (response.error) {
@@ -273,7 +269,6 @@ export function TrustPortalSwitch({
         organizationId: orgId,
         framework: apiFramework,
       },
-      orgId,
     );
 
     if (response.error) {
@@ -287,18 +282,7 @@ export function TrustPortalSwitch({
 
     window.open(payload.signedUrl, '_blank', 'noopener,noreferrer');
   };
-  const trustPortalSwitch = useAction(trustPortalSwitchAction, {
-    onSuccess: () => {
-      toast.success('Trust portal status updated');
-    },
-    onError: () => {
-      toast.error('Failed to update trust portal status');
-    },
-  });
-
-  // Use ref to store latest trustPortalSwitch to avoid stale closures
-  const trustPortalSwitchRef = useRef(trustPortalSwitch);
-  trustPortalSwitchRef.current = trustPortalSwitch;
+  const [isToggling, setIsToggling] = useState(false);
 
   const form = useForm<z.infer<typeof trustPortalSwitchSchema>>({
     resolver: zodResolver(trustPortalSwitchSchema),
@@ -329,9 +313,22 @@ export function TrustPortalSwitch({
 
   const onSubmit = useCallback(
     async (data: TrustPortalSwitchActionInput) => {
-      await trustPortalSwitchRef.current.execute(data);
+      setIsToggling(true);
+      try {
+        const response = await api.put('/v1/trust-portal/settings/toggle', {
+          enabled: data.enabled,
+          contactEmail: data.contactEmail,
+          primaryColor: data.primaryColor,
+        });
+        if (response.error) throw new Error(response.error);
+        toast.success('Trust portal status updated');
+      } catch {
+        toast.error('Failed to update trust portal status');
+      } finally {
+        setIsToggling(false);
+      }
     },
-    [], // Safe to use empty array because we use ref
+    [api],
   );
 
   const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
@@ -463,7 +460,7 @@ export function TrustPortalSwitch({
                     <Switch
                       checked={field.value}
                       onCheckedChange={handleEnabledChange}
-                      disabled={trustPortalSwitch.status === 'executing'}
+                      disabled={isToggling}
                     />
                   </FormControl>
                 </FormItem>
@@ -595,8 +592,7 @@ export function TrustPortalSwitch({
                       status={iso27001Status}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             iso27001Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('ISO 27001 status updated');
@@ -606,8 +602,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             iso27001: checked,
                           });
                           toast.success('ISO 27001 status updated');
@@ -629,8 +624,7 @@ export function TrustPortalSwitch({
                       status={iso42001Status}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             iso42001Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('ISO 42001 status updated');
@@ -640,8 +634,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             iso42001: checked,
                           });
                           toast.success('ISO 42001 status updated');
@@ -663,8 +656,7 @@ export function TrustPortalSwitch({
                       status={gdprStatus}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             gdprStatus: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('GDPR status updated');
@@ -674,8 +666,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             gdpr: checked,
                           });
                           toast.success('GDPR status updated');
@@ -697,8 +688,7 @@ export function TrustPortalSwitch({
                       status={hipaaStatus}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             hipaaStatus: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('HIPAA status updated');
@@ -708,8 +698,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             hipaa: checked,
                           });
                           toast.success('HIPAA status updated');
@@ -731,8 +720,7 @@ export function TrustPortalSwitch({
                       status={soc2type1Status}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             soc2type1Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('SOC 2 Type 1 status updated');
@@ -742,8 +730,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             soc2type1: checked,
                           });
                           toast.success('SOC 2 Type 1 status updated');
@@ -765,8 +752,7 @@ export function TrustPortalSwitch({
                       status={soc2type2Status}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             soc2type2Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('SOC 2 Type 2 status updated');
@@ -776,8 +762,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             soc2type2: checked,
                           });
                           toast.success('SOC 2 Type 2 status updated');
@@ -799,8 +784,7 @@ export function TrustPortalSwitch({
                       status={pcidssStatus}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             pcidssStatus: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('PCI DSS status updated');
@@ -810,8 +794,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             pcidss: checked,
                           });
                           toast.success('PCI DSS status updated');
@@ -833,8 +816,7 @@ export function TrustPortalSwitch({
                       status={nen7510Status}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             nen7510Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('NEN 7510 status updated');
@@ -844,8 +826,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             nen7510: checked,
                           });
                           toast.success('NEN 7510 status updated');
@@ -867,8 +848,7 @@ export function TrustPortalSwitch({
                       status={iso9001Status}
                       onStatusChange={async (value) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             iso9001Status: value as 'started' | 'in_progress' | 'compliant',
                           });
                           toast.success('ISO 9001 status updated');
@@ -878,8 +858,7 @@ export function TrustPortalSwitch({
                       }}
                       onToggle={async (checked) => {
                         try {
-                          await updateTrustPortalFrameworks({
-                            orgId,
+                          await api.put('/v1/trust-portal/settings/frameworks', {
                             iso9001: checked,
                           });
                           toast.success('ISO 9001 status updated');

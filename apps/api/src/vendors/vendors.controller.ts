@@ -6,13 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags,
@@ -38,14 +39,18 @@ import { DELETE_VENDOR_RESPONSES } from './schemas/delete-vendor.responses';
 @Controller({ path: 'vendors', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
+
+  @Get('global/search')
+  @RequirePermission('vendor', 'read')
+  @ApiOperation({ summary: 'Search global vendors database' })
+  @ApiQuery({ name: 'name', required: false, description: 'Vendor name to search for' })
+  async searchGlobalVendors(
+    @Query('name') name?: string,
+  ) {
+    return this.vendorsService.searchGlobal(name ?? '');
+  }
 
   @Get()
   @RequirePermission('vendor', 'read')
@@ -168,6 +173,27 @@ export class VendorsController {
             email: authContext.userEmail,
           },
         }),
+    };
+  }
+
+  @Post(':id/trigger-assessment')
+  @RequirePermission('vendor', 'update')
+  @ApiOperation({ summary: 'Trigger vendor risk assessment' })
+  @ApiParam(VENDOR_PARAMS.vendorId)
+  async triggerAssessment(
+    @Param('id') vendorId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.vendorsService.triggerAssessment(
+      vendorId,
+      organizationId,
+      authContext.userId,
+    );
+
+    return {
+      success: true,
+      ...result,
     };
   }
 

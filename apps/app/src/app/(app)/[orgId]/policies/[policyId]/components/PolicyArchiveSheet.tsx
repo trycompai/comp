@@ -1,52 +1,51 @@
 'use client';
 
-import { archivePolicyAction } from '@/actions/policies/archive-policy';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Policy } from '@db';
 import { ArchiveIcon, ArchiveRestoreIcon, X } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { toast } from 'sonner';
 
 export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMutate?: () => void }) {
+  const api = useApi();
   const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useQueryState('archive-policy-sheet');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isOpen = Boolean(open);
   const isArchived = policy.isArchived;
-
-  const archivePolicy = useAction(archivePolicyAction, {
-    onSuccess: (result) => {
-      if (result) {
-        toast.success('Policy archived successfully');
-        // Redirect to policies list after successful archive
-        router.push(`/${policy.organizationId}/policies`);
-      } else {
-        toast.success('Policy restored successfully');
-        // Stay on the policy page after restore
-        onMutate?.();
-      }
-      handleOpenChange(false);
-    },
-    onError: () => {
-      toast.error('Failed to update policy archive status');
-    },
-  });
 
   const handleOpenChange = (open: boolean) => {
     setOpen(open ? 'true' : null);
   };
 
-  const handleAction = () => {
-    archivePolicy.execute({
-      id: policy.id,
-      action: isArchived ? 'restore' : 'archive',
-      entityId: policy.id,
+  const handleAction = async () => {
+    const shouldArchive = !isArchived;
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/policies/${policy.id}`, {
+      isArchived: shouldArchive,
     });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to update policy archive status');
+      return;
+    }
+
+    if (shouldArchive) {
+      toast.success('Policy archived successfully');
+      router.push(`/${policy.organizationId}/policies`);
+    } else {
+      toast.success('Policy restored successfully');
+      onMutate?.();
+    }
+    handleOpenChange(false);
   };
 
   const content = (
@@ -60,16 +59,16 @@ export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMut
         <Button
           variant="outline"
           onClick={() => handleOpenChange(false)}
-          disabled={archivePolicy.status === 'executing'}
+          disabled={isSubmitting}
         >
           {'Cancel'}
         </Button>
         <Button
           variant={isArchived ? 'default' : 'destructive'}
           onClick={handleAction}
-          disabled={archivePolicy.status === 'executing'}
+          disabled={isSubmitting}
         >
-          {archivePolicy.status === 'executing' ? (
+          {isSubmitting ? (
             <span className="flex items-center gap-2">
               <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
               {isArchived ? 'Restore' : 'Archive'}

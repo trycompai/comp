@@ -8,7 +8,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -28,12 +27,6 @@ import { TasksService } from '../tasks.service';
 @Controller({ path: 'tasks', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class EvidenceExportController {
   private readonly logger = new Logger(EvidenceExportController.name);
 
@@ -199,12 +192,6 @@ export class EvidenceExportController {
 @Controller({ path: 'evidence-export', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class AuditorEvidenceExportController {
   private readonly logger = new Logger(AuditorEvidenceExportController.name);
 

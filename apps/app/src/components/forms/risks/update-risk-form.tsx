@@ -1,12 +1,12 @@
 'use client';
 
-import { updateRiskAction } from '@/actions/risk/update-risk-action';
 import { updateRiskSchema } from '@/actions/schema';
+import { useApi } from '@/hooks/use-api';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Departments, type Risk } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Stack, Textarea } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -17,15 +17,8 @@ interface UpdateRiskFormProps {
 }
 
 export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
-  const updateRisk = useAction(updateRiskAction, {
-    onSuccess: () => {
-      toast.success('Risk updated successfully');
-      onSuccess?.();
-    },
-    onError: () => {
-      toast.error('Failed to update risk');
-    },
-  });
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateRiskSchema>>({
     resolver: zodResolver(updateRiskSchema),
@@ -40,9 +33,9 @@ export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateRiskSchema>) => {
-    updateRisk.execute({
-      id: data.id,
+  const onSubmit = async (data: z.infer<typeof updateRiskSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/risks/${data.id}`, {
       title: data.title,
       description: data.description,
       category: data.category,
@@ -50,6 +43,15 @@ export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
       status: data.status,
       assigneeId: data.assigneeId,
     });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to update risk');
+      return;
+    }
+
+    toast.success('Risk updated successfully');
+    onSuccess?.();
   };
 
   return (
@@ -92,8 +94,8 @@ export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
             )}
           />
           <div className="flex justify-end pt-4">
-            <button type="submit" disabled={updateRisk.status === 'executing'}>
-              <Button loading={updateRisk.status === 'executing'}>Save</Button>
+            <button type="submit" disabled={isSubmitting}>
+              <Button loading={isSubmitting}>Save</Button>
             </button>
           </div>
         </Stack>

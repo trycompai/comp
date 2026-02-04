@@ -57,9 +57,7 @@ export function RiskPageClient({
   isViewingTask,
 }: RiskPageClientProps) {
   // Use SWR for real-time updates with polling
-  const { risk: swrRisk, isLoading } = useRisk(riskId, {
-    organizationId: orgId,
-  });
+  const { risk: swrRisk, isLoading } = useRisk(riskId);
 
   // Normalize and memoize the risk data
   // Use SWR data when available, fall back to initial data
@@ -81,7 +79,7 @@ export function RiskPageClient({
           </div>
         </>
       )}
-      <TaskItems entityId={riskId} entityType="risk" organizationId={orgId} />
+      <TaskItems entityId={riskId} entityType="risk" />
       {!isViewingTask && (
         <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
       )}

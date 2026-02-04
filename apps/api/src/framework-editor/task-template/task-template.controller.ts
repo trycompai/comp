@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -38,12 +37,6 @@ import { DELETE_TASK_TEMPLATE_RESPONSES } from './schemas/delete-task-template.r
 @Controller({ path: 'framework-editor/task-template', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class TaskTemplateController {
   constructor(private readonly taskTemplateService: TaskTemplateService) {}
 

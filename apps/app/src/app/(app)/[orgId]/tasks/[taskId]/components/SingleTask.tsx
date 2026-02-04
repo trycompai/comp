@@ -142,7 +142,7 @@ export function SingleTask({
 
     if (Object.keys(updatePayload).length > 0) {
       try {
-        const response = await apiClient.patch<Task>(`/v1/tasks/${task.id}`, updatePayload, orgId);
+        const response = await apiClient.patch<Task>(`/v1/tasks/${task.id}`, updatePayload);
 
         if (response.error) {
           throw new Error(response.error);
@@ -219,7 +219,6 @@ export function SingleTask({
                       await downloadTaskEvidenceZip({
                         taskId: task.id,
                         taskTitle: task.title,
-                        organizationId: orgId,
                         includeJson: true,
                       });
                       toast.success('Task evidence downloaded');

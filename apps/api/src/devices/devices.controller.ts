@@ -1,6 +1,5 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -20,12 +19,6 @@ import { DevicesService } from './devices.service';
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @RequirePermission('app', 'read')
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class DevicesController {
   constructor(private readonly devicesService: DevicesService) {}
 
@@ -33,7 +26,7 @@ export class DevicesController {
   @ApiOperation({
     summary: 'Get all devices',
     description:
-      'Returns all devices for the authenticated organization from FleetDM. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      'Returns all devices for the authenticated organization from FleetDM. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   })
   @ApiResponse({
     status: 200,
@@ -154,7 +147,7 @@ export class DevicesController {
   @ApiOperation({
     summary: 'Get devices by member ID',
     description:
-      "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+      "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
   })
   @ApiParam({
     name: 'memberId',

@@ -1,7 +1,7 @@
 'use client';
 
-import { getPolicyPdfUrlAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/get-policy-pdf-url';
 import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
+import { useApi } from '@/hooks/use-api';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
 import {
@@ -41,6 +41,7 @@ export function PolicyHeaderActions({
   policy: PolicyWithVersion | null;
   logs: AuditLogWithRelations[];
 }) {
+  const api = useApi();
   const router = useRouter();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -125,15 +126,17 @@ export function PolicyHeaderActions({
 
       if (publishedVersionPdfUrl) {
         // Download the uploaded PDF directly
-        const result = await getPolicyPdfUrlAction({
-          policyId: policy.id,
-          versionId: policy.currentVersion?.id,
-        });
+        const params = new URLSearchParams();
+        if (policy.currentVersion?.id) params.set('versionId', policy.currentVersion.id);
+        const qs = params.toString();
+        const result = await api.get<{ url: string }>(
+          `/v1/policies/${policy.id}/pdf/signed-url${qs ? `?${qs}` : ''}`,
+        );
 
-        if (result?.data?.success && result.data.data) {
+        if (result.data?.url) {
           // Create a temporary link and trigger download
           const link = document.createElement('a');
-          link.href = result.data.data; // data is the signed URL string
+          link.href = result.data.url;
           link.download = `${policy.name || 'Policy'}.pdf`;
           link.target = '_blank';
           document.body.appendChild(link);

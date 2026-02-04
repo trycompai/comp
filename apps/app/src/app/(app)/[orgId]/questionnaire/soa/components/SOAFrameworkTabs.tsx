@@ -68,7 +68,6 @@ export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAF
             frameworkId,
             organizationId,
           },
-          organizationId,
         );
 
         if (response.error) {

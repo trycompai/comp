@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -38,12 +37,6 @@ import { DELETE_CONTEXT_RESPONSES } from './schemas/delete-context.responses';
 @Controller({ path: 'context', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class ContextController {
   constructor(private readonly contextService: ContextService) {}
 

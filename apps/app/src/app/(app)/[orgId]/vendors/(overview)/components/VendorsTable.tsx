@@ -1,6 +1,7 @@
 'use client';
 
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
+import { useApi } from '@/hooks/use-api';
 import { VendorStatus } from '@/components/vendor-status';
 import {
   AlertDialog,
@@ -43,7 +44,6 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import { deleteVendor } from '../actions/deleteVendor';
 import { getVendorsAction, type GetVendorsActionInput } from '../actions/get-vendors-action';
 import type { GetAssigneesResult, GetVendorsResult } from '../data/queries';
 import type { GetVendorsSchema } from '../data/validations';
@@ -145,6 +145,7 @@ export function VendorsTable({
   orgId,
 }: VendorsTableProps) {
   const router = useRouter();
+  const api = useApi();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<VendorRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -418,15 +419,13 @@ export function VendorsTable({
 
     setIsDeleting(true);
     try {
-      const result = await deleteVendor({ vendorId: vendorToDelete.id });
-      if (result?.data?.success) {
+      const response = await api.delete(`/v1/vendors/${vendorToDelete.id}`);
+      if (!response.error) {
         toast.success('Vendor deleted successfully');
         setDeleteDialogOpen(false);
         setVendorToDelete(null);
       } else {
-        const errorMsg =
-          typeof result?.data?.error === 'string' ? result.data.error : 'Failed to delete vendor';
-        toast.error(errorMsg);
+        toast.error('Failed to delete vendor');
       }
     } catch {
       toast.error('Failed to delete vendor');

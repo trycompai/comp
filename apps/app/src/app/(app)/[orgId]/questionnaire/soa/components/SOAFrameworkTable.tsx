@@ -231,7 +231,6 @@ export function SOAFrameworkTable({
           organizationId,
           documentId: document.id,
         },
-        organizationId,
       );
 
       if (response.error) {
@@ -257,7 +256,6 @@ export function SOAFrameworkTable({
           organizationId,
           documentId: document.id,
         },
-        organizationId,
       );
 
       if (response.error) {
@@ -284,7 +282,6 @@ export function SOAFrameworkTable({
           documentId: document.id,
           approverId: selectedApproverId,
         },
-        organizationId,
       );
 
       if (response.error) {

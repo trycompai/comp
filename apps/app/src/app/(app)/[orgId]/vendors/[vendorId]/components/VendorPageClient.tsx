@@ -66,9 +66,7 @@ export function VendorPageClient({
   isViewingTask,
 }: VendorPageClientProps) {
   // Use SWR for real-time updates with polling
-  const { vendor: swrVendor } = useVendor(vendorId, {
-    organizationId: orgId,
-  });
+  const { vendor: swrVendor } = useVendor(vendorId);
 
   // Normalize and memoize the vendor data
   // Use SWR data when available, fall back to initial data
@@ -92,7 +90,7 @@ export function VendorPageClient({
             </div>
           </>
         )}
-        <TaskItems entityId={vendorId} entityType="vendor" organizationId={orgId} />
+        <TaskItems entityId={vendorId} entityType="vendor" />
         {!isViewingTask && (
           <Comments
             entityId={vendorId}

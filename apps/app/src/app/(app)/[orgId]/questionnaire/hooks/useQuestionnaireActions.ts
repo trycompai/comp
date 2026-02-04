@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import type { QuestionAnswer } from '../components/types';
 import { api } from '@/lib/api-client';
 import { env } from '@/env.mjs';
-import { jwtManager } from '@/utils/jwt-manager';
+import { sessionToken } from '@/utils/session-token';
 
 interface UseQuestionnaireActionsProps {
   orgId: string;
@@ -268,13 +268,12 @@ export function useQuestionnaireActions({
       const response = await api.post(
         '/v1/questionnaire/save-answer',
         {
-        questionnaireId,
-        questionIndex: index,
-        answer: answerText,
-        status: 'manual',
+          questionnaireId,
+          questionIndex: index,
+          answer: answerText,
+          status: 'manual',
           organizationId: orgId,
         },
-        orgId,
       );
 
       if (response.error) {
@@ -301,7 +300,7 @@ export function useQuestionnaireActions({
 
     try {
       // Get auth token for the request
-      const token = await jwtManager.getValidToken();
+      const token = await sessionToken.getToken();
 
       // Call the API to get the file as a blob
       const response = await fetch(
@@ -311,7 +310,6 @@ export function useQuestionnaireActions({
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'X-Organization-Id': orgId,
           },
           body: JSON.stringify({
             questionnaireId,

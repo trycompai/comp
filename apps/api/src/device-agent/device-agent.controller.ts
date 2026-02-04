@@ -6,7 +6,6 @@ import {
   Response,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -28,12 +27,6 @@ import type { Response as ExpressResponse } from 'express';
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @RequirePermission('app', 'read')
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class DeviceAgentController {
   constructor(private readonly deviceAgentService: DeviceAgentService) {}
 

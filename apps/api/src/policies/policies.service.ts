@@ -4,10 +4,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { db, PolicyStatus, Prisma } from '@trycompai/db';
+import { CommentEntityType, db, PolicyStatus, Prisma } from '@trycompai/db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
+import type { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 import type {
@@ -284,6 +285,7 @@ export class PoliciesService {
           assigneeId: true,
           approverId: true,
           policyTemplateId: true,
+          displayFormat: true,
         },
       });
 
@@ -1161,6 +1163,326 @@ export class PoliciesService {
       downloadUrl,
       policyCount: policies.length,
     };
+  }
+
+  async denyChanges(
+    policyId: string,
+    organizationId: string,
+    approverId: string,
+    userId: string,
+    comment?: string,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (policy.approverId !== approverId) {
+      throw new BadRequestException('Approver mismatch');
+    }
+
+    const newStatus = policy.currentVersionId
+      ? PolicyStatus.published
+      : PolicyStatus.draft;
+
+    await db.policy.update({
+      where: { id: policyId, organizationId },
+      data: {
+        status: newStatus,
+        approverId: null,
+        pendingVersionId: null,
+      },
+    });
+
+    if (comment && comment.trim() !== '') {
+      const member = await db.member.findFirst({
+        where: { userId, organizationId, deactivated: false },
+        select: { id: true },
+      });
+
+      if (member) {
+        await db.comment.create({
+          data: {
+            content: `Policy changes denied: ${comment}`,
+            entityId: policyId,
+            entityType: CommentEntityType.policy,
+            organizationId,
+            authorId: member.id,
+          },
+        });
+      }
+    }
+
+    return { success: true };
+  }
+
+  async mapControls(
+    policyId: string,
+    organizationId: string,
+    controlIds: string[],
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const updated = await db.policy.update({
+      where: { id: policyId },
+      data: {
+        controls: {
+          connect: controlIds.map((id) => ({ id })),
+        },
+      },
+      include: { controls: true },
+    });
+
+    this.logger.log(
+      `Mapped ${controlIds.length} controls to policy ${policyId}`,
+    );
+    return updated;
+  }
+
+  async getPdfSignedUrl(
+    policyId: string,
+    organizationId: string,
+    versionId?: string,
+  ) {
+    let pdfUrl: string | null = null;
+
+    if (versionId) {
+      const version = await db.policyVersion.findUnique({
+        where: { id: versionId },
+        select: {
+          pdfUrl: true,
+          policyId: true,
+          policy: { select: { organizationId: true } },
+        },
+      });
+
+      if (
+        !version ||
+        version.policyId !== policyId ||
+        version.policy.organizationId !== organizationId
+      ) {
+        throw new NotFoundException('Version not found');
+      }
+
+      pdfUrl = version.pdfUrl;
+    } else {
+      const policy = await db.policy.findUnique({
+        where: { id: policyId, organizationId },
+        select: {
+          pdfUrl: true,
+          currentVersion: { select: { pdfUrl: true } },
+        },
+      });
+
+      pdfUrl = policy?.currentVersion?.pdfUrl ?? policy?.pdfUrl ?? null;
+    }
+
+    if (!pdfUrl) {
+      throw new NotFoundException('No PDF found');
+    }
+
+    const signedUrl =
+      await this.attachmentsService.getPresignedInlinePdfUrl(pdfUrl);
+
+    return { url: signedUrl };
+  }
+
+  async uploadPdf(
+    policyId: string,
+    organizationId: string,
+    dto: UploadPolicyPdfDto,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      select: {
+        id: true,
+        pdfUrl: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const fileBuffer = Buffer.from(dto.fileData, 'base64');
+    const sanitizedFileName = dto.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    let oldPdfUrl: string | null = null;
+
+    if (dto.versionId) {
+      const version = await db.policyVersion.findUnique({
+        where: { id: dto.versionId },
+        select: { id: true, policyId: true, pdfUrl: true, version: true },
+      });
+
+      if (!version || version.policyId !== policyId) {
+        throw new NotFoundException('Version not found');
+      }
+
+      if (version.id === policy.currentVersionId) {
+        throw new BadRequestException(
+          'Cannot upload PDF to the published version',
+        );
+      }
+      if (version.id === policy.pendingVersionId) {
+        throw new BadRequestException(
+          'Cannot upload PDF to a version pending approval',
+        );
+      }
+
+      oldPdfUrl = version.pdfUrl;
+      const s3Key = `${organizationId}/policies/${policyId}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
+
+      await this.attachmentsService.uploadBuffer(
+        s3Key,
+        fileBuffer,
+        dto.fileType,
+      );
+
+      await db.policyVersion.update({
+        where: { id: dto.versionId },
+        data: { pdfUrl: s3Key },
+      });
+
+      if (oldPdfUrl && oldPdfUrl !== s3Key) {
+        await this.attachmentsService
+          .deletePolicyVersionPdf(oldPdfUrl)
+          .catch((err) => {
+            this.logger.warn('Failed to clean up old version PDF', err);
+          });
+      }
+
+      return { s3Key };
+    }
+
+    // Legacy: upload to policy level
+    oldPdfUrl = policy.pdfUrl;
+    const s3Key = `${organizationId}/policies/${policyId}/${Date.now()}-${sanitizedFileName}`;
+
+    await this.attachmentsService.uploadBuffer(s3Key, fileBuffer, dto.fileType);
+
+    await db.policy.update({
+      where: { id: policyId, organizationId },
+      data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+    });
+
+    if (oldPdfUrl && oldPdfUrl !== s3Key) {
+      await this.attachmentsService
+        .deletePolicyVersionPdf(oldPdfUrl)
+        .catch((err) => {
+          this.logger.warn('Failed to clean up old policy PDF', err);
+        });
+    }
+
+    return { s3Key };
+  }
+
+  async deletePdf(
+    policyId: string,
+    organizationId: string,
+    versionId?: string,
+  ) {
+    const policy = await db.policy.findUnique({
+      where: { id: policyId, organizationId },
+      select: {
+        id: true,
+        pdfUrl: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    let oldPdfUrl: string | null = null;
+
+    if (versionId) {
+      const version = await db.policyVersion.findUnique({
+        where: { id: versionId },
+        select: { id: true, policyId: true, pdfUrl: true },
+      });
+
+      if (!version || version.policyId !== policyId) {
+        throw new NotFoundException('Version not found');
+      }
+
+      if (version.id === policy.currentVersionId) {
+        throw new BadRequestException(
+          'Cannot delete PDF from the published version',
+        );
+      }
+      if (version.id === policy.pendingVersionId) {
+        throw new BadRequestException(
+          'Cannot delete PDF from a version pending approval',
+        );
+      }
+
+      oldPdfUrl = version.pdfUrl;
+
+      await db.policyVersion.update({
+        where: { id: versionId },
+        data: { pdfUrl: null },
+      });
+    } else {
+      oldPdfUrl = policy.pdfUrl;
+
+      await db.policy.update({
+        where: { id: policyId, organizationId },
+        data: { pdfUrl: null, displayFormat: 'EDITOR' },
+      });
+    }
+
+    if (oldPdfUrl) {
+      await this.attachmentsService
+        .deletePolicyVersionPdf(oldPdfUrl)
+        .catch((err) => {
+          this.logger.warn('Failed to delete PDF from S3', err);
+        });
+    }
+
+    return { success: true };
+  }
+
+  async unmapControl(
+    policyId: string,
+    organizationId: string,
+    controlId: string,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    const updated = await db.policy.update({
+      where: { id: policyId },
+      data: {
+        controls: {
+          disconnect: { id: controlId },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Unmapped control ${controlId} from policy ${policyId}`,
+    );
+    return updated;
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

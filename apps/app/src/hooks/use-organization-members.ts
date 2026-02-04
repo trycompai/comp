@@ -37,7 +37,7 @@ export function useOrganizationMembers({
         data: MemberData[];
         error: string;
         success: boolean;
-      }>(`/v1/people`, orgId);
+      }>(`/v1/people`);
 
       if (!data?.data) {
         console.error('[useOrganizationMembers] Failed to fetch organization members', data?.error);

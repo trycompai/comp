@@ -6,12 +6,12 @@ import {
   Get,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiQuery,
   ApiResponse,
@@ -26,6 +26,7 @@ import {
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { ApiKeyService } from '../auth/api-key.service';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipDto } from './dto/transfer-ownership.dto';
@@ -45,14 +46,11 @@ import { ORGANIZATION_OPERATIONS } from './schemas/organization-operations';
 @Controller({ path: 'organization', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey') // Still document API key for external customers
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class OrganizationController {
-  constructor(private readonly organizationService: OrganizationService) {}
+  constructor(
+    private readonly organizationService: OrganizationService,
+    private readonly apiKeyService: ApiKeyService,
+  ) {}
 
   @Get()
   @RequirePermission('organization', 'read')
@@ -187,6 +185,62 @@ export class OrganizationController {
     };
   }
 
+  @Put('role-notifications')
+  @RequirePermission('organization', 'update')
+  @ApiOperation({ summary: 'Update role notification settings' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['settings'],
+      properties: {
+        settings: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: [
+              'role',
+              'policyNotifications',
+              'taskReminders',
+              'taskAssignments',
+              'taskMentions',
+              'weeklyTaskDigest',
+              'findingNotifications',
+            ],
+            properties: {
+              role: { type: 'string' },
+              policyNotifications: { type: 'boolean' },
+              taskReminders: { type: 'boolean' },
+              taskAssignments: { type: 'boolean' },
+              taskMentions: { type: 'boolean' },
+              weeklyTaskDigest: { type: 'boolean' },
+              findingNotifications: { type: 'boolean' },
+            },
+          },
+        },
+      },
+    },
+  })
+  async updateRoleNotifications(
+    @OrganizationId() organizationId: string,
+    @Body()
+    body: {
+      settings: Array<{
+        role: string;
+        policyNotifications: boolean;
+        taskReminders: boolean;
+        taskAssignments: boolean;
+        taskMentions: boolean;
+        weeklyTaskDigest: boolean;
+        findingNotifications: boolean;
+      }>;
+    },
+  ) {
+    return this.organizationService.updateRoleNotifications(
+      organizationId,
+      body.settings,
+    );
+  }
+
   @Get('primary-color')
   @RequirePermission('organization', 'read')
   @ApiOperation(ORGANIZATION_OPERATIONS.getPrimaryColor)
@@ -229,5 +283,53 @@ export class OrganizationController {
         },
       }),
     };
+  }
+
+  @Post('logo')
+  @RequirePermission('organization', 'update')
+  @ApiOperation({ summary: 'Upload organization logo' })
+  async uploadLogo(
+    @OrganizationId() organizationId: string,
+    @Body() body: { fileName: string; fileType: string; fileData: string },
+  ) {
+    return this.organizationService.uploadLogo(
+      organizationId,
+      body.fileName,
+      body.fileType,
+      body.fileData,
+    );
+  }
+
+  @Delete('logo')
+  @RequirePermission('organization', 'update')
+  @ApiOperation({ summary: 'Remove organization logo' })
+  async removeLogo(@OrganizationId() organizationId: string) {
+    return this.organizationService.removeLogo(organizationId);
+  }
+
+  @Post('api-keys')
+  @RequirePermission('organization', 'update')
+  @ApiOperation({ summary: 'Create a new API key' })
+  async createApiKey(
+    @OrganizationId() organizationId: string,
+    @Body() body: { name: string; expiresAt?: string },
+  ) {
+    if (!body.name) {
+      throw new BadRequestException('Name is required');
+    }
+    return this.apiKeyService.create(organizationId, body.name, body.expiresAt);
+  }
+
+  @Post('api-keys/revoke')
+  @RequirePermission('organization', 'update')
+  @ApiOperation({ summary: 'Revoke an API key' })
+  async revokeApiKey(
+    @OrganizationId() organizationId: string,
+    @Body() body: { id: string },
+  ) {
+    if (!body.id) {
+      throw new BadRequestException('API key ID is required');
+    }
+    return this.apiKeyService.revoke(body.id, organizationId);
   }
 }

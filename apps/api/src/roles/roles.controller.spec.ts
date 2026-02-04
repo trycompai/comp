@@ -4,13 +4,6 @@ import type { AuthContext } from '../auth/types';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 
-// Mock jose to avoid ESM import issues in tests
-jest.mock('jose', () => ({
-  createRemoteJWKSet: jest.fn(),
-  jwtVerify: jest.fn(),
-}));
-
-// Import controller after mocking
 import { RolesController } from './roles.controller';
 
 describe('RolesController', () => {
@@ -30,7 +23,7 @@ describe('RolesController', () => {
 
   const mockAuthContext: AuthContext = {
     organizationId: 'org_123',
-    authType: 'jwt',
+    authType: 'session',
     isApiKey: false,
     userId: 'usr_123',
     userEmail: 'test@example.com',

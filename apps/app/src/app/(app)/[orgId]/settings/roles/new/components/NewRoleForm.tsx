@@ -18,7 +18,7 @@ export function NewRoleForm({ orgId }: NewRoleFormProps) {
   const handleSubmit = async (values: RoleFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await api.post('/v1/roles', values, orgId);
+      const response = await api.post('/v1/roles', values);
 
       if (response.error) {
         toast.error(response.error);

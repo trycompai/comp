@@ -65,7 +65,7 @@ function ActionsCell({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const response = await api.delete(`/v1/roles/${role.id}`, orgId);
+      const response = await api.delete(`/v1/roles/${role.id}`);
 
       if (response.error) {
         toast.error(response.error);

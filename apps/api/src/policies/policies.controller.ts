@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Res,
   UseGuards,
   HttpException,
@@ -15,7 +16,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -44,6 +44,7 @@ import {
   SubmitForApprovalDto,
   UpdateVersionContentDto,
 } from './dto/version.dto';
+import { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 import { PoliciesService } from './policies.service';
 import { GET_ALL_POLICIES_RESPONSES } from './schemas/get-all-policies.responses';
 import { GET_POLICY_BY_ID_RESPONSES } from './schemas/get-policy-by-id.responses';
@@ -72,12 +73,6 @@ import { PolicyResponseDto } from './dto/policy-responses.dto';
 @Controller({ path: 'policies', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class PoliciesController {
   constructor(private readonly policiesService: PoliciesService) {}
 
@@ -608,6 +603,117 @@ Keep responses helpful and focused on the policy editing task.`;
     });
 
     return result.pipeTextStreamToResponse(res);
+  }
+
+  @Post(':id/deny-changes')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'approve')
+  @ApiOperation({ summary: 'Deny requested policy changes' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async denyPolicyChanges(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() body: { approverId: string; comment?: string },
+  ) {
+    return this.policiesService.denyChanges(
+      id,
+      organizationId,
+      body.approverId,
+      authContext.userId!,
+      body.comment,
+    );
+  }
+
+  @Get(':id/pdf/signed-url')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
+  @ApiOperation({ summary: 'Get a signed URL for viewing a policy PDF inline' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPdfSignedUrl(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Query('versionId') versionId?: string,
+  ) {
+    return this.policiesService.getPdfSignedUrl(
+      id,
+      organizationId,
+      versionId,
+    );
+  }
+
+  @Post(':id/pdf/upload')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Upload a PDF for a policy or policy version' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({ type: UploadPolicyPdfDto })
+  async uploadPdf(
+    @Param('id') id: string,
+    @Body() dto: UploadPolicyPdfDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.policiesService.uploadPdf(id, organizationId, dto);
+  }
+
+  @Delete(':id/pdf')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Delete a PDF from a policy or policy version' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async deletePdf(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Query('versionId') versionId?: string,
+  ) {
+    return this.policiesService.deletePdf(id, organizationId, versionId);
+  }
+
+  @Post(':id/controls')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Map controls to a policy' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['controlIds'],
+      properties: {
+        controlIds: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+    },
+  })
+  async mapControls(
+    @Param('id') policyId: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: { controlIds: string[] },
+  ) {
+    return this.policiesService.mapControls(
+      policyId,
+      organizationId,
+      body.controlIds,
+    );
+  }
+
+  @Delete(':id/controls/:controlId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Unmap a control from a policy' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiParam({ name: 'controlId', description: 'Control ID to unmap' })
+  async unmapControl(
+    @Param('id') policyId: string,
+    @Param('controlId') controlId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.policiesService.unmapControl(
+      policyId,
+      organizationId,
+      controlId,
+    );
   }
 
   private convertPolicyContentToText(content: unknown): string {

@@ -20,7 +20,6 @@ import {
   ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiHeader,
   ApiSecurity,
 } from '@nestjs/swagger';
 import { FindingStatus } from '@trycompai/db';
@@ -39,12 +38,6 @@ import { db } from '@trycompai/db';
 @Controller({ path: 'findings', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class FindingsController {
   constructor(private readonly findingsService: FindingsService) {}
 

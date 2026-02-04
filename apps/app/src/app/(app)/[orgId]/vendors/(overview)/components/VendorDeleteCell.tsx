@@ -1,3 +1,4 @@
+import { useApi } from '@/hooks/use-api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,6 @@ import { Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
-import { deleteVendor } from '../actions/deleteVendor';
 import type { GetVendorsResult } from '../data/queries';
 
 type VendorRow = GetVendorsResult['data'][number];
@@ -23,6 +23,7 @@ interface VendorDeleteCellProps {
 }
 
 export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) => {
+  const api = useApi();
   const { mutate } = useSWRConfig();
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -31,19 +32,18 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
     event.stopPropagation();
     setIsDeleting(true);
 
-    const response = await deleteVendor({ vendorId: vendor.id });
+    const response = await api.delete(`/v1/vendors/${vendor.id}`);
 
-    if (response?.data?.success) {
+    if (!response.error) {
       toast.success(`Vendor "${vendor.name}" has been deleted.`);
       setIsRemoveAlertOpen(false);
-      // Invalidate all vendors SWR caches (any key starting with 'vendors')
       mutate(
         (key) => Array.isArray(key) && key[0] === 'vendors',
         undefined,
         { revalidate: true },
       );
     } else {
-      toast.error(String(response?.data?.error) || 'Failed to delete vendor.');
+      toast.error('Failed to delete vendor.');
     }
 
     setIsDeleting(false);

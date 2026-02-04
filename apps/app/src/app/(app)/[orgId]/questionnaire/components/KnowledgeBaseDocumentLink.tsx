@@ -35,7 +35,6 @@ export function KnowledgeBaseDocumentLink({
         {
           organizationId: orgId,
         },
-        orgId,
       );
 
       if (response.error) {

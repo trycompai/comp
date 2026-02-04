@@ -9,7 +9,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -40,11 +39,6 @@ import {
 @Controller({ path: 'browserbase', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description: 'Organization ID (required for session auth)',
-  required: true,
-})
 export class BrowserbaseController {
   constructor(private readonly browserbaseService: BrowserbaseService) {}
 

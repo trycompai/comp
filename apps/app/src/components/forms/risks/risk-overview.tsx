@@ -1,17 +1,16 @@
 'use client';
 
-import { updateRiskAction } from '@/actions/risk/update-risk-action';
 import { updateRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Departments, Member, type Risk, RiskCategory, RiskStatus, type User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -23,14 +22,8 @@ export function UpdateRiskOverview({
   risk: Risk;
   assignees: (Member & { user: User })[];
 }) {
-  const updateRisk = useAction(updateRiskAction, {
-    onSuccess: () => {
-      toast.success('Risk updated successfully');
-    },
-    onError: () => {
-      toast.error('Failed to update risk');
-    },
-  });
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateRiskSchema>>({
     resolver: zodResolver(updateRiskSchema),
@@ -45,9 +38,9 @@ export function UpdateRiskOverview({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateRiskSchema>) => {
-    updateRisk.execute({
-      id: data.id,
+  const onSubmit = async (data: z.infer<typeof updateRiskSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/risks/${data.id}`, {
       title: data.title,
       description: data.description,
       assigneeId: data.assigneeId,
@@ -55,6 +48,14 @@ export function UpdateRiskOverview({
       department: data.department,
       status: data.status,
     });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to update risk');
+      return;
+    }
+
+    toast.success('Risk updated successfully');
   };
 
   return (
@@ -72,7 +73,7 @@ export function UpdateRiskOverview({
                     assigneeId={field.value ?? null}
                     assignees={assignees}
                     onAssigneeChange={field.onChange}
-                    disabled={updateRisk.status === 'executing'}
+                    disabled={isSubmitting}
                     withTitle={false}
                   />
                 </FormControl>
@@ -167,8 +168,8 @@ export function UpdateRiskOverview({
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={updateRisk.status === 'executing'}>
-            {updateRisk.status === 'executing' ? (
+          <Button type="submit" variant="default" disabled={isSubmitting}>
+            {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               'Save'

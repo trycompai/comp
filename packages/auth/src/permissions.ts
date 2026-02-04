@@ -51,6 +51,7 @@ export const owner = ac.newRole({
   member: ['create', 'read', 'update', 'delete'],
   invitation: ['create', 'read', 'cancel'],
   team: ['create', 'read', 'update', 'delete'],
+  ac: ['create', 'read', 'update', 'delete'],
   // Full GRC access
   control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
   evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],
@@ -78,6 +79,7 @@ export const admin = ac.newRole({
   member: ['create', 'read', 'update', 'delete'],
   invitation: ['create', 'read', 'cancel'],
   team: ['create', 'read', 'update', 'delete'],
+  ac: ['create', 'read', 'update', 'delete'],
   // Full GRC access
   control: ['create', 'read', 'update', 'delete', 'assign', 'export'],
   evidence: ['create', 'read', 'update', 'delete', 'upload', 'export'],

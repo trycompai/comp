@@ -7,12 +7,12 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiProperty,
   ApiQuery,
@@ -24,7 +24,7 @@ import { IsString } from 'class-validator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { AuthContext } from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import {
   DomainStatusResponseDto,
@@ -58,12 +58,6 @@ class ListComplianceResourcesDto {
 @Controller({ path: 'trust-portal', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class TrustPortalController {
   constructor(private readonly trustPortalService: TrustPortalService) {}
 
@@ -254,6 +248,91 @@ export class TrustPortalController {
   ): Promise<{ success: boolean }> {
     this.assertOrganizationAccess(dto.organizationId, authContext);
     return this.trustPortalService.deleteTrustDocument(documentId, dto);
+  }
+
+  @Put('settings/toggle')
+  @RequirePermission('portal', 'update')
+  @ApiOperation({ summary: 'Enable or disable the trust portal' })
+  async togglePortal(
+    @OrganizationId() organizationId: string,
+    @Body()
+    body: {
+      enabled: boolean;
+      contactEmail?: string;
+      primaryColor?: string;
+    },
+  ) {
+    return this.trustPortalService.togglePortal(
+      organizationId,
+      body.enabled,
+      body.contactEmail,
+      body.primaryColor,
+    );
+  }
+
+  @Post('settings/custom-domain')
+  @RequirePermission('portal', 'update')
+  @ApiOperation({ summary: 'Add or update a custom domain for the trust portal' })
+  async addCustomDomain(
+    @OrganizationId() organizationId: string,
+    @Body() body: { domain: string },
+  ) {
+    if (!body.domain) {
+      throw new BadRequestException('Domain is required');
+    }
+    return this.trustPortalService.addCustomDomain(organizationId, body.domain);
+  }
+
+  @Post('settings/check-dns')
+  @RequirePermission('portal', 'update')
+  @ApiOperation({ summary: 'Check DNS records for a custom domain' })
+  async checkDnsRecords(
+    @OrganizationId() organizationId: string,
+    @Body() body: { domain: string },
+  ) {
+    if (!body.domain) {
+      throw new BadRequestException('Domain is required');
+    }
+    return this.trustPortalService.checkDnsRecords(
+      organizationId,
+      body.domain,
+    );
+  }
+
+  @Put('settings/faqs')
+  @RequirePermission('portal', 'update')
+  @ApiOperation({ summary: 'Update trust portal FAQs' })
+  async updateFaqs(
+    @OrganizationId() organizationId: string,
+    @Body() body: { faqs: Array<{ question: string; answer: string }> },
+  ) {
+    return this.trustPortalService.updateFaqs(
+      organizationId,
+      body.faqs ?? [],
+    );
+  }
+
+  @Put('settings/allowed-domains')
+  @RequirePermission('portal', 'update')
+  @ApiOperation({ summary: 'Update allowed domains for the trust portal' })
+  async updateAllowedDomains(
+    @OrganizationId() organizationId: string,
+    @Body() body: { domains: string[] },
+  ) {
+    return this.trustPortalService.updateAllowedDomains(
+      organizationId,
+      body.domains ?? [],
+    );
+  }
+
+  @Put('settings/frameworks')
+  @RequirePermission('portal', 'update')
+  @ApiOperation({ summary: 'Update trust portal framework settings' })
+  async updateFrameworks(
+    @OrganizationId() organizationId: string,
+    @Body() body: Record<string, boolean | string | undefined>,
+  ) {
+    return this.trustPortalService.updateFrameworks(organizationId, body);
   }
 
   private assertOrganizationAccess(

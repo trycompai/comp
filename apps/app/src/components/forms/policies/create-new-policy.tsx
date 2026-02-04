@@ -1,19 +1,21 @@
 'use client';
 
-import { createPolicyAction } from '@/actions/policies/create-new-policy';
+import { useApi } from '@/hooks/use-api';
 import { createPolicySchema, type CreatePolicySchema } from '@/actions/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label, Stack, Text, Textarea } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 export function CreateNewPolicyForm() {
+  const api = useApi();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isLoading, setIsLoading] = useState(false);
 
   const closeSheet = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -21,16 +23,6 @@ export function CreateNewPolicyForm() {
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
-
-  const createPolicy = useAction(createPolicyAction, {
-    onSuccess: () => {
-      toast.success('Policy successfully created');
-      closeSheet();
-    },
-    onError: () => {
-      toast.error('Failed to create policy');
-    },
-  });
 
   const {
     register,
@@ -44,11 +36,23 @@ export function CreateNewPolicyForm() {
     },
   });
 
-  const onSubmit = (data: CreatePolicySchema) => {
-    createPolicy.execute(data);
-  };
+  const onSubmit = async (data: CreatePolicySchema) => {
+    setIsLoading(true);
+    const response = await api.post('/v1/policies', {
+      name: data.title,
+      description: data.description,
+      content: [],
+    });
+    setIsLoading(false);
 
-  const isLoading = createPolicy.status === 'executing';
+    if (response.error) {
+      toast.error('Failed to create policy');
+      return;
+    }
+
+    toast.success('Policy successfully created');
+    closeSheet();
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

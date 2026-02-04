@@ -7,7 +7,6 @@ import type { BrowserAutomation } from './types';
 
 interface UseBrowserAutomationsOptions {
   taskId: string;
-  organizationId: string;
 }
 
 interface AutomationConfigInput {
@@ -16,7 +15,7 @@ interface AutomationConfigInput {
   instruction: string;
 }
 
-export function useBrowserAutomations({ taskId, organizationId }: UseBrowserAutomationsOptions) {
+export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) {
   const [automations, setAutomations] = useState<BrowserAutomation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -25,7 +24,6 @@ export function useBrowserAutomations({ taskId, organizationId }: UseBrowserAuto
     try {
       const res = await apiClient.get<BrowserAutomation[]>(
         `/v1/browserbase/automations/task/${taskId}`,
-        organizationId,
       );
       if (res.data) {
         setAutomations(res.data);
@@ -35,7 +33,7 @@ export function useBrowserAutomations({ taskId, organizationId }: UseBrowserAuto
     } finally {
       setIsLoading(false);
     }
-  }, [taskId, organizationId]);
+  }, [taskId]);
 
   const createAutomation = useCallback(
     async (input: AutomationConfigInput) => {
@@ -44,7 +42,6 @@ export function useBrowserAutomations({ taskId, organizationId }: UseBrowserAuto
         const res = await apiClient.post<BrowserAutomation>(
           '/v1/browserbase/automations',
           { taskId, ...input },
-          organizationId,
         );
         if (res.error) throw new Error(res.error);
 
@@ -58,7 +55,7 @@ export function useBrowserAutomations({ taskId, organizationId }: UseBrowserAuto
         setIsSaving(false);
       }
     },
-    [taskId, organizationId, fetchAutomations],
+    [taskId, fetchAutomations],
   );
 
   const updateAutomation = useCallback(
@@ -74,7 +71,6 @@ export function useBrowserAutomations({ taskId, organizationId }: UseBrowserAuto
         const res = await apiClient.patch<BrowserAutomation>(
           `/v1/browserbase/automations/${automationId}`,
           input,
-          organizationId,
         );
         if (res.error) throw new Error(res.error);
 
@@ -88,7 +84,7 @@ export function useBrowserAutomations({ taskId, organizationId }: UseBrowserAuto
         setIsSaving(false);
       }
     },
-    [organizationId, fetchAutomations],
+    [fetchAutomations],
   );
 
   return {

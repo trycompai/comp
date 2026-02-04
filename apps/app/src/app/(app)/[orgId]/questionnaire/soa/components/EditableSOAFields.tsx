@@ -98,7 +98,6 @@ export function EditableSOAFields({
           isApplicable: nextIsApplicable,
           justification: nextIsApplicable === false ? nextJustification : null,
         },
-        organizationId,
       );
 
       if (response.error) {

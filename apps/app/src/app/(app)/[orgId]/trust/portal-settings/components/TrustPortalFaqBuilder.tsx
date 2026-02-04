@@ -1,13 +1,12 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Textarea } from '@comp/ui/textarea';
 import { Card } from '@comp/ui/card';
-import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import { updateTrustPortalFaqsAction } from '../actions/update-trust-portal-faqs';
 import { Plus, Trash2, ChevronUp, ChevronDown, Save, Loader2 } from 'lucide-react';
 import type { FaqItem } from '../types/faq';
 
@@ -33,20 +32,12 @@ export function TrustPortalFaqBuilder({
   initialFaqs: FaqItem[] | null;
   orgId: string;
 }) {
+  const api = useApi();
   const [faqs, setFaqs] = useState<FaqItem[]>(() =>
     normalizeFaqs(initialFaqs ?? []),
   );
   const [isDirty, setIsDirty] = useState(false);
-
-  const updateFaqs = useAction(updateTrustPortalFaqsAction, {
-    onSuccess: () => {
-      setIsDirty(false);
-      toast.success('FAQs saved successfully');
-    },
-    onError: () => {
-      toast.error('Failed to save FAQs');
-    },
-  });
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleAddFaq = useCallback(() => {
     setFaqs((prev) => {
@@ -117,7 +108,7 @@ export function TrustPortalFaqBuilder({
     [],
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     // Filter out FAQs where both question and answer are empty (draft FAQs)
     const validFaqs = faqs.filter((faq) => faq.question.trim() !== '' || faq.answer.trim() !== '');
 
@@ -139,10 +130,18 @@ export function TrustPortalFaqBuilder({
     // Also normalize local state (remove empty drafts + keep UI consistent)
     setFaqs(normalized);
 
-    updateFaqs.execute({ faqs: normalized });
-  }, [faqs, updateFaqs]);
-
-  const isSaving = updateFaqs.status === 'executing';
+    setIsSaving(true);
+    try {
+      const response = await api.put('/v1/trust-portal/settings/faqs', { faqs: normalized });
+      if (response.error) throw new Error(response.error);
+      setIsDirty(false);
+      toast.success('FAQs saved successfully');
+    } catch {
+      toast.error('Failed to save FAQs');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [faqs, api]);
 
   return (
     <div className="space-y-4">

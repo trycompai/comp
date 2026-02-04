@@ -19,7 +19,6 @@ import {
   ApiProduces,
   ApiQuery,
   ApiSecurity,
-  ApiHeader,
   ApiTags,
 } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -56,12 +55,6 @@ import {
 })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class QuestionnaireController {
   private readonly logger = new Logger(QuestionnaireController.name);
 

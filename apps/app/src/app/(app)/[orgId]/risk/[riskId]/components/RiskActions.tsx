@@ -29,7 +29,7 @@ export function RiskActions({ riskId, orgId }: { riskId: string; orgId: string }
   
   // Get SWR mutate function to refresh risk data after mutations
   // Pass orgId to ensure same cache key as RiskPageClient
-  const { mutate: refreshRisk } = useRisk(riskId, { organizationId: orgId });
+  const { mutate: refreshRisk } = useRisk(riskId);
   
   const regenerate = useAction(regenerateRiskMitigationAction, {
     onSuccess: () => {

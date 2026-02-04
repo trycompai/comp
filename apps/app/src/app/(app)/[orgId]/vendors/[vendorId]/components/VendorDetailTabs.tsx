@@ -68,9 +68,7 @@ export function VendorDetailTabs({
   const [assessmentRunId, setAssessmentRunId] = useState<string | null>(null);
   const [assessmentToken, setAssessmentToken] = useState<string | null>(null);
 
-  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId, {
-    organizationId: orgId,
-  });
+  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
 
   const { data: taskItemsResponse, mutate: refreshTaskItems } = useTaskItems(
     vendorId,
@@ -81,7 +79,6 @@ export function VendorDetailTabs({
     'desc',
     {},
     {
-      organizationId: orgId,
       refreshInterval: 0,
       revalidateOnFocus: true,
     },
@@ -178,7 +175,6 @@ export function VendorDetailTabs({
             actions={
               <VendorActions
                 vendorId={vendorId}
-                orgId={orgId}
                 onOpenEditSheet={() => setIsEditSheetOpen(true)}
                 onAssessmentTriggered={handleAssessmentTriggered}
               />

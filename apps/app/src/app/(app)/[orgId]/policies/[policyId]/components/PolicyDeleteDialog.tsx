@@ -1,6 +1,6 @@
 'use client';
 
-import { deletePolicyAction } from '@/actions/policies/delete-policy';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -14,7 +14,6 @@ import { Form } from '@comp/ui/form';
 import { Policy } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -34,6 +33,7 @@ interface PolicyDeleteDialogProps {
 }
 
 export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDialogProps) {
+  const api = useApi();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,26 +44,19 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
     },
   });
 
-  const deletePolicy = useAction(deletePolicyAction, {
-    onSuccess: () => {
-      onClose();
-    },
-    onError: () => {
-      toast.error('Failed to delete policy.');
-    },
-  });
-
   const handleSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
-    deletePolicy.execute({
-      id: policy.id,
-      entityId: policy.id,
-    });
+    const response = await api.delete(`/v1/policies/${policy.id}`);
+    setIsSubmitting(false);
 
-    setTimeout(() => {
-      router.replace(`/${policy.organizationId}/policies`);
-    }, 1000);
+    if (response.error) {
+      toast.error('Failed to delete policy.');
+      return;
+    }
+
+    onClose();
     toast.info('Policy deleted! Redirecting to policies list...');
+    router.replace(`/${policy.organizationId}/policies`);
   };
 
   return (

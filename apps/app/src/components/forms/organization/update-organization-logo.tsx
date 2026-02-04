@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  removeOrganizationLogoAction,
-  updateOrganizationLogoAction,
-} from '@/actions/organization/update-organization-logo-action';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -14,7 +11,6 @@ import {
   CardTitle,
 } from '@comp/ui/card';
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -24,30 +20,11 @@ interface UpdateOrganizationLogoProps {
 }
 
 export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLogoProps) {
+  const api = useApi();
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentLogoUrl);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const uploadLogo = useAction(updateOrganizationLogoAction, {
-    onSuccess: (result) => {
-      if (result.data?.logoUrl) {
-        setPreviewUrl(result.data.logoUrl);
-      }
-      toast.success('Logo updated');
-    },
-    onError: (error) => {
-      toast.error(error.error.serverError || 'Failed to upload logo');
-    },
-  });
-
-  const removeLogo = useAction(removeOrganizationLogoAction, {
-    onSuccess: () => {
-      setPreviewUrl(null);
-      toast.success('Logo removed');
-    },
-    onError: () => {
-      toast.error('Failed to remove logo');
-    },
-  });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,13 +44,25 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
 
     // Convert to base64
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const base64 = (reader.result as string).split(',')[1];
-      uploadLogo.execute({
-        fileName: file.name,
-        fileType: file.type,
-        fileData: base64,
-      });
+      setIsUploading(true);
+      try {
+        const response = await api.post<{ logoUrl: string }>('/v1/organization/logo', {
+          fileName: file.name,
+          fileType: file.type,
+          fileData: base64,
+        });
+        if (response.error) throw new Error(response.error);
+        if (response.data?.logoUrl) {
+          setPreviewUrl(response.data.logoUrl);
+        }
+        toast.success('Logo updated');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to upload logo');
+      } finally {
+        setIsUploading(false);
+      }
     };
     reader.readAsDataURL(file);
 
@@ -83,7 +72,21 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
     }
   };
 
-  const isLoading = uploadLogo.status === 'executing' || removeLogo.status === 'executing';
+  const handleRemove = async () => {
+    setIsRemoving(true);
+    try {
+      const response = await api.delete('/v1/organization/logo');
+      if (response.error) throw new Error(response.error);
+      setPreviewUrl(null);
+      toast.success('Logo removed');
+    } catch {
+      toast.error('Failed to remove logo');
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+  const isLoading = isUploading || isRemoving;
 
   return (
     <Card>
@@ -128,7 +131,7 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
             >
-              {uploadLogo.status === 'executing' ? (
+              {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Uploading...
@@ -142,11 +145,11 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeLogo.execute({})}
+                onClick={handleRemove}
                 disabled={isLoading}
                 className="text-destructive hover:text-destructive"
               >
-                {removeLogo.status === 'executing' ? (
+                {isRemoving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Removing...
@@ -170,4 +173,3 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
     </Card>
   );
 }
-

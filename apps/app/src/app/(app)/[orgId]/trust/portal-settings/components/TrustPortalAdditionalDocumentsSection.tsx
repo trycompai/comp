@@ -109,7 +109,6 @@ export function TrustPortalAdditionalDocumentsSection({
                 fileType: file.type || 'application/octet-stream',
                 fileData,
               },
-              organizationId,
             );
 
             if (response.error) {
@@ -149,7 +148,6 @@ export function TrustPortalAdditionalDocumentsSection({
         const response = await api.post<TrustPortalDocumentDownloadResponse>(
           `/v1/trust-portal/documents/${documentId}/download`,
           { organizationId },
-          organizationId,
         );
 
         if (response.error) {
@@ -198,7 +196,6 @@ export function TrustPortalAdditionalDocumentsSection({
       const response = await api.post<{ success: boolean }>(
         `/v1/trust-portal/documents/${documentToDelete.id}/delete`,
         { organizationId },
-        organizationId,
       );
 
       if (response.error) {

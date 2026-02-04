@@ -1,6 +1,6 @@
 'use client';
 
-import { deleteContextEntryAction } from '@/actions/context-hub/delete-context-entry-action';
+import { useApi } from '@/hooks/use-api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 import { ContextForm } from './context-form';
 
 export function ContextList({ entries, locale }: { entries: Context[]; locale: string }) {
+  const api = useApi();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
 
@@ -139,12 +140,12 @@ export function ContextList({ entries, locale }: { entries: Context[]; locale: s
                             <AlertDialogAction
                               onClick={async () => {
                                 try {
-                                  const result = await deleteContextEntryAction({
-                                    id: entry.id,
-                                  });
-                                  if (result?.data?.success) {
-                                    toast.success('Context entry deleted');
+                                  const response = await api.delete(`/v1/context/${entry.id}`);
+                                  if (response.error) {
+                                    toast.error('Something went wrong');
+                                    return;
                                   }
+                                  toast.success('Context entry deleted');
                                 } catch (error) {
                                   toast.error('Something went wrong');
                                 }

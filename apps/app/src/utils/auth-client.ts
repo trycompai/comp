@@ -1,6 +1,5 @@
 import {
   emailOTPClient,
-  jwtClient,
   magicLinkClient,
   multiSessionClient,
   organizationClient,
@@ -35,7 +34,6 @@ export const authClient = createAuthClient({
     }),
     emailOTPClient(),
     magicLinkClient(),
-    jwtClient(),
     multiSessionClient(),
   ],
   // Authentication is handled via httpOnly cookies - no localStorage tokens needed

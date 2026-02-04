@@ -6,13 +6,11 @@ import { toast } from 'sonner';
 import type { ExecuteResponse, StartLiveResponse } from './types';
 
 interface UseBrowserExecutionOptions {
-  organizationId: string;
   onNeedsReauth: () => void;
   onComplete: () => void;
 }
 
 export function useBrowserExecution({
-  organizationId,
   onNeedsReauth,
   onComplete,
 }: UseBrowserExecutionOptions) {
@@ -32,7 +30,6 @@ export function useBrowserExecution({
         const startRes = await apiClient.post<StartLiveResponse>(
           `/v1/browserbase/automations/${automationId}/start-live`,
           {},
-          organizationId,
         );
 
         if (startRes.data?.needsReauth) {
@@ -60,7 +57,6 @@ export function useBrowserExecution({
             runId: startRes.data.runId,
             sessionId: startedSessionId,
           },
-          organizationId,
         );
 
         if (execRes.data?.success) {
@@ -83,7 +79,6 @@ export function useBrowserExecution({
             await apiClient.post(
               '/v1/browserbase/session/close',
               { sessionId: startedSessionId },
-              organizationId,
             );
           } catch {
             // Ignore cleanup errors (don't block UI / don't mask original error)
@@ -95,13 +90,13 @@ export function useBrowserExecution({
         onComplete();
       }
     },
-    [organizationId, onNeedsReauth, onComplete],
+    [onNeedsReauth, onComplete],
   );
 
   const cancelExecution = useCallback(async () => {
     if (sessionId) {
       try {
-        await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
+        await apiClient.post('/v1/browserbase/session/close', { sessionId });
       } catch {
         // Ignore
       }
@@ -112,7 +107,7 @@ export function useBrowserExecution({
     setIsExecuting(false);
     setRunningAutomationId(null);
     onComplete();
-  }, [sessionId, organizationId, onComplete]);
+  }, [sessionId, onComplete]);
 
   return {
     runningAutomationId,

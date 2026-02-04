@@ -9,14 +9,10 @@ import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
-import { cleanupStaleJwks } from './auth/auth.server';
 
 let app: INestApplication | null = null;
 
 async function bootstrap(): Promise<void> {
-  // Clean up JWKS if the secret has changed, before auth handles any requests
-  await cleanupStaleJwks();
-
   // Disable body parser - required for better-auth NestJS integration
   // The library will re-add body parsers after handling auth routes
   app = await NestFactory.create(AppModule, {

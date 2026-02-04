@@ -17,8 +17,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 interface TaskItemsProps {
   entityId: string;
   entityType: TaskItemEntityType;
-  /** Optional organization ID (if not provided, uses active org from session) */
-  organizationId?: string;
   /** Optional custom title for the task items section */
   title?: string;
   /** Optional custom description */
@@ -34,7 +32,6 @@ interface TaskItemsProps {
 export const TaskItems = ({
   entityId,
   entityType,
-  organizationId,
   title = 'Tasks',
   description,
   variant = 'card',
@@ -61,19 +58,13 @@ export const TaskItems = ({
     error: taskItemsError,
     isLoading: taskItemsLoading,
     mutate: refreshTaskItems,
-    organizationId: tasksOrgId,
-  } = useTaskItems(entityId, entityType, page, limit, sortBy, sortOrder, filters, {
-    organizationId,
-  });
+  } = useTaskItems(entityId, entityType, page, limit, sortBy, sortOrder, filters);
 
   const {
     data: statsResponse,
     isLoading: statsLoading,
     mutate: refreshStats,
-    organizationId: statsOrgId,
-  } = useTaskItemsStats(entityId, entityType, {
-    organizationId,
-  });
+  } = useTaskItemsStats(entityId, entityType);
 
   const { members } = useAssignableMembers();
   
@@ -163,11 +154,8 @@ export const TaskItems = ({
     taskItems.find((t) => t.id === selectedTaskItemId) || 
     null;
 
-  // `useApiSWR` doesn't start fetching until organizationId is available, and during that time `isLoading` is false.
-  // So we also treat "waiting for org" as initial loading for this section.
-  const isWaitingForOrg = !tasksOrgId || !statsOrgId;
   const isInitialLoad =
-    isWaitingForOrg || (!taskItemsResponse && !taskItemsError && taskItems.length === 0);
+    !taskItemsResponse && !taskItemsError && taskItems.length === 0;
   // Only show empty state if we're not loading AND we have no data AND we've received a response
   const shouldShowEmptyState = !taskItemsLoading && !taskItemsError && taskItems.length === 0 && taskItemsResponse !== undefined;
 

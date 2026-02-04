@@ -1,16 +1,16 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Vendor } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input, Stack, Textarea } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { updateVendorSchema } from '../../actions/schema';
-import { updateVendorAction } from '../../actions/update-vendor-action';
 
 interface UpdateTitleAndDescriptionFormProps {
   vendor: Vendor;
@@ -21,16 +21,8 @@ export function UpdateTitleAndDescriptionForm({
   vendor,
   onSuccess,
 }: UpdateTitleAndDescriptionFormProps) {
-  const updateVendor = useAction(updateVendorAction, {
-    onSuccess: () => {
-      toast.success('Vendor updated successfully');
-      onSuccess?.();
-    },
-    onError: (error) => {
-      console.error('Error updating vendor:', error);
-      toast.error('Failed to update vendor');
-    },
-  });
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateVendorSchema>>({
     resolver: zodResolver(updateVendorSchema),
@@ -45,16 +37,25 @@ export function UpdateTitleAndDescriptionForm({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorSchema>) => {
-    updateVendor.execute({
-      id: data.id,
+  const onSubmit = async (data: z.infer<typeof updateVendorSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/vendors/${data.id}`, {
       name: data.name,
       description: data.description,
       category: data.category,
       status: data.status,
       assigneeId: data.assigneeId,
-      website: data.website,
+      website: data.website === '' ? null : data.website,
     });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to update vendor');
+      return;
+    }
+
+    toast.success('Vendor updated successfully');
+    onSuccess?.();
   };
 
   return (
@@ -116,8 +117,8 @@ export function UpdateTitleAndDescriptionForm({
             )}
           />
           <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={updateVendor.status === 'executing'}>
-              {updateVendor.status === 'executing' ? 'Saving...' : 'Save'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </Stack>

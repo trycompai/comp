@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import {
   Button,
   Checkbox,
@@ -13,10 +14,9 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { updateRoleNotificationsAction } from '../actions/updateRoleNotifications';
 import type { NotificationKey, RoleNotificationConfig } from '../data/getRoleNotificationSettings';
 import { NOTIFICATION_TYPES } from '../data/getRoleNotificationSettings';
 
@@ -25,19 +25,10 @@ interface Props {
 }
 
 export function RoleNotificationSettings({ initialSettings }: Props) {
+  const api = useApi();
+  const router = useRouter();
   const [settings, setSettings] = useState<RoleNotificationConfig[]>(initialSettings);
   const [saving, setSaving] = useState(false);
-
-  const { execute } = useAction(updateRoleNotificationsAction, {
-    onSuccess: () => {
-      toast.success('Notification settings updated');
-      setSaving(false);
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to update settings');
-      setSaving(false);
-    },
-  });
 
   const handleToggle = (roleIndex: number, key: NotificationKey, checked: boolean) => {
     setSettings((prev) =>
@@ -54,14 +45,23 @@ export function RoleNotificationSettings({ initialSettings }: Props) {
 
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(initialSettings);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
-    execute({
-      settings: settings.map((config) => ({
-        role: config.role,
-        ...config.notifications,
-      })),
-    });
+    try {
+      const response = await api.put('/v1/organization/role-notifications', {
+        settings: settings.map((config) => ({
+          role: config.role,
+          ...config.notifications,
+        })),
+      });
+      if (response.error) throw new Error(response.error);
+      toast.success('Notification settings updated');
+      router.refresh();
+    } catch {
+      toast.error('Failed to update settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

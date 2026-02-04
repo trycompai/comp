@@ -35,6 +35,8 @@ import { TaskManagementModule } from './task-management/task-management.module';
 import { AssistantChatModule } from './assistant-chat/assistant-chat.module';
 import { TrainingModule } from './training/training.module';
 import { RolesModule } from './roles/roles.module';
+import { ControlsModule } from './controls/controls.module';
+import { FrameworksModule } from './frameworks/frameworks.module';
 
 @Module({
   imports: [
@@ -82,6 +84,8 @@ import { RolesModule } from './roles/roles.module';
     TaskManagementModule,
     AssistantChatModule,
     TrainingModule,
+    ControlsModule,
+    FrameworksModule,
   ],
   controllers: [AppController],
   providers: [

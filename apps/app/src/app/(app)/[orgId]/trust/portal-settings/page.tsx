@@ -239,7 +239,7 @@ async function fetchOrganizationPrimaryColor(orgId: string): Promise<string | nu
   const headersList = await headers();
   const cookieHeader = headersList.get('cookie') || '';
 
-  const jwtToken = await getJwtToken(cookieHeader);
+  const sessionTokenValue = await getSessionToken(cookieHeader);
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
   try {
@@ -247,11 +247,10 @@ async function fetchOrganizationPrimaryColor(orgId: string): Promise<string | nu
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-Organization-Id': orgId,
-        ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
+        ...(sessionTokenValue ? { Authorization: `Bearer ${sessionTokenValue}` } : {}),
       },
     });
-    
+
     if (!response.ok) {
       console.warn('Failed to fetch organization primary color:', response.statusText);
       return null;
@@ -269,7 +268,7 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
   const headersList = await headers();
   const cookieHeader = headersList.get('cookie') || '';
 
-  const jwtToken = await getJwtToken(cookieHeader);
+  const sessionTokenValue = await getSessionToken(cookieHeader);
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
   try {
@@ -277,8 +276,7 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Organization-Id': orgId,
-        ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
+        ...(sessionTokenValue ? { Authorization: `Bearer ${sessionTokenValue}` } : {}),
       },
       body: JSON.stringify({ organizationId: orgId }),
     });
@@ -326,7 +324,7 @@ async function fetchOrganizationFaqs(orgId: string): Promise<unknown[] | null> {
   }
 }
 
-async function getJwtToken(cookieHeader: string): Promise<string | null> {
+async function getSessionToken(cookieHeader: string): Promise<string | null> {
   if (!cookieHeader) {
     return null;
   }
@@ -347,7 +345,7 @@ async function getJwtToken(cookieHeader: string): Promise<string | null> {
     const tokenData = await tokenResponse.json();
     return tokenData?.token ?? null;
   } catch (error) {
-    console.warn('Failed to get JWT token for compliance resources:', error);
+    console.warn('Failed to get session token:', error);
     return null;
   }
 }

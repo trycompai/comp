@@ -29,7 +29,7 @@ export const saveManualAnswer = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const { question, answer, questionnaireId, tags } = parsedInput;
     const { activeOrganizationId } = ctx.session;
-    const userId = ctx.user.id;
+    const userId = ctx.user?.id;
 
     if (!activeOrganizationId) {
       return {

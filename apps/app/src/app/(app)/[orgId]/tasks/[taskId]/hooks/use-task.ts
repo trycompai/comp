@@ -35,7 +35,7 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
         throw new Error('Organization ID and Task ID are required');
       }
 
-      const response = await api.get<TaskData>(`/v1/tasks/${taskId}`, orgId);
+      const response = await api.get<TaskData>(`/v1/tasks/${taskId}`);
 
       if (response.error) {
         throw new Error(response.error);

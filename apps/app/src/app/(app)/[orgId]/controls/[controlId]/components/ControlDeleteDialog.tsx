@@ -1,6 +1,6 @@
 'use client';
 
-import { deleteControlAction } from '@/app/(app)/[orgId]/controls/[controlId]/actions/delete-control';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -14,7 +14,6 @@ import { Form } from '@comp/ui/form';
 import { Control } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -34,6 +33,7 @@ interface ControlDeleteDialogProps {
 }
 
 export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteDialogProps) {
+  const api = useApi();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,24 +44,18 @@ export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteD
     },
   });
 
-  const deleteControl = useAction(deleteControlAction, {
-    onSuccess: () => {
+  const handleSubmit = async (values: FormValues) => {
+    setIsSubmitting(true);
+    try {
+      const response = await api.delete(`/v1/controls/${control.id}`);
+      if (response.error) throw new Error(response.error);
       toast.info('Control deleted! Redirecting to controls list...');
       onClose();
       router.push(`/${control.organizationId}/controls`);
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to delete control.');
       setIsSubmitting(false);
-    },
-  });
-
-  const handleSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
-    deleteControl.execute({
-      id: control.id,
-      entityId: control.id,
-    });
+    }
   };
 
   return (

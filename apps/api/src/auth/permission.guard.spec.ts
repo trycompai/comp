@@ -1,16 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
 import { PermissionGuard, PERMISSIONS_KEY } from './permission.guard';
+
+// Mock auth.server to provide auth.api.hasPermission
+const mockHasPermission = jest.fn();
+jest.mock('./auth.server', () => ({
+  auth: {
+    api: {
+      hasPermission: (...args: unknown[]) => mockHasPermission(...args),
+    },
+  },
+}));
 
 describe('PermissionGuard', () => {
   let guard: PermissionGuard;
   let reflector: Reflector;
-
-  const mockConfigService = {
-    get: jest.fn().mockReturnValue('http://localhost:3000'),
-  };
 
   const createMockExecutionContext = (
     request: Partial<{
@@ -37,15 +42,12 @@ describe('PermissionGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        PermissionGuard,
-        Reflector,
-        { provide: ConfigService, useValue: mockConfigService },
-      ],
+      providers: [PermissionGuard, Reflector],
     }).compile();
 
     guard = module.get<PermissionGuard>(PermissionGuard);
     reflector = module.get<Reflector>(Reflector);
+    mockHasPermission.mockReset();
   });
 
   describe('canActivate', () => {
@@ -69,18 +71,52 @@ describe('PermissionGuard', () => {
       expect(result).toBe(true);
     });
 
-    it('should deny access when user has no roles', async () => {
+    it('should deny access when no authorization header present', async () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
         { resource: 'control', actions: ['delete'] },
       ]);
 
-      // Mock fetch to fail so it uses fallback
-      global.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
+      const context = createMockExecutionContext({
+        headers: {},
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should allow access when SDK returns success', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
+        { resource: 'control', actions: ['delete'] },
+      ]);
+
+      mockHasPermission.mockResolvedValue({ success: true, error: null });
 
       const context = createMockExecutionContext({
-        userRoles: null,
+        headers: { authorization: 'Bearer token' },
+      });
+
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
+      expect(mockHasPermission).toHaveBeenCalledWith({
+        headers: expect.any(Headers),
+        body: {
+          permissions: { control: ['delete'] },
+        },
+      });
+    });
+
+    it('should deny access when SDK returns failure', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
+        { resource: 'control', actions: ['delete'] },
+      ]);
+
+      mockHasPermission.mockResolvedValue({
+        success: false,
+        error: 'Permission denied',
+      });
+
+      const context = createMockExecutionContext({
         headers: { authorization: 'Bearer token' },
       });
 
@@ -89,37 +125,14 @@ describe('PermissionGuard', () => {
       );
     });
 
-    it('should allow access for privileged roles in fallback mode', async () => {
+    it('should deny access when SDK throws', async () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
         { resource: 'control', actions: ['delete'] },
       ]);
 
-      // Mock fetch to fail so it uses fallback
-      global.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
+      mockHasPermission.mockRejectedValue(new Error('SDK error'));
 
       const context = createMockExecutionContext({
-        userRoles: ['admin'],
-        headers: { authorization: 'Bearer token' },
-      });
-
-      const result = await guard.canActivate(context);
-      expect(result).toBe(true);
-    });
-
-    it('should deny access for restricted roles in fallback mode', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['delete'] },
-      ]);
-
-      // Mock fetch to fail so it uses fallback
-      global.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
-
-      const context = createMockExecutionContext({
-        userRoles: ['employee'],
         headers: { authorization: 'Bearer token' },
       });
 

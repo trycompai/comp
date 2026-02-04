@@ -4,26 +4,26 @@ export const POLICY_OPERATIONS: Record<string, ApiOperationOptions> = {
   getAllPolicies: {
     summary: 'Get all policies',
     description:
-      'Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      'Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   },
   getPolicyById: {
     summary: 'Get policy by ID',
     description:
-      'Returns a specific policy by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      'Returns a specific policy by ID for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   },
   createPolicy: {
     summary: 'Create a new policy',
     description:
-      'Creates a new policy for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      'Creates a new policy for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   },
   updatePolicy: {
     summary: 'Update policy',
     description:
-      'Partially updates a policy. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      'Partially updates a policy. Only provided fields will be updated. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   },
   deletePolicy: {
     summary: 'Delete policy',
     description:
-      'Permanently deletes a policy. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      'Permanently deletes a policy. This action cannot be undone. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   },
 };

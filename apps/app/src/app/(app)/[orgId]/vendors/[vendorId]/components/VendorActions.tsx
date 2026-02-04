@@ -1,7 +1,7 @@
 'use client';
 
 import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
-import { triggerVendorRiskAssessmentAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/trigger-vendor-risk-assessment';
+import { useApi } from '@/hooks/use-api';
 import { useVendor } from '@/hooks/use-vendors';
 import {
   AlertDialog,
@@ -25,24 +25,23 @@ import { useSWRConfig } from 'swr';
 
 interface VendorActionsProps {
   vendorId: string;
-  orgId: string;
   onOpenEditSheet: () => void;
   onAssessmentTriggered?: (runId: string, publicAccessToken: string) => void;
 }
 
 export function VendorActions({
   vendorId,
-  orgId,
   onOpenEditSheet,
   onAssessmentTriggered,
 }: VendorActionsProps) {
+  const api = useApi();
   const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isAssessmentConfirmOpen, setIsAssessmentConfirmOpen] = useState(false);
+  const [isAssessmentSubmitting, setIsAssessmentSubmitting] = useState(false);
 
   // Get SWR mutate function to refresh vendor data after mutations
-  // Pass orgId to ensure same cache key as VendorPageClient
-  const { mutate: refreshVendor } = useVendor(vendorId, { organizationId: orgId });
+  const { mutate: refreshVendor } = useVendor(vendorId);
 
   const regenerate = useAction(regenerateVendorMitigationAction, {
     onSuccess: () => {
@@ -62,31 +61,33 @@ export function VendorActions({
     onError: () => toast.error('Failed to trigger mitigation regeneration'),
   });
 
-  const triggerAssessment = useAction(triggerVendorRiskAssessmentAction, {
-    onSuccess: (result) => {
-      toast.success('Assessment regeneration triggered. This may take a moment.');
-      refreshVendor();
-      globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
-        revalidate: true,
-      });
-      // Notify parent with run info for real-time tracking
-      if (result.data?.runId && result.data?.publicAccessToken) {
-        onAssessmentTriggered?.(result.data.runId, result.data.publicAccessToken);
-      }
-    },
-    onError: () => toast.error('Failed to trigger risk assessment regeneration'),
-  });
-
   const handleConfirm = () => {
     setIsConfirmOpen(false);
     toast.info('Regenerating vendor risk mitigation...');
     regenerate.execute({ vendorId });
   };
 
-  const handleAssessmentConfirm = () => {
+  const handleAssessmentConfirm = async () => {
     setIsAssessmentConfirmOpen(false);
+    setIsAssessmentSubmitting(true);
     toast.info('Regenerating vendor risk assessment...');
-    triggerAssessment.execute({ vendorId });
+    try {
+      const response = await api.post<{ success: boolean; runId: string; publicAccessToken: string }>(`/v1/vendors/${vendorId}/trigger-assessment`, {});
+      if (response.error) throw new Error(response.error);
+      toast.success('Assessment regeneration triggered. This may take a moment.');
+      refreshVendor();
+      globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
+        revalidate: true,
+      });
+      // Notify parent with run info for real-time tracking
+      if (response.data?.runId && response.data?.publicAccessToken) {
+        onAssessmentTriggered?.(response.data.runId, response.data.publicAccessToken);
+      }
+    } catch {
+      toast.error('Failed to trigger risk assessment regeneration');
+    } finally {
+      setIsAssessmentSubmitting(false);
+    }
   };
 
   return (
@@ -140,14 +141,14 @@ export function VendorActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={triggerAssessment.status === 'executing'}>
+            <AlertDialogCancel disabled={isAssessmentSubmitting}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleAssessmentConfirm}
-              disabled={triggerAssessment.status === 'executing'}
+              disabled={isAssessmentSubmitting}
             >
-              {triggerAssessment.status === 'executing' ? 'Working…' : 'Confirm'}
+              {isAssessmentSubmitting ? 'Working…' : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,8 +1,8 @@
 'use client';
 
-import { createRiskAction } from '@/actions/risk/create-risk-action';
 import { createRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import type { Member, User } from '@db';
 import { Departments, RiskCategory } from '@db';
@@ -23,7 +23,7 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
@@ -35,18 +35,9 @@ interface CreateRiskProps {
 }
 
 export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
+  const api = useApi();
   const { mutate } = useSWRConfig();
-
-  const createRisk = useAction(createRiskAction, {
-    onSuccess: () => {
-      toast.success('Risk created successfully');
-      onSuccess?.();
-      mutate((key) => Array.isArray(key) && key[0] === 'risks', undefined, { revalidate: true });
-    },
-    onError: () => {
-      toast.error('Failed to create risk');
-    },
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
@@ -64,8 +55,19 @@ export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof createRiskSchema>) => {
-    createRisk.execute(data);
+  const onSubmit = async (data: z.infer<typeof createRiskSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.post('/v1/risks', data);
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to create risk');
+      return;
+    }
+
+    toast.success('Risk created successfully');
+    onSuccess?.();
+    mutate((key) => Array.isArray(key) && key[0] === 'risks', undefined, { revalidate: true });
   };
 
   return (
@@ -156,7 +158,7 @@ export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
                 assigneeId={field.value ?? null}
                 assignees={assignees}
                 onAssigneeChange={field.onChange}
-                disabled={createRisk.status === 'executing'}
+                disabled={isSubmitting}
                 withTitle={false}
               />
               <FieldError errors={[errors.assigneeId]} />
@@ -167,9 +169,9 @@ export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
 
       <SheetFooter>
         <HStack justify="end">
-          <Button type="submit" disabled={createRisk.status === 'executing'}>
-            {createRisk.status === 'executing' ? 'Creating...' : 'Create'}
-            {createRisk.status !== 'executing' && <ArrowRight size={16} className="ml-2" />}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating...' : 'Create'}
+            {!isSubmitting && <ArrowRight size={16} className="ml-2" />}
           </Button>
         </HStack>
       </SheetFooter>

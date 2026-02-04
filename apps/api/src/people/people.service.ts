@@ -4,6 +4,7 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
+import { db } from '@trycompai/db';
 import { FleetService } from '../lib/fleet.service';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
@@ -393,6 +394,41 @@ export class PeopleService {
         error,
       );
       throw new Error(`Failed to remove host: ${error.message}`);
+    }
+  }
+
+  async updateEmailPreferences(
+    userId: string,
+    preferences: {
+      policyNotifications: boolean;
+      taskReminders: boolean;
+      weeklyTaskDigest: boolean;
+      unassignedItemsNotifications: boolean;
+      taskMentions: boolean;
+      taskAssignments: boolean;
+    },
+  ) {
+    try {
+      const allUnsubscribed = Object.values(preferences).every(
+        (v) => v === false,
+      );
+
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          emailPreferences: preferences,
+          emailNotificationsUnsubscribed: allUnsubscribed,
+        },
+      });
+
+      this.logger.log(`Updated email preferences for user ${userId}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        `Failed to update email preferences for user ${userId}:`,
+        error,
+      );
+      throw error;
     }
   }
 }

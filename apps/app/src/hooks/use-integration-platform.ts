@@ -110,7 +110,6 @@ export function useIntegrationConnections() {
     async () => {
       const response = await api.get<ConnectionListItem[]>(
         `/v1/integrations/connections?organizationId=${orgId}`,
-        orgId,
       );
       if (response.error) {
         throw new Error(response.error);
@@ -143,7 +142,6 @@ export function useIntegrationConnection(connectionId: string | null) {
     async () => {
       const response = await api.get<IntegrationConnection>(
         `/v1/integrations/connections/${connectionId}`,
-        orgId,
       );
       if (response.error) {
         throw new Error(response.error);
@@ -250,7 +248,6 @@ export function useIntegrationMutations() {
           organizationId: orgId,
           credentials,
         },
-        orgId,
       );
 
       if (response.error) {
@@ -272,8 +269,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<TestConnectionResponse> => {
       const response = await api.post<TestConnectionResponse>(
         `/v1/integrations/connections/${connectionId}/test`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -296,8 +291,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
       const response = await api.post(
         `/v1/integrations/connections/${connectionId}/pause`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -319,8 +312,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
       const response = await api.post(
         `/v1/integrations/connections/${connectionId}/resume`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -342,8 +333,6 @@ export function useIntegrationMutations() {
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
       const response = await api.post(
         `/v1/integrations/connections/${connectionId}/disconnect`,
-        undefined,
-        orgId,
       );
 
       if (response.error) {
@@ -363,7 +352,7 @@ export function useIntegrationMutations() {
    */
   const deleteConnection = useCallback(
     async (connectionId: string): Promise<{ success: boolean; error?: string }> => {
-      const response = await api.delete(`/v1/integrations/connections/${connectionId}`, orgId);
+      const response = await api.delete(`/v1/integrations/connections/${connectionId}`);
 
       if (response.error) {
         return { success: false, error: response.error };

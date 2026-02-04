@@ -32,8 +32,7 @@ export function MetricsSection({
   isTogglingEnabled,
   editScriptUrl,
 }: MetricsSectionProps) {
-  const { orgId, taskId, automationId } = useParams<{
-    orgId: string;
+  const { taskId, automationId } = useParams<{
     taskId: string;
     automationId: string;
   }>();
@@ -77,7 +76,6 @@ export function MetricsSection({
       const response = await api.patch(
         `/v1/tasks/${taskId}/automations/${automationId}`,
         { name: nameValue.trim() },
-        orgId,
       );
 
       if (response.error) {

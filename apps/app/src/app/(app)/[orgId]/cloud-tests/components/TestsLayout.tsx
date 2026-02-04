@@ -147,7 +147,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         }
       } else {
         // Use dedicated cloud security endpoint
-        const response = await api.post(`/v1/cloud-security/scan/${targetProvider.id}`, {}, orgId);
+        const response = await api.post(`/v1/cloud-security/scan/${targetProvider.id}`, {});
         if (response.error) {
           console.error(`Error scanning ${targetProvider.name}:`, response.error);
           toast.error(`Failed to scan ${targetProvider.name}`);

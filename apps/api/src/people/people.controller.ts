@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Body,
@@ -10,11 +11,11 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiExtraModels,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -47,12 +48,6 @@ import { PEOPLE_BODIES } from './schemas/people-bodies';
 @Controller({ path: 'people', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class PeopleController {
   constructor(private readonly peopleService: PeopleService) {}
 
@@ -305,5 +300,60 @@ export class PeopleController {
           },
         }),
     };
+  }
+
+  @Put('me/email-preferences')
+  @ApiOperation({ summary: 'Update current user email notification preferences' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['preferences'],
+      properties: {
+        preferences: {
+          type: 'object',
+          required: [
+            'policyNotifications',
+            'taskReminders',
+            'weeklyTaskDigest',
+            'unassignedItemsNotifications',
+            'taskMentions',
+            'taskAssignments',
+          ],
+          properties: {
+            policyNotifications: { type: 'boolean' },
+            taskReminders: { type: 'boolean' },
+            weeklyTaskDigest: { type: 'boolean' },
+            unassignedItemsNotifications: { type: 'boolean' },
+            taskMentions: { type: 'boolean' },
+            taskAssignments: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  })
+  async updateEmailPreferences(
+    @AuthContext() authContext: AuthContextType,
+    @Body()
+    body: {
+      preferences: {
+        policyNotifications: boolean;
+        taskReminders: boolean;
+        weeklyTaskDigest: boolean;
+        unassignedItemsNotifications: boolean;
+        taskMentions: boolean;
+        taskAssignments: boolean;
+      };
+    },
+  ) {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. This endpoint requires session authentication.',
+      );
+    }
+
+    return this.peopleService.updateEmailPreferences(
+      authContext.userId,
+      body.preferences,
+    );
   }
 }

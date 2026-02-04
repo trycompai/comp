@@ -59,7 +59,6 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
         {
           organizationId: orgId,
         },
-        orgId,
       );
 
       if (response.error) {
@@ -96,7 +95,6 @@ export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProp
         {
           organizationId: orgId,
         },
-        orgId,
       );
 
       if (response.error) {

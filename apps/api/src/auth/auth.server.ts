@@ -5,13 +5,11 @@ import {
   sendEmail,
 } from '@trycompai/email';
 import { db } from '@trycompai/db';
-import { symmetricDecrypt } from 'better-auth/crypto';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import {
   bearer,
   emailOTP,
-  jwt,
   magicLink,
   multiSession,
   organization,
@@ -407,24 +405,6 @@ export const auth = betterAuth({
         });
       },
     }),
-    jwt({
-      jwt: {
-        definePayload: ({ user }) => ({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          emailVerified: user.emailVerified,
-        }),
-        expirationTime: '1h',
-      },
-      // IMPORTANT: Set rotationInterval to prevent JWKS key regeneration on every request
-      // Without this, new keys are created constantly, invalidating existing JWTs
-      // See: https://github.com/better-auth/better-auth/issues/6215
-      jwks: {
-        rotationInterval: 60 * 60 * 24 * 30, // 30 days - rotate keys monthly
-        gracePeriod: 60 * 60 * 24 * 7, // 7 days - old keys remain valid for a week after rotation
-      },
-    }),
     bearer(),
     multiSession(),
   ],
@@ -458,34 +438,3 @@ export const auth = betterAuth({
 
 export type Auth = typeof auth;
 
-/**
- * Clean up JWKS records encrypted with a previous secret.
- *
- * BetterAuth encrypts JWKS private keys using SECRET_KEY. When the secret
- * changes, existing keys can't be decrypted, causing all auth operations to
- * fail with "Failed to decrypt private key". This function detects the
- * mismatch on startup and removes stale records so BetterAuth can regenerate
- * fresh keys automatically.
- */
-export async function cleanupStaleJwks(): Promise<void> {
-  const secret = process.env.SECRET_KEY;
-  if (!secret) return;
-
-  try {
-    const record = await db.jwks.findFirst();
-    if (!record) return;
-
-    try {
-      await symmetricDecrypt({ key: secret, data: record.privateKey });
-    } catch {
-      console.warn(
-        '[Auth] JWKS keys were encrypted with a different secret. ' +
-          'Removing stale keys — fresh keys will be generated automatically.',
-      );
-      await db.jwks.deleteMany();
-      console.warn('[Auth] Stale JWKS keys removed.');
-    }
-  } catch (error) {
-    console.error('[Auth] Error during JWKS startup check:', error);
-  }
-}

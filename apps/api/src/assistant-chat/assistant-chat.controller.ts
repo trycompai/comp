@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -28,12 +27,6 @@ import type { AssistantChatMessage } from './assistant-chat.types';
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @RequirePermission('app', 'read')
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for JWT auth, optional for API key auth)',
-  required: false,
-})
 export class AssistantChatController {
   constructor(private readonly assistantChatService: AssistantChatService) {}
 

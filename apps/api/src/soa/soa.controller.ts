@@ -33,7 +33,7 @@ import { UseGuards } from '@nestjs/common';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { ApiSecurity, ApiHeader } from '@nestjs/swagger';
+import { ApiSecurity } from '@nestjs/swagger';
 import {
   createSafeSSESender,
   setupSSEHeaders,
@@ -47,12 +47,6 @@ import {
 })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class SOAController {
   private readonly logger = new Logger(SOAController.name);
 

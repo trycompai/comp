@@ -1,9 +1,6 @@
 'use client';
 
-import { deleteVersionAction } from '@/actions/policies/delete-version';
-import { submitPolicyForApprovalAction } from '@/actions/policies/submit-policy-for-approval-action';
-import { submitVersionForApprovalAction } from '@/actions/policies/submit-version-for-approval';
-import { updatePolicyFormAction } from '@/actions/policies/update-policy-form-action';
+import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
@@ -59,7 +56,6 @@ import {
 import { Calendar } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, History, Trash2, Upload } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -90,6 +86,7 @@ export function UpdatePolicyOverview({
   versions = [],
   onMutate,
 }: UpdatePolicyOverviewProps) {
+  const api = useApi();
   const router = useRouter();
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [isSetActiveApprovalDialogOpen, setIsSetActiveApprovalDialogOpen] = useState(false);
@@ -195,31 +192,7 @@ export function UpdatePolicyOverview({
 
   const fieldsDisabled = isPendingApproval;
 
-  const updatePolicyForm = useAction(updatePolicyFormAction, {
-    onSuccess: () => {
-      toast.success('Policy updated successfully');
-      setIsSubmitting(false);
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to update policy');
-      setIsSubmitting(false);
-    },
-  });
-
-  const submitForApproval = useAction(submitPolicyForApprovalAction, {
-    onSuccess: () => {
-      toast.success('Policy submitted for approval successfully!');
-      setIsSubmitting(false);
-      setIsApprovalDialogOpen(false);
-      setSelectedStatus('needs_review');
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to submit policy for approval.');
-      setIsSubmitting(false);
-    },
-  });
+  // Replaced useAction hooks with useApi calls in handleConfirmChanges and handleConfirmApproval
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -255,25 +228,31 @@ export function UpdatePolicyOverview({
     setIsSubmitting(false);
   };
 
-  const handleConfirmChanges = () => {
+  const handleConfirmChanges = async () => {
     if (!pendingChanges) return;
 
     setIsSubmitting(true);
-    updatePolicyForm.execute({
-      id: policy.id,
+    const response = await api.patch(`/v1/policies/${policy.id}`, {
       status: pendingChanges.formData.status,
       assigneeId: pendingChanges.formData.assigneeId,
       department: pendingChanges.formData.department,
-      review_frequency: pendingChanges.formData.reviewFrequency,
-      review_date: pendingChanges.formData.reviewDate,
-      approverId: null,
-      entityId: policy.id,
+      frequency: pendingChanges.formData.reviewFrequency,
+      reviewDate: pendingChanges.formData.reviewDate,
     });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to update policy');
+    } else {
+      toast.success('Policy updated successfully');
+      onMutate?.();
+    }
+
     setIsStatusChangeDialogOpen(false);
     setPendingChanges(null);
   };
 
-  const handleConfirmApproval = () => {
+  const handleConfirmApproval = async () => {
     if (!selectedApproverId) {
       toast.error('Approver is required.');
       return;
@@ -285,16 +264,24 @@ export function UpdatePolicyOverview({
     const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
 
     setIsSubmitting(true);
-    submitForApproval.execute({
-      id: policy.id,
+    const response = await api.patch(`/v1/policies/${policy.id}`, {
       status: PolicyStatus.needs_review,
       assigneeId,
       department,
-      review_frequency: reviewFrequency,
-      review_date: reviewDate,
+      frequency: reviewFrequency,
+      reviewDate,
       approverId: selectedApproverId,
-      entityId: policy.id,
     });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to submit policy for approval.');
+    } else {
+      toast.success('Policy submitted for approval successfully!');
+      setIsApprovalDialogOpen(false);
+      setSelectedStatus('needs_review');
+      onMutate?.();
+    }
     setSelectedApproverId(null);
   };
 
@@ -328,73 +315,61 @@ export function UpdatePolicyOverview({
 
   const handleConfirmSetActive = async () => {
     if (!pendingSetActiveVersion) return;
-    
+
     // Check if approval is required (approver must be selected)
     if (!versionApprovalApproverId) {
       toast.error('Please select an approver');
       return;
     }
-    
+
     const versionToPublish = pendingSetActiveVersion;
     setSettingActive(versionToPublish.id);
-    try {
-      const result = await submitVersionForApprovalAction({
-        policyId: policy.id,
-        versionId: versionToPublish.id,
-        approverId: versionApprovalApproverId,
-        entityId: policy.id,
-      });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to submit version for approval');
-      }
-      
-      // Don't change selectedVersionId - keep user on the version they were viewing
-      toast.success(`Version ${versionToPublish.version} submitted for approval`);
-      setPendingSetActiveVersion(null);
-      setIsSetActiveApprovalDialogOpen(false);
-      setVersionApprovalApproverId(null);
-      
-      // Trigger data refresh
-      onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to submit version for approval');
-    } finally {
-      setSettingActive(null);
+
+    const response = await api.post(
+      `/v1/policies/${policy.id}/versions/${versionToPublish.id}/submit-for-approval`,
+      { approverId: versionApprovalApproverId },
+    );
+    setSettingActive(null);
+
+    if (response.error) {
+      toast.error('Failed to submit version for approval');
+      return;
     }
+
+    toast.success(`Version ${versionToPublish.version} submitted for approval`);
+    setPendingSetActiveVersion(null);
+    setIsSetActiveApprovalDialogOpen(false);
+    setVersionApprovalApproverId(null);
+    onMutate?.();
+    router.refresh();
   };
 
   const handleDeleteVersion = async () => {
     if (!versionToDelete) return;
-    
+
     setIsDeletingVersion(true);
-    try {
-      const result = await deleteVersionAction({
-        versionId: versionToDelete.id,
-        policyId: policy.id,
-      });
-      
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to delete version');
-      }
-      
-      toast.success(`Version ${versionToDelete.version} deleted`);
-      
-      // If we deleted the selected version, switch to another one
-      if (selectedVersionId === versionToDelete.id) {
-        const remainingVersions = versions.filter(v => v.id !== versionToDelete.id);
-        setSelectedVersionId(policy.currentVersionId ?? remainingVersions[0]?.id ?? null);
-      }
-      
-      setDeleteVersionDialogOpen(false);
-      setVersionToDelete(null);
-      onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete version');
-    } finally {
-      setIsDeletingVersion(false);
+    const response = await api.delete(
+      `/v1/policies/${policy.id}/versions/${versionToDelete.id}`,
+    );
+    setIsDeletingVersion(false);
+
+    if (response.error) {
+      toast.error('Failed to delete version');
+      return;
     }
+
+    toast.success(`Version ${versionToDelete.version} deleted`);
+
+    // If we deleted the selected version, switch to another one
+    if (selectedVersionId === versionToDelete.id) {
+      const remainingVersions = versions.filter(v => v.id !== versionToDelete.id);
+      setSelectedVersionId(policy.currentVersionId ?? remainingVersions[0]?.id ?? null);
+    }
+
+    setDeleteVersionDialogOpen(false);
+    setVersionToDelete(null);
+    onMutate?.();
+    router.refresh();
   };
 
 
@@ -404,7 +379,7 @@ export function UpdatePolicyOverview({
     buttonText = 'Submit for Approval';
   }
 
-  const isLoading = isSubmitting || updatePolicyForm.isExecuting || submitForApproval.isExecuting;
+  const isLoading = isSubmitting;
 
   return (
     <>

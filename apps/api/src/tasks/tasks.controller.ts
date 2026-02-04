@@ -14,7 +14,6 @@ import {
 import {
   ApiExtraModels,
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -44,12 +43,6 @@ import { TasksService } from './tasks.service';
 @Controller({ path: 'tasks', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
@@ -111,6 +104,93 @@ export class TasksController {
     );
 
     return await this.tasksService.getTasks(organizationId, assignmentFilter);
+  }
+
+  @Post()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'create')
+  @ApiOperation({
+    summary: 'Create a task',
+    description: 'Create a new task for the organization',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', example: 'Implement access controls' },
+        description: {
+          type: 'string',
+          example: 'Set up role-based access controls for the platform',
+        },
+        assigneeId: {
+          type: 'string',
+          nullable: true,
+          example: 'mem_abc123',
+        },
+        frequency: {
+          type: 'string',
+          enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+          nullable: true,
+          example: 'monthly',
+        },
+        department: {
+          type: 'string',
+          enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
+          nullable: true,
+          example: 'it',
+        },
+        controlIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['ctrl_abc123'],
+        },
+        taskTemplateId: {
+          type: 'string',
+          nullable: true,
+          example: 'tmpl_abc123',
+        },
+        vendorId: {
+          type: 'string',
+          nullable: true,
+          example: 'vnd_abc123',
+          description: 'Vendor ID to connect this task to',
+        },
+      },
+      required: ['title', 'description'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Task created successfully',
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/TaskResponseDto' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request body',
+  })
+  async createTask(
+    @OrganizationId() organizationId: string,
+    @Body()
+    body: {
+      title: string;
+      description: string;
+      assigneeId?: string | null;
+      frequency?: string | null;
+      department?: string | null;
+      controlIds?: string[];
+      taskTemplateId?: string | null;
+      vendorId?: string | null;
+    },
+  ): Promise<TaskResponseDto> {
+    if (!body.title || !body.description) {
+      throw new BadRequestException('title and description are required');
+    }
+
+    return await this.tasksService.createTask(organizationId, body);
   }
 
   @Patch('bulk')
@@ -403,7 +483,7 @@ export class TasksController {
   @ApiOperation({
     summary: 'Update a task',
     description:
-      'Update an existing task (status, assignee, frequency, department, reviewDate)',
+      'Update an existing task (title, description, status, assignee, frequency, department, reviewDate)',
   })
   @ApiParam({
     name: 'taskId',
@@ -414,6 +494,16 @@ export class TasksController {
     schema: {
       type: 'object',
       properties: {
+        title: {
+          type: 'string',
+          example: 'Review access controls',
+          description: 'Task title',
+        },
+        description: {
+          type: 'string',
+          example: 'Review and update access control policies',
+          description: 'Task description',
+        },
         status: {
           type: 'string',
           enum: Object.values(TaskStatus),
@@ -466,6 +556,8 @@ export class TasksController {
     @Param('taskId') taskId: string,
     @Body()
     body: {
+      title?: string;
+      description?: string;
       status?: TaskStatus;
       assigneeId?: string | null;
       frequency?: string;
@@ -500,6 +592,8 @@ export class TasksController {
       organizationId,
       taskId,
       {
+        title: body.title,
+        description: body.description,
         status: body.status,
         assigneeId: body.assigneeId,
         frequency: body.frequency,
@@ -508,6 +602,41 @@ export class TasksController {
       },
       userId,
     );
+  }
+
+  @Delete(':taskId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'delete')
+  @ApiOperation({
+    summary: 'Delete a task',
+    description: 'Delete a single task by its ID',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Task deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Task deleted successfully' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Task not found',
+  })
+  async deleteTask(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.tasksService.deleteTask(organizationId, taskId);
+    return { success: true, message: 'Task deleted successfully' };
   }
 
   // ==================== TASK ATTACHMENTS ====================

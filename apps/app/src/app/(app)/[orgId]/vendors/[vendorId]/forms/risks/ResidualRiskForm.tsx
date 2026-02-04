@@ -1,11 +1,12 @@
 'use client';
 
-import { updateVendorResidualRisk } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/update-vendor-residual-risk';
+import { useApi } from '@/hooks/use-api';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@comp/ui/button';
 import { Select, SelectItem, Stack } from '@trycompai/design-system';
+import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -29,6 +30,8 @@ export function ResidualRiskForm({
   initialProbability = Likelihood.very_unlikely,
   initialImpact = Impact.insignificant,
 }: ResidualRiskFormProps) {
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('residual-risk-sheet');
 
   const form = useForm<FormValues>({
@@ -40,19 +43,20 @@ export function ResidualRiskForm({
   });
 
   async function onSubmit(values: FormValues) {
-    try {
-      await updateVendorResidualRisk({
-        vendorId,
-        residualProbability: values.residualProbability,
-        residualImpact: values.residualImpact,
-      });
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/vendors/${vendorId}`, {
+      residualProbability: values.residualProbability,
+      residualImpact: values.residualImpact,
+    });
+    setIsSubmitting(false);
 
-      toast.success('Residual risk updated successfully');
-      setOpen(null);
-    } catch (error) {
-      console.error('Error submitting form:', error);
+    if (response.error) {
       toast.error('An unexpected error occurred');
+      return;
     }
+
+    toast.success('Residual risk updated successfully');
+    setOpen(null);
   }
 
   return (

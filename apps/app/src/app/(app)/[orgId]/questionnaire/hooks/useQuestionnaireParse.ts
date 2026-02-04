@@ -78,7 +78,6 @@ export function useQuestionnaireParse({
             fileData: input.fileData,
             source: 'internal',
           },
-          input.organizationId,
         );
 
         if (response.error || !response.data) {

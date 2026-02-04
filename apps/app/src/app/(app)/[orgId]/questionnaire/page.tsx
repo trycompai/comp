@@ -80,8 +80,8 @@ export default async function SecurityQuestionnairePage({
       const headersList = await headers();
       const cookieHeader = headersList.get('cookie') || '';
 
-      // Get JWT token from Better Auth server-side
-      let jwtToken: string | null = null;
+      // Get session token from Better Auth server-side
+      let sessionTokenValue: string | null = null;
       try {
         const authUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000';
         const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
@@ -93,19 +93,18 @@ export default async function SecurityQuestionnairePage({
 
         if (tokenResponse.ok) {
           const tokenData = await tokenResponse.json();
-          jwtToken = tokenData.token || null;
+          sessionTokenValue = tokenData.token || null;
         }
       } catch {
-        console.warn('Failed to get JWT token, continuing without it');
+        console.warn('Failed to get session token, continuing without it');
       }
 
       const apiHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
-        'X-Organization-Id': organizationId,
       };
 
-      if (jwtToken) {
-        apiHeaders['Authorization'] = `Bearer ${jwtToken}`;
+      if (sessionTokenValue) {
+        apiHeaders['Authorization'] = `Bearer ${sessionTokenValue}`;
       }
 
       const response = await fetch(`${apiUrl}/v1/soa/ensure-setup`, {

@@ -22,8 +22,8 @@ export function useTaskItemActivity(taskItemId: string | null) {
 
   const { data, error, isLoading, mutate } = useSWR<ActivityLog[]>(
     taskItemId && orgId ? [`/v1/task-management/${taskItemId}/activity`, orgId] : null,
-    async ([endpoint, organizationId]: [string, string]) => {
-      const response = await api.get<ActivityLog[]>(endpoint, organizationId);
+    async ([endpoint]: [string, string]) => {
+      const response = await api.get<ActivityLog[]>(endpoint);
       if (response.error) throw new Error(response.error);
       return response.data || [];
     },

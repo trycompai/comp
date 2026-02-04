@@ -132,7 +132,6 @@ export function AdditionalDocumentsSection({
               fileData,
               organizationId,
             },
-            organizationId,
           );
 
           if (response.error) {
@@ -171,7 +170,6 @@ export function AdditionalDocumentsSection({
               documentIds: uploadedDocumentIds,
               organizationId,
             },
-            organizationId,
           );
 
           if (response.error) {
@@ -224,7 +222,6 @@ export function AdditionalDocumentsSection({
         {
           organizationId,
         },
-        organizationId,
       );
 
       if (response.error) {
@@ -278,7 +275,6 @@ export function AdditionalDocumentsSection({
         {
           organizationId,
         },
-        organizationId,
       );
 
       if (response.error) {

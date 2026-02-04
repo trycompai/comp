@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import {
   Button,
   Checkbox,
@@ -9,10 +10,9 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Lock } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { updateEmailPreferencesAction } from '../actions/update-email-preferences';
 
 interface EmailPreferences {
   policyNotifications: boolean;
@@ -90,20 +90,11 @@ export function EmailNotificationPreferences({
   isAdminOrOwner = true,
   roleNotifications,
 }: Props) {
+  const api = useApi();
+  const router = useRouter();
   const [preferences, setPreferences] =
     useState<EmailPreferences>(initialPreferences);
   const [saving, setSaving] = useState(false);
-
-  const { execute } = useAction(updateEmailPreferencesAction, {
-    onSuccess: () => {
-      toast.success('Email preferences updated successfully');
-      setSaving(false);
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError || 'Failed to update preferences');
-      setSaving(false);
-    },
-  });
 
   const handleToggle = (key: keyof EmailPreferences, checked: boolean) => {
     setPreferences((prev) => ({
@@ -126,7 +117,16 @@ export function EmailNotificationPreferences({
 
   const handleSave = async () => {
     setSaving(true);
-    execute({ preferences });
+    try {
+      const response = await api.put('/v1/people/me/email-preferences', { preferences });
+      if (response.error) throw new Error(response.error);
+      toast.success('Email preferences updated successfully');
+      router.refresh();
+    } catch {
+      toast.error('Failed to update preferences');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Check if a notification is locked by role settings (non-admin users only)

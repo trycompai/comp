@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
+import { auth } from './auth.server';
 import { AuthenticatedRequest } from './types';
 
 /**
@@ -33,11 +33,11 @@ const RESTRICTED_ROLES = ['employee', 'contractor'];
 const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'];
 
 /**
- * PermissionGuard - Validates user permissions using better-auth's hasPermission API
+ * PermissionGuard - Validates user permissions using better-auth's SDK
  *
  * This guard:
  * 1. Extracts required permissions from route metadata
- * 2. Calls better-auth's hasPermission endpoint to validate
+ * 2. Uses better-auth's hasPermission SDK to validate against role definitions
  * 3. For restricted roles (employee/contractor), also checks assignment access
  *
  * Usage:
@@ -50,17 +50,8 @@ const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'];
 @Injectable()
 export class PermissionGuard implements CanActivate {
   private readonly logger = new Logger(PermissionGuard.name);
-  private readonly betterAuthUrl: string;
 
-  constructor(
-    private reflector: Reflector,
-    private configService: ConfigService,
-  ) {
-    this.betterAuthUrl =
-      this.configService.get<string>('BETTER_AUTH_URL') ||
-      process.env.BETTER_AUTH_URL ||
-      '';
-  }
+  constructor(private reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get required permissions from route metadata
@@ -86,7 +77,7 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    // JWT auth - validate permissions via better-auth
+    // Build required permissions map
     const permissionBody: Record<string, string[]> = {};
     for (const perm of requiredPermissions) {
       permissionBody[perm.resource] = perm.actions;
@@ -99,9 +90,10 @@ export class PermissionGuard implements CanActivate {
       );
 
       if (!hasPermission) {
-        throw new ForbiddenException(
-          `Access denied. Required permissions: ${JSON.stringify(permissionBody)}`,
+        this.logger.warn(
+          `[PermissionGuard] Access denied. Required: ${JSON.stringify(permissionBody)}`,
         );
+        throw new ForbiddenException('Access denied');
       }
 
       return true;
@@ -115,74 +107,32 @@ export class PermissionGuard implements CanActivate {
   }
 
   /**
-   * Check permissions via better-auth's hasPermission API
+   * Check permissions using better-auth's hasPermission SDK.
+   * Forwards the request's authorization header so better-auth
+   * can resolve the user session and role, then checks the
+   * required permissions against the role definitions (including
+   * dynamic/custom roles stored in the DB).
    */
   private async checkPermission(
     request: AuthenticatedRequest,
     permissions: Record<string, string[]>,
   ): Promise<boolean> {
-    if (!this.betterAuthUrl) {
-      this.logger.error(
-        '[PermissionGuard] BETTER_AUTH_URL not configured, falling back to role check',
-      );
-      return this.fallbackRoleCheck(request.userRoles, permissions);
-    }
-
-    try {
-      const response = await fetch(
-        `${this.betterAuthUrl}/api/auth/organization/has-permission`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: request.headers['authorization'] as string,
-          },
-          body: JSON.stringify({
-            permissions,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        // 401 is expected for stale/invalid tokens — don't log it
-        if (response.status !== 401) {
-          this.logger.warn(
-            `[PermissionGuard] hasPermission API returned ${response.status}`,
-          );
-        }
-        // Fall back to role-based check if better-auth is unavailable
-        return this.fallbackRoleCheck(request.userRoles, permissions);
-      }
-
-      const result = await response.json();
-      return result.success === true || result.hasPermission === true;
-    } catch (error) {
-      this.logger.warn(
-        '[PermissionGuard] Failed to call hasPermission API, falling back to role check:',
-        error,
-      );
-      return this.fallbackRoleCheck(request.userRoles, permissions);
-    }
-  }
-
-  /**
-   * Fallback permission check using role-based logic
-   * Used when better-auth API is unavailable
-   */
-  private fallbackRoleCheck(
-    userRoles: string[] | null,
-    _permissions: Record<string, string[]>,
-  ): boolean {
-    if (!userRoles || userRoles.length === 0) {
+    const authHeader = request.headers['authorization'] as string;
+    if (!authHeader) {
       return false;
     }
 
-    // If user has any privileged role, allow access
-    const hasPrivilegedRole = userRoles.some((role) =>
-      PRIVILEGED_ROLES.includes(role),
-    );
+    const headers = new Headers();
+    headers.set('authorization', authHeader);
 
-    return hasPrivilegedRole;
+    const result = await auth.api.hasPermission({
+      headers,
+      body: {
+        permissions,
+      },
+    });
+
+    return result.success === true;
   }
 
   /**

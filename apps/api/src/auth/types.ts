@@ -1,25 +1,25 @@
-// Types for API authentication - supports API keys and JWT tokens only
+// Types for API authentication - supports API keys and session-based auth
 
 import { Departments } from '@prisma/client';
 
 export interface AuthenticatedRequest extends Request {
   organizationId: string;
-  authType: 'api-key' | 'jwt';
+  authType: 'api-key' | 'session';
   isApiKey: boolean;
   userId?: string;
   userEmail?: string;
   userRoles: string[] | null;
-  memberId?: string; // Member ID for assignment filtering (only available for JWT auth)
-  memberDepartment?: Departments; // Member department for visibility filtering (only available for JWT auth)
+  memberId?: string; // Member ID for assignment filtering (only available for session auth)
+  memberDepartment?: Departments; // Member department for visibility filtering (only available for session auth)
 }
 
 export interface AuthContext {
   organizationId: string;
-  authType: 'api-key' | 'jwt';
+  authType: 'api-key' | 'session';
   isApiKey: boolean;
-  userId?: string; // Only available for JWT auth
-  userEmail?: string; // Only available for JWT auth
+  userId?: string; // Only available for session auth
+  userEmail?: string; // Only available for session auth
   userRoles: string[] | null;
-  memberId?: string; // Member ID for assignment filtering (only available for JWT auth)
-  memberDepartment?: Departments; // Member department for visibility filtering (only available for JWT auth)
+  memberId?: string; // Member ID for assignment filtering (only available for session auth)
+  memberDepartment?: Departments; // Member department for visibility filtering (only available for session auth)
 }
