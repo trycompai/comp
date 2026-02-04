@@ -1,12 +1,25 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
-import { Button } from '@comp/ui/button';
-import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { useMediaQuery } from '@comp/ui/hooks';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@comp/ui/sheet';
-import { Policy } from '@db';
-import { ArchiveIcon, ArchiveRestoreIcon, X } from 'lucide-react';
+import type { Policy } from '@db';
+import {
+  Button,
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  HStack,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  Stack,
+  Text,
+} from '@trycompai/design-system';
+import { Archive, Renew } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
@@ -49,69 +62,42 @@ export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMut
   };
 
   const content = (
-    <div className="space-y-6">
-      <p className="text-muted-foreground text-sm">
+    <Stack gap="lg">
+      <Text size="sm" variant="muted">
         {isArchived
           ? 'Are you sure you want to restore this policy?'
           : 'Are you sure you want to archive this policy?'}
-      </p>
-      <div className="flex justify-end gap-2">
+      </Text>
+      <HStack justify="end" gap="sm">
         <Button
           variant="outline"
           onClick={() => handleOpenChange(false)}
           disabled={isSubmitting}
         >
-          {'Cancel'}
+          Cancel
         </Button>
         <Button
           variant={isArchived ? 'default' : 'destructive'}
           onClick={handleAction}
           disabled={isSubmitting}
+          loading={isSubmitting}
+          iconLeft={isArchived ? <Renew size={14} /> : <Archive size={14} />}
         >
-          {isSubmitting ? (
-            <span className="flex items-center gap-2">
-              <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              {isArchived ? 'Restore' : 'Archive'}
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              {isArchived ? (
-                <>
-                  <ArchiveRestoreIcon className="h-3 w-3" />
-                  {'Restore'}
-                </>
-              ) : (
-                <>
-                  <ArchiveIcon className="h-3 w-3" />
-                  {'Archive'}
-                </>
-              )}
-            </span>
-          )}
+          {isArchived ? 'Restore' : 'Archive'}
         </Button>
-      </div>
-    </div>
+      </HStack>
+    </Stack>
   );
 
   if (isDesktop) {
     return (
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent>
-          <SheetHeader className="mb-6">
-            <div className="flex flex-row items-center justify-between">
-              <SheetTitle>{isArchived ? 'Restore Policy' : 'Archive Policy'}</SheetTitle>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="m-0 size-auto p-0 hover:bg-transparent"
-                onClick={() => setOpen(null)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
+          <SheetHeader>
+            <SheetTitle>{isArchived ? 'Restore Policy' : 'Archive Policy'}</SheetTitle>
             <SheetDescription>{policy.name}</SheetDescription>
           </SheetHeader>
-          {content}
+          <SheetBody>{content}</SheetBody>
         </SheetContent>
       </Sheet>
     );
@@ -119,15 +105,18 @@ export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMut
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerTitle hidden>{isArchived ? 'Restore Policy' : 'Archive Policy'}</DrawerTitle>
-      <DrawerContent className="p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-medium">
-            {isArchived ? 'Restore Policy' : 'Archive Policy'}
-          </h3>
-          <p className="text-muted-foreground mt-1 text-sm">{policy.name}</p>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>{isArchived ? 'Restore Policy' : 'Archive Policy'}</DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">
+          <Stack gap="md">
+            <Text size="sm" variant="muted">
+              {policy.name}
+            </Text>
+            {content}
+          </Stack>
         </div>
-        {content}
       </DrawerContent>
     </Drawer>
   );
