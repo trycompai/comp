@@ -15696,6 +15696,11 @@
             "description": "Vendor website URL",
             "example": "https://www.cloudtechsolutions.com"
           },
+          "isSubProcessor": {
+            "type": "boolean",
+            "description": "Whether the vendor is a sub-processor",
+            "default": false
+          },
           "assigneeId": {
             "type": "string",
             "description": "ID of the user assigned to manage this vendor",
@@ -15809,6 +15814,11 @@
             "type": "string",
             "description": "Vendor website URL",
             "example": "https://www.cloudtechsolutions.com"
+          },
+          "isSubProcessor": {
+            "type": "boolean",
+            "description": "Whether the vendor is a sub-processor",
+            "default": false
           },
           "assigneeId": {
             "type": "string",

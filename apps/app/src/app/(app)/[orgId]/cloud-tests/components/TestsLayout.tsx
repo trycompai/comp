@@ -1,8 +1,8 @@
 'use client';
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
+import { useApi } from '@/hooks/use-api';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
-import { api } from '@/lib/api-client';
 import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
 import { Add, Settings } from '@trycompai/design-system/icons';
 import { useMemo, useState } from 'react';
@@ -45,6 +45,7 @@ const needsVariableConfiguration = (provider: Provider): boolean => {
 };
 
 export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsLayoutProps) {
+  const api = useApi();
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
@@ -65,8 +66,8 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     },
     {
       fallbackData: initialFindings,
-      refreshInterval: 5000,
       revalidateOnFocus: true,
+      // No automatic polling - we manually refresh after scans via mutateFindings()
     },
   );
 
@@ -84,6 +85,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     {
       fallbackData: initialProviders,
       revalidateOnFocus: true,
+      // No automatic polling - we manually refresh after scans via mutateProviders()
     },
   );
 
@@ -134,16 +136,22 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     }
 
     setIsScanning(true);
-    toast.message(`Starting ${targetProvider.name} security scan...`);
+    const startTime = Date.now();
+    toast.message(`Starting ${targetProvider.displayName || targetProvider.name} security scan...`);
 
     try {
       if (targetProvider.isLegacy) {
         // Run legacy check for this specific connection
+        // runTests now waits for completion (uses triggerAndPoll)
         const { runTests } = await import('../actions/run-tests');
-        // Pass the unique connection ID to only scan this specific connection
         const result = await runTests(targetProvider.id);
+
         if (!result.success) {
           console.error('Legacy scan error:', result.errors);
+          toast.error(
+            `Scan failed: ${result.errors?.join(', ') || 'Unknown error'}`,
+          );
+          return null;
         }
       } else {
         // Use dedicated cloud security endpoint
@@ -155,9 +163,11 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         }
       }
 
-      toast.success('Scan completed! Results updated.');
-      await mutateProviders(); // Refresh to get updated lastRunAt
-      await mutateFindings();
+      // Refresh data to get updated results (SWR cache + server cache already revalidated)
+      await Promise.all([mutateProviders(), mutateFindings()]);
+
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      toast.success(`Scan completed in ${elapsed}s! Results updated.`);
       return 'completed';
     } catch (error) {
       console.error('Scan error:', error);

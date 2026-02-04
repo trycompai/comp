@@ -1,6 +1,7 @@
 import { db } from '@db';
 import { Novu } from '@novu/api';
 import { logger, schedules } from '@trigger.dev/sdk';
+import { isUserUnsubscribed, sendEmail, TaskStatusNotificationEmail } from '@trycompai/email';
 
 import { getTargetStatus } from './task-schedule-helpers';
 
@@ -222,7 +223,50 @@ export const taskSchedule = schedules.task({
         `Sending notifications to ${recipients.length} recipients: ${recipients.map((r) => r.email).join(', ')}`,
       );
 
-      // Trigger notification for each recipient.
+      // Send email notifications to each recipient
+      await Promise.allSettled(
+        recipients.map(async (recipient) => {
+          const taskStatus = tasksToFailed.some((t) => t.id === recipient.task.id)
+            ? ('failed' as const)
+            : ('todo' as const);
+
+          // Check if user is unsubscribed
+          const isUnsubscribed = await isUserUnsubscribed(db, recipient.email, 'taskAssignments', recipient.task.organizationId);
+
+          if (isUnsubscribed) {
+            logger.info(
+              `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+            );
+            return;
+          }
+
+          try {
+            await sendEmail({
+              to: recipient.email,
+              subject: `Task "${recipient.task.title}" ${taskStatus === 'failed' ? 'failed' : 'needs review'}`,
+              react: TaskStatusNotificationEmail({
+                email: recipient.email,
+                userName: recipient.name,
+                taskName: recipient.task.title,
+                taskStatus,
+                organizationName: recipient.task.organization.name,
+                taskUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.task.organizationId}/tasks/${recipient.task.id}`,
+              }),
+              system: true,
+            });
+
+            logger.info(
+              `Task notification email sent to ${recipient.email} for task ${recipient.task.id} (status: ${taskStatus})`,
+            );
+          } catch (error) {
+            logger.error(`Failed to send task notification email to ${recipient.email}`, {
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        }),
+      );
+
+      // Also trigger Novu for in-app notifications
       await novu.triggerBulk({
         events: recipients.map((recipient) => ({
           workflowId: 'task-review-required',

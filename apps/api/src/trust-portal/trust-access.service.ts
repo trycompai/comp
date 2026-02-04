@@ -104,29 +104,9 @@ export class TrustAccessService {
   }
 
   /**
-   * Create a URL-friendly slug from organization name
+   * Ensure organization has a friendlyUrl, defaulting to organizationId
    */
-  private slugifyOrganizationName(name: string): string {
-    const cleaned = name
-      .trim()
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-
-    return cleaned.slice(0, 60);
-  }
-
-  /**
-   * Ensure organization has a friendlyUrl, create one if missing
-   */
-  private async ensureFriendlyUrl(params: {
-    organizationId: string;
-    organizationName: string;
-  }): Promise<string> {
-    const { organizationId, organizationName } = params;
-
+  private async ensureFriendlyUrl(organizationId: string): Promise<string> {
     const current = await db.trust.findUnique({
       where: { organizationId },
       select: { friendlyUrl: true },
@@ -134,39 +114,32 @@ export class TrustAccessService {
 
     if (current?.friendlyUrl) return current.friendlyUrl;
 
-    const baseCandidate =
-      this.slugifyOrganizationName(organizationName) ||
-      `org-${organizationId.slice(-8)}`;
-
-    for (let i = 0; i < 25; i += 1) {
-      const candidate = i === 0 ? baseCandidate : `${baseCandidate}-${i + 1}`;
-
-      const taken = await db.trust.findUnique({
-        where: { friendlyUrl: candidate },
-        select: { organizationId: true },
+    // Use organizationId as the default friendlyUrl (guaranteed unique)
+    try {
+      await db.trust.upsert({
+        where: { organizationId },
+        update: { friendlyUrl: organizationId },
+        create: {
+          organizationId,
+          friendlyUrl: organizationId,
+          status: 'published',
+        },
       });
-
-      if (taken && taken.organizationId !== organizationId) continue;
-
-      try {
-        await db.trust.upsert({
+      return organizationId;
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        // If somehow there's a conflict, the friendlyUrl already exists
+        const existing = await db.trust.findUnique({
           where: { organizationId },
-          update: { friendlyUrl: candidate },
-          create: { organizationId, friendlyUrl: candidate },
+          select: { friendlyUrl: true },
         });
-        return candidate;
-      } catch (error: unknown) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
-          continue;
-        }
-        throw error;
+        return existing?.friendlyUrl ?? organizationId;
       }
+      throw error;
     }
-
-    return organizationId;
   }
 
   /**
@@ -176,7 +149,7 @@ export class TrustAccessService {
     organizationId: string;
     organizationName: string;
   }): Promise<string> {
-    const { organizationId, organizationName } = params;
+    const { organizationId } = params;
 
     const trust = await db.trust.findUnique({
       where: { organizationId },
@@ -188,8 +161,7 @@ export class TrustAccessService {
     }
 
     const urlId =
-      trust?.friendlyUrl ||
-      (await this.ensureFriendlyUrl({ organizationId, organizationName }));
+      trust?.friendlyUrl || (await this.ensureFriendlyUrl(organizationId));
 
     return `${this.normalizeUrl(this.TRUST_APP_URL)}/${urlId}`;
   }
@@ -225,8 +197,34 @@ export class TrustAccessService {
       });
     }
 
-    if (!trust || trust.status !== 'published') {
-      throw new NotFoundException('Trust site not found or not published');
+    // If still no trust record but we have an organization, auto-create it
+    if (!trust) {
+      const organization = await db.organization.findUnique({
+        where: { id },
+      });
+
+      if (!organization) {
+        throw new NotFoundException('Trust site not found');
+      }
+
+      // Auto-create trust record with organizationId as friendlyUrl
+      trust = await db.trust.create({
+        data: {
+          organizationId: id,
+          friendlyUrl: id,
+          status: 'published',
+        },
+        include: { organization: true },
+      });
+    }
+
+    // Ensure the trust portal is published (auto-publish if draft)
+    if (trust.status !== 'published') {
+      trust = await db.trust.update({
+        where: { organizationId: trust.organizationId },
+        data: { status: 'published' },
+        include: { organization: true },
+      });
     }
 
     return trust;
@@ -2016,9 +2014,8 @@ export class TrustAccessService {
 
       if (hasUploadedPdf) {
         try {
-          const pdfBuffer = await this.attachmentsService.getObjectBuffer(
-            pdfUrl!,
-          );
+          const pdfBuffer =
+            await this.attachmentsService.getObjectBuffer(pdfUrl);
           return {
             policy,
             pdfBuffer: Buffer.from(pdfBuffer),
@@ -2306,9 +2303,8 @@ export class TrustAccessService {
 
       if (hasUploadedPdf) {
         try {
-          const rawBuffer = await this.attachmentsService.getObjectBuffer(
-            effectivePdfUrl!,
-          );
+          const rawBuffer =
+            await this.attachmentsService.getObjectBuffer(effectivePdfUrl);
           policyPdfBuffer = Buffer.from(rawBuffer);
         } catch (error) {
           console.warn(

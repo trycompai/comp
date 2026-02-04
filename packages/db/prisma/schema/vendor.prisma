@@ -9,6 +9,7 @@ model Vendor {
   residualProbability Likelihood     @default(very_unlikely)
   residualImpact      Impact         @default(insignificant)
   website             String?
+  isSubProcessor      Boolean        @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -52,6 +52,7 @@ export const updateVendorSchema = z.object({
   website: z
     .union([z.string().url('Must be a valid URL (include https://)'), z.literal('')])
     .optional(),
+  isSubProcessor: z.boolean().optional(),
 });
 
 export const createVendorCommentSchema = z.object({

@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsEnum,
   IsUrl,
+  IsBoolean,
 } from 'class-validator';
 import {
   VendorCategory,
@@ -99,6 +100,15 @@ export class CreateVendorDto {
   @IsOptional()
   @IsUrl()
   website?: string;
+
+  @ApiProperty({
+    description: 'Whether the vendor is a sub-processor',
+    default: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isSubProcessor?: boolean;
 
   @ApiProperty({
     description: 'ID of the user assigned to manage this vendor',

@@ -1,21 +1,21 @@
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
+import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
+import { Launch } from '@trycompai/design-system/icons';
 import { Prisma } from '@prisma/client';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { TrustAccessRequestsClient } from './components/trust-access-request-client';
-import { TrustPageTabs } from './components/TrustPageTabs';
+import Link from 'next/link';
 import { TrustPortalSwitch } from './portal-settings/components/TrustPortalSwitch';
 
 export default async function TrustPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  // Fetch portal settings data
-  await ensureFriendlyUrlIfEnabled(orgId);
+  // Ensure Trust record exists with default friendlyUrl
+  await ensureTrustRecord(orgId);
   const trustPortal = await getTrustPortal(orgId);
   const certificateFiles = await fetchComplianceCertificates(orgId);
-  const primaryColor = await fetchOrganizationPrimaryColor(orgId);
   const faqs = await fetchOrganizationFaqs(orgId);
   const additionalDocuments = await db.trustDocument.findMany({
     where: { organizationId: orgId, isActive: true },
@@ -23,59 +23,66 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
     orderBy: { createdAt: 'desc' },
   });
 
+  // Build the public trust portal URL
+  const portalUrl =
+    trustPortal?.domainVerified && trustPortal.domain
+      ? `https://${trustPortal.domain}`
+      : `https://trust.inc/${trustPortal?.friendlyUrl ?? orgId}`;
+
   return (
-    <TrustPageTabs
-      accessRequestsContent={<TrustAccessRequestsClient orgId={orgId} />}
-      portalSettingsContent={
-        <TrustPortalSwitch
-          enabled={trustPortal?.enabled ?? false}
-          slug={trustPortal?.friendlyUrl ?? orgId}
-          domain={trustPortal?.domain ?? ''}
-          domainVerified={trustPortal?.domainVerified ?? false}
-          contactEmail={trustPortal?.contactEmail ?? null}
-          primaryColor={primaryColor ?? null}
-          orgId={orgId}
-          soc2type1={trustPortal?.soc2type1 ?? false}
-          soc2type2={trustPortal?.soc2type2 ?? false}
-          iso27001={trustPortal?.iso27001 ?? false}
-          iso42001={trustPortal?.iso42001 ?? false}
-          gdpr={trustPortal?.gdpr ?? false}
-          hipaa={trustPortal?.hipaa ?? false}
-          pcidss={trustPortal?.pcidss ?? false}
-          nen7510={trustPortal?.nen7510 ?? false}
-          iso9001={trustPortal?.iso9001 ?? false}
-          soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
-          soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
-          iso27001Status={trustPortal?.iso27001Status ?? 'started'}
-          iso42001Status={trustPortal?.iso42001Status ?? 'started'}
-          gdprStatus={trustPortal?.gdprStatus ?? 'started'}
-          hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
-          pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
-          nen7510Status={trustPortal?.nen7510Status ?? 'started'}
-          iso9001Status={trustPortal?.iso9001Status ?? 'started'}
-          faqs={faqs}
-          isVercelDomain={trustPortal?.isVercelDomain ?? false}
-          vercelVerification={trustPortal?.vercelVerification ?? null}
-          iso27001FileName={certificateFiles.iso27001FileName}
-          iso42001FileName={certificateFiles.iso42001FileName}
-          gdprFileName={certificateFiles.gdprFileName}
-          hipaaFileName={certificateFiles.hipaaFileName}
-          soc2type1FileName={certificateFiles.soc2type1FileName}
-          soc2type2FileName={certificateFiles.soc2type2FileName}
-          pcidssFileName={certificateFiles.pcidssFileName}
-          nen7510FileName={certificateFiles.nen7510FileName}
-          iso9001FileName={certificateFiles.iso9001FileName}
-          allowedDomains={trustPortal?.allowedDomains ?? []}
-          additionalDocuments={additionalDocuments.map((doc) => ({
-            id: doc.id,
-            name: doc.name,
-            description: doc.description,
-            createdAt: doc.createdAt.toISOString(),
-            updatedAt: doc.updatedAt.toISOString(),
-          }))}
+    <PageLayout
+      header={
+        <PageHeader
+          title="Trust Portal"
+          actions={
+            <Button iconRight={<Launch />}>
+              <Link href={portalUrl} target="_blank" rel="noopener noreferrer">
+                Visit Trust Portal
+              </Link>
+            </Button>
+          }
         />
       }
-    />
+    >
+      <TrustPortalSwitch
+        orgId={orgId}
+        soc2type1={trustPortal?.soc2type1 ?? false}
+        soc2type2={trustPortal?.soc2type2 ?? false}
+        iso27001={trustPortal?.iso27001 ?? false}
+        iso42001={trustPortal?.iso42001 ?? false}
+        gdpr={trustPortal?.gdpr ?? false}
+        hipaa={trustPortal?.hipaa ?? false}
+        pcidss={trustPortal?.pcidss ?? false}
+        nen7510={trustPortal?.nen7510 ?? false}
+        iso9001={trustPortal?.iso9001 ?? false}
+        soc2type1Status={trustPortal?.soc2type1Status ?? 'started'}
+        soc2type2Status={trustPortal?.soc2type2Status ?? 'started'}
+        iso27001Status={trustPortal?.iso27001Status ?? 'started'}
+        iso42001Status={trustPortal?.iso42001Status ?? 'started'}
+        gdprStatus={trustPortal?.gdprStatus ?? 'started'}
+        hipaaStatus={trustPortal?.hipaaStatus ?? 'started'}
+        pcidssStatus={trustPortal?.pcidssStatus ?? 'started'}
+        nen7510Status={trustPortal?.nen7510Status ?? 'started'}
+        iso9001Status={trustPortal?.iso9001Status ?? 'started'}
+        faqs={faqs}
+        iso27001FileName={certificateFiles.iso27001FileName}
+        iso42001FileName={certificateFiles.iso42001FileName}
+        gdprFileName={certificateFiles.gdprFileName}
+        hipaaFileName={certificateFiles.hipaaFileName}
+        soc2type1FileName={certificateFiles.soc2type1FileName}
+        soc2type2FileName={certificateFiles.soc2type2FileName}
+        pcidssFileName={certificateFiles.pcidssFileName}
+        nen7510FileName={certificateFiles.nen7510FileName}
+        iso9001FileName={certificateFiles.iso9001FileName}
+        additionalDocuments={additionalDocuments.map((doc) => ({
+          id: doc.id,
+          name: doc.name,
+          description: doc.description,
+          createdAt: doc.createdAt.toISOString(),
+          updatedAt: doc.updatedAt.toISOString(),
+        }))}
+      />
+    </PageLayout>
   );
 }
 
@@ -95,10 +102,8 @@ const getTrustPortal = async (orgId: string) => {
   });
 
   return {
-    enabled: trustPortal?.status === 'published',
     domain: trustPortal?.domain,
     domainVerified: trustPortal?.domainVerified,
-    contactEmail: trustPortal?.contactEmail ?? '',
     soc2type1: trustPortal?.soc2type1,
     soc2type2: trustPortal?.soc2type2 || trustPortal?.soc2,
     iso27001: trustPortal?.iso27001,
@@ -120,78 +125,37 @@ const getTrustPortal = async (orgId: string) => {
     nen7510Status: trustPortal?.nen7510_status,
     iso9001: trustPortal?.iso9001,
     iso9001Status: trustPortal?.iso9001_status,
-    isVercelDomain: trustPortal?.isVercelDomain,
-    vercelVerification: trustPortal?.vercelVerification,
     friendlyUrl: trustPortal?.friendlyUrl,
-    allowedDomains: trustPortal?.allowedDomains ?? [],
-    email: trustPortal?.email ?? '',
-    privacyPolicy: trustPortal?.privacyPolicy ?? '',
-    soc2: trustPortal?.soc2 ?? false,
-    pci_dss: trustPortal?.pci_dss ?? false,
   };
 };
 
 /**
- * Create a URL-friendly slug from organization name
+ * Ensure Trust record exists with friendlyUrl defaulting to organizationId
  */
-const slugifyOrganizationName = (name: string): string => {
-  const cleaned = name
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-  return cleaned.slice(0, 60);
-};
-
-/**
- * Ensure friendlyUrl exists for enabled trust portals
- * This auto-heals cases where portal was enabled before friendlyUrl was required
- */
-const ensureFriendlyUrlIfEnabled = async (organizationId: string): Promise<void> => {
+const ensureTrustRecord = async (organizationId: string): Promise<void> => {
   const trust = await db.trust.findUnique({
     where: { organizationId },
-    select: { status: true, friendlyUrl: true },
+    select: { friendlyUrl: true },
   });
 
-  // Only sync if portal is enabled and friendlyUrl is missing
-  if (!trust || trust.status !== 'published' || trust.friendlyUrl) {
+  // If trust record exists with friendlyUrl, nothing to do
+  if (trust?.friendlyUrl) {
     return;
   }
 
-  const org = await db.organization.findUnique({
-    where: { id: organizationId },
-    select: { name: true },
-  });
-
-  if (!org) return;
-
-  const baseCandidate = slugifyOrganizationName(org.name) || `org-${organizationId.slice(-8)}`;
-
-  for (let i = 0; i < 25; i += 1) {
-    const candidate = i === 0 ? baseCandidate : `${baseCandidate}-${i + 1}`;
-
-    const taken = await db.trust.findUnique({
-      where: { friendlyUrl: candidate },
-      select: { organizationId: true },
+  // Create or update trust record with organizationId as default friendlyUrl
+  try {
+    await db.trust.upsert({
+      where: { organizationId },
+      update: { friendlyUrl: organizationId },
+      create: { organizationId, friendlyUrl: organizationId, status: 'published' },
     });
-
-    if (taken && taken.organizationId !== organizationId) continue;
-
-    try {
-      await db.trust.update({
-        where: { organizationId },
-        data: { friendlyUrl: candidate },
-      });
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      // Conflict on unique constraint - record already exists
       return;
-    } catch (error: unknown) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        continue;
-      }
-      throw error;
     }
+    throw error;
   }
 };
 
@@ -260,6 +224,7 @@ async function fetchOrganizationPrimaryColor(orgId: string): Promise<string | nu
   }
 }
 
+
 async function fetchComplianceCertificates(orgId: string): Promise<CertificateFiles> {
   const result: CertificateFiles = { ...DEFAULT_CERTIFICATE_FILES };
   const headersList = await headers();
@@ -303,7 +268,14 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
   return result;
 }
 
-async function fetchOrganizationFaqs(orgId: string): Promise<unknown[] | null> {
+type FaqItem = {
+  id: string;
+  question: string;
+  answer: string;
+  order: number;
+};
+
+async function fetchOrganizationFaqs(orgId: string): Promise<FaqItem[] | null> {
   try {
     const organization = await db.organization.findUnique({
       where: { id: orgId },
@@ -314,7 +286,9 @@ async function fetchOrganizationFaqs(orgId: string): Promise<unknown[] | null> {
       return null;
     }
 
-    return Array.isArray(organization.trustPortalFaqs) ? organization.trustPortalFaqs : null;
+    return Array.isArray(organization.trustPortalFaqs)
+      ? (organization.trustPortalFaqs as FaqItem[])
+      : null;
   } catch (error) {
     console.warn('Error fetching organization FAQs:', error);
     return null;

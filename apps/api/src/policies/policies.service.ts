@@ -342,9 +342,14 @@ export class PoliciesService {
       if (pdfUrlsToDelete.length > 0) {
         await Promise.allSettled(
           pdfUrlsToDelete.map((pdfUrl) =>
-            this.attachmentsService.deletePolicyVersionPdf(pdfUrl).catch((err) => {
-              this.logger.warn(`Failed to delete PDF from S3: ${pdfUrl}`, err);
-            }),
+            this.attachmentsService
+              .deletePolicyVersionPdf(pdfUrl)
+              .catch((err) => {
+                this.logger.warn(
+                  `Failed to delete PDF from S3: ${pdfUrl}`,
+                  err,
+                );
+              }),
           ),
         );
       }
@@ -808,7 +813,9 @@ export class PoliciesService {
 
     // Cannot assign a deactivated member as approver - they can't log in to approve
     if (approver.deactivated) {
-      throw new BadRequestException('Cannot assign a deactivated member as approver');
+      throw new BadRequestException(
+        'Cannot assign a deactivated member as approver',
+      );
     }
 
     await db.policy.update({
@@ -960,9 +967,8 @@ export class PoliciesService {
 
       if (hasUploadedPdf) {
         try {
-          const pdfBuffer = await this.attachmentsService.getObjectBuffer(
-            pdfUrl!,
-          );
+          const pdfBuffer =
+            await this.attachmentsService.getObjectBuffer(pdfUrl);
           return {
             policy,
             pdfBuffer: Buffer.from(pdfBuffer),

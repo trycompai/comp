@@ -7,7 +7,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { authClient } from '@/utils/auth-client';
-import { CertificateCheck, Logout, Settings } from '@carbon/icons-react';
+import { CertificateCheck, CloudAuditing, Logout, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +43,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback } from 'react';
 import { SettingsSidebar } from '../settings/components/SettingsSidebar';
+import { TrustSidebar } from '../trust/components/TrustSidebar';
 import { getAppShellSearchGroups } from './app-shell-search-groups';
 import { AppSidebar } from './AppSidebar';
 import { ConditionalOnboardingTracker } from './ConditionalOnboardingTracker';
@@ -96,6 +97,7 @@ function AppShellWrapperContent({
   const router = useRouter();
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const isSettingsActive = pathname?.startsWith(`/${organization.id}/settings`);
+  const isTrustActive = pathname?.startsWith(`/${organization.id}/trust`);
 
   const handleSidebarOpenChange = useCallback(
     (open: boolean) => {
@@ -211,11 +213,20 @@ function AppShellWrapperContent({
         <AppShellRail>
           <Link href={`/${organization.id}/frameworks`}>
             <AppShellRailItem
-              isActive={!isSettingsActive}
+              isActive={!isSettingsActive && !isTrustActive}
               icon={<CertificateCheck className="size-5" />}
               label="Compliance"
             />
           </Link>
+          {isTrustNdaEnabled && (
+            <Link href={`/${organization.id}/trust`}>
+              <AppShellRailItem
+                isActive={isTrustActive}
+                icon={<CloudAuditing className="size-5" />}
+                label="Trust"
+              />
+            </Link>
+          )}
           {canAccessRoute(permissions, 'settings') && (
             <Link href={`/${organization.id}/settings`}>
               <AppShellRailItem
@@ -228,14 +239,17 @@ function AppShellWrapperContent({
         </AppShellRail>
         <AppShellMain>
           <AppShellSidebar collapsible>
-            <AppShellSidebarHeader title={isSettingsActive ? 'Settings' : 'Compliance'} />
+            <AppShellSidebarHeader
+              title={isSettingsActive ? 'Settings' : isTrustActive ? 'Trust' : 'Compliance'}
+            />
             {isSettingsActive ? (
               <SettingsSidebar orgId={organization.id} showBrowserTab={isWebAutomationsEnabled} permissions={permissions} />
+            ) : isTrustActive ? (
+              <TrustSidebar orgId={organization.id} />
             ) : (
               <AppSidebar
                 organization={organization}
                 isQuestionnaireEnabled={isQuestionnaireEnabled}
-                isTrustNdaEnabled={isTrustNdaEnabled}
                 hasAuditorRole={hasAuditorRole}
                 isOnlyAuditor={isOnlyAuditor}
                 permissions={permissions}

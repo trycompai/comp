@@ -66,7 +66,9 @@ export function VendorPageClient({
   isViewingTask,
 }: VendorPageClientProps) {
   // Use SWR for real-time updates with polling
-  const { vendor: swrVendor } = useVendor(vendorId);
+  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId, {
+    organizationId: orgId,
+  });
 
   // Normalize and memoize the vendor data
   // Use SWR data when available, fall back to initial data
@@ -83,7 +85,7 @@ export function VendorPageClient({
       <div className="flex flex-col gap-4">
         {!isViewingTask && (
           <>
-            <SecondaryFields vendor={vendor} assignees={assignees} />
+            <SecondaryFields vendor={vendor} assignees={assignees} onUpdate={refreshVendor} />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <VendorInherentRiskChart vendor={vendor} />
               <VendorResidualRiskChart vendor={vendor} />

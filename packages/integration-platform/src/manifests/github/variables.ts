@@ -30,12 +30,27 @@ export const targetReposVariable: CheckVariable = {
     const allRepos: Array<{ value: string; label: string }> = [];
 
     for (const org of orgs) {
-      const repos = await ctx.fetchAllPages<GitHubRepo>(`/orgs/${org.login}/repos`);
-      for (const repo of repos) {
-        allRepos.push({
-          value: repo.full_name,
-          label: `${repo.full_name}${repo.private ? ' (private)' : ''}`,
-        });
+      try {
+        const repos = await ctx.fetchAllPages<GitHubRepo>(`/orgs/${org.login}/repos`);
+        for (const repo of repos) {
+          allRepos.push({
+            value: repo.full_name,
+            label: `${repo.full_name}${repo.private ? ' (private)' : ''}`,
+          });
+        }
+      } catch (error) {
+        const errorStr = String(error);
+        // Skip orgs with SAML SSO that haven't been authorized, or permission errors
+        // This allows users to still see repos from authorized orgs
+        if (
+          errorStr.includes('403') ||
+          errorStr.includes('SAML') ||
+          errorStr.includes('Forbidden')
+        ) {
+          continue;
+        }
+        // Re-throw other errors
+        throw error;
       }
     }
 
