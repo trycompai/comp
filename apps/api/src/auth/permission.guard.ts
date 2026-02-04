@@ -108,28 +108,34 @@ export class PermissionGuard implements CanActivate {
 
   /**
    * Check permissions using better-auth's hasPermission SDK.
-   * Forwards the request's authorization header so better-auth
-   * can resolve the user session and role, then checks the
-   * required permissions against the role definitions (including
-   * dynamic/custom roles stored in the DB).
+   * Forwards both authorization and cookie headers so better-auth
+   * can resolve the user session (and activeOrganizationId), then
+   * checks the required permissions against the role definitions
+   * (including dynamic/custom roles stored in the DB).
    */
   private async checkPermission(
     request: AuthenticatedRequest,
     permissions: Record<string, string[]>,
   ): Promise<boolean> {
+    const headers = new Headers();
+
     const authHeader = request.headers['authorization'] as string;
-    if (!authHeader) {
+    if (authHeader) {
+      headers.set('authorization', authHeader);
+    }
+
+    const cookieHeader = request.headers['cookie'] as string;
+    if (cookieHeader) {
+      headers.set('cookie', cookieHeader);
+    }
+
+    if (!authHeader && !cookieHeader) {
       return false;
     }
 
-    const headers = new Headers();
-    headers.set('authorization', authHeader);
-
     const result = await auth.api.hasPermission({
       headers,
-      body: {
-        permissions,
-      },
+      body: { permissions },
     });
 
     return result.success === true;

@@ -6,6 +6,15 @@ import { PermissionGuard } from '../auth/permission.guard';
 
 import { RolesController } from './roles.controller';
 
+// Mock auth.server to avoid importing better-auth ESM in Jest
+jest.mock('../auth/auth.server', () => ({
+  auth: {
+    api: {
+      getSession: jest.fn(),
+    },
+  },
+}));
+
 describe('RolesController', () => {
   let controller: RolesController;
   let rolesService: jest.Mocked<RolesService>;

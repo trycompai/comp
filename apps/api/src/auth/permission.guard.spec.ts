@@ -8,7 +8,7 @@ const mockHasPermission = jest.fn();
 jest.mock('./auth.server', () => ({
   auth: {
     api: {
-      hasPermission: (...args: unknown[]) => mockHasPermission(...args),
+      hasPermission: (...args) => mockHasPermission(...args),
     },
   },
 }));
@@ -71,7 +71,7 @@ describe('PermissionGuard', () => {
       expect(result).toBe(true);
     });
 
-    it('should deny access when no authorization header present', async () => {
+    it('should deny access when no authorization or cookie header present', async () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
         { resource: 'control', actions: ['delete'] },
       ]);
