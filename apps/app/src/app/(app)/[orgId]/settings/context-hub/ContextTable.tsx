@@ -57,7 +57,7 @@ import { ContextForm } from './components/context-form';
 
 // Editable answer cell - click to edit
 function EditableAnswerCell({ context }: { context: Context }) {
-  const api = useApi();
+  const { patch } = useApi();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [value, setValue] = useState(context.answer);
@@ -103,7 +103,7 @@ function EditableAnswerCell({ context }: { context: Context }) {
 
     if (finalValue.trim() && finalValue !== context.answer) {
       setIsSubmitting(true);
-      const response = await api.patch(`/v1/context/${context.id}`, {
+      const response = await patch(`/v1/context/${context.id}`, {
         question: context.question,
         answer: finalValue,
       });
@@ -121,7 +121,7 @@ function EditableAnswerCell({ context }: { context: Context }) {
       setIsEditing(false);
       setValue(context.answer);
     }
-  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, api]);
+  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, patch]);
 
   const handleCancel = useCallback(() => {
     setValue(context.answer);

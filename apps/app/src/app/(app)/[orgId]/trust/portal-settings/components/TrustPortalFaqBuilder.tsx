@@ -32,7 +32,7 @@ export function TrustPortalFaqBuilder({
   initialFaqs: FaqItem[] | null;
   orgId: string;
 }) {
-  const api = useApi();
+  const { put } = useApi();
   const [faqs, setFaqs] = useState<FaqItem[]>(() =>
     normalizeFaqs(initialFaqs ?? []),
   );
@@ -132,7 +132,7 @@ export function TrustPortalFaqBuilder({
 
     setIsSaving(true);
     try {
-      const response = await api.put('/v1/trust-portal/settings/faqs', { faqs: normalized });
+      const response = await put('/v1/trust-portal/settings/faqs', { faqs: normalized });
       if (response.error) throw new Error(response.error);
       setIsDirty(false);
       toast.success('FAQs saved successfully');
@@ -141,7 +141,7 @@ export function TrustPortalFaqBuilder({
     } finally {
       setIsSaving(false);
     }
-  }, [faqs, api]);
+  }, [faqs, put]);
 
   return (
     <div className="space-y-4">

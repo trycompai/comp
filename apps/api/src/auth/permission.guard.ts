@@ -91,7 +91,7 @@ export class PermissionGuard implements CanActivate {
 
       if (!hasPermission) {
         this.logger.warn(
-          `[PermissionGuard] Access denied. Required: ${JSON.stringify(permissionBody)}`,
+          `[PermissionGuard] Access denied for ${request.method} ${request.url}. Required: ${JSON.stringify(permissionBody)}`,
         );
         throw new ForbiddenException('Access denied');
       }
@@ -101,7 +101,7 @@ export class PermissionGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error('[PermissionGuard] Error checking permissions:', error);
+      this.logger.error(`[PermissionGuard] Error checking permissions for ${request.method} ${request.url}:`, error);
       throw new ForbiddenException('Unable to verify permissions');
     }
   }

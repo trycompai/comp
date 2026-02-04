@@ -10,7 +10,6 @@ import {
   db,
   Member,
   Organization,
-  PolicyStatus,
   User,
   type Prisma,
 } from '@db';
@@ -96,7 +95,11 @@ export const getPolicy = async (policyId: string) => {
   const organizationId = session?.session.activeOrganizationId;
   const userId = session?.user?.id;
 
+  console.log('[getPolicy] organizationId:', organizationId);
+  console.log('[getPolicy] userId:', userId);
+
   if (!organizationId) {
+    console.log('[getPolicy] no organizationId');
     return null;
   }
 
@@ -125,7 +128,10 @@ export const getPolicy = async (policyId: string) => {
     },
   });
 
+  console.log('[getPolicy] policy:', policy);
+
   if (!policy) {
+    console.log('[getPolicy] no policy');
     return null;
   }
 

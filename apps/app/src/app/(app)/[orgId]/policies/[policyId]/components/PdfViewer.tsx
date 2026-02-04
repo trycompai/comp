@@ -27,10 +27,11 @@ import {
   Upload,
 } from '@trycompai/design-system/icons';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Dropzone from 'react-dropzone';
 import { toast } from 'sonner';
 import { useApi } from '@/hooks/use-api';
+import { useApiSWR } from '@/hooks/use-api-swr';
 
 interface PdfViewerProps {
   policyId: string;
@@ -58,42 +59,20 @@ export function PdfViewer({
 }: PdfViewerProps) {
   // Combine both checks - can't modify if pending approval OR version is read-only
   const isReadOnly = isPendingApproval || isVersionReadOnly;
-  const api = useApi();
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const [isUrlLoading, setUrlLoading] = useState(true);
+  const { post, delete: apiDelete } = useApi();
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch the secure, temporary URL when the component loads with an S3 key.
-  useEffect(() => {
-    if (pdfUrl) {
-      setUrlLoading(true);
-      setSignedUrl(null); // Reset before fetching
-      const params = new URLSearchParams();
-      if (versionId) params.set('versionId', versionId);
-      const qs = params.toString();
-      api
-        .get<{ url: string }>(`/v1/policies/${policyId}/pdf/signed-url${qs ? `?${qs}` : ''}`)
-        .then((response) => {
-          if (response.data?.url) {
-            setSignedUrl(response.data.url);
-          } else {
-            setSignedUrl(null);
-          }
-        })
-        .catch(() => {
-          toast.error('Could not load the policy document.');
-          setSignedUrl(null);
-        })
-        .finally(() => setUrlLoading(false));
-    } else {
-      // No PDF for this version - reset state
-      setSignedUrl(null);
-      setUrlLoading(false);
-    }
-  }, [pdfUrl, policyId, versionId, api]);
+  const signedUrlEndpoint = pdfUrl
+    ? `/v1/policies/${policyId}/pdf/signed-url${versionId ? `?versionId=${versionId}` : ''}`
+    : null;
+  const { data: signedUrlResponse, isLoading: isUrlLoading, mutate: mutateSignedUrl } = useApiSWR<{ url: string }>(
+    signedUrlEndpoint,
+  );
+  const signedUrl = signedUrlResponse?.data?.url ?? null;
 
   const handleReplaceClick = () => {
     fileInputRef.current?.click();
@@ -126,7 +105,7 @@ export function PdfViewer({
       const base64Data = (reader.result as string).split(',')[1];
       setIsUploading(true);
       try {
-        const response = await api.post(`/v1/policies/${policyId}/pdf/upload`, {
+        const response = await post(`/v1/policies/${policyId}/pdf/upload`, {
           versionId,
           fileName: file.name,
           fileType: file.type,
@@ -151,10 +130,10 @@ export function PdfViewer({
       const params = new URLSearchParams();
       if (versionId) params.set('versionId', versionId);
       const qs = params.toString();
-      const response = await api.delete(`/v1/policies/${policyId}/pdf${qs ? `?${qs}` : ''}`);
+      const response = await apiDelete(`/v1/policies/${policyId}/pdf${qs ? `?${qs}` : ''}`);
       if (response.error) throw new Error(response.error);
       toast.success('PDF deleted successfully.');
-      setSignedUrl(null);
+      mutateSignedUrl(undefined);
       onMutate?.();
     } catch {
       toast.error('Failed to delete PDF.');
