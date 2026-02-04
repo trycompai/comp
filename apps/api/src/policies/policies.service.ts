@@ -541,6 +541,7 @@ export class PoliciesService {
             organizationId: true,
             currentVersionId: true,
             pendingVersionId: true,
+            status: true,
           },
         },
       },
@@ -554,7 +555,12 @@ export class PoliciesService {
       throw new NotFoundException('Version not found');
     }
 
-    if (version.id === version.policy.currentVersionId) {
+    // Only block editing the current version if the policy is published
+    // Draft policies should be editable even on their current version
+    if (
+      version.id === version.policy.currentVersionId &&
+      version.policy.status === 'published'
+    ) {
       throw new BadRequestException(
         'Cannot edit the published version. Create a new version to make changes.',
       );

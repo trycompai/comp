@@ -9,11 +9,13 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiBody,
   ApiOperation,
@@ -42,7 +44,6 @@ import {
   CreateVersionDto,
   PublishVersionDto,
   SubmitForApprovalDto,
-  UpdateVersionContentDto,
 } from './dto/version.dto';
 import { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 import { PoliciesService } from './policies.service';
@@ -353,15 +354,21 @@ export class PoliciesController {
   async updateVersionContent(
     @Param('id') id: string,
     @Param('versionId') versionId: string,
-    @Body() body: UpdateVersionContentDto,
+    @Req() req: Request,
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
+    // Use raw body content to bypass class-transformer mangling nested JSON
+    const rawContent = req.body?.content;
+    if (!Array.isArray(rawContent)) {
+      throw new HttpException('content must be an array', HttpStatus.BAD_REQUEST);
+    }
+
     const data = await this.policiesService.updateVersionContent(
       id,
       versionId,
       organizationId,
-      body,
+      { content: rawContent },
     );
 
     return {

@@ -140,6 +140,8 @@ interface PolicyContentManagerProps {
   /** Initial version ID to view (from URL param) */
   initialVersionId?: string;
   onMutate?: () => void;
+  /** Callback to update version content in the cache (optimistic update) */
+  onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
 }
 
 export function PolicyContentManager({
@@ -159,6 +161,7 @@ export function PolicyContentManager({
   assignees = [],
   initialVersionId,
   onMutate,
+  onVersionContentChange,
 }: PolicyContentManagerProps) {
   const api = useApi();
   const router = useRouter();
@@ -857,6 +860,7 @@ export function PolicyContentManager({
                     isViewingPendingVersion={isViewingPendingVersion}
                     policyStatus={policyStatus}
                     onContentChange={handleContentSaved}
+                    onVersionContentChange={onVersionContentChange}
                   />
                 </TabsContent>
                 <TabsContent value="PDF">
@@ -1077,6 +1081,7 @@ function PolicyEditorWrapper({
   isViewingPendingVersion,
   policyStatus,
   onContentChange,
+  onVersionContentChange,
 }: {
   policyId: string;
   versionId: string;
@@ -1087,6 +1092,7 @@ function PolicyEditorWrapper({
   isViewingPendingVersion: boolean;
   policyStatus?: string;
   onContentChange?: (content: Array<JSONContent>) => void;
+  onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
 }) {
   const api = useApi();
   const formattedContent = Array.isArray(policyContent)
@@ -1113,6 +1119,8 @@ function PolicyEditorWrapper({
     }
 
     onContentChange?.(content);
+    // Update the versions cache so switching versions shows the latest content
+    onVersionContentChange?.(versionId, content);
   }
 
   // Determine if editor should be read-only
