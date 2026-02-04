@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { db } from '@db';
+import { db, PolicyStatus } from '@db';
 import type { Prisma } from '@db';
 import { authActionClient } from '../safe-action';
 
@@ -66,11 +66,20 @@ export const updateVersionContentAction = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { policyId, versionId, content } = parsedInput;
-    const { activeOrganizationId } = ctx.session;
+    const { activeOrganizationId, userId } = ctx.session;
 
     if (!activeOrganizationId) {
       return { success: false, error: 'Not authorized' };
     }
+
+    // Get member ID for tracking who updated
+    const member = await db.member.findFirst({
+      where: {
+        organizationId: activeOrganizationId,
+        userId,
+      },
+      select: { id: true },
+    });
 
     // Verify version exists and belongs to organization
     const version = await db.policyVersion.findUnique({
@@ -82,6 +91,7 @@ export const updateVersionContentAction = authActionClient
             organizationId: true,
             currentVersionId: true,
             pendingVersionId: true,
+            status: true,
           },
         },
       },
@@ -95,8 +105,8 @@ export const updateVersionContentAction = authActionClient
       return { success: false, error: 'Version does not belong to this policy' };
     }
 
-    // Cannot edit published version
-    if (version.id === version.policy.currentVersionId) {
+    // Cannot edit published version (only if the policy is actually published)
+    if (version.id === version.policy.currentVersionId && version.policy.status === PolicyStatus.published) {
       return {
         success: false,
         error: 'Cannot edit the published version. Create a new version to make changes.',
@@ -117,7 +127,11 @@ export const updateVersionContentAction = authActionClient
 
     await db.policyVersion.update({
       where: { id: versionId },
-      data: { content: processedContent },
+      data: {
+        content: processedContent,
+        // Update publishedById to track who last updated this version
+        ...(member?.id ? { publishedById: member.id } : {}),
+      },
     });
 
     revalidatePath(`/${activeOrganizationId}/policies/${policyId}`);

@@ -76,6 +76,12 @@ export class VendorResponseDto {
   website: string | null;
 
   @ApiProperty({
+    description: 'Whether the vendor is a sub-processor',
+    example: false,
+  })
+  isSubProcessor: boolean;
+
+  @ApiProperty({
     description: 'Organization ID',
     example: 'org_abc123def456',
   })

@@ -6,7 +6,7 @@ model Trust {
   domainVerified     Boolean      @default(false)
   isVercelDomain     Boolean      @default(false)
   vercelVerification String?
-  status             TrustStatus  @default(draft)
+  status             TrustStatus  @default(published)
   contactEmail       String?
 
   /// Domains that bypass NDA signing when requesting trust portal access
