@@ -28,7 +28,7 @@ const checkDnsSchema = z.object({
     .min(1, 'Domain cannot be empty.')
     .max(63, 'Domain too long. Max 63 chars.')
     .regex(
-      /^(?!-)[A-Za-z0-9-]+([-\.]{1}[a-z0-9]+)*\.[A-Za-z]{2,6}$/,
+      /^(?!-)[A-Za-z0-9-]+([-\.]{1}[a-z0-9]+)*\.[A-Za-z]{2,63}$/,
       'Invalid domain format. Use format like sub.example.com',
     )
     .trim(),
