@@ -23,7 +23,8 @@ export class CreateVersionDto {
 
 export class UpdateVersionContentDto {
   @ApiProperty({
-    description: 'Content of the policy version as TipTap JSON (array of nodes)',
+    description:
+      'Content of the policy version as TipTap JSON (array of nodes)',
     example: [
       {
         type: 'heading',

@@ -1,6 +1,144 @@
 import { getManifest, runAllChecks } from '@comp/integration-platform';
 import { db } from '@db';
 import { logger, task } from '@trigger.dev/sdk';
+import { sendEmail } from '../../email/resend';
+import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
+
+/**
+ * Send email notifications for task status change
+ */
+async function sendTaskStatusChangeEmails(params: {
+  organizationId: string;
+  taskId: string;
+  taskTitle: string;
+  newStatus: 'done' | 'failed';
+}) {
+  const { organizationId, taskId, taskTitle, newStatus } = params;
+
+  try {
+    // Get organization, task assignee, and org owners
+    const [organization, task, allMembers] = await Promise.all([
+      db.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true },
+      }),
+      db.task.findUnique({
+        where: { id: taskId },
+        select: {
+          assignee: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      db.member.findMany({
+        where: {
+          organizationId,
+          deactivated: false,
+        },
+        select: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const organizationName = organization?.name ?? 'your organization';
+    const appUrl = process.env.BASE_URL || 'https://app.trycomp.ai';
+    const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
+
+    // Filter for admins/owners
+    const adminMembers = allMembers.filter(
+      (member) =>
+        member.role &&
+        (member.role.includes('admin') || member.role.includes('owner')),
+    );
+
+    // Build recipient list: assignee + admins
+    const recipientMap = new Map<
+      string,
+      { id: string; name: string; email: string }
+    >();
+
+    // Add assignee
+    if (task?.assignee?.user?.id && task.assignee.user.email) {
+      recipientMap.set(task.assignee.user.id, {
+        id: task.assignee.user.id,
+        name:
+          task.assignee.user.name?.trim() ||
+          task.assignee.user.email?.trim() ||
+          'User',
+        email: task.assignee.user.email,
+      });
+    }
+
+    // Add admin members
+    for (const member of adminMembers) {
+      if (member.user?.id && member.user.email) {
+        recipientMap.set(member.user.id, {
+          id: member.user.id,
+          name: member.user.name?.trim() || member.user.email?.trim() || 'User',
+          email: member.user.email,
+        });
+      }
+    }
+
+    const recipients = Array.from(recipientMap.values());
+
+    // Send emails to each recipient
+    await Promise.allSettled(
+      recipients.map(async (recipient) => {
+        try {
+          await sendEmail({
+            to: recipient.email,
+            subject: `Task "${taskTitle}" status changed to ${newStatus}`,
+            react: TaskStatusChangedEmail({
+              toName: recipient.name,
+              toEmail: recipient.email,
+              taskTitle,
+              oldStatus: 'done',
+              newStatus: newStatus === 'failed' ? 'Failed' : 'Done',
+              changedByName: 'Automation',
+              organizationName,
+              taskUrl,
+            }),
+            system: true,
+          });
+
+          logger.info(`Status change email sent to ${recipient.email}`);
+        } catch (error) {
+          logger.error(
+            `Failed to send status change email to ${recipient.email}`,
+            {
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
+          );
+        }
+      }),
+    );
+
+    logger.info(
+      `Sent ${recipients.length} status change notifications for task ${taskId} (status: ${newStatus})`,
+    );
+  } catch (error) {
+    logger.error('Failed to send task status change emails', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
 
 /**
  * Worker task that runs integration checks for a single task.
@@ -242,6 +380,14 @@ export const runTaskIntegrationChecks = task({
         logger.info(
           `Task ${taskId} marked as failed due to ${totalFindings} findings${hasFailedChecks ? ' and failed checks' : ''}`,
         );
+
+        // Send email notifications
+        await sendTaskStatusChangeEmails({
+          organizationId,
+          taskId,
+          taskTitle,
+          newStatus: 'failed',
+        });
       } else if (totalPassing > 0) {
         // Only update to done if not already done
         const currentTask = await db.task.findUnique({
