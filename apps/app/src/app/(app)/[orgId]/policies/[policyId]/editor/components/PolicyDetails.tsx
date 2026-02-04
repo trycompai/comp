@@ -825,7 +825,7 @@ export function PolicyContentManager({
                   Create new version
                 </Button>
               )}
-              {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
+              {!isPendingApproval && !isVersionReadOnly && aiAssistantEnabled && activeTab === 'EDITOR' && (
                 <Button
                   variant={showAiAssistant ? 'default' : 'outline'}
                   size="default"
@@ -875,7 +875,7 @@ export function PolicyContentManager({
               </Stack>
             </div>
 
-            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
+            {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && (
               <div className="flex-[3] min-w-0 self-stretch">
                 <PolicyAiAssistant
                   messages={messages}
