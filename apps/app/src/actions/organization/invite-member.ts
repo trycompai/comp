@@ -56,7 +56,7 @@ export const inviteMember = authActionClient
       });
 
       revalidatePath(`/${organizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`, 'max');
+      revalidateTag(`user_${ctx.user!.id}`, 'max');
 
       console.info('[inviteMember] success', {
         requestId,

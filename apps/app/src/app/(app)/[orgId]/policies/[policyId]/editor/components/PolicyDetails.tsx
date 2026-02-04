@@ -1,8 +1,5 @@
 'use client';
 
-import { deleteVersionAction } from '@/actions/policies/delete-version';
-import { submitVersionForApprovalAction } from '@/actions/policies/submit-version-for-approval';
-import { updateVersionContentAction } from '@/actions/policies/update-version-content';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import '@/styles/editor.css';
@@ -374,27 +371,22 @@ export function PolicyContentManager({
     }
 
     setIsSubmittingForApproval(true);
-    try {
-      const result = await submitVersionForApprovalAction({
-        policyId,
-        versionId: viewingVersion,
-        approverId: publishApproverId,
-        entityId: policyId,
-      });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to submit version for approval');
-      }
+    const response = await api.post(
+      `/v1/policies/${policyId}/versions/${viewingVersion}/submit-for-approval`,
+      { approverId: publishApproverId },
+    );
+    setIsSubmittingForApproval(false);
 
-      toast.success(`Version ${versionToPublish.version} submitted for approval`);
-      setIsPublishApprovalDialogOpen(false);
-      setPublishApproverId(null);
-      onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to submit version for approval');
-    } finally {
-      setIsSubmittingForApproval(false);
+    if (response.error) {
+      toast.error('Failed to submit version for approval');
+      return;
     }
+
+    toast.success(`Version ${versionToPublish.version} submitted for approval`);
+    setIsPublishApprovalDialogOpen(false);
+    setPublishApproverId(null);
+    onMutate?.();
+    router.refresh();
   };
 
   // Determine if we can publish the current version

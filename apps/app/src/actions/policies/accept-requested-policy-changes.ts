@@ -28,7 +28,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
     const { id, approverId, comment } = parsedInput;
     const { user, session } = ctx;
 
-    if (!user.id || !session.activeOrganizationId) {
+    if (!user?.id || !session.activeOrganizationId) {
       throw new Error('Unauthorized');
     }
 
@@ -149,7 +149,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       if (comment && comment.trim() !== '') {
         const member = await db.member.findFirst({
           where: {
-            userId: user.id,
+            userId: user!.id,
             organizationId: session.activeOrganizationId,
             deactivated: false,
           },

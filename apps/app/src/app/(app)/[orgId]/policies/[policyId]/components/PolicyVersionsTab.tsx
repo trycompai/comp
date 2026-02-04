@@ -1,7 +1,6 @@
 'use client';
 
-import { deleteVersionAction } from '@/actions/policies/delete-version';
-import { submitVersionForApprovalAction } from '@/actions/policies/submit-version-for-approval';
+import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
@@ -70,6 +69,7 @@ export function PolicyVersionsTab({
   isPendingApproval,
   onMutate,
 }: PolicyVersionsTabProps) {
+  const api = useApi();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -119,63 +119,54 @@ export function PolicyVersionsTab({
 
   const handleConfirmSetActive = async () => {
     if (!pendingSetActiveVersion) return;
-    
+
     if (!versionApprovalApproverId) {
       toast.error('Please select an approver');
       return;
     }
-    
+
     const versionToPublish = pendingSetActiveVersion;
     setSettingActive(versionToPublish.id);
-    try {
-      const result = await submitVersionForApprovalAction({
-        policyId: policy.id,
-        versionId: versionToPublish.id,
-        approverId: versionApprovalApproverId,
-        entityId: policy.id,
-      });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to submit version for approval');
-      }
-      
-      toast.success(`Version ${versionToPublish.version} submitted for approval`);
-      setPendingSetActiveVersion(null);
-      setIsSetActiveApprovalDialogOpen(false);
-      setVersionApprovalApproverId(null);
-      
-      onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to submit version for approval');
-    } finally {
-      setSettingActive(null);
+
+    const response = await api.post(
+      `/v1/policies/${policy.id}/versions/${versionToPublish.id}/submit-for-approval`,
+      { approverId: versionApprovalApproverId },
+    );
+    setSettingActive(null);
+
+    if (response.error) {
+      toast.error('Failed to submit version for approval');
+      return;
     }
+
+    toast.success(`Version ${versionToPublish.version} submitted for approval`);
+    setPendingSetActiveVersion(null);
+    setIsSetActiveApprovalDialogOpen(false);
+    setVersionApprovalApproverId(null);
+
+    onMutate?.();
+    router.refresh();
   };
 
   const handleDeleteVersion = async () => {
     if (!versionToDelete) return;
-    
+
     setIsDeletingVersion(true);
-    try {
-      const result = await deleteVersionAction({
-        versionId: versionToDelete.id,
-        policyId: policy.id,
-      });
-      
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to delete version');
-      }
-      
-      toast.success(`Version ${versionToDelete.version} deleted`);
-      setDeleteVersionDialogOpen(false);
-      setVersionToDelete(null);
-      onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete version');
-    } finally {
-      setIsDeletingVersion(false);
+    const response = await api.delete(
+      `/v1/policies/${policy.id}/versions/${versionToDelete.id}`,
+    );
+    setIsDeletingVersion(false);
+
+    if (response.error) {
+      toast.error('Failed to delete version');
+      return;
     }
+
+    toast.success(`Version ${versionToDelete.version} deleted`);
+    setDeleteVersionDialogOpen(false);
+    setVersionToDelete(null);
+    onMutate?.();
+    router.refresh();
   };
 
   const handleEditVersion = (version: PolicyVersionWithPublisher) => {

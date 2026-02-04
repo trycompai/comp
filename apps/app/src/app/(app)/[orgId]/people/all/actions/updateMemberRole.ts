@@ -59,7 +59,7 @@ export const updateMemberRole = authActionClient
 
     const { memberId, roles: newRoles, department } = parsedInput;
     const orgId = ctx.session.activeOrganizationId;
-    const requestingUserId = ctx.user.id;
+    const requestingUserId = ctx.user!.id;
 
     try {
       // Permission check: User needs to be admin or owner

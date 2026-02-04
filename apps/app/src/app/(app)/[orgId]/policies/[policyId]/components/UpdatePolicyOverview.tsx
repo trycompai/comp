@@ -37,9 +37,7 @@ import {
 } from '@trycompai/design-system';
 import { Calendar } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, History, Trash2, Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 type PolicyWithVersion = Policy & {
@@ -61,10 +59,6 @@ export function UpdatePolicyOverview({
   onMutate,
 }: UpdatePolicyOverviewProps) {
   const api = useApi();
-  const router = useRouter();
-  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
-  const [isSetActiveApprovalDialogOpen, setIsSetActiveApprovalDialogOpen] = useState(false);
-  const [versionApprovalApproverId, setVersionApprovalApproverId] = useState<string | null>(null);
   const [isStatusChangeDialogOpen, setIsStatusChangeDialogOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<{
     assigneeId: { from: string | null; to: string | null } | null;
@@ -144,39 +138,6 @@ export function UpdatePolicyOverview({
     setPendingChanges(null);
   };
 
-  const handleConfirmApproval = async () => {
-    if (!selectedApproverId) {
-      toast.error('Approver is required.');
-      return;
-    }
-
-    const assigneeId = selectedAssigneeId;
-    const department = selectedDepartment;
-    const reviewFrequency = selectedFrequency;
-    const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
-
-    setIsSubmitting(true);
-    const response = await api.patch(`/v1/policies/${policy.id}`, {
-      status: PolicyStatus.needs_review,
-      assigneeId,
-      department,
-      frequency: reviewFrequency,
-      reviewDate,
-      approverId: selectedApproverId,
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
-      toast.error('Failed to submit policy for approval.');
-    } else {
-      toast.success('Policy submitted for approval successfully!');
-      setIsApprovalDialogOpen(false);
-      setSelectedStatus('needs_review');
-      onMutate?.();
-    }
-    setSelectedApproverId(null);
-  };
-
   // Check if any form values have actually changed from their original values
   const hasFormChanges = useMemo(() => {
     const assigneeChanged = selectedAssigneeId !== policy.assigneeId;
@@ -185,90 +146,6 @@ export function UpdatePolicyOverview({
     
     return assigneeChanged || departmentChanged || frequencyChanged;
   }, [selectedAssigneeId, selectedDepartment, selectedFrequency, policy.assigneeId, policy.department, policy.frequency]);
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  // Request to set a version as active - may require approval
-  const handleRequestSetActive = (version: PolicyVersionWithPublisher) => {
-    // If policy requires approval (has an approver workflow), show approval dialog
-    // For now, we'll show confirmation dialog and allow setting active
-    setPendingSetActiveVersion(version);
-    setIsSetActiveApprovalDialogOpen(true);
-  };
-
-  const handleConfirmSetActive = async () => {
-    if (!pendingSetActiveVersion) return;
-
-    // Check if approval is required (approver must be selected)
-    if (!versionApprovalApproverId) {
-      toast.error('Please select an approver');
-      return;
-    }
-
-    const versionToPublish = pendingSetActiveVersion;
-    setSettingActive(versionToPublish.id);
-
-    const response = await api.post(
-      `/v1/policies/${policy.id}/versions/${versionToPublish.id}/submit-for-approval`,
-      { approverId: versionApprovalApproverId },
-    );
-    setSettingActive(null);
-
-    if (response.error) {
-      toast.error('Failed to submit version for approval');
-      return;
-    }
-
-    toast.success(`Version ${versionToPublish.version} submitted for approval`);
-    setPendingSetActiveVersion(null);
-    setIsSetActiveApprovalDialogOpen(false);
-    setVersionApprovalApproverId(null);
-    onMutate?.();
-    router.refresh();
-  };
-
-  const handleDeleteVersion = async () => {
-    if (!versionToDelete) return;
-
-    setIsDeletingVersion(true);
-    const response = await api.delete(
-      `/v1/policies/${policy.id}/versions/${versionToDelete.id}`,
-    );
-    setIsDeletingVersion(false);
-
-    if (response.error) {
-      toast.error('Failed to delete version');
-      return;
-    }
-
-    toast.success(`Version ${versionToDelete.version} deleted`);
-
-    // If we deleted the selected version, switch to another one
-    if (selectedVersionId === versionToDelete.id) {
-      const remainingVersions = versions.filter(v => v.id !== versionToDelete.id);
-      setSelectedVersionId(policy.currentVersionId ?? remainingVersions[0]?.id ?? null);
-    }
-
-    setDeleteVersionDialogOpen(false);
-    setVersionToDelete(null);
-    onMutate?.();
-    router.refresh();
-  };
-
-
-  let buttonText = 'Save';
-  // Only show "Submit for Approval" when moving TO published from draft/needs_review
-  if (['draft', 'needs_review'].includes(policy.status) && selectedStatus === 'published') {
-    buttonText = 'Submit for Approval';
-  }
 
   const isLoading = isSubmitting;
 

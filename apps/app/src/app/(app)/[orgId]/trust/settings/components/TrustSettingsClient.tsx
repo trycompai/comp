@@ -1,16 +1,15 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { useApi } from '@/hooks/use-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../../portal-settings/actions/trust-portal-switch';
 import { AllowedDomainsManager } from '../../portal-settings/components/AllowedDomainsManager';
 import { TrustPortalDomain } from '../../portal-settings/components/TrustPortalDomain';
 
@@ -40,17 +39,7 @@ export function TrustSettingsClient({
   vercelVerification,
   allowedDomains,
 }: TrustSettingsClientProps) {
-  const trustPortalSwitch = useAction(trustPortalSwitchAction, {
-    onSuccess: () => {
-      toast.success('Trust settings updated');
-    },
-    onError: () => {
-      toast.error('Failed to update trust settings');
-    },
-  });
-
-  const trustPortalSwitchRef = useRef(trustPortalSwitch);
-  trustPortalSwitchRef.current = trustPortalSwitch;
+  const api = useApi();
 
   const form = useForm<z.infer<typeof trustSettingsSchema>>({
     resolver: zodResolver(trustSettingsSchema),
@@ -87,14 +76,19 @@ export function TrustSettingsClient({
             primaryColor:
               field === 'primaryColor' ? (value as string) : (current.primaryColor ?? undefined),
           };
-          await trustPortalSwitchRef.current.execute(data);
+          const response = await api.put('/v1/trust-portal/settings/toggle', data);
+          if (response.error) {
+            toast.error('Failed to update trust settings');
+          } else {
+            toast.success('Trust settings updated');
+          }
           lastSaved.current[field] = value as string | null;
         } finally {
           savingRef.current[field] = false;
         }
       }
     },
-    [form],
+    [form, api],
   );
 
   const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');

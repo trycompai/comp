@@ -25,7 +25,7 @@ export const removeEmployeeRoleOrMember = authActionClient
       ctx,
     }): Promise<ActionResponse<{ removed: boolean; roleUpdated?: boolean }>> => {
       const organizationId = ctx.session.activeOrganizationId;
-      const currentUserId = ctx.user.id;
+      const currentUserId = ctx.user!.id;
 
       if (!organizationId) {
         return {

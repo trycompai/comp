@@ -57,7 +57,7 @@ export const inviteEmployee = authActionClient
 
       // Revalidate the employees list page
       revalidatePath(`/${organizationId}/people/all`);
-      revalidateTag(`user_${ctx.user.id}`, 'max'); // Keep user tag revalidation
+      revalidateTag(`user_${ctx.user!.id}`, 'max'); // Keep user tag revalidation
 
       console.info('[inviteEmployee] success', {
         requestId,

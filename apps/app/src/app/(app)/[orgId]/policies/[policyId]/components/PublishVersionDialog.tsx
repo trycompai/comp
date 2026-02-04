@@ -49,9 +49,11 @@ export function PublishVersionDialog({
       return;
     }
 
-    const data = response.data as { versionId?: string; version?: number } | undefined;
-    const newVersionId = data?.versionId;
-    toast.success(`Created version ${data?.version} as draft`);
+    // API returns { data: { versionId, version }, authType: ... }
+    const responseData = response.data as { data?: { versionId?: string; version?: number } } | undefined;
+    const versionData = responseData?.data;
+    const newVersionId = versionData?.versionId;
+    toast.success(`Created version ${versionData?.version} as draft`);
     setChangelog('');
     onClose();
     if (newVersionId) {

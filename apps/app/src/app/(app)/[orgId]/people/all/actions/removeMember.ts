@@ -41,7 +41,7 @@ export const removeMember = authActionClient
       const currentUserMember = await db.member.findFirst({
         where: {
           organizationId: ctx.session.activeOrganizationId,
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           deactivated: false,
         },
       });
@@ -91,7 +91,7 @@ export const removeMember = authActionClient
       }
 
       // Prevent self-removal
-      if (targetMember.userId === ctx.user.id) {
+      if (targetMember.userId === ctx.user!.id) {
         return {
           success: false,
           error: 'You cannot remove yourself from the organization',
@@ -301,7 +301,7 @@ export const removeMember = authActionClient
       }
 
       revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
-      revalidateTag(`user_${ctx.user.id}`, 'max');
+      revalidateTag(`user_${ctx.user!.id}`, 'max');
 
       return {
         success: true,

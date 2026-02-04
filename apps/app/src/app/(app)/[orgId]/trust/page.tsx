@@ -46,6 +46,15 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
     >
       <TrustPortalSwitch
         orgId={orgId}
+        enabled={trustPortal?.enabled ?? false}
+        slug={trustPortal?.friendlyUrl ?? orgId}
+        domain={trustPortal?.domain ?? ''}
+        domainVerified={trustPortal?.domainVerified ?? false}
+        contactEmail={trustPortal?.contactEmail ?? null}
+        primaryColor={trustPortal?.primaryColor ?? null}
+        isVercelDomain={trustPortal?.isVercelDomain ?? false}
+        vercelVerification={trustPortal?.vercelVerification ?? null}
+        allowedDomains={trustPortal?.allowedDomains ?? []}
         soc2type1={trustPortal?.soc2type1 ?? false}
         soc2type2={trustPortal?.soc2type2 ?? false}
         iso27001={trustPortal?.iso27001 ?? false}
@@ -102,8 +111,14 @@ const getTrustPortal = async (orgId: string) => {
   });
 
   return {
-    domain: trustPortal?.domain,
-    domainVerified: trustPortal?.domainVerified,
+    enabled: trustPortal?.status === 'published',
+    domain: trustPortal?.domain ?? '',
+    domainVerified: trustPortal?.domainVerified ?? false,
+    contactEmail: trustPortal?.contactEmail ?? null,
+    primaryColor: null, // Not stored in Trust table - fetched from organization if needed
+    isVercelDomain: trustPortal?.isVercelDomain ?? false,
+    vercelVerification: trustPortal?.vercelVerification ?? null,
+    allowedDomains: trustPortal?.allowedDomains ?? [],
     soc2type1: trustPortal?.soc2type1,
     soc2type2: trustPortal?.soc2type2 || trustPortal?.soc2,
     iso27001: trustPortal?.iso27001,

@@ -66,9 +66,7 @@ export function VendorPageClient({
   isViewingTask,
 }: VendorPageClientProps) {
   // Use SWR for real-time updates with polling
-  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId, {
-    organizationId: orgId,
-  });
+  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
 
   // Normalize and memoize the vendor data
   // Use SWR data when available, fall back to initial data

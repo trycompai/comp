@@ -148,7 +148,7 @@ export default async function Layout({
   const user = {
     name: session.user.name,
     email: session.user.email,
-    image: session.user.image,
+    image: session.user.image ?? null,
   };
 
   return (
