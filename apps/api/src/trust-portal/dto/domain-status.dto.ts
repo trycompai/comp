@@ -8,7 +8,7 @@ export class GetDomainStatusDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'domain cannot be empty' })
-  @Matches(/^(?!-)[A-Za-z0-9-]+([-.][a-z0-9]+)*\.[A-Za-z]{2,6}$/u, {
+  @Matches(/^(?!-)[A-Za-z0-9-]+([-.][a-z0-9]+)*\.[A-Za-z]{2,63}$/u, {
     message: 'domain must be a valid domain format',
   })
   domain: string;
