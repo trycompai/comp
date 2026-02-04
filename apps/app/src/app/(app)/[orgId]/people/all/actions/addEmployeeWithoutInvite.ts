@@ -133,14 +133,27 @@ export const addEmployeeWithoutInvite = async ({
     const domain = isProdEnv ? 'app.trycomp.ai' : 'localhost:3002';
     const inviteLink = `${protocol}://${domain}/${organizationId}`;
 
-    // Send the invitation email
-    await sendInviteMemberEmail({
-      inviteeEmail: email.toLowerCase(),
-      inviteLink,
-      organizationName: organization.name,
-    });
+    // Send the invitation email (non-fatal: member is already created)
+    let emailSent = true;
+    let emailError: string | undefined;
+    try {
+      await sendInviteMemberEmail({
+        inviteeEmail: email.toLowerCase(),
+        inviteLink,
+        organizationName: organization.name,
+      });
+    } catch (emailErr) {
+      emailSent = false;
+      emailError = emailErr instanceof Error ? emailErr.message : 'Failed to send invite email';
+      console.error('Invite email failed after member was added:', { email, organizationId, error: emailErr });
+    }
 
-    return { success: true, data: member };
+    return {
+      success: true,
+      data: member,
+      emailSent,
+      ...(emailError && { emailError }),
+    };
   } catch (error) {
     console.error('Error adding employee:', error);
     return { success: false, error: 'Failed to add employee' };
