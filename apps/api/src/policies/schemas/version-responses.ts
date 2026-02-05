@@ -65,27 +65,29 @@ export const GET_POLICY_VERSIONS_RESPONSES: Record<string, ApiResponseOptions> =
     404: NOT_FOUND_RESPONSE,
   };
 
-export const CREATE_POLICY_VERSION_RESPONSES: Record<string, ApiResponseOptions> =
-  {
-    201: {
-      status: 201,
-      description: 'Policy version created',
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              versionId: { type: 'string' },
-              version: { type: 'number' },
-            },
+export const CREATE_POLICY_VERSION_RESPONSES: Record<
+  string,
+  ApiResponseOptions
+> = {
+  201: {
+    status: 201,
+    description: 'Policy version created',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            versionId: { type: 'string' },
+            version: { type: 'number' },
           },
         },
       },
     },
-    400: BAD_REQUEST_RESPONSE,
-    401: UNAUTHORIZED_RESPONSE,
-    404: NOT_FOUND_RESPONSE,
-  };
+  },
+  400: BAD_REQUEST_RESPONSE,
+  401: UNAUTHORIZED_RESPONSE,
+  404: NOT_FOUND_RESPONSE,
+};
 
 export const UPDATE_VERSION_CONTENT_RESPONSES: Record<
   string,
@@ -147,26 +149,27 @@ export const PUBLISH_VERSION_RESPONSES: Record<string, ApiResponseOptions> = {
   404: NOT_FOUND_RESPONSE,
 };
 
-export const SET_ACTIVE_VERSION_RESPONSES: Record<string, ApiResponseOptions> = {
-  200: {
-    status: 200,
-    description: 'Active version updated',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'object',
-          properties: {
-            versionId: { type: 'string' },
-            version: { type: 'number' },
+export const SET_ACTIVE_VERSION_RESPONSES: Record<string, ApiResponseOptions> =
+  {
+    200: {
+      status: 200,
+      description: 'Active version updated',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              versionId: { type: 'string' },
+              version: { type: 'number' },
+            },
           },
         },
       },
     },
-  },
-  400: BAD_REQUEST_RESPONSE,
-  401: UNAUTHORIZED_RESPONSE,
-  404: NOT_FOUND_RESPONSE,
-};
+    400: BAD_REQUEST_RESPONSE,
+    401: UNAUTHORIZED_RESPONSE,
+    404: NOT_FOUND_RESPONSE,
+  };
 
 export const SUBMIT_VERSION_FOR_APPROVAL_RESPONSES: Record<
   string,

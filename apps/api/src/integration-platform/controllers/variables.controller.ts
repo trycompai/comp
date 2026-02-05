@@ -228,7 +228,9 @@ export class VariablesController {
       await this.credentialVaultService.getDecryptedCredentials(connectionId);
 
     const accessToken =
-      typeof credentials?.access_token === 'string' ? credentials.access_token : undefined;
+      typeof credentials?.access_token === 'string'
+        ? credentials.access_token
+        : undefined;
     if (!accessToken) {
       throw new HttpException(
         'No valid credentials found',
