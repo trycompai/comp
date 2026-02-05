@@ -245,10 +245,8 @@ export function TrustPortalCustomLinks({
   };
 
   const handleDelete = (linkId: string) => {
-    if (confirm('Are you sure you want to delete this link?')) {
-      setLinks((prev) => prev.filter((l) => l.id !== linkId));
-      deleteLink.execute({ linkId });
-    }
+    setLinks((prev) => prev.filter((l) => l.id !== linkId));
+    deleteLink.execute({ linkId });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {

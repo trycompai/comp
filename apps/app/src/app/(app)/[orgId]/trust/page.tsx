@@ -218,9 +218,9 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
     orderBy: { order: 'asc' },
   });
 
-  // Fetch vendors/subprocessors with risk assessment data for syncing
+  // Fetch vendors with risk assessment data for syncing
   const vendorsRaw = await db.vendor.findMany({
-    where: { organizationId: orgId, isSubProcessor: true },
+    where: { organizationId: orgId },
     orderBy: [{ trustPortalOrder: 'asc' }, { name: 'asc' }],
   });
 

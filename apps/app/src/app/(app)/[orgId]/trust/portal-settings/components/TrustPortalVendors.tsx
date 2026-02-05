@@ -27,7 +27,6 @@ interface Vendor {
   name: string;
   description: string;
   website: string | null;
-  isSubProcessor: boolean;
   showOnTrustPortal: boolean;
   logoUrl: string | null;
   complianceBadges: ComplianceBadge[] | null;
@@ -178,15 +177,13 @@ export function TrustPortalVendors({
     });
   };
 
-  const subprocessorVendors = vendors.filter((v) => v.isSubProcessor);
-
   // Pagination logic
-  const totalPages = Math.max(1, Math.ceil(subprocessorVendors.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(vendors.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedVendors = useMemo(
-    () => subprocessorVendors.slice(startIndex, endIndex),
-    [subprocessorVendors, startIndex, endIndex],
+    () => vendors.slice(startIndex, endIndex),
+    [vendors, startIndex, endIndex],
   );
 
   const handlePageChange = (page: number) => {
@@ -197,17 +194,16 @@ export function TrustPortalVendors({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h3 className="text-lg font-medium">Vendors & Subprocessors</h3>
+        <h3 className="text-lg font-medium">Vendors</h3>
         <p className="text-sm text-muted-foreground">
-          Configure which vendors marked as subprocessors appear on your public trust portal
+          Configure which vendors appear on your public trust portal
         </p>
       </div>
 
-      {subprocessorVendors.length === 0 ? (
+      {vendors.length === 0 ? (
         <div className="rounded-md border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No vendors marked as subprocessors. Go to the Vendors page to mark vendors as
-            subprocessors.
+            No vendors found. Go to the Vendors page to add vendors.
           </p>
         </div>
       ) : (
@@ -264,8 +260,8 @@ export function TrustPortalVendors({
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(endIndex, subprocessorVendors.length)} of{' '}
-                {subprocessorVendors.length} vendors
+                Showing {startIndex + 1}-{Math.min(endIndex, vendors.length)} of{' '}
+                {vendors.length} vendors
               </p>
               <div className="flex items-center gap-2">
                 <Button

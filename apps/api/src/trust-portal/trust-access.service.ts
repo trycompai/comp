@@ -2463,7 +2463,6 @@ export class TrustAccessService {
     const vendors = await db.vendor.findMany({
       where: {
         organizationId: trust.organizationId,
-        isSubProcessor: true,
         showOnTrustPortal: true,
       },
       orderBy: [{ trustPortalOrder: 'asc' }, { name: 'asc' }],

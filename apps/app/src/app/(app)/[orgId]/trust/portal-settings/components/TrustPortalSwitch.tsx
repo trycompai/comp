@@ -117,7 +117,6 @@ type TrustVendor = {
   name: string;
   description: string;
   website: string | null;
-  isSubProcessor: boolean;
   showOnTrustPortal: boolean;
   logoUrl: string | null;
   complianceBadges: ComplianceBadge[] | null;
