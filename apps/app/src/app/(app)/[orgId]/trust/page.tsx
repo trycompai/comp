@@ -1,16 +1,16 @@
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '@db';
+import { Prisma } from '@prisma/client';
 import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
-import { Prisma } from '@prisma/client';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { TrustPortalSwitch } from './portal-settings/components/TrustPortalSwitch';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
  * Valid compliance badge types for trust portal
@@ -51,7 +51,11 @@ function mapCertificationToBadgeType(certType: string): ComplianceBadgeType | nu
   if (normalized.includes('hipaa')) {
     return 'hipaa';
   }
-  if (normalized.includes('pcidss') || normalized.includes('pci dss') || normalized.includes('pci_dss')) {
+  if (
+    normalized.includes('pcidss') ||
+    normalized.includes('pci dss') ||
+    normalized.includes('pci_dss')
+  ) {
     return 'pci_dss';
   }
   if (normalized.includes('nen7510') || normalized.includes('nen 7510')) {
@@ -118,14 +122,12 @@ function generateLogoUrl(website: string | null): string | null {
  * Sync vendor trust portal data from GlobalVendors risk assessment
  * Updates compliance badges and logo URL if they can be derived from existing data
  */
-async function syncVendorTrustData(
-  vendor: {
-    id: string;
-    website: string | null;
-    complianceBadges: Prisma.JsonValue | null;
-    logoUrl: string | null;
-  }
-): Promise<{ complianceBadges: ComplianceBadge[] | null; logoUrl: string | null } | null> {
+async function syncVendorTrustData(vendor: {
+  id: string;
+  website: string | null;
+  complianceBadges: Prisma.JsonValue | null;
+  logoUrl: string | null;
+}): Promise<{ complianceBadges: ComplianceBadge[] | null; logoUrl: string | null } | null> {
   const updates: Prisma.VendorUpdateInput = {};
   let hasUpdates = false;
 
@@ -141,12 +143,12 @@ async function syncVendorTrustData(
       if (extractedBadges && extractedBadges.length > 0) {
         // Only update if current badges are empty or different
         const currentBadges = vendor.complianceBadges as ComplianceBadge[] | null;
-        const currentTypes = new Set(currentBadges?.map(b => b.type) ?? []);
-        const extractedTypes = new Set(extractedBadges.map(b => b.type));
-        
-        const isDifferent = 
+        const currentTypes = new Set(currentBadges?.map((b) => b.type) ?? []);
+        const extractedTypes = new Set(extractedBadges.map((b) => b.type));
+
+        const isDifferent =
           currentTypes.size !== extractedTypes.size ||
-          [...extractedTypes].some(t => !currentTypes.has(t));
+          [...extractedTypes].some((t) => !currentTypes.has(t));
 
         if (isDifferent) {
           updates.complianceBadges = extractedBadges as unknown as Prisma.InputJsonValue;
@@ -218,9 +220,9 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
     orderBy: { order: 'asc' },
   });
 
-  // Fetch vendors/subprocessors with risk assessment data for syncing
+  // Fetch vendors with risk assessment data for syncing
   const vendorsRaw = await db.vendor.findMany({
-    where: { organizationId: orgId, isSubProcessor: true },
+    where: { organizationId: orgId },
     orderBy: [{ trustPortalOrder: 'asc' }, { name: 'asc' }],
   });
 
