@@ -99,16 +99,21 @@ export async function DELETE(req: NextRequest) {
 
   const allKeys = recordsToDelete.flatMap((r) => r.attachments ?? []).filter(Boolean);
 
+  const S3_DELETE_MAX_KEYS = 1000;
+
   if (s3Client && APP_AWS_ORG_ASSETS_BUCKET && allKeys.length > 0) {
     try {
-      await s3Client.send(
-        new DeleteObjectsCommand({
-          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-          Delete: {
-            Objects: allKeys.map((key) => ({ Key: key })),
-          },
-        }),
-      );
+      for (let i = 0; i < allKeys.length; i += S3_DELETE_MAX_KEYS) {
+        const batch = allKeys.slice(i, i + S3_DELETE_MAX_KEYS);
+        await s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+            Delete: {
+              Objects: batch.map((key) => ({ Key: key })),
+            },
+          }),
+        );
+      }
     } catch (error) {
       console.error('Failed to delete policy attachment objects from S3', {
         error,
