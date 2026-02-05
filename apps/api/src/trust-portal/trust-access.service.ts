@@ -119,7 +119,11 @@ export class TrustAccessService {
       await db.trust.upsert({
         where: { organizationId },
         update: { friendlyUrl: organizationId },
-        create: { organizationId, friendlyUrl: organizationId, status: 'published' },
+        create: {
+          organizationId,
+          friendlyUrl: organizationId,
+          status: 'published',
+        },
       });
       return organizationId;
     } catch (error: unknown) {
@@ -2010,9 +2014,8 @@ export class TrustAccessService {
 
       if (hasUploadedPdf) {
         try {
-          const pdfBuffer = await this.attachmentsService.getObjectBuffer(
-            pdfUrl!,
-          );
+          const pdfBuffer =
+            await this.attachmentsService.getObjectBuffer(pdfUrl);
           return {
             policy,
             pdfBuffer: Buffer.from(pdfBuffer),
@@ -2300,9 +2303,8 @@ export class TrustAccessService {
 
       if (hasUploadedPdf) {
         try {
-          const rawBuffer = await this.attachmentsService.getObjectBuffer(
-            effectivePdfUrl!,
-          );
+          const rawBuffer =
+            await this.attachmentsService.getObjectBuffer(effectivePdfUrl);
           policyPdfBuffer = Buffer.from(rawBuffer);
         } catch (error) {
           console.warn(

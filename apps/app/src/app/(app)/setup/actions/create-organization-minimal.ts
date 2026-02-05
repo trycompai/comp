@@ -4,6 +4,7 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
+import { env } from '@/env.mjs';
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -42,14 +43,19 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       const userEmail = session.user.email;
       const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
 
+      // Check if self-hosted
+      const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
+
       // Create a new organization
       const newOrg = await db.organization.create({
         data: {
           name: parsedInput.organizationName,
           website: parsedInput.website,
           onboardingCompleted: false, // Explicitly set to false
-          // Auto-enable for trycomp.ai emails or local development
-          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' || isTryCompEmail) && {
+          // Auto-enable for trycomp.ai emails, local development, or self-hosted instances
+          ...((process.env.NEXT_PUBLIC_APP_ENV !== 'production' ||
+            isTryCompEmail ||
+            isSelfHosted) && {
             hasAccess: true,
           }),
           members: {

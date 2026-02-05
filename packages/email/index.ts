@@ -6,6 +6,7 @@ export * from './emails/magic-link';
 export * from './emails/marketing/welcome';
 export * from './emails/otp';
 export * from './emails/policy-notification';
+export * from './emails/reminders/task-status-notification';
 export * from './emails/training-completed';
 export * from './emails/unassigned-items-notification';
 export * from './emails/waitlist';

@@ -150,32 +150,32 @@ function safeJsonStringify(data: unknown): string | null {
   try {
     return (
       safeStringify(
-      data,
-      (_key, value) => {
-        if (value instanceof Date) {
-          return value.toISOString();
-        }
-        if (value instanceof Error) {
-          return {
-            name: value.name,
-            message: value.message,
-            stack: value.stack,
-          };
-        }
-        if (value instanceof Map) {
-          return { type: 'Map', entries: Array.from(value.entries()) };
-        }
-        if (value instanceof Set) {
-          return { type: 'Set', values: Array.from(value.values()) };
-        }
-        if (typeof value === 'function') {
-          return `[Function ${value.name || 'anonymous'}]`;
-        }
-        if (typeof value === 'symbol') {
-          return value.toString();
-        }
-        return value;
-      },
+        data,
+        (_key, value) => {
+          if (value instanceof Date) {
+            return value.toISOString();
+          }
+          if (value instanceof Error) {
+            return {
+              name: value.name,
+              message: value.message,
+              stack: value.stack,
+            };
+          }
+          if (value instanceof Map) {
+            return { type: 'Map', entries: Array.from(value.entries()) };
+          }
+          if (value instanceof Set) {
+            return { type: 'Set', values: Array.from(value.values()) };
+          }
+          if (typeof value === 'function') {
+            return `[Function ${value.name || 'anonymous'}]`;
+          }
+          if (typeof value === 'symbol') {
+            return value.toString();
+          }
+          return value;
+        },
         2,
       ) ?? null
     );

@@ -1,5 +1,6 @@
 import { extractDomain, isDomainActiveStripeCustomer, isPublicEmailDomain } from '@/lib/stripe';
 import { auth } from '@/utils/auth';
+import { env } from '@/env.mjs';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -60,33 +61,44 @@ export default async function UpgradePage({ params }: PageProps) {
 
   let hasAccess = member.organization.hasAccess;
 
-  // Auto-approve based on user's email domain
+  // Auto-approve based on user's email domain or self-hosted instance
   if (!hasAccess) {
-    const userEmail = authSession.user.email;
-    const userEmailDomain = extractDomain(userEmail ?? '');
-    const orgWebsiteDomain = extractDomain(member.organization.website ?? '');
+    // Auto-approve for self-hosted/OSS instances
+    const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
 
-    if (userEmailDomain) {
-      // Auto-approve for trycomp.ai emails (internal team)
-      const isTrycompEmail = userEmailDomain === 'trycomp.ai';
+    if (isSelfHosted) {
+      await db.organization.update({
+        where: { id: orgId },
+        data: { hasAccess: true },
+      });
+      hasAccess = true;
+    } else {
+      const userEmail = authSession.user.email;
+      const userEmailDomain = extractDomain(userEmail ?? '');
+      const orgWebsiteDomain = extractDomain(member.organization.website ?? '');
 
-      const canAutoApproveViaDomain =
-        !isTrycompEmail &&
-        Boolean(orgWebsiteDomain) &&
-        userEmailDomain === orgWebsiteDomain &&
-        !isPublicEmailDomain(userEmailDomain);
+      if (userEmailDomain) {
+        // Auto-approve for trycomp.ai emails (internal team)
+        const isTrycompEmail = userEmailDomain === 'trycomp.ai';
 
-      // Check Stripe for other domains
-      const isStripeCustomer = canAutoApproveViaDomain
-        ? await isDomainActiveStripeCustomer(userEmailDomain)
-        : false;
+        const canAutoApproveViaDomain =
+          !isTrycompEmail &&
+          Boolean(orgWebsiteDomain) &&
+          userEmailDomain === orgWebsiteDomain &&
+          !isPublicEmailDomain(userEmailDomain);
 
-      if (isTrycompEmail || isStripeCustomer) {
-        await db.organization.update({
-          where: { id: orgId },
-          data: { hasAccess: true },
-        });
-        hasAccess = true;
+        // Check Stripe for other domains
+        const isStripeCustomer = canAutoApproveViaDomain
+          ? await isDomainActiveStripeCustomer(userEmailDomain)
+          : false;
+
+        if (isTrycompEmail || isStripeCustomer) {
+          await db.organization.update({
+            where: { id: orgId },
+            data: { hasAccess: true },
+          });
+          hasAccess = true;
+        }
       }
     }
   }
