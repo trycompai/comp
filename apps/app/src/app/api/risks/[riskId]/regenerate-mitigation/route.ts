@@ -1,12 +1,26 @@
 import { generateRiskMitigation } from '@/trigger/tasks/onboarding/generate-risk-mitigation';
-import {
-  findCommentAuthor,
-  type PolicyContext,
-} from '@/trigger/tasks/onboarding/onboard-organization-helpers';
+import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { tasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
+
+interface PeopleApiResponse {
+  data: Array<{
+    id: string;
+    role: string;
+    deactivated: boolean;
+    user: { id: string; name: string | null; email: string };
+  }>;
+}
+
+interface PoliciesApiResponse {
+  data: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+  }>;
+}
 
 export async function POST(
   req: NextRequest,
@@ -31,13 +45,18 @@ export async function POST(
 
     const organizationId = session.session.activeOrganizationId;
 
-    const [author, policyRows] = await Promise.all([
-      findCommentAuthor(organizationId),
-      db.policy.findMany({
-        where: { organizationId },
-        select: { name: true, description: true },
-      }),
+    const [peopleResult, policiesResult] = await Promise.all([
+      serverApi.get<PeopleApiResponse>('/v1/people'),
+      serverApi.get<PoliciesApiResponse>('/v1/policies'),
     ]);
+
+    // Find first owner or admin as comment author
+    const people = peopleResult.data?.data ?? [];
+    const author = people.find(
+      (p) =>
+        !p.deactivated &&
+        (p.role.includes('owner') || p.role.includes('admin')),
+    );
 
     if (!author) {
       return NextResponse.json(
@@ -46,6 +65,7 @@ export async function POST(
       );
     }
 
+    const policyRows = policiesResult.data?.data ?? [];
     const policies: PolicyContext[] = policyRows.map((policy) => ({
       name: policy.name,
       description: policy.description,

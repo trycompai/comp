@@ -1,7 +1,6 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
 import { serverApi } from '@/lib/api-server';
-import { db } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { RisksTable } from './RisksTable';
@@ -59,13 +58,12 @@ export default async function RiskRegisterPage(props: {
 }) {
   const { orgId } = await props.params;
 
-  const [risksResult, peopleResult, onboarding] = await Promise.all([
+  const [risksResult, peopleResult, onboardingResult] = await Promise.all([
     serverApi.get<RisksApiResponse>('/v1/risks?perPage=50'),
     serverApi.get<PeopleApiResponse>('/v1/people'),
-    db.onboarding.findFirst({
-      where: { organizationId: orgId },
-      select: { triggerJobId: true },
-    }),
+    serverApi.get<{ triggerJobId: string | null; triggerJobCompleted: boolean } | null>(
+      '/v1/organization/onboarding',
+    ),
   ]);
 
   const risks = risksResult.data?.data ?? [];
@@ -86,6 +84,7 @@ export default async function RiskRegisterPage(props: {
       updatedAt: new Date(),
     }));
 
+  const onboarding = onboardingResult.data;
   const isEmpty = risks.length === 0;
   const isOnboardingActive = Boolean(onboarding?.triggerJobId);
 

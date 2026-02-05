@@ -777,6 +777,25 @@
         ]
       }
     },
+    "/v1/organization/onboarding": {
+      "get": {
+        "operationId": "OrganizationController_getOnboarding_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
     "/v1/organization/transfer-ownership": {
       "post": {
         "description": "Transfers organization ownership to another member. The current owner will become an admin and keep all other roles. The new owner will receive the owner role while keeping their existing roles. Only the current organization owner can perform this action. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",

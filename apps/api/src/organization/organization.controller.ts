@@ -77,6 +77,12 @@ export class OrganizationController {
     };
   }
 
+  @Get('onboarding')
+  @RequirePermission('organization', 'read')
+  async getOnboarding(@OrganizationId() organizationId: string) {
+    return this.organizationService.findOnboarding(organizationId);
+  }
+
   @Patch()
   @RequirePermission('organization', 'update')
   @ApiOperation(ORGANIZATION_OPERATIONS.updateOrganization)

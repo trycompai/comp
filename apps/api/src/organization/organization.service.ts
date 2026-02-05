@@ -53,6 +53,14 @@ export class OrganizationService {
     }
   }
 
+  async findOnboarding(organizationId: string) {
+    const onboarding = await db.onboarding.findFirst({
+      where: { organizationId },
+      select: { triggerJobId: true, triggerJobCompleted: true },
+    });
+    return onboarding;
+  }
+
   async updateById(id: string, updateData: UpdateOrganizationDto) {
     try {
       // First check if the organization exists
