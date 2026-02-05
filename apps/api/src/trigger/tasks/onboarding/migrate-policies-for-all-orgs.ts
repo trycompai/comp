@@ -14,7 +14,9 @@ export const migratePoliciesForAllOrgs = task({
       },
     });
 
-    logger.info(`Total legacy policies across all orgs: ${totalLegacyPolicies}`);
+    logger.info(
+      `Total legacy policies across all orgs: ${totalLegacyPolicies}`,
+    );
 
     if (totalLegacyPolicies === 0) {
       return {
@@ -118,7 +120,8 @@ export const migratePoliciesForAllOrgs = task({
           `Batch ${batchNumber} complete: ${successful} successful, ${failed} failed`,
         );
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error';
         logger.error(`Batch ${batchNumber} failed entirely: ${errorMsg}`);
         totalFailed += batch.length;
       }

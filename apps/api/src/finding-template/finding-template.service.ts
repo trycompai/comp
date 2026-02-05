@@ -31,9 +31,7 @@ export class FindingTemplateService {
         throw new NotFoundException(`Finding template with ID ${id} not found`);
       }
 
-      this.logger.log(
-        `Retrieved finding template: ${template.title} (${id})`,
-      );
+      this.logger.log(`Retrieved finding template: ${template.title} (${id})`);
       return template;
     } catch (error) {
       if (error instanceof NotFoundException) {

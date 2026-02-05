@@ -288,8 +288,8 @@ export class FindingsService {
   ) {
     // Verify finding exists and get current state for audit
     const finding = await this.findById(organizationId, findingId);
-    const previousStatus = finding.status as FindingStatus;
-    const previousType = finding.type as FindingType;
+    const previousStatus = finding.status;
+    const previousType = finding.type;
     const previousContent = finding.content;
 
     // Validate status transition permissions
@@ -421,7 +421,7 @@ export class FindingsService {
         taskId: finding.taskId,
         taskTitle: finding.task.title,
         findingContent: updatedFinding.content,
-        findingType: updatedFinding.type as FindingType,
+        findingType: updatedFinding.type,
         actorUserId: userId,
         actorName,
       };

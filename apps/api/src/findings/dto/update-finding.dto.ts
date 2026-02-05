@@ -41,7 +41,8 @@ export class UpdateFindingDto {
   content?: string;
 
   @ApiProperty({
-    description: 'Auditor note when requesting revision (only for needs_revision status)',
+    description:
+      'Auditor note when requesting revision (only for needs_revision status)',
     example: 'Please provide clearer screenshots showing the timestamp.',
     maxLength: 2000,
     required: false,

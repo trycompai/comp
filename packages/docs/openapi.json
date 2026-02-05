@@ -7024,6 +7024,7 @@
                     "enum": [
                       "todo",
                       "in_progress",
+                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
@@ -7332,6 +7333,7 @@
                     "enum": [
                       "todo",
                       "in_progress",
+                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
@@ -9340,6 +9342,320 @@
         ]
       }
     },
+    "/v1/trust-portal/overview": {
+      "post": {
+        "operationId": "TrustPortalController_updateOverview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overview updated successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update trust portal overview section",
+        "tags": [
+          "Trust Portal"
+        ]
+      },
+      "get": {
+        "operationId": "TrustPortalController_getOverview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get trust portal overview",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links": {
+      "post": {
+        "operationId": "TrustPortalController_createCustomLink_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Custom link created successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a custom link for trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      },
+      "get": {
+        "operationId": "TrustPortalController_listCustomLinks_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List custom links for trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links/{linkId}": {
+      "post": {
+        "operationId": "TrustPortalController_updateCustomLink_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "linkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom link updated successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a custom link",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links/{linkId}/delete": {
+      "post": {
+        "operationId": "TrustPortalController_deleteCustomLink_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "linkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom link deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a custom link",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/custom-links/reorder": {
+      "post": {
+        "operationId": "TrustPortalController_reorderCustomLinks_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom links reordered successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reorder custom links",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/vendors/{vendorId}/trust-settings": {
+      "post": {
+        "operationId": "TrustPortalController_updateVendorTrustSettings_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor settings updated successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update vendor trust portal settings",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/vendors": {
+      "get": {
+        "operationId": "TrustPortalController_listPublicVendors_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List vendors configured for trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
     "/v1/trust-access/{friendlyUrl}/requests": {
       "post": {
         "description": "External users submit request for data access from trust site",
@@ -10207,6 +10523,124 @@
           }
         },
         "summary": "Get FAQs for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/overview": {
+      "get": {
+        "description": "Retrieve the overview/mission text for a published trust portal.",
+        "operationId": "TrustAccessController_getPublicOverview_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overview retrieved successfully"
+          }
+        },
+        "summary": "Get overview section for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/custom-links": {
+      "get": {
+        "description": "Retrieve the custom external links configured for the trust portal.",
+        "operationId": "TrustAccessController_getPublicCustomLinks_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom links retrieved successfully"
+          }
+        },
+        "summary": "Get custom links for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/favicon": {
+      "get": {
+        "description": "Retrieve the favicon URL for the trust portal.",
+        "operationId": "TrustAccessController_getPublicFavicon_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Favicon URL retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "faviconUrl": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Signed URL to the favicon, or null if not set"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get favicon URL for a trust portal",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/{friendlyUrl}/vendors": {
+      "get": {
+        "description": "Retrieve the list of vendors configured to display on the trust portal.",
+        "operationId": "TrustAccessController_getPublicVendors_v1",
+        "parameters": [
+          {
+            "name": "friendlyUrl",
+            "required": true,
+            "in": "path",
+            "description": "Trust Portal friendly URL or Organization ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendors retrieved successfully"
+          }
+        },
+        "summary": "Get vendors/subprocessors for a trust portal",
         "tags": [
           "Trust Access"
         ]
