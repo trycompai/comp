@@ -632,6 +632,108 @@ Keep responses helpful and focused on the policy editing task.`;
     );
   }
 
+  @Post(':id/accept-changes')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'approve')
+  @ApiOperation({ summary: 'Accept requested policy changes and publish' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async acceptPolicyChanges(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() body: { approverId: string; comment?: string },
+  ) {
+    const result = await this.policiesService.acceptChanges(
+      id,
+      organizationId,
+      body.approverId,
+      authContext.userId!,
+      body.comment,
+    );
+
+    return {
+      data: result,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/regenerate')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Regenerate policy content using AI' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async regeneratePolicy(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const taskPayload = await this.policiesService.regeneratePolicy(
+      id,
+      organizationId,
+      authContext.userId,
+    );
+
+    // Import trigger.dev SDK dynamically to trigger the task
+    const { tasks, auth } = await import('@trigger.dev/sdk');
+
+    const handle = await tasks.trigger('update-policy', taskPayload);
+
+    const publicAccessToken = await auth.createPublicToken({
+      scopes: {
+        read: {
+          runs: [handle.id],
+        },
+      },
+    });
+
+    return {
+      data: {
+        success: true,
+        runId: handle.id,
+        publicAccessToken,
+      },
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post('regenerate-all')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Regenerate all policies using AI' })
+  async regenerateAllPolicies(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const { tasks } = await import('@trigger.dev/sdk');
+
+    await tasks.trigger('generate-full-policies', {
+      organizationId,
+    });
+
+    return {
+      data: { success: true },
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
   @Get(':id/pdf/signed-url')
   @UseGuards(PermissionGuard)
   @RequirePermission('policy', 'read')

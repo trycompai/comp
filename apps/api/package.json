@@ -104,7 +104,10 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@db$": "<rootDir>/../prisma/index"
+    }
   },
   "license": "UNLICENSED",
   "private": true,

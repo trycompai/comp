@@ -1,6 +1,5 @@
 'use client';
 
-import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
 import { useApi } from '@/hooks/use-api';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
@@ -23,7 +22,6 @@ import { Icons } from '@comp/ui/icons';
 import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -84,27 +82,30 @@ export function PolicyHeaderActions({
     }
   }, [run, router]);
 
-  // Delete flows through query param to existing dialog in PolicyOverview
-  const regenerate = useAction(regeneratePolicyAction, {
-    onSuccess: (result) => {
-      if (result.data?.runId && result.data?.publicAccessToken) {
-        // Show loading toast
+  const handleRegenerate = async () => {
+    if (!policy) return;
+    setIsRegenerating(true);
+    setRegenerateConfirmOpen(false);
+
+    try {
+      const response = await api.post<{ data: { runId: string; publicAccessToken: string } }>(
+        `/v1/policies/${policy.id}/regenerate`,
+      );
+
+      if (response.error) throw new Error(response.error);
+
+      const { runId, publicAccessToken } = response.data?.data ?? {};
+      if (runId && publicAccessToken) {
         const toastId = toast.loading('Regenerating policy content...');
         toastIdRef.current = toastId;
-        setIsRegenerating(true);
 
-        // Start tracking the run
-        setRunInfo({
-          runId: result.data.runId,
-          accessToken: result.data.publicAccessToken,
-        });
+        setRunInfo({ runId, accessToken: publicAccessToken });
       }
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to trigger policy regeneration');
       setIsRegenerating(false);
-    },
-  });
+    }
+  };
 
   const updateQueryParam = ({ key, value }: { key: string; value: string }) => {
     const url = new URL(window.location.href);
@@ -242,13 +243,10 @@ export function PolicyHeaderActions({
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                regenerate.execute({ policyId: policy.id });
-                setRegenerateConfirmOpen(false);
-              }}
-              disabled={regenerate.status === 'executing'}
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
             >
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+              {isRegenerating ? 'Working…' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

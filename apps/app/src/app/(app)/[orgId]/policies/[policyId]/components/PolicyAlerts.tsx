@@ -1,6 +1,5 @@
 'use client';
 
-import { acceptRequestedPolicyChangesAction } from '@/actions/policies/accept-requested-policy-changes';
 import { useApi } from '@/hooks/use-api';
 import { authClient } from '@/utils/auth-client';
 import type { Member, Policy, User } from '@db';
@@ -15,7 +14,6 @@ import {
 } from '@trycompai/design-system';
 import { Archive, Renew, Time } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -32,30 +30,29 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
   const router = useRouter();
   const searchParams = useSearchParams();
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
+  const [isApproving, setIsApproving] = useState(false);
   const [isDenying, setIsDenying] = useState(false);
 
   const approveCommentRef = useRef<HTMLTextAreaElement>(null);
   const rejectCommentRef = useRef<HTMLTextAreaElement>(null);
 
-  const acceptPolicyChanges = useAction(acceptRequestedPolicyChangesAction, {
-    onSuccess: () => {
-      toast.success('Policy changes accepted and published!');
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to accept policy changes.');
-    },
-  });
-
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (policy?.id && policy.approverId) {
       const comment = approveCommentRef.current?.value?.trim() || undefined;
-      acceptPolicyChanges.execute({
-        id: policy.id,
-        approverId: policy.approverId,
-        comment,
-        entityId: policy.id,
-      });
+      setIsApproving(true);
+      try {
+        const response = await api.post(`/v1/policies/${policy.id}/accept-changes`, {
+          approverId: policy.approverId,
+          comment,
+        });
+        if (response.error) throw new Error(response.error);
+        toast.success('Policy changes accepted and published!');
+        onMutate?.();
+      } catch {
+        toast.error('Failed to accept policy changes.');
+      } finally {
+        setIsApproving(false);
+      }
     }
   };
 
@@ -107,7 +104,7 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
           description="Review this policy and approve or reject the pending changes."
           onApprove={handleApprove}
           onReject={handleDeny}
-          approveLoading={acceptPolicyChanges.isPending}
+          approveLoading={isApproving}
           rejectLoading={isDenying}
           approveConfirmation={{
             title: 'Approve Policy Changes',

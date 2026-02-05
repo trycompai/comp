@@ -7032,6 +7032,88 @@
         ]
       }
     },
+    "/v1/policies/{id}/accept-changes": {
+      "post": {
+        "operationId": "PoliciesController_acceptPolicyChanges_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Accept requested policy changes and publish",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/regenerate": {
+      "post": {
+        "operationId": "PoliciesController_regeneratePolicy_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Regenerate policy content using AI",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/regenerate-all": {
+      "post": {
+        "operationId": "PoliciesController_regenerateAllPolicies_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Regenerate all policies using AI",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/policies/{id}/pdf/signed-url": {
       "get": {
         "operationId": "PoliciesController_getPdfSignedUrl_v1",

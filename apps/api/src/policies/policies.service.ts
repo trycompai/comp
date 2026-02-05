@@ -1231,6 +1231,179 @@ export class PoliciesService {
     return { success: true };
   }
 
+  async acceptChanges(
+    policyId: string,
+    organizationId: string,
+    approverId: string,
+    userId: string,
+    comment?: string,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      include: {
+        organization: { select: { name: true } },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    if (policy.approverId !== approverId) {
+      throw new BadRequestException('Approver mismatch');
+    }
+
+    const isNewPolicy = policy.lastPublishedAt === null;
+
+    const updateData: Prisma.PolicyUpdateInput = {
+      status: PolicyStatus.published,
+      approver: { disconnect: true },
+      signedBy: [],
+      lastPublishedAt: new Date(),
+      reviewDate: new Date(),
+      pendingVersionId: null,
+    };
+
+    // If there's a pending version, make it the current version
+    if (policy.pendingVersionId) {
+      const pendingVersion = await db.policyVersion.findUnique({
+        where: { id: policy.pendingVersionId },
+      });
+
+      if (!pendingVersion || pendingVersion.policyId !== policy.id) {
+        throw new BadRequestException(
+          'The pending version no longer exists. Approval cannot be completed.',
+        );
+      }
+
+      updateData.currentVersion = { connect: { id: pendingVersion.id } };
+      updateData.content = pendingVersion.content as Prisma.InputJsonValue[];
+      updateData.draftContent = pendingVersion.content as Prisma.InputJsonValue[];
+    }
+
+    await db.policy.update({
+      where: { id: policyId, organizationId },
+      data: updateData,
+    });
+
+    // If a comment was provided, create a comment
+    if (comment && comment.trim() !== '') {
+      const member = await db.member.findFirst({
+        where: { userId, organizationId, deactivated: false },
+        select: { id: true },
+      });
+
+      if (member) {
+        await db.comment.create({
+          data: {
+            content: `Policy changes accepted: ${comment}`,
+            entityId: policyId,
+            entityType: CommentEntityType.policy,
+            organizationId,
+            authorId: member.id,
+          },
+        });
+      }
+    }
+
+    // Get all active members for email notifications
+    const members = await db.member.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        deactivated: false,
+        user: { isPlatformAdmin: false },
+      },
+      include: { user: true },
+    });
+
+    return {
+      success: true,
+      emailNotifications: members
+        .filter((m) => m.user.email)
+        .map((m) => {
+          let notificationType: 'new' | 're-acceptance' | 'updated';
+          const wasAlreadySigned = policy.signedBy.includes(m.id);
+          if (isNewPolicy) {
+            notificationType = 'new';
+          } else if (wasAlreadySigned) {
+            notificationType = 're-acceptance';
+          } else {
+            notificationType = 'updated';
+          }
+          return {
+            email: m.user.email,
+            userName: m.user.name || m.user.email || 'Employee',
+            policyName: policy.name,
+            organizationId,
+            organizationName: policy.organization.name,
+            notificationType,
+          };
+        }),
+    };
+  }
+
+  async regeneratePolicy(
+    policyId: string,
+    organizationId: string,
+    userId?: string,
+  ) {
+    // Verify the policy exists
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId },
+      select: { id: true },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy with ID ${policyId} not found`);
+    }
+
+    // Get member ID
+    let memberId: string | undefined;
+    if (userId) {
+      const member = await db.member.findFirst({
+        where: { organizationId, userId },
+        select: { id: true },
+      });
+      memberId = member?.id;
+    }
+
+    // Load frameworks
+    const instances = await db.frameworkInstance.findMany({
+      where: { organizationId },
+      include: { framework: true },
+    });
+
+    const uniqueFrameworks = Array.from(
+      new Map(instances.map((fi) => [fi.framework.id, fi.framework])).values(),
+    ).map((f) => ({
+      id: f.id,
+      name: f.name,
+      version: f.version,
+      description: f.description,
+      visible: f.visible,
+      createdAt: f.createdAt,
+      updatedAt: f.updatedAt,
+    }));
+
+    // Load context hub
+    const contextEntries = await db.context.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'asc' },
+    });
+    const contextHub = contextEntries
+      .map((c) => `${c.question}\n${c.answer}`)
+      .join('\n');
+
+    return {
+      policyId,
+      organizationId,
+      contextHub,
+      frameworks: uniqueFrameworks,
+      memberId,
+    };
+  }
+
   async mapControls(
     policyId: string,
     organizationId: string,
