@@ -1,6 +1,4 @@
-import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { headers } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';
 
@@ -19,10 +17,6 @@ export const getContextEntries = cache(
     data: any[];
     pageCount: number;
   }> => {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.session.activeOrganizationId || session.session.activeOrganizationId !== orgId) {
-      return { data: [], pageCount: 0 };
-    }
     const where: any = {
       organizationId: orgId,
       ...(search && {

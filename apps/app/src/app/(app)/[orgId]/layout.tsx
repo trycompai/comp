@@ -75,6 +75,23 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
+  // Sync activeOrganizationId if it doesn't match the URL's orgId.
+  // Direct DB update instead of HTTP call to avoid race conditions:
+  // Next.js renders layouts and pages in parallel, so child pages may call
+  // serverApi before an HTTP-based sync completes. A direct DB write is faster
+  // and membership has already been validated above.
+  const currentActiveOrgId = session.session.activeOrganizationId;
+  if (!currentActiveOrgId || currentActiveOrgId !== requestedOrgId) {
+    try {
+      await db.session.update({
+        where: { id: session.session.id },
+        data: { activeOrganizationId: requestedOrgId },
+      });
+    } catch (error) {
+      console.error('[Layout] Failed to sync activeOrganizationId:', error);
+    }
+  }
+
   // Resolve effective permissions from all roles (built-in + custom)
   const permissions = await resolveUserPermissions(member.role, requestedOrgId);
 
