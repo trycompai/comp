@@ -124,9 +124,6 @@ export const addEmployeeWithoutInvite = async ({
     }
 
     // Generate invite link
-    const isLocalhost = process.env.NODE_ENV === 'development';
-    const protocol = isLocalhost ? 'http' : 'https';
-
     const inviteLink = `${process.env.NEXT_PUBLIC_PORTAL_URL}/${organizationId}`;
 
     // Send the invitation email (non-fatal: member is already created)
