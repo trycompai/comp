@@ -713,7 +713,7 @@ export class TrustPortalService {
     description?: string | null;
     url?: string;
     isActive?: boolean;
-  }) {
+  }, organizationId: string) {
     const link = await db.trustCustomLink.findUnique({
       where: { id: linkId },
     });
@@ -722,19 +722,27 @@ export class TrustPortalService {
       throw new NotFoundException('Custom link not found');
     }
 
+    if (link.organizationId !== organizationId) {
+      throw new BadRequestException('You can only modify custom links belonging to your organization');
+    }
+
     return db.trustCustomLink.update({
       where: { id: linkId },
       data,
     });
   }
 
-  async deleteCustomLink(linkId: string) {
+  async deleteCustomLink(linkId: string, organizationId: string) {
     const link = await db.trustCustomLink.findUnique({
       where: { id: linkId },
     });
 
     if (!link) {
       throw new NotFoundException('Custom link not found');
+    }
+
+    if (link.organizationId !== organizationId) {
+      throw new BadRequestException('You can only delete custom links belonging to your organization');
     }
 
     await db.trustCustomLink.delete({
@@ -802,13 +810,17 @@ export class TrustPortalService {
     showOnTrustPortal?: boolean;
     trustPortalOrder?: number | null;
     complianceBadges?: any;
-  }) {
+  }, organizationId: string) {
     const vendor = await db.vendor.findUnique({
       where: { id: vendorId },
     });
 
     if (!vendor) {
       throw new NotFoundException('Vendor not found');
+    }
+
+    if (vendor.organizationId !== organizationId) {
+      throw new BadRequestException('You can only modify vendors belonging to your organization');
     }
 
     return db.vendor.update({

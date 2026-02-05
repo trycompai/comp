@@ -322,9 +322,10 @@ export class TrustPortalController {
   async updateCustomLink(
     @Param('linkId') linkId: string,
     @Body() body: UpdateCustomLinkDto,
+    @AuthContext() authContext: AuthContextType,
   ) {
     const dto = UpdateCustomLinkSchema.parse(body);
-    return this.trustPortalService.updateCustomLink(linkId, dto);
+    return this.trustPortalService.updateCustomLink(linkId, dto, authContext.organizationId);
   }
 
   @Post('custom-links/:linkId/delete')
@@ -336,8 +337,11 @@ export class TrustPortalController {
     status: HttpStatus.OK,
     description: 'Custom link deleted successfully',
   })
-  async deleteCustomLink(@Param('linkId') linkId: string) {
-    return this.trustPortalService.deleteCustomLink(linkId);
+  async deleteCustomLink(
+    @Param('linkId') linkId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    return this.trustPortalService.deleteCustomLink(linkId, authContext.organizationId);
   }
 
   @Post('custom-links/reorder')
@@ -387,9 +391,10 @@ export class TrustPortalController {
   async updateVendorTrustSettings(
     @Param('vendorId') vendorId: string,
     @Body() body: UpdateVendorTrustSettingsDto,
+    @AuthContext() authContext: AuthContextType,
   ) {
     const dto = UpdateVendorTrustSettingsSchema.parse(body);
-    return this.trustPortalService.updateVendorTrustSettings(vendorId, dto);
+    return this.trustPortalService.updateVendorTrustSettings(vendorId, dto, authContext.organizationId);
   }
 
   @Get('vendors')
