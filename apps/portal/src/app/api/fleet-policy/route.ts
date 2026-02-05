@@ -121,6 +121,13 @@ export async function DELETE(req: NextRequest) {
         organizationId,
         keyCount: allKeys.length,
       });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to remove screenshots from storage. Please try again.',
+        },
+        { status: 503 },
+      );
     }
   }
 
