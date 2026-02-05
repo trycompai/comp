@@ -1140,7 +1140,16 @@
       "get": {
         "description": "Returns all members for the authenticated organization with their user information. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PeopleController_getAllPeople_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "includeDeactivated",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "People retrieved successfully",
@@ -2222,43 +2231,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "preferences"
-                ],
-                "properties": {
-                  "preferences": {
-                    "type": "object",
-                    "required": [
-                      "policyNotifications",
-                      "taskReminders",
-                      "weeklyTaskDigest",
-                      "unassignedItemsNotifications",
-                      "taskMentions",
-                      "taskAssignments"
-                    ],
-                    "properties": {
-                      "policyNotifications": {
-                        "type": "boolean"
-                      },
-                      "taskReminders": {
-                        "type": "boolean"
-                      },
-                      "weeklyTaskDigest": {
-                        "type": "boolean"
-                      },
-                      "unassignedItemsNotifications": {
-                        "type": "boolean"
-                      },
-                      "taskMentions": {
-                        "type": "boolean"
-                      },
-                      "taskAssignments": {
-                        "type": "boolean"
-                      }
-                    }
-                  }
-                }
+                "$ref": "#/components/schemas/UpdateEmailPreferencesDto"
               }
             }
           }
@@ -15424,7 +15397,7 @@
           },
           "role": {
             "type": "string",
-            "description": "Role for the member",
+            "description": "Role for the member (built-in role name or custom role ID)",
             "example": "admin"
           },
           "department": {
@@ -15497,7 +15470,7 @@
           },
           "role": {
             "type": "string",
-            "description": "Role for the member",
+            "description": "Role for the member (built-in role name or custom role ID)",
             "example": "admin"
           },
           "department": {
@@ -15540,6 +15513,54 @@
             "example": "2024-01-15T00:00:00.000Z"
           }
         }
+      },
+      "EmailPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "policyNotifications": {
+            "type": "boolean",
+            "example": true
+          },
+          "taskReminders": {
+            "type": "boolean",
+            "example": true
+          },
+          "weeklyTaskDigest": {
+            "type": "boolean",
+            "example": true
+          },
+          "unassignedItemsNotifications": {
+            "type": "boolean",
+            "example": true
+          },
+          "taskMentions": {
+            "type": "boolean",
+            "example": true
+          },
+          "taskAssignments": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "policyNotifications",
+          "taskReminders",
+          "weeklyTaskDigest",
+          "unassignedItemsNotifications",
+          "taskMentions",
+          "taskAssignments"
+        ]
+      },
+      "UpdateEmailPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "preferences": {
+            "$ref": "#/components/schemas/EmailPreferencesDto"
+          }
+        },
+        "required": [
+          "preferences"
+        ]
       },
       "CreateRiskDto": {
         "type": "object",

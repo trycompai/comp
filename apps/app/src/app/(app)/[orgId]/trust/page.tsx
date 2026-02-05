@@ -213,8 +213,6 @@ const DEFAULT_CERTIFICATE_FILES: CertificateFiles = {
 async function fetchOrganizationPrimaryColor(orgId: string): Promise<string | null> {
   const headersList = await headers();
   const cookieHeader = headersList.get('cookie') || '';
-
-  const sessionTokenValue = await getSessionToken(cookieHeader);
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
   try {
@@ -222,7 +220,7 @@ async function fetchOrganizationPrimaryColor(orgId: string): Promise<string | nu
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(sessionTokenValue ? { Authorization: `Bearer ${sessionTokenValue}` } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
     });
 
@@ -244,8 +242,6 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
   const result: CertificateFiles = { ...DEFAULT_CERTIFICATE_FILES };
   const headersList = await headers();
   const cookieHeader = headersList.get('cookie') || '';
-
-  const sessionTokenValue = await getSessionToken(cookieHeader);
   const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
   try {
@@ -253,7 +249,7 @@ async function fetchComplianceCertificates(orgId: string): Promise<CertificateFi
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(sessionTokenValue ? { Authorization: `Bearer ${sessionTokenValue}` } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
       body: JSON.stringify({ organizationId: orgId }),
     });
@@ -306,32 +302,6 @@ async function fetchOrganizationFaqs(orgId: string): Promise<FaqItem[] | null> {
       : null;
   } catch (error) {
     console.warn('Error fetching organization FAQs:', error);
-    return null;
-  }
-}
-
-async function getSessionToken(cookieHeader: string): Promise<string | null> {
-  if (!cookieHeader) {
-    return null;
-  }
-
-  try {
-    const authUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000';
-    const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
-      method: 'GET',
-      headers: {
-        Cookie: cookieHeader,
-      },
-    });
-
-    if (!tokenResponse.ok) {
-      return null;
-    }
-
-    const tokenData = await tokenResponse.json();
-    return tokenData?.token ?? null;
-  } catch (error) {
-    console.warn('Failed to get session token:', error);
     return null;
   }
 }

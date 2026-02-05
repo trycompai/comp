@@ -7,6 +7,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   ParseIntPipe,
   UseGuards,
   HttpCode,
@@ -23,6 +24,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -31,6 +33,7 @@ import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { PeopleResponseDto, UserResponseDto } from './dto/people-responses.dto';
+import { UpdateEmailPreferencesDto } from './dto/update-email-preferences.dto';
 import { PeopleService } from './people.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
 import { CREATE_MEMBER_RESPONSES } from './schemas/create-member.responses';
@@ -52,6 +55,7 @@ export class PeopleController {
   constructor(private readonly peopleService: PeopleService) {}
 
   @Get()
+  @AuditRead()
   @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getAllPeople)
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])
@@ -61,9 +65,12 @@ export class PeopleController {
   async getAllPeople(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('includeDeactivated') includeDeactivated?: string,
   ) {
-    const people =
-      await this.peopleService.findAllByOrganization(organizationId);
+    const people = await this.peopleService.findAllByOrganization(
+      organizationId,
+      includeDeactivated === 'true',
+    );
 
     return {
       data: people,
@@ -141,6 +148,7 @@ export class PeopleController {
   }
 
   @Get(':id')
+  @AuditRead()
   @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getPersonById)
   @ApiParam(PEOPLE_PARAMS.memberId)
@@ -254,6 +262,7 @@ export class PeopleController {
     const result = await this.peopleService.deleteById(
       memberId,
       organizationId,
+      authContext.userId,
     );
 
     return {
@@ -303,47 +312,11 @@ export class PeopleController {
   }
 
   @Put('me/email-preferences')
+  @RequirePermission('member', 'read')
   @ApiOperation({ summary: 'Update current user email notification preferences' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['preferences'],
-      properties: {
-        preferences: {
-          type: 'object',
-          required: [
-            'policyNotifications',
-            'taskReminders',
-            'weeklyTaskDigest',
-            'unassignedItemsNotifications',
-            'taskMentions',
-            'taskAssignments',
-          ],
-          properties: {
-            policyNotifications: { type: 'boolean' },
-            taskReminders: { type: 'boolean' },
-            weeklyTaskDigest: { type: 'boolean' },
-            unassignedItemsNotifications: { type: 'boolean' },
-            taskMentions: { type: 'boolean' },
-            taskAssignments: { type: 'boolean' },
-          },
-        },
-      },
-    },
-  })
   async updateEmailPreferences(
     @AuthContext() authContext: AuthContextType,
-    @Body()
-    body: {
-      preferences: {
-        policyNotifications: boolean;
-        taskReminders: boolean;
-        weeklyTaskDigest: boolean;
-        unassignedItemsNotifications: boolean;
-        taskMentions: boolean;
-        taskAssignments: boolean;
-      };
-    },
+    @Body() body: UpdateEmailPreferencesDto,
   ) {
     if (!authContext.userId) {
       throw new BadRequestException(

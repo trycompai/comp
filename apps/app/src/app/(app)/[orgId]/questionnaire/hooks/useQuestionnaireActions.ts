@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import type { QuestionAnswer } from '../components/types';
 import { api } from '@/lib/api-client';
 import { env } from '@/env.mjs';
-import { sessionToken } from '@/utils/session-token';
 
 interface UseQuestionnaireActionsProps {
   orgId: string;
@@ -299,22 +298,19 @@ export function useQuestionnaireActions({
     setIsExporting(true);
 
     try {
-      // Get auth token for the request
-      const token = await sessionToken.getToken();
-
       // Call the API to get the file as a blob
       const response = await fetch(
         `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/questionnaire/export`,
         {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             questionnaireId,
             organizationId: orgId,
-      format,
+            format,
           }),
         },
       );

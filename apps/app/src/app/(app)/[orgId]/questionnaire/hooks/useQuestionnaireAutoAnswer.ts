@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { QuestionAnswer } from '../components/types';
 import { env } from '@/env.mjs';
-import { sessionToken } from '@/utils/session-token';
 
 interface UseQuestionnaireAutoAnswerProps {
   results: QuestionAnswer[] | null;
@@ -76,16 +75,12 @@ export function useQuestionnaireAutoAnswer({
     }
 
     try {
-      // Use fetch with ReadableStream for SSE (EventSource only supports GET)
-      // credentials: 'include' is required to send cookies for authentication
-      const token = await sessionToken.getToken();
       const response = await fetch(
         `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/questionnaire/auto-answer`,
         {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         body: JSON.stringify({
             organizationId: payload.organizationId,

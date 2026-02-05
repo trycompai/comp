@@ -1,7 +1,6 @@
 'use client';
 
 import { env } from '@/env.mjs';
-import { sessionToken } from '@/utils/session-token';
 
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>;
@@ -15,7 +14,7 @@ export interface ApiResponse<T = unknown> {
 
 /**
  * API client for calling our internal NestJS API.
- * Uses better-auth session tokens (bearer plugin) for authentication.
+ * Uses cookie-based authentication (better-auth session cookies).
  * Organization context is carried by the session — no X-Organization-Id header needed.
  */
 export class ApiClient {
@@ -25,14 +24,9 @@ export class ApiClient {
     this.baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   }
 
-  /**
-   * Make an authenticated API call.
-   * Automatically handles token refresh on 401 errors.
-   */
   async call<T = unknown>(
     endpoint: string,
     options: ApiCallOptions = {},
-    retryOnAuthError = true,
   ): Promise<ApiResponse<T>> {
     const { headers: customHeaders, ...fetchOptions } = options;
 
@@ -41,50 +35,12 @@ export class ApiClient {
       ...customHeaders,
     };
 
-    // Add session token for authentication
-    if (typeof window !== 'undefined') {
-      try {
-        const token = await sessionToken.getToken();
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error('Error getting session token for API call:', error);
-      }
-    }
-
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         credentials: 'include',
         ...fetchOptions,
         headers,
       });
-
-      // Handle 401 Unauthorized - token might be invalid, try refreshing
-      if (response.status === 401 && retryOnAuthError && typeof window !== 'undefined') {
-        // Clear cached token and fetch a fresh one
-        sessionToken.clear();
-        const newToken = await sessionToken.fetchToken();
-
-        if (newToken) {
-          // Retry the request with the new token (only once)
-          const retryHeaders = {
-            ...headers,
-            Authorization: `Bearer ${newToken}`,
-          };
-
-          const retryResponse = await fetch(`${this.baseUrl}${endpoint}`, {
-            credentials: 'include',
-            ...fetchOptions,
-            headers: retryHeaders,
-          });
-
-          return this.parseResponse<T>(retryResponse);
-        } else {
-          // Failed to get token, return original error
-          return this.parseResponse<T>(response);
-        }
-      }
 
       return this.parseResponse<T>(response);
     } catch (error) {

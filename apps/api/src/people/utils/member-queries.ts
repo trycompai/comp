@@ -39,9 +39,13 @@ export class MemberQueries {
    */
   static async findAllByOrganization(
     organizationId: string,
+    includeDeactivated = false,
   ): Promise<PeopleResponseDto[]> {
     return db.member.findMany({
-      where: { organizationId, deactivated: false },
+      where: {
+        organizationId,
+        ...(includeDeactivated ? {} : { deactivated: false }),
+      },
       select: this.MEMBER_SELECT,
       orderBy: { createdAt: 'desc' },
     });
@@ -58,6 +62,7 @@ export class MemberQueries {
       where: {
         id: memberId,
         organizationId,
+        deactivated: false,
       },
       select: this.MEMBER_SELECT,
     });

@@ -80,36 +80,12 @@ export default async function SecurityQuestionnairePage({
       const headersList = await headers();
       const cookieHeader = headersList.get('cookie') || '';
 
-      // Get session token from Better Auth server-side
-      let sessionTokenValue: string | null = null;
-      try {
-        const authUrl = env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000';
-        const tokenResponse = await fetch(`${authUrl}/api/auth/token`, {
-          method: 'GET',
-          headers: {
-            Cookie: cookieHeader,
-          },
-        });
-
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
-          sessionTokenValue = tokenData.token || null;
-        }
-      } catch {
-        console.warn('Failed to get session token, continuing without it');
-      }
-
-      const apiHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (sessionTokenValue) {
-        apiHeaders['Authorization'] = `Bearer ${sessionTokenValue}`;
-      }
-
       const response = await fetch(`${apiUrl}/v1/soa/ensure-setup`, {
         method: 'POST',
-        headers: apiHeaders,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
         body: JSON.stringify({
           frameworkId,
           organizationId,

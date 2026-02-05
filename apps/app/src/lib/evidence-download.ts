@@ -1,7 +1,6 @@
 'use client';
 
 import { env } from '@/env.mjs';
-import { sessionToken } from '@/utils/session-token';
 
 /**
  * Download evidence PDF for a specific automation
@@ -88,24 +87,8 @@ async function downloadFile(
   url: string,
   fallback?: { fallbackBaseName: string; fallbackExtension: string },
 ): Promise<void> {
-  const headers: Record<string, string> = {};
-
-  // Add session token for authentication
-  if (typeof window !== 'undefined') {
-    try {
-      const token = await sessionToken.getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-    } catch (error) {
-      console.error('Error getting session token:', error);
-      throw new Error('Authentication failed');
-    }
-  }
-
   const response = await fetch(url, {
     method: 'GET',
-    headers,
     credentials: 'include',
   });
 

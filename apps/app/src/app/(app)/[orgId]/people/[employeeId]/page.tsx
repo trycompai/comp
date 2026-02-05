@@ -1,4 +1,4 @@
-import { auth } from '@/utils/auth';
+import { serverApi } from '@/lib/api-server';
 
 import {
   type TrainingVideo,
@@ -9,11 +9,43 @@ import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { Employee } from './components/Employee';
 
 const MDM_POLICY_ID = -9999;
+
+interface PeopleMember {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: string;
+  createdAt: string;
+  department: string;
+  isActive: boolean;
+  fleetDmLabelId: number | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    image: string | null;
+    createdAt: string;
+    updatedAt: string;
+    lastLogin: string | null;
+    isPlatformAdmin: boolean;
+  };
+}
+
+interface PeopleDetailResponse extends PeopleMember {
+  authType: string;
+  authenticatedUser?: { id: string; email: string };
+}
+
+interface PeopleListResponse {
+  data: PeopleMember[];
+  count: number;
+  authenticatedUser?: { id: string; email: string };
+}
 
 export default async function EmployeeDetailsPage({
   params,
@@ -22,37 +54,37 @@ export default async function EmployeeDetailsPage({
 }) {
   const { employeeId, orgId } = await params;
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const currentUserMember = await db.member.findFirst({
-    where: {
-      organizationId: orgId,
-      userId: session?.user?.id,
-    },
-  });
-
-  const canEditMembers =
-    currentUserMember?.role.includes('owner') || currentUserMember?.role.includes('admin') || false;
-
   if (!orgId) {
     redirect('/');
   }
 
-  const policies = await getPoliciesTasks(employeeId);
-  const employeeTrainingVideos = await getTrainingVideos(employeeId);
-  const employee = await getEmployee(employeeId);
+  // Fetch employee details and all members (for permission check) in parallel
+  const [employeeResponse, membersResponse] = await Promise.all([
+    serverApi.get<PeopleDetailResponse>(`/v1/people/${employeeId}`),
+    serverApi.get<PeopleListResponse>('/v1/people'),
+  ]);
 
-  // If employee doesn't exist, show 404 page
-  if (!employee) {
+  if (!employeeResponse.data) {
     notFound();
   }
 
-  // Get organization for certificate generation
-  const organization = await db.organization.findUnique({
-    where: { id: orgId },
-  });
+  const employee = employeeResponse.data as unknown as Member & { user: User };
+  const currentUserId = membersResponse.data?.authenticatedUser?.id;
+  const currentUserMember = (membersResponse.data?.data ?? []).find(
+    (m) => m.userId === currentUserId,
+  );
+
+  const canEditMembers =
+    currentUserMember?.role.includes('owner') ||
+    currentUserMember?.role.includes('admin') ||
+    false;
+
+  // TODO: Migrate to API endpoints when policies/training/org APIs are available
+  const [policies, employeeTrainingVideos, organization] = await Promise.all([
+    getPoliciesTasks(orgId),
+    getTrainingVideos(employeeId),
+    db.organization.findUnique({ where: { id: orgId } }),
+  ]);
 
   if (!organization) {
     notFound();
@@ -91,44 +123,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const getEmployee = async (employeeId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
-
-  const employee = await db.member.findFirst({
-    where: {
-      id: employeeId,
-      organizationId,
-    },
-    include: {
-      user: true,
-    },
-  });
-
-  return employee;
-};
-
-const getPoliciesTasks = async (employeeId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
-
+const getPoliciesTasks = async (organizationId: string) => {
   const policies = await db.policy.findMany({
     where: {
-      organizationId: organizationId,
+      organizationId,
       status: 'published',
       isRequiredToSign: true,
       isArchived: false,
@@ -142,16 +140,6 @@ const getPoliciesTasks = async (employeeId: string) => {
 };
 
 const getTrainingVideos = async (employeeId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
-
   const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
     where: {
       memberId: employeeId,

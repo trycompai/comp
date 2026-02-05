@@ -1,10 +1,17 @@
 import {
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   Logger,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
+import {
+  isUserUnsubscribed,
+  sendUnassignedItemsNotificationEmail,
+  type UnassignedItem,
+} from '@trycompai/email';
 import { FleetService } from '../lib/fleet.service';
 import type { PeopleResponseDto } from './dto/people-responses.dto';
 import type { CreatePeopleDto } from './dto/create-people.dto';
@@ -21,10 +28,14 @@ export class PeopleService {
 
   async findAllByOrganization(
     organizationId: string,
+    includeDeactivated = false,
   ): Promise<PeopleResponseDto[]> {
     try {
       await MemberValidator.validateOrganization(organizationId);
-      const members = await MemberQueries.findAllByOrganization(organizationId);
+      const members = await MemberQueries.findAllByOrganization(
+        organizationId,
+        includeDeactivated,
+      );
 
       this.logger.log(
         `Retrieved ${members.length} members for organization ${organizationId}`,
@@ -38,7 +49,7 @@ export class PeopleService {
         `Failed to retrieve members for organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to retrieve members: ${error.message}`);
+      throw new InternalServerErrorException('Failed to retrieve members');
     }
   }
 
@@ -69,7 +80,7 @@ export class PeopleService {
         `Failed to retrieve member ${memberId} in organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to retrieve member: ${error.message}`);
+      throw new InternalServerErrorException('Failed to retrieve member');
     }
   }
 
@@ -105,7 +116,7 @@ export class PeopleService {
         `Failed to create member for organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to create member: ${error.message}`);
+      throw new InternalServerErrorException('Failed to create member');
     }
   }
 
@@ -183,7 +194,7 @@ export class PeopleService {
         `Failed to bulk create members for organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to bulk create members: ${error.message}`);
+      throw new InternalServerErrorException('Failed to bulk create members');
     }
   }
 
@@ -229,23 +240,25 @@ export class PeopleService {
         `Failed to update member ${memberId} in organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to update member: ${error.message}`);
+      throw new InternalServerErrorException('Failed to update member');
     }
   }
 
   async deleteById(
     memberId: string,
     organizationId: string,
+    actorUserId?: string,
   ): Promise<{
     success: boolean;
     deletedMember: { id: string; name: string; email: string };
   }> {
     try {
       await MemberValidator.validateOrganization(organizationId);
-      const member = await MemberQueries.findMemberForDeletion(
-        memberId,
-        organizationId,
-      );
+
+      const member = await db.member.findFirst({
+        where: { id: memberId, organizationId },
+        include: { user: { select: { id: true, name: true, email: true, isPlatformAdmin: true } } },
+      });
 
       if (!member) {
         throw new NotFoundException(
@@ -253,11 +266,41 @@ export class PeopleService {
         );
       }
 
-      await MemberQueries.deleteMember(memberId);
+      if (member.role.includes('owner')) {
+        throw new ForbiddenException('Cannot remove the organization owner');
+      }
+
+      if (member.user.isPlatformAdmin) {
+        throw new ForbiddenException('This member is managed by Comp AI and cannot be removed');
+      }
+
+      if (actorUserId && member.userId === actorUserId) {
+        throw new ForbiddenException('You cannot remove yourself from the organization');
+      }
+
+      // Collect assigned items and clear assignments
+      const unassignedItems = await this.collectAndClearAssignments(memberId, organizationId);
+
+      // Remove FleetDM hosts
+      await this.removeFleetHosts(member.fleetDmLabelId);
+
+      // Deactivate member (soft delete)
+      await db.member.update({
+        where: { id: memberId },
+        data: { deactivated: true, isActive: false },
+      });
+
+      // Delete user sessions
+      await db.session.deleteMany({ where: { userId: member.userId } });
 
       this.logger.log(
-        `Deleted member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
+        `Deactivated member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
       );
+
+      // Send unassigned items notification to owner (fire-and-forget)
+      this.notifyOwnerOfUnassignedItems(organizationId, member.user.name || member.user.email, unassignedItems)
+        .catch((err) => this.logger.error('Failed to send unassigned items notification:', err));
+
       return {
         success: true,
         deletedMember: {
@@ -267,15 +310,97 @@ export class PeopleService {
         },
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
         throw error;
       }
       this.logger.error(
         `Failed to delete member ${memberId} from organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to delete member: ${error.message}`);
+      throw new InternalServerErrorException('Failed to delete member');
     }
+  }
+
+  private async collectAndClearAssignments(
+    memberId: string,
+    organizationId: string,
+  ): Promise<UnassignedItem[]> {
+    const [tasks, policies, risks, vendors] = await Promise.all([
+      db.task.findMany({
+        where: { assigneeId: memberId, organizationId },
+        select: { id: true, title: true },
+      }),
+      db.policy.findMany({
+        where: { assigneeId: memberId, organizationId },
+        select: { id: true, name: true },
+      }),
+      db.risk.findMany({
+        where: { assigneeId: memberId, organizationId },
+        select: { id: true, title: true },
+      }),
+      db.vendor.findMany({
+        where: { assigneeId: memberId, organizationId },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    const items: UnassignedItem[] = [
+      ...tasks.map((t) => ({ type: 'task' as const, id: t.id, name: t.title })),
+      ...policies.map((p) => ({ type: 'policy' as const, id: p.id, name: p.name })),
+      ...risks.map((r) => ({ type: 'risk' as const, id: r.id, name: r.title })),
+      ...vendors.map((v) => ({ type: 'vendor' as const, id: v.id, name: v.name })),
+    ];
+
+    // Clear all assignments
+    await Promise.all([
+      db.task.updateMany({ where: { assigneeId: memberId, organizationId }, data: { assigneeId: null } }),
+      db.policy.updateMany({ where: { assigneeId: memberId, organizationId }, data: { assigneeId: null } }),
+      db.risk.updateMany({ where: { assigneeId: memberId, organizationId }, data: { assigneeId: null } }),
+      db.vendor.updateMany({ where: { assigneeId: memberId, organizationId }, data: { assigneeId: null } }),
+    ]);
+
+    return items;
+  }
+
+  private async removeFleetHosts(fleetDmLabelId: number | null): Promise<void> {
+    if (!fleetDmLabelId) return;
+
+    try {
+      const result = await this.fleetService.removeHostsByLabel(fleetDmLabelId);
+      this.logger.log(`Removed ${result.deletedCount} host(s) from FleetDM for label ${fleetDmLabelId}`);
+    } catch (err) {
+      this.logger.error(`Failed to remove FleetDM hosts for label ${fleetDmLabelId}:`, err);
+    }
+  }
+
+  private async notifyOwnerOfUnassignedItems(
+    organizationId: string,
+    removedMemberName: string,
+    unassignedItems: UnassignedItem[],
+  ): Promise<void> {
+    if (unassignedItems.length === 0) return;
+
+    const [organization, owner] = await Promise.all([
+      db.organization.findUnique({ where: { id: organizationId }, select: { name: true } }),
+      db.member.findFirst({
+        where: { organizationId, role: { contains: 'owner' }, deactivated: false },
+        include: { user: { select: { email: true, name: true } } },
+      }),
+    ]);
+
+    if (!owner || !organization) return;
+
+    const unsubscribed = await isUserUnsubscribed(db, owner.user.email, 'unassignedItemsNotifications', organizationId);
+    if (unsubscribed) return;
+
+    await sendUnassignedItemsNotificationEmail({
+      email: owner.user.email,
+      userName: owner.user.name || owner.user.email,
+      organizationName: organization.name,
+      organizationId,
+      removedMemberName,
+      unassignedItems,
+    });
   }
 
   async unlinkDevice(
@@ -336,7 +461,7 @@ export class PeopleService {
         `Failed to unlink device for member ${memberId} in organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to unlink device: ${error.message}`);
+      throw new InternalServerErrorException('Failed to unlink device');
     }
   }
 
@@ -393,7 +518,7 @@ export class PeopleService {
         `Failed to remove host ${hostId} for member ${memberId} in organization ${organizationId}:`,
         error,
       );
-      throw new Error(`Failed to remove host: ${error.message}`);
+      throw new InternalServerErrorException('Failed to remove host');
     }
   }
 
