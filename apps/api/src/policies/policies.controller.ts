@@ -32,6 +32,7 @@ import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import {
   buildPolicyVisibilityFilter,
@@ -113,6 +114,7 @@ export class PoliciesController {
   @Get('download-all')
   @UseGuards(PermissionGuard)
   @RequirePermission('policy', 'read')
+  @AuditRead()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Download all published policies as a single PDF',
@@ -292,6 +294,30 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const data = await this.policiesService.getVersions(id, organizationId);
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get(':id/activity')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
+  @ApiOperation({ summary: 'Get recent audit activity for a policy' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPolicyActivity(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.getActivity(id, organizationId);
 
     return {
       data,
@@ -737,6 +763,7 @@ Keep responses helpful and focused on the policy editing task.`;
   @Get(':id/pdf/signed-url')
   @UseGuards(PermissionGuard)
   @RequirePermission('policy', 'read')
+  @AuditRead()
   @ApiOperation({ summary: 'Get a signed URL for viewing a policy PDF inline' })
   @ApiParam(POLICY_PARAMS.policyId)
   async getPdfSignedUrl(

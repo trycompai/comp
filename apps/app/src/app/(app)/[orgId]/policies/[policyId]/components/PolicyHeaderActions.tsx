@@ -3,6 +3,7 @@
 import { useApi } from '@/hooks/use-api';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
+import { useSWRConfig } from 'swr';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,7 @@ import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { AuditLogWithRelations } from '../data';
+import { auditLogsKey } from '../hooks/useAuditLogs';
 
 type PolicyWithVersion = Policy & {
   approver: (Member & { user: User }) | null;
@@ -34,13 +35,14 @@ type PolicyWithVersion = Policy & {
 
 export function PolicyHeaderActions({
   policy,
-  logs,
+  organizationId,
 }: {
   policy: PolicyWithVersion | null;
-  logs: AuditLogWithRelations[];
+  organizationId: string;
 }) {
   const api = useApi();
   const router = useRouter();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -122,29 +124,24 @@ export function PolicyHeaderActions({
     setIsDownloading(true);
 
     try {
-      // Check if the published version has a PDF uploaded
-      const publishedVersionPdfUrl = policy.currentVersion?.pdfUrl;
+      // Always call the API to check for an uploaded PDF (also creates audit log)
+      const params = new URLSearchParams();
+      if (policy.currentVersion?.id) params.set('versionId', policy.currentVersion.id);
+      const qs = params.toString();
+      const result = await api.get<{ url: string | null }>(
+        `/v1/policies/${policy.id}/pdf/signed-url${qs ? `?${qs}` : ''}`,
+      );
 
-      if (publishedVersionPdfUrl) {
+      if (result.data?.url) {
         // Download the uploaded PDF directly
-        const params = new URLSearchParams();
-        if (policy.currentVersion?.id) params.set('versionId', policy.currentVersion.id);
-        const qs = params.toString();
-        const result = await api.get<{ url: string }>(
-          `/v1/policies/${policy.id}/pdf/signed-url${qs ? `?${qs}` : ''}`,
-        );
-
-        if (result.data?.url) {
-          // Create a temporary link and trigger download
-          const link = document.createElement('a');
-          link.href = result.data.url;
-          link.download = `${policy.name || 'Policy'}.pdf`;
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          return;
-        }
+        const link = document.createElement('a');
+        link.href = result.data.url;
+        link.download = `${policy.name || 'Policy'}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
       }
 
       // Fall back to generating PDF from content
@@ -168,12 +165,14 @@ export function PolicyHeaderActions({
       }
 
       // Generate and download the PDF
-      generatePolicyPDF(policyContent as any, logs, policy.name || 'Policy Document');
+      generatePolicyPDF(policyContent as any, [], policy.name || 'Policy Document');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
       toast.error('Failed to generate policy PDF');
     } finally {
       setIsDownloading(false);
+      // Revalidate audit logs so the activity tab reflects the download
+      globalMutate(auditLogsKey(policy.id, organizationId));
     }
   };
 

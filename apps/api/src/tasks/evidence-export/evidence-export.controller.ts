@@ -16,6 +16,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { AuditRead } from '../../audit/skip-audit-log.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
@@ -75,6 +76,7 @@ export class EvidenceExportController {
    */
   @Get(':taskId/evidence/automation/:automationId/pdf')
   @RequirePermission('evidence', 'export')
+  @AuditRead()
   @ApiOperation({
     summary: 'Export automation evidence as PDF',
     description:
@@ -131,6 +133,7 @@ export class EvidenceExportController {
    */
   @Get(':taskId/evidence/export')
   @RequirePermission('evidence', 'export')
+  @AuditRead()
   @ApiOperation({
     summary: 'Export task evidence as ZIP',
     description:
@@ -202,6 +205,7 @@ export class AuditorEvidenceExportController {
    */
   @Get('all')
   @RequirePermission('evidence', 'export')
+  @AuditRead()
   @ApiOperation({
     summary: 'Export all organization evidence as ZIP (Auditor only)',
     description:

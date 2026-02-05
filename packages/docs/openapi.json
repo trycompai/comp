@@ -6406,6 +6406,37 @@
         ]
       }
     },
+    "/v1/policies/{id}/activity": {
+      "get": {
+        "operationId": "PoliciesController_getPolicyActivity_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get recent audit activity for a policy",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/policies/{id}/versions/{versionId}": {
       "patch": {
         "description": "Updates content for a non-published, non-pending version. Published and pending versions are immutable.",
@@ -7837,6 +7868,74 @@
         ]
       }
     },
+    "/v1/tasks/reorder": {
+      "patch": {
+        "description": "Update the order and status for multiple tasks (drag & drop)",
+        "operationId": "TasksController_reorderTasks_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "updates": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "order": {
+                          "type": "number"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "todo",
+                            "in_progress",
+                            "done",
+                            "not_relevant",
+                            "failed"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "order",
+                        "status"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "updates"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks reordered successfully"
+          },
+          "400": {
+            "description": "Invalid request body"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reorder tasks",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}": {
       "get": {
         "description": "Retrieve a specific task by its ID",
@@ -8059,6 +8158,44 @@
           }
         ],
         "summary": "Delete a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/regenerate": {
+      "post": {
+        "description": "Update the task title, description, and automation status with the latest content from the framework template",
+        "operationId": "TasksController_regenerateTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task regenerated successfully"
+          },
+          "400": {
+            "description": "Task has no associated template"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Regenerate task from template",
         "tags": [
           "Tasks"
         ]

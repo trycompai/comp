@@ -470,6 +470,53 @@ export class TasksService {
   }
 
   /**
+   * Regenerate task from its associated template
+   */
+  async regenerateFromTemplate(
+    organizationId: string,
+    taskId: string,
+  ) {
+    const task = await db.task.findFirst({
+      where: { id: taskId, organizationId },
+      include: { taskTemplate: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    if (!task.taskTemplate) {
+      throw new BadRequestException('Task has no associated template to regenerate from');
+    }
+
+    const updated = await db.task.update({
+      where: { id: taskId },
+      data: {
+        title: task.taskTemplate.name,
+        description: task.taskTemplate.description,
+        automationStatus: task.taskTemplate.automationStatus,
+      },
+    });
+
+    return { id: updated.id, title: updated.title };
+  }
+
+  /**
+   * Reorder tasks (update order and status for multiple tasks)
+   */
+  async reorderTasks(
+    organizationId: string,
+    updates: { id: string; order: number; status: TaskStatus }[],
+  ): Promise<void> {
+    for (const { id, order, status } of updates) {
+      await db.task.update({
+        where: { id, organizationId },
+        data: { order, status },
+      });
+    }
+  }
+
+  /**
    * Delete a single task by ID
    */
   async deleteTask(

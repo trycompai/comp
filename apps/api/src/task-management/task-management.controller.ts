@@ -26,6 +26,7 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { TaskItemEntityType } from '@trycompai/db';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { SkipAuditLog } from '../audit/skip-audit-log.decorator';
 import { TaskManagementService } from './task-management.service';
 import { CreateTaskItemDto } from './dto/create-task-item.dto';
 import { UpdateTaskItemDto } from './dto/update-task-item.dto';
@@ -128,6 +129,7 @@ export class TaskManagementController {
   }
 
   @Post()
+  @SkipAuditLog()
   @ApiOperation({
     summary: 'Create a new task item',
     description: 'Create a task item for an entity',
@@ -160,6 +162,7 @@ export class TaskManagementController {
   }
 
   @Put(':id')
+  @SkipAuditLog()
   @ApiOperation({
     summary: 'Update a task item',
     description: 'Update an existing task item',

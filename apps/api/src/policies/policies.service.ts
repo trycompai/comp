@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CommentEntityType, db, PolicyStatus, Prisma } from '@trycompai/db';
+import { AuditLogEntityType, CommentEntityType, db, Frequency, PolicyStatus, Prisma } from '@trycompai/db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
@@ -27,6 +27,25 @@ export class PoliciesService {
     private readonly attachmentsService: AttachmentsService,
     private readonly pdfRendererService: PolicyPdfRendererService,
   ) {}
+
+  private computeNextReviewDate(frequency: Frequency | null): Date {
+    const date = new Date();
+    switch (frequency) {
+      case Frequency.monthly:
+        date.setMonth(date.getMonth() + 1);
+        break;
+      case Frequency.quarterly:
+        date.setMonth(date.getMonth() + 3);
+        break;
+      case Frequency.yearly:
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+      default:
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+    }
+    return date;
+  }
 
   async findAll(
     organizationId: string,
@@ -244,7 +263,10 @@ export class PoliciesService {
       }
 
       // Prepare update data with special handling for status changes
-      const updatePayload: Record<string, unknown> = { ...updateData };
+      // Remove reviewDate from client payload — it's computed server-side
+      // based on frequency changes and version publishing
+      const { reviewDate: _ignoredReviewDate, ...safeUpdateData } = updateData;
+      const updatePayload: Record<string, unknown> = { ...safeUpdateData };
 
       // If status is being changed to published, update lastPublishedAt
       if (updateData.status === 'published') {
@@ -254,6 +276,13 @@ export class PoliciesService {
       // If isArchived is being set to true, update lastArchivedAt
       if (updateData.isArchived === true) {
         updatePayload.lastArchivedAt = new Date();
+      }
+
+      // If frequency changed, recalculate the next review date
+      if (updateData.frequency) {
+        updatePayload.reviewDate = this.computeNextReviewDate(
+          updateData.frequency as Frequency,
+        );
       }
 
       // Coerce content to Prisma JSON[] input if provided
@@ -368,6 +397,23 @@ export class PoliciesService {
       this.logger.error(`Failed to delete policy ${id}:`, error);
       throw error;
     }
+  }
+
+  async getActivity(policyId: string, organizationId: string) {
+    return db.auditLog.findMany({
+      where: {
+        organizationId,
+        entityType: AuditLogEntityType.policy,
+        entityId: policyId,
+      },
+      include: {
+        user: true,
+        member: true,
+        organization: true,
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 10,
+    });
   }
 
   async getVersions(policyId: string, organizationId: string) {
@@ -581,7 +627,7 @@ export class PoliciesService {
       data: { content: processedContent },
     });
 
-    return { versionId };
+    return { versionId, version: version.version };
   }
 
   async deleteVersion(
@@ -701,6 +747,7 @@ export class PoliciesService {
               content: contentToPublish,
               draftContent: contentToPublish,
               lastPublishedAt: new Date(),
+              reviewDate: this.computeNextReviewDate(policy.frequency),
               status: 'published',
               // Clear any pending approval since we're publishing directly
               pendingVersionId: null,
@@ -1260,11 +1307,12 @@ export class PoliciesService {
       approver: { disconnect: true },
       signedBy: [],
       lastPublishedAt: new Date(),
-      reviewDate: new Date(),
+      reviewDate: this.computeNextReviewDate(policy.frequency),
       pendingVersionId: null,
     };
 
     // If there's a pending version, make it the current version
+    let publishedVersion: number | null = null;
     if (policy.pendingVersionId) {
       const pendingVersion = await db.policyVersion.findUnique({
         where: { id: policy.pendingVersionId },
@@ -1276,6 +1324,7 @@ export class PoliciesService {
         );
       }
 
+      publishedVersion = pendingVersion.version;
       updateData.currentVersion = { connect: { id: pendingVersion.id } };
       updateData.content = pendingVersion.content as Prisma.InputJsonValue[];
       updateData.draftContent = pendingVersion.content as Prisma.InputJsonValue[];
@@ -1319,6 +1368,7 @@ export class PoliciesService {
 
     return {
       success: true,
+      version: publishedVersion,
       emailNotifications: members
         .filter((m) => m.user.email)
         .map((m) => {
@@ -1473,7 +1523,7 @@ export class PoliciesService {
     }
 
     if (!pdfUrl) {
-      throw new NotFoundException('No PDF found');
+      return { url: null };
     }
 
     const signedUrl =

@@ -357,6 +357,46 @@ export class TasksController {
     );
   }
 
+  @Patch('reorder')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Reorder tasks',
+    description: 'Update the order and status for multiple tasks (drag & drop)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        updates: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              order: { type: 'number' },
+              status: { type: 'string', enum: Object.values(TaskStatus) },
+            },
+            required: ['id', 'order', 'status'],
+          },
+        },
+      },
+      required: ['updates'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Tasks reordered successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  async reorderTasks(
+    @OrganizationId() organizationId: string,
+    @Body() body: { updates: { id: string; order: number; status: TaskStatus }[] },
+  ): Promise<{ success: boolean }> {
+    if (!Array.isArray(body.updates) || body.updates.length === 0) {
+      throw new BadRequestException('updates must be a non-empty array');
+    }
+    await this.tasksService.reorderTasks(organizationId, body.updates);
+    return { success: true };
+  }
+
   @Delete('bulk')
   @UseGuards(PermissionGuard)
   @RequirePermission('task', 'delete')
@@ -602,6 +642,29 @@ export class TasksController {
       },
       userId,
     );
+  }
+
+  @Post(':taskId/regenerate')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Regenerate task from template',
+    description:
+      'Update the task title, description, and automation status with the latest content from the framework template',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({ status: 200, description: 'Task regenerated successfully' })
+  @ApiResponse({ status: 400, description: 'Task has no associated template' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async regenerateTask(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.tasksService.regenerateFromTemplate(organizationId, taskId);
   }
 
   @Delete(':taskId')

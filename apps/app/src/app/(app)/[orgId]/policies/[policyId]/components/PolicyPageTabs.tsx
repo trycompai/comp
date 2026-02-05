@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Comments } from '../../../../../../components/comments/Comments';
 import type { AuditLogWithRelations } from '../data';
 import { PolicyContentManager } from '../editor/components/PolicyDetails';
+import { useAuditLogs } from '../hooks/useAuditLogs';
 import { usePolicy } from '../hooks/usePolicy';
 import { usePolicyVersions } from '../hooks/usePolicyVersions';
 import { PolicyAlerts } from './PolicyAlerts';
@@ -66,9 +67,16 @@ export function PolicyPageTabs({
     initialData: initialVersions,
   });
 
-  // Combined mutate function to refresh both policy and versions
+  // Use SWR for audit logs with initial data from server
+  const { logs: auditLogs, mutate: mutateAuditLogs } = useAuditLogs({
+    policyId,
+    organizationId,
+    initialData: logs,
+  });
+
+  // Combined mutate function to refresh policy, versions, and audit logs
   const mutateAll = async () => {
-    await Promise.all([mutate(), mutateVersions()]);
+    await Promise.all([mutate(), mutateVersions(), mutateAuditLogs()]);
   };
 
   // Update a specific version's content in the cache (optimistic update)
@@ -219,7 +227,7 @@ export function PolicyPageTabs({
           </TabsContent>
 
           <TabsContent value="activity">
-            <RecentAuditLogs logs={logs} />
+            <RecentAuditLogs logs={auditLogs} />
           </TabsContent>
 
           <TabsContent value="comments">
@@ -232,7 +240,7 @@ export function PolicyPageTabs({
       {policy && (
         <>
           <PolicyOverviewSheet policy={policy} />
-          <PolicyArchiveSheet policy={policy} onMutate={() => mutate()} />
+          <PolicyArchiveSheet policy={policy} onMutate={mutateAll} />
           <PolicyDeleteDialog
             isOpen={isDeleteDialogOpen}
             onClose={handleCloseDeleteDialog}

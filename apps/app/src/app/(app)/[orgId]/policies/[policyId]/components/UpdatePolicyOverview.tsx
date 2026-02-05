@@ -69,7 +69,6 @@ export function UpdatePolicyOverview({
       assigneeId: string | null;
       department: Departments;
       reviewFrequency: Frequency;
-      reviewDate: Date;
     };
   } | null>(null);
 
@@ -97,7 +96,6 @@ export function UpdatePolicyOverview({
     const assigneeId = selectedAssigneeId;
     const department = selectedDepartment;
     const reviewFrequency = selectedFrequency;
-    const reviewDate = policy.reviewDate ? new Date(policy.reviewDate) : new Date();
 
     // Show confirmation dialog with list of changes
     const assigneeChanged = assigneeId !== policy.assigneeId;
@@ -108,7 +106,7 @@ export function UpdatePolicyOverview({
       assigneeId: assigneeChanged ? { from: policy.assigneeId, to: assigneeId } : null,
       department: departmentChanged ? { from: policy.department, to: department } : null,
       reviewFrequency: frequencyChanged ? { from: policy.frequency, to: reviewFrequency } : null,
-      formData: { assigneeId, department, reviewFrequency, reviewDate, status: policy.status },
+      formData: { assigneeId, department, reviewFrequency, status: policy.status },
     });
     setIsStatusChangeDialogOpen(true);
     setIsSubmitting(false);
@@ -123,7 +121,6 @@ export function UpdatePolicyOverview({
       assigneeId: pendingChanges.formData.assigneeId,
       department: pendingChanges.formData.department,
       frequency: pendingChanges.formData.reviewFrequency,
-      reviewDate: pendingChanges.formData.reviewDate,
     });
     setIsSubmitting(false);
 
@@ -229,7 +226,7 @@ export function UpdatePolicyOverview({
               <InputGroup>
                 <InputGroupInput
                   id="review_date_display"
-                  value={policy.reviewDate ? format(new Date(policy.reviewDate), 'PPP') : 'None'}
+                  value={policy.reviewDate ? format(new Date(policy.reviewDate), 'PPP') : 'Not set'}
                   disabled
                   readOnly
                 />
@@ -237,16 +234,6 @@ export function UpdatePolicyOverview({
                   <Calendar size={16} />
                 </InputGroupAddon>
               </InputGroup>
-              <input
-                type="hidden"
-                id="review_date"
-                name="review_date"
-                value={
-                  policy.reviewDate
-                    ? new Date(policy.reviewDate).toISOString()
-                    : new Date().toISOString()
-                }
-              />
             </Stack>
           </Grid>
 

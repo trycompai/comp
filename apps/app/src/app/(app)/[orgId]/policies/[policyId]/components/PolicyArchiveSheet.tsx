@@ -51,12 +51,13 @@ export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMut
       return;
     }
 
+    await onMutate?.();
+
     if (shouldArchive) {
       toast.success('Policy archived successfully');
       router.push(`/${policy.organizationId}/policies`);
     } else {
       toast.success('Policy restored successfully');
-      onMutate?.();
     }
     handleOpenChange(false);
   };

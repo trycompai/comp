@@ -45,21 +45,18 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
     })),
   );
 
-  // Filter non-archived for the table display
-  const nonArchivedPolicies = policies.filter((p) => !p.isArchived);
-
   return (
     <PageLayout>
       <Stack gap="md">
         <PageHeader
           title="Policies"
-          actions={<PolicyPageActions policies={nonArchivedPolicies} />}
+          actions={<PolicyPageActions policies={policies.filter((p) => !p.isArchived)} />}
         />
         <Suspense fallback={<Loading />}>
           <PolicyChartsClient organizationId={orgId} initialData={initialOverview} />
         </Suspense>
         <PolicyTailoringProvider statuses={{}}>
-          <PolicyFilters policies={nonArchivedPolicies} />
+          <PolicyFilters policies={policies} />
         </PolicyTailoringProvider>
       </Stack>
     </PageLayout>
