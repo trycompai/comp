@@ -64,7 +64,10 @@ export class TaskNotifierService {
             where: {
               organizationId,
               deactivated: false,
-              user: { isPlatformAdmin: false },
+              OR: [
+                { user: { isPlatformAdmin: false } },
+                { role: { contains: 'owner' } },
+              ],
             },
             select: {
               id: true,
@@ -233,7 +236,10 @@ export class TaskNotifierService {
             where: {
               organizationId,
               deactivated: false,
-              user: { isPlatformAdmin: false },
+              OR: [
+                { user: { isPlatformAdmin: false } },
+                { role: { contains: 'owner' } },
+              ],
             },
             select: {
               id: true,
@@ -435,7 +441,10 @@ export class TaskNotifierService {
             where: {
               organizationId,
               deactivated: false,
-              user: { isPlatformAdmin: false },
+              OR: [
+                { user: { isPlatformAdmin: false } },
+                { role: { contains: 'owner' } },
+              ],
             },
             select: {
               id: true,
@@ -638,7 +647,10 @@ export class TaskNotifierService {
           where: {
             organizationId,
             deactivated: false,
-            user: { isPlatformAdmin: false },
+            OR: [
+              { user: { isPlatformAdmin: false } },
+              { role: { contains: 'owner' } },
+            ],
           },
           select: {
             id: true,

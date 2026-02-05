@@ -17,7 +17,10 @@ export default async function TaskPage({
     redirect(`/${orgId}/tasks`);
   }
 
-  const automations = await getAutomations(taskId);
+  const [automations, members] = await Promise.all([
+    getAutomations(taskId),
+    getMembers(task.organizationId),
+  ]);
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -43,6 +46,7 @@ export default async function TaskPage({
   return (
     <SingleTask
       initialTask={task}
+      initialMembers={members}
       initialAutomations={automations}
       isWebAutomationsEnabled={isWebAutomationsEnabled}
       isPlatformAdmin={isPlatformAdmin}
@@ -70,6 +74,21 @@ const getTask = async (taskId: string) => {
   } catch (error) {
     console.error('[getTask] Database query failed:', error);
     throw error;
+  }
+};
+
+const getMembers = async (organizationId: string) => {
+  try {
+    return await db.member.findMany({
+      where: { organizationId, deactivated: false },
+      include: {
+        user: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  } catch (error) {
+    console.error('[getMembers] Database query failed:', error);
+    return [];
   }
 };
 

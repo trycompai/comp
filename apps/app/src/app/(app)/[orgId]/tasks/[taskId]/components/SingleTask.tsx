@@ -61,6 +61,7 @@ interface SingleTaskProps {
 
 export function SingleTask({
   initialTask,
+  initialMembers,
   initialAutomations,
   isWebAutomationsEnabled,
   isPlatformAdmin,
@@ -308,7 +309,7 @@ export function SingleTask({
         {/* Right Column - Properties */}
         <div className="lg:col-span-1">
           <div className="pl-6 border-l border-border space-y-6">
-            <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
+            <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} initialMembers={initialMembers} />
 
             {/* Finding History Panel */}
             {selectedFindingIdForHistory && (

@@ -17,14 +17,13 @@ interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => void;
+  initialMembers?: (Member & { user: User })[];
 }
 
-export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSidebarProps) {
+export function TaskPropertiesSidebar({ handleUpdateTask, initialMembers }: TaskPropertiesSidebarProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
-  const { members } = useAssignableMembers();
-
-  console.log('members', members);
+  const { members } = useAssignableMembers({ initialData: initialMembers });
 
   const assignedMember =
     !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);

@@ -63,16 +63,11 @@ export function useOrganizationMembers({
 }
 
 /**
- * Like useOrganizationMembers but excludes platform admin (CX team) members.
- * Use this for assignee dropdowns and anywhere users should not be able to
- * select platform admin members.
+ * Like useOrganizationMembers but returns only active organization members.
+ * Use this for assignee dropdowns and anywhere users should select a member.
  */
 export function useAssignableMembers(
   options: UseOrganizationMembersOptions = {},
 ): UseOrganizationMembersReturn {
-  const result = useOrganizationMembers(options);
-  return {
-    ...result,
-    members: result.members?.filter((m) => !m.user?.isPlatformAdmin),
-  };
+  return useOrganizationMembers(options);
 }

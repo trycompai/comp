@@ -95,14 +95,6 @@ export const updateMemberRole = authActionClient
         };
       }
 
-      // Prevent modifying platform admin members (CX team)
-      if (targetMember.user.isPlatformAdmin) {
-        return {
-          success: false,
-          error: 'This member is managed by Comp AI and cannot be modified.',
-        };
-      }
-
       // Parse the target member's current roles from the string
       const currentRoles = parseRolesString(targetMember.role);
 

@@ -236,7 +236,7 @@ export function MemberRow({
             })}
           </div>
 
-          {!isDeactivated && !isPlatformAdmin && (
+          {!isDeactivated && (
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>

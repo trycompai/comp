@@ -33,7 +33,10 @@ export const policySchedule = schedules.task({
             members: {
               where: {
                 deactivated: false,
-                user: { isPlatformAdmin: false },
+                OR: [
+                  { user: { isPlatformAdmin: false } },
+                  { role: { contains: 'owner' } },
+                ],
               },
               select: {
                 user: {

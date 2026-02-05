@@ -104,9 +104,26 @@ export async function isUserUnsubscribed(
       return false;
     }
 
-    // Platform admins (CX team) never receive notifications in customer orgs
+    // Platform admins only receive notifications for organizations they own
     if (user.isPlatformAdmin) {
-      return true;
+      if (!organizationId || !db.member) {
+        return true; // No org context — block notifications
+      }
+      const adminMemberRecords = await db.member.findMany({
+        where: {
+          organizationId,
+          user: { email },
+          deactivated: false,
+        },
+        select: { role: true },
+      });
+      const adminRoles = adminMemberRecords.flatMap((m) =>
+        m.role.split(',').map((r) => r.trim()),
+      );
+      if (!adminRoles.includes('owner')) {
+        return true; // Not an owner in this org — block notifications
+      }
+      // Platform admin IS an owner — fall through to normal notification logic
     }
 
     // If legacy all-or-nothing flag is set, user is unsubscribed from everything

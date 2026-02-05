@@ -543,7 +543,10 @@ export class FindingNotifierService {
           where: {
             organizationId,
             deactivated: false,
-            user: { isPlatformAdmin: false },
+            OR: [
+              { user: { isPlatformAdmin: false } },
+              { role: { contains: 'owner' } },
+            ],
           },
           select: {
             user: { select: { id: true, email: true, name: true } },

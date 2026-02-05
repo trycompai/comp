@@ -6,6 +6,7 @@ export interface AuthenticatedRequest extends Request {
   organizationId: string;
   authType: 'api-key' | 'session';
   isApiKey: boolean;
+  isPlatformAdmin: boolean;
   userId?: string;
   userEmail?: string;
   userRoles: string[] | null;
@@ -17,6 +18,7 @@ export interface AuthContext {
   organizationId: string;
   authType: 'api-key' | 'session';
   isApiKey: boolean;
+  isPlatformAdmin: boolean;
   userId?: string; // Only available for session auth
   userEmail?: string; // Only available for session auth
   userRoles: string[] | null;

@@ -218,7 +218,7 @@ function AppShellWrapperContent({
               label="Compliance"
             />
           </Link>
-          {isTrustNdaEnabled && (
+          {isTrustNdaEnabled && canAccessRoute(permissions, 'trust') && (
             <Link href={`/${organization.id}/trust`}>
               <AppShellRailItem
                 isActive={isTrustActive}
