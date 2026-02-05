@@ -239,74 +239,41 @@ export class TaskNotifierService {
     const { organizationId, taskIds, newAssigneeId, changedByUserId } = params;
 
     try {
-      const [
-        organization,
-        changedByUser,
-        tasks,
-        allMembers,
-        newAssigneeMember,
-      ] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.user.findUnique({
-          where: { id: changedByUserId },
-          select: { name: true, email: true },
-        }),
-        db.task.findMany({
-          where: {
-            id: { in: taskIds },
-            organizationId,
-          },
-          select: {
-            id: true,
-            title: true,
-          },
-        }),
-        db.member.findMany({
-          where: {
-            organizationId,
-            deactivated: false,
-          },
-          select: {
-            id: true,
-            role: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+      const [organization, changedByUser, tasks, newAssigneeMember] =
+        await Promise.all([
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: changedByUserId },
+            select: { name: true, email: true },
+          }),
+          db.task.findMany({
+            where: {
+              id: { in: taskIds },
+              organizationId,
             },
-          },
-        }),
-        newAssigneeId
-          ? db.member.findUnique({
-              where: { id: newAssigneeId },
-              select: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
+            select: {
+              id: true,
+              title: true,
+            },
+          }),
+          newAssigneeId
+            ? db.member.findUnique({
+                where: { id: newAssigneeId },
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
                   },
                 },
-              },
-            })
-          : Promise.resolve(null),
-      ]);
-
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) =>
-          member.role &&
-          (member.role.includes('admin') || member.role.includes('owner')),
-      );
-
-      this.logger.debug(
-        `[notifyBulkAssigneeChange] Found ${allMembers.length} total members, ${adminMembers.length} admins/owners for organization ${organizationId}`,
-      );
+              })
+            : Promise.resolve(null),
+        ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
@@ -319,17 +286,12 @@ export class TaskNotifierService {
           'Unassigned'
         : 'Unassigned';
 
-      // Build recipient list: new assignee + admins, excluding actor
-      const recipientMap = new Map<
-        string,
-        { id: string; name: string; email: string }
-      >();
-
-      // Add new assignee if exists
+      // Notify only the new assignee (the person who was assigned the tasks), excluding the actor
+      const recipients: { id: string; name: string; email: string }[] = [];
       if (newAssigneeMember?.user?.id && newAssigneeMember.user.email) {
         const userId = newAssigneeMember.user.id;
         if (userId !== changedByUserId) {
-          recipientMap.set(userId, {
+          recipients.push({
             id: userId,
             name:
               newAssigneeMember.user.name?.trim() ||
@@ -339,23 +301,6 @@ export class TaskNotifierService {
           });
         }
       }
-
-      // Add admin members
-      for (const member of adminMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name:
-                member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
-            });
-          }
-        }
-      }
-
-      const recipients = Array.from(recipientMap.values());
       const taskCount = tasks.length;
 
       const appUrl =
@@ -677,78 +622,45 @@ export class TaskNotifierService {
     } = params;
 
     try {
-      const [
-        organization,
-        changedByUser,
-        oldAssigneeMember,
-        newAssigneeMember,
-        allMembers,
-      ] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.user.findUnique({
-          where: { id: changedByUserId },
-          select: { name: true, email: true },
-        }),
-        oldAssigneeId
-          ? db.member.findUnique({
-              where: { id: oldAssigneeId },
-              select: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
+      const [organization, changedByUser, oldAssigneeMember, newAssigneeMember] =
+        await Promise.all([
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: changedByUserId },
+            select: { name: true, email: true },
+          }),
+          oldAssigneeId
+            ? db.member.findUnique({
+                where: { id: oldAssigneeId },
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
                   },
                 },
-              },
-            })
-          : Promise.resolve(null),
-        newAssigneeId
-          ? db.member.findUnique({
-              where: { id: newAssigneeId },
-              select: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
+              })
+            : Promise.resolve(null),
+          newAssigneeId
+            ? db.member.findUnique({
+                where: { id: newAssigneeId },
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
                   },
                 },
-              },
-            })
-          : Promise.resolve(null),
-        db.member.findMany({
-          where: {
-            organizationId,
-            deactivated: false,
-          },
-          select: {
-            id: true,
-            role: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        }),
-      ]);
-
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) =>
-          member.role &&
-          (member.role.includes('admin') || member.role.includes('owner')),
-      );
-
-      this.logger.debug(
-        `[notifyAssigneeChange] Found ${allMembers.length} total members, ${adminMembers.length} admins/owners for organization ${organizationId}`,
-      );
+              })
+            : Promise.resolve(null),
+        ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
@@ -766,32 +678,12 @@ export class TaskNotifierService {
           'Unassigned'
         : 'Unassigned';
 
-      // Build recipient list: old assignee + new assignee + admins, excluding actor
-      const recipientMap = new Map<
-        string,
-        { id: string; name: string; email: string }
-      >();
-
-      // Add old assignee if exists
-      if (oldAssigneeMember?.user?.id && oldAssigneeMember.user.email) {
-        const userId = oldAssigneeMember.user.id;
-        if (userId !== changedByUserId) {
-          recipientMap.set(userId, {
-            id: userId,
-            name:
-              oldAssigneeMember.user.name?.trim() ||
-              oldAssigneeMember.user.email?.trim() ||
-              'User',
-            email: oldAssigneeMember.user.email,
-          });
-        }
-      }
-
-      // Add new assignee if exists
+      // Notify only the new assignee (the person who was assigned to the task), excluding the actor
+      const recipients: { id: string; name: string; email: string }[] = [];
       if (newAssigneeMember?.user?.id && newAssigneeMember.user.email) {
         const userId = newAssigneeMember.user.id;
         if (userId !== changedByUserId) {
-          recipientMap.set(userId, {
+          recipients.push({
             id: userId,
             name:
               newAssigneeMember.user.name?.trim() ||
@@ -801,23 +693,6 @@ export class TaskNotifierService {
           });
         }
       }
-
-      // Add admin members
-      for (const member of adminMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name:
-                member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
-            });
-          }
-        }
-      }
-
-      const recipients = Array.from(recipientMap.values());
 
       const appUrl =
         process.env.NEXT_PUBLIC_APP_URL ??
