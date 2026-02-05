@@ -20,6 +20,17 @@ import { toast } from 'sonner';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { TaskList } from './TaskList';
 
+interface FrameworkInstance {
+  id: string;
+  framework: {
+    id: string;
+    name: string;
+  };
+  requirementsMapped: {
+    controlId: string;
+  }[];
+}
+
 interface TasksPageClientProps {
   tasks: (Task & {
     controls: { id: string; name: string }[];
@@ -39,6 +50,7 @@ interface TasksPageClientProps {
   })[];
   members: (Member & { user: User })[];
   controls: { id: string; name: string }[];
+  frameworkInstances: FrameworkInstance[];
   activeTab: 'categories' | 'list';
   orgId: string;
   organizationName: string | null;
@@ -49,6 +61,7 @@ export function TasksPageClient({
   tasks,
   members,
   controls,
+  frameworkInstances,
   activeTab,
   orgId,
   organizationName,
@@ -121,7 +134,12 @@ export function TasksPageClient({
       }
       padding="default"
     >
-      <TaskList tasks={tasks} members={members} activeTab={activeTab} />
+      <TaskList
+        tasks={tasks}
+        members={members}
+        frameworkInstances={frameworkInstances}
+        activeTab={activeTab}
+      />
       <CreateTaskSheet
         members={members}
         controls={controls}
