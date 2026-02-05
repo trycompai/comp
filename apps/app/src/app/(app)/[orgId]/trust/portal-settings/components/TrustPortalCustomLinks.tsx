@@ -199,6 +199,10 @@ export function TrustPortalCustomLinks({
   };
 
   const handleSave = () => {
+    if (createLink.status === 'executing' || updateLink.status === 'executing') {
+      return;
+    }
+
     if (!title.trim() || !url.trim()) {
       toast.error('Title and URL are required');
       return;
@@ -368,7 +372,11 @@ export function TrustPortalCustomLinks({
 
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <Button onClick={handleSave} width="full">
+                  <Button
+                    onClick={handleSave}
+                    width="full"
+                    loading={createLink.status === 'executing' || updateLink.status === 'executing'}
+                  >
                     {editingLink ? 'Update' : 'Create'}
                   </Button>
                 </div>
