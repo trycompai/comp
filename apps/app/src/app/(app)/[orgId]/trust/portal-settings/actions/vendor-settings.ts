@@ -49,11 +49,14 @@ export const updateVendorTrustSettingsAction = authActionClient
   .action(async ({ ctx, parsedInput }) => {
     const vendor = await db.vendor.findUnique({
       where: { id: parsedInput.vendorId },
-      include: { organization: true },
     });
 
     if (!vendor) {
       throw new Error('Vendor not found');
+    }
+
+    if (vendor.organizationId !== ctx.session.activeOrganizationId) {
+      throw new Error('Unauthorized');
     }
 
     // Auto-generate logo URL if not explicitly provided and vendor has a website

@@ -2542,9 +2542,11 @@ export class TrustAccessService {
       soc2: 'SOC 2',
       iso27001: 'ISO 27001',
       iso42001: 'ISO 42001',
+      iso9001: 'ISO 9001',
       gdpr: 'GDPR',
       hipaa: 'HIPAA',
       pci_dss: 'PCI DSS',
+      nen7510: 'NEN 7510',
       ccpa: 'CCPA',
     };
 

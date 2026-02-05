@@ -74,11 +74,14 @@ export const updateCustomLinkAction = authActionClient
   .action(async ({ ctx, parsedInput }) => {
     const link = await db.trustCustomLink.findUnique({
       where: { id: parsedInput.linkId },
-      include: { organization: true },
     });
 
     if (!link) {
       throw new Error('Link not found');
+    }
+
+    if (link.organizationId !== ctx.session.activeOrganizationId) {
+      throw new Error('Unauthorized');
     }
 
     const updated = await db.trustCustomLink.update({
@@ -108,11 +111,14 @@ export const deleteCustomLinkAction = authActionClient
   .action(async ({ ctx, parsedInput }) => {
     const link = await db.trustCustomLink.findUnique({
       where: { id: parsedInput.linkId },
-      include: { organization: true },
     });
 
     if (!link) {
       throw new Error('Link not found');
+    }
+
+    if (link.organizationId !== ctx.session.activeOrganizationId) {
+      throw new Error('Unauthorized');
     }
 
     await db.trustCustomLink.delete({
