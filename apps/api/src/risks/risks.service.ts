@@ -1,7 +1,25 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db, Prisma } from '@trycompai/db';
 import { CreateRiskDto } from './dto/create-risk.dto';
+import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
+
+export interface PaginatedRisksResult {
+  data: Prisma.RiskGetPayload<{
+    include: {
+      assignee: {
+        include: {
+          user: {
+            select: { id: true; name: true; email: true; image: true };
+          };
+        };
+      };
+    };
+  }>[];
+  totalCount: number;
+  page: number;
+  pageCount: number;
+}
 
 @Injectable()
 export class RisksService {
@@ -10,31 +28,64 @@ export class RisksService {
   async findAllByOrganization(
     organizationId: string,
     assignmentFilter: Prisma.RiskWhereInput = {},
-  ) {
+    query: GetRisksQueryDto = {},
+  ): Promise<PaginatedRisksResult> {
+    const {
+      title,
+      page = 1,
+      perPage = 50,
+      sort = 'createdAt',
+      sortDirection = 'desc',
+      status,
+      category,
+      department,
+      assigneeId,
+    } = query;
+
     try {
-      const risks = await db.risk.findMany({
-        where: { organizationId, ...assignmentFilter },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          assignee: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  image: true,
+      const where: Prisma.RiskWhereInput = {
+        organizationId,
+        ...assignmentFilter,
+        ...(title && {
+          title: { contains: title, mode: Prisma.QueryMode.insensitive },
+        }),
+        ...(status && { status }),
+        ...(category && { category }),
+        ...(department && { department }),
+        ...(assigneeId && { assigneeId }),
+      };
+
+      const [risks, totalCount] = await Promise.all([
+        db.risk.findMany({
+          where,
+          skip: (page - 1) * perPage,
+          take: perPage,
+          orderBy: { [sort]: sortDirection },
+          include: {
+            assignee: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    image: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
+        }),
+        db.risk.count({ where }),
+      ]);
+
+      const pageCount = Math.ceil(totalCount / perPage);
 
       this.logger.log(
-        `Retrieved ${risks.length} risks for organization ${organizationId}`,
+        `Retrieved ${risks.length} risks (page ${page}/${pageCount}) for organization ${organizationId}`,
       );
-      return risks;
+
+      return { data: risks, totalCount, page, pageCount };
     } catch (error) {
       this.logger.error(
         `Failed to retrieve risks for organization ${organizationId}:`,

@@ -2,6 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import type { Risk } from '@db';
+import { useSWRConfig } from 'swr';
 import { RiskMatrixChart } from './RiskMatrixChart';
 
 interface ResidualRiskChartProps {
@@ -10,6 +11,7 @@ interface ResidualRiskChartProps {
 
 export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
   const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
 
   return (
     <RiskMatrixChart
@@ -26,6 +28,11 @@ export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
         if (response.error) {
           throw new Error('Failed to update residual risk');
         }
+        globalMutate(
+          (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+          undefined,
+          { revalidate: true },
+        );
         return response;
       }}
     />

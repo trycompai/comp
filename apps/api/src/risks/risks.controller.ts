@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
@@ -27,6 +28,7 @@ import {
   hasRiskAccess,
 } from '../utils/assignment-filter';
 import { CreateRiskDto } from './dto/create-risk.dto';
+import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
 import { RisksService } from './risks.service';
 import { RISK_OPERATIONS } from './schemas/risk-operations';
@@ -54,6 +56,7 @@ export class RisksController {
   @ApiResponse(GET_ALL_RISKS_RESPONSES[404])
   @ApiResponse(GET_ALL_RISKS_RESPONSES[500])
   async getAllRisks(
+    @Query() query: GetRisksQueryDto,
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
@@ -63,14 +66,17 @@ export class RisksController {
       authContext.userRoles,
     );
 
-    const risks = await this.risksService.findAllByOrganization(
+    const result = await this.risksService.findAllByOrganization(
       organizationId,
       assignmentFilter,
+      query,
     );
 
     return {
-      data: risks,
-      count: risks.length,
+      data: result.data,
+      totalCount: result.totalCount,
+      page: result.page,
+      pageCount: result.pageCount,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {

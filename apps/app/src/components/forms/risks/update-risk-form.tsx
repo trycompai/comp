@@ -9,6 +9,7 @@ import { Button, Input, Stack, Textarea } from '@trycompai/design-system';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
 interface UpdateRiskFormProps {
@@ -18,6 +19,7 @@ interface UpdateRiskFormProps {
 
 export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
   const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateRiskSchema>>({
@@ -51,6 +53,11 @@ export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
     }
 
     toast.success('Risk updated successfully');
+    globalMutate(
+      (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+      undefined,
+      { revalidate: true },
+    );
     onSuccess?.();
   };
 

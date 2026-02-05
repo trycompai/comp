@@ -8,7 +8,9 @@ import { TaskItems } from '@/components/task-items/TaskItems';
 import { useRisk, type RiskResponse } from '@/hooks/use-risks';
 import { CommentEntityType } from '@db';
 import type { Member, Risk, User } from '@db';
+import { PageHeader } from '@trycompai/design-system';
 import { useMemo } from 'react';
+import { RiskActions } from './RiskActions';
 
 type RiskWithAssignee = Risk & {
   assignee: { user: User } | null;
@@ -37,30 +39,19 @@ interface RiskPageClientProps {
   orgId: string;
   initialRisk: RiskWithAssignee;
   assignees: (Member & { user: User })[];
-  isViewingTask: boolean;
+  taskItemId: string | null;
 }
 
-/**
- * Client component for risk detail page content
- * Uses SWR for real-time updates and caching
- * 
- * Benefits:
- * - Instant initial render (uses server-fetched data)
- * - Real-time updates via polling (5s interval)
- * - Mutations trigger automatic refresh via mutate()
- */
 export function RiskPageClient({
   riskId,
   orgId,
   initialRisk,
   assignees,
-  isViewingTask,
+  taskItemId,
 }: RiskPageClientProps) {
-  // Use SWR for real-time updates with polling
-  const { risk: swrRisk, isLoading } = useRisk(riskId);
+  const { risk: swrRisk } = useRisk(riskId);
+  const isViewingTask = Boolean(taskItemId);
 
-  // Normalize and memoize the risk data
-  // Use SWR data when available, fall back to initial data
   const risk = useMemo(() => {
     if (swrRisk) {
       return normalizeRisk(swrRisk);
@@ -68,28 +59,42 @@ export function RiskPageClient({
     return initialRisk;
   }, [swrRisk, initialRisk]);
 
+  const shortTaskId = (id: string) => id.slice(-6).toUpperCase();
+
+  const breadcrumbs = taskItemId
+    ? [
+        { label: 'Risks', href: `/${orgId}/risk` },
+        { label: risk.title, href: `/${orgId}/risk/${riskId}` },
+        { label: shortTaskId(taskItemId), isCurrent: true },
+      ]
+    : [
+        { label: 'Risks', href: `/${orgId}/risk` },
+        { label: risk.title, isCurrent: true },
+      ];
+
   return (
-    <div className="flex flex-col gap-4">
-      {!isViewingTask && (
-        <>
-          <RiskOverview risk={risk} assignees={assignees} />
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <InherentRiskChart risk={risk} />
-            <ResidualRiskChart risk={risk} />
-          </div>
-        </>
-      )}
-      <TaskItems entityId={riskId} entityType="risk" />
-      {!isViewingTask && (
-        <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
-      )}
-    </div>
+    <>
+      <PageHeader
+        title={taskItemId ? shortTaskId(taskItemId) : risk.title}
+        breadcrumbs={breadcrumbs}
+        actions={<RiskActions riskId={riskId} orgId={orgId} />}
+      />
+      <div className="flex flex-col gap-4">
+        {!isViewingTask && (
+          <>
+            <RiskOverview risk={risk} assignees={assignees} />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <InherentRiskChart risk={risk} />
+              <ResidualRiskChart risk={risk} />
+            </div>
+          </>
+        )}
+        <TaskItems entityId={riskId} entityType="risk" />
+        {!isViewingTask && (
+          <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
+        )}
+      </div>
+    </>
   );
 }
-
-/**
- * Export the risk mutate function for use by mutation components
- * Call this after updating risk data to trigger SWR revalidation
- */
-export { useRisk } from '@/hooks/use-risks';
 

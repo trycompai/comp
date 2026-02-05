@@ -2256,7 +2256,138 @@
       "get": {
         "description": "Returns all risks for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "RisksController_getAllRisks_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "title",
+            "required": false,
+            "in": "query",
+            "description": "Search by title (case-insensitive contains)",
+            "schema": {
+              "example": "data breach",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-indexed)",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "perPage",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "minimum": 1,
+              "maximum": 250,
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Sort by field",
+            "schema": {
+              "default": "createdAt",
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "updatedAt",
+                "title",
+                "status"
+              ]
+            }
+          },
+          {
+            "name": "sortDirection",
+            "required": false,
+            "in": "query",
+            "description": "Sort direction",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "pending",
+                "closed",
+                "archived"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "customer",
+                "fraud",
+                "governance",
+                "operations",
+                "other",
+                "people",
+                "regulatory",
+                "reporting",
+                "resilience",
+                "technology",
+                "vendor_management"
+              ]
+            }
+          },
+          {
+            "name": "department",
+            "required": false,
+            "in": "query",
+            "description": "Filter by department",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "none",
+                "admin",
+                "gov",
+                "hr",
+                "it",
+                "itsm",
+                "qms"
+              ]
+            }
+          },
+          {
+            "name": "assigneeId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by assignee member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Risks retrieved successfully",

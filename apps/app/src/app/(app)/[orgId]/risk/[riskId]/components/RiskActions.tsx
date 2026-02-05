@@ -1,24 +1,21 @@
 'use client';
 
-import { regenerateRiskMitigationAction } from '@/app/(app)/[orgId]/risk/[riskId]/actions/regenerate-risk-mitigation';
 import { useRisk } from '@/hooks/use-risks';
-import { Button } from '@comp/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import { Cog } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+} from '@trycompai/design-system';
+import { Settings } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
@@ -26,44 +23,50 @@ import { useSWRConfig } from 'swr';
 export function RiskActions({ riskId, orgId }: { riskId: string; orgId: string }) {
   const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  
-  // Get SWR mutate function to refresh risk data after mutations
-  // Pass orgId to ensure same cache key as RiskPageClient
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
   const { mutate: refreshRisk } = useRisk(riskId);
-  
-  const regenerate = useAction(regenerateRiskMitigationAction, {
-    onSuccess: () => {
+
+  const handleConfirm = async () => {
+    setIsConfirmOpen(false);
+    setIsRegenerating(true);
+    toast.info('Regenerating risk mitigation...');
+
+    try {
+      const response = await fetch(`/api/risks/${riskId}/regenerate-mitigation`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Request failed');
+      }
       toast.success('Regeneration triggered. This may take a moment.');
-      // Trigger SWR revalidation for risk detail, list views, and comments
       refreshRisk();
       globalMutate(
         (key) => Array.isArray(key) && key[0] === 'risks',
         undefined,
         { revalidate: true },
       );
-      // Invalidate comments cache for this risk
       globalMutate(
-        (key) => typeof key === 'string' && key.includes(`/v1/comments`) && key.includes(riskId),
+        (key) =>
+          typeof key === 'string' &&
+          key.includes('/v1/comments') &&
+          key.includes(riskId),
         undefined,
         { revalidate: true },
       );
-    },
-    onError: () => toast.error('Failed to trigger mitigation regeneration'),
-  });
-
-  const handleConfirm = () => {
-    setIsConfirmOpen(false);
-    toast.info('Regenerating risk mitigation...');
-    regenerate.execute({ riskId });
+    } catch {
+      toast.error('Failed to trigger mitigation regeneration');
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Risk actions">
-            <Cog className="h-4 w-4" />
-          </Button>
+        <DropdownMenuTrigger variant="ellipsis">
+          <Settings size={16} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setIsConfirmOpen(true)}>
@@ -72,29 +75,23 @@ export function RiskActions({ riskId, orgId }: { riskId: string; orgId: string }
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isConfirmOpen} onOpenChange={(open) => !open && setIsConfirmOpen(false)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Regenerate Mitigation</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate Mitigation</AlertDialogTitle>
+            <AlertDialogDescription>
               This will generate a fresh mitigation comment for this risk and mark it closed.
               Continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsConfirmOpen(false)}
-              disabled={regenerate.status === 'executing'}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleConfirm} disabled={regenerate.status === 'executing'}>
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRegenerating}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm} disabled={isRegenerating}>
+              {isRegenerating ? 'Working...' : 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

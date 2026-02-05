@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
 export function UpdateRiskOverview({
@@ -23,6 +24,7 @@ export function UpdateRiskOverview({
   assignees: (Member & { user: User })[];
 }) {
   const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateRiskSchema>>({
@@ -56,6 +58,11 @@ export function UpdateRiskOverview({
     }
 
     toast.success('Risk updated successfully');
+    globalMutate(
+      (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+      undefined,
+      { revalidate: true },
+    );
   };
 
   return (

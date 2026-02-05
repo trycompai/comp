@@ -1,55 +1,98 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { CreateRiskSheet } from '@/components/sheets/create-risk-sheet';
-import { getValidFilters } from '@/lib/data-table';
+import { serverApi } from '@/lib/api-server';
 import { db } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
-import { cache } from 'react';
-import { getRisks } from './data/getRisks';
-import { searchParamsCache } from './data/validations';
 import { RisksTable } from './RisksTable';
+
+interface RisksApiResponse {
+  data: Array<{
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    department: string | null;
+    status: string;
+    likelihood: string;
+    impact: string;
+    residualLikelihood: string;
+    residualImpact: string;
+    treatmentStrategy: string;
+    treatmentStrategyDescription: string | null;
+    organizationId: string;
+    assigneeId: string | null;
+    assignee: {
+      id: string;
+      user: {
+        id: string;
+        name: string | null;
+        email: string;
+        image: string | null;
+      };
+    } | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  totalCount: number;
+  page: number;
+  pageCount: number;
+}
+
+interface PeopleApiResponse {
+  data: Array<{
+    id: string;
+    role: string;
+    deactivated: boolean;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+      image: string | null;
+    };
+  }>;
+}
 
 export default async function RiskRegisterPage(props: {
   params: Promise<{ orgId: string }>;
-  searchParams: Promise<{
-    search: string;
-    page: string;
-    perPage: string;
-    status: string;
-    department: string;
-    assigneeId: string;
-  }>;
+  searchParams: Promise<Record<string, string>>;
 }) {
-  const { params } = props;
-  const { orgId } = await params;
+  const { orgId } = await props.params;
 
-  const searchParams = await props.searchParams;
-  const search = searchParamsCache.parse(searchParams);
-  const validFilters = getValidFilters(search.filters);
-
-  const searchParamsForTable = {
-    ...search,
-    filters: validFilters,
-  };
-
-  const [risksResult, assignees, onboarding] = await Promise.all([
-    getRisks({ orgId, searchParams: searchParamsForTable }),
-    getAssignees(orgId),
+  const [risksResult, peopleResult, onboarding] = await Promise.all([
+    serverApi.get<RisksApiResponse>('/v1/risks?perPage=50'),
+    serverApi.get<PeopleApiResponse>('/v1/people'),
     db.onboarding.findFirst({
       where: { organizationId: orgId },
       select: { triggerJobId: true },
     }),
   ]);
 
-  const isEmpty = risksResult.data?.length === 0;
-  const isDefaultView = search.page === 1 && search.title === '' && validFilters.length === 0;
+  const risks = risksResult.data?.data ?? [];
+  const pageCount = risksResult.data?.pageCount ?? 0;
+
+  // Transform people response to assignees format expected by CreateRiskSheet
+  const assignees = (peopleResult.data?.data ?? [])
+    .filter((p) => !p.deactivated && !['employee', 'contractor'].includes(p.role))
+    .map((p) => ({
+      id: p.id,
+      role: p.role,
+      deactivated: p.deactivated,
+      user: p.user,
+      organizationId: orgId,
+      isActive: true,
+      userId: p.user.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+
+  const isEmpty = risks.length === 0;
   const isOnboardingActive = Boolean(onboarding?.triggerJobId);
 
-  // Show AppOnboarding only if empty, default view, AND onboarding is not active
-  if (isEmpty && isDefaultView && !isOnboardingActive) {
+  if (isEmpty && !isOnboardingActive) {
     return (
       <PageLayout padding="sm" container={false}>
-        <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees} />} />
+        <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees as any} />} />
         <AppOnboarding
           title={'Risk Management'}
           description={
@@ -84,13 +127,12 @@ export default async function RiskRegisterPage(props: {
 
   return (
     <PageLayout>
-      <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees} />} />
+      <PageHeader title="Risks" actions={<CreateRiskSheet assignees={assignees as any} />} />
       <RisksTable
-        risks={risksResult?.data || []}
-        pageCount={risksResult.pageCount}
-        assignees={assignees}
+        risks={risks as any}
+        pageCount={pageCount}
+        assignees={assignees as any}
         onboardingRunId={onboarding?.triggerJobId ?? null}
-        searchParams={searchParamsForTable}
         orgId={orgId}
       />
     </PageLayout>
@@ -102,23 +144,3 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Risks',
   };
 }
-
-const getAssignees = cache(async (orgId: string) => {
-  if (!orgId) {
-    return [];
-  }
-
-  return await db.member.findMany({
-    where: {
-      organizationId: orgId,
-      isActive: true,
-      deactivated: false,
-      role: {
-        notIn: ['employee', 'contractor'],
-      },
-    },
-    include: {
-      user: true,
-    },
-  });
-});

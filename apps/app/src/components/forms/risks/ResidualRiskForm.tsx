@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 
 interface ResidualRiskFormProps {
@@ -43,6 +44,7 @@ export function ResidualRiskForm({
   initialImpact,
 }: ResidualRiskFormProps) {
   const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('residual-risk-sheet');
 
@@ -69,6 +71,11 @@ export function ResidualRiskForm({
     }
 
     toast.success('Residual risk updated successfully');
+    globalMutate(
+      (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+      undefined,
+      { revalidate: true },
+    );
     setOpen(null);
   };
 

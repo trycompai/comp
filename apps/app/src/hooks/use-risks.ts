@@ -3,7 +3,7 @@
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
 import { ApiResponse } from '@/lib/api-client';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type {
   RiskCategory,
   Departments,
@@ -48,7 +48,21 @@ export interface Risk {
 
 export interface RisksResponse {
   data: Risk[];
-  count: number;
+  totalCount: number;
+  page: number;
+  pageCount: number;
+}
+
+export interface RisksQueryParams {
+  title?: string;
+  page?: number;
+  perPage?: number;
+  sort?: string;
+  sortDirection?: 'asc' | 'desc';
+  status?: string;
+  category?: string;
+  department?: string;
+  assigneeId?: string;
 }
 
 /**
@@ -89,6 +103,8 @@ interface UpdateRiskData {
 export interface UseRisksOptions extends UseApiSWROptions<RisksResponse> {
   /** Initial data from server for hydration - avoids loading state on first render */
   initialData?: Risk[];
+  /** Query parameters for filtering/pagination/sorting */
+  queryParams?: RisksQueryParams;
 }
 
 export interface UseRiskOptions extends UseApiSWROptions<RiskResponse> {
@@ -109,16 +125,35 @@ export interface UseRiskOptions extends UseApiSWROptions<RiskResponse> {
  * const { data, isLoading, mutate } = useRisks();
  */
 export function useRisks(options: UseRisksOptions = {}) {
-  const { initialData, ...restOptions } = options;
+  const { initialData, queryParams, ...restOptions } = options;
 
-  return useApiSWR<RisksResponse>('/v1/risks', {
+  // Build URL with query params
+  const endpoint = useMemo(() => {
+    const params = new URLSearchParams();
+    if (queryParams?.title) params.set('title', queryParams.title);
+    if (queryParams?.page) params.set('page', String(queryParams.page));
+    if (queryParams?.perPage) params.set('perPage', String(queryParams.perPage));
+    if (queryParams?.sort) params.set('sort', queryParams.sort);
+    if (queryParams?.sortDirection) params.set('sortDirection', queryParams.sortDirection);
+    if (queryParams?.status) params.set('status', queryParams.status);
+    if (queryParams?.category) params.set('category', queryParams.category);
+    if (queryParams?.department) params.set('department', queryParams.department);
+    if (queryParams?.assigneeId) params.set('assigneeId', queryParams.assigneeId);
+    const qs = params.toString();
+    return qs ? `/v1/risks?${qs}` : '/v1/risks';
+  }, [queryParams]);
+
+  return useApiSWR<RisksResponse>(endpoint, {
     ...restOptions,
-    // Refresh risks periodically for real-time updates
     refreshInterval: restOptions.refreshInterval ?? 30000,
-    // Use initial data as fallback for instant render
     ...(initialData && {
       fallbackData: {
-        data: { data: initialData, count: initialData.length },
+        data: {
+          data: initialData,
+          totalCount: initialData.length,
+          page: queryParams?.page ?? 1,
+          pageCount: 1,
+        },
         status: 200,
       } as ApiResponse<RisksResponse>,
     }),
@@ -257,7 +292,8 @@ export function useRisksWithMutations(options: UseApiSWROptions<RisksResponse> =
 
   return {
     risks: data?.data?.data ?? [],
-    count: data?.data?.count ?? 0,
+    totalCount: data?.data?.totalCount ?? 0,
+    pageCount: data?.data?.pageCount ?? 0,
     isLoading,
     error,
     mutate,
