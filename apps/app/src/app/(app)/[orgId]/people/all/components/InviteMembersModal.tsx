@@ -176,8 +176,16 @@ export function InviteMembersModal({
                 email: invite.email.toLowerCase(),
                 roles: invite.roles,
               });
-              if (result.success && 'emailSent' in result && result.emailSent === false) {
-                emailFailedEmails.push(invite.email);
+              if (!result.success) {
+                failedInvites.push({
+                  email: invite.email,
+                  error: result.error ?? 'Failed to add employee',
+                });
+              } else {
+                if ('emailSent' in result && result.emailSent === false) {
+                  emailFailedEmails.push(invite.email);
+                }
+                successCount++;
               }
             } else {
               // Check member status and reactivate if needed
@@ -201,8 +209,8 @@ export function InviteMembersModal({
                   roles: invite.roles,
                 });
               }
+              successCount++;
             }
-            successCount++;
           } catch (error) {
             console.error(`Failed to invite ${invite.email}:`, error);
             failedInvites.push({
@@ -364,8 +372,16 @@ export function InviteMembersModal({
                   email: email.toLowerCase(),
                   roles: validRoles,
                 });
-                if (result.success && 'emailSent' in result && result.emailSent === false) {
-                  emailFailedEmails.push(email);
+                if (!result.success) {
+                  failedInvites.push({
+                    email,
+                    error: result.error ?? 'Failed to add employee',
+                  });
+                } else {
+                  if ('emailSent' in result && result.emailSent === false) {
+                    emailFailedEmails.push(email);
+                  }
+                  successCount++;
                 }
               } else {
                 // Check member status and reactivate if needed
@@ -389,8 +405,8 @@ export function InviteMembersModal({
                     roles: validRoles,
                   });
                 }
+                successCount++;
               }
-              successCount++;
             } catch (error) {
               console.error(`Failed to invite ${email}:`, error);
               failedInvites.push({
