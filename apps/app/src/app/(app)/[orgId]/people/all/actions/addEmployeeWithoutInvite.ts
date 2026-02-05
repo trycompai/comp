@@ -127,11 +127,7 @@ export const addEmployeeWithoutInvite = async ({
     const isLocalhost = process.env.NODE_ENV === 'development';
     const protocol = isLocalhost ? 'http' : 'https';
 
-    const betterAuthUrl = process.env.NEXT_PUBLIC_PORTAL_URL;
-    const isProdEnv = betterAuthUrl?.includes('portal.trycomp.ai');
-
-    const domain = isProdEnv ? 'app.trycomp.ai' : 'localhost:3002';
-    const inviteLink = `${protocol}://${domain}/${organizationId}`;
+    const inviteLink = `${process.env.NEXT_PUBLIC_PORTAL_URL}/${organizationId}`;
 
     // Send the invitation email (non-fatal: member is already created)
     let emailSent = true;
