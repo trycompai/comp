@@ -22,8 +22,10 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 
+import type { ManualAnswer } from '../../../components/types';
+
 interface ManualAnswersSectionProps {
-  manualAnswers: Awaited<ReturnType<typeof import('../../data/queries').getManualAnswers>>;
+  manualAnswers: ManualAnswer[];
 }
 
 export function ManualAnswersSection({ manualAnswers }: ManualAnswersSectionProps) {

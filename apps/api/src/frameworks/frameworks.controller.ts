@@ -1,6 +1,7 @@
 import {
   Controller,
   Delete,
+  Get,
   Param,
   UseGuards,
 } from '@nestjs/common';
@@ -14,9 +15,17 @@ import { FrameworksService } from './frameworks.service';
 @ApiTags('Frameworks')
 @ApiBearerAuth()
 @UseGuards(HybridAuthGuard, PermissionGuard)
-@Controller('v1/frameworks')
+@Controller({ path: 'frameworks', version: '1' })
 export class FrameworksController {
   constructor(private readonly frameworksService: FrameworksService) {}
+
+  @Get()
+  @RequirePermission('framework', 'read')
+  @ApiOperation({ summary: 'List framework instances for the organization' })
+  async findAll(@OrganizationId() organizationId: string) {
+    const data = await this.frameworksService.findAll(organizationId);
+    return { data, count: data.length };
+  }
 
   @Delete(':id')
   @RequirePermission('framework', 'delete')

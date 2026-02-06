@@ -23,7 +23,8 @@ import { Building2, CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, Fi
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { deleteQuestionnaireAction } from '../actions/delete-questionnaire';
+import { api } from '@/lib/api-client';
+import type { QuestionnaireListItem } from '../../components/types';
 import { useQuestionnaireHistory } from '../hooks/useQuestionnaireHistory';
 
 function getFileIcon(filename: string) {
@@ -41,7 +42,7 @@ function getFileIcon(filename: string) {
 }
 
 interface QuestionnaireHistoryProps {
-  questionnaires: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>;
+  questionnaires: QuestionnaireListItem[];
   orgId: string;
 }
 
@@ -178,7 +179,7 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
-          {paginatedQuestionnaires.map((questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number], index) => (
+          {paginatedQuestionnaires.map((questionnaire: QuestionnaireListItem, index) => (
             <div
               key={questionnaire.id}
               className="animate-in fade-in duration-500 ease-out"
@@ -248,7 +249,7 @@ export function QuestionnaireHistory({ questionnaires, orgId }: QuestionnaireHis
 }
 
 interface QuestionnaireHistoryItemProps {
-  questionnaire: Awaited<ReturnType<typeof import('../data/queries').getQuestionnaires>>[number];
+  questionnaire: QuestionnaireListItem;
   orgId: string;
   router: ReturnType<typeof useRouter>;
 }
@@ -281,14 +282,16 @@ function QuestionnaireHistoryItem({
     setIsDeleting(true);
 
     try {
-      const result = await deleteQuestionnaireAction({ questionnaireId: questionnaire.id });
+      const result = await api.delete<{ success: boolean }>(
+        `/v1/questionnaire/${questionnaire.id}`,
+      );
 
-      if (result?.data?.success) {
+      if (result.data?.success) {
         toast.success('Questionnaire deleted successfully');
         setIsDeleteDialogOpen(false);
         router.refresh();
       } else {
-        toast.error(result?.data?.error || 'Failed to delete questionnaire');
+        toast.error(result.error || 'Failed to delete questionnaire');
       }
     } catch (error) {
       toast.error('An error occurred while deleting the questionnaire');

@@ -79,6 +79,7 @@ export function useQuestionnaireAutoAnswer({
         `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/questionnaire/auto-answer`,
         {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           },

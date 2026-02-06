@@ -11728,6 +11728,79 @@
         ]
       }
     },
+    "/v1/questionnaire": {
+      "get": {
+        "operationId": "QuestionnaireController_findAll_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of questionnaires"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
+    "/v1/questionnaire/{id}": {
+      "get": {
+        "operationId": "QuestionnaireController_findById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Questionnaire details"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Questionnaire"
+        ]
+      },
+      "delete": {
+        "operationId": "QuestionnaireController_deleteById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Questionnaire deleted"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Questionnaire"
+        ]
+      }
+    },
     "/v1/questionnaire/parse": {
       "post": {
         "operationId": "QuestionnaireController_parseQuestionnaire_v1",
@@ -12298,70 +12371,66 @@
     "/v1/knowledge-base/documents": {
       "get": {
         "operationId": "KnowledgeBaseController_listDocuments_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "List of knowledge base documents",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "description": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "s3Key": {
-                        "type": "string"
-                      },
-                      "fileType": {
-                        "type": "string"
-                      },
-                      "fileSize": {
-                        "type": "number"
-                      },
-                      "processingStatus": {
-                        "type": "string",
-                        "enum": [
-                          "pending",
-                          "processing",
-                          "completed",
-                          "failed"
-                        ]
-                      },
-                      "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                      },
-                      "updatedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                      }
-                    }
-                  }
-                }
+            "description": "List of knowledge base documents"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List all knowledge base documents for an organization",
+        "tags": [
+          "Knowledge Base"
+        ]
+      }
+    },
+    "/v1/knowledge-base/manual-answers": {
+      "get": {
+        "operationId": "KnowledgeBaseController_listManualAnswers_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of manual answers"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List all manual answers for an organization",
+        "tags": [
+          "Knowledge Base"
+        ]
+      },
+      "post": {
+        "operationId": "KnowledgeBaseController_saveManualAnswer_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveManualAnswerDto"
               }
             }
           }
         },
-        "summary": "List all knowledge base documents for an organization",
+        "responses": {
+          "200": {
+            "description": "Manual answer saved"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Save or update a manual answer",
         "tags": [
           "Knowledge Base"
         ]
@@ -12383,27 +12452,14 @@
         },
         "responses": {
           "200": {
-            "description": "Document uploaded successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "s3Key": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Document uploaded successfully"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Upload a knowledge base document",
         "tags": [
           "Knowledge Base"
@@ -12425,25 +12481,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Signed download URL generated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "signedUrl": {
-                      "type": "string"
-                    },
-                    "fileName": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Signed download URL generated"
           }
         },
-        "summary": "Get a signed download URL for a knowledge base document",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a signed download URL for a document",
         "tags": [
           "Knowledge Base"
         ]
@@ -12464,31 +12510,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Signed view URL generated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "signedUrl": {
-                      "type": "string"
-                    },
-                    "fileName": {
-                      "type": "string"
-                    },
-                    "fileType": {
-                      "type": "string"
-                    },
-                    "viewableInBrowser": {
-                      "type": "boolean"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Signed view URL generated"
           }
         },
-        "summary": "Get a signed view URL for a knowledge base document",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a signed view URL for a document",
         "tags": [
           "Knowledge Base"
         ]
@@ -12509,29 +12539,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Document deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "vectorDeletionRunId": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "publicAccessToken": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Document deleted successfully"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Delete a knowledge base document",
         "tags": [
           "Knowledge Base"
@@ -12554,31 +12569,14 @@
         },
         "responses": {
           "200": {
-            "description": "Document processing triggered",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "runId": {
-                      "type": "string"
-                    },
-                    "publicAccessToken": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Document processing triggered"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Trigger processing of knowledge base documents",
         "tags": [
           "Knowledge Base"
@@ -12600,26 +12598,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Public access token created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "token": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Public access token created"
           }
         },
-        "summary": "Create a public access token for a Trigger.dev run",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a public access token for a run",
         "tags": [
           "Knowledge Base"
         ]
@@ -12650,25 +12637,14 @@
         },
         "responses": {
           "200": {
-            "description": "Manual answer deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "error": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Manual answer deleted"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Delete a manual answer",
         "tags": [
           "Knowledge Base"
@@ -12691,25 +12667,14 @@
         },
         "responses": {
           "200": {
-            "description": "All manual answers deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "error": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  }
-                }
-              }
-            }
+            "description": "All manual answers deleted"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Delete all manual answers for an organization",
         "tags": [
           "Knowledge Base"
@@ -15214,7 +15179,7 @@
         ]
       }
     },
-    "/v1/v1/controls": {
+    "/v1/controls": {
       "post": {
         "operationId": "ControlsController_create_v1",
         "parameters": [],
@@ -15244,7 +15209,7 @@
         ]
       }
     },
-    "/v1/v1/controls/{id}": {
+    "/v1/controls/{id}": {
       "delete": {
         "operationId": "ControlsController_delete_v1",
         "parameters": [
@@ -15273,7 +15238,27 @@
         ]
       }
     },
-    "/v1/v1/frameworks/{id}": {
+    "/v1/frameworks": {
+      "get": {
+        "operationId": "FrameworksController_findAll_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List framework instances for the organization",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}": {
       "delete": {
         "operationId": "FrameworksController_delete_v1",
         "parameters": [
@@ -18463,6 +18448,10 @@
         "properties": {}
       },
       "AutoAnswerDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SaveManualAnswerDto": {
         "type": "object",
         "properties": {}
       },

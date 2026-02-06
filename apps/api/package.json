@@ -106,7 +106,8 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@db$": "<rootDir>/../prisma/index"
+      "^@db$": "<rootDir>/../prisma/index",
+      "^@/(.*)$": "<rootDir>/$1"
     }
   },
   "license": "UNLICENSED",

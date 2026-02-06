@@ -24,13 +24,13 @@ import { format } from 'date-fns';
 import { useDocumentProcessing } from '../hooks/useDocumentProcessing';
 import { Loader2 } from 'lucide-react';
 
-type KnowledgeBaseDocument = Awaited<
-  ReturnType<typeof import('../../data/queries').getKnowledgeBaseDocuments>
->[number];
+import type { KBDocument } from '../../../components/types';
+
+type KnowledgeBaseDocument = KBDocument;
 
 interface AdditionalDocumentsSectionProps {
   organizationId: string;
-  documents: Awaited<ReturnType<typeof import('../../data/queries').getKnowledgeBaseDocuments>>;
+  documents: KBDocument[];
 }
 
 // Simple state for active run tracking

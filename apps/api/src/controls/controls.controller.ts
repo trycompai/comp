@@ -17,7 +17,7 @@ import { CreateControlDto } from './dto/create-control.dto';
 @ApiTags('Controls')
 @ApiBearerAuth()
 @UseGuards(HybridAuthGuard, PermissionGuard)
-@Controller('v1/controls')
+@Controller({ path: 'controls', version: '1' })
 export class ControlsController {
   constructor(private readonly controlsService: ControlsService) {}
 

@@ -2,6 +2,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
   Post,
   Query,
   Res,
@@ -24,6 +28,11 @@ import {
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import {
+  OrganizationId,
+  AuthContext,
+} from '../auth/auth-context.decorator';
+import type { AuthContext as AuthContextType } from '../auth/types';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import { ExportQuestionnaireDto } from './dto/export-questionnaire.dto';
 import { AnswerSingleQuestionDto } from './dto/answer-single-question.dto';
@@ -62,6 +71,66 @@ export class QuestionnaireController {
     private readonly questionnaireService: QuestionnaireService,
     private readonly trustAccessService: TrustAccessService,
   ) {}
+
+  @Get()
+  @RequirePermission('questionnaire', 'read')
+  @ApiOkResponse({ description: 'List of questionnaires' })
+  async findAll(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.questionnaireService.findAll(organizationId);
+    return {
+      data,
+      count: data.length,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get(':id')
+  @RequirePermission('questionnaire', 'read')
+  @ApiOkResponse({ description: 'Questionnaire details' })
+  async findById(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const questionnaire = await this.questionnaireService.findById(
+      id,
+      organizationId,
+    );
+    if (!questionnaire) {
+      throw new NotFoundException('Questionnaire not found');
+    }
+    return {
+      ...questionnaire,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Delete(':id')
+  @RequirePermission('questionnaire', 'delete')
+  @ApiOkResponse({ description: 'Questionnaire deleted' })
+  async deleteById(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.questionnaireService.deleteById(id, organizationId);
+  }
 
   @Post('parse')
   @RequirePermission('questionnaire', 'read')

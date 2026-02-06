@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import { tasks, auth } from '@trigger.dev/sdk';
+import { syncManualAnswerToVector } from '@/vector-store/lib';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DeleteDocumentDto } from './dto/delete-document.dto';
 import { GetDocumentUrlDto } from './dto/get-document-url.dto';
@@ -209,6 +210,71 @@ export class KnowledgeBaseService {
       });
       return undefined;
     }
+  }
+
+  async listManualAnswers(organizationId: string) {
+    return db.securityQuestionnaireManualAnswer.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        question: true,
+        answer: true,
+        tags: true,
+        sourceQuestionnaireId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  async saveManualAnswer(dto: {
+    organizationId: string;
+    question: string;
+    answer: string;
+    tags?: string[];
+    sourceQuestionnaireId?: string;
+  }) {
+    const manualAnswer = await db.securityQuestionnaireManualAnswer.upsert({
+      where: {
+        organizationId_question: {
+          organizationId: dto.organizationId,
+          question: dto.question.trim(),
+        },
+      },
+      create: {
+        question: dto.question.trim(),
+        answer: dto.answer.trim(),
+        tags: dto.tags || [],
+        organizationId: dto.organizationId,
+        sourceQuestionnaireId: dto.sourceQuestionnaireId || null,
+        createdBy: null,
+        updatedBy: null,
+      },
+      update: {
+        answer: dto.answer.trim(),
+        tags: dto.tags || [],
+        sourceQuestionnaireId: dto.sourceQuestionnaireId || null,
+        updatedBy: null,
+        updatedAt: new Date(),
+      },
+    });
+
+    // Sync to vector DB
+    try {
+      await syncManualAnswerToVector(manualAnswer.id, dto.organizationId);
+    } catch (error) {
+      this.logger.error('Failed to sync manual answer to vector DB', {
+        manualAnswerId: manualAnswer.id,
+        organizationId: dto.organizationId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+
+    return {
+      success: true,
+      manualAnswerId: manualAnswer.id,
+    };
   }
 
   async deleteManualAnswer(
