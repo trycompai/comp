@@ -288,6 +288,129 @@ function mapRiskLevelToImpact(
 }
 
 /**
+ * Valid compliance badge types for trust portal
+ */
+type ComplianceBadgeType =
+  | 'soc2'
+  | 'iso27001'
+  | 'iso42001'
+  | 'gdpr'
+  | 'hipaa'
+  | 'pci_dss'
+  | 'nen7510'
+  | 'iso9001';
+
+/**
+ * Map certification type strings from risk assessment to our badge types
+ */
+function mapCertificationToBadgeType(
+  certType: string,
+): ComplianceBadgeType | null {
+  const normalized = certType.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // SOC 2 (Type I or Type II)
+  if (normalized.includes('soc2') || normalized.includes('soc 2')) {
+    return 'soc2';
+  }
+
+  // ISO 27001
+  if (normalized.includes('iso27001') || normalized.includes('27001')) {
+    return 'iso27001';
+  }
+
+  // ISO 42001 (AI Management)
+  if (normalized.includes('iso42001') || normalized.includes('42001')) {
+    return 'iso42001';
+  }
+
+  // ISO 9001 (Quality Management)
+  if (normalized.includes('iso9001') || normalized.includes('9001')) {
+    return 'iso9001';
+  }
+
+  // GDPR
+  if (normalized.includes('gdpr')) {
+    return 'gdpr';
+  }
+
+  // HIPAA
+  if (normalized.includes('hipaa')) {
+    return 'hipaa';
+  }
+
+  // PCI DSS
+  if (
+    normalized.includes('pcidss') ||
+    normalized.includes('pci') ||
+    normalized.includes('paymentcard')
+  ) {
+    return 'pci_dss';
+  }
+
+  // NEN 7510 (Dutch healthcare)
+  if (normalized.includes('nen7510') || normalized.includes('7510')) {
+    return 'nen7510';
+  }
+
+  return null;
+}
+
+/**
+ * Extract compliance badges from risk assessment data
+ */
+function extractComplianceBadges(
+  data: Prisma.InputJsonValue,
+): Prisma.InputJsonValue | null {
+  try {
+    const parsed = data as {
+      certifications?: Array<{ type: string; status: string }>;
+    };
+
+    if (!parsed?.certifications || !Array.isArray(parsed.certifications)) {
+      return null;
+    }
+
+    const badges: Array<{ type: ComplianceBadgeType; verified: boolean }> = [];
+    const seenTypes = new Set<ComplianceBadgeType>();
+
+    for (const cert of parsed.certifications) {
+      // Only include verified certifications
+      if (cert.status !== 'verified') {
+        continue;
+      }
+
+      const badgeType = mapCertificationToBadgeType(cert.type);
+      if (badgeType && !seenTypes.has(badgeType)) {
+        seenTypes.add(badgeType);
+        badges.push({ type: badgeType, verified: true });
+      }
+    }
+
+    return badges.length > 0 ? badges : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generate logo URL using Google Favicon API
+ */
+function generateLogoUrl(website: string | null): string | null {
+  if (!website) return null;
+
+  try {
+    const urlWithProtocol = website.startsWith('http')
+      ? website
+      : `https://${website}`;
+    const parsed = new URL(urlWithProtocol);
+    const domain = parsed.hostname.replace(/^www\./, '');
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Extract domain from website URL for GlobalVendors lookup.
  * Removes www. prefix and returns just the domain (e.g., "example.com").
  */
@@ -758,6 +881,18 @@ export const vendorRiskAssessmentTask: Task<
     const residualProbability = mapRiskLevelToLikelihood(normalizedRiskLevel);
     const residualImpact = mapRiskLevelToImpact(normalizedRiskLevel);
 
+    // Extract compliance badges from risk assessment certifications
+    const complianceBadges = extractComplianceBadges(data);
+    if (complianceBadges) {
+      logger.info('Extracted compliance badges from risk assessment', {
+        vendor: payload.vendorName,
+        badges: complianceBadges,
+      });
+    }
+
+    // Generate logo URL from website using Google Favicon API
+    const logoUrl = generateLogoUrl(vendor.website);
+
     // Mark org-specific vendor as assessed
     await db.vendor.update({
       where: { id: vendor.id },
@@ -767,6 +902,10 @@ export const vendorRiskAssessmentTask: Task<
         inherentImpact,
         residualProbability,
         residualImpact,
+        // Only set complianceBadges if we found any, otherwise leave unchanged
+        ...(complianceBadges ? { complianceBadges } : {}),
+        // Only set logoUrl if we generated one, otherwise leave unchanged
+        ...(logoUrl ? { logoUrl } : {}),
       },
     });
 

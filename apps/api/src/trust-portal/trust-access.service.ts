@@ -25,6 +25,7 @@ import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
+
 @Injectable()
 export class TrustAccessService {
   /**
@@ -2381,5 +2382,176 @@ export class TrustAccessService {
       downloadUrl,
       policyCount: policies.length,
     };
+  }
+
+  async getPublicOverview(friendlyUrl: string) {
+    const trust = await db.trust.findUnique({
+      where: { friendlyUrl },
+      select: {
+        overviewTitle: true,
+        overviewContent: true,
+        showOverview: true,
+      },
+    });
+
+    if (!trust || !trust.showOverview) {
+      return null;
+    }
+
+    return {
+      title: trust.overviewTitle,
+      content: trust.overviewContent,
+    };
+  }
+
+  async getPublicCustomLinks(friendlyUrl: string) {
+    const trust = await db.trust.findUnique({
+      where: { friendlyUrl },
+      select: { organizationId: true },
+    });
+
+    if (!trust) {
+      return [];
+    }
+
+    return db.trustCustomLink.findMany({
+      where: {
+        organizationId: trust.organizationId,
+        isActive: true,
+      },
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        url: true,
+      },
+    });
+  }
+
+  async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
+    const trust = await db.trust.findUnique({
+      where: { friendlyUrl },
+      select: { favicon: true },
+    });
+
+    if (!trust?.favicon || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      return null;
+    }
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: trust.favicon,
+      });
+      return await getSignedUrl(s3Client, command, { expiresIn: 86400 }); // 24 hours
+    } catch {
+      return null;
+    }
+  }
+
+  async getPublicVendors(friendlyUrl: string) {
+    const trust = await db.trust.findUnique({
+      where: { friendlyUrl },
+      select: { organizationId: true },
+    });
+
+    if (!trust) {
+      return [];
+    }
+
+    const vendors = await db.vendor.findMany({
+      where: {
+        organizationId: trust.organizationId,
+        showOnTrustPortal: true,
+      },
+      orderBy: [{ trustPortalOrder: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        website: true,
+        logoUrl: true,
+        complianceBadges: true,
+      },
+    });
+
+    // Get websites to look up in GlobalVendors
+    const websiteList = vendors
+      .map((v) => v.website)
+      .filter((w): w is string => !!w);
+
+    // Fetch GlobalVendors data for trust portal URLs
+    const globalVendors = websiteList.length
+      ? await db.globalVendors.findMany({
+          where: { website: { in: websiteList } },
+          select: {
+            website: true,
+            riskAssessmentData: true,
+          },
+        })
+      : [];
+
+    // Create a map for quick lookup
+    const globalVendorMap = new Map(
+      globalVendors.map((gv) => [gv.website, gv.riskAssessmentData]),
+    );
+
+    // Add icon URLs to compliance badges and trust portal URL
+    return vendors.map((vendor) => {
+      // Default to original website URL
+      let trustPortalUrl: string | null = vendor.website;
+
+      // Try to get trust portal URL from GlobalVendors riskAssessmentData
+      if (vendor.website) {
+        const riskData = globalVendorMap.get(vendor.website);
+        if (riskData && typeof riskData === 'object' && riskData !== null) {
+          const links = (riskData as Record<string, unknown>).links;
+          if (Array.isArray(links) && links.length > 0) {
+            const firstLink = links[0];
+            if (
+              firstLink &&
+              typeof firstLink === 'object' &&
+              'url' in firstLink &&
+              typeof firstLink.url === 'string'
+            ) {
+              trustPortalUrl = firstLink.url;
+            }
+          }
+        }
+      }
+      return {
+        ...vendor,
+        complianceBadges: this.formatComplianceBadgeLabels(vendor.complianceBadges),
+        trustPortalUrl,
+      };
+    });
+  }
+
+  /**
+   * Format compliance badges as simple type + label pairs for external rendering.
+   * Does NOT include branded icons to avoid implying vendors were certified through us.
+   */
+  private formatComplianceBadgeLabels(badges: unknown): { type: string; label: string }[] {
+    if (!badges || !Array.isArray(badges)) {
+      return [];
+    }
+
+    const LABEL_MAP: Record<string, string> = {
+      soc2: 'SOC 2',
+      iso27001: 'ISO 27001',
+      iso42001: 'ISO 42001',
+      iso9001: 'ISO 9001',
+      gdpr: 'GDPR',
+      hipaa: 'HIPAA',
+      pci_dss: 'PCI DSS',
+      nen7510: 'NEN 7510',
+      ccpa: 'CCPA',
+    };
+
+    return badges.map((badge: { type: string }) => ({
+      type: badge.type,
+      label: LABEL_MAP[badge.type] ?? badge.type.toUpperCase(),
+    }));
   }
 }
