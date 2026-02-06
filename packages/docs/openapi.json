@@ -9998,20 +9998,130 @@
         ]
       }
     },
+    "/v1/trust-portal/settings/toggle": {
+      "put": {
+        "operationId": "TrustPortalController_togglePortal_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Enable or disable the trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/custom-domain": {
+      "post": {
+        "operationId": "TrustPortalController_addCustomDomain_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Add or update a custom domain for the trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/check-dns": {
+      "post": {
+        "operationId": "TrustPortalController_checkDnsRecords_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Check DNS records for a custom domain",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/faqs": {
+      "put": {
+        "operationId": "TrustPortalController_updateFaqs_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update trust portal FAQs",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/allowed-domains": {
+      "put": {
+        "operationId": "TrustPortalController_updateAllowedDomains_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update allowed domains for the trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/settings/frameworks": {
+      "put": {
+        "operationId": "TrustPortalController_updateFrameworks_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update trust portal framework settings",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
     "/v1/trust-portal/overview": {
       "post": {
         "operationId": "TrustPortalController_updateOverview_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Overview updated successfully"
@@ -10030,15 +10140,6 @@
       "get": {
         "operationId": "TrustPortalController_getOverview_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "organizationId",
             "required": true,
@@ -10067,17 +10168,7 @@
     "/v1/trust-portal/custom-links": {
       "post": {
         "operationId": "TrustPortalController_createCustomLink_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": "Custom link created successfully"
@@ -10096,15 +10187,6 @@
       "get": {
         "operationId": "TrustPortalController_listCustomLinks_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "organizationId",
             "required": true,
@@ -10135,15 +10217,6 @@
         "operationId": "TrustPortalController_updateCustomLink_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "linkId",
             "required": true,
             "in": "path",
@@ -10173,15 +10246,6 @@
         "operationId": "TrustPortalController_deleteCustomLink_v1",
         "parameters": [
           {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "linkId",
             "required": true,
             "in": "path",
@@ -10209,17 +10273,7 @@
     "/v1/trust-portal/custom-links/reorder": {
       "post": {
         "operationId": "TrustPortalController_reorderCustomLinks_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Custom links reordered successfully"
@@ -10240,15 +10294,6 @@
       "post": {
         "operationId": "TrustPortalController_updateVendorTrustSettings_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "vendorId",
             "required": true,
@@ -10278,15 +10323,6 @@
       "get": {
         "operationId": "TrustPortalController_listPublicVendors_v1",
         "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "organizationId",
             "required": true,
