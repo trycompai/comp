@@ -28,6 +28,7 @@ import { Check, Circle, FolderTree, List, Search, XCircle } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
+import type { FrameworkInstanceForTasks } from '../types';
 import { ModernTaskList } from './ModernTaskList';
 import { TasksByCategory } from './TasksByCategory';
 
@@ -42,6 +43,7 @@ const statuses = [
 export function TaskList({
   tasks: initialTasks,
   members,
+  frameworkInstances,
   activeTab,
 }: {
   tasks: (Task & {
@@ -61,6 +63,7 @@ export function TaskList({
     }>;
   })[];
   members: (Member & { user: User })[];
+  frameworkInstances: FrameworkInstanceForTasks[];
   activeTab: 'categories' | 'list';
 }) {
   const params = useParams();
@@ -68,12 +71,25 @@ export function TaskList({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useQueryState('status');
   const [assigneeFilter, setAssigneeFilter] = useQueryState('assignee');
+  const [frameworkFilter, setFrameworkFilter] = useQueryState('framework');
   const [currentTab, setCurrentTab] = useState<'categories' | 'list'>(activeTab);
 
   // Sync activeTab prop with state when it changes
   useEffect(() => {
     setCurrentTab(activeTab);
   }, [activeTab]);
+
+  // Clear frameworkFilter when it's invalid or frameworks are empty.
+  // Prevents invisible filter (no dropdown when empty) and stale bookmarked URLs.
+  useEffect(() => {
+    if (!frameworkFilter) return;
+    const isValid =
+      frameworkInstances.length > 0 &&
+      frameworkInstances.some((fw) => fw.id === frameworkFilter);
+    if (!isValid) {
+      setFrameworkFilter(null);
+    }
+  }, [frameworkFilter, frameworkInstances, setFrameworkFilter]);
 
   const handleTabChange = async (value: string) => {
     const newTab = value as 'categories' | 'list';
@@ -100,7 +116,17 @@ export function TaskList({
       });
   }, [members]);
 
-  // Filter tasks by search query, status, and assignee
+  // Build a map of control IDs to their framework instances for efficient lookup
+  const frameworkControlIds = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const fw of frameworkInstances) {
+      const controlIds = new Set(fw.requirementsMapped.map((r) => r.controlId));
+      map.set(fw.id, controlIds);
+    }
+    return map;
+  }, [frameworkInstances]);
+
+  // Filter tasks by search query, status, assignee, and framework
   const filteredTasks = initialTasks.filter((task) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -110,7 +136,16 @@ export function TaskList({
     const matchesStatus = !statusFilter || task.status === statusFilter;
     const matchesAssignee = !assigneeFilter || task.assigneeId === assigneeFilter;
 
-    return matchesSearch && matchesStatus && matchesAssignee;
+    const matchesFramework =
+      !frameworkFilter ||
+      (() => {
+        const fwControlIds = frameworkControlIds.get(frameworkFilter);
+        // Stale/invalid framework ID (e.g. from bookmarked URL): treat as "All frameworks" to match dropdown display
+        if (!fwControlIds) return true;
+        return task.controls.some((c) => fwControlIds.has(c.id));
+      })();
+
+    return matchesSearch && matchesStatus && matchesAssignee && matchesFramework;
   });
 
   // Calculate overall stats from all tasks (not filtered)
@@ -571,6 +606,36 @@ export function TaskList({
                   </SelectContent>
                 </Select>
 
+                {frameworkInstances.length > 0 && (
+                  <Select
+                    value={frameworkFilter || 'all'}
+                    onValueChange={(value) => setFrameworkFilter(value === 'all' ? null : value)}
+                  >
+                    <SelectTrigger size="sm">
+                      <SelectValue placeholder="All frameworks">
+                        {(() => {
+                          if (!frameworkFilter) return 'All frameworks';
+                          const selectedFramework = frameworkInstances.find(
+                            (fw) => fw.id === frameworkFilter,
+                          );
+                          if (!selectedFramework) return 'All frameworks';
+                          return selectedFramework.framework.name;
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <span className="text-xs">All frameworks</span>
+                      </SelectItem>
+                      {frameworkInstances.map((fw) => (
+                        <SelectItem key={fw.id} value={fw.id}>
+                          <span className="text-xs">{fw.framework.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
                 <Select
                   value={assigneeFilter || 'all'}
                   onValueChange={(value) => setAssigneeFilter(value === 'all' ? null : value)}
@@ -629,7 +694,7 @@ export function TaskList({
                 </Select>
               </div>
               {/* Result Count */}
-              {(searchQuery || statusFilter || assigneeFilter) && (
+              {(searchQuery || statusFilter || assigneeFilter || frameworkFilter) && (
                 <div className="text-muted-foreground text-xs tabular-nums whitespace-nowrap lg:ml-auto">
                   {filteredTasks.length} {filteredTasks.length === 1 ? 'result' : 'results'}
                 </div>
@@ -664,7 +729,6 @@ export function TaskList({
           </div>
         </Stack>
       </Tabs>
-
     </Stack>
   );
 }
