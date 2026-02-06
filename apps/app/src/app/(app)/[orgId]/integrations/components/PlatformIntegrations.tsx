@@ -36,7 +36,6 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { getRelevantTasksForIntegration } from '../actions/get-relevant-tasks';
 import {
   CATEGORIES,
   INTEGRATIONS,
@@ -300,24 +299,29 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   useEffect(() => {
     if (selectedCustomIntegration && orgId && taskTemplates && taskTemplates.length > 0) {
       setIsLoadingTasks(true);
-      getRelevantTasksForIntegration({
-        integrationName: selectedCustomIntegration.name,
-        integrationDescription: selectedCustomIntegration.description,
-        taskTemplates: taskTemplates.map((t) => ({
-          id: t.id,
-          name: t.name,
-          description: t.description,
-        })),
-        examplePrompts: selectedCustomIntegration.examplePrompts,
+      fetch('/api/integrations/relevant-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          integrationName: selectedCustomIntegration.name,
+          integrationDescription: selectedCustomIntegration.description,
+          taskTemplates: taskTemplates.map((t) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+          })),
+          examplePrompts: selectedCustomIntegration.examplePrompts,
+        }),
       })
-        .then((aiTasks) => {
-          // Map AI results to include actual taskId
+        .then((res) => res.json())
+        .then((data: { tasks: Array<{ taskTemplateId: string; taskName: string; reason: string; prompt: string }> }) => {
+          const aiTasks = Array.isArray(data.tasks) ? data.tasks : [];
           const tasksWithIds = aiTasks
             .map((task) => ({
               ...task,
               taskId: templateToTaskMap.get(task.taskTemplateId) || '',
             }))
-            .filter((task) => task.taskId); // Only keep tasks we can navigate to
+            .filter((task) => task.taskId);
           setRelevantTasks(tasksWithIds);
         })
         .catch((error) => {

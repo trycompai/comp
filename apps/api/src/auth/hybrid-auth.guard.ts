@@ -2,15 +2,19 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { db } from '@trycompai/db';
 import { ApiKeyService } from './api-key.service';
 import { auth } from './auth.server';
+import { resolveServiceByToken } from './service-token.config';
 import { AuthenticatedRequest } from './types';
 
 @Injectable()
 export class HybridAuthGuard implements CanActivate {
+  private readonly logger = new Logger(HybridAuthGuard.name);
+
   constructor(private readonly apiKeyService: ApiKeyService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -20,6 +24,12 @@ export class HybridAuthGuard implements CanActivate {
     const apiKey = request.headers['x-api-key'] as string;
     if (apiKey) {
       return this.handleApiKeyAuth(request, apiKey);
+    }
+
+    // Try Service Token authentication (for internal services)
+    const serviceToken = request.headers['x-service-token'] as string;
+    if (serviceToken) {
+      return this.handleServiceTokenAuth(request, serviceToken);
     }
 
     // Try session-based authentication (bearer token or cookies)
@@ -48,6 +58,37 @@ export class HybridAuthGuard implements CanActivate {
     request.isPlatformAdmin = false;
     // API keys are organization-scoped and are not tied to a specific user/member.
     request.userRoles = null;
+
+    return true;
+  }
+
+  private handleServiceTokenAuth(
+    request: AuthenticatedRequest,
+    token: string,
+  ): boolean {
+    const service = resolveServiceByToken(token);
+    if (!service) {
+      throw new UnauthorizedException('Invalid service token');
+    }
+
+    const organizationId = request.headers['x-organization-id'] as string;
+    if (!organizationId) {
+      throw new UnauthorizedException(
+        'x-organization-id header is required for service token auth',
+      );
+    }
+
+    request.organizationId = organizationId;
+    request.authType = 'service';
+    request.isApiKey = false;
+    request.isServiceToken = true;
+    request.serviceName = service.definition.name;
+    request.isPlatformAdmin = false;
+    request.userRoles = null;
+
+    this.logger.log(
+      `Service "${service.definition.name}" authenticated for org ${organizationId}`,
+    );
 
     return true;
   }

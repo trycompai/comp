@@ -19,6 +19,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { OrganizationId } from '../auth/auth-context.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DeleteDocumentDto } from './dto/delete-document.dto';
@@ -80,6 +81,7 @@ export class KnowledgeBaseController {
 
   @Post('documents/:documentId/download')
   @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiOperation({ summary: 'Get a signed download URL for a document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Signed download URL generated' })
@@ -95,6 +97,7 @@ export class KnowledgeBaseController {
 
   @Post('documents/:documentId/view')
   @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiOperation({ summary: 'Get a signed view URL for a document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Signed view URL generated' })

@@ -7,7 +7,6 @@ import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompa
 import { Add, Settings } from '@trycompai/design-system/icons';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
 import { isCloudProviderSlug } from '../constants';
 import type { Finding, Provider } from '../types';
 import { CloudSettingsModal } from './CloudSettingsModal';
@@ -57,37 +56,30 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const [manageProviderType, setManageProviderType] = useState<string | null>(null);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
-  const { data: findings = initialFindings, mutate: mutateFindings } = useSWR<Finding[]>(
-    `/api/cloud-tests/findings?orgId=${orgId}`,
-    async (url) => {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to fetch');
-      return res.json();
-    },
+  const findingsResponse = api.useSWR<{ data: Finding[]; count: number }>(
+    '/v1/cloud-security/findings',
     {
-      fallbackData: initialFindings,
+      fallbackData: { data: { data: initialFindings, count: initialFindings.length }, status: 200 },
       revalidateOnFocus: true,
-      // No automatic polling - we manually refresh after scans via mutateFindings()
     },
   );
+  const findings = Array.isArray(findingsResponse.data?.data?.data)
+    ? findingsResponse.data.data.data
+    : initialFindings;
+  const mutateFindings = findingsResponse.mutate;
 
-  const {
-    data: providers = initialProviders,
-    mutate: mutateProviders,
-    isValidating: isProvidersValidating,
-  } = useSWR<Provider[]>(
-    `/api/cloud-tests/providers?orgId=${orgId}`,
-    async (url) => {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to fetch');
-      return res.json();
-    },
+  const providersResponse = api.useSWR<{ data: Provider[]; count: number }>(
+    '/v1/cloud-security/providers',
     {
-      fallbackData: initialProviders,
+      fallbackData: { data: { data: initialProviders, count: initialProviders.length }, status: 200 },
       revalidateOnFocus: true,
-      // No automatic polling - we manually refresh after scans via mutateProviders()
     },
   );
+  const providers = Array.isArray(providersResponse.data?.data?.data)
+    ? providersResponse.data.data.data
+    : initialProviders;
+  const mutateProviders = providersResponse.mutate;
+  const isProvidersValidating = providersResponse.isValidating;
 
   const connectedProviders = providers;
 
@@ -141,10 +133,13 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
 
     try {
       if (targetProvider.isLegacy) {
-        // Run legacy check for this specific connection
-        // runTests now waits for completion (uses triggerAndPoll)
-        const { runTests } = await import('../actions/run-tests');
-        const result = await runTests(targetProvider.id);
+        // Run legacy scan via API route (triggers Trigger.dev task)
+        const res = await fetch('/api/cloud-tests/legacy-scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ integrationId: targetProvider.id }),
+        });
+        const result = await res.json();
 
         if (!result.success) {
           console.error('Legacy scan error:', result.errors);

@@ -214,11 +214,13 @@ export const runTaskIntegrationChecks = task({
     try {
       logger.info('Ensuring valid credentials (refreshing if needed)...');
       const response = await fetch(
-        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials?organizationId=${organizationId}`,
+        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+            'x-organization-id': organizationId,
           },
         },
       );

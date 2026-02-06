@@ -4685,17 +4685,7 @@
     "/v1/internal/vendors/risk-assessment/trigger-batch": {
       "post": {
         "operationId": "InternalVendorAutomationController_triggerVendorRiskAssessmentBatch_v1",
-        "parameters": [
-          {
-            "name": "X-Internal-Token",
-            "in": "header",
-            "description": "Internal service token (required in production)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -4711,6 +4701,11 @@
             "description": "Tasks triggered"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Trigger vendor risk assessment tasks for a batch of vendors (internal)",
         "tags": [
           "Internal - Vendors"
@@ -4720,17 +4715,7 @@
     "/v1/internal/vendors/risk-assessment/trigger-single": {
       "post": {
         "operationId": "InternalVendorAutomationController_triggerSingleVendorRiskAssessment_v1",
-        "parameters": [
-          {
-            "name": "X-Internal-Token",
-            "in": "header",
-            "description": "Internal service token (required in production)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -4746,6 +4731,11 @@
             "description": "Task triggered with run info for real-time tracking"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Trigger vendor risk assessment for a single vendor and return run info (internal)",
         "tags": [
           "Internal - Vendors"
@@ -12915,14 +12905,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -12930,8 +12912,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "OAuth"
+          "Integrations"
         ]
       }
     },
@@ -12944,8 +12931,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "OAuth"
+          "Integrations"
         ]
       }
     },
@@ -12958,31 +12950,32 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "OAuth"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/oauth-apps": {
       "get": {
         "operationId": "OAuthAppsController_listOAuthApps_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "OAuthApps"
+          "Integrations"
         ]
       },
       "post": {
@@ -12993,8 +12986,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "OAuthApps"
+          "Integrations"
         ]
       }
     },
@@ -13009,14 +13007,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13024,8 +13014,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "OAuthApps"
+          "Integrations"
         ]
       }
     },
@@ -13040,14 +13035,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13055,8 +13042,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "OAuthApps"
+          "Integrations"
         ]
       }
     },
@@ -13078,8 +13070,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13101,8 +13098,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13115,8 +13117,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       },
       "post": {
@@ -13127,8 +13134,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13150,8 +13162,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       },
       "delete": {
@@ -13171,8 +13188,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       },
       "patch": {
@@ -13185,14 +13207,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13200,8 +13214,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13223,8 +13242,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13246,8 +13270,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13269,8 +13298,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13292,8 +13326,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13308,14 +13347,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13323,8 +13354,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13339,14 +13375,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13354,8 +13382,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Connections"
+          "Integrations"
         ]
       }
     },
@@ -13451,8 +13484,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Checks"
+          "Integrations"
         ]
       }
     },
@@ -13474,8 +13512,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Checks"
+          "Integrations"
         ]
       }
     },
@@ -13497,8 +13540,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Checks"
+          "Integrations"
         ]
       }
     },
@@ -13528,8 +13576,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Checks"
+          "Integrations"
         ]
       }
     },
@@ -13551,8 +13604,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Variables"
+          "Integrations"
         ]
       }
     },
@@ -13574,8 +13632,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Variables"
+          "Integrations"
         ]
       },
       "post": {
@@ -13595,8 +13658,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Variables"
+          "Integrations"
         ]
       }
     },
@@ -13626,8 +13694,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Variables"
+          "Integrations"
         ]
       }
     },
@@ -13642,14 +13715,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13657,8 +13722,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "TaskIntegrations"
+          "Integrations"
         ]
       }
     },
@@ -13673,14 +13743,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13688,8 +13750,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "TaskIntegrations"
+          "Integrations"
         ]
       }
     },
@@ -13704,14 +13771,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13719,8 +13778,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "TaskIntegrations"
+          "Integrations"
         ]
       }
     },
@@ -13732,14 +13796,6 @@
             "name": "taskId",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -13758,8 +13814,13 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "TaskIntegrations"
+          "Integrations"
         ]
       }
     },
@@ -13797,192 +13858,262 @@
     "/v1/integrations/sync/google-workspace/employees": {
       "post": {
         "operationId": "SyncController_syncGoogleWorkspaceEmployees_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/google-workspace/status": {
       "post": {
         "operationId": "SyncController_getGoogleWorkspaceStatus_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/rippling/employees": {
       "post": {
         "operationId": "SyncController_syncRipplingEmployees_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/rippling/status": {
       "post": {
         "operationId": "SyncController_getRipplingStatus_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/ramp/employees": {
       "post": {
         "operationId": "SyncController_syncRampEmployees_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/jumpcloud/employees": {
       "post": {
         "operationId": "SyncController_syncJumpCloudEmployees_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/jumpcloud/status": {
       "post": {
         "operationId": "SyncController_getJumpCloudStatus_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/ramp/status": {
       "post": {
         "operationId": "SyncController_getRampStatus_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       }
     },
     "/v1/integrations/sync/employee-sync-provider": {
       "get": {
         "operationId": "SyncController_getEmployeeSyncProvider_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
         ]
       },
       "post": {
         "operationId": "SyncController_setEmployeeSyncProvider_v1",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "Sync"
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/cloud-security/providers": {
+      "get": {
+        "operationId": "CloudSecurityController_getProviders_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Cloud Security"
+        ]
+      }
+    },
+    "/v1/cloud-security/findings": {
+      "get": {
+        "operationId": "CloudSecurityController_getFindings_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Cloud Security"
         ]
       }
     },
@@ -13997,14 +14128,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "x-organization-id",
-            "required": true,
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -14012,8 +14135,79 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "tags": [
-          "CloudSecurity"
+          "Cloud Security"
+        ]
+      }
+    },
+    "/v1/cloud-security/legacy/connect": {
+      "post": {
+        "operationId": "CloudSecurityController_connectLegacy_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Cloud Security"
+        ]
+      }
+    },
+    "/v1/cloud-security/legacy/{id}": {
+      "delete": {
+        "operationId": "CloudSecurityController_disconnectLegacy_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Cloud Security"
+        ]
+      }
+    },
+    "/v1/cloud-security/legacy/validate-aws": {
+      "post": {
+        "operationId": "CloudSecurityController_validateAwsCredentials_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Cloud Security"
         ]
       }
     },
@@ -15101,17 +15295,7 @@
       "post": {
         "description": "Checks if the member has completed all training videos. If so, sends an email with the training certificate attached.",
         "operationId": "TrainingController_sendTrainingCompletionEmail_v1",
-        "parameters": [
-          {
-            "name": "x-internal-token",
-            "required": true,
-            "in": "header",
-            "description": "Internal API token for service-to-service calls",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -15134,6 +15318,11 @@
             }
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Send training completion email with certificate",
         "tags": [
           "Training"
@@ -15144,17 +15333,7 @@
       "post": {
         "description": "Generates a PDF certificate for a member who has completed all training videos. Returns the PDF as a downloadable file.",
         "operationId": "TrainingController_generateCertificate_v1",
-        "parameters": [
-          {
-            "name": "x-internal-token",
-            "required": true,
-            "in": "header",
-            "description": "Internal API token for service-to-service calls",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -15173,6 +15352,11 @@
             "description": "Training not complete or member not found"
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Generate training completion certificate PDF",
         "tags": [
           "Training"
@@ -16231,7 +16415,7 @@
         "properties": {
           "organizationId": {
             "type": "string",
-            "description": "Organization ID",
+            "description": "Organization ID (deprecated — use auth context)",
             "example": "org_abc123"
           },
           "withResearch": {
@@ -16248,7 +16432,6 @@
           }
         },
         "required": [
-          "organizationId",
           "vendors"
         ]
       },
@@ -16257,7 +16440,7 @@
         "properties": {
           "organizationId": {
             "type": "string",
-            "description": "Organization ID",
+            "description": "Organization ID (deprecated — use auth context)",
             "example": "org_abc123"
           },
           "vendorId": {
@@ -16281,7 +16464,6 @@
           }
         },
         "required": [
-          "organizationId",
           "vendorId",
           "vendorName",
           "vendorWebsite"
@@ -19188,13 +19370,12 @@
           },
           "organizationId": {
             "type": "string",
-            "description": "The organization ID",
+            "description": "Organization ID (deprecated — use auth context)",
             "example": "org_abc123"
           }
         },
         "required": [
-          "memberId",
-          "organizationId"
+          "memberId"
         ]
       },
       "SendTrainingCompletionResponseDto": {

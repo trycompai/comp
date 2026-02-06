@@ -1,7 +1,8 @@
-'use server';
-
+import { auth } from '@/utils/auth';
 import { groq } from '@ai-sdk/groq';
 import { generateObject, NoObjectGeneratedError } from 'ai';
+import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const RelevantTasksSchema = z.object({
@@ -15,26 +16,53 @@ const RelevantTasksSchema = z.object({
   ),
 });
 
-export async function getRelevantTasksForIntegration({
-  integrationName,
-  integrationDescription,
-  taskTemplates,
-  examplePrompts,
-}: {
-  integrationName: string;
-  integrationDescription: string;
-  taskTemplates: Array<{ id: string; name: string; description: string }>;
-  examplePrompts?: string[];
-}): Promise<{ taskTemplateId: string; taskName: string; reason: string; prompt: string }[]> {
-  // Defensive check for undefined or empty taskTemplates
-  if (!taskTemplates || taskTemplates.length === 0) {
-    return [];
+const RequestSchema = z.object({
+  integrationName: z.string(),
+  integrationDescription: z.string(),
+  taskTemplates: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string(),
+    }),
+  ),
+  examplePrompts: z.array(z.string()).optional(),
+});
+
+export async function POST(request: Request) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Format task templates for the prompt (truncate descriptions to reduce token usage)
+  const body = await request.json();
+  const parsed = RequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid request body' },
+      { status: 400 },
+    );
+  }
+
+  const {
+    integrationName,
+    integrationDescription,
+    taskTemplates,
+    examplePrompts,
+  } = parsed.data;
+
+  if (!taskTemplates || taskTemplates.length === 0) {
+    return NextResponse.json({ tasks: [] });
+  }
+
+  const validTaskIds = new Set(taskTemplates.map((t) => t.id));
+
   const tasksList = taskTemplates
     .map((task) => {
-      // Truncate description to max 100 chars to reduce token usage
       const truncatedDesc =
         task.description.length > 100
           ? task.description.substring(0, 100) + '...'
@@ -42,9 +70,6 @@ export async function getRelevantTasksForIntegration({
       return `${task.id}|${task.name}|${truncatedDesc}`;
     })
     .join('\n');
-
-  // Create a set of valid task IDs for validation
-  const validTaskIds = new Set(taskTemplates.map((t) => t.id));
 
   const systemPrompt = `You are a GRC expert matching compliance tasks to integrations.
 
@@ -60,7 +85,7 @@ Return JSON with an array of tasks. Each task must have: taskTemplateId (from th
   const examplePromptsSection =
     examplePrompts && examplePrompts.length > 0
       ? `\n\nExample prompts showing the style for ${integrationName}:\n${examplePrompts
-          .map((prompt, index) => `- ${prompt}`)
+          .map((prompt) => `- ${prompt}`)
           .join('\n')}\n\nUse these as inspiration - generate similar prompts that mention ${integrationName} specifically.`
       : '';
 
@@ -73,23 +98,16 @@ ${tasksList}
 Return ONLY tasks relevant to ${integrationName}. Each prompt MUST mention "${integrationName}" or be clearly specific to it.
 Format: {"relevantTasks": [{"taskTemplateId": "...", "taskName": "...", "reason": "...", "prompt": "..."}, ...]}`;
 
-  const promptSize = (systemPrompt + userPrompt).length;
-  console.log(`[getRelevantTasks] Prompt size: ${promptSize} chars, ${taskTemplates.length} tasks`);
-
   try {
-    const startTime = Date.now();
-    const { object, usage } = await generateObject({
+    const { object } = await generateObject({
       model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
       schema: RelevantTasksSchema,
       system: systemPrompt,
       prompt: userPrompt,
     });
-    const duration = Date.now() - startTime;
 
-    // Handle case where model returns single object instead of array
     let tasks = object.relevantTasks;
     if (!Array.isArray(tasks)) {
-      // If it's a single object, wrap it in an array
       if (tasks && typeof tasks === 'object' && 'taskTemplateId' in tasks) {
         tasks = [tasks];
       } else {
@@ -97,25 +115,12 @@ Format: {"relevantTasks": [{"taskTemplateId": "...", "taskName": "...", "reason"
       }
     }
 
-    // Filter out any tasks with invalid taskTemplateIds (AI hallucination protection)
-    const validTasks = tasks.filter((task) => {
-      if (!validTaskIds.has(task.taskTemplateId)) {
-        console.warn(
-          `[getRelevantTasks] Filtered out invalid taskTemplateId: ${task.taskTemplateId}`,
-        );
-        return false;
-      }
-      return true;
-    });
-
-    console.log(
-      `[getRelevantTasks] Generated ${validTasks.length} valid tasks (${tasks.length - validTasks.length} filtered) in ${duration}ms (tokens: ${usage?.totalTokens || 'unknown'})`,
+    const validTasks = tasks.filter((task) =>
+      validTaskIds.has(task.taskTemplateId),
     );
 
-    return validTasks;
+    return NextResponse.json({ tasks: validTasks });
   } catch (error) {
-    console.error('Error generating relevant tasks:', error);
-    // Try to extract tasks from error if available
     if (NoObjectGeneratedError.isInstance(error)) {
       try {
         const errorText = error.text;
@@ -125,13 +130,12 @@ Format: {"relevantTasks": [{"taskTemplateId": "...", "taskName": "...", "reason"
             const tasks = Array.isArray(parsed.relevantTasks)
               ? parsed.relevantTasks
               : [parsed.relevantTasks];
-            // Filter to only valid task IDs
             const validTasks = tasks.filter(
-              (t: { taskTemplateId?: string }) => t.taskTemplateId && validTaskIds.has(t.taskTemplateId),
+              (t: { taskTemplateId?: string }) =>
+                t.taskTemplateId && validTaskIds.has(t.taskTemplateId),
             );
             if (validTasks.length > 0) {
-              console.log(`[getRelevantTasks] Recovered ${validTasks.length} valid tasks from error response`);
-              return validTasks;
+              return NextResponse.json({ tasks: validTasks });
             }
           }
         }
@@ -139,6 +143,7 @@ Format: {"relevantTasks": [{"taskTemplateId": "...", "taskName": "...", "reason"
         // Ignore parse errors
       }
     }
-    return [];
+    console.error('Error generating relevant tasks:', error);
+    return NextResponse.json({ tasks: [] });
   }
 }

@@ -145,10 +145,10 @@ export const markVideoAsCompleted = authActionClient
 
       // Call the API to send the completion email with certificate
       const apiUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-      const internalToken = env.INTERNAL_API_TOKEN;
+      const serviceToken = env.SERVICE_TOKEN_PORTAL;
 
-      if (!internalToken) {
-        logger('INTERNAL_API_TOKEN not configured, skipping API call', {
+      if (!serviceToken) {
+        logger('SERVICE_TOKEN_PORTAL not configured, skipping API call', {
           memberId: member.id,
         });
         return organizationTrainingVideo;
@@ -159,7 +159,8 @@ export const markVideoAsCompleted = authActionClient
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-internal-token': internalToken,
+            'x-service-token': serviceToken,
+            'x-organization-id': organizationId,
           },
           body: JSON.stringify({
             memberId: member.id,

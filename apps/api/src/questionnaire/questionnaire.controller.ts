@@ -32,6 +32,7 @@ import {
   OrganizationId,
   AuthContext,
 } from '../auth/auth-context.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import { ExportQuestionnaireDto } from './dto/export-questionnaire.dto';
@@ -217,6 +218,7 @@ export class QuestionnaireController {
 
   @Post('export')
   @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -484,6 +486,7 @@ export class QuestionnaireController {
 
   @Post('answers/export')
   @RequirePermission('questionnaire', 'read')
+  @AuditRead()
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',

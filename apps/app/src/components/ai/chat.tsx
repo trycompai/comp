@@ -168,7 +168,6 @@ export default function Chat() {
           method: 'PUT',
           body: JSON.stringify({ messages: storedMessages }),
         },
-        true,
       );
     }, delayMs);
 
@@ -192,7 +191,6 @@ export default function Chat() {
           body: JSON.stringify({ messages: snapshot.messages }),
           keepalive: true,
         },
-        false,
       );
     };
   }, [resolvedOrganizationId, userId]);

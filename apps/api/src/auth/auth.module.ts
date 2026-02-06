@@ -4,7 +4,6 @@ import { auth } from './auth.server';
 import { ApiKeyGuard } from './api-key.guard';
 import { ApiKeyService } from './api-key.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
-import { InternalTokenGuard } from './internal-token.guard';
 import { PermissionGuard } from './permission.guard';
 
 @Module({
@@ -20,14 +19,12 @@ import { PermissionGuard } from './permission.guard';
     ApiKeyService,
     ApiKeyGuard,
     HybridAuthGuard,
-    InternalTokenGuard,
     PermissionGuard,
   ],
   exports: [
     ApiKeyService,
     ApiKeyGuard,
     HybridAuthGuard,
-    InternalTokenGuard,
     PermissionGuard,
     BetterAuthModule,
   ],

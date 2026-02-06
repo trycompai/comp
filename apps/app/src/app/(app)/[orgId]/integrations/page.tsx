@@ -1,6 +1,15 @@
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import { PlatformIntegrations } from './components/PlatformIntegrations';
+
+interface TaskApiResponse {
+  data: Array<{
+    id: string;
+    title: string;
+    description: string;
+    taskTemplateId: string | null;
+  }>;
+}
 
 interface PageProps {
   params: Promise<{ orgId: string }>;
@@ -9,30 +18,20 @@ interface PageProps {
 export default async function IntegrationsPage({ params }: PageProps) {
   const { orgId } = await params;
 
-  // Fetch organization's tasks that have a template (can be automated)
-  const orgTasks = await db.task.findMany({
-    where: {
-      organizationId: orgId,
-      taskTemplateId: { not: null },
-    },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      taskTemplateId: true,
-    },
-    orderBy: {
-      title: 'asc',
-    },
-  });
+  // Fetch organization's tasks via API
+  const tasksResult = await serverApi.get<TaskApiResponse>('/v1/tasks');
+  const allTasks = tasksResult.data?.data ?? [];
 
-  // Map to the format expected by the component
-  const taskTemplates = orgTasks.map((task) => ({
-    id: task.taskTemplateId as string, // Used as taskTemplateId for matching
-    taskId: task.id, // Actual task ID for navigation
-    name: task.title,
-    description: task.description,
-  }));
+  // Filter to tasks that have a template (can be automated)
+  const taskTemplates = allTasks
+    .filter((task) => task.taskTemplateId)
+    .map((task) => ({
+      id: task.taskTemplateId as string,
+      taskId: task.id,
+      name: task.title,
+      description: task.description,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <PageLayout>

@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db';
-import { env } from '@/env.mjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -52,24 +51,23 @@ export async function POST(req: NextRequest) {
     }
 
     const apiUrl =
-      env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
       process.env.API_BASE_URL ||
       'http://localhost:3333';
 
-    const internalToken = env.INTERNAL_API_TOKEN;
-    if (!internalToken) {
-      return NextResponse.json(
-        { error: 'Server configuration error.' },
-        { status: 500 },
-      );
-    }
+    // Forward the user's session cookies to the NestJS API for authentication
+    const cookieHeader = req.headers.get('cookie') || '';
+    const authHeader = req.headers.get('authorization') || '';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (cookieHeader) headers['cookie'] = cookieHeader;
+    if (authHeader) headers['authorization'] = authHeader;
 
     const response = await fetch(`${apiUrl}/v1/training/generate-certificate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-token': internalToken,
-      },
+      headers,
       body: JSON.stringify({ memberId, organizationId }),
     });
 

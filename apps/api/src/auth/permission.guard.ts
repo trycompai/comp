@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { auth } from './auth.server';
+import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';
 
 /**
@@ -74,6 +75,31 @@ export class PermissionGuard implements CanActivate {
       this.logger.warn(
         `[PermissionGuard] API key bypassing permission check for ${requiredPermissions.map((p) => `${p.resource}:${p.actions.join(',')}`).join('; ')}`,
       );
+      return true;
+    }
+
+    // Service tokens: check scoped permissions (NOT a blanket bypass)
+    if (request.isServiceToken) {
+      const service = resolveServiceByName(request.serviceName);
+      if (!service) {
+        throw new ForbiddenException('Unknown service');
+      }
+
+      const hasAllPerms = requiredPermissions.every((perm) =>
+        perm.actions.every((action) =>
+          service.permissions.includes(`${perm.resource}:${action}`),
+        ),
+      );
+
+      if (!hasAllPerms) {
+        this.logger.warn(
+          `[PermissionGuard] Service "${request.serviceName}" denied: missing permission for ${requiredPermissions.map((p) => `${p.resource}:${p.actions.join(',')}`).join('; ')}`,
+        );
+        throw new ForbiddenException(
+          'Service token lacks required permission',
+        );
+      }
+
       return true;
     }
 

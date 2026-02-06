@@ -65,6 +65,8 @@ export type GRCResource =
   | 'finding'
   | 'questionnaire'
   | 'integration'
+  | 'cloud-security'
+  | 'training'
   | 'app'
   | 'portal';
 
