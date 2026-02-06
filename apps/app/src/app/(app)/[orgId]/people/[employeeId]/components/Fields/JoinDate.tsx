@@ -30,9 +30,9 @@ export const JoinDate = ({
               <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
                 <FormLabel
                   htmlFor="date-picker-with-dropdowns-desktop"
-                  className="text-xs font-medium uppercase"
+                  className="text-muted-foreground text-xs font-medium uppercase"
                 >
-                  Date
+                  Join Date
                 </FormLabel>
                 <PopoverTrigger asChild>
                   <Button
