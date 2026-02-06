@@ -1,3 +1,10 @@
+## [1.82.1](https://github.com/trycompai/comp/compare/v1.82.0...v1.82.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* **api:** send task-assignee email to only new assignee, not to all admins ([#2107](https://github.com/trycompai/comp/issues/2107)) ([57593a6](https://github.com/trycompai/comp/commit/57593a6253f4768d02aad4eef8ca91bad1e967f3))
+
 # [1.82.0](https://github.com/trycompai/comp/compare/v1.81.0...v1.82.0) (2026-02-03)
 
 

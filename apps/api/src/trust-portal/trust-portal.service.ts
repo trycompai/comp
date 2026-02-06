@@ -1118,4 +1118,194 @@ export class TrustPortalService {
       );
     }
   }
+
+  async updateOverview(organizationId: string, data: {
+    overviewTitle?: string | null;
+    overviewContent?: string | null;
+    showOverview?: boolean;
+  }) {
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found');
+    }
+
+    return db.trust.update({
+      where: { organizationId },
+      data: {
+        overviewTitle: data.overviewTitle,
+        overviewContent: data.overviewContent,
+        showOverview: data.showOverview,
+      },
+    });
+  }
+
+  async getOverview(organizationId: string) {
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: {
+        overviewTitle: true,
+        overviewContent: true,
+        showOverview: true,
+      },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found');
+    }
+
+    return trust;
+  }
+
+  async createCustomLink(organizationId: string, data: {
+    title: string;
+    description?: string | null;
+    url: string;
+  }) {
+    const maxOrder = await db.trustCustomLink.findFirst({
+      where: { organizationId },
+      orderBy: { order: 'desc' },
+      select: { order: true },
+    });
+
+    const order = (maxOrder?.order ?? -1) + 1;
+
+    return db.trustCustomLink.create({
+      data: {
+        organizationId,
+        title: data.title,
+        description: data.description,
+        url: data.url,
+        order,
+      },
+    });
+  }
+
+  async updateCustomLink(linkId: string, data: {
+    title?: string;
+    description?: string | null;
+    url?: string;
+    isActive?: boolean;
+  }, organizationId: string) {
+    const link = await db.trustCustomLink.findUnique({
+      where: { id: linkId },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Custom link not found');
+    }
+
+    if (link.organizationId !== organizationId) {
+      throw new BadRequestException('You can only modify custom links belonging to your organization');
+    }
+
+    return db.trustCustomLink.update({
+      where: { id: linkId },
+      data,
+    });
+  }
+
+  async deleteCustomLink(linkId: string, organizationId: string) {
+    const link = await db.trustCustomLink.findUnique({
+      where: { id: linkId },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Custom link not found');
+    }
+
+    if (link.organizationId !== organizationId) {
+      throw new BadRequestException('You can only delete custom links belonging to your organization');
+    }
+
+    await db.trustCustomLink.delete({
+      where: { id: linkId },
+    });
+
+    return { success: true };
+  }
+
+  async reorderCustomLinks(organizationId: string, linkIds: string[]) {
+    const links = await db.trustCustomLink.findMany({
+      where: { organizationId },
+    });
+
+    const linkIdSet = new Set(links.map((l) => l.id));
+    const invalidIds = linkIds.filter((id) => !linkIdSet.has(id));
+
+    if (invalidIds.length > 0) {
+      throw new BadRequestException('Some link IDs do not belong to this organization');
+    }
+
+    await db.$transaction(
+      linkIds.map((linkId, index) =>
+        db.trustCustomLink.update({
+          where: { id: linkId },
+          data: { order: index },
+        }),
+      ),
+    );
+
+    return { success: true };
+  }
+
+  async listCustomLinks(organizationId: string) {
+    return db.trustCustomLink.findMany({
+      where: { organizationId, isActive: true },
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async getPublicVendors(organizationId: string) {
+    return db.vendor.findMany({
+      where: {
+        organizationId,
+        isSubProcessor: true,
+        showOnTrustPortal: true,
+      },
+      orderBy: [
+        { trustPortalOrder: 'asc' },
+        { name: 'asc' },
+      ],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        website: true,
+        logoUrl: true,
+        complianceBadges: true,
+      },
+    });
+  }
+
+  async updateVendorTrustSettings(vendorId: string, data: {
+    logoUrl?: string | null;
+    showOnTrustPortal?: boolean;
+    trustPortalOrder?: number | null;
+    complianceBadges?: any;
+  }, organizationId: string) {
+    const vendor = await db.vendor.findUnique({
+      where: { id: vendorId },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
+
+    if (vendor.organizationId !== organizationId) {
+      throw new BadRequestException('You can only modify vendors belonging to your organization');
+    }
+
+    return db.vendor.update({
+      where: { id: vendorId },
+      data: {
+        logoUrl: data.logoUrl,
+        showOnTrustPortal: data.showOnTrustPortal,
+        trustPortalOrder: data.trustPortalOrder,
+        complianceBadges: data.complianceBadges as Prisma.InputJsonValue,
+      },
+    });
+  }
 }

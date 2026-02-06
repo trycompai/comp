@@ -212,7 +212,7 @@ export class TaskNotifierService {
     const { organizationId, taskIds, newAssigneeId, changedByUserId } = params;
 
     try {
-      const [organization, changedByUser, tasks, allMembers, newAssigneeMember] =
+      const [organization, changedByUser, tasks, newAssigneeMember] =
         await Promise.all([
           db.organization.findUnique({
             where: { id: organizationId },
@@ -232,26 +232,6 @@ export class TaskNotifierService {
               title: true,
             },
           }),
-          db.member.findMany({
-            where: {
-              organizationId,
-              deactivated: false,
-              OR: [
-                { user: { isPlatformAdmin: false } },
-                { role: { contains: 'owner' } },
-              ],
-            },
-            select: {
-              id: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          }),
           newAssigneeId
             ? db.member.findUnique({
                 where: { id: newAssigneeId },
@@ -268,10 +248,6 @@ export class TaskNotifierService {
             : Promise.resolve(null),
         ]);
 
-      this.logger.debug(
-        `[notifyBulkAssigneeChange] Found ${allMembers.length} total members for organization ${organizationId}`,
-      );
-
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
         changedByUser?.name?.trim() ||
@@ -283,25 +259,21 @@ export class TaskNotifierService {
           'Unassigned'
         : 'Unassigned';
 
-      // Build recipient list: all members excluding actor.
-      // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
-
-      for (const member of allMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name:
-                member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
-            });
-          }
+      // Notify only the new assignee (the person who was assigned the tasks), excluding the actor
+      const recipients: { id: string; name: string; email: string }[] = [];
+      if (newAssigneeMember?.user?.id && newAssigneeMember.user.email) {
+        const userId = newAssigneeMember.user.id;
+        if (userId !== changedByUserId) {
+          recipients.push({
+            id: userId,
+            name:
+              newAssigneeMember.user.name?.trim() ||
+              newAssigneeMember.user.email?.trim() ||
+              'User',
+            email: newAssigneeMember.user.email,
+          });
         }
       }
-
-      const recipients = Array.from(recipientMap.values());
       const taskCount = tasks.length;
 
       const appUrl =
@@ -600,74 +572,45 @@ export class TaskNotifierService {
     } = params;
 
     try {
-      const [
-        organization,
-        changedByUser,
-        oldAssigneeMember,
-        newAssigneeMember,
-        allMembers,
-      ] = await Promise.all([
-        db.organization.findUnique({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.user.findUnique({
-          where: { id: changedByUserId },
-          select: { name: true, email: true },
-        }),
-        oldAssigneeId
-          ? db.member.findUnique({
-              where: { id: oldAssigneeId },
-              select: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
+      const [organization, changedByUser, oldAssigneeMember, newAssigneeMember] =
+        await Promise.all([
+          db.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          }),
+          db.user.findUnique({
+            where: { id: changedByUserId },
+            select: { name: true, email: true },
+          }),
+          oldAssigneeId
+            ? db.member.findUnique({
+                where: { id: oldAssigneeId },
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
                   },
                 },
-              },
-            })
-          : Promise.resolve(null),
-        newAssigneeId
-          ? db.member.findUnique({
-              where: { id: newAssigneeId },
-              select: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
+              })
+            : Promise.resolve(null),
+          newAssigneeId
+            ? db.member.findUnique({
+                where: { id: newAssigneeId },
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
                   },
                 },
-              },
-            })
-          : Promise.resolve(null),
-        db.member.findMany({
-          where: {
-            organizationId,
-            deactivated: false,
-            OR: [
-              { user: { isPlatformAdmin: false } },
-              { role: { contains: 'owner' } },
-            ],
-          },
-          select: {
-            id: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        }),
-      ]);
-
-      this.logger.debug(
-        `[notifyAssigneeChange] Found ${allMembers.length} total members for organization ${organizationId}`,
-      );
+              })
+            : Promise.resolve(null),
+        ]);
 
       const organizationName = organization?.name ?? 'your organization';
       const changedByName =
@@ -685,25 +628,21 @@ export class TaskNotifierService {
           'Unassigned'
         : 'Unassigned';
 
-      // Build recipient list: all members excluding actor.
-      // The isUserUnsubscribed check handles role-based filtering via the notification matrix.
-      const recipientMap = new Map<string, { id: string; name: string; email: string }>();
-
-      for (const member of allMembers) {
-        if (member.user?.id && member.user.email) {
-          const userId = member.user.id;
-          if (userId !== changedByUserId) {
-            recipientMap.set(userId, {
-              id: userId,
-              name:
-                member.user.name?.trim() || member.user.email?.trim() || 'User',
-              email: member.user.email,
-            });
-          }
+      // Notify only the new assignee (the person who was assigned to the task), excluding the actor
+      const recipients: { id: string; name: string; email: string }[] = [];
+      if (newAssigneeMember?.user?.id && newAssigneeMember.user.email) {
+        const userId = newAssigneeMember.user.id;
+        if (userId !== changedByUserId) {
+          recipients.push({
+            id: userId,
+            name:
+              newAssigneeMember.user.name?.trim() ||
+              newAssigneeMember.user.email?.trim() ||
+              'User',
+            email: newAssigneeMember.user.email,
+          });
         }
       }
-
-      const recipients = Array.from(recipientMap.values());
 
       const appUrl =
         process.env.NEXT_PUBLIC_APP_URL ??

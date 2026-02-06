@@ -602,4 +602,91 @@ export class TrustAccessController {
   async getFaqs(@Param('friendlyUrl') friendlyUrl: string) {
     return this.trustAccessService.getFaqs(friendlyUrl);
   }
+
+  @Get(':friendlyUrl/overview')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get overview section for a trust portal',
+    description:
+      'Retrieve the overview/mission text for a published trust portal.',
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Overview retrieved successfully',
+  })
+  async getPublicOverview(@Param('friendlyUrl') friendlyUrl: string) {
+    return this.trustAccessService.getPublicOverview(friendlyUrl);
+  }
+
+  @Get(':friendlyUrl/custom-links')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get custom links for a trust portal',
+    description:
+      'Retrieve the custom external links configured for the trust portal.',
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Custom links retrieved successfully',
+  })
+  async getPublicCustomLinks(@Param('friendlyUrl') friendlyUrl: string) {
+    return this.trustAccessService.getPublicCustomLinks(friendlyUrl);
+  }
+
+  @Get(':friendlyUrl/favicon')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get favicon URL for a trust portal',
+    description: 'Retrieve the favicon URL for the trust portal.',
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Favicon URL retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        faviconUrl: {
+          type: 'string',
+          nullable: true,
+          description: 'Signed URL to the favicon, or null if not set',
+        },
+      },
+    },
+  })
+  async getPublicFavicon(@Param('friendlyUrl') friendlyUrl: string) {
+    const faviconUrl =
+      await this.trustAccessService.getPublicFavicon(friendlyUrl);
+    return { faviconUrl };
+  }
+
+  @Get(':friendlyUrl/vendors')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get vendors/subprocessors for a trust portal',
+    description:
+      'Retrieve the list of vendors configured to display on the trust portal.',
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Vendors retrieved successfully',
+  })
+  async getPublicVendors(@Param('friendlyUrl') friendlyUrl: string) {
+    return this.trustAccessService.getPublicVendors(friendlyUrl);
+  }
 }
