@@ -41,6 +41,13 @@ export const createOrganization = authActionClientWithoutOrg
       // Create a new organization directly in the database
       const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
 
+      // Resolve framework IDs to display names (e.g. "SOC 2", "ISO 27001")
+      const frameworks = await db.frameworkEditorFramework.findMany({
+        where: { id: { in: parsedInput.frameworkIds } },
+        select: { name: true },
+      });
+      const frameworkNames = frameworks.map((f) => f.name).join(', ');
+
       const newOrg = await db.organization.create({
         data: {
           name: parsedInput.organizationName,
@@ -62,7 +69,7 @@ export const createOrganization = authActionClientWithoutOrg
                 question: step.question,
                 answer:
                   step.key === 'frameworkIds'
-                    ? parsedInput.frameworkIds.join(', ')
+                    ? frameworkNames || parsedInput.frameworkIds.join(', ')
                     : (parsedInput[step.key as keyof typeof parsedInput] as string),
                 tags: ['onboarding'],
               })),
