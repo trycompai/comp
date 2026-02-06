@@ -356,10 +356,16 @@ export const generateAuditorContentTask = schemaTask({
         };
       }
 
-      // Build context from organization data (excluding auditor sections to avoid circular reference)
+      // Build context from organization data, excluding:
+      // 1. Auditor sections (to avoid circular reference)
+      // 2. Framework selection (contains raw IDs like "frk_xxx" and isn't relevant to auditor content)
       const auditorQuestions = new Set(Object.values(SECTION_QUESTIONS));
+      const excludedQuestions = new Set([
+        ...auditorQuestions,
+        'Which compliance frameworks do you need?',
+      ]);
       const contextHubText = questionsAndAnswers
-        .filter((qa) => !auditorQuestions.has(qa.question))
+        .filter((qa) => !excludedQuestions.has(qa.question))
         .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
         .join('\n\n');
 
