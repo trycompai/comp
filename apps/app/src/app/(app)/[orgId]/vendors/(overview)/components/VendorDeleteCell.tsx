@@ -10,16 +10,14 @@ import {
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
+import type { Vendor } from '@/hooks/use-vendors';
 import { Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
-import type { GetVendorsResult } from '../data/queries';
-
-type VendorRow = GetVendorsResult['data'][number];
 
 interface VendorDeleteCellProps {
-  vendor: VendorRow;
+  vendor: Vendor;
 }
 
 export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) => {
@@ -38,7 +36,9 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
       toast.success(`Vendor "${vendor.name}" has been deleted.`);
       setIsRemoveAlertOpen(false);
       mutate(
-        (key) => Array.isArray(key) && key[0] === 'vendors',
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
         undefined,
         { revalidate: true },
       );

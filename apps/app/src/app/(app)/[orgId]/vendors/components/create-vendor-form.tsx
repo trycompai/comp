@@ -1,7 +1,6 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
-import { researchVendorAction } from '@/actions/research-vendor';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -11,7 +10,6 @@ import { Textarea } from '@comp/ui/textarea';
 import { type Member, type User, VendorCategory, VendorStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -35,8 +33,6 @@ export function CreateVendorForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pendingWebsiteRef = useRef<string | null>(null);
-
-  const researchVendor = useAction(researchVendorAction);
 
   const form = useForm<CreateVendorFormValues>({
     resolver: zodResolver(createVendorSchema),
@@ -72,12 +68,18 @@ export function CreateVendorForm({
       const website = pendingWebsiteRef.current;
       pendingWebsiteRef.current = null;
       if (website) {
-        researchVendor.execute({ website });
+        fetch('/api/vendors/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ website }),
+        }).catch(() => {});
       }
 
       // Invalidate vendors cache
       mutate(
-        (key) => Array.isArray(key) && key[0] === 'vendors',
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
         undefined,
         { revalidate: true },
       );

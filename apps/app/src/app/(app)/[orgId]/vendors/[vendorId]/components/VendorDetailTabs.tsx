@@ -126,7 +126,17 @@ export function VendorDetailTabs({
     if (swrVendor) {
       return normalizeVendor(swrVendor);
     }
-    return vendor;
+    // Also normalize the initial vendor prop — API returns date strings, not Date objects
+    return {
+      ...vendor,
+      createdAt: vendor.createdAt instanceof Date ? vendor.createdAt : new Date(vendor.createdAt),
+      updatedAt: vendor.updatedAt instanceof Date ? vendor.updatedAt : new Date(vendor.updatedAt),
+      riskAssessmentUpdatedAt: vendor.riskAssessmentUpdatedAt
+        ? vendor.riskAssessmentUpdatedAt instanceof Date
+          ? vendor.riskAssessmentUpdatedAt
+          : new Date(vendor.riskAssessmentUpdatedAt)
+        : null,
+    } as VendorWithRiskAssessment;
   }, [swrVendor, vendor]);
 
   // Check if there's an in-progress "Verify risk assessment" task (means task is still running)

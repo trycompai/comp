@@ -1,6 +1,5 @@
 'use client';
 
-import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
 import { useApi } from '@/hooks/use-api';
 import { useVendor } from '@/hooks/use-vendors';
 import {
@@ -18,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from '@trycompai/design-system';
 import { Edit, OverflowMenuVertical, Renew } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
@@ -39,14 +37,24 @@ export function VendorActions({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isAssessmentConfirmOpen, setIsAssessmentConfirmOpen] = useState(false);
   const [isAssessmentSubmitting, setIsAssessmentSubmitting] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Get SWR mutate function to refresh vendor data after mutations
   const { mutate: refreshVendor } = useVendor(vendorId);
 
-  const regenerate = useAction(regenerateVendorMitigationAction, {
-    onSuccess: () => {
+  const handleConfirm = async () => {
+    setIsConfirmOpen(false);
+    setIsRegenerating(true);
+    toast.info('Regenerating vendor risk mitigation...');
+    try {
+      const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger mitigation regeneration');
+      }
       toast.success('Regeneration triggered. This may take a moment.');
-      // Trigger SWR revalidation for vendor detail, list views, and comments
       refreshVendor();
       globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
         revalidate: true,
@@ -57,14 +65,11 @@ export function VendorActions({
         undefined,
         { revalidate: true },
       );
-    },
-    onError: () => toast.error('Failed to trigger mitigation regeneration'),
-  });
-
-  const handleConfirm = () => {
-    setIsConfirmOpen(false);
-    toast.info('Regenerating vendor risk mitigation...');
-    regenerate.execute({ vendorId });
+    } catch {
+      toast.error('Failed to trigger mitigation regeneration');
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   const handleAssessmentConfirm = async () => {
@@ -122,11 +127,11 @@ export function VendorActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={regenerate.status === 'executing'}>
+            <AlertDialogCancel disabled={isRegenerating}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm} disabled={regenerate.status === 'executing'}>
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+            <AlertDialogAction onClick={handleConfirm} disabled={isRegenerating}>
+              {isRegenerating ? 'Working\u2026' : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -148,7 +153,7 @@ export function VendorActions({
               onClick={handleAssessmentConfirm}
               disabled={isAssessmentSubmitting}
             >
-              {isAssessmentSubmitting ? 'Working…' : 'Confirm'}
+              {isAssessmentSubmitting ? 'Working\u2026' : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 
 const formSchema = z.object({
@@ -31,6 +32,7 @@ export function InherentRiskForm({
   initialImpact = Impact.insignificant,
 }: InherentRiskFormProps) {
   const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('inherent-risk-sheet');
 
@@ -56,6 +58,13 @@ export function InherentRiskForm({
     }
 
     toast.success('Inherent risk updated successfully');
+    globalMutate(
+      (key) =>
+        (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+        (typeof key === 'string' && key.includes('/v1/vendors')),
+      undefined,
+      { revalidate: true },
+    );
     setOpen(null);
   }
 

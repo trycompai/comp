@@ -9,6 +9,7 @@ import { Input, Stack, Textarea } from '@trycompai/design-system';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { z } from 'zod';
 import { updateVendorSchema } from '../../actions/schema';
 
@@ -22,6 +23,7 @@ export function UpdateTitleAndDescriptionForm({
   onSuccess,
 }: UpdateTitleAndDescriptionFormProps) {
   const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateVendorSchema>>({
@@ -55,6 +57,13 @@ export function UpdateTitleAndDescriptionForm({
     }
 
     toast.success('Vendor updated successfully');
+    globalMutate(
+      (key) =>
+        (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+        (typeof key === 'string' && key.includes('/v1/vendors')),
+      undefined,
+      { revalidate: true },
+    );
     onSuccess?.();
   };
 
