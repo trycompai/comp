@@ -27,8 +27,8 @@ export default async function TasksPage({
   const tasks = await getTasks();
   const members = await getMembersWithMetadata();
   const controls = await getControls();
-  const { hasEvidenceExportAccess, organizationName } =
-    await getEvidenceExportContext(orgId);
+  const frameworkInstances = await getFrameworkInstances();
+  const { hasEvidenceExportAccess, organizationName } = await getEvidenceExportContext(orgId);
 
   // Read tab preference from cookie (server-side, no hydration issues)
   const cookieStore = await cookies();
@@ -40,6 +40,7 @@ export default async function TasksPage({
       tasks={tasks}
       members={members}
       controls={controls}
+      frameworkInstances={frameworkInstances}
       activeTab={activeTab}
       orgId={orgId}
       organizationName={organizationName}
@@ -83,9 +84,7 @@ const getEvidenceExportContext = async (organizationId: string) => {
 
   const roles = parseRolesString(member?.role);
   const hasEvidenceExportAccess =
-    roles.includes(Role.auditor) ||
-    roles.includes(Role.admin) ||
-    roles.includes(Role.owner);
+    roles.includes(Role.auditor) || roles.includes(Role.admin) || roles.includes(Role.owner);
 
   return {
     hasEvidenceExportAccess,
@@ -194,4 +193,37 @@ const getControls = async () => {
   });
 
   return controls;
+};
+
+const getFrameworkInstances = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const orgId = session?.session.activeOrganizationId;
+
+  if (!orgId) {
+    return [];
+  }
+
+  const frameworkInstances = await db.frameworkInstance.findMany({
+    where: {
+      organizationId: orgId,
+    },
+    include: {
+      framework: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      requirementsMapped: {
+        select: {
+          controlId: true,
+        },
+      },
+    },
+  });
+
+  return frameworkInstances;
 };
