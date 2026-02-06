@@ -1,10 +1,12 @@
+'use client';
+
 import { Button } from '@comp/ui/button';
-import { Calendar } from '@comp/ui/calendar';
-import { cn } from '@comp/ui/cn';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
-import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@trycompai/design-system';
+import { format, isValid, parse } from 'date-fns';
+import { ChevronDown } from 'lucide-react';
+import { useState } from 'react';
 import type { Control } from 'react-hook-form';
 import type { EmployeeFormValues } from '../EmployeeDetails';
 
@@ -15,45 +17,68 @@ export const JoinDate = ({
   control: Control<EmployeeFormValues>;
   disabled: boolean;
 }) => {
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+
   return (
     <FormField
       control={control}
       name="createdAt"
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel className="text-muted-foreground text-xs font-medium uppercase">
-            Join Date
-          </FormLabel>
-          <Popover>
-            <PopoverTrigger asChild disabled={disabled}>
-              <FormControl>
-                <Button
-                  variant={'outline'}
-                  className={cn(
-                    'h-10 pl-3 text-left font-normal', // Use h-10 for consistency
-                    !field.value && 'text-muted-foreground',
-                  )}
+      render={({ field }) => {
+        const handleInputBlur = () => {
+          if (!inputValue) return;
+
+          const parsed = parse(inputValue, 'MM/dd/yyyy', new Date());
+          if (isValid(parsed) && parsed <= new Date()) {
+            field.onChange(parsed);
+          }
+          setInputValue('');
+        };
+
+        return (
+          <FormItem className="flex flex-col">
+            <FormControl>
+              <Popover open={open} onOpenChange={setOpen}>
+                <FormLabel
+                  htmlFor="date-picker-with-dropdowns-desktop"
+                  className="text-xs font-medium uppercase"
                 >
-                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={field.value}
-                onSelect={field.onChange}
-                disabled={
-                  (date: Date) => date > new Date() // Explicitly type the date argument
-                }
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
+                  Date
+                </FormLabel>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    id="date-picker-with-dropdowns-desktop"
+                    className="justify-start px-2.5 font-normal"
+                  >
+                    {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                    <ChevronDown className="ml-auto font-light size-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={(date) => date && field.onChange(date)}
+                    captionLayout="dropdown"
+                  />
+                  <div className="flex gap-2 border-t p-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setOpen(false)}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 };
