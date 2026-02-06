@@ -11,6 +11,12 @@ model Vendor {
   website             String?
   isSubProcessor      Boolean        @default(false)
 
+  // Trust Portal display settings
+  logoUrl           String?
+  showOnTrustPortal Boolean @default(false)
+  trustPortalOrder  Int?
+  complianceBadges  Json? // Array of { type: 'soc2' | 'iso27001' | etc, verified: boolean }
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
