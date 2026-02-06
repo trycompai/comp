@@ -58,6 +58,7 @@ export const JoinDate = ({
                       variant="outline"
                       size="sm"
                       className="w-full"
+                      type="button"
                       onClick={() => setOpen(false)}
                     >
                       Done
