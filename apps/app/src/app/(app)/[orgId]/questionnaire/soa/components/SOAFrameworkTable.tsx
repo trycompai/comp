@@ -71,37 +71,9 @@ export function SOAFrameworkTable({
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Log isFullyRemote prop on mount
-  console.log('[SOA Table] Component initialized:', {
-    organizationId,
-    isFullyRemote,
-    questionsCount: (configuration.questions as Array<any>)?.length || 0,
-  });
-
   const columns = configuration.columns as SOAColumn[];
   const questions = configuration.questions as SOAQuestion[];
-  
-  // Log all controls with closure starting with "7." for debugging
-  useMemo(() => {
-    const controls7 = questions.filter((q) => {
-      const closure = q.columnMapping.closure || '';
-      return closure.startsWith('7.');
-    });
-    
-    console.log('[SOA Table] Controls with closure starting with "7.":', {
-      isFullyRemote,
-      controls7Count: controls7.length,
-      controls7Details: controls7.map((q) => ({
-        id: q.id,
-        closure: q.columnMapping.closure,
-        title: q.columnMapping.title,
-        currentIsApplicable: q.columnMapping.isApplicable,
-      })),
-    });
-    
-    return controls7;
-  }, [questions, isFullyRemote]);
-  
+
   // Create answers map from document answers (for justification and to check if answer exists)
   // Memoize to prevent hydration mismatches
   const [answersMap, setAnswersMap] = useState<Map<string, { answer: string | null; answerVersion: number }>>(() => {
