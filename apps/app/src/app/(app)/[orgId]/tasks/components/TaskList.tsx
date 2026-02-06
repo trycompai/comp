@@ -28,6 +28,7 @@ import { Check, Circle, FolderTree, List, Search, XCircle } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
+import type { FrameworkInstanceForTasks } from '../types';
 import { ModernTaskList } from './ModernTaskList';
 import { TasksByCategory } from './TasksByCategory';
 
@@ -38,17 +39,6 @@ const statuses = [
   { id: 'failed', label: 'Failed', icon: XCircle, color: 'text-red-400' },
   { id: 'not_relevant', label: 'Not Relevant', icon: Circle, color: 'text-slate-500' },
 ] as const;
-
-interface FrameworkInstance {
-  id: string;
-  framework: {
-    id: string;
-    name: string;
-  };
-  requirementsMapped: {
-    controlId: string;
-  }[];
-}
 
 export function TaskList({
   tasks: initialTasks,
@@ -73,7 +63,7 @@ export function TaskList({
     }>;
   })[];
   members: (Member & { user: User })[];
-  frameworkInstances: FrameworkInstance[];
+  frameworkInstances: FrameworkInstanceForTasks[];
   activeTab: 'categories' | 'list';
 }) {
   const params = useParams();
@@ -138,7 +128,8 @@ export function TaskList({
       !frameworkFilter ||
       (() => {
         const fwControlIds = frameworkControlIds.get(frameworkFilter);
-        if (!fwControlIds) return true;
+        // Stale/invalid framework ID (e.g. from bookmarked URL): show no tasks, same as valid framework with no controls
+        if (!fwControlIds) return false;
         return task.controls.some((c) => fwControlIds.has(c.id));
       })();
 

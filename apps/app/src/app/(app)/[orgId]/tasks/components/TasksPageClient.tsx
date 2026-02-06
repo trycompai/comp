@@ -17,19 +17,9 @@ import {
 import { Add, ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import type { FrameworkInstanceForTasks } from '../types';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { TaskList } from './TaskList';
-
-interface FrameworkInstance {
-  id: string;
-  framework: {
-    id: string;
-    name: string;
-  };
-  requirementsMapped: {
-    controlId: string;
-  }[];
-}
 
 interface TasksPageClientProps {
   tasks: (Task & {
@@ -50,7 +40,7 @@ interface TasksPageClientProps {
   })[];
   members: (Member & { user: User })[];
   controls: { id: string; name: string }[];
-  frameworkInstances: FrameworkInstance[];
+  frameworkInstances: FrameworkInstanceForTasks[];
   activeTab: 'categories' | 'list';
   orgId: string;
   organizationName: string | null;
