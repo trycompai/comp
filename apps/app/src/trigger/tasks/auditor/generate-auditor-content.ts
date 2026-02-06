@@ -1,5 +1,5 @@
 import { getOrganizationContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
-import { groq } from '@ai-sdk/groq';
+import { openai } from '@ai-sdk/openai';
 import { db } from '@db';
 import { logger, metadata, schemaTask } from '@trigger.dev/sdk';
 import { generateText } from 'ai';
@@ -89,24 +89,54 @@ RULES:
 - No bullet points.
 ${TONE_RULES}`,
 
-  'critical-vendors': `List vendors in this EXACT format, one per line:
+  'critical-vendors': `Using the provided vendor/software list, narrow it down to ONLY the critical vendors from a SOC 2 perspective for the audit report.
 
+A critical vendor is one that:
+- Hosts or processes customer data (cloud infrastructure providers like AWS, GCP, Azure)
+- Provides core identity / authentication services (e.g. Okta, Google Workspace, Microsoft 365 — but ONLY if used as the primary identity provider)
+- Is essential to the company's production system or service delivery
+- Handles sensitive data (e.g. payment processors IF the company processes payments as a core service)
+
+DO NOT INCLUDE vendors that are:
+- Internal productivity / collaboration tools (e.g. Notion, Slack, Teams, Jira, Confluence, Asana)
+- General business tools (e.g. Stripe, HubSpot, Intercom, Zendesk)
+- HR / payroll tools (e.g. Rippling, Gusto, BambooHR)
+- Marketing or analytics tools
+- Version control or CI/CD tools (e.g. GitHub, GitLab) unless they host production infrastructure
+- Security monitoring tools (e.g. Vanta, Drata, CrowdStrike)
+
+Typically a SOC 2 report includes only 3-6 critical vendors. Be very selective.
+
+FORMAT — one vendor per line:
 [Vendor Name] – [Type: SaaS/IaaS/PaaS] – ([Brief description of service])
 
 EXAMPLE:
-Zoom – SaaS – (Video conferencing / collaboration)
 AWS – IaaS / PaaS – (Cloud infrastructure and hosting)
-Microsoft 365 – SaaS – (Office productivity and identity)
+Google Workspace – SaaS – (Primary identity provider and email)
+Datadog – SaaS – (Production monitoring and observability)
 
 RULES:
 - Do NOT include the section title.
 - Each vendor on its own line.
 - Follow the exact format: Name – Type – (Description)
-- Only include vendors explicitly mentioned in sources.
+- Only include vendors from the provided sources — do not add vendors not mentioned.
+- Aim for 3-6 vendors maximum.
 ${TONE_RULES}`,
 
-  'subservice-organizations': `List subservice organizations in this EXACT format:
+  'subservice-organizations': `Identify the subservice organisations from a SOC 2 perspective.
 
+A subservice organisation is an external service provider whose infrastructure or platform the company DIRECTLY RELIES ON to deliver its own services to customers. In SOC 2 terms, these are typically the main cloud infrastructure / hosting providers (IaaS/PaaS) — e.g. AWS, Google Cloud Platform, Microsoft Azure.
+
+DO NOT INCLUDE:
+- SaaS tools the company merely uses internally (e.g. Slack, Notion, Jira, GitHub, Stripe, HubSpot)
+- Communication or collaboration platforms (e.g. Teams, Zoom)
+- HR, payroll, or admin tools
+- Security or monitoring tools
+- Any tool that is NOT the primary infrastructure hosting the company's production system
+
+Typically there is only 1 (sometimes 2) subservice organisations. Be very selective.
+
+FORMAT:
 Subservice organisations: [Name1], [Name2], ...
 
 If only one: "Subservice organisations: [Name]"
@@ -118,7 +148,7 @@ RULES:
 - Do NOT include the section title.
 - Use "Subservice organisations:" prefix.
 - Just list the names, comma-separated if multiple.
-- Only include organizations explicitly mentioned as subservice providers in sources.
+- Look for where the company hosts its applications and data — that is the subservice organisation.
 ${TONE_RULES}`,
 };
 
@@ -145,7 +175,7 @@ async function scrapeWebsite(website: string): Promise<string> {
       urls: [website],
       prompt:
         'Extract all text content from this website, including company information, services, mission, vision, and any other relevant business information. Return the content as plain text or markdown.',
-      limit: 10
+      limit: 10,
     }),
   });
 
@@ -223,7 +253,7 @@ async function generateSectionContent(
   contextHubText: string,
 ): Promise<string> {
   const { text } = await generateText({
-    model: groq('openai/gpt-oss-120b'),
+    model: openai('gpt-5.2'),
     system: `You are an expert at extracting and organizing company information for audit purposes.
 
 CRITICAL RULES:
