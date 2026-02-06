@@ -36,6 +36,14 @@ model Trust {
   pci_dss_status   FrameworkStatus @default(started)
   iso9001_status   FrameworkStatus @default(started)
 
+  // Overview section for public trust portal
+  overviewTitle   String?
+  overviewContent String? // Markdown content with links
+  showOverview    Boolean @default(false)
+
+  // Favicon for trust portal (stored in S3)
+  favicon String?
+
   @@id([status, organizationId])
   @@unique([organizationId])
   @@index([organizationId])
@@ -221,4 +229,23 @@ model TrustDocument {
 
   @@index([organizationId])
   @@index([organizationId, isActive])
+}
+
+model TrustCustomLink {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tcl'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  url         String
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, isActive, order])
 }
