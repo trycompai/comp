@@ -79,6 +79,18 @@ export function TaskList({
     setCurrentTab(activeTab);
   }, [activeTab]);
 
+  // Clear frameworkFilter when it's invalid or frameworks are empty.
+  // Prevents invisible filter (no dropdown when empty) and stale bookmarked URLs.
+  useEffect(() => {
+    if (!frameworkFilter) return;
+    const isValid =
+      frameworkInstances.length > 0 &&
+      frameworkInstances.some((fw) => fw.id === frameworkFilter);
+    if (!isValid) {
+      setFrameworkFilter(null);
+    }
+  }, [frameworkFilter, frameworkInstances, setFrameworkFilter]);
+
   const handleTabChange = async (value: string) => {
     const newTab = value as 'categories' | 'list';
     setCurrentTab(newTab);
@@ -128,8 +140,8 @@ export function TaskList({
       !frameworkFilter ||
       (() => {
         const fwControlIds = frameworkControlIds.get(frameworkFilter);
-        // Stale/invalid framework ID (e.g. from bookmarked URL): show no tasks, same as valid framework with no controls
-        if (!fwControlIds) return false;
+        // Stale/invalid framework ID (e.g. from bookmarked URL): treat as "All frameworks" to match dropdown display
+        if (!fwControlIds) return true;
         return task.controls.some((c) => fwControlIds.has(c.id));
       })();
 

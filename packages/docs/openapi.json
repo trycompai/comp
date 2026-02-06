@@ -7024,7 +7024,6 @@
                     "enum": [
                       "todo",
                       "in_progress",
-                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
@@ -7333,7 +7332,6 @@
                     "enum": [
                       "todo",
                       "in_progress",
-                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
