@@ -99,8 +99,11 @@ export async function DELETE(req: NextRequest) {
 
   const allKeys = recordsToDelete.flatMap((r) => r.attachments ?? []).filter(Boolean);
 
-  const S3_DELETE_MAX_KEYS = 1000;
+  // Delete DB records first to avoid inconsistent state: if we deleted S3 first and
+  // DB delete fails, we'd have broken image links. Orphaned S3 objects are preferable.
+  const result = await db.fleetPolicyResult.deleteMany({ where });
 
+  const S3_DELETE_MAX_KEYS = 1000;
   if (s3Client && APP_AWS_ORG_ASSETS_BUCKET && allKeys.length > 0) {
     try {
       for (let i = 0; i < allKeys.length; i += S3_DELETE_MAX_KEYS) {
@@ -115,23 +118,15 @@ export async function DELETE(req: NextRequest) {
         );
       }
     } catch (error) {
-      console.error('Failed to delete policy attachment objects from S3', {
+      // DB is already clean; orphaned S3 objects are acceptable and can be cleaned up later
+      console.error('Failed to delete policy attachment objects from S3 (orphaned)', {
         error,
         policyId,
         organizationId,
         keyCount: allKeys.length,
       });
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Failed to remove screenshots from storage. Please try again.',
-        },
-        { status: 503 },
-      );
     }
   }
-
-  const result = await db.fleetPolicyResult.deleteMany({ where });
 
   return NextResponse.json({
     success: true,
