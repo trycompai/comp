@@ -20,13 +20,11 @@ import {
   type TrustPortalDocument,
 } from './TrustPortalAdditionalDocumentsSection';
 import { TrustPortalCustomLinks } from './TrustPortalCustomLinks';
-import { TrustPortalDomain } from './TrustPortalDomain';
 import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
 import { TrustPortalOverview } from './TrustPortalOverview';
 import { TrustPortalVendors } from './TrustPortalVendors';
 import { UpdateTrustFavicon } from './UpdateTrustFavicon';
 import { BrandSettings } from './BrandSettings';
-import { AllowedDomainsManager } from './AllowedDomainsManager';
 import type { FaqItem } from '../types/faq';
 import {
   GDPR,
@@ -162,9 +160,6 @@ export function TrustPortalSwitch({
   iso9001,
   iso9001Status,
   faqs,
-  isVercelDomain,
-  vercelVerification,
-  // File props - will be passed from page.tsx later
   iso27001FileName,
   iso42001FileName,
   gdprFileName,
@@ -175,7 +170,6 @@ export function TrustPortalSwitch({
   nen7510FileName,
   iso9001FileName,
   additionalDocuments,
-  allowedDomains,
   overview,
   customLinks,
   vendors,
@@ -207,8 +201,6 @@ export function TrustPortalSwitch({
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
   faqs: any[] | null;
-  isVercelDomain?: boolean;
-  vercelVerification?: string | null;
   iso27001FileName?: string | null;
   iso42001FileName?: string | null;
   gdprFileName?: string | null;
@@ -219,7 +211,6 @@ export function TrustPortalSwitch({
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
   additionalDocuments: TrustPortalDocument[];
-  allowedDomains: string[];
   overview: TrustOverviewData;
   customLinks: TrustCustomLink[];
   vendors: TrustVendor[];
@@ -847,19 +838,9 @@ export function TrustPortalSwitch({
               />
             </div>
           </TabsContent>
+
         </Tabs>
       </form>
-      {form.watch('enabled') && (
-        <div className="pt-6">
-          <TrustPortalDomain
-            domain={domain}
-            domainVerified={domainVerified}
-            orgId={orgId}
-            isVercelDomain={isVercelDomain ?? false}
-            vercelVerification={vercelVerification ?? null}
-          />
-        </div>
-      )}
     </Form>
   );
 }
@@ -868,8 +849,8 @@ export function TrustPortalSwitch({
 function ComplianceFramework({
   title,
   description,
-  isEnabled,
-  status,
+  isEnabled: isEnabledProp,
+  status: statusProp,
   onStatusChange,
   onToggle,
   fileName,
@@ -890,6 +871,8 @@ function ComplianceFramework({
   frameworkKey: string;
   orgId: string;
 }) {
+  const [isEnabled, setIsEnabled] = useState(isEnabledProp);
+  const [status, setStatus] = useState(statusProp);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1018,7 +1001,15 @@ function ComplianceFramework({
           <div className="flex flex-row items-center justify-between gap-6">
             <div className="min-w-0 flex-1">
               {isEnabled ? (
-                <Select defaultValue={status} onValueChange={onStatusChange}>
+                <Select defaultValue={status} value={status} onValueChange={async (value) => {
+                  const prev = status;
+                  setStatus(value);
+                  try {
+                    await onStatusChange(value);
+                  } catch {
+                    setStatus(prev);
+                  }
+                }}>
                   <SelectTrigger className="min-w-[180px] text-base font-medium">
                     <SelectValue placeholder="Select status" className="w-auto" />
                   </SelectTrigger>
@@ -1050,7 +1041,14 @@ function ComplianceFramework({
               )}
             </div>
             <div className="shrink-0 pl-2">
-              <Switch checked={isEnabled} onCheckedChange={onToggle} />
+              <Switch checked={isEnabled} onCheckedChange={async (checked) => {
+                setIsEnabled(checked);
+                try {
+                  await onToggle(checked);
+                } catch {
+                  setIsEnabled(!checked);
+                }
+              }} />
             </div>
           </div>
 

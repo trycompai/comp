@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -74,6 +75,51 @@ class ListComplianceResourcesDto {
 @ApiSecurity('apikey')
 export class TrustPortalController {
   constructor(private readonly trustPortalService: TrustPortalService) {}
+
+  @Get('settings')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'read')
+  @ApiOperation({
+    summary: 'Get complete trust portal settings for admin page',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Trust portal settings retrieved successfully',
+  })
+  async getSettings(@OrganizationId() organizationId: string) {
+    return this.trustPortalService.getSettings(organizationId);
+  }
+
+  @Post('favicon')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('portal', 'update')
+  @ApiOperation({
+    summary: 'Upload a favicon for the trust portal',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Favicon uploaded successfully',
+  })
+  async uploadFavicon(
+    @OrganizationId() organizationId: string,
+    @Body() body: { fileName: string; fileType: string; fileData: string },
+  ) {
+    return this.trustPortalService.uploadFavicon(organizationId, body);
+  }
+
+  @Delete('favicon')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('portal', 'update')
+  @ApiOperation({
+    summary: 'Remove the trust portal favicon',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Favicon removed successfully',
+  })
+  async removeFavicon(@OrganizationId() organizationId: string) {
+    return this.trustPortalService.removeFavicon(organizationId);
+  }
 
   @Get('domain/status')
   @HttpCode(HttpStatus.OK)
@@ -500,12 +546,14 @@ export class TrustPortalController {
   @ApiOperation({
     summary: 'List vendors configured for trust portal',
   })
-  @ApiQuery({ name: 'organizationId', required: true })
-  async listPublicVendors(
-    @Query('organizationId') organizationId: string,
-    @AuthContext() authContext: AuthContextType,
+  @ApiQuery({ name: 'all', required: false, description: 'When true, returns all org vendors with sync' })
+  async listVendors(
+    @OrganizationId() organizationId: string,
+    @Query('all') all?: string,
   ) {
-    this.assertOrganizationAccess(organizationId, authContext);
+    if (all === 'true') {
+      return this.trustPortalService.getAllVendorsWithSync(organizationId);
+    }
     return this.trustPortalService.getPublicVendors(organizationId);
   }
 

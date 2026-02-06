@@ -9660,6 +9660,64 @@
         ]
       }
     },
+    "/v1/trust-portal/settings": {
+      "get": {
+        "operationId": "TrustPortalController_getSettings_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Trust portal settings retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get complete trust portal settings for admin page",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
+    "/v1/trust-portal/favicon": {
+      "post": {
+        "operationId": "TrustPortalController_uploadFavicon_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Favicon uploaded successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload a favicon for the trust portal",
+        "tags": [
+          "Trust Portal"
+        ]
+      },
+      "delete": {
+        "operationId": "TrustPortalController_removeFavicon_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Favicon removed successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Remove the trust portal favicon",
+        "tags": [
+          "Trust Portal"
+        ]
+      }
+    },
     "/v1/trust-portal/domain/status": {
       "get": {
         "description": "Retrieve the verification status and DNS records for a custom domain configured in the Vercel trust portal project",
@@ -10321,12 +10379,13 @@
     },
     "/v1/trust-portal/vendors": {
       "get": {
-        "operationId": "TrustPortalController_listPublicVendors_v1",
+        "operationId": "TrustPortalController_listVendors_v1",
         "parameters": [
           {
-            "name": "organizationId",
-            "required": true,
+            "name": "all",
+            "required": false,
             "in": "query",
+            "description": "When true, returns all org vendors with sync",
             "schema": {
               "type": "string"
             }

@@ -11,15 +11,9 @@ import {
 } from '@trycompai/design-system';
 import { Add, Close, Edit, Link as LinkIcon, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { GripVertical } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  createCustomLinkAction,
-  updateCustomLinkAction,
-  deleteCustomLinkAction,
-  reorderCustomLinksAction,
-} from '../actions/custom-links';
-import { useAction } from 'next-safe-action/hooks';
+import { api } from '@/lib/api-client';
 import {
   DndContext,
   closestCenter,
@@ -137,6 +131,8 @@ export function TrustPortalCustomLinks({
   const [description, setDescription] = useState('');
   const [url, setUrl] = useState('');
 
+  const [isMutating, setIsMutating] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -144,51 +140,79 @@ export function TrustPortalCustomLinks({
     }),
   );
 
-  const createLink = useAction(createCustomLinkAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setLinks((prev) => [...prev, data as CustomLink]);
-        toast.success('Link created successfully');
-        resetForm();
+  const createLinkApi = useCallback(
+    async (data: { title: string; description: string | null; url: string }) => {
+      setIsMutating(true);
+      try {
+        const response = await api.post<CustomLink>('/v1/trust-portal/custom-links', {
+          organizationId: orgId,
+          ...data,
+        });
+        if (response.error) throw new Error(response.error);
+        if (response.data) {
+          setLinks((prev) => [...prev, response.data as CustomLink]);
+          toast.success('Link created successfully');
+          resetForm();
+        }
+      } catch {
+        toast.error('Failed to create link');
+      } finally {
+        setIsMutating(false);
       }
     },
-    onError: () => {
-      toast.error('Failed to create link');
-    },
-  });
+    [orgId],
+  );
 
-  const updateLink = useAction(updateCustomLinkAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setLinks((prev) =>
-          prev.map((l) => (l.id === data.id ? (data as CustomLink) : l)),
+  const updateLinkApi = useCallback(
+    async (linkId: string, data: { title?: string; description?: string | null; url?: string }) => {
+      setIsMutating(true);
+      try {
+        const response = await api.post<CustomLink>(
+          `/v1/trust-portal/custom-links/${linkId}`,
+          data,
         );
-        toast.success('Link updated successfully');
-        resetForm();
+        if (response.error) throw new Error(response.error);
+        if (response.data) {
+          setLinks((prev) =>
+            prev.map((l) => (l.id === response.data!.id ? (response.data as CustomLink) : l)),
+          );
+          toast.success('Link updated successfully');
+          resetForm();
+        }
+      } catch {
+        toast.error('Failed to update link');
+      } finally {
+        setIsMutating(false);
       }
     },
-    onError: () => {
-      toast.error('Failed to update link');
-    },
-  });
+    [],
+  );
 
-  const deleteLink = useAction(deleteCustomLinkAction, {
-    onSuccess: () => {
+  const deleteLinkApi = useCallback(async (linkId: string) => {
+    try {
+      const response = await api.post(`/v1/trust-portal/custom-links/${linkId}/delete`);
+      if (response.error) throw new Error(response.error);
       toast.success('Link deleted successfully');
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to delete link');
-    },
-  });
+    }
+  }, []);
 
-  const reorderLinks = useAction(reorderCustomLinksAction, {
-    onSuccess: () => {
-      toast.success('Links reordered');
+  const reorderLinksApi = useCallback(
+    async (linkIds: string[]) => {
+      try {
+        const response = await api.post('/v1/trust-portal/custom-links/reorder', {
+          organizationId: orgId,
+          linkIds,
+        });
+        if (response.error) throw new Error(response.error);
+        toast.success('Links reordered');
+      } catch {
+        toast.error('Failed to reorder links');
+      }
     },
-    onError: () => {
-      toast.error('Failed to reorder links');
-    },
-  });
+    [orgId],
+  );
 
   const resetForm = () => {
     setTitle('');
@@ -199,9 +223,7 @@ export function TrustPortalCustomLinks({
   };
 
   const handleSave = () => {
-    if (createLink.status === 'executing' || updateLink.status === 'executing') {
-      return;
-    }
+    if (isMutating) return;
 
     if (!title.trim() || !url.trim()) {
       toast.error('Title and URL are required');
@@ -224,15 +246,13 @@ export function TrustPortalCustomLinks({
     setUrl(normalizedUrl);
 
     if (editingLink) {
-      updateLink.execute({
-        linkId: editingLink.id,
+      updateLinkApi(editingLink.id, {
         title,
         description: description || null,
         url: normalizedUrl,
       });
     } else {
-      createLink.execute({
-        orgId,
+      createLinkApi({
         title,
         description: description || null,
         url: normalizedUrl,
@@ -250,7 +270,7 @@ export function TrustPortalCustomLinks({
 
   const handleDelete = (linkId: string) => {
     setLinks((prev) => prev.filter((l) => l.id !== linkId));
-    deleteLink.execute({ linkId });
+    deleteLinkApi(linkId);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -261,11 +281,8 @@ export function TrustPortalCustomLinks({
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
         const newItems = arrayMove(items, oldIndex, newIndex);
-        
-        reorderLinks.execute({
-          orgId,
-          linkIds: newItems.map((item) => item.id),
-        });
+
+        reorderLinksApi(newItems.map((item) => item.id));
 
         return newItems;
       });
@@ -375,7 +392,7 @@ export function TrustPortalCustomLinks({
                   <Button
                     onClick={handleSave}
                     width="full"
-                    loading={createLink.status === 'executing' || updateLink.status === 'executing'}
+                    loading={isMutating}
                   >
                     {editingLink ? 'Update' : 'Create'}
                   </Button>

@@ -1258,6 +1258,345 @@ export class TrustPortalService {
     });
   }
 
+  /**
+   * Get complete trust portal settings for the admin page.
+   * Ensures trust record exists, returns all config fields, favicon URL, org data.
+   */
+  async getSettings(organizationId: string) {
+    // Ensure trust record exists with a friendlyUrl
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true, primaryColor: true, trustPortalFaqs: true },
+    });
+
+    if (!org) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    await this.ensureFriendlyUrl(organizationId, org.name);
+
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found');
+    }
+
+    // Get favicon signed URL if available
+    let faviconUrl: string | null = null;
+    if (trust.favicon && s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
+      try {
+        const command = new GetObjectCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Key: trust.favicon,
+        });
+        faviconUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+      } catch {
+        // If favicon fetch fails, continue without it
+      }
+    }
+
+    // Fetch default overview content from Context Hub if overview is empty
+    let defaultOverviewContent: string | null = null;
+    if (!trust.overviewContent) {
+      const missionContext = await db.context.findFirst({
+        where: { organizationId, question: 'Mission & Vision' },
+        select: { answer: true },
+      });
+      defaultOverviewContent = missionContext?.answer ?? null;
+    }
+
+    return {
+      enabled: trust.status === 'published',
+      friendlyUrl: trust.friendlyUrl,
+      domain: trust.domain ?? '',
+      domainVerified: trust.domainVerified ?? false,
+      isVercelDomain: trust.isVercelDomain ?? false,
+      vercelVerification: trust.vercelVerification ?? null,
+      contactEmail: trust.contactEmail ?? null,
+      allowedDomains: trust.allowedDomains ?? [],
+      // Framework flags
+      soc2type1: trust.soc2type1 ?? false,
+      soc2type2: trust.soc2type2 || trust.soc2 || false,
+      iso27001: trust.iso27001 ?? false,
+      iso42001: trust.iso42001 ?? false,
+      gdpr: trust.gdpr ?? false,
+      hipaa: trust.hipaa ?? false,
+      pcidss: trust.pci_dss ?? false,
+      nen7510: trust.nen7510 ?? false,
+      iso9001: trust.iso9001 ?? false,
+      // Framework statuses
+      soc2type1Status: trust.soc2type1_status ?? 'started',
+      soc2type2Status:
+        !trust.soc2type2 && trust.soc2
+          ? trust.soc2_status ?? 'started'
+          : trust.soc2type2_status ?? 'started',
+      iso27001Status: trust.iso27001_status ?? 'started',
+      iso42001Status: trust.iso42001_status ?? 'started',
+      gdprStatus: trust.gdpr_status ?? 'started',
+      hipaaStatus: trust.hipaa_status ?? 'started',
+      pcidssStatus: trust.pci_dss_status ?? 'started',
+      nen7510Status: trust.nen7510_status ?? 'started',
+      iso9001Status: trust.iso9001_status ?? 'started',
+      // Overview
+      overviewTitle: trust.overviewTitle ?? null,
+      overviewContent: trust.overviewContent ?? defaultOverviewContent,
+      showOverview: trust.showOverview ?? false,
+      // Favicon
+      faviconUrl,
+      // Organization data
+      primaryColor: org.primaryColor ?? null,
+      faqs: org.trustPortalFaqs ?? null,
+    };
+  }
+
+  /**
+   * Upload a favicon for the trust portal.
+   */
+  async uploadFavicon(
+    organizationId: string,
+    dto: { fileName: string; fileType: string; fileData: string },
+  ) {
+    this.ensureS3Availability();
+
+    const { fileName, fileType, fileData } = dto;
+
+    // Validate file type
+    const allowedTypes = [
+      'image/x-icon',
+      'image/vnd.microsoft.icon',
+      'image/png',
+      'image/svg+xml',
+    ];
+    const allowedExtensions = ['.ico', '.png', '.svg'];
+    const fileExtension = fileName
+      .toLowerCase()
+      .substring(fileName.lastIndexOf('.'));
+
+    if (
+      !allowedTypes.includes(fileType) &&
+      !allowedExtensions.includes(fileExtension)
+    ) {
+      throw new BadRequestException(
+        'Favicon must be .ico, .png, or .svg format',
+      );
+    }
+
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(fileData, 'base64');
+
+    // Validate file size (100KB limit)
+    if (fileBuffer.length > 100 * 1024) {
+      throw new BadRequestException('Favicon must be less than 100KB');
+    }
+
+    // Generate S3 key
+    const timestamp = Date.now();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `${organizationId}/trust/favicon/${timestamp}-${sanitizedFileName}`;
+
+    // Upload to S3
+    const putCommand = new PutObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: fileType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    });
+    await s3Client!.send(putCommand);
+
+    // Update trust record
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+    });
+
+    if (!trust) {
+      throw new NotFoundException('Trust portal not found');
+    }
+
+    await db.trust.update({
+      where: { organizationId },
+      data: { favicon: key },
+    });
+
+    // Generate signed URL for immediate display
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: key,
+    });
+    const signedUrl = await getSignedUrl(s3Client!, getCommand, {
+      expiresIn: 3600,
+    });
+
+    return { success: true, faviconUrl: signedUrl };
+  }
+
+  /**
+   * Remove the trust portal favicon.
+   */
+  async removeFavicon(organizationId: string) {
+    await db.trust.update({
+      where: { organizationId },
+      data: { favicon: null },
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * Get all vendors with sync from GlobalVendors risk assessment data.
+   * Extracts compliance badges and generates logo URLs.
+   */
+  async getAllVendorsWithSync(organizationId: string) {
+    const vendors = await db.vendor.findMany({
+      where: { organizationId },
+      orderBy: [{ trustPortalOrder: 'asc' }, { name: 'asc' }],
+    });
+
+    // Sync compliance badges and logos in parallel
+    const syncedVendors = await Promise.all(
+      vendors.map(async (vendor) => {
+        const updates: Prisma.VendorUpdateInput = {};
+        let hasUpdates = false;
+
+        // Look up GlobalVendors record by website
+        if (vendor.website) {
+          const globalVendor = await db.globalVendors.findUnique({
+            where: { website: vendor.website },
+            select: { riskAssessmentData: true },
+          });
+
+          if (globalVendor?.riskAssessmentData) {
+            const extractedBadges = this.extractComplianceBadges(
+              globalVendor.riskAssessmentData,
+            );
+            if (extractedBadges && extractedBadges.length > 0) {
+              const currentBadges = vendor.complianceBadges as
+                | Array<{ type: string }>
+                | null;
+              const currentTypes = new Set(
+                currentBadges?.map((b) => b.type) ?? [],
+              );
+              const extractedTypes = new Set(
+                extractedBadges.map((b) => b.type),
+              );
+
+              const isDifferent =
+                currentTypes.size !== extractedTypes.size ||
+                [...extractedTypes].some((t) => !currentTypes.has(t));
+
+              if (isDifferent) {
+                updates.complianceBadges =
+                  extractedBadges as unknown as Prisma.InputJsonValue;
+                hasUpdates = true;
+              }
+            }
+          }
+        }
+
+        // Generate logo URL if missing
+        if (!vendor.logoUrl && vendor.website) {
+          const logoUrl = this.generateLogoUrl(vendor.website);
+          if (logoUrl) {
+            updates.logoUrl = logoUrl;
+            hasUpdates = true;
+          }
+        }
+
+        if (hasUpdates) {
+          const updated = await db.vendor.update({
+            where: { id: vendor.id },
+            data: updates,
+          });
+          return updated;
+        }
+
+        return vendor;
+      }),
+    );
+
+    return syncedVendors.map((v) => ({
+      id: v.id,
+      name: v.name,
+      description: v.description,
+      website: v.website,
+      showOnTrustPortal: v.showOnTrustPortal,
+      logoUrl: v.logoUrl,
+      complianceBadges: v.complianceBadges,
+    }));
+  }
+
+  private extractComplianceBadges(
+    data: Prisma.JsonValue,
+  ): Array<{ type: string; verified: boolean }> | null {
+    try {
+      const parsed = data as {
+        certifications?: Array<{ type: string; status: string }>;
+      };
+
+      if (!parsed?.certifications || !Array.isArray(parsed.certifications)) {
+        return null;
+      }
+
+      const badges: Array<{ type: string; verified: boolean }> = [];
+      const seenTypes = new Set<string>();
+
+      for (const cert of parsed.certifications) {
+        if (cert.status !== 'verified') continue;
+
+        const badgeType = this.mapCertificationToBadgeType(cert.type);
+        if (badgeType && !seenTypes.has(badgeType)) {
+          seenTypes.add(badgeType);
+          badges.push({ type: badgeType, verified: true });
+        }
+      }
+
+      return badges.length > 0 ? badges : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private mapCertificationToBadgeType(certType: string): string | null {
+    const normalized = certType.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    if (normalized.includes('soc2') || normalized.includes('soc 2'))
+      return 'soc2';
+    if (normalized.includes('iso27001') || normalized.includes('iso 27001'))
+      return 'iso27001';
+    if (normalized.includes('iso42001') || normalized.includes('iso 42001'))
+      return 'iso42001';
+    if (normalized.includes('gdpr')) return 'gdpr';
+    if (normalized.includes('hipaa')) return 'hipaa';
+    if (
+      normalized.includes('pcidss') ||
+      normalized.includes('pci dss') ||
+      normalized.includes('pci_dss')
+    )
+      return 'pci_dss';
+    if (normalized.includes('nen7510') || normalized.includes('nen 7510'))
+      return 'nen7510';
+    if (normalized.includes('iso9001') || normalized.includes('iso 9001'))
+      return 'iso9001';
+
+    return null;
+  }
+
+  private generateLogoUrl(website: string | null): string | null {
+    if (!website) return null;
+    try {
+      const urlWithProtocol = website.startsWith('http')
+        ? website
+        : `https://${website}`;
+      const parsed = new URL(urlWithProtocol);
+      const domain = parsed.hostname.replace(/^www\./, '');
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+    } catch {
+      return null;
+    }
+  }
+
   async getPublicVendors(organizationId: string) {
     return db.vendor.findMany({
       where: {
