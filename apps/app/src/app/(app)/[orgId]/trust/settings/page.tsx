@@ -12,17 +12,13 @@ export default async function TrustSettingsPage({
 }) {
   const { orgId } = await params;
 
-  const [trustPortal, organization] = await Promise.all([
-    getTrustPortal(orgId),
-    getOrganization(orgId),
-  ]);
+  const trustPortal = await getTrustPortal(orgId);
 
   return (
     <PageLayout header={<PageHeader title="Trust Settings" />}>
       <TrustSettingsClient
         orgId={orgId}
         contactEmail={trustPortal?.contactEmail ?? null}
-        primaryColor={organization?.primaryColor ?? null}
         domain={trustPortal?.domain ?? ''}
         domainVerified={trustPortal?.domainVerified ?? false}
         isVercelDomain={trustPortal?.isVercelDomain ?? false}
@@ -58,14 +54,6 @@ const getTrustPortal = async (orgId: string) => {
   };
 };
 
-const getOrganization = async (orgId: string) => {
-  const organization = await db.organization.findUnique({
-    where: { id: orgId },
-    select: { primaryColor: true },
-  });
-
-  return organization;
-};
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
