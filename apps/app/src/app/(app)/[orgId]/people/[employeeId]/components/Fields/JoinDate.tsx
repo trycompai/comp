@@ -4,7 +4,7 @@ import { Button } from '@comp/ui/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@comp/ui/popover';
 import { Calendar } from '@trycompai/design-system';
-import { format, isValid, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import type { Control } from 'react-hook-form';
@@ -18,27 +18,16 @@ export const JoinDate = ({
   disabled: boolean;
 }) => {
   const [open, setOpen] = useState(false);
-  const [inputValue, setInputValue] = useState('');
 
   return (
     <FormField
       control={control}
       name="createdAt"
       render={({ field }) => {
-        const handleInputBlur = () => {
-          if (!inputValue) return;
-
-          const parsed = parse(inputValue, 'MM/dd/yyyy', new Date());
-          if (isValid(parsed) && parsed <= new Date()) {
-            field.onChange(parsed);
-          }
-          setInputValue('');
-        };
-
         return (
           <FormItem className="flex flex-col">
             <FormControl>
-              <Popover open={open} onOpenChange={setOpen}>
+              <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
                 <FormLabel
                   htmlFor="date-picker-with-dropdowns-desktop"
                   className="text-xs font-medium uppercase"
@@ -50,6 +39,7 @@ export const JoinDate = ({
                     variant="outline"
                     id="date-picker-with-dropdowns-desktop"
                     className="justify-start px-2.5 font-normal"
+                    disabled={disabled}
                   >
                     {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                     <ChevronDown className="ml-auto font-light size-4 opacity-50" />
@@ -61,6 +51,7 @@ export const JoinDate = ({
                     selected={field.value}
                     onSelect={(date) => date && field.onChange(date)}
                     captionLayout="dropdown"
+                    disabled={(date) => date > new Date()}
                   />
                   <div className="flex gap-2 border-t p-2">
                     <Button
