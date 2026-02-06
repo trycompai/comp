@@ -2,19 +2,22 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   Param,
   Patch,
   Post,
+  Query,
+  Req,
   Res,
   UseGuards,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -27,7 +30,14 @@ import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import {
+  buildPolicyVisibilityFilter,
+  canViewPolicy,
+} from '../utils/department-visibility';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
@@ -35,8 +45,8 @@ import {
   CreateVersionDto,
   PublishVersionDto,
   SubmitForApprovalDto,
-  UpdateVersionContentDto,
 } from './dto/version.dto';
+import { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 import { PoliciesService } from './policies.service';
 import { GET_ALL_POLICIES_RESPONSES } from './schemas/get-all-policies.responses';
 import { GET_POLICY_BY_ID_RESPONSES } from './schemas/get-policy-by-id.responses';
@@ -65,16 +75,12 @@ import { PolicyResponseDto } from './dto/policy-responses.dto';
 @Controller({ path: 'policies', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class PoliciesController {
   constructor(private readonly policiesService: PoliciesService) {}
 
   @Get()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getAllPolicies)
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[200])
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[401])
@@ -82,7 +88,16 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const policies = await this.policiesService.findAll(organizationId);
+    // Build visibility filter for department-specific policies
+    const visibilityFilter = buildPolicyVisibilityFilter(
+      authContext.memberDepartment,
+      authContext.userRoles,
+    );
+
+    const policies = await this.policiesService.findAll(
+      organizationId,
+      visibilityFilter,
+    );
 
     return {
       data: policies,
@@ -97,6 +112,9 @@ export class PoliciesController {
   }
 
   @Get('download-all')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
+  @AuditRead()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Download all published policies as a single PDF',
@@ -131,10 +149,13 @@ export class PoliciesController {
   }
 
   @Get(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getPolicyById)
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[200])
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[401])
+  @ApiResponse(GET_POLICY_BY_ID_RESPONSES[403])
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[404])
   async getPolicy(
     @Param('id') id: string,
@@ -142,6 +163,19 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const policy = await this.policiesService.findById(id, organizationId);
+
+    // Check visibility access for department-specific policies
+    if (
+      !canViewPolicy(
+        policy,
+        authContext.memberDepartment,
+        authContext.userRoles,
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to view this policy',
+      );
+    }
 
     return {
       ...policy,
@@ -156,6 +190,8 @@ export class PoliciesController {
   }
 
   @Post()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'create')
   @ApiOperation(POLICY_OPERATIONS.createPolicy)
   @ApiBody(POLICY_BODIES.createPolicy)
   @ApiResponse(CREATE_POLICY_RESPONSES[201])
@@ -184,6 +220,8 @@ export class PoliciesController {
   }
 
   @Patch(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
   @ApiOperation(POLICY_OPERATIONS.updatePolicy)
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiBody(POLICY_BODIES.updatePolicy)
@@ -216,6 +254,8 @@ export class PoliciesController {
   }
 
   @Delete(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'delete')
   @ApiOperation(POLICY_OPERATIONS.deletePolicy)
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiResponse(DELETE_POLICY_RESPONSES[200])
@@ -241,6 +281,8 @@ export class PoliciesController {
   }
 
   @Get(':id/versions')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation(VERSION_OPERATIONS.getPolicyVersions)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[200])
@@ -265,7 +307,33 @@ export class PoliciesController {
     };
   }
 
+  @Get(':id/activity')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
+  @ApiOperation({ summary: 'Get recent audit activity for a policy' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPolicyActivity(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.getActivity(id, organizationId);
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
   @Post(':id/versions')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.createPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.createVersion)
@@ -299,6 +367,8 @@ export class PoliciesController {
   }
 
   @Patch(':id/versions/:versionId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
   @ApiOperation(VERSION_OPERATIONS.updateVersionContent)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -310,15 +380,21 @@ export class PoliciesController {
   async updateVersionContent(
     @Param('id') id: string,
     @Param('versionId') versionId: string,
-    @Body() body: UpdateVersionContentDto,
+    @Req() req: Request,
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
+    // Use raw body content to bypass class-transformer mangling nested JSON
+    const rawContent = req.body?.content;
+    if (!Array.isArray(rawContent)) {
+      throw new HttpException('content must be an array', HttpStatus.BAD_REQUEST);
+    }
+
     const data = await this.policiesService.updateVersionContent(
       id,
       versionId,
       organizationId,
-      body,
+      { content: rawContent },
     );
 
     return {
@@ -334,6 +410,8 @@ export class PoliciesController {
   }
 
   @Delete(':id/versions/:versionId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'delete')
   @ApiOperation(VERSION_OPERATIONS.deletePolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -366,6 +444,8 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/publish')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'publish')
   @ApiOperation(VERSION_OPERATIONS.publishPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.publishVersion)
@@ -399,6 +479,8 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/:versionId/activate')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'publish')
   @ApiOperation(VERSION_OPERATIONS.setActivePolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -431,6 +513,8 @@ export class PoliciesController {
   }
 
   @Post(':id/versions/:versionId/submit-for-approval')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'approve')
   @ApiOperation(VERSION_OPERATIONS.submitVersionForApproval)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
@@ -466,6 +550,8 @@ export class PoliciesController {
   }
 
   @Post(':id/ai-chat')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
   @ApiOperation({
     summary: 'Chat with AI about a policy',
     description:
@@ -550,6 +636,220 @@ Keep responses helpful and focused on the policy editing task.`;
     });
 
     return result.pipeTextStreamToResponse(res);
+  }
+
+  @Post(':id/deny-changes')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'approve')
+  @ApiOperation({ summary: 'Deny requested policy changes' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async denyPolicyChanges(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() body: { approverId: string; comment?: string },
+  ) {
+    return this.policiesService.denyChanges(
+      id,
+      organizationId,
+      body.approverId,
+      authContext.userId!,
+      body.comment,
+    );
+  }
+
+  @Post(':id/accept-changes')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'approve')
+  @ApiOperation({ summary: 'Accept requested policy changes and publish' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async acceptPolicyChanges(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() body: { approverId: string; comment?: string },
+  ) {
+    const result = await this.policiesService.acceptChanges(
+      id,
+      organizationId,
+      body.approverId,
+      authContext.userId!,
+      body.comment,
+    );
+
+    return {
+      data: result,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/regenerate')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Regenerate policy content using AI' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async regeneratePolicy(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const taskPayload = await this.policiesService.regeneratePolicy(
+      id,
+      organizationId,
+      authContext.userId,
+    );
+
+    // Import trigger.dev SDK dynamically to trigger the task
+    const { tasks, auth } = await import('@trigger.dev/sdk');
+
+    const handle = await tasks.trigger('update-policy', taskPayload);
+
+    const publicAccessToken = await auth.createPublicToken({
+      scopes: {
+        read: {
+          runs: [handle.id],
+        },
+      },
+    });
+
+    return {
+      data: {
+        success: true,
+        runId: handle.id,
+        publicAccessToken,
+      },
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post('regenerate-all')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Regenerate all policies using AI' })
+  async regenerateAllPolicies(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const { tasks } = await import('@trigger.dev/sdk');
+
+    await tasks.trigger('generate-full-policies', {
+      organizationId,
+    });
+
+    return {
+      data: { success: true },
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get(':id/pdf/signed-url')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
+  @AuditRead()
+  @ApiOperation({ summary: 'Get a signed URL for viewing a policy PDF inline' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPdfSignedUrl(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Query('versionId') versionId?: string,
+  ) {
+    return this.policiesService.getPdfSignedUrl(
+      id,
+      organizationId,
+      versionId,
+    );
+  }
+
+  @Post(':id/pdf/upload')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Upload a PDF for a policy or policy version' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({ type: UploadPolicyPdfDto })
+  async uploadPdf(
+    @Param('id') id: string,
+    @Body() dto: UploadPolicyPdfDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.policiesService.uploadPdf(id, organizationId, dto);
+  }
+
+  @Delete(':id/pdf')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Delete a PDF from a policy or policy version' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async deletePdf(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @Query('versionId') versionId?: string,
+  ) {
+    return this.policiesService.deletePdf(id, organizationId, versionId);
+  }
+
+  @Post(':id/controls')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Map controls to a policy' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['controlIds'],
+      properties: {
+        controlIds: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+    },
+  })
+  async mapControls(
+    @Param('id') policyId: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: { controlIds: string[] },
+  ) {
+    return this.policiesService.mapControls(
+      policyId,
+      organizationId,
+      body.controlIds,
+    );
+  }
+
+  @Delete(':id/controls/:controlId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'update')
+  @ApiOperation({ summary: 'Unmap a control from a policy' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiParam({ name: 'controlId', description: 'Control ID to unmap' })
+  async unmapControl(
+    @Param('id') policyId: string,
+    @Param('controlId') controlId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.policiesService.unmapControl(
+      policyId,
+      organizationId,
+      controlId,
+    );
   }
 
   private convertPolicyContentToText(content: unknown): string {

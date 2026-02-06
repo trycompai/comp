@@ -13,7 +13,7 @@ export const env = createEnv({
     AUTH_MICROSOFT_CLIENT_ID: z.string().optional(),
     AUTH_MICROSOFT_CLIENT_SECRET: z.string().optional(),
     AUTH_SECRET: z.string(),
-    INTERNAL_API_TOKEN: z.string().optional(),
+    SERVICE_TOKEN_PORTAL: z.string().optional(),
   },
 
   client: {
@@ -38,7 +38,7 @@ export const env = createEnv({
     AUTH_MICROSOFT_CLIENT_ID: process.env.AUTH_MICROSOFT_CLIENT_ID,
     AUTH_MICROSOFT_CLIENT_SECRET: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
     AUTH_SECRET: process.env.AUTH_SECRET,
-    INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
+    SERVICE_TOKEN_PORTAL: process.env.SERVICE_TOKEN_PORTAL,
   },
 
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,

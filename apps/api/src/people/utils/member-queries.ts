@@ -29,6 +29,7 @@ export class MemberQueries {
         createdAt: true,
         updatedAt: true,
         lastLogin: true,
+        isPlatformAdmin: true,
       },
     },
   } as const;
@@ -38,9 +39,13 @@ export class MemberQueries {
    */
   static async findAllByOrganization(
     organizationId: string,
+    includeDeactivated = false,
   ): Promise<PeopleResponseDto[]> {
     return db.member.findMany({
-      where: { organizationId, deactivated: false },
+      where: {
+        organizationId,
+        ...(includeDeactivated ? {} : { deactivated: false }),
+      },
       select: this.MEMBER_SELECT,
       orderBy: { createdAt: 'desc' },
     });
@@ -57,6 +62,7 @@ export class MemberQueries {
       where: {
         id: memberId,
         organizationId,
+        deactivated: false,
       },
       select: this.MEMBER_SELECT,
     });
@@ -89,17 +95,66 @@ export class MemberQueries {
     memberId: string,
     updateData: UpdatePeopleDto,
   ): Promise<PeopleResponseDto> {
-    // Prepare update data with defaults for optional fields
-    const updatePayload: any = { ...updateData };
+    // Separate user-level fields from member-level fields
+    const { name, email, createdAt, ...memberFields } = updateData;
+
+    // Prepare member update data
+    const updatePayload: any = { ...memberFields };
+
+    // Convert createdAt string to Date for Prisma
+    if (createdAt !== undefined) {
+      updatePayload.createdAt = new Date(createdAt);
+    }
 
     // Handle fleetDmLabelId: convert undefined to null for database
     if (
-      updateData.fleetDmLabelId === undefined &&
-      'fleetDmLabelId' in updateData
+      memberFields.fleetDmLabelId === undefined &&
+      'fleetDmLabelId' in memberFields
     ) {
       updatePayload.fleetDmLabelId = null;
     }
 
+    const hasUserUpdates =
+      name !== undefined || email !== undefined;
+    const hasMemberUpdates = Object.keys(updatePayload).length > 0;
+
+    // If we need to update both user and member, use a transaction
+    if (hasUserUpdates) {
+      return db.$transaction(async (tx) => {
+        // Get the member to find the associated userId
+        const member = await tx.member.findUniqueOrThrow({
+          where: { id: memberId },
+          select: { userId: true },
+        });
+
+        // Update user fields
+        const userUpdateData: { name?: string; email?: string } = {};
+        if (name !== undefined) userUpdateData.name = name;
+        if (email !== undefined) userUpdateData.email = email;
+
+        await tx.user.update({
+          where: { id: member.userId },
+          data: userUpdateData,
+        });
+
+        // Update member fields if any
+        if (hasMemberUpdates) {
+          return tx.member.update({
+            where: { id: memberId },
+            data: updatePayload,
+            select: this.MEMBER_SELECT,
+          });
+        }
+
+        // Return updated member with fresh user data
+        return tx.member.findUniqueOrThrow({
+          where: { id: memberId },
+          select: this.MEMBER_SELECT,
+        });
+      });
+    }
+
+    // Only member-level updates
     return db.member.update({
       where: { id: memberId },
       data: updatePayload,

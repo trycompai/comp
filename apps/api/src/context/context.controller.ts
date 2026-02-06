@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -19,6 +18,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreateContextDto } from './dto/create-context.dto';
 import { UpdateContextDto } from './dto/update-context.dto';
@@ -34,18 +35,13 @@ import { DELETE_CONTEXT_RESPONSES } from './schemas/delete-context.responses';
 
 @ApiTags('Context')
 @Controller({ path: 'context', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class ContextController {
   constructor(private readonly contextService: ContextService) {}
 
   @Get()
+  @RequirePermission('evidence', 'read')
   @ApiOperation(CONTEXT_OPERATIONS.getAllContext)
   @ApiResponse(GET_ALL_CONTEXT_RESPONSES[200])
   @ApiResponse(GET_ALL_CONTEXT_RESPONSES[401])
@@ -73,6 +69,7 @@ export class ContextController {
   }
 
   @Get(':id')
+  @RequirePermission('evidence', 'read')
   @ApiOperation(CONTEXT_OPERATIONS.getContextById)
   @ApiParam(CONTEXT_PARAMS.contextId)
   @ApiResponse(GET_CONTEXT_BY_ID_RESPONSES[200])
@@ -103,6 +100,7 @@ export class ContextController {
   }
 
   @Post()
+  @RequirePermission('evidence', 'create')
   @ApiOperation(CONTEXT_OPERATIONS.createContext)
   @ApiBody(CONTEXT_BODIES.createContext)
   @ApiResponse(CREATE_CONTEXT_RESPONSES[201])
@@ -134,6 +132,7 @@ export class ContextController {
   }
 
   @Patch(':id')
+  @RequirePermission('evidence', 'update')
   @ApiOperation(CONTEXT_OPERATIONS.updateContext)
   @ApiParam(CONTEXT_PARAMS.contextId)
   @ApiBody(CONTEXT_BODIES.updateContext)
@@ -168,6 +167,7 @@ export class ContextController {
   }
 
   @Delete(':id')
+  @RequirePermission('evidence', 'delete')
   @ApiOperation(CONTEXT_OPERATIONS.deleteContext)
   @ApiParam(CONTEXT_PARAMS.contextId)
   @ApiResponse(DELETE_CONTEXT_RESPONSES[200])

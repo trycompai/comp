@@ -68,9 +68,7 @@ export function VendorDetailTabs({
   const [assessmentRunId, setAssessmentRunId] = useState<string | null>(null);
   const [assessmentToken, setAssessmentToken] = useState<string | null>(null);
 
-  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId, {
-    organizationId: orgId,
-  });
+  const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
 
   const { data: taskItemsResponse, mutate: refreshTaskItems } = useTaskItems(
     vendorId,
@@ -81,7 +79,6 @@ export function VendorDetailTabs({
     'desc',
     {},
     {
-      organizationId: orgId,
       refreshInterval: 0,
       revalidateOnFocus: true,
     },
@@ -129,7 +126,17 @@ export function VendorDetailTabs({
     if (swrVendor) {
       return normalizeVendor(swrVendor);
     }
-    return vendor;
+    // Also normalize the initial vendor prop — API returns date strings, not Date objects
+    return {
+      ...vendor,
+      createdAt: vendor.createdAt instanceof Date ? vendor.createdAt : new Date(vendor.createdAt),
+      updatedAt: vendor.updatedAt instanceof Date ? vendor.updatedAt : new Date(vendor.updatedAt),
+      riskAssessmentUpdatedAt: vendor.riskAssessmentUpdatedAt
+        ? vendor.riskAssessmentUpdatedAt instanceof Date
+          ? vendor.riskAssessmentUpdatedAt
+          : new Date(vendor.riskAssessmentUpdatedAt)
+        : null,
+    } as VendorWithRiskAssessment;
   }, [swrVendor, vendor]);
 
   // Check if there's an in-progress "Verify risk assessment" task (means task is still running)
@@ -178,7 +185,6 @@ export function VendorDetailTabs({
             actions={
               <VendorActions
                 vendorId={vendorId}
-                orgId={orgId}
                 onOpenEditSheet={() => setIsEditSheetOpen(true)}
                 onAssessmentTriggered={handleAssessmentTriggered}
               />

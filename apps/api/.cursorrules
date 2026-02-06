@@ -1,0 +1,80 @@
+# API Development Rules
+
+## Testing Requirements
+
+**Every new feature MUST include tests.** This is mandatory, not optional.
+
+### When to Write Tests
+
+1. **New features**: Every new service, controller, or significant function MUST have accompanying unit tests
+2. **Bug fixes**: Add a test that reproduces the bug before fixing it
+3. **Refactoring**: Ensure existing tests pass; add tests if coverage is lacking
+
+### When to Run Tests
+
+Run tests after significant changes:
+
+```bash
+# Run tests for a specific module
+npx jest src/<module-name> --passWithNoTests
+
+# Run all API tests
+npx turbo run test --filter=@comp/api
+
+# Run tests in watch mode during development
+npx jest --watch
+```
+
+### Test File Conventions
+
+- Place test files next to the source file: `foo.service.ts` → `foo.service.spec.ts`
+- Use Jest and NestJS testing utilities
+- Mock external dependencies (database, external APIs)
+- Test both success and error cases
+
+### Minimum Test Coverage
+
+- **Services**: Test all public methods, including error handling
+- **Controllers**: Test endpoint routing and parameter passing
+- **Guards**: Test authorization logic
+- **Utils**: Test edge cases and error conditions
+
+### Example Test Structure
+
+```typescript
+describe('MyService', () => {
+  describe('myMethod', () => {
+    it('should handle success case', async () => { ... });
+    it('should throw on invalid input', async () => { ... });
+    it('should handle edge case X', async () => { ... });
+  });
+});
+```
+
+## Development Workflow
+
+1. **Before coding**: Read existing code patterns in the module
+2. **During coding**: Follow established patterns, add types
+3. **After significant changes**:
+   - Run type-check: `npx turbo run typecheck --filter=@comp/api`
+   - Run tests: `npx jest src/<module>`
+4. **Before committing**: Ensure all tests pass
+
+## Code Style
+
+### Authentication & Authorization
+
+- Use `@UseGuards(HybridAuthGuard, PermissionGuard)` for protected endpoints
+- Use `@RequirePermission('resource', 'action')` decorator for RBAC
+- Access auth context via `@AuthContext()` decorator
+- Access organization ID via `@OrganizationId()` decorator
+
+### Error Handling
+
+- Use NestJS exceptions: `BadRequestException`, `NotFoundException`, `ForbiddenException`
+- Provide clear, actionable error messages
+
+### Database Access
+
+- Always scope queries by `organizationId` for multi-tenancy
+- Use transactions for operations that modify multiple records

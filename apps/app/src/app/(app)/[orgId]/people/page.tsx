@@ -1,7 +1,5 @@
-import { auth } from '@/utils/auth';
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { TeamMembers } from './all/components/TeamMembers';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
@@ -11,36 +9,35 @@ import { EmployeeDevicesList } from './devices/components/EmployeeDevicesList';
 import { getEmployeeDevices } from './devices/data';
 import type { Host } from './devices/types';
 
+interface PeopleMember {
+  userId: string;
+  role: string;
+}
+
+interface PeopleApiResponse {
+  data: PeopleMember[];
+  count: number;
+  authenticatedUser?: { id: string; email: string };
+}
+
 export default async function PeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const membersResponse = await serverApi.get<PeopleApiResponse>('/v1/people');
 
-  if (!session?.session.activeOrganizationId) {
+  if (!membersResponse.data) {
     return redirect('/');
   }
 
-  const currentUserMember = await db.member.findFirst({
-    where: {
-      organizationId: orgId,
-      userId: session.user.id,
-    },
-  });
+  const allMembers = membersResponse.data.data;
+  const currentUserId = membersResponse.data.authenticatedUser?.id;
+  const currentUserMember = allMembers.find((m) => m.userId === currentUserId);
+
   const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
   const canManageMembers = currentUserRoles.some((role) => ['owner', 'admin'].includes(role));
   const isAuditor = currentUserRoles.includes('auditor');
   const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
-
-  // Check if there are employees to show the Employee Tasks tab
-  const allMembers = await db.member.findMany({
-    where: {
-      organizationId: orgId,
-      deactivated: false,
-    },
-  });
 
   const employees = allMembers.filter((member) => {
     const roles = member.role.includes(',') ? member.role.split(',') : [member.role];

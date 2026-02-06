@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
@@ -8,16 +9,23 @@ import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
 import type { Member, Task, User } from '@db';
+import { TaskStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import type { z } from 'zod';
-import { updateVendorTaskSchema } from '../../../../actions/schema';
-import { updateVendorTaskAction } from '../../../../actions/task/update-task-action';
+import { z } from 'zod';
+
+const updateTaskSheetSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1, { message: 'Title is required' }),
+  description: z.string().min(1, { message: 'Description is required' }),
+  status: z.nativeEnum(TaskStatus, { error: 'Task status is required' }),
+  assigneeId: z.string().nullable(),
+});
 
 interface UpdateTaskSheetProps {
   task: Task & { assignee: { user: User } | null };
@@ -27,19 +35,12 @@ interface UpdateTaskSheetProps {
 export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
   const [_, setTaskOverviewSheet] = useQueryState('task-overview-sheet');
   const params = useParams<{ taskId: string }>();
+  const api = useApi();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateTask = useAction(updateVendorTaskAction, {
-    onSuccess: () => {
-      toast.success('Task updated successfully');
-      setTaskOverviewSheet(null);
-    },
-    onError: () => {
-      toast.error('Failed to update task');
-    },
-  });
-
-  const form = useForm<z.infer<typeof updateVendorTaskSchema>>({
-    resolver: zodResolver(updateVendorTaskSchema),
+  const form = useForm<z.infer<typeof updateTaskSheetSchema>>({
+    resolver: zodResolver(updateTaskSheetSchema),
     defaultValues: {
       id: params.taskId,
       title: task.title,
@@ -49,8 +50,24 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updateVendorTaskSchema>) => {
-    updateTask.execute(data);
+  const onSubmit = async (data: z.infer<typeof updateTaskSheetSchema>) => {
+    setIsSubmitting(true);
+    try {
+      const response = await api.patch(`/v1/tasks/${data.id}`, {
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        assigneeId: data.assigneeId,
+      });
+      if (response.error) throw new Error(response.error);
+      toast.success('Task updated successfully');
+      setTaskOverviewSheet(null);
+      router.refresh();
+    } catch {
+      toast.error('Failed to update task');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Function to render status with correct color
@@ -171,7 +188,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
                               assigneeId={field.value}
                               assignees={assignees}
                               onAssigneeChange={field.onChange}
-                              disabled={updateTask.status === 'executing'}
+                              disabled={isSubmitting}
                               withTitle={false}
                             />
                           </FormControl>
@@ -186,7 +203,7 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button type="submit" variant="default" disabled={updateTask.status === 'executing'}>
+            <Button type="submit" variant="default" disabled={isSubmitting}>
               <div className="flex items-center justify-center">
                 Update
                 <ArrowRightIcon className="ml-2 h-4 w-4" />

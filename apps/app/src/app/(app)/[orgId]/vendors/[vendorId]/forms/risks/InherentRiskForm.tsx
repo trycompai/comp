@@ -1,14 +1,16 @@
 'use client';
 
-import { updateVendorInherentRisk } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/update-vendor-inherent-risk';
+import { useApi } from '@/hooks/use-api';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@comp/ui/button';
 import { Select, SelectItem, Stack } from '@trycompai/design-system';
+import { useState } from 'react';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 
 const formSchema = z.object({
@@ -29,6 +31,9 @@ export function InherentRiskForm({
   initialProbability = Likelihood.very_unlikely,
   initialImpact = Impact.insignificant,
 }: InherentRiskFormProps) {
+  const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('inherent-risk-sheet');
 
   const form = useForm<FormValues>({
@@ -40,19 +45,27 @@ export function InherentRiskForm({
   });
 
   async function onSubmit(values: FormValues) {
-    try {
-      await updateVendorInherentRisk({
-        vendorId,
-        inherentProbability: values.inherentProbability,
-        inherentImpact: values.inherentImpact,
-      });
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/vendors/${vendorId}`, {
+      inherentProbability: values.inherentProbability,
+      inherentImpact: values.inherentImpact,
+    });
+    setIsSubmitting(false);
 
-      toast.success('Inherent risk updated successfully');
-      setOpen(null);
-    } catch (error) {
-      console.error('Error submitting form:', error);
+    if (response.error) {
       toast.error('An unexpected error occurred');
+      return;
     }
+
+    toast.success('Inherent risk updated successfully');
+    globalMutate(
+      (key) =>
+        (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+        (typeof key === 'string' && key.includes('/v1/vendors')),
+      undefined,
+      { revalidate: true },
+    );
+    setOpen(null);
   }
 
   return (

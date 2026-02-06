@@ -6,6 +6,7 @@ import { cn } from '@comp/ui/cn';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import type { Role } from '@db'; // Assuming Role is from prisma
 import { ChevronsUpDown, Lock, X } from 'lucide-react';
+import type { CustomRoleOption } from './MultiRoleCombobox';
 
 interface MultiRoleComboboxTriggerProps {
   selectedRoles: Role[];
@@ -16,6 +17,7 @@ interface MultiRoleComboboxTriggerProps {
   getRoleLabel: (role: Role) => string;
   onClick?: () => void;
   ariaExpanded?: boolean;
+  customRoles?: CustomRoleOption[]; // Custom roles from the organization
 }
 
 export function MultiRoleComboboxTrigger({
@@ -27,7 +29,13 @@ export function MultiRoleComboboxTrigger({
   getRoleLabel,
   onClick,
   ariaExpanded,
+  customRoles = [],
 }: MultiRoleComboboxTriggerProps) {
+  // Check if a role is a custom role (not a built-in one)
+  const isCustomRole = (role: Role): boolean => {
+    const builtInRoles = ['owner', 'admin', 'auditor', 'employee', 'contractor'];
+    return !builtInRoles.includes(role);
+  };
   return (
     <Button
       type="button"
@@ -45,8 +53,12 @@ export function MultiRoleComboboxTrigger({
         {selectedRoles.map((role) => (
           <Badge
             key={role}
-            variant="secondary"
-            className={cn('text-xs', lockedRoles.includes(role) && 'border-primary border')}
+            variant={isCustomRole(role) ? 'outline' : 'secondary'}
+            className={cn(
+              'text-xs',
+              lockedRoles.includes(role) && 'border-primary border',
+              isCustomRole(role) && 'border-blue-300 bg-blue-50 text-blue-700',
+            )}
             onClick={(e) => {
               e.stopPropagation(); // Prevent popover from closing if it's open
               handleSelect(role);

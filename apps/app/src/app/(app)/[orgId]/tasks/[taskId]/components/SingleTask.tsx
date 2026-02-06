@@ -1,7 +1,6 @@
 'use client';
 
-import { regenerateTaskAction } from '@/actions/tasks/regenerate-task-action';
-import { apiClient } from '@/lib/api-client';
+import { useApi } from '@/hooks/use-api';
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import { useActiveMember } from '@/utils/auth-client';
 import {
@@ -31,7 +30,6 @@ import {
   type User,
 } from '@db';
 import { ChevronRight, Download, RefreshCw, Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -63,6 +61,7 @@ interface SingleTaskProps {
 
 export function SingleTask({
   initialTask,
+  initialMembers,
   initialAutomations,
   isWebAutomationsEnabled,
   isPlatformAdmin,
@@ -91,20 +90,29 @@ export function SingleTask({
   const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
   // isPlatformAdmin is passed from the server component (page.tsx)
 
+  const api = useApi();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(
     null,
   );
 
-  const regenerate = useAction(regenerateTaskAction, {
-    onSuccess: () => {
+  const handleRegenerate = async () => {
+    if (!task) return;
+    setIsRegenerating(true);
+    setRegenerateConfirmOpen(false);
+    try {
+      const response = await api.post(`/v1/tasks/${task.id}/regenerate`);
+      if (response.error) throw new Error(response.error);
+      await mutateTask();
       toast.success('Task updated with latest template content.');
-    },
-    onError: (error) => {
-      toast.error(error.error?.serverError || 'Failed to regenerate task');
-    },
-  });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to regenerate task');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleUpdateTask = async (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
@@ -142,7 +150,7 @@ export function SingleTask({
 
     if (Object.keys(updatePayload).length > 0) {
       try {
-        const response = await apiClient.patch<Task>(`/v1/tasks/${task.id}`, updatePayload, orgId);
+        const response = await api.patch<Task>(`/v1/tasks/${task.id}`, updatePayload);
 
         if (response.error) {
           throw new Error(response.error);
@@ -219,7 +227,6 @@ export function SingleTask({
                       await downloadTaskEvidenceZip({
                         taskId: task.id,
                         taskTitle: task.title,
-                        organizationId: orgId,
                         includeJson: true,
                       });
                       toast.success('Task evidence downloaded');
@@ -302,7 +309,7 @@ export function SingleTask({
         {/* Right Column - Properties */}
         <div className="lg:col-span-1">
           <div className="pl-6 border-l border-border space-y-6">
-            <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} />
+            <TaskPropertiesSidebar handleUpdateTask={handleUpdateTask} initialMembers={initialMembers} />
 
             {/* Finding History Panel */}
             {selectedFindingIdForHistory && (
@@ -337,13 +344,10 @@ export function SingleTask({
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                regenerate.execute({ taskId: task.id });
-                setRegenerateConfirmOpen(false);
-              }}
-              disabled={regenerate.status === 'executing'}
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
             >
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+              {isRegenerating ? 'Working…' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

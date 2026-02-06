@@ -1,7 +1,7 @@
 'use client';
 
-import { updateOrganizationNameAction } from '@/actions/organization/update-organization-name-action';
 import { organizationNameSchema } from '@/actions/schema';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -15,20 +15,14 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/fo
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
 export function UpdateOrganizationName({ organizationName }: { organizationName: string }) {
-  const updateOrganizationName = useAction(updateOrganizationNameAction, {
-    onSuccess: () => {
-      toast.success('Organization name updated');
-    },
-    onError: () => {
-      toast.error('Error updating organization name');
-    },
-  });
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationNameSchema>>({
     resolver: zodResolver(organizationNameSchema),
@@ -37,8 +31,17 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
     },
   });
 
-  const onSubmit = (data: z.infer<typeof organizationNameSchema>) => {
-    updateOrganizationName.execute(data);
+  const onSubmit = async (data: z.infer<typeof organizationNameSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.patch('/v1/organization', { name: data.name });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Error updating organization name');
+      return;
+    }
+
+    toast.success('Organization name updated');
   };
 
   return (
@@ -82,8 +85,8 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
             <div className="text-muted-foreground text-xs">
               {'Please use 32 characters at maximum.'}
             </div>
-            <Button type="submit" disabled={updateOrganizationName.status === 'executing'}>
-              {updateOrganizationName.status === 'executing' ? (
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
               {'Save'}

@@ -11,12 +11,18 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import {
   DescribeHubCommand,
   SecurityHubClient,
 } from '@aws-sdk/client-securityhub';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
@@ -34,12 +40,7 @@ import {
 
 interface CreateConnectionDto {
   providerSlug: string;
-  organizationId: string;
   credentials?: Record<string, string | string[]>;
-}
-
-interface ListConnectionsQuery {
-  organizationId: string;
 }
 
 const hasCredentialValue = (value?: string | string[]): boolean => {
@@ -50,6 +51,9 @@ const hasCredentialValue = (value?: string | string[]): boolean => {
 };
 
 @Controller({ path: 'integrations/connections', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class ConnectionsController {
   private readonly logger = new Logger(ConnectionsController.name);
 
@@ -65,6 +69,7 @@ export class ConnectionsController {
    * List all available integration providers
    */
   @Get('providers')
+  @RequirePermission('integration', 'read')
   async listProviders(@Query('activeOnly') activeOnly?: string) {
     const manifests =
       activeOnly === 'true' ? getActiveManifests() : getAllManifests();
@@ -154,6 +159,7 @@ export class ConnectionsController {
    * Get a specific provider's details
    */
   @Get('providers/:slug')
+  @RequirePermission('integration', 'read')
   async getProvider(@Param('slug') slug: string) {
     const manifest = getManifest(slug);
     if (!manifest) {
@@ -228,16 +234,8 @@ export class ConnectionsController {
    * List connections for an organization
    */
   @Get()
-  async listConnections(@Query() query: ListConnectionsQuery) {
-    const { organizationId } = query;
-
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  @RequirePermission('integration', 'read')
+  async listConnections(@OrganizationId() organizationId: string) {
     const connections =
       await this.connectionService.getOrganizationConnections(organizationId);
 
@@ -261,6 +259,7 @@ export class ConnectionsController {
    * Get a specific connection
    */
   @Get(':id')
+  @RequirePermission('integration', 'read')
   async getConnection(@Param('id') id: string) {
     const connection = await this.connectionService.getConnection(id);
     const providerSlug = (connection as { provider?: { slug: string } })
@@ -311,8 +310,12 @@ export class ConnectionsController {
    * Create a new connection with API key credentials
    */
   @Post()
-  async createConnection(@Body() body: CreateConnectionDto) {
-    const { providerSlug, organizationId, credentials } = body;
+  @RequirePermission('integration', 'create')
+  async createConnection(
+    @OrganizationId() organizationId: string,
+    @Body() body: CreateConnectionDto,
+  ) {
+    const { providerSlug, credentials } = body;
 
     // Validate provider
     const manifest = getManifest(providerSlug);
@@ -643,6 +646,7 @@ export class ConnectionsController {
    * Test a connection's credentials
    */
   @Post(':id/test')
+  @RequirePermission('integration', 'update')
   async testConnection(@Param('id') id: string) {
     const connection = await this.connectionService.getConnection(id);
     const providerSlug = (connection as any).provider?.slug;
@@ -732,6 +736,7 @@ export class ConnectionsController {
    * Pause a connection
    */
   @Post(':id/pause')
+  @RequirePermission('integration', 'update')
   async pauseConnection(@Param('id') id: string) {
     const connection = await this.connectionService.pauseConnection(id);
     return { id: connection.id, status: connection.status };
@@ -741,6 +746,7 @@ export class ConnectionsController {
    * Resume a paused connection
    */
   @Post(':id/resume')
+  @RequirePermission('integration', 'update')
   async resumeConnection(@Param('id') id: string) {
     const connection = await this.connectionService.activateConnection(id);
     return { id: connection.id, status: connection.status };
@@ -750,6 +756,7 @@ export class ConnectionsController {
    * Disconnect (soft delete) a connection
    */
   @Post(':id/disconnect')
+  @RequirePermission('integration', 'delete')
   async disconnectConnection(@Param('id') id: string) {
     const connection = await this.connectionService.disconnectConnection(id);
     return { id: connection.id, status: connection.status };
@@ -759,6 +766,7 @@ export class ConnectionsController {
    * Delete a connection permanently
    */
   @Delete(':id')
+  @RequirePermission('integration', 'delete')
   async deleteConnection(@Param('id') id: string) {
     await this.connectionService.deleteConnection(id);
     return { success: true };
@@ -768,18 +776,12 @@ export class ConnectionsController {
    * Update connection metadata (connectionName, regions, etc.)
    */
   @Patch(':id')
+  @RequirePermission('integration', 'update')
   async updateConnection(
     @Param('id') id: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
     @Body() body: { metadata?: Record<string, unknown> },
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId query parameter is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const connection = await this.connectionService.getConnection(id);
     if (connection.organizationId !== organizationId) {
       throw new HttpException(
@@ -810,17 +812,11 @@ export class ConnectionsController {
    * Used by scheduled jobs to ensure tokens are valid before running checks.
    */
   @Post(':id/ensure-valid-credentials')
+  @RequirePermission('integration', 'update')
   async ensureValidCredentials(
     @Param('id') id: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const connection = await this.connectionService.getConnection(id);
 
     if (connection.organizationId !== organizationId) {
@@ -979,18 +975,12 @@ export class ConnectionsController {
    * Update credentials for a custom auth connection
    */
   @Put(':id/credentials')
+  @RequirePermission('integration', 'update')
   async updateCredentials(
     @Param('id') id: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
     @Body() body: { credentials: Record<string, string | string[]> },
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const connection = await this.connectionService.getConnection(id);
 
     if (connection.organizationId !== organizationId) {

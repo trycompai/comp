@@ -1,7 +1,6 @@
 'use client';
 
-import { createApiKeyAction } from '@/actions/organization/create-api-key-action';
-import { revokeApiKeyAction } from '@/actions/organization/revoke-api-key-action';
+import { useApi } from '@/hooks/use-api';
 import type { ApiKey } from '@/hooks/use-api-keys';
 import { useMediaQuery } from '@comp/ui/hooks';
 import {
@@ -49,22 +48,30 @@ import {
 } from '@trycompai/design-system';
 import { Add, Close, Copy, OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
 import { Check } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 function ActionsCell({ apiKey }: { apiKey: ApiKey }) {
+  const api = useApi();
+  const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
 
-  const { execute, status } = useAction(revokeApiKeyAction, {
-    onSuccess: () => {
+  const handleRevoke = async () => {
+    setIsRevoking(true);
+    try {
+      const response = await api.post('/v1/organization/api-keys/revoke', { id: apiKey.id });
+      if (response.error) throw new Error(response.error);
       setDeleteOpen(false);
       toast.success('API key revoked');
-    },
-    onError: () => {
+      router.refresh();
+    } catch {
       toast.error('Failed to revoke API key');
-    },
-  });
+    } finally {
+      setIsRevoking(false);
+    }
+  };
 
   return (
     <>
@@ -92,10 +99,10 @@ function ActionsCell({ apiKey }: { apiKey: ApiKey }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => execute({ id: apiKey.id })}
-              disabled={status === 'executing'}
+              onClick={handleRevoke}
+              disabled={isRevoking}
             >
-              {status === 'executing' ? 'Revoking...' : 'Revoke'}
+              {isRevoking ? 'Revoking...' : 'Revoke'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -111,29 +118,36 @@ function CreateApiKeySheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const api = useApi();
+  const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [name, setName] = useState('');
   const [expiration, setExpiration] = useState<'never' | '30days' | '90days' | '1year'>('never');
   const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const { execute: createApiKey, status } = useAction(createApiKeyAction, {
-    onSuccess: (data) => {
-      if (data.data?.data?.key) {
-        setCreatedApiKey(data.data.data.key);
+  const handleSubmit = async () => {
+    setIsCreating(true);
+    try {
+      const response = await api.post<{ key: string }>('/v1/organization/api-keys', {
+        name,
+        expiresAt: expiration,
+      });
+      if (response.error) throw new Error(response.error);
+      if (response.data?.key) {
+        setCreatedApiKey(response.data.key);
       }
-    },
-    onError: () => {
+      router.refresh();
+    } catch {
       toast.error('Failed to create API key');
-    },
-  });
-
-  const handleSubmit = () => {
-    createApiKey({ name, expiresAt: expiration });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleClose = () => {
-    if (status !== 'executing') {
+    if (!isCreating) {
       setName('');
       setExpiration('never');
       setCreatedApiKey(null);
@@ -193,10 +207,10 @@ function CreateApiKeySheet({
       </Stack>
       <Button
         onClick={handleSubmit}
-        disabled={status === 'executing' || !name.trim()}
+        disabled={isCreating || !name.trim()}
         width="full"
       >
-        {status === 'executing' ? 'Creating...' : 'Create'}
+        {isCreating ? 'Creating...' : 'Create'}
       </Button>
     </Stack>
   );

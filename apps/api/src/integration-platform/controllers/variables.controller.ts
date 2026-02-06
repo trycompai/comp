@@ -4,11 +4,15 @@ import {
   Post,
   Param,
   Body,
-  Query,
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
 import { getManifest, type CheckVariable } from '@comp/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
@@ -37,6 +41,9 @@ interface VariableDefinition {
 }
 
 @Controller({ path: 'integrations/variables', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class VariablesController {
   private readonly logger = new Logger(VariablesController.name);
 
@@ -51,6 +58,7 @@ export class VariablesController {
    * Get all variables required for a provider's checks
    */
   @Get('providers/:providerSlug')
+  @RequirePermission('integration', 'read')
   async getProviderVariables(
     @Param('providerSlug') providerSlug: string,
   ): Promise<{ variables: VariableDefinition[] }> {
@@ -100,6 +108,7 @@ export class VariablesController {
    * Get variables for a specific connection (with current values)
    */
   @Get('connections/:connectionId')
+  @RequirePermission('integration', 'read')
   async getConnectionVariables(@Param('connectionId') connectionId: string) {
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
@@ -166,6 +175,7 @@ export class VariablesController {
    * Fetch dynamic options for a variable (requires active connection)
    */
   @Get('connections/:connectionId/options/:variableId')
+  @RequirePermission('integration', 'read')
   async fetchVariableOptions(
     @Param('connectionId') connectionId: string,
     @Param('variableId') variableId: string,
@@ -358,6 +368,7 @@ export class VariablesController {
    * Save variable values for a connection
    */
   @Post('connections/:connectionId')
+  @RequirePermission('integration', 'update')
   async saveConnectionVariables(
     @Param('connectionId') connectionId: string,
     @Body() body: SaveVariablesDto,

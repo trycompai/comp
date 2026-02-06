@@ -9,20 +9,28 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
+import { OrganizationId } from '../../auth/auth-context.decorator';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { OAuthAppRepository } from '../repositories/oauth-app.repository';
 import { getManifest } from '@comp/integration-platform';
 
 interface SaveOAuthAppDto {
   providerSlug: string;
-  organizationId: string;
   clientId: string;
   clientSecret: string;
   customScopes?: string[];
 }
 
 @Controller({ path: 'integrations/oauth-apps', version: '1' })
+@ApiTags('Integrations')
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@ApiSecurity('apikey')
 export class OAuthAppsController {
   private readonly logger = new Logger(OAuthAppsController.name);
 
@@ -35,14 +43,8 @@ export class OAuthAppsController {
    * List custom OAuth apps for an organization
    */
   @Get()
-  async listOAuthApps(@Query('organizationId') organizationId: string) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  @RequirePermission('integration', 'read')
+  async listOAuthApps(@OrganizationId() organizationId: string) {
     const apps =
       await this.oauthAppRepository.findByOrganization(organizationId);
 
@@ -60,9 +62,10 @@ export class OAuthAppsController {
    * Get OAuth app setup info for a provider
    */
   @Get('setup/:providerSlug')
+  @RequirePermission('integration', 'read')
   async getSetupInfo(
     @Param('providerSlug') providerSlug: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
     const manifest = getManifest(providerSlug);
     if (!manifest) {
@@ -103,10 +106,13 @@ export class OAuthAppsController {
    * Save custom OAuth app credentials for an organization
    */
   @Post()
-  async saveOAuthApp(@Body() body: SaveOAuthAppDto) {
+  @RequirePermission('integration', 'create')
+  async saveOAuthApp(
+    @OrganizationId() organizationId: string,
+    @Body() body: SaveOAuthAppDto,
+  ) {
     const {
       providerSlug,
-      organizationId,
       clientId,
       clientSecret,
       customScopes,
@@ -155,17 +161,11 @@ export class OAuthAppsController {
    * Delete custom OAuth app credentials for an organization
    */
   @Delete(':providerSlug')
+  @RequirePermission('integration', 'delete')
   async deleteOAuthApp(
     @Param('providerSlug') providerSlug: string,
-    @Query('organizationId') organizationId: string,
+    @OrganizationId() organizationId: string,
   ) {
-    if (!organizationId) {
-      throw new HttpException(
-        'organizationId is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     await this.oauthCredentialsService.deleteOrgCredentials(
       providerSlug,
       organizationId,

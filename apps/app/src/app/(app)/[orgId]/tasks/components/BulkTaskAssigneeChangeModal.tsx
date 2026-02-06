@@ -92,7 +92,6 @@ export function BulkTaskAssigneeChangeModal({
       const response = await apiClient.patch<{ updatedCount: number }>(
         '/v1/tasks/bulk/assignee',
         payload,
-        orgIdParam,
       );
 
       if (response.error) {

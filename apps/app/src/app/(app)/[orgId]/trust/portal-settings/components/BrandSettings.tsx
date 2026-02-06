@@ -1,15 +1,14 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { api } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@trycompai/design-system';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { trustPortalSwitchAction } from '../actions/trust-portal-switch';
 
 const trustSettingsSchema = z.object({
   primaryColor: z.string().optional(),
@@ -24,18 +23,6 @@ export function BrandSettings({
   orgId,
   primaryColor,
 }: BrandSettingsProps) {
-  const trustPortalSwitch = useAction(trustPortalSwitchAction, {
-    onSuccess: () => {
-      toast.success('Brand settings updated');
-    },
-    onError: () => {
-      toast.error('Failed to update brand settings');
-    },
-  });
-
-  const trustPortalSwitchRef = useRef(trustPortalSwitch);
-  trustPortalSwitchRef.current = trustPortalSwitch;
-
   const form = useForm<z.infer<typeof trustSettingsSchema>>({
     resolver: zodResolver(trustSettingsSchema),
     defaultValues: {
@@ -65,7 +52,9 @@ export function BrandSettings({
             primaryColor:
               field === 'primaryColor' ? (value as string) : (form.getValues('primaryColor') ?? undefined),
           };
-          await trustPortalSwitchRef.current.execute(data);
+          const response = await api.put('/v1/trust-portal/settings/toggle', data);
+          if (response.error) throw new Error(response.error);
+          toast.success('Brand settings updated');
           lastSaved.current[field] = value as string | null;
         } finally {
           savingRef.current[field] = false;

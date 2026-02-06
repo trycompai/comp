@@ -1,7 +1,6 @@
 'use client';
 
-import { createContextEntryAction } from '@/actions/context-hub/create-context-entry-action';
-import { updateContextEntryAction } from '@/actions/context-hub/update-context-entry-action';
+import { useApi } from '@/hooks/use-api';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
@@ -9,39 +8,44 @@ import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import type { Context } from '@db';
 import { Loader2 } from 'lucide-react';
-import { useTransition } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?: () => void }) {
-  const [isPending, startTransition] = useTransition();
+  const api = useApi();
+  const [isPending, setIsPending] = useState(false);
 
   async function onSubmit(formData: FormData) {
-    startTransition(async () => {
-      try {
-        if (entry) {
-          const result = await updateContextEntryAction({
-            id: entry.id,
-            question: formData.get('question') as string,
-            answer: formData.get('answer') as string,
-          });
-          if (result?.data) {
-            toast.success('Context entry updated');
-            onSuccess?.();
-          }
-        } else {
-          const result = await createContextEntryAction({
-            question: formData.get('question') as string,
-            answer: formData.get('answer') as string,
-          });
-          if (result?.data) {
-            toast.success('Context entry created');
-            onSuccess?.();
-          }
+    setIsPending(true);
+    try {
+      if (entry) {
+        const response = await api.patch(`/v1/context/${entry.id}`, {
+          question: formData.get('question') as string,
+          answer: formData.get('answer') as string,
+        });
+        if (response.error) {
+          toast.error('Something went wrong');
+          return;
         }
-      } catch (error) {
-        toast.error('Something went wrong');
+        toast.success('Context entry updated');
+        onSuccess?.();
+      } else {
+        const response = await api.post('/v1/context', {
+          question: formData.get('question') as string,
+          answer: formData.get('answer') as string,
+        });
+        if (response.error) {
+          toast.error('Something went wrong');
+          return;
+        }
+        toast.success('Context entry created');
+        onSuccess?.();
       }
-    });
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (

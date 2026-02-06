@@ -1,6 +1,6 @@
 'use client';
 
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useAssignableMembers } from '@/hooks/use-organization-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
@@ -17,14 +17,13 @@ interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
     data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => void;
+  initialMembers?: (Member & { user: User })[];
 }
 
-export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSidebarProps) {
+export function TaskPropertiesSidebar({ handleUpdateTask, initialMembers }: TaskPropertiesSidebarProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
-  const { members } = useOrganizationMembers();
-
-  console.log('members', members);
+  const { members } = useAssignableMembers({ initialData: initialMembers });
 
   const assignedMember =
     !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);

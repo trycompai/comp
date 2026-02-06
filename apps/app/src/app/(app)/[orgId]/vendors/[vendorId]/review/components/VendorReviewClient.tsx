@@ -7,7 +7,6 @@ import { useEffect, useMemo } from 'react';
 
 interface VendorReviewClientProps {
   vendorId: string;
-  orgId: string;
   initialVendor: VendorResponse;
 }
 
@@ -17,12 +16,10 @@ interface VendorReviewClientProps {
  */
 export function VendorReviewClient({
   vendorId,
-  orgId,
   initialVendor,
 }: VendorReviewClientProps) {
   // Use SWR for real-time updates with polling (5s default)
   const { vendor: swrVendor } = useVendor(vendorId, {
-    organizationId: orgId,
     initialData: initialVendor,
   });
 
@@ -38,7 +35,6 @@ export function VendorReviewClient({
     'desc',
     {},
     {
-      organizationId: orgId,
       // Avoid always-on polling; we only poll aggressively while generating
       refreshInterval: 0,
       revalidateOnFocus: true,

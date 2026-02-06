@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateVersionDto {
@@ -35,6 +36,7 @@ export class UpdateVersionContentDto {
     type: 'array',
     items: { type: 'object', additionalProperties: true },
   })
+  @Transform(({ value }) => value) // Preserve raw JSON, don't let class-transformer mangle it
   @IsArray()
   content: unknown[];
 }

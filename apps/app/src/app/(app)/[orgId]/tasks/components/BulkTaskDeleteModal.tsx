@@ -49,7 +49,6 @@ export function BulkTaskDeleteModal({
 
       const response = await apiClient.delete<{ deletedCount: number }>(
         '/v1/tasks/bulk',
-        orgIdParam,
         payload,
       );
 

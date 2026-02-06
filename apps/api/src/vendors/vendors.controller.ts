@@ -6,19 +6,22 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -34,18 +37,23 @@ import { DELETE_VENDOR_RESPONSES } from './schemas/delete-vendor.responses';
 
 @ApiTags('Vendors')
 @Controller({ path: 'vendors', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
+  @Get('global/search')
+  @RequirePermission('vendor', 'read')
+  @ApiOperation({ summary: 'Search global vendors database' })
+  @ApiQuery({ name: 'name', required: false, description: 'Vendor name to search for' })
+  async searchGlobalVendors(
+    @Query('name') name?: string,
+  ) {
+    return this.vendorsService.searchGlobal(name ?? '');
+  }
+
   @Get()
+  @RequirePermission('vendor', 'read')
   @ApiOperation(VENDOR_OPERATIONS.getAllVendors)
   @ApiResponse(GET_ALL_VENDORS_RESPONSES[200])
   @ApiResponse(GET_ALL_VENDORS_RESPONSES[401])
@@ -73,6 +81,7 @@ export class VendorsController {
   }
 
   @Get(':id')
+  @RequirePermission('vendor', 'read')
   @ApiOperation(VENDOR_OPERATIONS.getVendorById)
   @ApiParam(VENDOR_PARAMS.vendorId)
   @ApiResponse(GET_VENDOR_BY_ID_RESPONSES[200])
@@ -100,6 +109,7 @@ export class VendorsController {
   }
 
   @Post()
+  @RequirePermission('vendor', 'create')
   @ApiOperation(VENDOR_OPERATIONS.createVendor)
   @ApiBody(VENDOR_BODIES.createVendor)
   @ApiResponse(CREATE_VENDOR_RESPONSES[201])
@@ -132,6 +142,7 @@ export class VendorsController {
   }
 
   @Patch(':id')
+  @RequirePermission('vendor', 'update')
   @ApiOperation(VENDOR_OPERATIONS.updateVendor)
   @ApiParam(VENDOR_PARAMS.vendorId)
   @ApiBody(VENDOR_BODIES.updateVendor)
@@ -165,7 +176,29 @@ export class VendorsController {
     };
   }
 
+  @Post(':id/trigger-assessment')
+  @RequirePermission('vendor', 'update')
+  @ApiOperation({ summary: 'Trigger vendor risk assessment' })
+  @ApiParam(VENDOR_PARAMS.vendorId)
+  async triggerAssessment(
+    @Param('id') vendorId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const result = await this.vendorsService.triggerAssessment(
+      vendorId,
+      organizationId,
+      authContext.userId,
+    );
+
+    return {
+      success: true,
+      ...result,
+    };
+  }
+
   @Delete(':id')
+  @RequirePermission('vendor', 'delete')
   @ApiOperation(VENDOR_OPERATIONS.deleteVendor)
   @ApiParam(VENDOR_PARAMS.vendorId)
   @ApiResponse(DELETE_VENDOR_RESPONSES[200])

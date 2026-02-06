@@ -2,10 +2,9 @@
 
 import { Button, Switch } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { api } from '@/lib/api-client';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { updateVendorTrustSettingsAction } from '../actions/vendor-settings';
-import { useAction } from 'next-safe-action/hooks';
 import {
   ISO27001,
   ISO42001,
@@ -156,26 +155,34 @@ export function TrustPortalVendors({
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const updateVendor = useAction(updateVendorTrustSettingsAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setVendors((prev) =>
-          prev.map((v) => (v.id === data.id ? { ...v, ...data } as Vendor : v)),
+  const handleToggleVisibility = useCallback(
+    async (vendorId: string, currentValue: boolean) => {
+      // Optimistic update
+      setVendors((prev) =>
+        prev.map((v) =>
+          v.id === vendorId ? { ...v, showOnTrustPortal: !currentValue } : v,
+        ),
+      );
+
+      try {
+        const response = await api.post(
+          `/v1/trust-portal/vendors/${vendorId}/trust-settings`,
+          { showOnTrustPortal: !currentValue },
         );
+        if (response.error) throw new Error(response.error);
         toast.success('Vendor settings updated');
+      } catch {
+        // Revert on failure
+        setVendors((prev) =>
+          prev.map((v) =>
+            v.id === vendorId ? { ...v, showOnTrustPortal: currentValue } : v,
+          ),
+        );
+        toast.error('Failed to update vendor settings');
       }
     },
-    onError: () => {
-      toast.error('Failed to update vendor settings');
-    },
-  });
-
-  const handleToggleVisibility = (vendorId: string, currentValue: boolean) => {
-    updateVendor.execute({
-      vendorId,
-      showOnTrustPortal: !currentValue,
-    });
-  };
+    [],
+  );
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(vendors.length / ITEMS_PER_PAGE));

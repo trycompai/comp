@@ -1,6 +1,8 @@
 'use client';
 
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
+import { useApi } from '@/hooks/use-api';
+import { useVendors, type Vendor } from '@/hooks/use-vendors';
 import { VendorStatus } from '@/components/vendor-status';
 import {
   AlertDialog,
@@ -40,24 +42,27 @@ import {
 import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
-import { deleteVendor } from '../actions/deleteVendor';
-import { getVendorsAction, type GetVendorsActionInput } from '../actions/get-vendors-action';
-import type { GetAssigneesResult, GetVendorsResult } from '../data/queries';
-import type { GetVendorsSchema } from '../data/validations';
+import { useSWRConfig } from 'swr';
 import { useOnboardingStatus } from '../hooks/use-onboarding-status';
 import { VendorOnboardingProvider, useVendorOnboardingStatus } from './vendor-onboarding-context';
 
-export type VendorRow = GetVendorsResult['data'][number] & {
+export type VendorRow = Vendor & {
   isPending?: boolean;
   isAssessing?: boolean;
 };
 
-const callGetVendorsAction = getVendorsAction as unknown as (
-  input: GetVendorsActionInput,
-) => Promise<GetVendorsResult>;
+type AssigneeMember = {
+  id: string;
+  role: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  };
+};
 
 const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'> = [
   'pending',
@@ -78,15 +83,13 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 interface VendorsTableProps {
-  vendors: GetVendorsResult['data'];
-  pageCount: number;
-  assignees: GetAssigneesResult;
+  vendors: Vendor[];
+  assignees: AssigneeMember[];
   onboardingRunId?: string | null;
-  searchParams: GetVendorsSchema;
   orgId: string;
 }
 
-function VendorNameCell({ vendor, orgId }: { vendor: VendorRow; orgId: string }) {
+function VendorNameCell({ vendor }: { vendor: VendorRow }) {
   const onboardingStatus = useVendorOnboardingStatus();
   const status = onboardingStatus[vendor.id];
   const isPending = vendor.isPending || status === 'pending' || status === 'processing';
@@ -139,12 +142,13 @@ function VendorStatusCell({ vendor }: { vendor: VendorRow }) {
 
 export function VendorsTable({
   vendors: initialVendors,
-  pageCount: initialPageCount,
   assignees,
   onboardingRunId,
   orgId,
 }: VendorsTableProps) {
   const router = useRouter();
+  const api = useApi();
+  const { mutate: globalMutate } = useSWRConfig();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<VendorRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -164,44 +168,16 @@ export function VendorsTable({
     'vendors',
   );
 
-  // Build search params for API
-  const currentSearchParams = useMemo<GetVendorsSchema>(() => {
-    return {
-      page,
-      perPage,
-      name: '',
-      status: null,
-      department: null,
-      assigneeId: null,
-      sort: [{ id: sort.id, desc: sort.desc }],
-      filters: [],
-      joinOperator: 'and',
-    };
-  }, [page, perPage, sort]);
-
-  // Create stable SWR key
-  const swrKey = useMemo(() => {
-    if (!orgId) return null;
-    const key = JSON.stringify(currentSearchParams);
-    return ['vendors', orgId, key] as const;
-  }, [orgId, currentSearchParams]);
-
-  // Fetcher function for SWR
-  const fetcher = useCallback(async () => {
-    if (!orgId) return { data: [], pageCount: 0 };
-    return await callGetVendorsAction({ orgId, searchParams: currentSearchParams });
-  }, [orgId, currentSearchParams]);
-
-  // Use SWR to fetch vendors with polling for real-time updates
-  const { data: vendorsData } = useSWR(swrKey, fetcher, {
-    fallbackData: { data: initialVendors, pageCount: initialPageCount },
+  // Use SWR hook for vendors with polling
+  const { data: vendorsResponse } = useVendors({
+    initialData: initialVendors,
     refreshInterval: isActive ? 1000 : 5000,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    keepPreviousData: true,
   });
 
-  const vendors = vendorsData?.data || initialVendors;
+  const vendors = useMemo(() => {
+    const data = vendorsResponse?.data?.data;
+    return Array.isArray(data) ? data : initialVendors;
+  }, [vendorsResponse, initialVendors]);
 
   // Check if all vendors are done assessing
   const allVendorsDoneAssessing = useMemo(() => {
@@ -279,8 +255,8 @@ export function VendorsTable({
         organizationId: orgId,
         assigneeId: null,
         assignee: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         isPending: true,
       }));
 
@@ -305,8 +281,8 @@ export function VendorsTable({
         organizationId: orgId,
         assigneeId: null,
         assignee: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         isPending: true,
       }));
 
@@ -337,7 +313,8 @@ export function VendorsTable({
         const comparison = (aValue as string).localeCompare(bValue as string);
         return sort.desc ? -comparison : comparison;
       }
-      const comparison = new Date(aValue as Date).getTime() - new Date(bValue as Date).getTime();
+      const comparison =
+        new Date(aValue as string).getTime() - new Date(bValue as string).getTime();
       return sort.desc ? -comparison : comparison;
     });
 
@@ -345,16 +322,12 @@ export function VendorsTable({
   }, [mergedVendors, searchQuery, sort]);
 
   // Calculate pageCount from filtered data and paginate
-  // When searching locally, calculate pageCount from filtered data
-  // When not searching, use server's pageCount (server handles pagination)
-  const filteredPageCount = searchQuery
-    ? Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage))
-    : Math.max(1, vendorsData?.pageCount ?? initialPageCount);
+  const filteredPageCount = Math.max(
+    1,
+    Math.ceil(filteredAndSortedVendors.length / perPage),
+  );
 
-  // When searching locally, slice the data for client-side pagination
-  // When not searching, server returns the correct page, but slice to enforce perPage
-  // (avoids extra rows from onboarding pending/temp vendors)
-  const startIndex = searchQuery ? (page - 1) * perPage : 0;
+  const startIndex = (page - 1) * perPage;
   const paginatedVendors = filteredAndSortedVendors.slice(startIndex, startIndex + perPage);
 
   // Keep page in bounds when pageCount changes
@@ -428,15 +401,20 @@ export function VendorsTable({
 
     setIsDeleting(true);
     try {
-      const result = await deleteVendor({ vendorId: vendorToDelete.id });
-      if (result?.data?.success) {
+      const response = await api.delete(`/v1/vendors/${vendorToDelete.id}`);
+      if (!response.error) {
         toast.success('Vendor deleted successfully');
         setDeleteDialogOpen(false);
         setVendorToDelete(null);
+        globalMutate(
+          (key) =>
+            (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+            (typeof key === 'string' && key.includes('/v1/vendors')),
+          undefined,
+          { revalidate: true },
+        );
       } else {
-        const errorMsg =
-          typeof result?.data?.error === 'string' ? result.data.error : 'Failed to delete vendor';
-        toast.error(errorMsg);
+        toast.error('Failed to delete vendor');
       }
     } catch {
       toast.error('Failed to delete vendor');
@@ -564,7 +542,7 @@ export function VendorsTable({
                     data-state={blocked ? 'disabled' : undefined}
                   >
                     <TableCell>
-                      <VendorNameCell vendor={vendor} orgId={orgId} />
+                      <VendorNameCell vendor={vendor} />
                     </TableCell>
                     <TableCell>
                       <VendorStatusCell vendor={vendor} />

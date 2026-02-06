@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@trycompai/db';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 @Injectable()
 export class ApiKeyService {
@@ -21,6 +21,86 @@ export class ApiKeyService {
     }
     // For backward compatibility, hash without salt
     return createHash('sha256').update(apiKey).digest('hex');
+  }
+
+  private generateApiKey(): string {
+    const apiKey = randomBytes(32).toString('hex');
+    return `comp_${apiKey}`;
+  }
+
+  private generateSalt(): string {
+    return randomBytes(16).toString('hex');
+  }
+
+  async create(
+    organizationId: string,
+    name: string,
+    expiresAt?: string,
+  ) {
+    const apiKey = this.generateApiKey();
+    const salt = this.generateSalt();
+    const hashedKey = this.hashApiKey(apiKey, salt);
+
+    let expirationDate: Date | null = null;
+    if (expiresAt && expiresAt !== 'never') {
+      const now = new Date();
+      switch (expiresAt) {
+        case '30days':
+          expirationDate = new Date(now.setDate(now.getDate() + 30));
+          break;
+        case '90days':
+          expirationDate = new Date(now.setDate(now.getDate() + 90));
+          break;
+        case '1year':
+          expirationDate = new Date(
+            now.setFullYear(now.getFullYear() + 1),
+          );
+          break;
+      }
+    }
+
+    const record = await db.apiKey.create({
+      data: {
+        name,
+        key: hashedKey,
+        salt,
+        expiresAt: expirationDate,
+        organizationId,
+      },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        expiresAt: true,
+      },
+    });
+
+    return {
+      ...record,
+      key: apiKey,
+      createdAt: record.createdAt.toISOString(),
+      expiresAt: record.expiresAt ? record.expiresAt.toISOString() : null,
+    };
+  }
+
+  async revoke(apiKeyId: string, organizationId: string) {
+    const result = await db.apiKey.updateMany({
+      where: {
+        id: apiKeyId,
+        organizationId,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new NotFoundException(
+        'API key not found or not authorized to revoke',
+      );
+    }
+
+    return { success: true };
   }
 
   /**

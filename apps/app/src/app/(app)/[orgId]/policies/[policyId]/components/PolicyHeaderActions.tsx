@@ -1,9 +1,9 @@
 'use client';
 
-import { getPolicyPdfUrlAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/get-policy-pdf-url';
-import { regeneratePolicyAction } from '@/app/(app)/[orgId]/policies/[policyId]/actions/regenerate-policy';
+import { useApi } from '@/hooks/use-api';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
+import { useSWRConfig } from 'swr';
 import {
   Dialog,
   DialogContent,
@@ -23,11 +23,10 @@ import { Icons } from '@comp/ui/icons';
 import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { AuditLogWithRelations } from '../data';
+import { auditLogsKey } from '../hooks/useAuditLogs';
 
 type PolicyWithVersion = Policy & {
   approver: (Member & { user: User }) | null;
@@ -36,12 +35,14 @@ type PolicyWithVersion = Policy & {
 
 export function PolicyHeaderActions({
   policy,
-  logs,
+  organizationId,
 }: {
   policy: PolicyWithVersion | null;
-  logs: AuditLogWithRelations[];
+  organizationId: string;
 }) {
+  const api = useApi();
   const router = useRouter();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -83,27 +84,30 @@ export function PolicyHeaderActions({
     }
   }, [run, router]);
 
-  // Delete flows through query param to existing dialog in PolicyOverview
-  const regenerate = useAction(regeneratePolicyAction, {
-    onSuccess: (result) => {
-      if (result.data?.runId && result.data?.publicAccessToken) {
-        // Show loading toast
+  const handleRegenerate = async () => {
+    if (!policy) return;
+    setIsRegenerating(true);
+    setRegenerateConfirmOpen(false);
+
+    try {
+      const response = await api.post<{ data: { runId: string; publicAccessToken: string } }>(
+        `/v1/policies/${policy.id}/regenerate`,
+      );
+
+      if (response.error) throw new Error(response.error);
+
+      const { runId, publicAccessToken } = response.data?.data ?? {};
+      if (runId && publicAccessToken) {
         const toastId = toast.loading('Regenerating policy content...');
         toastIdRef.current = toastId;
-        setIsRegenerating(true);
 
-        // Start tracking the run
-        setRunInfo({
-          runId: result.data.runId,
-          accessToken: result.data.publicAccessToken,
-        });
+        setRunInfo({ runId, accessToken: publicAccessToken });
       }
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to trigger policy regeneration');
       setIsRegenerating(false);
-    },
-  });
+    }
+  };
 
   const updateQueryParam = ({ key, value }: { key: string; value: string }) => {
     const url = new URL(window.location.href);
@@ -120,27 +124,24 @@ export function PolicyHeaderActions({
     setIsDownloading(true);
 
     try {
-      // Check if the published version has a PDF uploaded
-      const publishedVersionPdfUrl = policy.currentVersion?.pdfUrl;
+      // Always call the API to check for an uploaded PDF (also creates audit log)
+      const params = new URLSearchParams();
+      if (policy.currentVersion?.id) params.set('versionId', policy.currentVersion.id);
+      const qs = params.toString();
+      const result = await api.get<{ url: string | null }>(
+        `/v1/policies/${policy.id}/pdf/signed-url${qs ? `?${qs}` : ''}`,
+      );
 
-      if (publishedVersionPdfUrl) {
+      if (result.data?.url) {
         // Download the uploaded PDF directly
-        const result = await getPolicyPdfUrlAction({
-          policyId: policy.id,
-          versionId: policy.currentVersion?.id,
-        });
-
-        if (result?.data?.success && result.data.data) {
-          // Create a temporary link and trigger download
-          const link = document.createElement('a');
-          link.href = result.data.data; // data is the signed URL string
-          link.download = `${policy.name || 'Policy'}.pdf`;
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          return;
-        }
+        const link = document.createElement('a');
+        link.href = result.data.url;
+        link.download = `${policy.name || 'Policy'}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
       }
 
       // Fall back to generating PDF from content
@@ -164,12 +165,14 @@ export function PolicyHeaderActions({
       }
 
       // Generate and download the PDF
-      generatePolicyPDF(policyContent as any, logs, policy.name || 'Policy Document');
+      generatePolicyPDF(policyContent as any, [], policy.name || 'Policy Document');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
       toast.error('Failed to generate policy PDF');
     } finally {
       setIsDownloading(false);
+      // Revalidate audit logs so the activity tab reflects the download
+      globalMutate(auditLogsKey(policy.id, organizationId));
     }
   };
 
@@ -239,13 +242,10 @@ export function PolicyHeaderActions({
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                regenerate.execute({ policyId: policy.id });
-                setRegenerateConfirmOpen(false);
-              }}
-              disabled={regenerate.status === 'executing'}
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
             >
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+              {isRegenerating ? 'Working…' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

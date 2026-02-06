@@ -1,7 +1,7 @@
 'use client';
 
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useAssignableMembers } from '@/hooks/use-organization-members';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
@@ -104,7 +104,7 @@ export function TaskSmartForm({
     filters,
   );
 
-  const { members } = useOrganizationMembers();
+  const { members } = useAssignableMembers();
   const { uploadAttachment, isUploading } = useTaskItemAttachmentUpload({
     entityId,
     entityType,

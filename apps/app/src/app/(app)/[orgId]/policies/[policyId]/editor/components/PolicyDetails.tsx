@@ -1,8 +1,5 @@
 'use client';
 
-import { deleteVersionAction } from '@/actions/policies/delete-version';
-import { submitVersionForApprovalAction } from '@/actions/policies/submit-version-for-approval';
-import { updateVersionContentAction } from '@/actions/policies/update-version-content';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
 import '@/styles/editor.css';
@@ -49,20 +46,11 @@ import { Checkmark, Close, MagicWand } from '@trycompai/design-system/icons';
 import { DefaultChatTransport } from 'ai';
 import { format } from 'date-fns';
 import { structuredPatch } from 'diff';
-import {
-  ArrowDownUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Trash2,
-  Upload,
-} from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, FileText, Trash2, Upload } from 'lucide-react';
+import { useApi } from '@/hooks/use-api';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { switchPolicyDisplayFormatAction } from '../../actions/switch-policy-display-format';
 import { PdfViewer } from '../../components/PdfViewer';
 import { PublishVersionDialog } from '../../components/PublishVersionDialog';
 import type { PolicyChatUIMessage } from '../types';
@@ -152,6 +140,8 @@ interface PolicyContentManagerProps {
   /** Initial version ID to view (from URL param) */
   initialVersionId?: string;
   onMutate?: () => void;
+  /** Callback to update version content in the cache (optimistic update) */
+  onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
 }
 
 export function PolicyContentManager({
@@ -171,7 +161,9 @@ export function PolicyContentManager({
   assignees = [],
   initialVersionId,
   onMutate,
+  onVersionContentChange,
 }: PolicyContentManagerProps) {
+  const api = useApi();
   const router = useRouter();
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
@@ -344,33 +336,28 @@ export function PolicyContentManager({
     if (!versionToDelete) return;
 
     setIsDeletingVersion(true);
-    try {
-      const result = await deleteVersionAction({
-        versionId: versionToDelete.id,
-        policyId,
-      });
+    const response = await api.delete(
+      `/v1/policies/${policyId}/versions/${versionToDelete.id}`,
+    );
+    setIsDeletingVersion(false);
 
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to delete version');
-      }
-
-      toast.success(`Version ${versionToDelete.version} deleted`);
-
-      // If we deleted the selected version, switch to another one
-      if (viewingVersion === versionToDelete.id) {
-        const remainingVersions = versions.filter((v) => v.id !== versionToDelete.id);
-        setViewingVersion(currentVersionId ?? remainingVersions[0]?.id ?? '');
-      }
-
-      setDeleteVersionDialogOpen(false);
-      setVersionToDelete(null);
-      onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete version');
-    } finally {
-      setIsDeletingVersion(false);
+    if (response.error) {
+      toast.error('Failed to delete version');
+      return;
     }
+
+    toast.success(`Version ${versionToDelete.version} deleted`);
+
+    // If we deleted the selected version, switch to another one
+    if (viewingVersion === versionToDelete.id) {
+      const remainingVersions = versions.filter(v => v.id !== versionToDelete.id);
+      setViewingVersion(currentVersionId ?? remainingVersions[0]?.id ?? '');
+    }
+
+    setDeleteVersionDialogOpen(false);
+    setVersionToDelete(null);
+    onMutate?.();
+    router.refresh();
   };
 
   // Handle submit for approval
@@ -387,27 +374,22 @@ export function PolicyContentManager({
     }
 
     setIsSubmittingForApproval(true);
-    try {
-      const result = await submitVersionForApprovalAction({
-        policyId,
-        versionId: viewingVersion,
-        approverId: publishApproverId,
-        entityId: policyId,
-      });
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to submit version for approval');
-      }
+    const response = await api.post(
+      `/v1/policies/${policyId}/versions/${viewingVersion}/submit-for-approval`,
+      { approverId: publishApproverId },
+    );
+    setIsSubmittingForApproval(false);
 
-      toast.success(`Version ${versionToPublish.version} submitted for approval`);
-      setIsPublishApprovalDialogOpen(false);
-      setPublishApproverId(null);
-      onMutate?.();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to submit version for approval');
-    } finally {
-      setIsSubmittingForApproval(false);
+    if (response.error) {
+      toast.error('Failed to submit version for approval');
+      return;
     }
+
+    toast.success(`Version ${versionToPublish.version} submitted for approval`);
+    setIsPublishApprovalDialogOpen(false);
+    setPublishApproverId(null);
+    onMutate?.();
+    router.refresh();
   };
 
   // Determine if we can publish the current version
@@ -473,21 +455,21 @@ export function PolicyContentManager({
     [messages],
   );
 
-  const switchFormat = useAction(switchPolicyDisplayFormatAction, {
-    onSuccess: () => {
-      // Server action succeeded, update ref for next operation
+  const handleSwitchFormat = async (format: string) => {
+    try {
+      const response = await api.patch(`/v1/policies/${policyId}`, {
+        displayFormat: format,
+      });
+      if (response.error) throw new Error(response.error);
       previousTabRef.current = activeTab;
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to switch view.');
-      // Roll back to the previous tab state on error
       setActiveTab(previousTabRef.current);
-      // Also restore AI assistant visibility if we were switching from EDITOR
       if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
         setShowAiAssistant(true);
       }
-    },
-  });
+    }
+  };
 
   const currentPolicyMarkdown = useMemo(
     () => convertContentToMarkdown(currentContent),
@@ -511,29 +493,22 @@ export function PolicyContentManager({
     const { content, key } = activeProposal;
 
     setIsApplying(true);
-    try {
-      const jsonContent = markdownToTipTapJSON(content);
-      const result = await updateVersionContentAction({
-        policyId,
-        versionId: viewingVersion,
-        content: jsonContent,
-        entityId: policyId,
-      });
+    const jsonContent = markdownToTipTapJSON(content);
+    const response = await api.patch(
+      `/v1/policies/${policyId}/versions/${viewingVersion}`,
+      { content: jsonContent },
+    );
+    setIsApplying(false);
 
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to apply changes');
-      }
-
-      setCurrentContent(jsonContent);
-      setEditorKey((prev) => prev + 1);
-      setDismissedProposalKey(key);
-      toast.success('Policy updated with AI suggestions');
-    } catch (err) {
-      console.error('Failed to apply changes:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to apply changes');
-    } finally {
-      setIsApplying(false);
+    if (response.error) {
+      toast.error('Failed to apply changes');
+      return;
     }
+
+    setCurrentContent(jsonContent);
+    setEditorKey((prev) => prev + 1);
+    setDismissedProposalKey(key);
+    toast.success('Policy updated with AI suggestions');
   }
 
   // Track local changes made in editor (after save)
@@ -553,7 +528,7 @@ export function PolicyContentManager({
           if (format === 'PDF') {
             setShowAiAssistant(false);
           }
-          switchFormat.execute({ policyId, format: format as 'EDITOR' | 'PDF' });
+          handleSwitchFormat(format);
         }}
       >
         <Stack gap="md">
@@ -853,7 +828,7 @@ export function PolicyContentManager({
                   Create new version
                 </Button>
               )}
-              {!isPendingApproval && aiAssistantEnabled && activeTab === 'EDITOR' && (
+              {!isPendingApproval && !isVersionReadOnly && aiAssistantEnabled && activeTab === 'EDITOR' && (
                 <Button
                   variant={showAiAssistant ? 'default' : 'outline'}
                   size="default"
@@ -885,6 +860,7 @@ export function PolicyContentManager({
                     isViewingPendingVersion={isViewingPendingVersion}
                     policyStatus={policyStatus}
                     onContentChange={handleContentSaved}
+                    onVersionContentChange={onVersionContentChange}
                   />
                 </TabsContent>
                 <TabsContent value="PDF">
@@ -903,7 +879,7 @@ export function PolicyContentManager({
               </Stack>
             </div>
 
-            {aiAssistantEnabled && showAiAssistant && activeTab === 'EDITOR' && (
+            {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && (
               <div className="flex-[3] min-w-0 self-stretch">
                 <PolicyAiAssistant
                   messages={messages}
@@ -1105,6 +1081,7 @@ function PolicyEditorWrapper({
   isViewingPendingVersion,
   policyStatus,
   onContentChange,
+  onVersionContentChange,
 }: {
   policyId: string;
   versionId: string;
@@ -1115,7 +1092,9 @@ function PolicyEditorWrapper({
   isViewingPendingVersion: boolean;
   policyStatus?: string;
   onContentChange?: (content: Array<JSONContent>) => void;
+  onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
 }) {
+  const api = useApi();
   const formattedContent = Array.isArray(policyContent)
     ? policyContent
     : [policyContent as JSONContent];
@@ -1130,24 +1109,18 @@ function PolicyEditorWrapper({
   async function savePolicy(content: Array<JSONContent>): Promise<void> {
     if (!versionId) return;
 
-    try {
-      // Save to the specific version's content
-      const result = await updateVersionContentAction({
-        policyId,
-        versionId,
-        content,
-        entityId: policyId,
-      });
+    const response = await api.patch(
+      `/v1/policies/${policyId}/versions/${versionId}`,
+      { content },
+    );
 
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to save');
-      }
-
-      onContentChange?.(content);
-    } catch (error) {
-      console.error('Error saving policy version:', error);
-      throw error;
+    if (response.error) {
+      throw new Error('Failed to save');
     }
+
+    onContentChange?.(content);
+    // Update the versions cache so switching versions shows the latest content
+    onVersionContentChange?.(versionId, content);
   }
 
   // Determine if editor should be read-only

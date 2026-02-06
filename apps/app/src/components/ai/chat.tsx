@@ -58,7 +58,6 @@ export default function Chat() {
         : undefined,
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      headers: resolvedOrganizationId ? { 'X-Organization-Id': resolvedOrganizationId } : undefined,
     }),
 
     // Automatically submit when all server-side tool calls are complete
@@ -84,8 +83,6 @@ export default function Chat() {
     void (async () => {
       const res = await apiClient.get<{ messages: AssistantStoredMessage[] }>(
         '/v1/assistant-chat/history',
-        resolvedOrganizationId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       );
 
       if (res.error || res.status !== 200) {
@@ -170,9 +167,7 @@ export default function Chat() {
         {
           method: 'PUT',
           body: JSON.stringify({ messages: storedMessages }),
-          organizationId: resolvedOrganizationId,
         },
-        true,
       );
     }, delayMs);
 
@@ -194,10 +189,8 @@ export default function Chat() {
         {
           method: 'PUT',
           body: JSON.stringify({ messages: snapshot.messages }),
-          organizationId: snapshot.organizationId,
           keepalive: true,
         },
-        false,
       );
     };
   }, [resolvedOrganizationId, userId]);
@@ -212,7 +205,7 @@ export default function Chat() {
           disabled={isLoading || messages.length === 0 || !resolvedOrganizationId || !userId}
           onClick={() => {
             if (!resolvedOrganizationId || !userId) return;
-            void apiClient.delete('/v1/assistant-chat/history', resolvedOrganizationId);
+            void apiClient.delete('/v1/assistant-chat/history');
             setMessages([]);
             setInput('');
           }}

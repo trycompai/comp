@@ -266,7 +266,6 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
                               taskId,
                               automationId: automation.id,
                               automationName: automation.name,
-                              organizationId: orgId,
                             });
                             toast.success('Evidence PDF downloaded');
                           } catch (err) {

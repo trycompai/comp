@@ -6,12 +6,13 @@ import { cn } from '@comp/ui/cn';
 import { ScrollArea } from '@comp/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { AuditLog, AuditLogEntityType } from '@db';
-import { HStack, Section, Stack, Text } from '@trycompai/design-system';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger, HStack, Section, Stack, Text } from '@trycompai/design-system';
 import { format } from 'date-fns';
 import {
   ActivityIcon,
   AlertTriangle,
   CalendarIcon,
+  ChevronRightIcon,
   ClockIcon,
   FileIcon,
   FileTextIcon,
@@ -44,6 +45,22 @@ const getActionColor = (action: LogActionType | string) => {
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
   }
+};
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+
+const formatChangeValue = (value: unknown): string => {
+  if (value === null || value === undefined) return '(empty)';
+  const str = String(value);
+  if (!str || str === 'null' || str === 'undefined') return '(empty)';
+  if (ISO_DATE_REGEX.test(str)) {
+    try {
+      return format(new Date(str), 'MMM d, yyyy');
+    } catch {
+      return str;
+    }
+  }
+  return str;
 };
 
 const getInitials = (name = '') => {
@@ -150,24 +167,29 @@ const LogItem = ({ log }: { log: AuditLogWithRelations }) => {
             </Text>
 
             {logData.changes && Object.keys(logData.changes).length > 0 && (
-              <div className="bg-muted/40 rounded-md p-2 text-xs">
-                <Text size="xs" weight="medium">
-                  Changes:
-                </Text>
-                <Stack gap="1">
-                  {Object.entries(logData.changes).map(([field, { previous, current }]) => (
-                    <Text key={field} size="xs">
-                      <Text as="span" size="xs" weight="medium">
-                        {field}:
-                      </Text>{' '}
-                      <span className="text-muted-foreground line-through">
-                        {String(previous) || '(empty)'}
-                      </span>{' '}
-                      → {String(current) || '(empty)'}
-                    </Text>
-                  ))}
-                </Stack>
-              </div>
+              <Collapsible>
+                <CollapsibleTrigger className="group flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronRightIcon className="h-3 w-3 transition-transform group-data-[panel-open]:rotate-90" />
+                  <span>{Object.keys(logData.changes).length} field{Object.keys(logData.changes).length > 1 ? 's' : ''} changed</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="bg-muted/40 rounded-md p-2 text-xs mt-1">
+                    <Stack gap="1">
+                      {Object.entries(logData.changes).map(([field, { previous, current }]) => (
+                        <Text key={field} size="xs">
+                          <Text as="span" size="xs" weight="medium">
+                            {field}:
+                          </Text>{' '}
+                          <span className="text-muted-foreground line-through">
+                            {formatChangeValue(previous)}
+                          </span>{' '}
+                          → {formatChangeValue(current)}
+                        </Text>
+                      ))}
+                    </Stack>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
             <HStack gap="4" wrap="wrap">

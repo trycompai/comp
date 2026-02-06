@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -13,7 +14,6 @@ import {
 import {
   ApiExtraModels,
   ApiBody,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -25,7 +25,13 @@ import { AttachmentsService } from '../attachments/attachments.service';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import {
+  buildTaskAssignmentFilter,
+  hasTaskAccess,
+} from '../utils/assignment-filter';
 import {
   AttachmentResponseDto,
   TaskResponseDto,
@@ -37,12 +43,6 @@ import { TasksService } from './tasks.service';
 @Controller({ path: 'tasks', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
@@ -52,9 +52,12 @@ export class TasksController {
   // ==================== TASKS ====================
 
   @Get()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get all tasks',
-    description: 'Retrieve all tasks for the authenticated organization',
+    description:
+      'Retrieve all tasks for the authenticated organization. Employees/contractors only see their assigned tasks.',
   })
   @ApiResponse({
     status: 200,
@@ -92,11 +95,107 @@ export class TasksController {
   })
   async getTasks(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
   ): Promise<TaskResponseDto[]> {
-    return await this.tasksService.getTasks(organizationId);
+    // Build assignment filter for restricted roles (employee/contractor)
+    const assignmentFilter = buildTaskAssignmentFilter(
+      authContext.memberId,
+      authContext.userRoles,
+    );
+
+    return await this.tasksService.getTasks(organizationId, assignmentFilter);
+  }
+
+  @Post()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'create')
+  @ApiOperation({
+    summary: 'Create a task',
+    description: 'Create a new task for the organization',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', example: 'Implement access controls' },
+        description: {
+          type: 'string',
+          example: 'Set up role-based access controls for the platform',
+        },
+        assigneeId: {
+          type: 'string',
+          nullable: true,
+          example: 'mem_abc123',
+        },
+        frequency: {
+          type: 'string',
+          enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+          nullable: true,
+          example: 'monthly',
+        },
+        department: {
+          type: 'string',
+          enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
+          nullable: true,
+          example: 'it',
+        },
+        controlIds: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['ctrl_abc123'],
+        },
+        taskTemplateId: {
+          type: 'string',
+          nullable: true,
+          example: 'tmpl_abc123',
+        },
+        vendorId: {
+          type: 'string',
+          nullable: true,
+          example: 'vnd_abc123',
+          description: 'Vendor ID to connect this task to',
+        },
+      },
+      required: ['title', 'description'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Task created successfully',
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/TaskResponseDto' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request body',
+  })
+  async createTask(
+    @OrganizationId() organizationId: string,
+    @Body()
+    body: {
+      title: string;
+      description: string;
+      assigneeId?: string | null;
+      frequency?: string | null;
+      department?: string | null;
+      controlIds?: string[];
+      taskTemplateId?: string | null;
+      vendorId?: string | null;
+    },
+  ): Promise<TaskResponseDto> {
+    if (!body.title || !body.description) {
+      throw new BadRequestException('title and description are required');
+    }
+
+    return await this.tasksService.createTask(organizationId, body);
   }
 
   @Patch('bulk')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Update status for multiple tasks',
     description: 'Bulk update the status of multiple tasks',
@@ -188,6 +287,8 @@ export class TasksController {
   }
 
   @Patch('bulk/assignee')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'assign')
   @ApiOperation({
     summary: 'Update assignee for multiple tasks',
     description: 'Bulk update the assignee of multiple tasks',
@@ -256,7 +357,49 @@ export class TasksController {
     );
   }
 
+  @Patch('reorder')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Reorder tasks',
+    description: 'Update the order and status for multiple tasks (drag & drop)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        updates: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              order: { type: 'number' },
+              status: { type: 'string', enum: Object.values(TaskStatus) },
+            },
+            required: ['id', 'order', 'status'],
+          },
+        },
+      },
+      required: ['updates'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Tasks reordered successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  async reorderTasks(
+    @OrganizationId() organizationId: string,
+    @Body() body: { updates: { id: string; order: number; status: TaskStatus }[] },
+  ): Promise<{ success: boolean }> {
+    if (!Array.isArray(body.updates) || body.updates.length === 0) {
+      throw new BadRequestException('updates must be a non-empty array');
+    }
+    await this.tasksService.reorderTasks(organizationId, body.updates);
+    return { success: true };
+  }
+
   @Delete('bulk')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'delete')
   @ApiOperation({
     summary: 'Delete multiple tasks',
     description: 'Bulk delete multiple tasks by their IDs',
@@ -305,6 +448,8 @@ export class TasksController {
   }
 
   @Get(':taskId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get task by ID',
     description: 'Retrieve a specific task by its ID',
@@ -332,6 +477,10 @@ export class TasksController {
     },
   })
   @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not assigned to this task',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Task not found',
     content: {
@@ -351,15 +500,30 @@ export class TasksController {
   async getTask(
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
+    @AuthContext() authContext: AuthContextType,
   ): Promise<TaskResponseDto> {
-    return await this.tasksService.getTask(organizationId, taskId);
+    // Service returns full task object with assignee info
+    const task = await this.tasksService.getTask(organizationId, taskId);
+
+    // Check assignment access for restricted roles
+    // The task object from service includes assigneeId even though DTO doesn't declare it
+    const taskWithAssignee = task as TaskResponseDto & { assigneeId: string | null };
+    if (
+      !hasTaskAccess(taskWithAssignee, authContext.memberId, authContext.userRoles)
+    ) {
+      throw new ForbiddenException('You do not have access to this task');
+    }
+
+    return task;
   }
 
   @Patch(':taskId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
   @ApiOperation({
     summary: 'Update a task',
     description:
-      'Update an existing task (status, assignee, frequency, department, reviewDate)',
+      'Update an existing task (title, description, status, assignee, frequency, department, reviewDate)',
   })
   @ApiParam({
     name: 'taskId',
@@ -370,6 +534,16 @@ export class TasksController {
     schema: {
       type: 'object',
       properties: {
+        title: {
+          type: 'string',
+          example: 'Review access controls',
+          description: 'Task title',
+        },
+        description: {
+          type: 'string',
+          example: 'Review and update access control policies',
+          description: 'Task description',
+        },
         status: {
           type: 'string',
           enum: Object.values(TaskStatus),
@@ -422,6 +596,8 @@ export class TasksController {
     @Param('taskId') taskId: string,
     @Body()
     body: {
+      title?: string;
+      description?: string;
       status?: TaskStatus;
       assigneeId?: string | null;
       frequency?: string;
@@ -456,6 +632,8 @@ export class TasksController {
       organizationId,
       taskId,
       {
+        title: body.title,
+        description: body.description,
         status: body.status,
         assigneeId: body.assigneeId,
         frequency: body.frequency,
@@ -466,9 +644,69 @@ export class TasksController {
     );
   }
 
+  @Post(':taskId/regenerate')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Regenerate task from template',
+    description:
+      'Update the task title, description, and automation status with the latest content from the framework template',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({ status: 200, description: 'Task regenerated successfully' })
+  @ApiResponse({ status: 400, description: 'Task has no associated template' })
+  @ApiResponse({ status: 404, description: 'Task not found' })
+  async regenerateTask(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.tasksService.regenerateFromTemplate(organizationId, taskId);
+  }
+
+  @Delete(':taskId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'delete')
+  @ApiOperation({
+    summary: 'Delete a task',
+    description: 'Delete a single task by its ID',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Task deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Task deleted successfully' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Task not found',
+  })
+  async deleteTask(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.tasksService.deleteTask(organizationId, taskId);
+    return { success: true, message: 'Task deleted successfully' };
+  }
+
   // ==================== TASK ATTACHMENTS ====================
 
   @Get(':taskId/attachments')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get task attachments',
     description: 'Retrieve all attachments for a specific task',
@@ -545,6 +783,8 @@ export class TasksController {
   }
 
   @Post(':taskId/attachments')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('evidence', 'upload')
   @ApiOperation({
     summary: 'Upload attachment to task',
     description: 'Upload a file attachment to a specific task',
@@ -659,6 +899,8 @@ export class TasksController {
   }
 
   @Get(':taskId/attachments/:attachmentId/download')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('evidence', 'read')
   @ApiOperation({
     summary: 'Get attachment download URL',
     description: 'Generate a signed URL for downloading a task attachment',
@@ -741,6 +983,8 @@ export class TasksController {
   }
 
   @Delete(':taskId/attachments/:attachmentId')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('evidence', 'delete')
   @ApiOperation({
     summary: 'Delete task attachment',
     description: 'Delete a specific attachment from a task',

@@ -10,11 +10,7 @@ import type {
   SessionResponse,
 } from './types';
 
-interface UseBrowserContextOptions {
-  organizationId: string;
-}
-
-export function useBrowserContext({ organizationId }: UseBrowserContextOptions) {
+export function useBrowserContext() {
   const [status, setStatus] = useState<BrowserContextStatus>('loading');
   const [contextId, setContextId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -26,7 +22,6 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
     try {
       const res = await apiClient.get<{ hasContext: boolean; contextId?: string }>(
         '/v1/browserbase/org-context',
-        organizationId,
       );
       if (res.data) {
         if (res.data.hasContext && res.data.contextId) {
@@ -39,7 +34,7 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
     } catch {
       setStatus('no-context');
     }
-  }, [organizationId]);
+  }, []);
 
   const startAuth = useCallback(
     async (url: string) => {
@@ -51,7 +46,6 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         const contextRes = await apiClient.post<ContextResponse>(
           '/v1/browserbase/org-context',
           {},
-          organizationId,
         );
         if (contextRes.error || !contextRes.data) {
           throw new Error(contextRes.error || 'Failed to create context');
@@ -62,7 +56,6 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         const sessionRes = await apiClient.post<SessionResponse>(
           '/v1/browserbase/session',
           { contextId: contextRes.data.contextId },
-          organizationId,
         );
         if (sessionRes.error || !sessionRes.data) {
           throw new Error(sessionRes.error || 'Failed to create session');
@@ -75,7 +68,6 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         await apiClient.post(
           '/v1/browserbase/navigate',
           { sessionId: startedSessionId, url },
-          organizationId,
         );
 
         setShowAuthFlow(true);
@@ -93,7 +85,6 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
             await apiClient.post(
               '/v1/browserbase/session/close',
               { sessionId: startedSessionId },
-              organizationId,
             );
           } catch {
             // Ignore cleanup errors (don't mask original error)
@@ -101,7 +92,7 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         }
       }
     },
-    [organizationId],
+    [],
   );
 
   const checkAuth = useCallback(
@@ -114,11 +105,10 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         const res = await apiClient.post<AuthStatusResponse>(
           '/v1/browserbase/check-auth',
           { sessionId, url },
-          organizationId,
         );
 
         // Close session
-        await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
+        await apiClient.post('/v1/browserbase/session/close', { sessionId });
         setSessionId(null);
         setLiveViewUrl(null);
         setShowAuthFlow(false);
@@ -137,13 +127,13 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
         setStatus('has-context');
       }
     },
-    [sessionId, organizationId],
+    [sessionId],
   );
 
   const cancelAuth = useCallback(async () => {
     if (sessionId) {
       try {
-        await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
+        await apiClient.post('/v1/browserbase/session/close', { sessionId });
       } catch {
         // Ignore
       }
@@ -152,7 +142,7 @@ export function useBrowserContext({ organizationId }: UseBrowserContextOptions) 
     setLiveViewUrl(null);
     setShowAuthFlow(false);
     setStatus(contextId ? 'has-context' : 'no-context');
-  }, [sessionId, contextId, organizationId]);
+  }, [sessionId, contextId]);
 
   return {
     status,

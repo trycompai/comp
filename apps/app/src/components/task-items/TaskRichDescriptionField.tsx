@@ -154,7 +154,6 @@ export function TaskRichDescriptionField({
       try {
         const response = await api.get<{ downloadUrl: string }>(
           `/v1/attachments/${attachmentId}/download`,
-          organizationId,
         );
         if (response.error || !response.data?.downloadUrl) {
           throw new Error(response.error || 'Download URL not available');
@@ -177,7 +176,6 @@ export function TaskRichDescriptionField({
       try {
         const response = await api.delete(
           `/v1/task-management/attachments/${attachmentId}`,
-          organizationId,
         );
         if (response.error) {
           throw new Error(response.error);

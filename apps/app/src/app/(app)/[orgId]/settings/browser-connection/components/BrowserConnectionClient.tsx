@@ -45,7 +45,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
     try {
       const res = await apiClient.get<{ hasContext: boolean; contextId?: string }>(
         '/v1/browserbase/org-context',
-        organizationId,
       );
       if (res.data) {
         setHasContext(res.data.hasContext);
@@ -54,7 +53,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
     } catch {
       // Ignore
     }
-  }, [organizationId]);
+  }, []);
 
   useEffect(() => {
     checkContextStatus();
@@ -70,7 +69,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       const contextRes = await apiClient.post<ContextResponse>(
         '/v1/browserbase/org-context',
         {},
-        organizationId,
       );
       if (contextRes.error || !contextRes.data) {
         throw new Error(contextRes.error || 'Failed to create context');
@@ -82,7 +80,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       const sessionRes = await apiClient.post<SessionResponse>(
         '/v1/browserbase/session',
         { contextId: contextRes.data.contextId },
-        organizationId,
       );
       if (sessionRes.error || !sessionRes.data) {
         throw new Error(sessionRes.error || 'Failed to create session');
@@ -95,7 +92,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       await apiClient.post(
         '/v1/browserbase/navigate',
         { sessionId: startedSessionId, url: urlToCheck },
-        organizationId,
       );
 
       setStatus('session-active');
@@ -111,7 +107,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
           await apiClient.post(
             '/v1/browserbase/session/close',
             { sessionId: startedSessionId },
-            organizationId,
           );
         } catch {
           // Ignore cleanup errors (don't mask original error)
@@ -130,7 +125,6 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       const res = await apiClient.post<AuthStatusResponse>(
         '/v1/browserbase/check-auth',
         { sessionId, url: urlToCheck },
-        organizationId,
       );
       if (res.error || !res.data) {
         throw new Error(res.error || 'Failed to check auth');
@@ -139,7 +133,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setAuthStatus(res.data);
 
       // Close the session after checking
-      await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
+      await apiClient.post('/v1/browserbase/session/close', { sessionId });
       setSessionId(null);
       setLiveViewUrl(null);
       setStatus('idle');
@@ -152,7 +146,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
   const handleCloseSession = async () => {
     if (sessionId) {
       try {
-        await apiClient.post('/v1/browserbase/session/close', { sessionId }, organizationId);
+        await apiClient.post('/v1/browserbase/session/close', { sessionId });
       } catch {
         // Ignore
       }

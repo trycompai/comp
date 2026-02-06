@@ -1,7 +1,7 @@
 'use client';
 
 import { useOptimisticTaskItems } from '@/hooks/use-task-items';
-import { useOrganizationMembers } from '@/hooks/use-organization-members';
+import { useAssignableMembers } from '@/hooks/use-organization-members';
 import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { Button } from '@comp/ui/button';
 import type {
@@ -76,7 +76,7 @@ export function TaskItemFocusView({
     sortOrder,
     filters,
   );
-  const { members } = useOrganizationMembers();
+  const { members } = useAssignableMembers();
 
   const assignableMembers = useMemo(() => {
     if (!members) return [];

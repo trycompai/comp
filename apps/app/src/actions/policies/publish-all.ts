@@ -157,7 +157,7 @@ export const publishAllPoliciesAction = authActionClient
           organizationId: parsedInput.organizationId,
           isActive: true,
           deactivated: false,
-          OR: [{ role: { contains: Role.employee } }, { role: { contains: Role.contractor } }],
+          user: { isPlatformAdmin: false },
         },
         include: {
           user: {
@@ -169,7 +169,9 @@ export const publishAllPoliciesAction = authActionClient
         },
       });
 
-      // Trigger email tasks for all employees using batchTrigger
+      // Trigger email tasks for all members — the downstream
+      // isUserUnsubscribed check handles role-based notification
+      // filtering via the organization's notification matrix.
       const emailPayloads = members
         .filter((orgMember) => orgMember.user.email)
         .map((orgMember) => ({

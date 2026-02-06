@@ -1,6 +1,5 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -9,20 +8,17 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { DevicesByMemberResponseDto } from './dto/devices-by-member-response.dto';
 import { DevicesService } from './devices.service';
 
 @ApiTags('Devices')
 @Controller({ path: 'devices', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@RequirePermission('app', 'read')
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class DevicesController {
   constructor(private readonly devicesService: DevicesService) {}
 
@@ -30,7 +26,7 @@ export class DevicesController {
   @ApiOperation({
     summary: 'Get all devices',
     description:
-      'Returns all devices for the authenticated organization from FleetDM. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).',
+      'Returns all devices for the authenticated organization from FleetDM. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
   })
   @ApiResponse({
     status: 200,
@@ -151,7 +147,7 @@ export class DevicesController {
   @ApiOperation({
     summary: 'Get devices by member ID',
     description:
-      "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (cookies + X-Organization-Id header).",
+      "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated fleetDmLabelId. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
   })
   @ApiParam({
     name: 'memberId',

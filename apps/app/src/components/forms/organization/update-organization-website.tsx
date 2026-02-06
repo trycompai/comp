@@ -1,7 +1,7 @@
 'use client';
 
-import { updateOrganizationWebsiteAction } from '@/actions/organization/update-organization-website-action';
 import { organizationWebsiteSchema } from '@/actions/schema';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/fo
 import { Input } from '@comp/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -25,14 +25,8 @@ export function UpdateOrganizationWebsite({
 }: {
   organizationWebsite: string;
 }) {
-  const updateOrganizationWebsite = useAction(updateOrganizationWebsiteAction, {
-    onSuccess: () => {
-      toast.success('Organization website updated');
-    },
-    onError: () => {
-      toast.error('Error updating organization website');
-    },
-  });
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationWebsiteSchema>>({
     resolver: zodResolver(organizationWebsiteSchema),
@@ -41,8 +35,17 @@ export function UpdateOrganizationWebsite({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof organizationWebsiteSchema>) => {
-    updateOrganizationWebsite.execute(data);
+  const onSubmit = async (data: z.infer<typeof organizationWebsiteSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.patch('/v1/organization', { website: data.website });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Error updating organization website');
+      return;
+    }
+
+    toast.success('Organization website updated');
   };
 
   return (
@@ -85,8 +88,8 @@ export function UpdateOrganizationWebsite({
             <div className="text-muted-foreground text-xs">
               {'Please enter a valid URL including https://'}
             </div>
-            <Button type="submit" disabled={updateOrganizationWebsite.status === 'executing'}>
-              {updateOrganizationWebsite.status === 'executing' ? (
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
               {'Save'}

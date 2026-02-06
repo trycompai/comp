@@ -1,3 +1,4 @@
+import { requireRoutePermission } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { cache } from 'react';
@@ -6,7 +7,15 @@ import { db } from '@db';
 import type { Metadata } from 'next';
 import { ApiKeysTable } from './components/table/ApiKeysTable';
 
-export default async function ApiKeysPage() {
+export default async function ApiKeysPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+
+  await requireRoutePermission('settings/api-keys', orgId);
+
   const apiKeys = await getApiKeys();
 
   return <ApiKeysTable apiKeys={apiKeys} />;

@@ -149,7 +149,6 @@ export function AutomationOverview({
       const response = await api.patch(
         `/v1/tasks/${taskId}/automations/${automationId}`,
         { description: descriptionValue.trim() || null },
-        orgId,
       );
 
       if (response.error) {

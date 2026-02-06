@@ -66,7 +66,6 @@ export function TasksPageClient({
     setIsDownloadingAll(true);
     try {
       await downloadAllEvidenceZip({
-        organizationId: orgId,
         organizationName: organizationName ?? undefined,
         includeJson: includeRawJson,
       });

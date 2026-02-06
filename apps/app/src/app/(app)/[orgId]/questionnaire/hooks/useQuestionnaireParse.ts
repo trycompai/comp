@@ -4,7 +4,6 @@ import { api } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { createTriggerToken } from '../actions/create-trigger-token';
 import type { QuestionAnswer } from '../components/types';
 
 interface UseQuestionnaireParseProps {
@@ -42,9 +41,18 @@ export function useQuestionnaireParse({
   // Get trigger token for auto-answer (can trigger and read)
   useEffect(() => {
     async function getAutoAnswerToken() {
-      const result = await createTriggerToken('vendor-questionnaire-orchestrator');
-      if (result.success && result.token) {
-        setAutoAnswerToken(result.token);
+      try {
+        const res = await fetch('/api/questionnaire/trigger-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: 'vendor-questionnaire-orchestrator' }),
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+          setAutoAnswerToken(data.token);
+        }
+      } catch (error) {
+        console.error('Failed to get trigger token:', error);
       }
     }
     if (!autoAnswerToken) {
@@ -78,7 +86,6 @@ export function useQuestionnaireParse({
             fileData: input.fileData,
             source: 'internal',
           },
-          input.organizationId,
         );
 
         if (response.error || !response.data) {

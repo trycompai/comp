@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
@@ -15,8 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@comp/ui/tabs';
 import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { disconnectCloudAction } from '../actions/disconnect-cloud';
-import { isCloudProviderSlug } from '../constants';
 
 interface CloudProvider {
   id: string; // Provider slug (aws, gcp, azure)
@@ -60,6 +59,7 @@ export function CloudSettingsModal({
   connectedProviders,
   onUpdate,
 }: CloudSettingsModalProps) {
+  const api = useApi();
   const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.connectionId || 'aws');
   const [isDeleting, setIsDeleting] = useState(false);
   const { deleteConnection } = useIntegrationMutations();
@@ -78,23 +78,14 @@ export function CloudSettingsModal({
 
       if (provider.isLegacy) {
         // Legacy providers use the old Integration table
-        if (!isCloudProviderSlug(provider.id)) {
-          toast.error('Unsupported legacy provider');
-          return;
-        }
-
-        const legacyResult = await disconnectCloudAction({
-          cloudProvider: provider.id,
-          integrationId: provider.connectionId,
-        });
-        if (legacyResult?.data?.success) {
+        const response = await api.delete(`/v1/cloud-security/legacy/${provider.connectionId}`);
+        if (!response.error) {
           toast.success('Cloud provider disconnected');
           onUpdate();
           onOpenChange(false);
-          return;
+        } else {
+          toast.error('Failed to disconnect');
         }
-
-        toast.error(legacyResult?.data?.error || 'Failed to disconnect');
         return;
       }
 

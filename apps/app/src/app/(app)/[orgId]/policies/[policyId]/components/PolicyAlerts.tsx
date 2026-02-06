@@ -1,7 +1,6 @@
 'use client';
 
-import { acceptRequestedPolicyChangesAction } from '@/actions/policies/accept-requested-policy-changes';
-import { denyRequestedPolicyChangesAction } from '@/actions/policies/deny-requested-policy-changes';
+import { useApi } from '@/hooks/use-api';
 import { authClient } from '@/utils/auth-client';
 import type { Member, Policy, User } from '@db';
 import {
@@ -15,9 +14,8 @@ import {
 } from '@trycompai/design-system';
 import { Archive, Renew, Time } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface PolicyAlertsProps {
@@ -27,55 +25,54 @@ interface PolicyAlertsProps {
 }
 
 export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAlertsProps) {
+  const api = useApi();
   const { data: activeMember } = authClient.useActiveMember();
   const router = useRouter();
   const searchParams = useSearchParams();
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
+  const [isApproving, setIsApproving] = useState(false);
+  const [isDenying, setIsDenying] = useState(false);
 
   const approveCommentRef = useRef<HTMLTextAreaElement>(null);
   const rejectCommentRef = useRef<HTMLTextAreaElement>(null);
 
-  const denyPolicyChanges = useAction(denyRequestedPolicyChangesAction, {
-    onSuccess: () => {
-      toast.info('Policy changes denied!');
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to deny policy changes.');
-    },
-  });
-
-  const acceptPolicyChanges = useAction(acceptRequestedPolicyChangesAction, {
-    onSuccess: () => {
-      toast.success('Policy changes accepted and published!');
-      onMutate?.();
-    },
-    onError: () => {
-      toast.error('Failed to accept policy changes.');
-    },
-  });
-
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (policy?.id && policy.approverId) {
       const comment = approveCommentRef.current?.value?.trim() || undefined;
-      acceptPolicyChanges.execute({
-        id: policy.id,
-        approverId: policy.approverId,
-        comment,
-        entityId: policy.id,
-      });
+      setIsApproving(true);
+      try {
+        const response = await api.post(`/v1/policies/${policy.id}/accept-changes`, {
+          approverId: policy.approverId,
+          comment,
+        });
+        if (response.error) throw new Error(response.error);
+        toast.success('Policy changes accepted and published!');
+        onMutate?.();
+      } catch {
+        toast.error('Failed to accept policy changes.');
+      } finally {
+        setIsApproving(false);
+      }
     }
   };
 
-  const handleDeny = () => {
+  const handleDeny = async () => {
     if (policy?.id && policy.approverId) {
       const comment = rejectCommentRef.current?.value?.trim() || undefined;
-      denyPolicyChanges.execute({
-        id: policy.id,
-        approverId: policy.approverId,
-        comment,
-        entityId: policy.id,
-      });
+      setIsDenying(true);
+      try {
+        const response = await api.post(`/v1/policies/${policy.id}/deny-changes`, {
+          approverId: policy.approverId,
+          comment,
+        });
+        if (response.error) throw new Error(response.error);
+        toast.info('Policy changes denied!');
+        onMutate?.();
+      } catch {
+        toast.error('Failed to deny policy changes.');
+      } finally {
+        setIsDenying(false);
+      }
     }
   };
 
@@ -107,8 +104,8 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
           description="Review this policy and approve or reject the pending changes."
           onApprove={handleApprove}
           onReject={handleDeny}
-          approveLoading={acceptPolicyChanges.isPending}
-          rejectLoading={denyPolicyChanges.isPending}
+          approveLoading={isApproving}
+          rejectLoading={isDenying}
           approveConfirmation={{
             title: 'Approve Policy Changes',
             description: 'Are you sure you want to approve these policy changes?',

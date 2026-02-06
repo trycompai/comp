@@ -1,7 +1,7 @@
 'use client';
 
-import { updatePolicyOverviewAction } from '@/actions/policies/update-policy-overview-action';
 import { updatePolicyOverviewSchema } from '@/actions/schema';
+import { useApi } from '@/hooks/use-api';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Policy } from '@db';
 import { Button } from '@comp/ui/button';
@@ -15,7 +15,7 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -26,15 +26,8 @@ interface UpdatePolicyFormProps {
 }
 
 export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
-  const updatePolicy = useAction(updatePolicyOverviewAction, {
-    onSuccess: () => {
-      toast.success('Policy updated successfully');
-      onSuccess?.();
-    },
-    onError: () => {
-      toast.error('Failed to update policy');
-    },
-  });
+  const api = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updatePolicyOverviewSchema>>({
     resolver: zodResolver(updatePolicyOverviewSchema),
@@ -46,14 +39,21 @@ export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof updatePolicyOverviewSchema>) => {
-    console.log(data);
-    updatePolicy.execute({
-      id: data.id,
-      title: data.title,
+  const onSubmit = async (data: z.infer<typeof updatePolicyOverviewSchema>) => {
+    setIsSubmitting(true);
+    const response = await api.patch(`/v1/policies/${data.id}`, {
+      name: data.title,
       description: data.description,
-      entityId: data.id,
     });
+    setIsSubmitting(false);
+
+    if (response.error) {
+      toast.error('Failed to update policy');
+      return;
+    }
+
+    toast.success('Policy updated successfully');
+    onSuccess?.();
   };
 
   return (
@@ -99,8 +99,8 @@ export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
                   )}
                 />
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={updatePolicy.status === 'executing'}>
-                    {updatePolicy.status === 'executing' ? 'Saving...' : 'Save'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : 'Save'}
                   </Button>
                 </div>
               </Stack>

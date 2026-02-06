@@ -1,6 +1,6 @@
 'use client';
 
-import { createVersionAction } from '@/actions/policies/create-version';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -32,37 +32,34 @@ export function PublishVersionDialog({
   onClose,
   onSuccess,
 }: PublishVersionDialogProps) {
+  const api = useApi();
   const router = useRouter();
   const [changelog, setChangelog] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
     setIsCreating(true);
+    const response = await api.post(`/v1/policies/${policyId}/versions`, {
+      changelog: changelog.trim() || undefined,
+    });
+    setIsCreating(false);
 
-    try {
-      const result = await createVersionAction({
-        policyId,
-        changelog: changelog.trim() || undefined,
-        entityId: policyId,
-      });
-
-      if (!result?.data?.success) {
-        throw new Error(result?.data?.error || 'Failed to create version');
-      }
-
-      const newVersionId = result.data.data?.versionId;
-      toast.success(`Created version ${result.data.data?.version} as draft`);
-      setChangelog('');
-      onClose();
-      if (newVersionId) {
-        onSuccess?.(newVersionId);
-      }
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create version');
-    } finally {
-      setIsCreating(false);
+    if (response.error) {
+      toast.error('Failed to create version');
+      return;
     }
+
+    // API returns { data: { versionId, version }, authType: ... }
+    const responseData = response.data as { data?: { versionId?: string; version?: number } } | undefined;
+    const versionData = responseData?.data;
+    const newVersionId = versionData?.versionId;
+    toast.success(`Created version ${versionData?.version} as draft`);
+    setChangelog('');
+    onClose();
+    if (newVersionId) {
+      onSuccess?.(newVersionId);
+    }
+    router.refresh();
   };
 
   const handleOpenChange = (open: boolean) => {

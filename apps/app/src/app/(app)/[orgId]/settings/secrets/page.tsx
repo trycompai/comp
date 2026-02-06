@@ -1,3 +1,4 @@
+import { requireRoutePermission } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import type { Metadata } from 'next';
@@ -5,7 +6,15 @@ import { headers } from 'next/headers';
 import { cache } from 'react';
 import { SecretsTable } from './components/table/SecretsTable';
 
-export default async function SecretsPage() {
+export default async function SecretsPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+
+  await requireRoutePermission('settings/secrets', orgId);
+
   const secrets = await getSecrets();
 
   return <SecretsTable secrets={secrets} />;

@@ -1,11 +1,10 @@
 'use client';
 
+import { api } from '@/lib/api-client';
 import { Button, Input, Textarea } from '@trycompai/design-system';
 import { View, ViewOff } from '@trycompai/design-system/icons';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import { updateTrustOverviewAction } from '../actions/update-trust-overview';
-import { useAction } from 'next-safe-action/hooks';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -23,24 +22,32 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
   const [content, setContent] = useState(initialData.overviewContent ?? '');
   const [showOverview, setShowOverview] = useState(initialData.showOverview);
   const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const updateOverview = useAction(updateTrustOverviewAction, {
-    onSuccess: () => {
-      setIsDirty(false);
-      toast.success('Overview saved successfully');
+  const saveOverview = useCallback(
+    async (overrides?: { showOverview?: boolean }) => {
+      setIsSaving(true);
+      try {
+        const response = await api.post('/v1/trust-portal/overview', {
+          organizationId: orgId,
+          overviewTitle: title.trim() || null,
+          overviewContent: content.trim() || null,
+          showOverview: overrides?.showOverview ?? showOverview,
+        });
+        if (response.error) throw new Error(response.error);
+        setIsDirty(false);
+        toast.success('Overview saved successfully');
+      } catch {
+        toast.error('Failed to save overview');
+      } finally {
+        setIsSaving(false);
+      }
     },
-    onError: () => {
-      toast.error('Failed to save overview');
-    },
-  });
+    [orgId, title, content, showOverview],
+  );
 
   const handleSave = () => {
-    updateOverview.execute({
-      orgId,
-      overviewTitle: title.trim() || null,
-      overviewContent: content.trim() || null,
-      showOverview,
-    });
+    saveOverview();
   };
 
   const handleTitleChange = (value: string) => {
@@ -56,15 +63,8 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
   const handleToggleChange = (checked: boolean) => {
     setShowOverview(checked);
     // Auto-save visibility toggle immediately
-    updateOverview.execute({
-      orgId,
-      overviewTitle: title.trim() || null,
-      overviewContent: content.trim() || null,
-      showOverview: checked,
-    });
+    saveOverview({ showOverview: checked });
   };
-
-  const isSaving = updateOverview.status === 'executing';
 
   return (
     <div className="space-y-6">

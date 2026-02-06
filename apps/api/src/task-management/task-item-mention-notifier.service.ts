@@ -54,6 +54,7 @@ export class TaskItemMentionNotifierService {
       const mentionedUsers = await db.user.findMany({
         where: {
           id: { in: mentionedUserIds },
+          isPlatformAdmin: false,
         },
       });
 
@@ -114,6 +115,7 @@ export class TaskItemMentionNotifierService {
           db,
           user.email,
           'taskMentions',
+          organizationId,
         );
         if (isUnsubscribed) {
           this.logger.log(

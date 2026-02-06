@@ -46,7 +46,7 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
       const response = await api.get<{
         success: boolean;
         automation: TaskAutomationData;
-      }>(`/v1/tasks/${taskId}/automations/${automationId}`, orgId);
+      }>(`/v1/tasks/${taskId}/automations/${automationId}`);
 
       if (response.error) {
         console.log('failed to fetch automation', response.error);

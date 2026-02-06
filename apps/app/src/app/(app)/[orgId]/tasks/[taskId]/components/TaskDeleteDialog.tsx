@@ -1,5 +1,6 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -13,13 +14,11 @@ import { Form } from '@comp/ui/form';
 import { Task } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { deleteTaskAction } from '../actions/delete-task';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -35,6 +34,7 @@ interface TaskDeleteDialogProps {
 
 export function TaskDeleteDialog({ isOpen, onClose, task }: TaskDeleteDialogProps) {
   const router = useRouter();
+  const api = useApi();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
@@ -44,24 +44,18 @@ export function TaskDeleteDialog({ isOpen, onClose, task }: TaskDeleteDialogProp
     },
   });
 
-  const deleteTask = useAction(deleteTaskAction, {
-    onSuccess: () => {
+  const handleSubmit = async (values: FormValues) => {
+    setIsSubmitting(true);
+    try {
+      const response = await api.delete(`/v1/tasks/${task.id}`);
+      if (response.error) throw new Error(response.error);
       toast.info('Task deleted! Redirecting to tasks list...');
       onClose();
       router.push(`/${task.organizationId}/tasks`);
-    },
-    onError: () => {
+    } catch {
       toast.error('Failed to delete task.');
       setIsSubmitting(false);
-    },
-  });
-
-  const handleSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
-    deleteTask.execute({
-      id: task.id,
-      entityId: task.id,
-    });
+    }
   };
 
   return (

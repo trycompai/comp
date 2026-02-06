@@ -2,19 +2,21 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Body,
   Param,
+  Query,
   ParseIntPipe,
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiExtraModels,
-  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -22,13 +24,16 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
+import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { RequireRoles } from '../auth/role-validator.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePeopleDto } from './dto/create-people.dto';
 import { UpdatePeopleDto } from './dto/update-people.dto';
 import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { PeopleResponseDto, UserResponseDto } from './dto/people-responses.dto';
+import { UpdateEmailPreferencesDto } from './dto/update-email-preferences.dto';
 import { PeopleService } from './people.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
 import { CREATE_MEMBER_RESPONSES } from './schemas/create-member.responses';
@@ -44,18 +49,14 @@ import { PEOPLE_BODIES } from './schemas/people-bodies';
 @ApiTags('People')
 @ApiExtraModels(PeopleResponseDto, UserResponseDto)
 @Controller({ path: 'people', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class PeopleController {
   constructor(private readonly peopleService: PeopleService) {}
 
   @Get()
+  @AuditRead()
+  @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getAllPeople)
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[401])
@@ -64,9 +65,12 @@ export class PeopleController {
   async getAllPeople(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('includeDeactivated') includeDeactivated?: string,
   ) {
-    const people =
-      await this.peopleService.findAllByOrganization(organizationId);
+    const people = await this.peopleService.findAllByOrganization(
+      organizationId,
+      includeDeactivated === 'true',
+    );
 
     return {
       data: people,
@@ -83,6 +87,7 @@ export class PeopleController {
   }
 
   @Post()
+  @RequirePermission('member', 'create')
   @ApiOperation(PEOPLE_OPERATIONS.createMember)
   @ApiBody(PEOPLE_BODIES.createMember)
   @ApiResponse(CREATE_MEMBER_RESPONSES[201])
@@ -111,6 +116,7 @@ export class PeopleController {
   }
 
   @Post('bulk')
+  @RequirePermission('member', 'create')
   @ApiOperation(PEOPLE_OPERATIONS.bulkCreateMembers)
   @ApiBody(PEOPLE_BODIES.bulkCreateMembers)
   @ApiResponse(BULK_CREATE_MEMBERS_RESPONSES[201])
@@ -142,6 +148,8 @@ export class PeopleController {
   }
 
   @Get(':id')
+  @AuditRead()
+  @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getPersonById)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[200])
@@ -169,6 +177,7 @@ export class PeopleController {
   }
 
   @Patch(':id')
+  @RequirePermission('member', 'update')
   @ApiOperation(PEOPLE_OPERATIONS.updateMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiBody(PEOPLE_BODIES.updateMember)
@@ -204,7 +213,7 @@ export class PeopleController {
 
   @Delete(':id/host/:hostId')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(RequireRoles('owner'))
+  @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.removeHost)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiParam(PEOPLE_PARAMS.hostId)
@@ -238,6 +247,7 @@ export class PeopleController {
   }
 
   @Delete(':id')
+  @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.deleteMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(DELETE_MEMBER_RESPONSES[200])
@@ -252,6 +262,7 @@ export class PeopleController {
     const result = await this.peopleService.deleteById(
       memberId,
       organizationId,
+      authContext.userId,
     );
 
     return {
@@ -269,6 +280,7 @@ export class PeopleController {
 
   @Patch(':id/unlink-device')
   @HttpCode(HttpStatus.OK)
+  @RequirePermission('member', 'update')
   @ApiOperation(PEOPLE_OPERATIONS.unlinkDevice)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiResponse(UPDATE_MEMBER_RESPONSES[200])
@@ -297,5 +309,24 @@ export class PeopleController {
           },
         }),
     };
+  }
+
+  @Put('me/email-preferences')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Update current user email notification preferences' })
+  async updateEmailPreferences(
+    @AuthContext() authContext: AuthContextType,
+    @Body() body: UpdateEmailPreferencesDto,
+  ) {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. This endpoint requires session authentication.',
+      );
+    }
+
+    return this.peopleService.updateEmailPreferences(
+      authContext.userId,
+      body.preferences,
+    );
   }
 }

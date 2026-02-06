@@ -1,14 +1,12 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { SelectPills } from '@comp/ui/select-pills';
 import { Control } from '@db';
 import { Section } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { mapPolicyToControls } from '../actions/mapPolicyToControls';
-import { unmapPolicyFromControl } from '../actions/unmapPolicyFromControl';
 
 export const PolicyControlMappings = ({
   mappedControls,
@@ -20,28 +18,9 @@ export const PolicyControlMappings = ({
   isPendingApproval: boolean;
 }) => {
   const { policyId } = useParams<{ policyId: string }>();
+  const api = useApi();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  const mapControlsAction = useAction(mapPolicyToControls, {
-    onSuccess: () => {
-      toast.success('Controls mapped successfully');
-    },
-    onError: (err) => {
-      toast.error(err.error.serverError || 'Failed to map controls');
-      setLoading(false);
-    },
-  });
-
-  const unmapControlAction = useAction(unmapPolicyFromControl, {
-    onSuccess: () => {
-      toast.success('Controls unmapped successfully');
-      setLoading(false);
-    },
-    onError: (err) => {
-      toast.error(err.error.serverError || 'Failed to unmap control');
-      setLoading(false);
-    },
-  });
 
   const mappedNames = mappedControls.map((c) => c.name);
 
@@ -57,17 +36,18 @@ export const PolicyControlMappings = ({
 
     try {
       if (added.length > 0) {
-        await mapControlsAction.execute({
-          policyId,
+        const response = await api.post(`/v1/policies/${policyId}/controls`, {
           controlIds: added.map((c) => c.id),
         });
+        if (response.error) throw new Error(response.error);
+        toast.success('Controls mapped successfully');
       }
       if (removed.length > 0) {
-        await unmapControlAction.execute({
-          policyId,
-          controlId: removed[0].id,
-        });
+        const response = await api.delete(`/v1/policies/${policyId}/controls/${removed[0].id}`);
+        if (response.error) throw new Error(response.error);
+        toast.success('Controls unmapped successfully');
       }
+      router.refresh();
     } catch {
       toast.error('Failed to update controls');
     } finally {

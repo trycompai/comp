@@ -15,13 +15,11 @@ import { Input } from '@comp/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, ClipboardCopy, ExternalLink, Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useApi } from '@/hooks/use-api';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { checkDnsRecordAction } from '../actions/check-dns-record';
-import { customDomainAction } from '../actions/custom-domain';
 
 const trustPortalDomainSchema = z.object({
   domain: z
@@ -79,62 +77,9 @@ export function TrustPortalDomain({
     setIsVercelTxtVerified(isVercelTxtVerified === 'true');
   }, [initialDomain]);
 
-  const updateCustomDomain = useAction(customDomainAction, {
-    onSuccess: (data) => {
-      // Check if the action returned an error (e.g., domain already in use)
-      if (data?.data?.success === false) {
-        toast.error(data.data.error || 'Failed to update custom domain.');
-        return;
-      }
-      toast.success('Custom domain update submitted, please verify your DNS records.');
-    },
-    onError: (error) => {
-      toast.error(
-        error.error.serverError ||
-          error.error.validationErrors?._errors?.[0] ||
-          'Failed to update custom domain.',
-      );
-    },
-  });
-
-  const checkDnsRecord = useAction(checkDnsRecordAction, {
-    onSuccess: (data) => {
-      if (data?.data?.error) {
-        toast.error(data.data.error);
-
-        if (data.data?.isCnameVerified) {
-          setIsCnameVerified(true);
-          localStorage.setItem(`${initialDomain}-isCnameVerified`, 'true');
-        }
-        if (data.data?.isTxtVerified) {
-          setIsTxtVerified(true);
-          localStorage.setItem(`${initialDomain}-isTxtVerified`, 'true');
-        }
-        if (data.data?.isVercelTxtVerified) {
-          setIsVercelTxtVerified(true);
-          localStorage.setItem(`${initialDomain}-isVercelTxtVerified`, 'true');
-        }
-      } else {
-        if (data.data?.isCnameVerified) {
-          setIsCnameVerified(true);
-          localStorage.removeItem(`${initialDomain}-isCnameVerified`);
-        }
-        if (data.data?.isTxtVerified) {
-          setIsTxtVerified(true);
-          localStorage.removeItem(`${initialDomain}-isTxtVerified`);
-        }
-        if (data.data?.isVercelTxtVerified) {
-          setIsVercelTxtVerified(true);
-          localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
-        }
-      }
-    },
-    onError: () => {
-      toast.error(
-        'DNS record verification failed, check the records are valid or try again later.',
-      );
-    },
-  });
+  const api = useApi();
+  const [isUpdatingDomain, setIsUpdatingDomain] = useState(false);
+  const [isCheckingDns, setIsCheckingDns] = useState(false);
 
   const form = useForm<z.infer<typeof trustPortalDomainSchema>>({
     resolver: zodResolver(trustPortalDomainSchema),
@@ -152,7 +97,23 @@ export function TrustPortalDomain({
     localStorage.removeItem(`${initialDomain}-isTxtVerified`);
     localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
 
-    updateCustomDomain.execute({ domain: data.domain });
+    setIsUpdatingDomain(true);
+    try {
+      const response = await api.post<{ success: boolean; needsVerification?: boolean; error?: string }>(
+        '/v1/trust-portal/settings/custom-domain',
+        { domain: data.domain },
+      );
+      if (response.error) throw new Error(response.error);
+      if (response.data?.success === false) {
+        toast.error(response.data.error || 'Failed to update custom domain.');
+        return;
+      }
+      toast.success('Custom domain update submitted, please verify your DNS records.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update custom domain.');
+    } finally {
+      setIsUpdatingDomain(false);
+    }
   };
 
   const handleCopy = (text: string, type: string) => {
@@ -160,8 +121,56 @@ export function TrustPortalDomain({
     toast.success(`${type} copied to clipboard`);
   };
 
-  const handleCheckDnsRecord = () => {
-    checkDnsRecord.execute({ domain: form.watch('domain') });
+  const handleCheckDnsRecord = async () => {
+    setIsCheckingDns(true);
+    try {
+      const response = await api.post<{
+        success: boolean;
+        isCnameVerified?: boolean;
+        isTxtVerified?: boolean;
+        isVercelTxtVerified?: boolean;
+        error?: string;
+      }>('/v1/trust-portal/settings/check-dns', {
+        domain: form.watch('domain'),
+      });
+      if (response.error) throw new Error(response.error);
+
+      const data = response.data;
+      if (data?.error) {
+        toast.error(data.error);
+        if (data.isCnameVerified) {
+          setIsCnameVerified(true);
+          localStorage.setItem(`${initialDomain}-isCnameVerified`, 'true');
+        }
+        if (data.isTxtVerified) {
+          setIsTxtVerified(true);
+          localStorage.setItem(`${initialDomain}-isTxtVerified`, 'true');
+        }
+        if (data.isVercelTxtVerified) {
+          setIsVercelTxtVerified(true);
+          localStorage.setItem(`${initialDomain}-isVercelTxtVerified`, 'true');
+        }
+      } else {
+        if (data?.isCnameVerified) {
+          setIsCnameVerified(true);
+          localStorage.removeItem(`${initialDomain}-isCnameVerified`);
+        }
+        if (data?.isTxtVerified) {
+          setIsTxtVerified(true);
+          localStorage.removeItem(`${initialDomain}-isTxtVerified`);
+        }
+        if (data?.isVercelTxtVerified) {
+          setIsVercelTxtVerified(true);
+          localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
+        }
+      }
+    } catch {
+      toast.error(
+        'DNS record verification failed, check the records are valid or try again later.',
+      );
+    } finally {
+      setIsCheckingDns(false);
+    }
   };
 
   return (
@@ -221,9 +230,9 @@ export function TrustPortalDomain({
                           type="button"
                           className="md:max-w-[300px]"
                           onClick={handleCheckDnsRecord}
-                          disabled={checkDnsRecord.status === 'executing'}
+                          disabled={isCheckingDns}
                         >
-                          {checkDnsRecord.status === 'executing' ? (
+                          {isCheckingDns ? (
                             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                           ) : null}
                           Check DNS record
@@ -529,10 +538,10 @@ export function TrustPortalDomain({
             <Button
               type="submit"
               disabled={
-                updateCustomDomain.status === 'executing' || checkDnsRecord.status === 'executing'
+                isUpdatingDomain || isCheckingDns
               }
             >
-              {updateCustomDomain.status === 'executing' ? (
+              {isUpdatingDomain ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}
               {'Save'}

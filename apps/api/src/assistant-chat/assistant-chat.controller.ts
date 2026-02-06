@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -16,6 +15,8 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { SaveAssistantChatHistoryDto } from './assistant-chat.dto';
 import { AssistantChatService } from './assistant-chat.service';
@@ -23,14 +24,9 @@ import type { AssistantChatMessage } from './assistant-chat.types';
 
 @ApiTags('Assistant Chat')
 @Controller({ path: 'assistant-chat', version: '1' })
-@UseGuards(HybridAuthGuard)
+@UseGuards(HybridAuthGuard, PermissionGuard)
+@RequirePermission('app', 'read')
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for JWT auth, optional for API key auth)',
-  required: false,
-})
 export class AssistantChatController {
   constructor(private readonly assistantChatService: AssistantChatService) {}
 

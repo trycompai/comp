@@ -1,19 +1,20 @@
 'use client';
 
+import { useDebounce } from '@/hooks/useDebounce';
 import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
-import { Form } from '@comp/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
+import { Input } from '@comp/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { Download, Eye, FileCheck2, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { updateTrustPortalFrameworks } from '../actions/update-trust-portal-frameworks';
 import {
   TrustPortalAdditionalDocumentsSection,
   type TrustPortalDocument,
@@ -37,8 +38,11 @@ import {
   SOC2Type2,
 } from './logos';
 
-// Client-side form schema for framework state
-const trustPortalFormSchema = z.object({
+// Client-side form schema (includes all fields for form state)
+const trustPortalSwitchSchema = z.object({
+  enabled: z.boolean(),
+  contactEmail: z.string().email().or(z.literal('')).optional(),
+  primaryColor: z.string().optional(),
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
   iso27001: z.boolean(),
@@ -58,6 +62,13 @@ const trustPortalFormSchema = z.object({
   nen7510Status: z.enum(['started', 'in_progress', 'compliant']),
   iso9001Status: z.enum(['started', 'in_progress', 'compliant']),
 });
+
+// Server action input schema (only fields that the server accepts)
+type TrustPortalSwitchActionInput = {
+  enabled: boolean;
+  contactEmail?: string | '';
+  primaryColor?: string;
+};
 
 const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
   iso27001: 'iso_27001',
@@ -123,6 +134,12 @@ type TrustVendor = {
 };
 
 export function TrustPortalSwitch({
+  enabled,
+  slug,
+  domainVerified,
+  domain,
+  contactEmail,
+  primaryColor,
   orgId,
   soc2type1,
   soc2type2,
@@ -157,9 +174,13 @@ export function TrustPortalSwitch({
   customLinks,
   vendors,
   faviconUrl,
-  contactEmail,
-  primaryColor,
 }: {
+  enabled: boolean;
+  slug: string;
+  domainVerified: boolean;
+  domain: string;
+  contactEmail: string | null;
+  primaryColor: string | null;
   orgId: string;
   soc2type1: boolean;
   soc2type2: boolean;
@@ -179,7 +200,7 @@ export function TrustPortalSwitch({
   nen7510Status: 'started' | 'in_progress' | 'compliant';
   iso9001: boolean;
   iso9001Status: 'started' | 'in_progress' | 'compliant';
-  faqs: FaqItem[] | null;
+  faqs: any[] | null;
   iso27001FileName?: string | null;
   iso42001FileName?: string | null;
   gdprFileName?: string | null;
@@ -194,8 +215,6 @@ export function TrustPortalSwitch({
   customLinks: TrustCustomLink[];
   vendors: TrustVendor[];
   faviconUrl?: string | null;
-  contactEmail?: string | null;
-  primaryColor?: string | null;
 }) {
   const [certificateFiles, setCertificateFiles] = useState<Record<string, string | null>>({
     iso27001: iso27001FileName ?? null,
@@ -260,7 +279,6 @@ export function TrustPortalSwitch({
         fileType: file.type || 'application/pdf',
         fileData,
       },
-      orgId,
     );
 
     if (response.error) {
@@ -293,7 +311,6 @@ export function TrustPortalSwitch({
         organizationId: orgId,
         framework: apiFramework,
       },
-      orgId,
     );
 
     if (response.error) {
@@ -307,9 +324,14 @@ export function TrustPortalSwitch({
 
     window.open(payload.signedUrl, '_blank', 'noopener,noreferrer');
   };
-  const form = useForm<z.infer<typeof trustPortalFormSchema>>({
-    resolver: zodResolver(trustPortalFormSchema),
+  const [isToggling, setIsToggling] = useState(false);
+
+  const form = useForm<z.infer<typeof trustPortalSwitchSchema>>({
+    resolver: zodResolver(trustPortalSwitchSchema),
     defaultValues: {
+      enabled: enabled,
+      contactEmail: contactEmail ?? undefined,
+      primaryColor: primaryColor ?? undefined,
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
       iso27001: iso27001 ?? false,
@@ -330,6 +352,126 @@ export function TrustPortalSwitch({
       iso9001Status: iso9001Status ?? 'started',
     },
   });
+
+  const onSubmit = useCallback(
+    async (data: TrustPortalSwitchActionInput) => {
+      setIsToggling(true);
+      try {
+        const response = await api.put('/v1/trust-portal/settings/toggle', {
+          enabled: data.enabled,
+          contactEmail: data.contactEmail,
+          primaryColor: data.primaryColor,
+        });
+        if (response.error) throw new Error(response.error);
+        toast.success('Trust portal status updated');
+      } catch {
+        toast.error('Failed to update trust portal status');
+      } finally {
+        setIsToggling(false);
+      }
+    },
+    [api],
+  );
+
+  const portalUrl = domainVerified ? `https://${domain}` : `https://trust.inc/${slug}`;
+
+  const lastSaved = useRef<{ [key: string]: string | boolean | null }>({
+    contactEmail: contactEmail ?? '',
+    enabled: enabled,
+    primaryColor: primaryColor ?? null,
+  });
+
+  const savingRef = useRef<{ [key: string]: boolean }>({
+    contactEmail: false,
+    enabled: false,
+    primaryColor: false,
+  });
+
+  const autoSave = useCallback(
+    async (field: string, value: unknown) => {
+      // Prevent concurrent saves for the same field
+      if (savingRef.current[field]) {
+        return;
+      }
+
+      const current = form.getValues();
+      if (lastSaved.current[field] !== value) {
+        savingRef.current[field] = true;
+        try {
+          // Only send fields that trustPortalSwitchAction accepts
+          // Server schema accepts: enabled, contactEmail, primaryColor
+          const data: TrustPortalSwitchActionInput = {
+            enabled: field === 'enabled' ? (value as boolean) : current.enabled,
+            contactEmail:
+              field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
+            primaryColor:
+              field === 'primaryColor' ? (value as string) : (current.primaryColor ?? undefined),
+          };
+          await onSubmit(data);
+          lastSaved.current[field] = value as string | boolean | null;
+        } finally {
+          savingRef.current[field] = false;
+        }
+      }
+    },
+    [form, onSubmit],
+  );
+
+  const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');
+  const debouncedContactEmail = useDebounce(contactEmailValue, 800);
+
+  const [primaryColorValue, setPrimaryColorValue] = useState(form.getValues('primaryColor') || '');
+  const debouncedPrimaryColor = useDebounce(primaryColorValue, 800);
+
+  useEffect(() => {
+    if (
+      debouncedContactEmail !== undefined &&
+      debouncedContactEmail !== lastSaved.current.contactEmail &&
+      !savingRef.current.contactEmail
+    ) {
+      form.setValue('contactEmail', debouncedContactEmail);
+      void autoSave('contactEmail', debouncedContactEmail);
+    }
+  }, [debouncedContactEmail, autoSave, form]);
+
+  useEffect(() => {
+    if (
+      debouncedPrimaryColor !== undefined &&
+      debouncedPrimaryColor !== lastSaved.current.primaryColor &&
+      !savingRef.current.primaryColor
+    ) {
+      form.setValue('primaryColor', debouncedPrimaryColor || undefined);
+      void autoSave('primaryColor', debouncedPrimaryColor || null);
+    }
+  }, [debouncedPrimaryColor, autoSave, form]);
+
+  const handleContactEmailBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      form.setValue('contactEmail', value);
+      autoSave('contactEmail', value);
+    },
+    [form, autoSave],
+  );
+
+  const handlePrimaryColorBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (value) {
+        form.setValue('primaryColor', value);
+      }
+      void autoSave('primaryColor', value || null);
+    },
+    [form, autoSave],
+  );
+
+  const handleEnabledChange = useCallback(
+    (val: boolean) => {
+      form.setValue('enabled', val);
+      autoSave('enabled', val);
+    },
+    [form, autoSave],
+  );
 
   return (
     <Form {...form}>
@@ -363,8 +505,7 @@ export function TrustPortalSwitch({
                   status={iso27001Status}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         iso27001Status: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('ISO 27001 status updated');
@@ -374,8 +515,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         iso27001: checked,
                       });
                       toast.success('ISO 27001 status updated');
@@ -397,8 +537,7 @@ export function TrustPortalSwitch({
                   status={iso42001Status}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         iso42001Status: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('ISO 42001 status updated');
@@ -408,8 +547,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         iso42001: checked,
                       });
                       toast.success('ISO 42001 status updated');
@@ -431,8 +569,7 @@ export function TrustPortalSwitch({
                   status={gdprStatus}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         gdprStatus: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('GDPR status updated');
@@ -442,8 +579,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         gdpr: checked,
                       });
                       toast.success('GDPR status updated');
@@ -465,8 +601,7 @@ export function TrustPortalSwitch({
                   status={hipaaStatus}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         hipaaStatus: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('HIPAA status updated');
@@ -476,8 +611,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         hipaa: checked,
                       });
                       toast.success('HIPAA status updated');
@@ -499,8 +633,7 @@ export function TrustPortalSwitch({
                   status={soc2type1Status}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         soc2type1Status: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('SOC 2 Type 1 status updated');
@@ -510,8 +643,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         soc2type1: checked,
                       });
                       toast.success('SOC 2 Type 1 status updated');
@@ -533,8 +665,7 @@ export function TrustPortalSwitch({
                   status={soc2type2Status}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         soc2type2Status: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('SOC 2 Type 2 status updated');
@@ -544,8 +675,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         soc2type2: checked,
                       });
                       toast.success('SOC 2 Type 2 status updated');
@@ -567,8 +697,7 @@ export function TrustPortalSwitch({
                   status={pcidssStatus}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         pcidssStatus: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('PCI DSS status updated');
@@ -578,8 +707,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         pcidss: checked,
                       });
                       toast.success('PCI DSS status updated');
@@ -601,8 +729,7 @@ export function TrustPortalSwitch({
                   status={nen7510Status}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         nen7510Status: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('NEN 7510 status updated');
@@ -612,8 +739,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         nen7510: checked,
                       });
                       toast.success('NEN 7510 status updated');
@@ -635,8 +761,7 @@ export function TrustPortalSwitch({
                   status={iso9001Status}
                   onStatusChange={async (value) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         iso9001Status: value as 'started' | 'in_progress' | 'compliant',
                       });
                       toast.success('ISO 9001 status updated');
@@ -646,8 +771,7 @@ export function TrustPortalSwitch({
                   }}
                   onToggle={async (checked) => {
                     try {
-                      await updateTrustPortalFrameworks({
-                        orgId,
+                      await api.put('/v1/trust-portal/settings/frameworks', {
                         iso9001: checked,
                       });
                       toast.success('ISO 9001 status updated');
@@ -714,6 +838,7 @@ export function TrustPortalSwitch({
               />
             </div>
           </TabsContent>
+
         </Tabs>
       </form>
     </Form>
@@ -724,8 +849,8 @@ export function TrustPortalSwitch({
 function ComplianceFramework({
   title,
   description,
-  isEnabled,
-  status,
+  isEnabled: isEnabledProp,
+  status: statusProp,
   onStatusChange,
   onToggle,
   fileName,
@@ -746,6 +871,8 @@ function ComplianceFramework({
   frameworkKey: string;
   orgId: string;
 }) {
+  const [isEnabled, setIsEnabled] = useState(isEnabledProp);
+  const [status, setStatus] = useState(statusProp);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -874,7 +1001,15 @@ function ComplianceFramework({
           <div className="flex flex-row items-center justify-between gap-6">
             <div className="min-w-0 flex-1">
               {isEnabled ? (
-                <Select defaultValue={status} onValueChange={onStatusChange}>
+                <Select defaultValue={status} value={status} onValueChange={async (value) => {
+                  const prev = status;
+                  setStatus(value);
+                  try {
+                    await onStatusChange(value);
+                  } catch {
+                    setStatus(prev);
+                  }
+                }}>
                   <SelectTrigger className="min-w-[180px] text-base font-medium">
                     <SelectValue placeholder="Select status" className="w-auto" />
                   </SelectTrigger>
@@ -906,7 +1041,14 @@ function ComplianceFramework({
               )}
             </div>
             <div className="shrink-0 pl-2">
-              <Switch checked={isEnabled} onCheckedChange={onToggle} />
+              <Switch checked={isEnabled} onCheckedChange={async (checked) => {
+                setIsEnabled(checked);
+                try {
+                  await onToggle(checked);
+                } catch {
+                  setIsEnabled(!checked);
+                }
+              }} />
             </div>
           </div>
 

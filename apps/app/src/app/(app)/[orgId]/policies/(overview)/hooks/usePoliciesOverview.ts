@@ -34,7 +34,7 @@ export function usePoliciesOverview({ organizationId, initialData }: UsePolicies
   const { data, error, isLoading, mutate } = useSWR(
     ['/v1/policies', organizationId],
     async ([endpoint, orgId]) => {
-      const response = await apiClient.get<{ data: PolicyFromApi[] }>(endpoint, orgId);
+      const response = await apiClient.get<{ data: PolicyFromApi[] }>(endpoint);
       if (response.error) throw new Error(response.error);
       return response.data?.data ?? [];
     },

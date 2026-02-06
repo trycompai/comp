@@ -1,3 +1,4 @@
+import { requireRoutePermission } from '@/lib/permissions.server';
 import type { Metadata } from 'next';
 import { ContextTable } from './ContextTable';
 import { getContextEntries } from './data/getContextEntries';
@@ -14,6 +15,9 @@ export default async function ContextHubSettings({
   }>;
 }) {
   const { orgId } = await params;
+
+  await requireRoutePermission('settings/context-hub', orgId);
+
   const { search, page, perPage } = await searchParams;
 
   const entriesResult = await getContextEntries({

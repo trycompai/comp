@@ -1,7 +1,6 @@
 'use client';
 
-import { regenerateVendorMitigationAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/regenerate-vendor-mitigation';
-import { triggerVendorRiskAssessmentAction } from '@/app/(app)/[orgId]/vendors/[vendorId]/actions/trigger-vendor-risk-assessment';
+import { useApi } from '@/hooks/use-api';
 import { useVendor } from '@/hooks/use-vendors';
 import {
   AlertDialog,
@@ -18,36 +17,44 @@ import {
   DropdownMenuTrigger,
 } from '@trycompai/design-system';
 import { Edit, OverflowMenuVertical, Renew } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 
 interface VendorActionsProps {
   vendorId: string;
-  orgId: string;
   onOpenEditSheet: () => void;
   onAssessmentTriggered?: (runId: string, publicAccessToken: string) => void;
 }
 
 export function VendorActions({
   vendorId,
-  orgId,
   onOpenEditSheet,
   onAssessmentTriggered,
 }: VendorActionsProps) {
+  const api = useApi();
   const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isAssessmentConfirmOpen, setIsAssessmentConfirmOpen] = useState(false);
+  const [isAssessmentSubmitting, setIsAssessmentSubmitting] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Get SWR mutate function to refresh vendor data after mutations
-  // Pass orgId to ensure same cache key as VendorPageClient
-  const { mutate: refreshVendor } = useVendor(vendorId, { organizationId: orgId });
+  const { mutate: refreshVendor } = useVendor(vendorId);
 
-  const regenerate = useAction(regenerateVendorMitigationAction, {
-    onSuccess: () => {
+  const handleConfirm = async () => {
+    setIsConfirmOpen(false);
+    setIsRegenerating(true);
+    toast.info('Regenerating vendor risk mitigation...');
+    try {
+      const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger mitigation regeneration');
+      }
       toast.success('Regeneration triggered. This may take a moment.');
-      // Trigger SWR revalidation for vendor detail, list views, and comments
       refreshVendor();
       globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
         revalidate: true,
@@ -58,35 +65,34 @@ export function VendorActions({
         undefined,
         { revalidate: true },
       );
-    },
-    onError: () => toast.error('Failed to trigger mitigation regeneration'),
-  });
+    } catch {
+      toast.error('Failed to trigger mitigation regeneration');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
-  const triggerAssessment = useAction(triggerVendorRiskAssessmentAction, {
-    onSuccess: (result) => {
+  const handleAssessmentConfirm = async () => {
+    setIsAssessmentConfirmOpen(false);
+    setIsAssessmentSubmitting(true);
+    toast.info('Regenerating vendor risk assessment...');
+    try {
+      const response = await api.post<{ success: boolean; runId: string; publicAccessToken: string }>(`/v1/vendors/${vendorId}/trigger-assessment`, {});
+      if (response.error) throw new Error(response.error);
       toast.success('Assessment regeneration triggered. This may take a moment.');
       refreshVendor();
       globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
         revalidate: true,
       });
       // Notify parent with run info for real-time tracking
-      if (result.data?.runId && result.data?.publicAccessToken) {
-        onAssessmentTriggered?.(result.data.runId, result.data.publicAccessToken);
+      if (response.data?.runId && response.data?.publicAccessToken) {
+        onAssessmentTriggered?.(response.data.runId, response.data.publicAccessToken);
       }
-    },
-    onError: () => toast.error('Failed to trigger risk assessment regeneration'),
-  });
-
-  const handleConfirm = () => {
-    setIsConfirmOpen(false);
-    toast.info('Regenerating vendor risk mitigation...');
-    regenerate.execute({ vendorId });
-  };
-
-  const handleAssessmentConfirm = () => {
-    setIsAssessmentConfirmOpen(false);
-    toast.info('Regenerating vendor risk assessment...');
-    triggerAssessment.execute({ vendorId });
+    } catch {
+      toast.error('Failed to trigger risk assessment regeneration');
+    } finally {
+      setIsAssessmentSubmitting(false);
+    }
   };
 
   return (
@@ -121,11 +127,11 @@ export function VendorActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={regenerate.status === 'executing'}>
+            <AlertDialogCancel disabled={isRegenerating}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm} disabled={regenerate.status === 'executing'}>
-              {regenerate.status === 'executing' ? 'Working…' : 'Confirm'}
+            <AlertDialogAction onClick={handleConfirm} disabled={isRegenerating}>
+              {isRegenerating ? 'Working\u2026' : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -140,14 +146,14 @@ export function VendorActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={triggerAssessment.status === 'executing'}>
+            <AlertDialogCancel disabled={isAssessmentSubmitting}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleAssessmentConfirm}
-              disabled={triggerAssessment.status === 'executing'}
+              disabled={isAssessmentSubmitting}
             >
-              {triggerAssessment.status === 'executing' ? 'Working…' : 'Confirm'}
+              {isAssessmentSubmitting ? 'Working\u2026' : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

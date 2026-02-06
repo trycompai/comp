@@ -1,10 +1,10 @@
 'use client';
 
-import { changeOrganizationAction } from '@/actions/change-organization';
+import { authClient } from '@/utils/auth-client';
 import type { Organization } from '@db';
 import { OrganizationSelector } from '@trycompai/design-system';
-import { useAction } from 'next-safe-action/hooks';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface OrganizationSwitcherProps {
   organizations: Organization[];
@@ -47,18 +47,17 @@ export function OrganizationSwitcher({
 }: OrganizationSwitcherProps) {
   const router = useRouter();
 
-  const { execute, status } = useAction(changeOrganizationAction, {
-    onSuccess: (result) => {
-      const orgId = result.data?.data?.id;
-      if (orgId) {
-        router.push(`/${orgId}/`);
-      }
-    },
-  });
+  const [isSwitching, setIsSwitching] = useState(false);
 
-  const handleOrgChange = (orgId: string) => {
+  const handleOrgChange = async (orgId: string) => {
     if (orgId !== organization?.id) {
-      execute({ organizationId: orgId });
+      setIsSwitching(true);
+      try {
+        await authClient.organization.setActive({ organizationId: orgId });
+        router.push(`/${orgId}/`);
+      } catch {
+        setIsSwitching(false);
+      }
     }
   };
 
@@ -76,7 +75,7 @@ export function OrganizationSwitcher({
     createdAt: org.createdAt,
   }));
 
-  const isExecuting = status === 'executing';
+  const isExecuting = isSwitching;
 
   return (
     <OrganizationSelector

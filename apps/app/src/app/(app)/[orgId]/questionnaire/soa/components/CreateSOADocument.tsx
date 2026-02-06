@@ -32,7 +32,6 @@ export function CreateSOADocument({
           frameworkId,
           organizationId,
         },
-        organizationId,
       );
 
       if (response.error) {

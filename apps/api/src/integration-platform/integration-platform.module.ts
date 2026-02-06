@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { OAuthController } from './controllers/oauth.controller';
 import { OAuthAppsController } from './controllers/oauth-apps.controller';
 import { ConnectionsController } from './controllers/connections.controller';
@@ -23,6 +24,7 @@ import { PlatformCredentialRepository } from './repositories/platform-credential
 import { CheckRunRepository } from './repositories/check-run.repository';
 
 @Module({
+  imports: [AuthModule],
   controllers: [
     OAuthController,
     OAuthAppsController,

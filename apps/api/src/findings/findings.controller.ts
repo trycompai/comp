@@ -20,12 +20,12 @@ import {
   ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiHeader,
   ApiSecurity,
 } from '@nestjs/swagger';
 import { FindingStatus } from '@trycompai/db';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { RequireRoles } from '../auth/role-validator.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { AuthContext } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { FindingsService } from './findings.service';
@@ -38,16 +38,12 @@ import { db } from '@trycompai/db';
 @Controller({ path: 'findings', version: '1' })
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
-@ApiHeader({
-  name: 'X-Organization-Id',
-  description:
-    'Organization ID (required for session auth, optional for API key auth)',
-  required: false,
-})
 export class FindingsController {
   constructor(private readonly findingsService: FindingsService) {}
 
   @Get()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get findings for a task',
     description: 'Retrieve all findings for a specific task',
@@ -84,6 +80,8 @@ export class FindingsController {
   }
 
   @Get('organization')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get all findings for organization',
     description: 'Retrieve all findings for the organization',
@@ -128,6 +126,8 @@ export class FindingsController {
   }
 
   @Get(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get finding by ID',
     description: 'Retrieve a specific finding by its ID',
@@ -157,7 +157,8 @@ export class FindingsController {
   }
 
   @Post()
-  @UseGuards(RequireRoles('auditor', 'admin', 'owner'))
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'create')
   @ApiOperation({
     summary: 'Create a finding',
     description:
@@ -233,7 +234,8 @@ export class FindingsController {
   }
 
   @Patch(':id')
-  @UseGuards(RequireRoles('auditor', 'admin', 'owner'))
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'update')
   @ApiOperation({
     summary: 'Update a finding',
     description:
@@ -310,7 +312,8 @@ export class FindingsController {
   }
 
   @Delete(':id')
-  @UseGuards(RequireRoles('auditor', 'admin', 'owner'))
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'delete')
   @ApiOperation({
     summary: 'Delete a finding',
     description: 'Delete a finding (Auditor or Platform Admin only)',
@@ -379,6 +382,8 @@ export class FindingsController {
   }
 
   @Get(':id/history')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('finding', 'read')
   @ApiOperation({
     summary: 'Get finding history',
     description: 'Retrieve the activity history for a specific finding',

@@ -24,15 +24,11 @@ export async function POST(req: Request) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const organizationIdFromHeader = req.headers.get('x-organization-id')?.trim();
-  const organizationIdFromSession = session.session.activeOrganizationId;
-
-  // Prefer deterministic org context from URL → client header.
-  const organizationId = organizationIdFromHeader ?? organizationIdFromSession;
+  const organizationId = session.session.activeOrganizationId;
 
   if (!organizationId) {
     return NextResponse.json(
-      { error: 'Organization context required (missing X-Organization-Id).' },
+      { error: 'No active organization in session.' },
       { status: 400 },
     );
   }

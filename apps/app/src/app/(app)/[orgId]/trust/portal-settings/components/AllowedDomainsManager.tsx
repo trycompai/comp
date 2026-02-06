@@ -1,7 +1,7 @@
 'use client';
 
+import { useApi } from '@/hooks/use-api';
 import { useState } from 'react';
-import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 import { Plus, X, Info } from 'lucide-react';
 import { Button } from '@comp/ui/button';
@@ -30,7 +30,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
-import { updateAllowedDomainsAction } from '../actions/update-allowed-domains';
 
 interface AllowedDomainsManagerProps {
   initialDomains: string[];
@@ -43,27 +42,31 @@ export function AllowedDomainsManager({
   initialDomains,
   orgId,
 }: AllowedDomainsManagerProps) {
+  const api = useApi();
   const [domains, setDomains] = useState<string[]>(initialDomains);
   const [lastSavedDomains, setLastSavedDomains] =
     useState<string[]>(initialDomains);
   const [newDomain, setNewDomain] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [domainToDelete, setDomainToDelete] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const updateDomains = useAction(updateAllowedDomainsAction, {
-    onSuccess: ({ data }) => {
+  const saveDomains = async (updatedDomains: string[]) => {
+    setIsUpdating(true);
+    try {
+      const response = await api.put('/v1/trust-portal/settings/allowed-domains', {
+        domains: updatedDomains,
+      });
+      if (response.error) throw new Error(response.error);
       toast.success('Allowed domains updated');
-      // Update last saved state from server response
-      if (data?.allowedDomains) {
-        setLastSavedDomains(data.allowedDomains);
-      }
-    },
-    onError: ({ error }) => {
-      toast.error(error.serverError ?? 'Failed to update allowed domains');
-      // Revert to last successfully saved state
+      setLastSavedDomains(updatedDomains);
+    } catch {
+      toast.error('Failed to update allowed domains');
       setDomains(lastSavedDomains);
-    },
-  });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const normalizeDomain = (domain: string): string => {
     let normalized = domain.toLowerCase().trim();
@@ -98,13 +101,13 @@ export function AllowedDomainsManager({
     const updatedDomains = [...domains, normalized];
     setDomains(updatedDomains);
     setNewDomain('');
-    updateDomains.execute({ allowedDomains: updatedDomains });
+    saveDomains(updatedDomains);
   };
 
   const handleRemoveDomain = (domainToRemove: string) => {
     const updatedDomains = domains.filter((d) => d !== domainToRemove);
     setDomains(updatedDomains);
-    updateDomains.execute({ allowedDomains: updatedDomains });
+    saveDomains(updatedDomains);
     setDomainToDelete(null);
   };
 
@@ -156,7 +159,7 @@ export function AllowedDomainsManager({
                 setError(null);
               }}
               onKeyDown={handleKeyDown}
-              disabled={updateDomains.status === 'executing'}
+              disabled={isUpdating}
             />
             {error && <p className="text-sm text-destructive mt-1">{error}</p>}
           </div>
@@ -165,7 +168,7 @@ export function AllowedDomainsManager({
             variant="outline"
             size="icon"
             onClick={handleAddDomain}
-            disabled={updateDomains.status === 'executing' || !newDomain.trim()}
+            disabled={isUpdating || !newDomain.trim()}
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -183,7 +186,7 @@ export function AllowedDomainsManager({
                 <button
                   type="button"
                   onClick={() => setDomainToDelete(domain)}
-                  disabled={updateDomains.status === 'executing'}
+                  disabled={isUpdating}
                   className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
                 >
                   <X className="h-3 w-3" />

@@ -56,7 +56,7 @@ export default async function PolicyDetails({
           <h1 className="text-2xl font-semibold tracking-tight">{policy?.name ?? 'Policy'}</h1>
           {policy && <PolicyStatusBadge status={policy.status} />}
         </div>
-        <PolicyHeaderActions policy={policy} logs={logs} />
+        <PolicyHeaderActions policy={policy} organizationId={orgId} />
       </div>
       <PolicyPage
         policy={policy}

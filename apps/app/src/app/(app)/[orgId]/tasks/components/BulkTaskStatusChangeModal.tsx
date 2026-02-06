@@ -66,7 +66,6 @@ export function BulkTaskStatusChangeModal({
       const response = await apiClient.patch<{ updatedCount: number }>(
         '/v1/tasks/bulk',
         payload,
-        orgIdParam,
       );
 
       if (response.error) {

@@ -26,7 +26,7 @@ import { Label } from '@comp/ui/label';
 import type { Role } from '@db';
 
 import { toast } from 'sonner';
-import { MultiRoleCombobox } from './MultiRoleCombobox';
+import { MultiRoleCombobox, type CustomRoleOption } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { MemberWithUser } from './TeamMembers';
@@ -38,6 +38,7 @@ interface MemberRowProps {
   onUpdateRole: (memberId: string, roles: Role[]) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
+  customRoles?: CustomRoleOption[];
 }
 
 // Helper to get initials
@@ -62,6 +63,7 @@ export function MemberRow({
   onUpdateRole,
   canEdit,
   isCurrentUserOwner,
+  customRoles = [],
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -89,7 +91,8 @@ export function MemberRow({
   ) as Role[];
 
   const isOwner = currentRoles.includes('owner');
-  const canRemove = !isOwner;
+  const isPlatformAdmin = member.user.isPlatformAdmin === true;
+  const canRemove = !isOwner && !isPlatformAdmin;
   const isDeactivated = member.deactivated;
   const canViewProfile = !isDeactivated;
   const profileHref = canViewProfile ? `/${orgId}/people/${memberId}` : null;
@@ -191,30 +194,46 @@ export function MemberRow({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex flex-wrap gap-1 max-w-[120px] sm:max-w-none">
-            {currentRoles.map((role) => (
+            {isPlatformAdmin && (
               <Badge
-                key={role}
-                variant="secondary"
-                className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}
+                variant="outline"
+                className="text-xs whitespace-nowrap text-indigo-700 border-indigo-300 bg-indigo-50 dark:text-indigo-300 dark:border-indigo-700 dark:bg-indigo-950"
               >
-                {(() => {
-                  switch (role) {
-                    case 'owner':
-                      return 'Owner';
-                    case 'admin':
-                      return 'Admin';
-                    case 'auditor':
-                      return 'Auditor';
-                    case 'employee':
-                      return 'Employee';
-                    case 'contractor':
-                      return 'Contractor';
-                    default:
-                      return '???';
-                  }
-                })()}
+                Comp AI
               </Badge>
-            ))}
+            )}
+            {currentRoles.map((role) => {
+              const builtInRoles = ['owner', 'admin', 'auditor', 'employee', 'contractor'];
+              const customRole = !builtInRoles.includes(role)
+                ? customRoles.find((r) => r.name === role)
+                : undefined;
+
+              return (
+                <Badge
+                  key={role}
+                  variant="secondary"
+                  className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}
+                >
+                  {(() => {
+                    if (customRole) return customRole.name;
+                    switch (role) {
+                      case 'owner':
+                        return 'Owner';
+                      case 'admin':
+                        return 'Admin';
+                      case 'auditor':
+                        return 'Auditor';
+                      case 'employee':
+                        return 'Employee';
+                      case 'contractor':
+                        return 'Contractor';
+                      default:
+                        return role;
+                    }
+                  })()}
+                </Badge>
+              );
+            })}
           </div>
 
           {!isDeactivated && (
@@ -298,6 +317,7 @@ export function MemberRow({
                 onSelectedRolesChange={setSelectedRoles}
                 placeholder={'Select a role'}
                 lockedRoles={isOwner ? ['owner'] : []}
+                customRoles={customRoles}
               />
               {isOwner && (
                 <p className="text-muted-foreground mt-1 text-xs">

@@ -232,7 +232,6 @@ export function useQuestionnaireDetailHandlers({
           questionAnswerId,
           organizationId,
         },
-        organizationId,
       );
 
       if (response.error) {
@@ -294,7 +293,6 @@ export function useQuestionnaireDetailHandlers({
           status: 'manual',
           questionIndex: result.originalIndex,
         },
-        organizationId,
       );
 
       if (response.error) {

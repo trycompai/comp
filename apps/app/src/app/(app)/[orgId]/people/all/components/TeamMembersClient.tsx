@@ -11,34 +11,28 @@ import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
-import { Separator } from '@comp/ui/separator';
 import type { Invitation, Role } from '@db';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
+import { InputGroup, InputGroupAddon, InputGroupInput, Separator } from '@trycompai/design-system';
 
 import { MemberRow } from './MemberRow';
+import type { CustomRoleOption } from './MultiRoleCombobox';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
-
-// Import the server actions themselves to get their types
-import type { removeMember } from '../actions/removeMember';
-import type { revokeInvitation } from '../actions/revokeInvitation';
 
 import { usePeopleActions } from '@/hooks/use-people-api';
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
 import { InviteMembersModal } from './InviteMembersModal';
 
-// Define prop types using typeof for the actions still used
 interface TeamMembersClientProps {
   data: TeamMembersData;
   organizationId: string;
-  removeMemberAction: typeof removeMember;
-  revokeInvitationAction: typeof revokeInvitation;
   canManageMembers: boolean;
   canInviteUsers: boolean;
   isAuditor: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
+  customRoles?: CustomRoleOption[];
 }
 
 // Define a simplified type for merged list items
@@ -56,20 +50,19 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
 export function TeamMembersClient({
   data,
   organizationId,
-  removeMemberAction,
-  revokeInvitationAction,
   canManageMembers,
   canInviteUsers,
   isAuditor,
   isCurrentUserOwner,
   employeeSyncData,
+  customRoles = [],
 }: TeamMembersClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
   const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
 
-  const { unlinkDevice } = usePeopleActions();
+  const { unlinkDevice, removeMember } = usePeopleActions();
 
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -147,6 +140,20 @@ export function TeamMembersClient({
     }),
   ];
 
+  // All available roles: built-in roles (type-safe from Role enum) + custom roles
+  const builtInRoleOptions: { value: Role; label: string }[] = [
+    { value: 'owner', label: 'Owner' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'auditor', label: 'Auditor' },
+    { value: 'employee', label: 'Employee' },
+    { value: 'contractor', label: 'Contractor' },
+  ] satisfies { value: Role; label: string }[];
+
+  const allRoleOptions = [
+    ...builtInRoleOptions,
+    ...customRoles.map((role) => ({ value: role.name, label: role.name })),
+  ];
+
   const filteredItems = allItems.filter((item) => {
     const matchesSearch =
       item.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -170,33 +177,32 @@ export function TeamMembersClient({
   const pendingInvites = filteredItems.filter((item) => item.type === 'invitation');
 
   const handleCancelInvitation = async (invitationId: string) => {
-    const result = await revokeInvitationAction({ invitationId });
-    if (result?.data) {
-      if (result.data?.error) {
-        toast.error(String(result?.data?.error) || 'Failed to cancel invitation');
+    try {
+      const response = await fetch(`/api/invitations/${invitationId}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error(result.error || 'Failed to cancel invitation');
         return;
       }
-      // Success case
+
       toast.success('Invitation has been cancelled');
-      // Data revalidates server-side via action's revalidatePath
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to add user';
-      console.error('Cancel Invitation Error:', errorMessage);
+      router.refresh();
+    } catch (error) {
+      console.error('Cancel Invitation Error:', error);
+      toast.error('Failed to cancel invitation');
     }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    const result = await removeMemberAction({ memberId });
-    if (result?.data?.success) {
-      // Success case
-      toast.success('has been removed from the organization');
-      router.refresh(); // Add client-side refresh as well
-    } else {
-      // Error case
-      const errorMessage = result?.serverError || 'Failed to remove member';
-      console.error('Remove Member Error:', errorMessage);
+    try {
+      await removeMember(memberId);
+      toast.success('Member has been removed from the organization');
+      router.refresh();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove member';
       toast.error(errorMessage);
     }
   };
@@ -256,6 +262,7 @@ export function TeamMembersClient({
         allowedRoles={
           canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
         }
+        customRoles={customRoles}
       />
 
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -305,10 +312,11 @@ export function TeamMembersClient({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{'All Roles'}</SelectItem>
-            <SelectItem value="owner">{'Owner'}</SelectItem>
-            <SelectItem value="admin">{'Admin'}</SelectItem>
-            <SelectItem value="auditor">{'Auditor'}</SelectItem>
-            <SelectItem value="employee">{'Employee'}</SelectItem>
+            {allRoleOptions.map((role) => (
+              <SelectItem key={role.value} value={role.value}>
+                {role.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {hasAnyConnection && (
@@ -361,7 +369,9 @@ export function TeamMembersClient({
                     'Select a provider to enable auto-sync'
                   )}
                 </div>
-                <Separator className="my-1" />
+                <div className="my-1">
+                  <Separator />
+                </div>
                 {googleWorkspaceConnectionId && (
                   <SelectItem value="google-workspace">
                     <div className="flex items-center gap-2">
@@ -455,6 +465,7 @@ export function TeamMembersClient({
                 onUpdateRole={handleUpdateRole}
                 canEdit={canManageMembers}
                 isCurrentUserOwner={isCurrentUserOwner}
+                customRoles={customRoles}
               />
             ))}
           </div>
