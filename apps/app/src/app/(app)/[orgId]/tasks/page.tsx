@@ -28,7 +28,7 @@ export default async function TasksPage({
   const members = await getMembersWithMetadata();
   const controls = await getControls();
   const frameworkInstances = await getFrameworkInstances();
-  const { hasEvidenceExportAccess, organizationName } = await getEvidenceExportContext(orgId);
+  const { hasEvidenceExportAccess, organizationName, evidenceApprovalEnabled } = await getEvidenceExportContext(orgId);
 
   // Read tab preference from cookie (server-side, no hydration issues)
   const cookieStore = await cookies();
@@ -45,6 +45,7 @@ export default async function TasksPage({
       orgId={orgId}
       organizationName={organizationName}
       hasEvidenceExportAccess={hasEvidenceExportAccess}
+      evidenceApprovalEnabled={evidenceApprovalEnabled}
     />
   );
 }
@@ -64,7 +65,7 @@ const getEvidenceExportContext = async (organizationId: string) => {
   });
 
   if (!session) {
-    return { hasEvidenceExportAccess: false, organizationName: null };
+    return { hasEvidenceExportAccess: false, organizationName: null, evidenceApprovalEnabled: false };
   }
 
   const [member, organization] = await Promise.all([
@@ -78,7 +79,7 @@ const getEvidenceExportContext = async (organizationId: string) => {
     }),
     db.organization.findUnique({
       where: { id: organizationId },
-      select: { name: true },
+      select: { name: true, evidenceApprovalEnabled: true },
     }),
   ]);
 
@@ -89,6 +90,7 @@ const getEvidenceExportContext = async (organizationId: string) => {
   return {
     hasEvidenceExportAccess,
     organizationName: organization?.name ?? null,
+    evidenceApprovalEnabled: organization?.evidenceApprovalEnabled ?? false,
   };
 };
 

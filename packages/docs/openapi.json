@@ -7024,6 +7024,7 @@
                     "enum": [
                       "todo",
                       "in_progress",
+                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
@@ -7225,6 +7226,71 @@
         ]
       }
     },
+    "/v1/tasks/bulk/submit-for-review": {
+      "post": {
+        "description": "Submit multiple tasks for review with a single approver",
+        "operationId": "TasksController_bulkSubmitForReview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "tsk_abc123",
+                      "tsk_def456"
+                    ]
+                  },
+                  "approverId": {
+                    "type": "string",
+                    "example": "mem_abc123",
+                    "description": "Member ID of the approver"
+                  }
+                },
+                "required": [
+                  "taskIds",
+                  "approverId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tasks submitted for review"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Bulk submit tasks for review",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
     "/v1/tasks/{taskId}": {
       "get": {
         "description": "Retrieve a specific task by its ID",
@@ -7297,7 +7363,7 @@
         ]
       },
       "patch": {
-        "description": "Update an existing task (status, assignee, frequency, department, reviewDate)",
+        "description": "Update an existing task (status, assignee, approver, frequency, department, reviewDate)",
         "operationId": "TasksController_updateTask_v1",
         "parameters": [
           {
@@ -7332,6 +7398,7 @@
                     "enum": [
                       "todo",
                       "in_progress",
+                      "in_review",
                       "done",
                       "not_relevant",
                       "failed"
@@ -7343,6 +7410,12 @@
                     "nullable": true,
                     "example": "mem_abc123",
                     "description": "Assignee member ID, or null to unassign"
+                  },
+                  "approverId": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "mem_abc123",
+                    "description": "Approver member ID, or null to unassign"
                   },
                   "frequency": {
                     "type": "string",
@@ -7402,6 +7475,224 @@
           }
         ],
         "summary": "Update a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/activity": {
+      "get": {
+        "description": "Retrieve audit log activity for a specific task with pagination",
+        "operationId": "TasksController_getTaskActivity_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity retrieved successfully"
+          },
+          "400": {
+            "description": "Task not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task activity",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/submit-for-review": {
+      "post": {
+        "description": "Move task status to in_review and assign an approver.",
+        "operationId": "TasksController_submitForReview_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "approverId": {
+                    "type": "string",
+                    "example": "mem_abc123",
+                    "description": "Member ID of the approver"
+                  }
+                },
+                "required": [
+                  "approverId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task submitted for review"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Submit task for review",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/approve": {
+      "post": {
+        "description": "Approve a task that is in review. Only the assigned approver can approve. Moves status to done and creates an audit comment.",
+        "operationId": "TasksController_approveTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task approved successfully"
+          },
+          "400": {
+            "description": "Task is not in review"
+          },
+          "403": {
+            "description": "Not the assigned approver"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Approve a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/reject": {
+      "post": {
+        "description": "Reject a task that is in review. Only the assigned approver can reject. Reverts status to the previous status and creates an audit comment.",
+        "operationId": "TasksController_rejectTask_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task rejected successfully"
+          },
+          "400": {
+            "description": "Task is not in review"
+          },
+          "403": {
+            "description": "Not the assigned approver"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reject a task review",
         "tags": [
           "Tasks"
         ]
