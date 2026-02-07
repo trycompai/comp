@@ -91,7 +91,7 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8">
       {/* Table */}
       <div className="rounded-md border border-border/50 bg-card/50 backdrop-blur-sm shadow-sm overflow-hidden">
         <Table>
