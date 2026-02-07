@@ -290,7 +290,8 @@ export function SingleTask({
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-6">
+        <TabsContent value="overview">
+          <div className="mt-6">
           {/* Approval Banner */}
           {evidenceApprovalEnabled && isInReview && (
             <div className="mb-6">
@@ -472,10 +473,13 @@ export function SingleTask({
               </div>
             </div>
           </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="activity" className="mt-6">
+        <TabsContent value="activity">
+          <div className="mt-6">
           <TaskActivityFull />
+          </div>
         </TabsContent>
       </Tabs>
 
