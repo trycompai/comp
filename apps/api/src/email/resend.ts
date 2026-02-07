@@ -1,9 +1,5 @@
-import { Resend } from 'resend';
 import * as React from 'react';
-
-export const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+import { getMailService } from '@trycompai/email';
 
 export interface EmailAttachment {
   filename: string;
@@ -32,9 +28,7 @@ export const sendEmail = async ({
   scheduledAt?: string;
   attachments?: EmailAttachment[];
 }) => {
-  if (!resend) {
-    throw new Error('Resend not initialized - missing API key');
-  }
+  const mailService = getMailService();
 
   // 1) Pull each env var into its own constant
   const fromMarketing = process.env.RESEND_FROM_MARKETING;
@@ -63,7 +57,7 @@ export const sendEmail = async ({
   }
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await mailService.send({
       from: fromAddress, // now always a string
       to: toAddress, // now always a string
       cc,

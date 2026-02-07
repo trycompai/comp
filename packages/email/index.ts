@@ -15,6 +15,7 @@ export * from './emails/waitlist';
 export * from './lib/all-policy-notification';
 export * from './lib/check-unsubscribe';
 export * from './lib/invite-member';
+export * from './lib/mail-service';
 export * from './lib/magic-link';
 export * from './lib/policy-notification';
 export * from './lib/resend';
