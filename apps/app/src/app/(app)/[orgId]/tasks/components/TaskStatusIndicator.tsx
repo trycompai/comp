@@ -1,6 +1,6 @@
 import { cn } from '@comp/ui/cn';
 import type { TaskStatus } from '@db';
-import { BadgeCheck, Circle, CircleDashed, Loader2, OctagonX } from 'lucide-react';
+import { BadgeCheck, Circle, CircleDashed, Eye, Loader2, OctagonX } from 'lucide-react';
 
 interface TaskStatusIndicatorProps {
   status: TaskStatus;
@@ -14,6 +14,9 @@ export function TaskStatusIndicator({ status, className }: TaskStatusIndicatorPr
   if (status === 'in_progress') {
     Icon = Loader2;
     iconClass = 'text-blue-400';
+  } else if (status === 'in_review') {
+    Icon = Eye;
+    iconClass = 'text-orange-400';
   } else if (status === 'done') {
     Icon = BadgeCheck;
     iconClass = 'text-primary';

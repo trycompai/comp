@@ -1,5 +1,6 @@
 'use client';
 
+import { UpdateOrganizationEvidenceApproval } from '@/components/forms/organization/update-organization-evidence-approval';
 import { downloadAllEvidenceZip } from '@/lib/evidence-download';
 import type { Member, Task, User } from '@db';
 import {
@@ -13,6 +14,9 @@ import {
   PopoverTitle,
   PopoverTrigger,
   Switch,
+  Tabs,
+  TabsList,
+  TabsTrigger,
 } from '@trycompai/design-system';
 import { Add, ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
@@ -45,6 +49,7 @@ interface TasksPageClientProps {
   orgId: string;
   organizationName: string | null;
   hasEvidenceExportAccess: boolean;
+  evidenceApprovalEnabled: boolean;
 }
 
 export function TasksPageClient({
@@ -56,11 +61,13 @@ export function TasksPageClient({
   orgId,
   organizationName,
   hasEvidenceExportAccess,
+  evidenceApprovalEnabled,
 }: TasksPageClientProps) {
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [includeRawJson, setIncludeRawJson] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [mainTab, setMainTab] = useState('evidence-list');
 
   const handleDownloadAllEvidence = async () => {
     setIsDownloadingAll(true);
@@ -73,7 +80,12 @@ export function TasksPageClient({
       toast.success('Evidence package downloaded successfully');
       setIsPopoverOpen(false);
     } catch (err) {
-      toast.error('Failed to download evidence. Please try again.');
+      const noEvidence = err instanceof Error && err.message?.includes('No tasks with evidence found');
+      if (noEvidence) {
+        toast.info('No tasks with evidence found to export.');
+      } else {
+        toast.error('Failed to download evidence. Please try again.');
+      }
       console.error('Evidence download error:', err);
     } finally {
       setIsDownloadingAll(false);
@@ -81,6 +93,7 @@ export function TasksPageClient({
   };
 
   return (
+    <Tabs defaultValue="evidence-list" onValueChange={setMainTab}>
     <PageLayout
       header={
         <PageHeader
@@ -129,7 +142,22 @@ export function TasksPageClient({
         members={members}
         frameworkInstances={frameworkInstances}
         activeTab={activeTab}
+        evidenceApprovalEnabled={evidenceApprovalEnabled}
+        afterAnalytics={
+          <div className="w-fit">
+            <TabsList variant="underline">
+              <TabsTrigger value="evidence-list">Overview</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+          </div>
+        }
+        showFiltersAndList={mainTab === 'evidence-list'}
       />
+      {mainTab === 'settings' && (
+        <UpdateOrganizationEvidenceApproval
+          evidenceApprovalEnabled={evidenceApprovalEnabled}
+        />
+      )}
       <CreateTaskSheet
         members={members}
         controls={controls}
@@ -137,5 +165,6 @@ export function TasksPageClient({
         onOpenChange={setIsCreateSheetOpen}
       />
     </PageLayout>
+    </Tabs>
   );
 }
