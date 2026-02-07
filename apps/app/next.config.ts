@@ -56,6 +56,9 @@ const config: NextConfig = {
         hostname: '**',
       },
     ],
+    // Disable image optimization for self-hosted deployments
+    // where Next.js image optimization isn't available
+    unoptimized: process.env.SELF_HOSTING === 'true',
   },
 
   experimental: {
