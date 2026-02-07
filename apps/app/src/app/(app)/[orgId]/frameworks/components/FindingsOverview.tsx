@@ -174,8 +174,8 @@ export function FindingsOverview({
       <CardContent className="flex flex-col flex-1">
         {findings.length === 0 ? (
           <div className="flex items-center justify-center gap-2 rounded-lg p-4 mt-2 bg-border/50">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="text-sm text-primary">No findings</span>
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="text-sm">No findings</span>
           </div>
         ) : filteredFindings.length === 0 ? (
           <div className="flex items-center justify-center gap-2 rounded-lg p-4 mt-2 bg-border/50">
@@ -215,7 +215,9 @@ export function FindingsOverview({
                         </div>
                       </div>
                       <Button asChild size="icon" variant="outline" className="shrink-0 ml-2">
-                        <Link href={`/${organizationId}/tasks/${finding.task.id}#finding-${finding.id}`}>
+                        <Link
+                          href={`/${organizationId}/tasks/${finding.task.id}#finding-${finding.id}`}
+                        >
                           <ArrowRight className="h-3 w-3" />
                         </Link>
                       </Button>
