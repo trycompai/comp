@@ -80,7 +80,8 @@ export function TasksPageClient({
       toast.success('Evidence package downloaded successfully');
       setIsPopoverOpen(false);
     } catch (err) {
-      const noEvidence = err instanceof Error && err.message?.includes('No tasks with evidence found');
+      const noEvidence =
+        err instanceof Error && err.message?.includes('No tasks with evidence found');
       if (noEvidence) {
         toast.info('No tasks with evidence found to export.');
       } else {
@@ -94,77 +95,74 @@ export function TasksPageClient({
 
   return (
     <Tabs defaultValue="evidence-list" onValueChange={setMainTab}>
-    <PageLayout
-      header={
-        <PageHeader
-          title="Evidence"
-          actions={
-            <div className="flex items-center gap-2">
-              {hasEvidenceExportAccess && (
-                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                  <PopoverTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-7 px-2 cursor-pointer">
-                    Export All Evidence
-                  </PopoverTrigger>
-                  <PopoverContent align="end" side="bottom" sideOffset={8}>
-                    <PopoverHeader>
-                      <PopoverTitle>Export Options</PopoverTitle>
-                      <PopoverDescription>Download all task evidence as ZIP</PopoverDescription>
-                    </PopoverHeader>
-                    <div className="flex items-center justify-between gap-3 py-1">
-                      <span className="text-sm">Include raw JSON files</span>
-                      <Switch
-                        checked={includeRawJson}
-                        onCheckedChange={(checked) => setIncludeRawJson(checked)}
-                      />
-                    </div>
-                    <Button
-                      iconLeft={<ArrowDown />}
-                      onClick={handleDownloadAllEvidence}
-                      disabled={isDownloadingAll}
-                      width="full"
-                    >
-                      {isDownloadingAll ? 'Preparing…' : 'Export'}
-                    </Button>
-                  </PopoverContent>
-                </Popover>
-              )}
-              <Button iconLeft={<Add />} onClick={() => setIsCreateSheetOpen(true)}>
-                Create Evidence
-              </Button>
+      <PageLayout
+        header={
+          <PageHeader
+            title="Evidence"
+            actions={
+              <div className="flex items-center gap-2">
+                {hasEvidenceExportAccess && (
+                  <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                    <PopoverTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-7 px-2 cursor-pointer">
+                      Export All Evidence
+                    </PopoverTrigger>
+                    <PopoverContent align="end" side="bottom" sideOffset={8}>
+                      <PopoverHeader>
+                        <PopoverTitle>Export Options</PopoverTitle>
+                        <PopoverDescription>Download all task evidence as ZIP</PopoverDescription>
+                      </PopoverHeader>
+                      <div className="flex items-center justify-between gap-3 py-1">
+                        <span className="text-sm">Include raw JSON files</span>
+                        <Switch
+                          checked={includeRawJson}
+                          onCheckedChange={(checked) => setIncludeRawJson(checked)}
+                        />
+                      </div>
+                      <Button
+                        iconLeft={<ArrowDown />}
+                        onClick={handleDownloadAllEvidence}
+                        disabled={isDownloadingAll}
+                        width="full"
+                      >
+                        {isDownloadingAll ? 'Preparing…' : 'Export'}
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
+                )}
+                <Button iconLeft={<Add />} onClick={() => setIsCreateSheetOpen(true)}>
+                  Create Evidence
+                </Button>
+              </div>
+            }
+          />
+        }
+      >
+        <TaskList
+          tasks={tasks}
+          members={members}
+          frameworkInstances={frameworkInstances}
+          activeTab={activeTab}
+          evidenceApprovalEnabled={evidenceApprovalEnabled}
+          afterAnalytics={
+            <div className="w-fit">
+              <TabsList variant="underline">
+                <TabsTrigger value="evidence-list">Overview</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
             </div>
           }
+          showFiltersAndList={mainTab === 'evidence-list'}
         />
-      }
-      padding="default"
-    >
-      <TaskList
-        tasks={tasks}
-        members={members}
-        frameworkInstances={frameworkInstances}
-        activeTab={activeTab}
-        evidenceApprovalEnabled={evidenceApprovalEnabled}
-        afterAnalytics={
-          <div className="w-fit">
-            <TabsList variant="underline">
-              <TabsTrigger value="evidence-list">Overview</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
-          </div>
-        }
-        showFiltersAndList={mainTab === 'evidence-list'}
-      />
-      {mainTab === 'settings' && (
-        <UpdateOrganizationEvidenceApproval
-          evidenceApprovalEnabled={evidenceApprovalEnabled}
+        {mainTab === 'settings' && (
+          <UpdateOrganizationEvidenceApproval evidenceApprovalEnabled={evidenceApprovalEnabled} />
+        )}
+        <CreateTaskSheet
+          members={members}
+          controls={controls}
+          open={isCreateSheetOpen}
+          onOpenChange={setIsCreateSheetOpen}
         />
-      )}
-      <CreateTaskSheet
-        members={members}
-        controls={controls}
-        open={isCreateSheetOpen}
-        onOpenChange={setIsCreateSheetOpen}
-      />
-    </PageLayout>
+      </PageLayout>
     </Tabs>
   );
 }
