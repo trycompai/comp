@@ -1,6 +1,6 @@
 import { auth } from '@/app/lib/auth';
 import { db } from '@db';
-import { Badge, PageHeader, PageLayout } from '@trycompai/design-system';
+import { Badge, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { PolicyAcceptButton } from './PolicyAcceptButton';
@@ -60,13 +60,16 @@ export default async function PolicyPage({
       header={
         <PageHeader
           title={policy.name}
-          description={policy.description ?? undefined}
           breadcrumbs={[
             { label: 'Overview', href: `/${orgId}` },
             { label: policy.name, isCurrent: true },
           ]}
           actions={isAccepted ? <Badge variant="default">Accepted</Badge> : undefined}
-        />
+        >
+          {policy.description && (
+            <PageHeaderDescription>{policy.description}</PageHeaderDescription>
+          )}
+        </PageHeader>
       }
     >
       <div className="space-y-6">

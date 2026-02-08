@@ -53,10 +53,9 @@ export function Employee({
           actions={
             canEdit ? (
               <Button
-                type="submit"
-                form={EMPLOYEE_FORM_ID}
                 disabled={!formState.isDirty || formState.isLoading}
                 loading={formState.isLoading}
+                render={<button type="submit" form={EMPLOYEE_FORM_ID} />}
               >
                 Save
               </Button>
