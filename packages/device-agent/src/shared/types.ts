@@ -73,6 +73,8 @@ export interface OrgRegistration {
 /** Stored authentication data — supports multiple organizations */
 export interface StoredAuth {
   sessionToken: string;
+  /** The cookie name used by the server (e.g. 'better-auth.session_token' or '__Secure-better-auth.session_token') */
+  cookieName: string;
   userId: string;
   organizations: OrgRegistration[];
 }

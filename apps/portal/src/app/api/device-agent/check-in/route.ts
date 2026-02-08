@@ -56,6 +56,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
     }
 
+    // Verify the user is still an active member of the device's organization
+    const member = await db.member.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId: device.organizationId,
+        deactivated: false,
+      },
+    });
+
+    if (!member) {
+      return NextResponse.json({ error: 'Not an active member of this organization' }, { status: 403 });
+    }
+
     // Delete old checks for the same types and create new ones
     const checkTypes = checks.map((c) => c.checkType);
 

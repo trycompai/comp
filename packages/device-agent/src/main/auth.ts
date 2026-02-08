@@ -79,9 +79,7 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
         const authData = await extractAuthAndRegisterAll(deviceInfo, authWindow);
         if (authData) {
           setAuth(authData);
-          log(
-            `Auth complete: ${authData.organizations.length} org(s) registered`,
-          );
+          log(`Auth complete: ${authData.organizations.length} org(s) registered`);
           finish(authData);
         }
         // If null, don't close — might be intermediate navigation
@@ -122,8 +120,7 @@ async function extractAuthAndRegisterAll(
   const cookies = await session.defaultSession.cookies.get({ url: portalUrl });
   const sessionCookie = cookies.find(
     (c) =>
-      c.name === 'better-auth.session_token' ||
-      c.name === '__Secure-better-auth.session_token',
+      c.name === 'better-auth.session_token' || c.name === '__Secure-better-auth.session_token',
   );
 
   if (!sessionCookie) {
@@ -236,6 +233,7 @@ async function extractAuthAndRegisterAll(
 
   return {
     sessionToken,
+    cookieName: sessionCookie.name,
     userId,
     organizations: registrations,
   };

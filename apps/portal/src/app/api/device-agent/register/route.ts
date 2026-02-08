@@ -51,35 +51,80 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not a member of this organization' }, { status: 403 });
     }
 
-    // Upsert device: if same serial number + org exists, update; otherwise create
-    const device = await db.device.upsert({
-      where: {
-        serialNumber_organizationId: {
-          serialNumber: serialNumber ?? '',
+    // Branch on serialNumber to avoid collisions for serial-less devices.
+    // PostgreSQL treats NULLs as distinct in unique constraints, so devices
+    // without a serial number can safely coexist in the same org.
+    let device;
+
+    if (serialNumber) {
+      // Serial number present — upsert on the unique (serialNumber, organizationId) key
+      device = await db.device.upsert({
+        where: {
+          serialNumber_organizationId: {
+            serialNumber,
+            organizationId,
+          },
+        },
+        update: {
+          name,
+          hostname,
+          platform,
+          osVersion,
+          hardwareModel,
+          agentVersion,
+          userId: session.user.id,
+        },
+        create: {
+          name,
+          hostname,
+          platform,
+          osVersion,
+          serialNumber,
+          hardwareModel,
+          agentVersion,
+          userId: session.user.id,
           organizationId,
         },
-      },
-      update: {
-        name,
-        hostname,
-        platform,
-        osVersion,
-        hardwareModel,
-        agentVersion,
-        userId: session.user.id,
-      },
-      create: {
-        name,
-        hostname,
-        platform,
-        osVersion,
-        serialNumber,
-        hardwareModel,
-        agentVersion,
-        userId: session.user.id,
-        organizationId,
-      },
-    });
+      });
+    } else {
+      // No serial number — find by hostname + userId + org (same user re-registering
+      // the same machine), or create a new record with serialNumber = null.
+      const existing = await db.device.findFirst({
+        where: {
+          hostname,
+          userId: session.user.id,
+          organizationId,
+          serialNumber: null,
+        },
+      });
+
+      if (existing) {
+        device = await db.device.update({
+          where: { id: existing.id },
+          data: {
+            name,
+            platform,
+            osVersion,
+            hardwareModel,
+            agentVersion,
+          },
+        });
+      } else {
+        device = await db.device.create({
+          data: {
+            name,
+            hostname,
+            platform,
+            osVersion,
+            serialNumber: null,
+            hardwareModel,
+            agentVersion,
+            userId: session.user.id,
+            organizationId,
+          },
+        });
+      }
+    }
 
     return NextResponse.json({ deviceId: device.id });
   } catch (error) {

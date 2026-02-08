@@ -22,7 +22,8 @@ export async function reportCheckResults(checks: CheckResult[]): Promise<ReportR
   }
 
   const portalUrl = getPortalUrl();
-  const cookieHeader = `better-auth.session_token=${auth.sessionToken}`;
+  const cookieName = auth.cookieName ?? 'better-auth.session_token';
+  const cookieHeader = `${cookieName}=${auth.sessionToken}`;
 
   let allSucceeded = true;
   let anyNonCompliant = false;

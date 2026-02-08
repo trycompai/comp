@@ -6,7 +6,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import type { DownloadAgentRequest, SupportedOS } from '../types';
 import { detectOSFromUserAgent, validateMemberAndOrg } from '../utils';
 
-const SUPPORTED_OSES: SupportedOS[] = ['macos', 'macos-intel', 'windows'];
+const SUPPORTED_OSES: SupportedOS[] = ['macos', 'macos-intel', 'windows', 'linux'];
 
 const isSupportedOS = (value: unknown): value is SupportedOS =>
   typeof value === 'string' && SUPPORTED_OSES.includes(value as SupportedOS);
