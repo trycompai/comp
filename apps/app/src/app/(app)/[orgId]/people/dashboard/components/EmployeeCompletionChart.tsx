@@ -74,7 +74,7 @@ export function EmployeeCompletionChart({
   const orgId = params.orgId as string;
   const [searchTerm, setSearchTerm] = React.useState('');
   const [page, setPage] = React.useState(1);
-  const perPage = 25;
+  const [perPage, setPerPage] = React.useState(25);
 
   // Calculate completion data for each employee
   const employeeStats: EmployeeTaskStats[] = React.useMemo(() => {
@@ -206,7 +206,10 @@ export function EmployeeCompletionChart({
                   onPageChange: setPage,
                   pageSize: perPage,
                   pageSizeOptions: [25, 50, 100],
-                  onPageSizeChange: () => setPage(1),
+                  onPageSizeChange: (size: number) => {
+                    setPerPage(size);
+                    setPage(1);
+                  },
                 }
               : undefined
           }
