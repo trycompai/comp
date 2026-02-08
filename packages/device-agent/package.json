@@ -1,8 +1,8 @@
 {
   "name": "@comp/device-agent",
-  "version": "1.0.0",
-  "description": "Comp AI Device Compliance Agent - System tray application for device compliance checks",
-  "author": "Comp AI <engineering@trycomp.ai>",
+  "version": "1.0.1",
+  "description": "Comp AI Device Compliance Agent - Device Compliance Checks",
+  "author": "Comp AI <hello@trycomp.ai>",
   "homepage": "https://trycomp.ai",
   "private": true,
   "main": "dist/main/index.js",
