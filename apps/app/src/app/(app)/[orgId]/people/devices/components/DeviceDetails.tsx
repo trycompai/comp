@@ -28,6 +28,7 @@ const CHECK_NAMES: Record<string, string> = {
 const PLATFORM_LABELS: Record<string, string> = {
   macos: 'macOS',
   windows: 'Windows',
+  linux: 'Linux',
 };
 
 interface DeviceDetailsProps {
