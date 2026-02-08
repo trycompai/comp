@@ -295,9 +295,11 @@ export class DevicesService {
     dto.display_name = device.name;
     dto.display_text = device.name;
     dto.status = device.isCompliant ? 'compliant' : 'non-compliant';
-    dto.disk_encryption_enabled = device.checks.some(
-      (c) => c.checkType === 'disk_encryption' && c.passed,
+    // Use only the latest check per type (checks are ordered by checkedAt desc)
+    const latestDiskEncryptionCheck = device.checks.find(
+      (c) => c.checkType === 'disk_encryption',
     );
+    dto.disk_encryption_enabled = latestDiskEncryptionCheck?.passed ?? false;
     dto.source = 'device_agent';
     // Default empty values for FleetDM-specific fields
     dto.software = [];
