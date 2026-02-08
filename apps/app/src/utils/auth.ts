@@ -152,6 +152,12 @@ export const auth = betterAuth({
       },
       ac,
       roles: allRoles,
+      // Enable dynamic access control for custom roles (Sprint 2)
+      // This allows creating organization-specific roles at runtime
+      // dynamicAccessControl: {
+      //   enabled: true,
+      //   maximumRolesPerOrganization: 20,
+      // },
       schema: {
         organization: {
           modelName: 'Organization',

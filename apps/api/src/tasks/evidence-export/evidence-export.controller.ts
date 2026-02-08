@@ -19,7 +19,8 @@ import {
 import type { Response } from 'express';
 import { OrganizationId } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
-import { RequireRoles } from '../../auth/role-validator.guard';
+import { PermissionGuard } from '../../auth/permission.guard';
+import { RequirePermission } from '../../auth/require-permission.decorator';
 import { EvidenceExportService } from './evidence-export.service';
 import { TasksService } from '../tasks.service';
 
@@ -210,7 +211,8 @@ export class AuditorEvidenceExportController {
    * Export all evidence for the organization (auditor only)
    */
   @Get('all')
-  @UseGuards(RequireRoles('auditor', 'admin', 'owner'))
+  @UseGuards(PermissionGuard)
+  @RequirePermission('evidence', 'export')
   @ApiOperation({
     summary: 'Export all organization evidence as ZIP (Auditor only)',
     description:

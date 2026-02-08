@@ -4,7 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { db, TaskStatus } from '@trycompai/db';
+import { db, TaskStatus, Prisma } from '@trycompai/db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 
@@ -14,12 +14,18 @@ export class TasksService {
 
   /**
    * Get all tasks for an organization
+   * @param organizationId - The organization ID
+   * @param assignmentFilter - Optional filter for assignment-based access (for employee/contractor roles)
    */
-  async getTasks(organizationId: string): Promise<TaskResponseDto[]> {
+  async getTasks(
+    organizationId: string,
+    assignmentFilter: Prisma.TaskWhereInput = {},
+  ): Promise<TaskResponseDto[]> {
     try {
       const tasks = await db.task.findMany({
         where: {
           organizationId,
+          ...assignmentFilter,
         },
         orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
       });

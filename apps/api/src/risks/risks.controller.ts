@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -19,7 +20,13 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import {
+  buildRiskAssignmentFilter,
+  hasRiskAccess,
+} from '../utils/assignment-filter';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
 import { RisksService } from './risks.service';
@@ -46,6 +53,8 @@ export class RisksController {
   constructor(private readonly risksService: RisksService) {}
 
   @Get()
+  @UseGuards(PermissionGuard)
+  @RequirePermission('risk', 'read')
   @ApiOperation(RISK_OPERATIONS.getAllRisks)
   @ApiResponse(GET_ALL_RISKS_RESPONSES[200])
   @ApiResponse(GET_ALL_RISKS_RESPONSES[401])
@@ -55,7 +64,16 @@ export class RisksController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const risks = await this.risksService.findAllByOrganization(organizationId);
+    // Build assignment filter for restricted roles (employee/contractor)
+    const assignmentFilter = buildRiskAssignmentFilter(
+      authContext.memberId,
+      authContext.userRoles,
+    );
+
+    const risks = await this.risksService.findAllByOrganization(
+      organizationId,
+      assignmentFilter,
+    );
 
     return {
       data: risks,
@@ -72,10 +90,13 @@ export class RisksController {
   }
 
   @Get(':id')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('risk', 'read')
   @ApiOperation(RISK_OPERATIONS.getRiskById)
   @ApiParam(RISK_PARAMS.riskId)
   @ApiResponse(GET_RISK_BY_ID_RESPONSES[200])
   @ApiResponse(GET_RISK_BY_ID_RESPONSES[401])
+  @ApiResponse(GET_RISK_BY_ID_RESPONSES[403])
   @ApiResponse(GET_RISK_BY_ID_RESPONSES[404])
   @ApiResponse(GET_RISK_BY_ID_RESPONSES[500])
   async getRiskById(
@@ -84,6 +105,11 @@ export class RisksController {
     @AuthContext() authContext: AuthContextType,
   ) {
     const risk = await this.risksService.findById(riskId, organizationId);
+
+    // Check assignment access for restricted roles
+    if (!hasRiskAccess(risk, authContext.memberId, authContext.userRoles)) {
+      throw new ForbiddenException('You do not have access to this risk');
+    }
 
     return {
       ...risk,
