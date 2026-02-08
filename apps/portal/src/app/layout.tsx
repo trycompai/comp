@@ -1,8 +1,10 @@
+import '@comp/ui/globals.css';
+import '@trycompai/design-system/globals.css';
+
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
 import { initializeServer } from '@comp/analytics/server';
 import { cn } from '@comp/ui/cn';
-import '@comp/ui/globals.css';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
@@ -88,7 +90,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
   });
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={cn(
           `${GeistMono.variable} ${font.variable}`,

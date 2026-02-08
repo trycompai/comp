@@ -12,7 +12,7 @@ interface MemberWithUserOrg extends Member {
 
 interface OrganizationDashboardProps {
   organizationId: string;
-  member: MemberWithUserOrg; // Pass the full member object for user info etc.
+  member: MemberWithUserOrg;
   fleetPolicies: FleetPolicy[];
   host: Host | null;
 }
@@ -24,11 +24,10 @@ export async function OrganizationDashboard({
   host,
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
-  // Include currentVersion to get the published version's content and pdfUrl
   const policies = await db.policy.findMany({
     where: {
       organizationId: organizationId,
-      isRequiredToSign: true, // Keep original logic for required policies
+      isRequiredToSign: true,
       status: 'published',
     },
     include: {
@@ -44,28 +43,13 @@ export async function OrganizationDashboard({
   });
 
   // Fetch training video completions specific to the member
-  // Note: The original fetched *all* completions for the member, regardless of org
-  // If videos are org-specific, the schema/query might need adjustment
   const trainingVideos = await db.employeeTrainingVideoCompletion.findMany({
     where: {
       memberId: member.id,
-      // Add organizationId filter if EmployeeTrainingVideoCompletion has it
-      // organizationId: organizationId,
     },
-    // Include video details if needed by EmployeeTasksList
-    // include: { trainingVideo: true }
   });
 
-  console.log('[OrganizationDashboard] Training videos fetched:', {
-    memberId: member.id,
-    count: trainingVideos.length,
-    videos: trainingVideos.map((v) => ({
-      videoId: v.videoId,
-      completedAt: v.completedAt,
-    })),
-  });
-
-  // Get Org first to get the label id.
+  // Get Org first to verify it exists
   const org = await db.organization.findUnique({
     where: {
       id: organizationId,
@@ -76,13 +60,12 @@ export async function OrganizationDashboard({
     return <NoAccessMessage />;
   }
 
-  // Display tasks without welcome message for cleaner UI
   return (
     <EmployeeTasksList
       organizationId={organizationId}
       policies={policies}
       trainingVideos={trainingVideos}
-      member={member} // Pass the member object down
+      member={member}
       fleetPolicies={fleetPolicies}
       host={host}
     />

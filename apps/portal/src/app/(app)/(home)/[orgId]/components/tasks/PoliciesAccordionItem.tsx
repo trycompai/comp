@@ -2,10 +2,10 @@
 
 import { acceptAllPolicies } from '@/actions/accept-policies';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
-import { Button } from '@comp/ui/button';
 import { cn } from '@comp/ui/cn';
 import type { Member, Policy, PolicyVersion } from '@db';
-import { CheckCircle2, Circle, FileText } from 'lucide-react';
+import { Button } from '@trycompai/design-system';
+import { CheckmarkFilled, CircleDash, Document } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -58,9 +58,9 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
       <AccordionTrigger className="px-4 hover:no-underline [&[data-state=open]]:pb-2">
         <div className="flex items-center gap-3">
           {hasAcceptedPolicies ? (
-            <CheckCircle2 className="text-primary h-5 w-5" />
+            <CheckmarkFilled size={20} className="text-primary" />
           ) : (
-            <Circle className="text-muted-foreground h-5 w-5" />
+            <CircleDash size={20} className="text-muted-foreground" />
           )}
           <span
             className={cn('text-base', hasAcceptedPolicies && 'text-muted-foreground line-through')}
@@ -86,10 +86,10 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                         href={`/${member.organizationId}/policy/${policy.id}`}
                         className="hover:text-primary flex items-center gap-2 text-sm transition-colors"
                       >
-                        <FileText className="text-muted-foreground h-4 w-4" />
+                        <Document size={16} className="text-muted-foreground" />
                         <span className={cn(isAccepted && 'line-through')}>{policy.name}</span>
                       </Link>
-                      {isAccepted && <CheckCircle2 className="text-primary h-3 w-3" />}
+                      {isAccepted && <CheckmarkFilled size={12} className="text-primary" />}
                     </div>
                   );
                 })}
@@ -98,12 +98,9 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
                 size="sm"
                 onClick={handleAcceptAllPolicies}
                 disabled={hasAcceptedPolicies || isAcceptingAll}
+                loading={isAcceptingAll}
               >
-                {isAcceptingAll
-                  ? 'Accepting...'
-                  : hasAcceptedPolicies
-                    ? 'All Policies Accepted'
-                    : 'Accept All'}
+                {hasAcceptedPolicies ? 'All Policies Accepted' : 'Accept All'}
               </Button>
             </>
           ) : (

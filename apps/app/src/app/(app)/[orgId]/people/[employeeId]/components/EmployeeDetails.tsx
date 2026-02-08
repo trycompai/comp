@@ -1,12 +1,11 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import { Form } from '@comp/ui/form';
 import type { Departments, Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Section, Stack } from '@trycompai/design-system';
-import { Save } from 'lucide-react';
+import { Grid } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -28,14 +27,18 @@ const employeeFormSchema = z.object({
 
 export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
+export const EMPLOYEE_FORM_ID = 'employee-details-form';
+
 export const EmployeeDetails = ({
   employee,
   canEdit,
+  onFormStateChange,
 }: {
   employee: Member & {
     user: User;
   };
   canEdit: boolean;
+  onFormStateChange?: (state: { isDirty: boolean; isLoading: boolean }) => void;
 }) => {
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
@@ -101,36 +104,24 @@ export const EmployeeDetails = ({
     }
   };
 
+  const isLoading = form.formState.isSubmitting || actionStatus === 'executing';
+  const { isDirty } = form.formState;
+
+  useEffect(() => {
+    onFormStateChange?.({ isDirty, isLoading });
+  }, [isDirty, isLoading, onFormStateChange]);
+
   return (
-    <Section>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Stack gap="lg">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <Name control={form.control} disabled={!canEdit} />
-              <Email control={form.control} disabled={true} />
-              <Department control={form.control} disabled={!canEdit} />
-              <Status control={form.control} disabled={!canEdit} />
-              <JoinDate control={form.control} disabled={!canEdit} />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                disabled={
-                  !form.formState.isDirty ||
-                  form.formState.isSubmitting ||
-                  actionStatus === 'executing'
-                }
-              >
-                {!(form.formState.isSubmitting || actionStatus === 'executing') && (
-                  <Save className="h-4 w-4" />
-                )}
-                {form.formState.isSubmitting || actionStatus === 'executing' ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </Stack>
-        </form>
-      </Form>
-    </Section>
+    <Form {...form}>
+      <form id={EMPLOYEE_FORM_ID} onSubmit={form.handleSubmit(onSubmit)}>
+        <Grid cols={{ base: '1', md: '2' }} gap="4">
+          <Name control={form.control} disabled={!canEdit} />
+          <Email control={form.control} disabled={true} />
+          <Department control={form.control} disabled={!canEdit} />
+          <Status control={form.control} disabled={!canEdit} />
+          <JoinDate control={form.control} disabled={!canEdit} />
+        </Grid>
+      </form>
+    </Form>
   );
 };

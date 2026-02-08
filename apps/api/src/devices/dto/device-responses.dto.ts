@@ -79,8 +79,11 @@ export class DeviceResponseDto {
   })
   software_updated_at: string;
 
-  @ApiProperty({ description: 'Device ID', example: 123 })
-  id: number;
+  @ApiProperty({
+    description: 'Device ID (numeric for Fleet devices, string UUID for device-agent devices)',
+    oneOf: [{ type: 'number', example: 123 }, { type: 'string', example: 'clx1abc123' }],
+  })
+  id: number | string;
 
   @ApiProperty({
     description: 'Detail updated at',
@@ -319,4 +322,12 @@ export class DeviceResponseDto {
 
   @ApiProperty({ description: 'Display name', example: "John's MacBook Pro" })
   display_name: string;
+
+  @ApiProperty({
+    description: 'Source system that reported this device',
+    example: 'fleet',
+    enum: ['fleet', 'device_agent'],
+    required: false,
+  })
+  source?: 'fleet' | 'device_agent';
 }

@@ -4,7 +4,7 @@ import { db } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, multiSession, organization } from 'better-auth/plugins';
+import { bearer, emailOTP, multiSession, organization } from 'better-auth/plugins';
 import { ac, admin, auditor, contractor, employee, owner } from './permissions';
 
 export const auth = betterAuth({
@@ -71,6 +71,7 @@ export const auth = betterAuth({
     }),
     nextCookies(),
     multiSession(),
+    bearer(),
   ],
   socialProviders: {
     google: {

@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import type { Member, Policy, PolicyVersion } from '@db';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@trycompai/design-system';
+import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -110,7 +110,7 @@ export function PolicyCarousel({
           onClick={handlePrevious}
           disabled={currentIndex === 0}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft size={16} />
         </Button>
         <span className="text-muted-foreground text-sm">
           Policy {currentIndex + 1} of {policies.length}
@@ -121,7 +121,7 @@ export function PolicyCarousel({
           onClick={handleNext}
           disabled={currentIndex === policies.length - 1}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight size={16} />
         </Button>
       </div>
     </div>

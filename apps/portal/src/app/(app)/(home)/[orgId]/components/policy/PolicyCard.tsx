@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import {
   Card,
   CardContent,
@@ -11,7 +10,8 @@ import {
 } from '@comp/ui/card';
 import type { Member, Policy, PolicyVersion } from '@db';
 import type { JSONContent } from '@tiptap/react';
-import { ArrowRight, Check } from 'lucide-react';
+import { Button } from '@trycompai/design-system';
+import { ArrowRight, Checkmark } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { PolicyEditor } from './PolicyEditor';
 import { PortalPdfViewer } from './PortalPdfViewer';
@@ -47,17 +47,16 @@ export function PolicyCard({ policy, onNext, onComplete, member, isLastPolicy }:
       {isAccepted && (
         <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-xs">
           <div className="space-y-4 text-center">
-            <Check className="text-primary mx-auto h-12 w-12" />
+            <Checkmark size={48} className="text-primary mx-auto" />
             <h3 className="text-xl font-semibold">Policy Accepted</h3>
             <p className="text-muted-foreground">You have accepted this policy</p>
             <div className="flex justify-center gap-2">
-              <Button variant="outline" onClick={() => setIsAccepted(false)} className="gap-2">
+              <Button variant="outline" onClick={() => setIsAccepted(false)}>
                 View Again
               </Button>
               {!isLastPolicy && (
-                <Button onClick={onNext} className="gap-2">
+                <Button onClick={onNext} iconRight={<ArrowRight size={16} />}>
                   Next Policy
-                  <ArrowRight className="h-4 w-4" />
                 </Button>
               )}
             </div>

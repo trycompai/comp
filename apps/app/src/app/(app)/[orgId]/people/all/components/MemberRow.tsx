@@ -5,18 +5,6 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Badge,
-  HStack,
-  Label,
-  TableCell,
-  TableRow,
-  Text,
-} from '@trycompai/design-system';
-import { Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -33,6 +21,8 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import type { Role } from '@db';
+import { Badge, Label, TableCell, TableRow, Text } from '@trycompai/design-system';
+import { Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 
 import { toast } from 'sonner';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
@@ -47,20 +37,8 @@ interface MemberRowProps {
   onUpdateRole: (memberId: string, roles: Role[]) => void;
   canEdit: boolean;
   isCurrentUserOwner: boolean;
-}
-
-function getInitials(name?: string | null, email?: string | null): string {
-  if (name) {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  }
-  if (email) {
-    return email.substring(0, 2).toUpperCase();
-  }
-  return '??';
+  taskCompletion?: { completed: number; total: number };
+  hasDeviceAgentDevice?: boolean;
 }
 
 function getRoleLabel(role: string): string {
@@ -95,6 +73,8 @@ export function MemberRow({
   onUpdateRole,
   canEdit,
   isCurrentUserOwner,
+  taskCompletion,
+  hasDeviceAgentDevice,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -109,7 +89,6 @@ export function MemberRow({
 
   const memberName = member.user.name || member.user.email || 'Member';
   const memberEmail = member.user.email || '';
-  const memberAvatar = member.user.image;
   const memberId = member.id;
   const currentRoles = parseRoles(member.role);
 
@@ -168,25 +147,19 @@ export function MemberRow({
       <TableRow data-state={isDeactivated ? 'disabled' : undefined}>
         {/* NAME */}
         <TableCell>
-          <HStack gap="3" align="center">
-            <div className={`flex-shrink-0 ${isDeactivated ? 'grayscale opacity-60' : ''}`}>
-              <Avatar>
-                <AvatarImage src={memberAvatar || undefined} />
-                <AvatarFallback>{getInitials(member.user.name, member.user.email)}</AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="min-w-0">
-              <Link
-                href={profileHref}
-                className={`truncate text-sm font-medium hover:underline ${
-                  isDeactivated ? 'text-muted-foreground' : ''
-                }`}
-              >
-                {memberName}
-              </Link>
-              <Text variant="muted">{memberEmail}</Text>
-            </div>
-          </HStack>
+          <div className="min-w-0">
+            <Link
+              href={profileHref}
+              className={`truncate text-sm font-medium hover:underline ${
+                isDeactivated ? 'text-muted-foreground' : ''
+              }`}
+            >
+              {memberName}
+            </Link>
+            <Text size="xs" variant="muted">
+              {memberEmail}
+            </Text>
+          </div>
         </TableCell>
 
         {/* STATUS */}
@@ -194,7 +167,7 @@ export function MemberRow({
           {isDeactivated ? (
             <Badge variant="destructive">Inactive</Badge>
           ) : (
-            <Badge variant="secondary">Active</Badge>
+            <Badge variant="default">Active</Badge>
           )}
         </TableCell>
 
@@ -202,11 +175,28 @@ export function MemberRow({
         <TableCell>
           <div className="flex flex-wrap gap-1">
             {currentRoles.map((role) => (
-              <Badge key={role} variant="outline">
+              <Badge key={role} variant="default">
                 {getRoleLabel(role)}
               </Badge>
             ))}
           </div>
+        </TableCell>
+
+        {/* TASKS */}
+        <TableCell>
+          {taskCompletion ? (
+            <Badge
+              variant={
+                taskCompletion.completed === taskCompletion.total ? 'default' : 'destructive'
+              }
+            >
+              {taskCompletion.completed}/{taskCompletion.total}
+            </Badge>
+          ) : (
+            <Text size="sm" variant="muted">
+              —
+            </Text>
+          )}
         </TableCell>
 
         {/* ACTIONS */}
@@ -226,7 +216,7 @@ export function MemberRow({
                       <span>Edit Roles</span>
                     </DropdownMenuItem>
                   )}
-                  {member.fleetDmLabelId && isCurrentUserOwner && (
+                  {(member.fleetDmLabelId || hasDeviceAgentDevice) && isCurrentUserOwner && (
                     <DropdownMenuItem
                       onSelect={() => {
                         setDropdownOpen(false);
@@ -268,8 +258,8 @@ export function MemberRow({
         title="Remove Device"
         description={
           <>
-            Are you sure you want to remove all devices for this user{' '}
-            <strong>{memberName}</strong>? This will disconnect all devices from the organization.
+            Are you sure you want to remove all devices for this user <strong>{memberName}</strong>?
+            This will disconnect all devices from the organization.
           </>
         }
         onOpenChange={setIsRemoveDeviceAlertOpen}

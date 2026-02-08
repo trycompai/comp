@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@comp/ui/button';
 import type { EmployeeTrainingVideoCompletion } from '@db';
-import { ArrowRight, Check, Loader2 } from 'lucide-react';
+import { Button } from '@trycompai/design-system';
+import { ArrowRight, Checkmark } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 
 // Define our own TrainingVideo interface since we can't find the import
@@ -53,19 +53,14 @@ export function YoutubeEmbed({
             variant={isCompleted ? 'secondary' : 'default'}
             onClick={onComplete}
             disabled={isCompleted}
-            className="gap-2"
+            loading={isMarkingComplete}
+            iconLeft={!isMarkingComplete ? <Checkmark size={16} /> : undefined}
           >
-            {isMarkingComplete ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Marking as Complete...
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                {isCompleted ? 'Completed' : 'Mark as Complete'}
-              </>
-            )}
+            {isMarkingComplete
+              ? 'Marking as Complete...'
+              : isCompleted
+                ? 'Completed'
+                : 'Mark as Complete'}
           </Button>
         )}
       </div>
@@ -73,16 +68,15 @@ export function YoutubeEmbed({
         {isCompleted && !isRewatching && (
           <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-xs">
             <div className="space-y-4 text-center">
-              <Check className="text-primary mx-auto h-12 w-12" />
+              <Checkmark size={48} className="text-primary mx-auto" />
               <h3 className="text-xl font-semibold">Video Completed</h3>
               <div className="flex justify-center gap-2">
-                <Button variant="outline" onClick={() => setIsRewatching(true)} className="gap-2">
+                <Button variant="outline" onClick={() => setIsRewatching(true)}>
                   Watch Again
                 </Button>
                 {onNext && (
-                  <Button onClick={onNext} className="gap-2">
+                  <Button onClick={onNext} iconRight={<ArrowRight size={16} />}>
                     Next Video
-                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 )}
               </div>

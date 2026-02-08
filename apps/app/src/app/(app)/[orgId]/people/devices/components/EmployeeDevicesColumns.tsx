@@ -2,85 +2,116 @@
 
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import type { ColumnDef } from '@tanstack/react-table';
-import { CheckCircle2, XCircle } from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import type { FleetPolicy, Host } from '../types';
-import { DeviceDropdownMenu } from './DeviceDropdownMenu';
+import { Badge } from '@trycompai/design-system';
+import type { DeviceWithChecks } from '../types';
 
-function UserNameCell({ userName, memberId }: { userName: string | null | undefined; memberId: string | undefined }) {
-  const params = useParams();
-  const orgId = params?.orgId as string;
+const CHECK_NAMES: Record<string, string> = {
+  disk_encryption: 'Disk Encryption',
+  antivirus: 'Antivirus',
+  password_policy: 'Password Policy',
+  screen_lock: 'Screen Lock',
+};
 
-  if (!userName || !memberId) {
-    return <span className="truncate font-medium">{userName || '-'}</span>;
-  }
+const PLATFORM_LABELS: Record<string, string> = {
+  macos: 'macOS',
+  windows: 'Windows',
+};
 
-  return (
-    <Link
-      href={`/${orgId}/people/${memberId}`}
-      className="truncate font-medium text-primary hover:underline"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {userName}
-    </Link>
-  );
-}
-
-export function getEmployeeDevicesColumns(isCurrentUserOwner: boolean): ColumnDef<Host>[] {
+export function getDeviceColumns(): ColumnDef<DeviceWithChecks>[] {
   return [
     {
-      id: 'computer_name',
-      accessorKey: 'computer_name',
+      id: 'name',
+      accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Device Name" />,
-      cell: ({ row }) => {
-        return (
-          <div className="flex items-center gap-2">
-            <span className="max-w-[31.25rem] truncate font-medium">
-              {row.getValue('computer_name')}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'user_name',
-      accessorKey: 'user_name',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
-      cell: ({ row }) => {
-        const userName = row.getValue('user_name') as string | null | undefined;
-        const memberId = row.original.member_id;
-        return (
-          <div className="flex items-center gap-2">
-            <UserNameCell userName={userName} memberId={memberId} />
-          </div>
-        );
-      },
-    },
-    {
-      id: 'policies',
-      accessorKey: 'policies',
-      enableColumnFilter: false,
-      enableSorting: false,
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Is Compliant" />,
-      cell: ({ row }) => {
-        const policies = row.getValue('policies') as FleetPolicy[];
-        const isCompliant = policies.every((policy) => policy.response === 'pass');
-        return isCompliant ? (
-          <CheckCircle2 size={16} className="text-primary" />
-        ) : (
-          <XCircle size={16} className="text-red-500" />
-        );
-      },
-    },
-    {
-      id: 'actions',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="" />,
-      enableColumnFilter: false,
-      enableSorting: false,
       cell: ({ row }) => (
-          <DeviceDropdownMenu host={row.original} isCurrentUserOwner={isCurrentUserOwner} />
-        ),
-    }
+        <div className="flex items-center gap-2">
+          <span className="max-w-[31.25rem] truncate font-medium">{row.original.name}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'user',
+      accessorFn: (row) => row.user.name,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">{row.original.user.name}</span>
+          <span className="text-muted-foreground text-xs">{row.original.user.email}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'platform',
+      accessorKey: 'platform',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Platform" />,
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="text-sm">
+            {PLATFORM_LABELS[row.original.platform] ?? row.original.platform}
+          </span>
+          <span className="text-muted-foreground text-xs">{row.original.osVersion}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'lastCheckIn',
+      accessorKey: 'lastCheckIn',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Last Check-in" />,
+      cell: ({ row }) => {
+        const lastCheckIn = row.original.lastCheckIn;
+        if (!lastCheckIn) {
+          return <span className="text-muted-foreground text-sm">Never</span>;
+        }
+        const date = new Date(lastCheckIn);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+        let timeAgo: string;
+        if (diffHours < 1) {
+          timeAgo = 'Just now';
+        } else if (diffHours < 24) {
+          timeAgo = `${diffHours}h ago`;
+        } else {
+          const diffDays = Math.floor(diffHours / 24);
+          timeAgo = `${diffDays}d ago`;
+        }
+
+        return <span className="text-sm">{timeAgo}</span>;
+      },
+    },
+    {
+      id: 'checks',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Checks" />,
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const checks = row.original.checks;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {checks.map((check) => (
+              <Badge key={check.checkType} variant={check.passed ? 'default' : 'destructive'}>
+                {CHECK_NAMES[check.checkType] ?? check.checkType}
+              </Badge>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      id: 'isCompliant',
+      accessorKey: 'isCompliant',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Compliant" />,
+      cell: ({ row }) => {
+        const isCompliant = row.original.isCompliant;
+        return (
+          <span
+            className={`text-sm ${isCompliant ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+          >
+            {isCompliant ? 'Yes' : 'No'}
+          </span>
+        );
+      },
+    },
   ];
 }

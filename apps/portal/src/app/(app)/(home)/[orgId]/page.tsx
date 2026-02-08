@@ -53,7 +53,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     redirect('/');
   }
 
-  // Fleet policies - already has graceful error handling in getFleetPolicies
+  // Fleet policies - only fetch if member has a fleet device label
   const fleetData = await getFleetPolicies(member);
 
   return (
@@ -72,9 +72,8 @@ const getFleetPolicies = async (
 ): Promise<{ fleetPolicies: FleetPolicy[]; device: Host | null }> => {
   const deviceLabelId = member.fleetDmLabelId;
 
-  // Return early if no deviceLabelId
-  if (!deviceLabelId) {
-    console.log('No fleet device label ID found for member');
+  // Return early if no deviceLabelId or FleetDM not configured
+  if (!deviceLabelId || !process.env.FLEET_URL || !process.env.FLEET_TOKEN) {
     return { fleetPolicies: [], device: null };
   }
 
@@ -82,7 +81,7 @@ const getFleetPolicies = async (
     const fleet = await getFleetInstance();
 
     const deviceResponse = await fleet.get(`/labels/${deviceLabelId}/hosts`);
-    const device: Host | undefined = deviceResponse.data.hosts[0]; // There should only be one device per label.
+    const device: Host | undefined = deviceResponse.data.hosts[0];
 
     if (!device) {
       return { fleetPolicies: [], device: null };
@@ -111,20 +110,32 @@ const getFleetPolicies = async (
     return {
       device,
       fleetPolicies: fleetPolicies.map((policy) => {
-        const policyResult = fleetPolicyResults.find((result) => result.fleetPolicyId === policy.id);
+        const policyResult = fleetPolicyResults.find(
+          (result) => result.fleetPolicyId === policy.id,
+        );
         return {
           ...policy,
-          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
+          response:
+            policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass'
+              ? 'pass'
+              : 'fail',
           attachments: policyResult?.attachments || [],
-        }
+        };
       }),
     };
-  } catch (error: any) {
-    // Log more details about the error
-    if (error.response?.status === 404) {
-      console.log(`Fleet endpoint not found for label ID: ${deviceLabelId}`);
+  } catch (error: unknown) {
+    const statusCode =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : undefined;
+
+    if (statusCode === 404) {
+      console.log(`Fleet endpoint not found for label ID: ${member.fleetDmLabelId}`);
     } else {
-      console.error('Error fetching fleet policies:', error.message || error);
+      console.error(
+        'Error fetching fleet policies:',
+        error instanceof Error ? error.message : error,
+      );
     }
     return { fleetPolicies: [], device: null };
   }

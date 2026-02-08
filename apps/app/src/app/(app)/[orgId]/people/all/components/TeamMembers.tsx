@@ -1,5 +1,6 @@
 'use server';
 
+import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { auth } from '@/utils/auth';
 import type { Invitation, Member, User } from '@db';
 import { db } from '@db';
@@ -75,6 +76,67 @@ export async function TeamMembers(props: TeamMembersProps) {
   // Fetch employee sync connections server-side
   const employeeSyncData = await getEmployeeSyncConnections(organizationId);
 
+  // Build task completion map for employees/contractors
+  const taskCompletionMap: Record<string, { completed: number; total: number }> = {};
+
+  const employeeMembers = members.filter((member) => {
+    const roles = member.role.includes(',')
+      ? member.role.split(',').map((r) => r.trim())
+      : [member.role];
+    return roles.includes('employee') || roles.includes('contractor');
+  });
+
+  if (employeeMembers.length > 0) {
+    // Fetch required policies
+    const policies = await db.policy.findMany({
+      where: {
+        organizationId,
+        isRequiredToSign: true,
+        status: 'published',
+        isArchived: false,
+      },
+    });
+
+    // Fetch training video completions
+    const employeeIds = employeeMembers.map((m) => m.id);
+    const trainingCompletions = await db.employeeTrainingVideoCompletion.findMany({
+      where: {
+        memberId: { in: employeeIds },
+      },
+    });
+
+    const totalTrainingVideos = trainingVideosData.length;
+    const totalPolicies = policies.length;
+    const totalTasks = totalPolicies + totalTrainingVideos;
+
+    for (const employee of employeeMembers) {
+      const policiesCompleted = policies.filter((p) => p.signedBy.includes(employee.id)).length;
+
+      const trainingsCompleted = trainingCompletions.filter(
+        (tc) => tc.memberId === employee.id && tc.completedAt !== null,
+      ).length;
+
+      taskCompletionMap[employee.id] = {
+        completed: policiesCompleted + trainingsCompleted,
+        total: totalTasks,
+      };
+    }
+  }
+
+  // Build a set of member IDs whose users have device-agent devices
+  const memberUserIds = members.map((m) => m.userId);
+  const devicesForMembers = await db.device.findMany({
+    where: {
+      organizationId,
+      userId: { in: memberUserIds },
+    },
+    select: { userId: true },
+  });
+  const userIdsWithDevice = new Set(devicesForMembers.map((d) => d.userId));
+  const memberIdsWithDeviceAgent = members
+    .filter((m) => userIdsWithDevice.has(m.userId))
+    .map((m) => m.id);
+
   return (
     <TeamMembersClient
       data={data}
@@ -86,6 +148,8 @@ export async function TeamMembers(props: TeamMembersProps) {
       isAuditor={isAuditor}
       isCurrentUserOwner={isCurrentUserOwner}
       employeeSyncData={employeeSyncData}
+      taskCompletionMap={taskCompletionMap}
+      memberIdsWithDeviceAgent={memberIdsWithDeviceAgent}
     />
   );
 }

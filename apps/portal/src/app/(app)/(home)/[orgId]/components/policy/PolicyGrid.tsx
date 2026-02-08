@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import type { Member, Policy, PolicyVersion } from '@db';
-import { Check } from 'lucide-react';
+import { Checkmark } from '@trycompai/design-system/icons';
 
 type PolicyWithVersion = Policy & {
   currentVersion?: Pick<PolicyVersion, 'id' | 'content' | 'pdfUrl' | 'version'> | null;
@@ -46,7 +46,7 @@ export function PolicyGrid({ policies, onPolicyClick, member }: PolicyGridProps)
               >
                 {isCompleted && (
                   <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[2px]">
-                    <Check className="text-primary h-12 w-12" />
+                    <Checkmark size={48} className="text-primary" />
                   </div>
                 )}
                 <CardHeader>

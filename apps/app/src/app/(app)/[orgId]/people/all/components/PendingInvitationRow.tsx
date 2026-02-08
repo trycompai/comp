@@ -10,14 +10,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Avatar,
-  AvatarFallback,
   Badge,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  HStack,
   TableCell,
   TableRow,
   Text,
@@ -80,14 +77,9 @@ export function PendingInvitationRow({
       <TableRow>
         {/* NAME */}
         <TableCell>
-          <HStack gap="3" align="center">
-            <Avatar>
-              <AvatarFallback>{invitation.email.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <Text>{invitation.email}</Text>
-            </div>
-          </HStack>
+          <div className="min-w-0">
+            <Text>{invitation.email}</Text>
+          </div>
         </TableCell>
 
         {/* STATUS */}
@@ -104,6 +96,13 @@ export function PendingInvitationRow({
               </Badge>
             ))}
           </div>
+        </TableCell>
+
+        {/* TASKS */}
+        <TableCell>
+          <Text size="sm" variant="muted">
+            —
+          </Text>
         </TableCell>
 
         {/* ACTIONS */}

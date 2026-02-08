@@ -18,6 +18,7 @@ model User {
   members            Member[]
   sessions           Session[]
   fleetPolicyResults FleetPolicyResult[]
+  devices            Device[]
 
   @@unique([email])
 }

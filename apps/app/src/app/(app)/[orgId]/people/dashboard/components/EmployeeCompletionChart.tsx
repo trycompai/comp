@@ -1,16 +1,45 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
-import { ExternalLink, Search } from 'lucide-react';
+import {
+  Avatar,
+  AvatarFallback,
+  Badge,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+  HStack,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { Search } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import type { CSSProperties } from 'react';
 import * as React from 'react';
 
-// Use correct types from the database
-import { TrainingVideo } from '@/lib/data/training-videos';
-import { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
+import type { TrainingVideo } from '@/lib/data/training-videos';
+import type { EmployeeTrainingVideoCompletion, Member, Policy, User } from '@db';
+
+function getInitials(name: string, email: string): string {
+  if (name) {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return email.slice(0, 2).toUpperCase();
+}
 
 interface EmployeeCompletionChartProps {
   employees: (Member & {
@@ -23,12 +52,6 @@ interface EmployeeCompletionChartProps {
   showAll?: boolean;
 }
 
-// Define colors for the chart using DS semantic colors
-const taskColors = {
-  completed: 'bg-success', // Green - completed/good state
-  incomplete: 'bg-warning', // Yellow - needs action
-};
-
 interface EmployeeTaskStats {
   id: string;
   name: string;
@@ -38,8 +61,6 @@ interface EmployeeTaskStats {
   trainingsCompleted: number;
   policiesTotal: number;
   trainingsTotal: number;
-  policyPercentage: number;
-  trainingPercentage: number;
   overallPercentage: number;
 }
 
@@ -52,39 +73,26 @@ export function EmployeeCompletionChart({
   const params = useParams();
   const orgId = params.orgId as string;
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [displayedItems, setDisplayedItems] = React.useState(showAll ? 20 : 5);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(25);
+
   // Calculate completion data for each employee
   const employeeStats: EmployeeTaskStats[] = React.useMemo(() => {
     return employees.map((employee) => {
-      // Count policies completed by this employee
       const policiesCompletedCount = policies.filter((policy) =>
         policy.signedBy.includes(employee.id),
       ).length;
 
-      // Calculate policy completion percentage
-      const policyCompletionPercentage = policies.length
-        ? Math.round((policiesCompletedCount / policies.length) * 100)
-        : 0;
-
-      // Count training videos completed by this employee
       const employeeTrainingVideos = trainingVideos.filter(
         (video) => video.memberId === employee.id && video.completedAt !== null,
       );
       const trainingsCompletedCount = employeeTrainingVideos.length;
 
-      // Get the total unique training videos available
       const uniqueTrainingVideosIds = [
         ...new Set(trainingVideos.map((video) => video.metadata.id)),
       ];
       const trainingVideosTotal = uniqueTrainingVideosIds.length;
 
-      // Calculate training completion percentage
-      const trainingCompletionPercentage = trainingVideosTotal
-        ? Math.round((trainingsCompletedCount / trainingVideosTotal) * 100)
-        : 0;
-
-      // Calculate total completion percentage
       const totalItems = policies.length + trainingVideosTotal;
       const totalCompletedItems = policiesCompletedCount + trainingsCompletedCount;
 
@@ -101,8 +109,6 @@ export function EmployeeCompletionChart({
         trainingsCompleted: trainingsCompletedCount,
         policiesTotal: policies.length,
         trainingsTotal: trainingVideosTotal,
-        policyPercentage: policyCompletionPercentage,
-        trainingPercentage: trainingCompletionPercentage,
         overallPercentage,
       };
     });
@@ -119,231 +125,145 @@ export function EmployeeCompletionChart({
     );
   }, [employeeStats, searchTerm]);
 
-  // Sort and limit employees
+  // Sort employees by completion percentage
   const sortedStats = React.useMemo(() => {
-    const sorted = [...filteredStats].sort((a, b) => b.overallPercentage - a.overallPercentage);
-    return showAll ? sorted.slice(0, displayedItems) : sorted.slice(0, 5);
-  }, [filteredStats, displayedItems, showAll]);
+    return [...filteredStats].sort((a, b) => b.overallPercentage - a.overallPercentage);
+  }, [filteredStats]);
 
-  // Load more function for infinite scroll
-  const loadMore = React.useCallback(async () => {
-    if (isLoading || !showAll) return;
-
-    setIsLoading(true);
-    // Simulate loading delay
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setDisplayedItems((prev) => prev + 20);
-    setIsLoading(false);
-  }, [isLoading, showAll]);
-
-  // Infinite scroll effect
-  React.useEffect(() => {
-    if (!showAll) return;
-
-    const handleScroll = () => {
-      if (
-        window.innerHeight + document.documentElement.scrollTop >=
-        document.documentElement.offsetHeight - 1000
-      ) {
-        loadMore();
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loadMore, showAll]);
+  const pageCount = Math.max(1, Math.ceil(sortedStats.length / perPage));
+  const paginatedStats = React.useMemo(() => {
+    if (!showAll) return sortedStats.slice(0, 5);
+    const start = (page - 1) * perPage;
+    return sortedStats.slice(start, start + perPage);
+  }, [sortedStats, page, perPage, showAll]);
 
   // Check for empty data scenarios
   if (!employees.length) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{'Employee Task Completion'}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex h-[300px] items-center justify-center">
-          <p className="text-muted-foreground text-center text-sm">
-            {'No employee data available'}
-          </p>
-        </CardContent>
-      </Card>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>No employee data available</EmptyTitle>
+          <EmptyDescription>
+            Employees will appear here once they are added to the organization.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
-  // Check if there are any tasks to complete
   if (policies.length === 0 && !trainingVideos.length) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{'Employee Task Completion'}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex h-[300px] items-center justify-center">
-          <p className="text-muted-foreground text-center text-sm">
-            {'No tasks available to complete'}
-          </p>
-        </CardContent>
-      </Card>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>No tasks available</EmptyTitle>
+          <EmptyDescription>
+            Create policies or add training videos to track employee completion.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{'Employee Task Completion'}</CardTitle>
-        {showAll && (
-          <div className="mt-4">
-            <InputGroup>
-              <InputGroupAddon>
-                <Search size={16} />
-              </InputGroupAddon>
-              <InputGroupInput
-                placeholder="Search employees..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </InputGroup>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        {filteredStats.length === 0 ? (
-          <div className="flex h-[200px] items-center justify-center">
-            <p className="text-muted-foreground text-center text-sm">
-              {searchTerm ? 'No employees found matching your search' : 'No employees available'}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-8">
-              {sortedStats.map((stat) => (
-                <div key={stat.id} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{stat.name}</p>
+    <Stack gap="4">
+      {showAll && (
+        <div className="w-full md:max-w-[300px]">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search size={16} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+            />
+          </InputGroup>
+        </div>
+      )}
+
+      {filteredStats.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>{searchTerm ? 'No employees found' : 'No employees available'}</EmptyTitle>
+            <EmptyDescription>
+              {searchTerm
+                ? 'Try adjusting your search.'
+                : 'Employees will appear here once they are added.'}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <Table
+          variant="bordered"
+          pagination={
+            showAll
+              ? {
+                  page,
+                  pageCount,
+                  onPageChange: setPage,
+                  pageSize: perPage,
+                  pageSizeOptions: [25, 50, 100],
+                  onPageSizeChange: (size: number) => {
+                    setPerPage(size);
+                    setPage(1);
+                  },
+                }
+              : undefined
+          }
+        >
+          <TableHeader>
+            <TableRow>
+              <TableHead>Employee</TableHead>
+              <TableHead>Policies</TableHead>
+              <TableHead>Training</TableHead>
+              <TableHead>Completion</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedStats.map((stat) => {
+              const allComplete = stat.overallPercentage === 100;
+              return (
+                <TableRow key={stat.id}>
+                  <TableCell>
+                    <HStack gap="3" align="center">
+                      <Avatar>
+                        <AvatarFallback>{getInitials(stat.name, stat.email)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
                         <Link
                           href={`/${orgId}/people/${stat.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:text-primary/80 flex items-center gap-1 text-xs font-medium underline-offset-4 hover:underline"
+                          className="truncate text-sm font-medium hover:underline"
                         >
-                          View Profile
-                          <ExternalLink className="h-3 w-3" />
+                          {stat.name}
                         </Link>
+                        <Text variant="muted">{stat.email}</Text>
                       </div>
-                      <p className="text-muted-foreground text-xs">{stat.email}</p>
-                    </div>
-                    <div className="text-muted-foreground text-right text-xs">
-                      <div>
-                        {stat.policiesCompleted + stat.trainingsCompleted} / {stat.totalTasks} tasks
-                      </div>
-                      <div className="text-xs">
-                        {stat.policiesCompleted}/{stat.policiesTotal} policies •{' '}
-                        {stat.trainingsCompleted}/{stat.trainingsTotal} training
-                      </div>
-                    </div>
-                  </div>
-
-                  <TaskBarChart stat={stat} />
-
-                  <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
-                    <div className="flex items-center gap-1">
-                      <div className="size-2 rounded-xs bg-success" />
-                      <span>{'Completed'}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="size-2 rounded-xs bg-warning" />
-                      <span>{'Not Completed'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {showAll && sortedStats.length < filteredStats.length && (
-              <div className="mt-8 flex justify-center">
-                {isLoading ? (
-                  <div className="text-muted-foreground text-sm">Loading more employees...</div>
-                ) : (
-                  <button
-                    onClick={loadMore}
-                    className="text-primary hover:text-primary/80 text-sm font-medium"
-                  >
-                    Load more employees
-                  </button>
-                )}
-              </div>
-            )}
-
-            {showAll && (
-              <div className="mt-4 text-center text-muted-foreground text-xs">
-                Showing {sortedStats.length} of {filteredStats.length} employees
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function TaskBarChart({ stat }: { stat: EmployeeTaskStats }) {
-  const totalCompleted = stat.policiesCompleted + stat.trainingsCompleted;
-  const totalIncomplete = stat.totalTasks - totalCompleted;
-  const barHeight = 12;
-
-  // Empty chart for no tasks
-  if (stat.totalTasks === 0) {
-    return <div className="bg-muted h-3" />;
-  }
-
-  return (
-    <div
-      className="relative h-[var(--height)]"
-      style={{ '--height': `${barHeight}px` } as CSSProperties}
-    >
-      <div className="absolute inset-0 h-full w-full overflow-visible">
-        {/* Completed segment */}
-        {totalCompleted > 0 && (
-          <div
-            className="absolute"
-            style={{
-              width: `${(totalCompleted / stat.totalTasks) * 100}%`,
-              height: `${barHeight}px`,
-              left: '0%',
-            }}
-          >
-            <div
-              className={taskColors.completed}
-              style={{
-                width: '100%',
-                height: '100%',
-              }}
-              title={`Completed: ${totalCompleted}`}
-            />
-          </div>
-        )}
-
-        {/* Incomplete segment */}
-        {totalIncomplete > 0 && (
-          <div
-            className="absolute"
-            style={{
-              width: `${(totalIncomplete / stat.totalTasks) * 100}%`,
-              height: `${barHeight}px`,
-              left: `${(totalCompleted / stat.totalTasks) * 100}%`,
-            }}
-          >
-            <div
-              className={taskColors.incomplete}
-              style={{
-                width: '100%',
-                height: '100%',
-              }}
-              title={`Incomplete: ${totalIncomplete}`}
-            />
-          </div>
-        )}
-      </div>
-    </div>
+                    </HStack>
+                  </TableCell>
+                  <TableCell>
+                    <Text size="sm">
+                      {stat.policiesCompleted}/{stat.policiesTotal}
+                    </Text>
+                  </TableCell>
+                  <TableCell>
+                    <Text size="sm">
+                      {stat.trainingsCompleted}/{stat.trainingsTotal}
+                    </Text>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={allComplete ? 'default' : 'destructive'}>
+                      {stat.overallPercentage}%
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </Stack>
   );
 }
