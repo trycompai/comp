@@ -275,7 +275,7 @@ export class DevicesService {
     // Construct a partial DTO with device-agent fields; consumers should handle
     // missing FleetDM-specific fields gracefully via the `source` field.
     const dto = new DeviceResponseDto();
-    dto.id = device.id as unknown as number;
+    dto.id = device.id;
     dto.computer_name = device.name;
     dto.hostname = device.hostname;
     dto.platform = device.platform === 'macos' ? 'darwin' : device.platform;

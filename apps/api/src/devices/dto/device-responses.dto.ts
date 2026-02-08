@@ -79,8 +79,11 @@ export class DeviceResponseDto {
   })
   software_updated_at: string;
 
-  @ApiProperty({ description: 'Device ID', example: 123 })
-  id: number;
+  @ApiProperty({
+    description: 'Device ID (numeric for Fleet devices, string UUID for device-agent devices)',
+    oneOf: [{ type: 'number', example: 123 }, { type: 'string', example: 'clx1abc123' }],
+  })
+  id: number | string;
 
   @ApiProperty({
     description: 'Detail updated at',

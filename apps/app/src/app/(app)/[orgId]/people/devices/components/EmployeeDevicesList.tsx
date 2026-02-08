@@ -56,7 +56,7 @@ export const EmployeeDevicesList = ({ devices }: EmployeeDevicesListProps) => {
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithChecks | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const perPage = 50;
+  const [perPage, setPerPage] = useState(50);
 
   const filteredDevices = useMemo(() => {
     if (!searchQuery) return devices;
@@ -127,7 +127,10 @@ export const EmployeeDevicesList = ({ devices }: EmployeeDevicesListProps) => {
             onPageChange: setPage,
             pageSize: perPage,
             pageSizeOptions: [25, 50, 100],
-            onPageSizeChange: () => setPage(1),
+            onPageSizeChange: (size) => {
+              setPerPage(size);
+              setPage(1);
+            },
           }}
         >
           <TableHeader>

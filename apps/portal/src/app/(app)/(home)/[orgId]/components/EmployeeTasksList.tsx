@@ -87,7 +87,7 @@ export const EmployeeTasksList = ({
   const allDeviceAgentCompliant = devices.length > 0 && devices.every((d) => d.isCompliant);
   const hasInstalledFleetAgent = host !== null;
   const allFleetPoliciesPass =
-    fleetPolicies.length > 0 && fleetPolicies.every((policy) => policy.response === 'pass');
+    fleetPolicies.length === 0 || fleetPolicies.every((policy) => policy.response === 'pass');
 
   const hasCompletedDeviceSetup =
     (hasDeviceAgentDevices && allDeviceAgentCompliant) ||
