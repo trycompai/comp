@@ -146,9 +146,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
 
         if (!result.success) {
           console.error('Legacy scan error:', result.errors);
-          toast.error(
-            `Scan failed: ${result.errors?.join(', ') || 'Unknown error'}`,
-          );
+          toast.error(`Scan failed: ${result.errors?.join(', ') || 'Unknown error'}`);
           return null;
         }
       } else {
@@ -236,7 +234,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           <>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => {
                 setAddConnectionProvider(null);
                 setViewingResults(false);
