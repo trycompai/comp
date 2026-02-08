@@ -8,7 +8,7 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin({ exclude: ['electron-store'] })],
     define: {
       __PORTAL_URL__: JSON.stringify(
-        process.env.PORTAL_URL || 'https://app.trycomp.ai',
+        process.env.PORTAL_URL || 'https://app.staging.trycomp.ai',
       ),
       __AGENT_VERSION__: JSON.stringify(
         process.env.AGENT_VERSION || '1.0.0',

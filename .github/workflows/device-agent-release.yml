@@ -2,7 +2,7 @@ name: Device Agent Release
 
 on:
   push:
-    branches: [main, release]
+    branches: ['**']
     paths:
       - 'packages/device-agent/**'
 
@@ -44,16 +44,16 @@ jobs:
 
           BRANCH="${GITHUB_REF_NAME}"
 
-          if [ "$BRANCH" = "main" ]; then
-            TAG_NAME="device-agent-v${NEXT_VERSION}-staging.${GITHUB_RUN_NUMBER}"
-            IS_PRERELEASE="true"
-            PORTAL_URL="https://portal.staging.trycomp.ai"
-            RELEASE_NAME="Device Agent v${NEXT_VERSION} (Staging #${GITHUB_RUN_NUMBER})"
-          else
+          if [ "$BRANCH" = "release" ]; then
             TAG_NAME="device-agent-v${NEXT_VERSION}"
             IS_PRERELEASE="false"
-            PORTAL_URL="https://portal.trycomp.ai"
+            PORTAL_URL="https://app.trycomp.ai"
             RELEASE_NAME="Device Agent v${NEXT_VERSION}"
+          else
+            TAG_NAME="device-agent-v${NEXT_VERSION}-staging.${GITHUB_RUN_NUMBER}"
+            IS_PRERELEASE="true"
+            PORTAL_URL="https://app.staging.trycomp.ai"
+            RELEASE_NAME="Device Agent v${NEXT_VERSION} (Staging #${GITHUB_RUN_NUMBER})"
           fi
 
           echo "version=$NEXT_VERSION" >> $GITHUB_OUTPUT
