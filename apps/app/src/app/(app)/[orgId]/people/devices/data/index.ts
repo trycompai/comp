@@ -47,7 +47,7 @@ export const getEmployeeDevicesFromDB: () => Promise<DeviceWithChecks[]> = async
       id: device.id,
       name: device.name,
       hostname: device.hostname,
-      platform: device.platform as 'macos' | 'windows',
+      platform: device.platform as 'macos' | 'windows' | 'linux',
       osVersion: device.osVersion,
       serialNumber: device.serialNumber,
       hardwareModel: device.hardwareModel,
@@ -162,8 +162,12 @@ export const getFleetDevices: () => Promise<DeviceWithChecks[]> = async () => {
 
         // Map fleet platform to our platform type
         const platform = host.platform?.toLowerCase();
-        const mappedPlatform: 'macos' | 'windows' =
-          platform === 'darwin' || platform === 'macos' || platform === 'osx' ? 'macos' : 'windows';
+        const mappedPlatform: 'macos' | 'windows' | 'linux' =
+          platform === 'darwin' || platform === 'macos' || platform === 'osx'
+            ? 'macos'
+            : platform === 'linux' || platform === 'ubuntu' || platform === 'rhel' || platform === 'centos'
+              ? 'linux'
+              : 'windows';
 
         // Use disk_encryption_enabled as a basic compliance check
         const isCompliant = host.disk_encryption_enabled === true;

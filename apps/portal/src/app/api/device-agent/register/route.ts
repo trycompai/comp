@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const registerDeviceSchema = z.object({
   name: z.string().min(1),
   hostname: z.string().min(1),
-  platform: z.enum(['macos', 'windows']),
+  platform: z.enum(['macos', 'windows', 'linux']),
   osVersion: z.string().min(1),
   serialNumber: z.string().optional(),
   hardwareModel: z.string().optional(),

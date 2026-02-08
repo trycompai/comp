@@ -10,7 +10,7 @@ export interface DeviceWithChecks {
   id: string;
   name: string;
   hostname: string;
-  platform: 'macos' | 'windows';
+  platform: 'macos' | 'windows' | 'linux';
   osVersion: string;
   serialNumber: string | null;
   hardwareModel: string | null;

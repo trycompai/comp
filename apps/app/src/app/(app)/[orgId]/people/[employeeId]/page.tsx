@@ -287,7 +287,7 @@ const getMemberDevice = async (
     id: device.id,
     name: device.name,
     hostname: device.hostname,
-    platform: device.platform as 'macos' | 'windows',
+    platform: device.platform as 'macos' | 'windows' | 'linux',
     osVersion: device.osVersion,
     serialNumber: device.serialNumber,
     hardwareModel: device.hardwareModel,
