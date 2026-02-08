@@ -68,7 +68,7 @@ export function QuantityInput({
           autoComplete="off"
           step={0.1}
           value={rawValue}
-          onInput={handleInput}
+          onChange={handleInput}
           onBlur={onBlur}
           onFocus={onFocus}
           inputMode="decimal"

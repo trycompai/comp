@@ -2,9 +2,9 @@
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { env } from '@/env.mjs';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
-import { env } from '@/env.mjs';
 import { db } from '@db';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -46,6 +46,13 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       // Check if self-hosted
       const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
 
+      // Resolve framework IDs to display names (e.g. "SOC 2", "ISO 27001")
+      const frameworks = await db.frameworkEditorFramework.findMany({
+        where: { id: { in: parsedInput.frameworkIds } },
+        select: { name: true },
+      });
+      const frameworkNames = frameworks.map((f) => f.name).join(', ');
+
       // Create a new organization
       const newOrg = await db.organization.create({
         data: {
@@ -68,7 +75,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           context: {
             create: {
               question: 'Which compliance frameworks do you need?',
-              answer: parsedInput.frameworkIds.join(', '),
+              answer: frameworkNames || parsedInput.frameworkIds.join(', '),
               tags: ['onboarding'],
             },
           },

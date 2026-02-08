@@ -65,6 +65,10 @@ export const organizationAdvancedModeSchema = z.object({
   advancedModeEnabled: z.boolean(),
 });
 
+export const organizationEvidenceApprovalSchema = z.object({
+  evidenceApprovalEnabled: z.boolean(),
+});
+
 // Risks
 export const createRiskSchema = z.object({
   title: z

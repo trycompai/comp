@@ -15,22 +15,50 @@ import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } fro
 
 interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
-    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'frequency' | 'department' | 'reviewDate'>>,
+    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>>,
   ) => void;
+  evidenceApprovalEnabled?: boolean;
+  onRequestApproval?: () => void;
 }
 
-export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSidebarProps) {
+export function TaskPropertiesSidebar({
+  handleUpdateTask,
+  evidenceApprovalEnabled = false,
+  onRequestApproval,
+}: TaskPropertiesSidebarProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
   const { members } = useOrganizationMembers();
 
-  console.log('members', members);
-
   const assignedMember =
     !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);
 
+  const approverMember =
+    !task?.approverId || !members ? null : members.find((m) => m.id === task.approverId);
+
   if (isLoading) return <div>Loading...</div>;
   if (!task) return null;
+
+  // Lock status changes when task is in review and approval is enabled
+  const isStatusLocked = evidenceApprovalEnabled && task.status === 'in_review';
+
+  const handleStatusChange = (selectedStatus: string | null) => {
+    if (!selectedStatus) return;
+
+    // Prevent manual status changes when task is pending approval
+    if (isStatusLocked) return;
+
+    // Intercept "done" status when evidence approval is enabled
+    if (evidenceApprovalEnabled && selectedStatus === 'done' && onRequestApproval) {
+      onRequestApproval();
+      return;
+    }
+
+    handleUpdateTask({
+      status: selectedStatus as TaskStatus,
+      reviewDate: selectedStatus === 'done' ? new Date() : task.reviewDate,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -42,7 +70,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
           <span className="text-sm font-medium">Status</span>
           <PropertySelector<TaskStatus>
             value={task.status}
-            options={taskStatuses}
+            options={taskStatuses.filter((s) => s !== 'in_review')}
             getKey={(status) => status}
             renderOption={(status) => (
               <div className="flex items-center gap-2">
@@ -50,16 +78,12 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                 <span className="capitalize">{status.replace('_', ' ')}</span>
               </div>
             )}
-            onSelect={(selectedStatus) => {
-              handleUpdateTask({
-                status: selectedStatus as TaskStatus,
-                reviewDate: selectedStatus === 'done' ? new Date() : task.reviewDate,
-              });
-            }}
+            onSelect={handleStatusChange}
             trigger={
               <Button
                 variant="ghost"
                 className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center gap-2 px-2 py-0.5 font-medium capitalize transition-colors cursor-pointer"
+                disabled={isStatusLocked}
               >
                 <TaskStatusIndicator status={task.status} />
                 {task.status.replace('_', ' ')}
@@ -68,6 +92,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             searchPlaceholder="Change status..."
             emptyText="No status found."
             contentWidth="w-48"
+            disabled={isStatusLocked}
           />
         </div>
 
@@ -127,10 +152,73 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             emptyText="No member found."
             contentWidth="w-64"
             disabled={members?.length === 0}
-            allowUnassign={true} // Enable unassign option
-            showCheck={false} // Hide check icon for assignee selector
+            allowUnassign={true}
+            showCheck={false}
           />
         </div>
+
+        {/* Approver Selector (visible when evidence approval is enabled) */}
+        {evidenceApprovalEnabled && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Approver</span>
+            <PropertySelector<Member & { user: User }>
+              value={task.approverId}
+              options={members ?? []}
+              getKey={(member) => member.id}
+              getSearchValue={(member) => `${member.user?.name || ''} ${member.user?.email || ''}`.trim() || member.id}
+              renderOption={(member) => (
+                <div className="flex items-center gap-2 w-full">
+                  <Avatar className="h-5 w-5 shrink-0">
+                    {member.user?.image && (
+                      <AvatarImage src={member.user.image} alt={member.user.name ?? member.user.email ?? ''} />
+                    )}
+                    <AvatarFallback>
+                      {member.user?.name?.charAt(0) ?? member.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{member.user.name || member.user.email}</span>
+                </div>
+              )}
+              onSelect={(selectedApproverId) => {
+                handleUpdateTask({
+                  approverId: selectedApproverId === null ? null : selectedApproverId,
+                });
+              }}
+              trigger={
+                <Button
+                  variant="ghost"
+                  className="hover:bg-muted data-[state=open]:bg-muted flex h-auto w-auto items-center justify-end gap-1.5 px-2 py-0.5 transition-colors cursor-pointer"
+                  disabled={members?.length === 0}
+                >
+                  {approverMember ? (
+                    <>
+                      <Avatar className="h-4 w-4">
+                        {approverMember.user?.image && (
+                          <AvatarImage
+                            src={approverMember.user.image}
+                            alt={approverMember.user.name ?? approverMember.user.email ?? ''}
+                          />
+                        )}
+                        <AvatarFallback className="text-[10px]">
+                          {approverMember.user?.name?.charAt(0) ?? approverMember.user?.email?.charAt(0)?.toUpperCase() ?? '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{approverMember.user.name || approverMember.user.email}</span>
+                    </>
+                  ) : (
+                    <span className="font-medium">Unassigned</span>
+                  )}
+                </Button>
+              }
+              searchPlaceholder="Change approver..."
+              emptyText="No member found."
+              contentWidth="w-64"
+              disabled={members?.length === 0}
+              allowUnassign={true}
+              showCheck={false}
+            />
+          </div>
+        )}
 
         {/* Frequency Selector */}
         <div className="flex items-center justify-between">
@@ -141,7 +229,6 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             getKey={(freq) => freq}
             renderOption={(freq) => <span className="capitalize">{freq.replace('_', ' ')}</span>}
             onSelect={(selectedFreq) => {
-              // Pass null directly if 'None' (unassign) was selected
               handleUpdateTask({
                 frequency: selectedFreq === null ? null : (selectedFreq as TaskFrequency),
               });
@@ -171,12 +258,10 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             getKey={(dept) => dept}
             renderOption={(dept) => {
               if (dept === 'none') {
-                // Render 'none' as plain text
                 return <span className="text-muted-foreground">None</span>;
               }
-              // Render other departments as colored badges
               const mainColor = DEPARTMENT_COLORS[dept] ?? DEPARTMENT_COLORS.none;
-              const lightBgColor = `${mainColor}1A`; // Add opacity for lighter background
+              const lightBgColor = `${mainColor}1A`;
               return (
                 <Badge
                   className="border-l-2 px-1.5 py-0 text-xs font-normal uppercase"
@@ -203,12 +288,10 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
                 {(() => {
                   const currentDept = task.department ?? 'none';
                   if (currentDept === 'none') {
-                    // Render 'None' as plain text for the trigger
                     return <span className="font-medium">None</span>;
                   }
-                  // Render other departments as colored badges
-                  const mainColor = DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none; // Fallback
-                  const lightBgColor = `${mainColor}1A`; // Add opacity
+                  const mainColor = DEPARTMENT_COLORS[currentDept] ?? DEPARTMENT_COLORS.none;
+                  const lightBgColor = `${mainColor}1A`;
                   return (
                     <Badge
                       className="border-l-2 px-1.5 py-0 text-xs font-normal uppercase"
@@ -248,7 +331,8 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             </div>
           </div>
         )}
-        {/* Review Date Selector */}
+
+        {/* Review Date */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Review Date</span>
           <div className="flex items-center gap-2">
@@ -261,6 +345,16 @@ export function TaskPropertiesSidebar({ handleUpdateTask }: TaskPropertiesSideba
             )}
           </div>
         </div>
+
+        {/* Approved At - shown when task has been approved */}
+        {task.approvedAt && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Approved At</span>
+            <span className="text-sm font-medium">
+              {format(new Date(task.approvedAt), 'M/d/yyyy')}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

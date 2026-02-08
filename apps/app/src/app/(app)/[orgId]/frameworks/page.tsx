@@ -1,5 +1,6 @@
 import { auth } from '@/utils/auth';
-import { db, FindingStatus } from '@db';
+import { db } from '@db';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
@@ -70,18 +71,20 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
   const findings = await getOrganizationFindings(organizationId);
 
   return (
-    <Overview
-      frameworksWithControls={frameworksWithControls}
-      frameworksWithCompliance={frameworksWithCompliance}
-      allFrameworks={allFrameworks}
-      organizationId={organizationId}
-      publishedPoliciesScore={scores.publishedPoliciesScore}
-      doneTasksScore={scores.doneTasksScore}
-      peopleScore={scores.peopleScore}
-      currentMember={member}
-      onboardingTriggerJobId={onboarding?.triggerJobId ?? null}
-      findings={findings}
-    />
+    <PageLayout header={<PageHeader title="Overview" />}>
+      <Overview
+        frameworksWithControls={frameworksWithControls}
+        frameworksWithCompliance={frameworksWithCompliance}
+        allFrameworks={allFrameworks}
+        organizationId={organizationId}
+        publishedPoliciesScore={scores.publishedPoliciesScore}
+        doneTasksScore={scores.doneTasksScore}
+        peopleScore={scores.peopleScore}
+        currentMember={member}
+        onboardingTriggerJobId={onboarding?.triggerJobId ?? null}
+        findings={findings}
+      />
+    </PageLayout>
   );
 }
 
@@ -165,10 +168,7 @@ const getOrganizationFindings = cache(async (organizationId: string) => {
         },
       },
     },
-    orderBy: [
-      { status: 'asc' },
-      { createdAt: 'desc' },
-    ],
+    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
   });
 
   return findings;

@@ -255,7 +255,7 @@ export default async function TrustPage({ params }: { params: Promise<{ orgId: s
         <PageHeader
           title="Trust Portal"
           actions={
-            <Button iconRight={<Launch />}>
+            <Button iconRight={<Launch className="size-3" />}>
               <Link href={portalUrl} target="_blank" rel="noopener noreferrer">
                 Visit Trust Portal
               </Link>

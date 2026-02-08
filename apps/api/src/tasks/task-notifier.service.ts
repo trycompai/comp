@@ -7,6 +7,8 @@ import { TaskBulkStatusChangedEmail } from '../email/templates/task-bulk-status-
 import { TaskBulkAssigneeChangedEmail } from '../email/templates/task-bulk-assignee-changed';
 import { TaskStatusChangedEmail } from '../email/templates/task-status-changed';
 import { TaskAssigneeChangedEmail } from '../email/templates/task-assignee-changed';
+import { EvidenceReviewRequestedEmail } from '../email/templates/evidence-review-requested';
+import { EvidenceBulkReviewRequestedEmail } from '../email/templates/evidence-bulk-review-requested';
 import { NovuService } from '../notifications/novu.service';
 
 const BULK_TASK_WORKFLOW_ID = 'evidence-bulk-updated';
@@ -778,6 +780,289 @@ export class TaskNotifierService {
     } catch (error) {
       this.logger.error(
         'Failed to send assignee change notifications',
+        error as Error,
+      );
+    }
+  }
+
+  async notifyEvidenceReviewRequested(params: {
+    organizationId: string;
+    taskId: string;
+    taskTitle: string;
+    submittedByUserId: string;
+    approverMemberId: string;
+  }): Promise<void> {
+    const { organizationId, taskId, taskTitle, submittedByUserId, approverMemberId } = params;
+
+    try {
+      const [organization, submittedByUser, approverMember] = await Promise.all([
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        }),
+        db.user.findUnique({
+          where: { id: submittedByUserId },
+          select: { name: true, email: true },
+        }),
+        db.member.findUnique({
+          where: { id: approverMemberId },
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      const organizationName = organization?.name ?? 'your organization';
+      const submittedByName =
+        submittedByUser?.name?.trim() ||
+        submittedByUser?.email?.trim() ||
+        'Someone';
+
+      if (!approverMember?.user?.id || !approverMember.user.email) {
+        this.logger.warn('Approver not found, skipping review request notification');
+        return;
+      }
+
+      if (approverMember.user.id === submittedByUserId) {
+        this.logger.log('Approver is the submitter, skipping notification');
+        return;
+      }
+
+      const recipient = {
+        id: approverMember.user.id,
+        name: approverMember.user.name?.trim() || approverMember.user.email?.trim() || 'User',
+        email: approverMember.user.email,
+      };
+
+      const isUnsubscribed = await isUserUnsubscribed(
+        db,
+        recipient.email,
+        'taskAssignments',
+      );
+
+      if (isUnsubscribed) {
+        this.logger.log(
+          `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+        );
+        return;
+      }
+
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.BETTER_AUTH_URL ??
+        'https://app.trycomp.ai';
+      const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
+
+      // Send email notification
+      try {
+        const { id } = await sendEmail({
+          to: recipient.email,
+          subject: `Evidence review requested: "${taskTitle}"`,
+          react: EvidenceReviewRequestedEmail({
+            toName: recipient.name,
+            toEmail: recipient.email,
+            taskTitle,
+            submittedByName,
+            organizationName,
+            taskUrl,
+          }),
+          system: true,
+        });
+
+        this.logger.log(
+          `Evidence review request email sent to ${recipient.email} (ID: ${id})`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send evidence review request email to ${recipient.email}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+
+      // Send in-app notification
+      try {
+        const title = 'Evidence review requested';
+        const message = `${submittedByName} submitted evidence for "${taskTitle}" and requested your approval in ${organizationName}`;
+
+        await this.novuService.trigger({
+          workflowId: TASK_WORKFLOW_ID,
+          subscriberId: `${recipient.id}-${organizationId}`,
+          email: recipient.email,
+          payload: {
+            title,
+            message,
+            url: taskUrl,
+          },
+        });
+
+        this.logger.log(
+          `[NOVU] Evidence review request in-app notification sent to ${recipient.id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `[NOVU] Failed to send evidence review request in-app notification to ${recipient.id}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to send evidence review request notifications',
+        error as Error,
+      );
+    }
+  }
+
+  async notifyBulkEvidenceReviewRequested(params: {
+    organizationId: string;
+    taskIds: string[];
+    taskCount: number;
+    submittedByUserId: string;
+    approverMemberId: string;
+  }): Promise<void> {
+    const { organizationId, taskIds, taskCount, submittedByUserId, approverMemberId } = params;
+
+    try {
+      const [organization, submittedByUser, approverMember, tasks] = await Promise.all([
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        }),
+        db.user.findUnique({
+          where: { id: submittedByUserId },
+          select: { name: true, email: true },
+        }),
+        db.member.findUnique({
+          where: { id: approverMemberId },
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        }),
+        db.task.findMany({
+          where: {
+            id: { in: taskIds },
+            organizationId,
+          },
+          select: {
+            id: true,
+            title: true,
+          },
+        }),
+      ]);
+
+      const organizationName = organization?.name ?? 'your organization';
+      const submittedByName =
+        submittedByUser?.name?.trim() ||
+        submittedByUser?.email?.trim() ||
+        'Someone';
+
+      if (!approverMember?.user?.id || !approverMember.user.email) {
+        this.logger.warn('Approver not found, skipping bulk review notification');
+        return;
+      }
+
+      if (approverMember.user.id === submittedByUserId) {
+        this.logger.log('Approver is the submitter, skipping notification');
+        return;
+      }
+
+      const recipient = {
+        id: approverMember.user.id,
+        name: approverMember.user.name?.trim() || approverMember.user.email?.trim() || 'User',
+        email: approverMember.user.email,
+      };
+
+      const isUnsubscribed = await isUserUnsubscribed(
+        db,
+        recipient.email,
+        'taskAssignments',
+      );
+
+      if (isUnsubscribed) {
+        this.logger.log(
+          `Skipping notification: user ${recipient.email} is unsubscribed from task assignments`,
+        );
+        return;
+      }
+
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.BETTER_AUTH_URL ??
+        'https://app.trycomp.ai';
+      const tasksUrl = `${appUrl}/${organizationId}/tasks`;
+      const taskText = taskCount === 1 ? 'task' : 'tasks';
+
+      const taskItems = tasks.map((task) => ({
+        title: task.title ?? 'Untitled task',
+        url: `${appUrl}/${organizationId}/tasks/${task.id}`,
+      }));
+
+      // Send email notification
+      try {
+        const { id } = await sendEmail({
+          to: recipient.email,
+          subject: `${taskCount} ${taskText} submitted for your review`,
+          react: EvidenceBulkReviewRequestedEmail({
+            toName: recipient.name,
+            toEmail: recipient.email,
+            taskCount,
+            submittedByName,
+            organizationName,
+            tasksUrl,
+            tasks: taskItems,
+          }),
+          system: true,
+        });
+
+        this.logger.log(
+          `Bulk evidence review request email sent to ${recipient.email} (ID: ${id})`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send bulk evidence review request email to ${recipient.email}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+
+      // Send in-app notification
+      try {
+        const title = `${taskCount} ${taskText} submitted for review`;
+        const message = `${submittedByName} submitted ${taskCount} ${taskText} for your review in ${organizationName}`;
+
+        await this.novuService.trigger({
+          workflowId: BULK_TASK_WORKFLOW_ID,
+          subscriberId: `${recipient.id}-${organizationId}`,
+          email: recipient.email,
+          payload: {
+            title,
+            message,
+            url: tasksUrl,
+          },
+        });
+
+        this.logger.log(
+          `[NOVU] Bulk evidence review request in-app notification sent to ${recipient.id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `[NOVU] Failed to send bulk evidence review request in-app notification to ${recipient.id}:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to send bulk evidence review request notifications',
         error as Error,
       );
     }

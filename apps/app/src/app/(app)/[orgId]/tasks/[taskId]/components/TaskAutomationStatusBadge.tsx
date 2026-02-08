@@ -28,7 +28,7 @@ export function TaskAutomationStatusBadge({ status, className }: TaskAutomationS
                 className,
               )}
             >
-              <span className="text-xs font-medium">Automated</span>
+              <span className="text-xs font-medium dark:brightness-150">Automated</span>
             </Badge>
           </TooltipTrigger>
           <TooltipContent>

@@ -165,7 +165,7 @@ export function ProviderTabs({
 
         return (
           <TabsContent key={providerType} value={providerType}>
-            <div className="mb-4 rounded-lg border bg-card p-4">
+            <div className="mb-4">
               <Tabs
                 value={activeConnId}
                 onValueChange={(value) => onConnectionTabChange(providerType, value)}

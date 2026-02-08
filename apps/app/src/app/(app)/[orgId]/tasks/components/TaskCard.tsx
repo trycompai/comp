@@ -14,7 +14,7 @@ export const ItemTypes = {
 };
 
 // Type representing valid task status IDs.
-export type StatusId = 'todo' | 'in_progress' | 'done' | 'failed' | 'not_relevant';
+export type StatusId = 'todo' | 'in_progress' | 'in_review' | 'done' | 'failed' | 'not_relevant';
 
 // Interface for the data transferred during drag operations.
 export interface DragItem {

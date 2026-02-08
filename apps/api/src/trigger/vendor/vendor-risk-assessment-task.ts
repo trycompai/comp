@@ -214,7 +214,7 @@ async function normalizeRiskLevel(
 
   try {
     const result = await generateObject({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-5.2'),
       schema: normalizedRiskLevelSchema,
       prompt: `Classify this vendor security risk level into exactly one of these 5 categories.
 

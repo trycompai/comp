@@ -1,5 +1,5 @@
-import { PageHeader, PageLayout } from '@trycompai/design-system';
+import { PageLayout } from '@trycompai/design-system';
 
 export default function Loading() {
-  return <PageLayout loading header={<PageHeader title="Trust Portal" />} />;
+  return <PageLayout loading />;
 }
