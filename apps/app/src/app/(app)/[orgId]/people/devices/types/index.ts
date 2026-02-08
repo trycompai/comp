@@ -1,3 +1,33 @@
+export interface DeviceCheckResult {
+  id: string;
+  checkType: 'disk_encryption' | 'antivirus' | 'password_policy' | 'screen_lock';
+  passed: boolean;
+  details: Record<string, unknown> | null;
+  checkedAt: string;
+}
+
+export interface DeviceWithChecks {
+  id: string;
+  name: string;
+  hostname: string;
+  platform: 'macos' | 'windows';
+  osVersion: string;
+  serialNumber: string | null;
+  hardwareModel: string | null;
+  isCompliant: boolean;
+  lastCheckIn: string | null;
+  agentVersion: string | null;
+  installedAt: string;
+  user: {
+    name: string;
+    email: string;
+  };
+  checks: DeviceCheckResult[];
+  /** Indicates which system reported this device */
+  source: 'device_agent' | 'fleet';
+}
+
+/** @deprecated - use DeviceCheckResult instead. Kept for backward compatibility during migration. */
 export interface FleetPolicy {
   id: number;
   name: string;
@@ -11,12 +41,13 @@ export interface FleetPolicy {
   resolution?: string;
   platform?: string;
   calendar_events_enabled?: boolean;
-  created_at?: string; // ISO date-time string
-  updated_at?: string; // ISO date-time string
+  created_at?: string;
+  updated_at?: string;
   response: string;
   attachments?: string[];
 }
 
+/** @deprecated - use DeviceWithChecks instead. Kept for backward compatibility during migration. */
 export interface Host {
   member_id?: string;
   user_name?: string;
@@ -84,6 +115,7 @@ export interface Host {
   display_name: string;
 }
 
+/** @deprecated */
 export type MDM = {
   connected_to_fleet: boolean;
   dep_profile_error: boolean;

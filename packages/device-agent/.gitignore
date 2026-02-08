@@ -1,0 +1,9 @@
+# Electron-builder output
+release/
+
+# Electron-vite build output
+dist/
+out/
+
+# Node modules (also in root .gitignore)
+node_modules/

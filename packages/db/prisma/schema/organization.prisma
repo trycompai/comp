@@ -60,5 +60,8 @@ model Organization {
   // Findings
   findings Finding[]
 
+  // Device Agent
+  devices Device[]
+
   @@index([slug])
 }

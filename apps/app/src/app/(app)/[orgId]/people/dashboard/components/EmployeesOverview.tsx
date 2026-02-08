@@ -79,7 +79,6 @@ export async function EmployeesOverview() {
         );
 
         if (videoMetadata) {
-          // Push the object matching the updated ProcessedTrainingVideo interface
           processedTrainingVideos.push({
             id: dbVideo.id,
             memberId: dbVideo.memberId,
@@ -93,13 +92,11 @@ export async function EmployeesOverview() {
   }
 
   return (
-    <div className="grid gap-6">
-      <EmployeeCompletionChart
-        employees={employees}
-        policies={policies}
-        trainingVideos={processedTrainingVideos as any}
-        showAll={true}
-      />
-    </div>
+    <EmployeeCompletionChart
+      employees={employees}
+      policies={policies}
+      trainingVideos={processedTrainingVideos as any}
+      showAll={true}
+    />
   );
 }

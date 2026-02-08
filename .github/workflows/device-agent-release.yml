@@ -1,0 +1,179 @@
+name: Device Agent Release
+
+on:
+  push:
+    tags:
+      - 'device-agent-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: Build macOS (.dmg)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: packages/device-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Package macOS
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run package:mac
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-agent-macos
+          path: packages/device-agent/release/*.dmg
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows (.exe)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: packages/device-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Package Windows
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run package:win
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-agent-windows
+          path: packages/device-agent/release/*.exe
+          if-no-files-found: error
+
+  build-linux:
+    name: Build Linux (.AppImage, .deb)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/device-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Package Linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run package:linux
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-agent-linux
+          path: |
+            packages/device-agent/release/*.AppImage
+            packages/device-agent/release/*.deb
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: device-agent-macos
+          path: artifacts/
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: device-agent-windows
+          path: artifacts/
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: device-agent-linux
+          path: artifacts/
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#device-agent-v}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Device Agent v${{ steps.version.outputs.version }}"
+          body: |
+            ## Comp AI Device Agent v${{ steps.version.outputs.version }}
+
+            ### Downloads
+            - **macOS**: Download the `.dmg` file below (universal binary, Apple Silicon + Intel)
+            - **Windows**: Download the `.exe` installer below
+            - **Linux**: Download the `.AppImage` (portable) or `.deb` (Debian/Ubuntu) below
+
+            ### What's included
+            - Disk encryption check (FileVault / BitLocker / LUKS)
+            - Antivirus detection (XProtect / Windows Defender / ClamAV + AppArmor/SELinux)
+            - Password policy enforcement (minimum 8 characters)
+            - Screen lock verification (5 minutes or less)
+            - Auto-remediation for fixable settings with guided instructions
+
+            ### Installation
+            1. Download the installer for your operating system
+            2. Run the installer and follow the prompts
+            3. Sign in with your Comp AI portal credentials
+            4. The agent will run in your system tray and check compliance automatically
+          draft: false
+          prerelease: false
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

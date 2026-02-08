@@ -319,4 +319,12 @@ export class DeviceResponseDto {
 
   @ApiProperty({ description: 'Display name', example: "John's MacBook Pro" })
   display_name: string;
+
+  @ApiProperty({
+    description: 'Source system that reported this device',
+    example: 'fleet',
+    enum: ['fleet', 'device_agent'],
+    required: false,
+  })
+  source?: 'fleet' | 'device_agent';
 }

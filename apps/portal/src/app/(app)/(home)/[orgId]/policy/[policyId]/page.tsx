@@ -1,16 +1,7 @@
 import { auth } from '@/app/lib/auth';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@comp/ui/card';
 import { db } from '@db';
-import { ArrowLeft, Check } from 'lucide-react';
+import { Badge, PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PolicyAcceptButton } from './PolicyAcceptButton';
 import PolicyViewer from './PolicyViewer';
@@ -64,50 +55,36 @@ export default async function PolicyPage({
   const isAccepted = policy.signedBy.includes(member.id);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div>
-        <Link href={`/${orgId}`} className="mb-4 inline-flex items-center gap-2 text-sm">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Overview
-        </Link>
-      </div>
+    <PageLayout
+      padding="lg"
+      header={
+        <PageHeader
+          title={policy.name}
+          description={policy.description ?? undefined}
+          breadcrumbs={[
+            { label: 'Overview', href: `/${orgId}` },
+            { label: policy.name, isCurrent: true },
+          ]}
+          actions={isAccepted ? <Badge variant="default">Accepted</Badge> : undefined}
+        />
+      }
+    >
+      <div className="space-y-6">
+        <PolicyViewer policy={policy} />
 
-      <Card className="shadow-md">
-        {isAccepted && (
-          <div className="bg-green-50 border-green-200 mb-4 flex items-center gap-2 rounded-t-xs border p-3">
-            <Check className="text-green-600 h-5 w-5" />
-            <span className="text-green-800 text-sm font-medium">
-              You have accepted this policy
-            </span>
-          </div>
+        {policy.updatedAt && (
+          <p className="text-muted-foreground text-sm">
+            Last updated: {new Date(policy.updatedAt).toLocaleDateString()}
+          </p>
         )}
-        <CardHeader>
-          <CardTitle className="text-2xl">{policy.name}</CardTitle>
-          {policy.description && (
-            <CardDescription className="text-muted-foreground">
-              {policy.description}
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="prose max-w-none">
-            <PolicyViewer policy={policy} />
-          </div>
-          {policy.updatedAt && (
-            <p className="text-muted-foreground mt-6 text-sm">
-              Last updated: {new Date(policy.updatedAt).toLocaleDateString()}
-            </p>
-          )}
-        </CardContent>
-        <CardFooter>
-          <PolicyAcceptButton
-            policyId={policy.id}
-            memberId={member.id}
-            isAccepted={isAccepted}
-            orgId={orgId}
-          />
-        </CardFooter>
-      </Card>
-    </div>
+
+        <PolicyAcceptButton
+          policyId={policy.id}
+          memberId={member.id}
+          isAccepted={isAccepted}
+          orgId={orgId}
+        />
+      </div>
+    </PageLayout>
   );
 }

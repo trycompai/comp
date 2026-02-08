@@ -1,0 +1,55 @@
+model Device {
+  id            String         @id @default(dbgenerated("generate_prefixed_cuid('dev'::text)"))
+  name          String
+  hostname      String
+  platform      DevicePlatform
+  osVersion     String
+  serialNumber  String?
+  hardwareModel String?
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  isCompliant  Boolean   @default(false)
+  lastCheckIn  DateTime?
+  agentVersion String?
+  installedAt  DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  checks DeviceCheck[]
+
+  @@unique([serialNumber, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([isCompliant])
+}
+
+model DeviceCheck {
+  id       String @id @default(dbgenerated("generate_prefixed_cuid('dck'::text)"))
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  checkType DeviceCheckType
+  passed    Boolean
+  details   Json?
+
+  checkedAt DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([checkType])
+}
+
+enum DevicePlatform {
+  macos
+  windows
+  linux
+}
+
+enum DeviceCheckType {
+  disk_encryption
+  antivirus
+  password_policy
+  screen_lock
+}

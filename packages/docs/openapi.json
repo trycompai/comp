@@ -16950,6 +16950,15 @@
             "type": "string",
             "description": "Display name",
             "example": "John's MacBook Pro"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source system that reported this device",
+            "example": "fleet",
+            "enum": [
+              "fleet",
+              "device_agent"
+            ]
           }
         },
         "required": [
