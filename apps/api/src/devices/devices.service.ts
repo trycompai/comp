@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { db } from '@trycompai/db';
+import { mergeDeviceLists } from '@trycompai/utils/devices';
 import { FleetService } from '../lib/fleet.service';
 import { DeviceResponseDto } from './dto/device-responses.dto';
 import type { MemberResponseDto } from './dto/member-responses.dto';
@@ -40,7 +41,10 @@ export class DevicesService {
     ]);
 
     // Merge and deduplicate (agent devices take priority)
-    return this.mergeDevices(agentDevices, fleetDevices);
+    return mergeDeviceLists(agentDevices, fleetDevices, {
+      getSerialNumber: (d) => d.hardware_serial,
+      getHostname: (d) => d.hostname,
+    });
   }
 
   async findAllByMember(
@@ -90,7 +94,10 @@ export class DevicesService {
       this.getAgentDevicesForUser(member.userId, organizationId),
     ]);
 
-    return this.mergeDevices(agentDevices, fleetDevices);
+    return mergeDeviceLists(agentDevices, fleetDevices, {
+      getSerialNumber: (d) => d.hardware_serial,
+      getHostname: (d) => d.hostname,
+    });
   }
 
   async getMemberById(
@@ -304,32 +311,5 @@ export class DevicesService {
     dto.issues = {};
     dto.mdm = {};
     return dto;
-  }
-
-  private mergeDevices(
-    agentDevices: DeviceResponseDto[],
-    fleetDevices: DeviceResponseDto[],
-  ): DeviceResponseDto[] {
-    // Build sets of known identifiers from agent devices
-    const knownSerials = new Set<string>();
-    const knownHostnames = new Set<string>();
-
-    for (const device of agentDevices) {
-      const serial = (device as { hardware_serial?: string }).hardware_serial;
-      const hostname = (device as { hostname?: string }).hostname;
-      if (serial) knownSerials.add(serial.toLowerCase());
-      if (hostname) knownHostnames.add(hostname.toLowerCase());
-    }
-
-    // Filter out fleet devices that overlap with agent devices
-    const uniqueFleetDevices = fleetDevices.filter((device) => {
-      const serial = (device as { hardware_serial?: string }).hardware_serial;
-      const hostname = (device as { hostname?: string }).hostname;
-      if (serial && knownSerials.has(serial.toLowerCase())) return false;
-      if (hostname && knownHostnames.has(hostname.toLowerCase())) return false;
-      return true;
-    });
-
-    return [...agentDevices, ...uniqueFleetDevices];
   }
 }

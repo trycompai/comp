@@ -4,6 +4,7 @@ import { getFleetInstance } from '@/lib/fleet';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
+import { mergeDeviceLists } from '@trycompai/utils/devices';
 import type { DeviceWithChecks } from '../types';
 
 /**
@@ -219,25 +220,9 @@ export const getAllDevices: () => Promise<DeviceWithChecks[]> = async () => {
     getFleetDevices(),
   ]);
 
-  // Device-agent entries take priority. Build a set of known serials/hostnames.
-  const knownSerials = new Set<string>();
-  const knownHostnames = new Set<string>();
-
-  for (const device of agentDevices) {
-    if (device.serialNumber) knownSerials.add(device.serialNumber.toLowerCase());
-    if (device.hostname) knownHostnames.add(device.hostname.toLowerCase());
-  }
-
-  // Only include fleet devices that don't overlap with device-agent entries
-  const uniqueFleetDevices = fleetDevices.filter((device) => {
-    if (device.serialNumber && knownSerials.has(device.serialNumber.toLowerCase())) {
-      return false;
-    }
-    if (device.hostname && knownHostnames.has(device.hostname.toLowerCase())) {
-      return false;
-    }
-    return true;
+  // Device-agent entries take priority over FleetDM entries
+  return mergeDeviceLists(agentDevices, fleetDevices, {
+    getSerialNumber: (d) => d.serialNumber,
+    getHostname: (d) => d.hostname,
   });
-
-  return [...agentDevices, ...uniqueFleetDevices];
 };
