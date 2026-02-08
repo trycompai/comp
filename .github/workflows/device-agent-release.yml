@@ -2,15 +2,76 @@ name: Device Agent Release
 
 on:
   push:
-    tags:
-      - 'device-agent-v*'
+    branches: [main, release]
+    paths:
+      - 'packages/device-agent/**'
 
 permissions:
   contents: write
 
 jobs:
+  detect-version:
+    name: Detect Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+      portal_url: ${{ steps.version.outputs.portal_url }}
+      release_name: ${{ steps.version.outputs.release_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Compute next version
+        id: version
+        run: |
+          # Get the latest production tag (ignore -staging suffixes)
+          LATEST_TAG=$(git tag -l 'device-agent-v*' --sort=-v:refname | grep -v '\-staging' | head -1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            # No existing tags - start at 1.0.0
+            NEXT_VERSION="1.0.0"
+          else
+            # Extract version and bump patch
+            CURRENT_VERSION="${LATEST_TAG#device-agent-v}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+
+          BRANCH="${GITHUB_REF_NAME}"
+
+          if [ "$BRANCH" = "main" ]; then
+            TAG_NAME="device-agent-v${NEXT_VERSION}-staging.${GITHUB_RUN_NUMBER}"
+            IS_PRERELEASE="true"
+            PORTAL_URL="https://portal.staging.trycomp.ai"
+            RELEASE_NAME="Device Agent v${NEXT_VERSION} (Staging #${GITHUB_RUN_NUMBER})"
+          else
+            TAG_NAME="device-agent-v${NEXT_VERSION}"
+            IS_PRERELEASE="false"
+            PORTAL_URL="https://portal.trycomp.ai"
+            RELEASE_NAME="Device Agent v${NEXT_VERSION}"
+          fi
+
+          echo "version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "portal_url=$PORTAL_URL" >> $GITHUB_OUTPUT
+          echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+
+          echo "--- Version Info ---"
+          echo "Latest tag: $LATEST_TAG"
+          echo "Next version: $NEXT_VERSION"
+          echo "Tag name: $TAG_NAME"
+          echo "Pre-release: $IS_PRERELEASE"
+          echo "Portal URL: $PORTAL_URL"
+
   build-macos:
     name: Build macOS (.dmg)
+    needs: detect-version
     runs-on: macos-latest
     defaults:
       run:
@@ -28,6 +89,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build
+        env:
+          PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
+          AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
         run: bun run build
 
       - name: Package macOS
@@ -49,6 +113,7 @@ jobs:
 
   build-windows:
     name: Build Windows (.exe)
+    needs: detect-version
     runs-on: windows-latest
     defaults:
       run:
@@ -66,6 +131,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build
+        env:
+          PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
+          AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
         run: bun run build
 
       - name: Package Windows
@@ -84,6 +152,7 @@ jobs:
 
   build-linux:
     name: Build Linux (.AppImage, .deb)
+    needs: detect-version
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -101,6 +170,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build
+        env:
+          PORTAL_URL: ${{ needs.detect-version.outputs.portal_url }}
+          AGENT_VERSION: ${{ needs.detect-version.outputs.version }}
         run: bun run build
 
       - name: Package Linux
@@ -119,7 +191,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build-macos, build-windows, build-linux]
+    needs: [detect-version, build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -143,17 +215,25 @@ jobs:
           name: device-agent-linux
           path: artifacts/
 
-      - name: Extract version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#device-agent-v}" >> $GITHUB_OUTPUT
+      - name: Create git tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ needs.detect-version.outputs.tag_name }}" -m "${{ needs.detect-version.outputs.release_name }}"
+          git push origin "${{ needs.detect-version.outputs.tag_name }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "Device Agent v${{ steps.version.outputs.version }}"
+          tag_name: ${{ needs.detect-version.outputs.tag_name }}
+          name: ${{ needs.detect-version.outputs.release_name }}
           body: |
-            ## Comp AI Device Agent v${{ steps.version.outputs.version }}
+            ## ${{ needs.detect-version.outputs.release_name }}
+
+            **Environment:** ${{ needs.detect-version.outputs.is_prerelease == 'true' && 'Staging' || 'Production' }}
+            **Portal:** ${{ needs.detect-version.outputs.portal_url }}
 
             ### Downloads
             - **macOS**: Download the `.dmg` file below (universal binary, Apple Silicon + Intel)
@@ -173,7 +253,7 @@ jobs:
             3. Sign in with your Comp AI portal credentials
             4. The agent will run in your system tray and check compliance automatically
           draft: false
-          prerelease: false
+          prerelease: ${{ needs.detect-version.outputs.is_prerelease == 'true' }}
           files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

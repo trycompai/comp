@@ -1,11 +1,16 @@
-/** Default portal base URL - overridden by stored config */
-export const DEFAULT_PORTAL_URL = 'https://portal.trycomp.ai';
+declare const __PORTAL_URL__: string;
+declare const __AGENT_VERSION__: string;
+
+/** Default portal base URL - injected at build time via electron-vite define */
+export const DEFAULT_PORTAL_URL =
+  typeof __PORTAL_URL__ !== 'undefined' ? __PORTAL_URL__ : 'https://app.trycomp.ai';
 
 /** How often to run compliance checks (in milliseconds) */
 export const CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 /** Agent version reported to the server */
-export const AGENT_VERSION = '1.0.0';
+export const AGENT_VERSION =
+  typeof __AGENT_VERSION__ !== 'undefined' ? __AGENT_VERSION__ : '1.0.0';
 
 /** API route paths on the portal */
 export const API_ROUTES = {

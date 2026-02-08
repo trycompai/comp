@@ -2,6 +2,8 @@ import { app } from 'electron';
 import Store from 'electron-store';
 import type { CheckResult, StoredAuth } from '../shared/types';
 
+declare const __PORTAL_URL__: string;
+
 interface StoreSchema {
   auth: StoredAuth | null;
   portalUrl: string;
@@ -11,7 +13,7 @@ interface StoreSchema {
 }
 
 const isDev = !app.isPackaged;
-const defaultPortalUrl = isDev ? 'http://localhost:3002' : 'https://portal.trycomp.ai';
+const defaultPortalUrl = isDev ? 'http://localhost:3002' : __PORTAL_URL__;
 
 const store = new Store<StoreSchema>({
   name: 'comp-device-agent',
