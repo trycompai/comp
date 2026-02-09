@@ -1,12 +1,22 @@
 'use client';
 
-import { Edit, Laptop, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Laptop } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  HStack,
+  Label,
+  TableCell,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { Edit, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -22,7 +32,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
-import { Label } from '@comp/ui/label';
 import type { Role } from '@db';
 
 import { toast } from 'sonner';
@@ -40,7 +49,6 @@ interface MemberRowProps {
   isCurrentUserOwner: boolean;
 }
 
-// Helper to get initials
 function getInitials(name?: string | null, email?: string | null): string {
   if (name) {
     return name
@@ -53,6 +61,31 @@ function getInitials(name?: string | null, email?: string | null): string {
     return email.substring(0, 2).toUpperCase();
   }
   return '??';
+}
+
+function getRoleLabel(role: string): string {
+  switch (role) {
+    case 'owner':
+      return 'Owner';
+    case 'admin':
+      return 'Admin';
+    case 'auditor':
+      return 'Auditor';
+    case 'employee':
+      return 'Employee';
+    case 'contractor':
+      return 'Contractor';
+    default:
+      return '???';
+  }
+}
+
+function parseRoles(role: Role | Role[] | string): Role[] {
+  if (Array.isArray(role)) return role as Role[];
+  if (typeof role === 'string' && role.includes(',')) {
+    return role.split(',').map((r) => r.trim()) as Role[];
+  }
+  return [role as Role];
 }
 
 export function MemberRow({
@@ -69,9 +102,7 @@ export function MemberRow({
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isUpdateRolesOpen, setIsUpdateRolesOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedRoles, setSelectedRoles] = useState<Role[]>(
-    Array.isArray(member.role) ? member.role : ([member.role] as Role[]),
-  );
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>(() => parseRoles(member.role));
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
@@ -80,23 +111,17 @@ export function MemberRow({
   const memberEmail = member.user.email || '';
   const memberAvatar = member.user.image;
   const memberId = member.id;
-  const currentRoles = (
-    Array.isArray(member.role)
-      ? member.role
-      : typeof member.role === 'string' && member.role.includes(',')
-        ? (member.role.split(',') as Role[])
-        : [member.role]
-  ) as Role[];
+  const currentRoles = parseRoles(member.role);
 
   const isOwner = currentRoles.includes('owner');
   const canRemove = !isOwner;
-  const isDeactivated = member.deactivated;
-  const canViewProfile = !isDeactivated;
-  const profileHref = canViewProfile ? `/${orgId}/people/${memberId}` : null;
+  const isDeactivated = member.deactivated || !member.isActive;
+  const profileHref = `/${orgId}/people/${memberId}`;
 
   const handleEditRolesClick = () => {
-    setDropdownOpen(false); // Close dropdown first
-    setIsUpdateRolesOpen(true); // Then open dialog
+    setSelectedRoles(parseRoles(member.role));
+    setDropdownOpen(false);
+    setIsUpdateRolesOpen(true);
   };
 
   const handleUpdateRolesClick = async () => {
@@ -105,7 +130,6 @@ export function MemberRow({
       rolesToUpdate = [...rolesToUpdate, 'owner'];
     }
 
-    // Don't update if no roles are selected
     if (rolesToUpdate.length === 0) {
       return;
     }
@@ -113,7 +137,7 @@ export function MemberRow({
     setIsUpdating(true);
     await onUpdateRole(memberId, rolesToUpdate);
     setIsUpdating(false);
-    setIsUpdateRolesOpen(false); // Close dialog after update
+    setIsUpdateRolesOpen(false);
   };
 
   const handleRemoveClick = async () => {
@@ -141,124 +165,96 @@ export function MemberRow({
 
   return (
     <>
-      <div
-        className={`hover:bg-muted/50 flex items-center justify-between p-4 ${isDeactivated ? 'opacity-60' : ''}`}
-      >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Avatar className={`flex-shrink-0 ${isDeactivated ? 'grayscale' : ''}`}>
-            <AvatarImage src={memberAvatar || undefined} />
-            <AvatarFallback>{getInitials(member.user.name, member.user.email)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1 gap-2">
-            <div className="flex items-center flex-wrap gap-1.5">
-              {profileHref ? (
-                <Link
-                  href={profileHref}
-                  className={`truncate text-sm font-medium hover:underline ${
-                    isDeactivated ? 'line-through text-muted-foreground' : ''
-                  }`}
-                >
-                  {memberName}
-                </Link>
-              ) : (
-                <span
-                  className={`truncate text-sm font-medium ${
-                    isDeactivated ? 'line-through text-muted-foreground' : ''
-                  }`}
-                >
-                  {memberName}
-                </span>
-              )}
-              {isDeactivated && (
-                <Badge
-                  variant="outline"
-                  className="text-xs text-orange-600 border-orange-300 bg-orange-50"
-                >
-                  Deactivated
-                </Badge>
-              )}
-              {profileHref && (
-                <Link
-                  href={profileHref}
-                  className="text-xs text-blue-600 hover:underline flex-shrink-0"
-                >
-                  ({'View Profile'})
-                </Link>
-              )}
+      <TableRow data-state={isDeactivated ? 'disabled' : undefined}>
+        {/* NAME */}
+        <TableCell>
+          <HStack gap="3" align="center">
+            <div className={`flex-shrink-0 ${isDeactivated ? 'grayscale opacity-60' : ''}`}>
+              <Avatar>
+                <AvatarImage src={memberAvatar || undefined} />
+                <AvatarFallback>{getInitials(member.user.name, member.user.email)}</AvatarFallback>
+              </Avatar>
             </div>
-            <div className="text-muted-foreground text-sm truncate">{memberEmail}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex flex-wrap gap-1 max-w-[120px] sm:max-w-none">
-            {currentRoles.map((role) => (
-              <Badge
-                key={role}
-                variant="secondary"
-                className={`text-xs whitespace-nowrap ${isDeactivated ? 'opacity-50' : ''}`}
+            <div className="min-w-0">
+              <Link
+                href={profileHref}
+                className={`truncate text-sm font-medium hover:underline ${
+                  isDeactivated ? 'text-muted-foreground' : ''
+                }`}
               >
-                {(() => {
-                  switch (role) {
-                    case 'owner':
-                      return 'Owner';
-                    case 'admin':
-                      return 'Admin';
-                    case 'auditor':
-                      return 'Auditor';
-                    case 'employee':
-                      return 'Employee';
-                    case 'contractor':
-                      return 'Contractor';
-                    default:
-                      return '???';
-                  }
-                })()}
+                {memberName}
+              </Link>
+              <Text variant="muted">{memberEmail}</Text>
+            </div>
+          </HStack>
+        </TableCell>
+
+        {/* STATUS */}
+        <TableCell>
+          {isDeactivated ? (
+            <Badge variant="destructive">Inactive</Badge>
+          ) : (
+            <Badge variant="secondary">Active</Badge>
+          )}
+        </TableCell>
+
+        {/* ROLE */}
+        <TableCell>
+          <div className="flex flex-wrap gap-1">
+            {currentRoles.map((role) => (
+              <Badge key={role} variant="outline">
+                {getRoleLabel(role)}
               </Badge>
             ))}
           </div>
+        </TableCell>
 
+        {/* ACTIONS */}
+        <TableCell>
           {!isDeactivated && (
-            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canEdit && (
-                  <DropdownMenuItem onSelect={handleEditRolesClick}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    <span>{'Edit Roles'}</span>
-                  </DropdownMenuItem>
-                )}
-                {member.fleetDmLabelId && isCurrentUserOwner && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setDropdownOpen(false);
-                      setIsRemoveDeviceAlertOpen(true);
-                    }}
-                  >
-                    <Laptop className="mr-2 h-4 w-4" />
-                    <span>{'Remove Device'}</span>
-                  </DropdownMenuItem>
-                )}
-                {canRemove && (
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    onSelect={() => {
-                      setDropdownOpen(false);
-                      setIsRemoveAlertOpen(true);
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>{'Remove Member'}</span>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex justify-center">
+              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
+                    <OverflowMenuVertical />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canEdit && (
+                    <DropdownMenuItem onSelect={handleEditRolesClick}>
+                      <Edit size={16} className="mr-2" />
+                      <span>Edit Roles</span>
+                    </DropdownMenuItem>
+                  )}
+                  {member.fleetDmLabelId && isCurrentUserOwner && (
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setIsRemoveDeviceAlertOpen(true);
+                      }}
+                    >
+                      <Laptop className="mr-2 h-4 w-4" />
+                      <span>Remove Device</span>
+                    </DropdownMenuItem>
+                  )}
+                  {canRemove && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setIsRemoveAlertOpen(true);
+                      }}
+                    >
+                      <TrashCan size={16} className="mr-2" />
+                      <span>Remove Member</span>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
-        </div>
-      </div>
+        </TableCell>
+      </TableRow>
 
       <RemoveMemberAlert
         open={isRemoveAlertOpen}
@@ -270,42 +266,40 @@ export function MemberRow({
       <RemoveDeviceAlert
         open={isRemoveDeviceAlertOpen}
         title="Remove Device"
-        description={(
+        description={
           <>
-            {'Are you sure you want to remove all devices for this user '} <strong>{memberName}</strong>?{' '}
-            {'This will disconnect all devices from the organization.'}
+            Are you sure you want to remove all devices for this user{' '}
+            <strong>{memberName}</strong>? This will disconnect all devices from the organization.
           </>
-        )}
+        }
         onOpenChange={setIsRemoveDeviceAlertOpen}
         onRemove={handleRemoveDeviceClick}
         isRemoving={isRemovingDevice}
       />
 
-      {/* Edit Roles Dialog - moved outside DropdownMenu to avoid overlay conflicts */}
+      {/* Edit Roles Dialog */}
       <Dialog open={isUpdateRolesOpen} onOpenChange={setIsUpdateRolesOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{'Edit Member Roles'}</DialogTitle>
-            <DialogDescription>
-              {'Change roles for'} {memberName}
-            </DialogDescription>
+            <DialogTitle>Edit Member Roles</DialogTitle>
+            <DialogDescription>Change roles for {memberName}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor={`role-${memberId}`}>{'Roles'}</Label>
+              <Label htmlFor={`role-${memberId}`}>Roles</Label>
               <MultiRoleCombobox
                 selectedRoles={selectedRoles}
                 onSelectedRolesChange={setSelectedRoles}
-                placeholder={'Select a role'}
+                placeholder="Select a role"
                 lockedRoles={isOwner ? ['owner'] : []}
               />
               {isOwner && (
                 <p className="text-muted-foreground mt-1 text-xs">
-                  {'The owner role cannot be removed.'}
+                  The owner role cannot be removed.
                 </p>
               )}
               <p className="text-muted-foreground mt-1 text-xs">
-                {'Members must have at least one role.'}
+                Members must have at least one role.
               </p>
             </div>
           </div>
@@ -317,7 +311,7 @@ export function MemberRow({
               onClick={handleUpdateRolesClick}
               disabled={isUpdating || selectedRoles.length === 0}
             >
-              {'Update'}
+              Update
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,25 +1,29 @@
 'use client';
 
-import { Avatar, AvatarFallback } from '@comp/ui/avatar';
-import { Badge } from '@comp/ui/badge';
-import { Button } from '@comp/ui/button';
+import type { Invitation } from '@db';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@comp/ui/dialog';
-import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Avatar,
+  AvatarFallback,
+  Badge,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@comp/ui/dropdown-menu';
-import type { Invitation } from '@db';
-import { Clock, MoreHorizontal, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+  HStack,
+  TableCell,
+  TableRow,
+  Text,
+} from '@trycompai/design-system';
+import { OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import { useEffect, useState } from 'react';
 
 interface PendingInvitationRowProps {
   invitation: Invitation & {
@@ -65,87 +69,86 @@ export function PendingInvitationRow({
     }
   }, [pendingRemove, isCancelDialogOpen, onCancel, invitation.id]);
 
-  const roleDisplay = useMemo(() => {
-    return invitation.role;
-  }, [invitation.role]);
+  const roles = Array.isArray(invitation.role)
+    ? invitation.role
+    : typeof invitation.role === 'string' && invitation.role.includes(',')
+      ? invitation.role.split(',')
+      : [invitation.role];
 
   return (
     <>
-      <div className="hover:bg-muted/50 flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarFallback>{invitation.email.charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="flex items-center gap-2 font-medium">
-              <span>{invitation.email}</span>
-              <Badge variant="outline" className="hidden md:flex items-center gap-1 text-xs">
-                <Clock className="mr-1 h-3 w-3" />
-                Pending
-              </Badge>
+      <TableRow>
+        {/* NAME */}
+        <TableCell>
+          <HStack gap="3" align="center">
+            <Avatar>
+              <AvatarFallback>{invitation.email.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <Text>{invitation.email}</Text>
             </div>
-            {/* No secondary email line for invitations */}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="max-w-[150px] flex-wrap justify-end gap-1 hidden md:flex">
-            {(Array.isArray(invitation.role)
-              ? invitation.role
-              : typeof invitation.role === 'string' && invitation.role.includes(',')
-                ? invitation.role.split(',')
-                : [invitation.role]
-            ).map((role: string) => (
-              <Badge key={role} variant="secondary" className="text-xs">
+          </HStack>
+        </TableCell>
+
+        {/* STATUS */}
+        <TableCell>
+          <Badge variant="outline">Pending</Badge>
+        </TableCell>
+
+        {/* ROLE */}
+        <TableCell>
+          <div className="flex flex-wrap gap-1">
+            {roles.map((role: string) => (
+              <Badge key={role} variant="outline">
                 {role.charAt(0).toUpperCase() + role.slice(1)}
               </Badge>
             ))}
           </div>
-          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <DropdownMenuTrigger
-              asChild
-              disabled={isCancelling || !canCancel}
-            >
-              <Button variant="ghost" className="data-[state=open]:bg-muted flex h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                onSelect={handleOpenCancelDialog}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Cancel Invitation</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+        </TableCell>
 
-      <Dialog open={isCancelDialogOpen} onOpenChange={handleCancelDialogOpenChange}>
-        <DialogContent
-          className="space-y-4 py-4"
-          onInteractOutside={(e) => e.preventDefault()}
-          showCloseButton={false}
-        >
-          <DialogHeader>
-            <DialogTitle>Cancel Invitation</DialogTitle>
-            <DialogDescription>
+        {/* ACTIONS */}
+        <TableCell>
+          <div className="flex justify-center">
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger
+                variant="ellipsis"
+                disabled={isCancelling || !canCancel}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <OverflowMenuVertical />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem variant="destructive" onSelect={handleOpenCancelDialog}>
+                  <TrashCan size={16} />
+                  Cancel Invitation
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TableCell>
+      </TableRow>
+
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={handleCancelDialogOpenChange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Invitation</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to cancel the invitation for {invitation.email}?
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
           <p className="text-muted-foreground mt-1 text-xs">This action cannot be undone.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleCancelClick} disabled={isCancelling}>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleCancelClick}
+              disabled={isCancelling}
+            >
               Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

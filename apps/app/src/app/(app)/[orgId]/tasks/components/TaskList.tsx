@@ -1,6 +1,7 @@
 'use client';
 
 import { updateTaskViewPreference } from '@/actions/tasks';
+import type { ReactNode } from 'react';
 import type { Member, Task, User } from '@db';
 import {
   Avatar,
@@ -28,12 +29,14 @@ import { Check, Circle, FolderTree, List, Search, XCircle } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
+import type { FrameworkInstanceForTasks } from '../types';
 import { ModernTaskList } from './ModernTaskList';
 import { TasksByCategory } from './TasksByCategory';
 
 const statuses = [
   { id: 'todo', label: 'Todo', icon: Circle, color: 'text-slate-400' },
   { id: 'in_progress', label: 'In Progress', icon: Circle, color: 'text-blue-400' },
+  { id: 'in_review', label: 'In Review', icon: Circle, color: 'text-orange-400' },
   { id: 'done', label: 'Done', icon: Check, color: 'text-emerald-400' },
   { id: 'failed', label: 'Failed', icon: XCircle, color: 'text-red-400' },
   { id: 'not_relevant', label: 'Not Relevant', icon: Circle, color: 'text-slate-500' },
@@ -42,8 +45,13 @@ const statuses = [
 export function TaskList({
   tasks: initialTasks,
   members,
+  frameworkInstances,
   activeTab,
+  evidenceApprovalEnabled = false,
+  afterAnalytics,
+  showFiltersAndList = true,
 }: {
+  evidenceApprovalEnabled?: boolean;
   tasks: (Task & {
     controls: { id: string; name: string }[];
     evidenceAutomations?: Array<{
@@ -61,19 +69,35 @@ export function TaskList({
     }>;
   })[];
   members: (Member & { user: User })[];
+  frameworkInstances: FrameworkInstanceForTasks[];
   activeTab: 'categories' | 'list';
+  afterAnalytics?: ReactNode;
+  showFiltersAndList?: boolean;
 }) {
   const params = useParams();
   const orgId = params.orgId as string;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useQueryState('status');
   const [assigneeFilter, setAssigneeFilter] = useQueryState('assignee');
+  const [frameworkFilter, setFrameworkFilter] = useQueryState('framework');
   const [currentTab, setCurrentTab] = useState<'categories' | 'list'>(activeTab);
 
   // Sync activeTab prop with state when it changes
   useEffect(() => {
     setCurrentTab(activeTab);
   }, [activeTab]);
+
+  // Clear frameworkFilter when it's invalid or frameworks are empty.
+  // Prevents invisible filter (no dropdown when empty) and stale bookmarked URLs.
+  useEffect(() => {
+    if (!frameworkFilter) return;
+    const isValid =
+      frameworkInstances.length > 0 &&
+      frameworkInstances.some((fw) => fw.id === frameworkFilter);
+    if (!isValid) {
+      setFrameworkFilter(null);
+    }
+  }, [frameworkFilter, frameworkInstances, setFrameworkFilter]);
 
   const handleTabChange = async (value: string) => {
     const newTab = value as 'categories' | 'list';
@@ -100,7 +124,17 @@ export function TaskList({
       });
   }, [members]);
 
-  // Filter tasks by search query, status, and assignee
+  // Build a map of control IDs to their framework instances for efficient lookup
+  const frameworkControlIds = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const fw of frameworkInstances) {
+      const controlIds = new Set(fw.requirementsMapped.map((r) => r.controlId));
+      map.set(fw.id, controlIds);
+    }
+    return map;
+  }, [frameworkInstances]);
+
+  // Filter tasks by search query, status, assignee, and framework
   const filteredTasks = initialTasks.filter((task) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -110,7 +144,16 @@ export function TaskList({
     const matchesStatus = !statusFilter || task.status === statusFilter;
     const matchesAssignee = !assigneeFilter || task.assigneeId === assigneeFilter;
 
-    return matchesSearch && matchesStatus && matchesAssignee;
+    const matchesFramework =
+      !frameworkFilter ||
+      (() => {
+        const fwControlIds = frameworkControlIds.get(frameworkFilter);
+        // Stale/invalid framework ID (e.g. from bookmarked URL): treat as "All frameworks" to match dropdown display
+        if (!fwControlIds) return true;
+        return task.controls.some((c) => fwControlIds.has(c.id));
+      })();
+
+    return matchesSearch && matchesStatus && matchesAssignee && matchesFramework;
   });
 
   // Calculate overall stats from all tasks (not filtered)
@@ -120,6 +163,7 @@ export function TaskList({
       (t) => t.status === 'done' || t.status === 'not_relevant',
     ).length;
     const inProgress = initialTasks.filter((t) => t.status === 'in_progress').length;
+    const inReview = initialTasks.filter((t) => t.status === 'in_review').length;
     const todo = initialTasks.filter((t) => t.status === 'todo').length;
     const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
 
@@ -252,6 +296,7 @@ export function TaskList({
       total,
       done,
       inProgress,
+      inReview,
       todo,
       completionRate,
       tasksWithAutomation,
@@ -302,7 +347,7 @@ export function TaskList({
             </div>
 
             {/* Status Breakdown */}
-            <div className="lg:col-span-6 grid grid-cols-3 gap-3 lg:pl-3 xl:pl-4">
+            <div className="lg:col-span-6 grid grid-cols-4 gap-3 lg:pl-3 xl:pl-4">
               {/* Completed */}
               <div className="border-l-2 border-l-primary bg-card/50 px-3 py-2">
                 <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wider">
@@ -330,6 +375,22 @@ export function TaskList({
                 <div className="text-muted-foreground text-[10px] tabular-nums">
                   {overallStats.total > 0
                     ? Math.round((overallStats.inProgress / overallStats.total) * 100)
+                    : 0}
+                  %
+                </div>
+              </div>
+
+              {/* In Review */}
+              <div className="border-l-2 border-l-orange-400 bg-card/50 px-3 py-2">
+                <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wider">
+                  In Review
+                </div>
+                <div className="text-foreground text-xl font-semibold tabular-nums mb-0.5">
+                  {overallStats.inReview}
+                </div>
+                <div className="text-muted-foreground text-[10px] tabular-nums">
+                  {overallStats.total > 0
+                    ? Math.round((overallStats.inReview / overallStats.total) * 100)
                     : 0}
                   %
                 </div>
@@ -507,10 +568,10 @@ export function TaskList({
         </div>
       </div>
 
-      {/* Separator after Analytics */}
-      <Separator />
+      {afterAnalytics}
 
       {/* Unified Control Module */}
+      {showFiltersAndList && (
       <Tabs value={currentTab} onValueChange={handleTabChange}>
         <Stack gap="lg">
           <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -571,6 +632,36 @@ export function TaskList({
                   </SelectContent>
                 </Select>
 
+                {frameworkInstances.length > 0 && (
+                  <Select
+                    value={frameworkFilter || 'all'}
+                    onValueChange={(value) => setFrameworkFilter(value === 'all' ? null : value)}
+                  >
+                    <SelectTrigger size="sm">
+                      <SelectValue placeholder="All frameworks">
+                        {(() => {
+                          if (!frameworkFilter) return 'All frameworks';
+                          const selectedFramework = frameworkInstances.find(
+                            (fw) => fw.id === frameworkFilter,
+                          );
+                          if (!selectedFramework) return 'All frameworks';
+                          return selectedFramework.framework.name;
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <span className="text-xs">All frameworks</span>
+                      </SelectItem>
+                      {frameworkInstances.map((fw) => (
+                        <SelectItem key={fw.id} value={fw.id}>
+                          <span className="text-xs">{fw.framework.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
                 <Select
                   value={assigneeFilter || 'all'}
                   onValueChange={(value) => setAssigneeFilter(value === 'all' ? null : value)}
@@ -629,7 +720,7 @@ export function TaskList({
                 </Select>
               </div>
               {/* Result Count */}
-              {(searchQuery || statusFilter || assigneeFilter) && (
+              {(searchQuery || statusFilter || assigneeFilter || frameworkFilter) && (
                 <div className="text-muted-foreground text-xs tabular-nums whitespace-nowrap lg:ml-auto">
                   {filteredTasks.length} {filteredTasks.length === 1 ? 'result' : 'results'}
                 </div>
@@ -638,7 +729,7 @@ export function TaskList({
 
             {/* Tabs - visible on all screens */}
             <div className="flex w-full justify-start lg:w-auto lg:shrink-0">
-              <TabsList>
+              <TabsList variant="default">
                 <TabsTrigger value="categories">
                   <FolderTree className="h-2.5 w-2.5" />
                   Categories
@@ -659,12 +750,12 @@ export function TaskList({
               />
             </TabsContent>
             <TabsContent value="list">
-              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} />
+              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} evidenceApprovalEnabled={evidenceApprovalEnabled} />
             </TabsContent>
           </div>
         </Stack>
       </Tabs>
-
+      )}
     </Stack>
   );
 }
