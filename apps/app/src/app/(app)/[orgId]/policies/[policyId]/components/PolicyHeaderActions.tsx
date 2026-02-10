@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@comp/ui/button';
 import { useSWRConfig } from 'swr';
@@ -27,6 +26,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { auditLogsKey } from '../hooks/useAuditLogs';
+import { usePolicy, policyKey } from '../hooks/usePolicy';
+import { policyVersionsKey } from '../hooks/usePolicyVersions';
 
 type PolicyWithVersion = Policy & {
   approver: (Member & { user: User }) | null;
@@ -40,12 +41,16 @@ export function PolicyHeaderActions({
   policy: PolicyWithVersion | null;
   organizationId: string;
 }) {
-  const api = useApi();
   const router = useRouter();
   const { mutate: globalMutate } = useSWRConfig();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const { regeneratePolicy, getPdfUrl } = usePolicy({
+    policyId: policy?.id ?? '',
+    organizationId,
+  });
 
   // Real-time task tracking
   const [runInfo, setRunInfo] = useState<{
@@ -60,6 +65,13 @@ export function PolicyHeaderActions({
     enabled: !!runInfo?.runId && !!runInfo?.accessToken,
   });
 
+  const revalidateAll = () => {
+    if (!policy) return;
+    globalMutate(policyKey(policy.id, organizationId));
+    globalMutate(policyVersionsKey(policy.id, organizationId));
+    globalMutate(auditLogsKey(policy.id, organizationId));
+  };
+
   // Handle run completion
   useEffect(() => {
     if (!run) return;
@@ -72,7 +84,7 @@ export function PolicyHeaderActions({
       setIsRegenerating(false);
       setRunInfo(null);
       toastIdRef.current = null;
-      router.refresh();
+      revalidateAll();
     } else if (run.status === 'FAILED' || run.status === 'CRASHED' || run.status === 'CANCELED') {
       if (toastIdRef.current) {
         toast.dismiss(toastIdRef.current);
@@ -82,7 +94,7 @@ export function PolicyHeaderActions({
       setRunInfo(null);
       toastIdRef.current = null;
     }
-  }, [run, router]);
+  }, [run]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRegenerate = async () => {
     if (!policy) return;
@@ -90,11 +102,7 @@ export function PolicyHeaderActions({
     setRegenerateConfirmOpen(false);
 
     try {
-      const response = await api.post<{ data: { runId: string; publicAccessToken: string } }>(
-        `/v1/policies/${policy.id}/regenerate`,
-      );
-
-      if (response.error) throw new Error(response.error);
+      const response = await regeneratePolicy();
 
       const { runId, publicAccessToken } = response.data?.data ?? {};
       if (runId && publicAccessToken) {
@@ -125,17 +133,12 @@ export function PolicyHeaderActions({
 
     try {
       // Always call the API to check for an uploaded PDF (also creates audit log)
-      const params = new URLSearchParams();
-      if (policy.currentVersion?.id) params.set('versionId', policy.currentVersion.id);
-      const qs = params.toString();
-      const result = await api.get<{ url: string | null }>(
-        `/v1/policies/${policy.id}/pdf/signed-url${qs ? `?${qs}` : ''}`,
-      );
+      const url = await getPdfUrl(policy.currentVersion?.id);
 
-      if (result.data?.url) {
+      if (url) {
         // Download the uploaded PDF directly
         const link = document.createElement('a');
-        link.href = result.data.url;
+        link.href = url;
         link.download = `${policy.name || 'Policy'}.pdf`;
         link.target = '_blank';
         document.body.appendChild(link);
@@ -145,7 +148,6 @@ export function PolicyHeaderActions({
       }
 
       // Fall back to generating PDF from content
-      // Use published version content if available, otherwise policy content
       const contentSource = policy.currentVersion?.content ?? policy.content;
 
       if (!contentSource) {
@@ -165,7 +167,7 @@ export function PolicyHeaderActions({
       }
 
       // Generate and download the PDF
-      generatePolicyPDF(policyContent as any, [], policy.name || 'Policy Document');
+      generatePolicyPDF(policyContent, [], policy.name || 'Policy Document');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
       toast.error('Failed to generate policy PDF');

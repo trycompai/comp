@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Vendor } from '@db';
@@ -22,7 +22,7 @@ export function UpdateTitleAndDescriptionForm({
   vendor,
   onSuccess,
 }: UpdateTitleAndDescriptionFormProps) {
-  const api = useApi();
+  const { updateVendor } = useVendorActions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,30 +41,30 @@ export function UpdateTitleAndDescriptionForm({
 
   const onSubmit = async (data: z.infer<typeof updateVendorSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/vendors/${data.id}`, {
-      name: data.name,
-      description: data.description,
-      category: data.category,
-      status: data.status,
-      assigneeId: data.assigneeId,
-      website: data.website === '' ? null : data.website,
-    });
-    setIsSubmitting(false);
+    try {
+      await updateVendor(data.id, {
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        status: data.status,
+        assigneeId: data.assigneeId,
+        website: data.website === '' ? undefined : data.website,
+      });
 
-    if (response.error) {
+      toast.success('Vendor updated successfully');
+      globalMutate(
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
+        undefined,
+        { revalidate: true },
+      );
+      onSuccess?.();
+    } catch {
       toast.error('Failed to update vendor');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Vendor updated successfully');
-    globalMutate(
-      (key) =>
-        (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
-        (typeof key === 'string' && key.includes('/v1/vendors')),
-      undefined,
-      { revalidate: true },
-    );
-    onSuccess?.();
   };
 
   return (

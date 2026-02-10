@@ -1,9 +1,9 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { isJSON } from '@/lib/utils';
 import { useMediaQuery } from '@comp/ui/hooks';
 import type { Context } from '@db';
+import { useContextEntries } from './hooks/useContextEntries';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +57,7 @@ import { ContextForm } from './components/context-form';
 
 // Editable answer cell - click to edit
 function EditableAnswerCell({ context }: { context: Context }) {
-  const { patch } = useApi();
+  const { updateEntry } = useContextEntries();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [value, setValue] = useState(context.answer);
@@ -103,25 +103,24 @@ function EditableAnswerCell({ context }: { context: Context }) {
 
     if (finalValue.trim() && finalValue !== context.answer) {
       setIsSubmitting(true);
-      const response = await patch(`/v1/context/${context.id}`, {
-        question: context.question,
-        answer: finalValue,
-      });
-      setIsSubmitting(false);
-
-      if (response.error) {
+      try {
+        await updateEntry(context.id, {
+          question: context.question,
+          answer: finalValue,
+        });
+        setIsEditing(false);
+        toast.success('Answer updated');
+      } catch {
         setValue(context.answer);
         toast.error('Failed to update answer');
-        return;
+      } finally {
+        setIsSubmitting(false);
       }
-
-      setIsEditing(false);
-      toast.success('Answer updated');
     } else {
       setIsEditing(false);
       setValue(context.answer);
     }
-  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, patch]);
+  }, [value, arrayValue, structuredValue, context.answer, context.id, context.question, updateEntry]);
 
   const handleCancel = useCallback(() => {
     setValue(context.answer);
@@ -378,22 +377,21 @@ function EditableAnswerCell({ context }: { context: Context }) {
 
 // Actions cell with dropdown
 function ActionsCell({ context }: { context: Context }) {
-  const api = useApi();
+  const { deleteEntry } = useContextEntries();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    const response = await api.delete(`/v1/context/${context.id}`);
-    setIsDeleting(false);
-
-    if (response.error) {
+    try {
+      await deleteEntry(context.id);
+      setDeleteOpen(false);
+      toast.success('Entry deleted');
+    } catch {
       toast.error('Failed to delete entry');
-      return;
+    } finally {
+      setIsDeleting(false);
     }
-
-    setDeleteOpen(false);
-    toast.success('Entry deleted');
   };
 
   return (
@@ -482,7 +480,8 @@ function CreateContextSheetLocal({
   );
 }
 
-export const ContextTable = ({ entries }: { entries: Context[]; pageCount: number }) => {
+export const ContextTable = ({ entries: initialEntries }: { entries: Context[]; pageCount: number }) => {
+  const { entries } = useContextEntries({ initialData: initialEntries });
   const [search, setSearch] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 

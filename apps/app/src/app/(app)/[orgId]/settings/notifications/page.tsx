@@ -1,7 +1,7 @@
-import { requireRoutePermission } from '@/lib/permissions.server';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
 import { RoleNotificationSettings } from './components/RoleNotificationSettings';
-import { getRoleNotificationSettings } from './data/getRoleNotificationSettings';
+import type { RoleNotificationConfig } from './data/getRoleNotificationSettings';
 
 export default async function NotificationsSettings({
   params,
@@ -10,9 +10,11 @@ export default async function NotificationsSettings({
 }) {
   const { orgId } = await params;
 
-  await requireRoutePermission('settings/notifications', orgId);
+  const res = await serverApi.get<{
+    data: RoleNotificationConfig[];
+  }>('/v1/organization/role-notifications');
 
-  const settings = await getRoleNotificationSettings(orgId);
+  const settings = res.data?.data ?? [];
 
   return <RoleNotificationSettings initialSettings={settings} />;
 }

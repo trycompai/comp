@@ -1,11 +1,11 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { RoleForm, type RoleFormValues } from '../../components/RoleForm';
+import { useRoles } from '../../hooks/useRoles';
 
 interface NewRoleFormProps {
   orgId: string;
@@ -13,23 +13,17 @@ interface NewRoleFormProps {
 
 export function NewRoleForm({ orgId }: NewRoleFormProps) {
   const router = useRouter();
+  const { createRole } = useRoles();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (values: RoleFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await api.post('/v1/roles', values);
-
-      if (response.error) {
-        toast.error(response.error);
-        return;
-      }
-
+      await createRole(values);
       toast.success('Role created successfully');
       router.push(`/${orgId}/settings/roles`);
-      router.refresh();
     } catch (error) {
-      toast.error('Failed to create role');
+      toast.error(error instanceof Error ? error.message : 'Failed to create role');
     } finally {
       setIsSubmitting(false);
     }

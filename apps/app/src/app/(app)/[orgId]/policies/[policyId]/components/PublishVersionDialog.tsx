@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -13,13 +12,14 @@ import {
 import { Label } from '@comp/ui/label';
 import { Textarea } from '@comp/ui/textarea';
 import { Stack } from '@trycompai/design-system';
-import { useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePolicyVersions } from '../hooks/usePolicyVersions';
 
 interface PublishVersionDialogProps {
   policyId: string;
-  currentVersionNumber?: number; // The published version number for display
+  currentVersionNumber?: number;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (newVersionId: string) => void;
@@ -32,34 +32,32 @@ export function PublishVersionDialog({
   onClose,
   onSuccess,
 }: PublishVersionDialogProps) {
-  const api = useApi();
-  const router = useRouter();
+  const { orgId } = useParams<{ orgId: string }>();
+  const { createVersion } = usePolicyVersions({
+    policyId,
+    organizationId: orgId,
+  });
+
   const [changelog, setChangelog] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
     setIsCreating(true);
-    const response = await api.post(`/v1/policies/${policyId}/versions`, {
-      changelog: changelog.trim() || undefined,
-    });
-    setIsCreating(false);
-
-    if (response.error) {
+    try {
+      const response = await createVersion(changelog.trim() || undefined);
+      const versionData = response.data?.data;
+      const newVersionId = versionData?.versionId;
+      toast.success(`Created version ${versionData?.version} as draft`);
+      setChangelog('');
+      onClose();
+      if (newVersionId) {
+        onSuccess?.(newVersionId);
+      }
+    } catch {
       toast.error('Failed to create version');
-      return;
+    } finally {
+      setIsCreating(false);
     }
-
-    // API returns { data: { versionId, version }, authType: ... }
-    const responseData = response.data as { data?: { versionId?: string; version?: number } } | undefined;
-    const versionData = responseData?.data;
-    const newVersionId = versionData?.versionId;
-    toast.success(`Created version ${versionData?.version} as draft`);
-    setChangelog('');
-    onClose();
-    if (newVersionId) {
-      onSuccess?.(newVersionId);
-    }
-    router.refresh();
   };
 
   const handleOpenChange = (open: boolean) => {

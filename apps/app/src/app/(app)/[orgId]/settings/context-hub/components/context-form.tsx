@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
@@ -10,38 +9,29 @@ import type { Context } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useContextEntries } from '../hooks/useContextEntries';
 
 export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?: () => void }) {
-  const api = useApi();
+  const { createEntry, updateEntry } = useContextEntries();
   const [isPending, setIsPending] = useState(false);
 
   async function onSubmit(formData: FormData) {
     setIsPending(true);
     try {
+      const body = {
+        question: formData.get('question') as string,
+        answer: formData.get('answer') as string,
+      };
+
       if (entry) {
-        const response = await api.patch(`/v1/context/${entry.id}`, {
-          question: formData.get('question') as string,
-          answer: formData.get('answer') as string,
-        });
-        if (response.error) {
-          toast.error('Something went wrong');
-          return;
-        }
+        await updateEntry(entry.id, body);
         toast.success('Context entry updated');
-        onSuccess?.();
       } else {
-        const response = await api.post('/v1/context', {
-          question: formData.get('question') as string,
-          answer: formData.get('answer') as string,
-        });
-        if (response.error) {
-          toast.error('Something went wrong');
-          return;
-        }
+        await createEntry(body);
         toast.success('Context entry created');
-        onSuccess?.();
       }
-    } catch (error) {
+      onSuccess?.();
+    } catch {
       toast.error('Something went wrong');
     } finally {
       setIsPending(false);

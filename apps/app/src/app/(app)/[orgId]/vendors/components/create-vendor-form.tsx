@@ -1,7 +1,7 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
@@ -10,7 +10,6 @@ import { Textarea } from '@comp/ui/textarea';
 import { type Member, type User, VendorCategory, VendorStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -28,8 +27,7 @@ export function CreateVendorForm({
   onSuccess?: () => void;
 }) {
   const { mutate } = useSWRConfig();
-  const api = useApi();
-  const router = useRouter();
+  const { createVendor } = useVendorActions();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pendingWebsiteRef = useRef<string | null>(null);
@@ -53,16 +51,13 @@ export function CreateVendorForm({
     pendingWebsiteRef.current = data.website ?? null;
 
     try {
-      const response = await api.post('/v1/vendors', {
+      await createVendor({
         name: data.name,
         description: data.description || '',
         category: data.category,
-        status: data.status,
         website: data.website || undefined,
         assigneeId: data.assigneeId,
       });
-
-      if (response.error) throw new Error(response.error);
 
       // Run optional follow-up research (non-blocking)
       const website = pendingWebsiteRef.current;
@@ -86,7 +81,6 @@ export function CreateVendorForm({
 
       toast.success('Vendor created successfully');
       onSuccess?.();
-      router.refresh();
     } catch (error) {
       pendingWebsiteRef.current = null;
       toast.error(error instanceof Error ? error.message : 'Failed to create vendor');

@@ -1,7 +1,7 @@
 'use client';
 
 import { updateRiskSchema } from '@/actions/schema';
-import { useApi } from '@/hooks/use-api';
+import { useRiskActions } from '@/hooks/use-risks';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Departments, type Risk } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,7 @@ interface UpdateRiskFormProps {
 }
 
 export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
-  const api = useApi();
+  const { updateRisk } = useRiskActions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,28 +37,27 @@ export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
 
   const onSubmit = async (data: z.infer<typeof updateRiskSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/risks/${data.id}`, {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      department: data.department,
-      status: data.status,
-      assigneeId: data.assigneeId,
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updateRisk(data.id, {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        department: data.department,
+        status: data.status,
+        assigneeId: data.assigneeId,
+      });
+      toast.success('Risk updated successfully');
+      globalMutate(
+        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+        undefined,
+        { revalidate: true },
+      );
+      onSuccess?.();
+    } catch {
       toast.error('Failed to update risk');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Risk updated successfully');
-    globalMutate(
-      (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
-      undefined,
-      { revalidate: true },
-    );
-    onSuccess?.();
   };
 
   return (

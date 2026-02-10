@@ -38,6 +38,7 @@ import { RolesModule } from './roles/roles.module';
 import { ControlsModule } from './controls/controls.module';
 import { FrameworksModule } from './frameworks/frameworks.module';
 import { AuditModule } from './audit/audit.module';
+import { SecretsModule } from './secrets/secrets.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { AuditModule } from './audit/audit.module';
     ControlsModule,
     FrameworksModule,
     AuditModule,
+    SecretsModule,
   ],
   controllers: [AppController],
   providers: [

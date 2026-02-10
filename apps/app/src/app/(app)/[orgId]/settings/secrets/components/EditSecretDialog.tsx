@@ -19,6 +19,7 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useSecrets } from '../hooks/useSecrets';
 
 interface EditSecretDialogProps {
   secret: {
@@ -29,7 +30,6 @@ interface EditSecretDialogProps {
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSecretUpdated?: () => void;
 }
 
 const editSecretSchema = z.object({
@@ -49,8 +49,8 @@ export function EditSecretDialog({
   secret,
   open,
   onOpenChange,
-  onSecretUpdated,
 }: EditSecretDialogProps) {
+  const { updateSecret } = useSecrets();
   const {
     handleSubmit,
     control,
@@ -80,50 +80,20 @@ export function EditSecretDialog({
   }, [secret, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
-    // Get organizationId from the URL path
-    const pathSegments = window.location.pathname.split('/');
-    const orgId = pathSegments[1];
-
     try {
       // Only send fields that have values
-      const updateData: Record<string, string | null> = {
-        organizationId: orgId,
-      };
+      const updateData: Record<string, string | null> = {};
       if (values.name !== secret.name) updateData.name = values.name;
       if (values.value) updateData.value = values.value;
       if (values.description !== secret.description)
         updateData.description = values.description || null;
       if (values.category !== secret.category) updateData.category = values.category || null;
 
-      const response = await fetch(`/api/secrets/${secret.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        // Map Zod errors to form fields
-        if (Array.isArray(error.details)) {
-          let handled = false;
-          for (const issue of error.details) {
-            const field = issue?.path?.[0] as keyof EditSecretFormValues | undefined;
-            if (field) {
-              setError(field, { type: 'server', message: issue.message });
-              handled = true;
-            }
-          }
-          if (handled) return;
-        }
-        throw new Error(error.error || 'Failed to update secret');
-      }
+      await updateSecret(secret.id, updateData);
 
       toast.success('Secret updated successfully');
       onOpenChange(false);
       reset();
-
-      if (onSecretUpdated) onSecretUpdated();
-      else window.location.reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to update secret');
       console.error('Error updating secret:', err);

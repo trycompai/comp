@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, X, Info } from 'lucide-react';
@@ -42,7 +42,7 @@ export function AllowedDomainsManager({
   initialDomains,
   orgId,
 }: AllowedDomainsManagerProps) {
-  const api = useApi();
+  const { updateAllowedDomains } = useTrustPortalSettings();
   const [domains, setDomains] = useState<string[]>(initialDomains);
   const [lastSavedDomains, setLastSavedDomains] =
     useState<string[]>(initialDomains);
@@ -54,10 +54,7 @@ export function AllowedDomainsManager({
   const saveDomains = async (updatedDomains: string[]) => {
     setIsUpdating(true);
     try {
-      const response = await api.put('/v1/trust-portal/settings/allowed-domains', {
-        domains: updatedDomains,
-      });
-      if (response.error) throw new Error(response.error);
+      await updateAllowedDomains(updatedDomains);
       toast.success('Allowed domains updated');
       setLastSavedDomains(updatedDomains);
     } catch {

@@ -1,7 +1,11 @@
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+
+interface AuthMeResponse {
+  user: { isPlatformAdmin: boolean } | null;
+}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
@@ -12,13 +16,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/');
   }
 
-  // Check if user is platform admin
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { isPlatformAdmin: true },
-  });
+  const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
 
-  if (!user?.isPlatformAdmin) {
+  if (!meRes.data?.user?.isPlatformAdmin) {
     redirect('/');
   }
 

@@ -20,7 +20,9 @@ interface UseTaskAutomationReturn {
   isLoading: boolean;
   isError: boolean;
   error: Error | undefined;
-  mutate: () => Promise<any>;
+  mutate: () => Promise<unknown>;
+  updateAutomation: (body: Partial<Pick<TaskAutomationData, 'name' | 'description'>>) => Promise<void>;
+  deleteAutomation: () => Promise<void>;
 }
 
 export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomationReturn {
@@ -49,12 +51,10 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
       }>(`/v1/tasks/${taskId}/automations/${automationId}`);
 
       if (response.error) {
-        console.log('failed to fetch automation', response.error);
         throw new Error(response.error);
       }
 
       if (!response.data?.success) {
-        console.log('failed to fetch automation', response.data);
         throw new Error('Failed to fetch automation');
       }
 
@@ -65,12 +65,30 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
       revalidateOnReconnect: true,
       revalidateIfStale: true,
       dedupingInterval: 2000,
-      shouldRetryOnError: (error) => {
-        // Don't retry on 404s
-        return !error?.message?.includes('404');
+      shouldRetryOnError: (err: Error) => {
+        return !err?.message?.includes('404');
       },
     },
   );
+
+  const updateAutomation = async (
+    body: Partial<Pick<TaskAutomationData, 'name' | 'description'>>,
+  ) => {
+    const realId = data?.id || automationId;
+    const response = await api.patch(
+      `/v1/tasks/${taskId}/automations/${realId}`,
+      body,
+    );
+    if (response.error) throw new Error(response.error);
+    await mutate();
+  };
+
+  const deleteAutomation = async () => {
+    const response = await api.delete(
+      `/v1/tasks/${taskId}/automations/${automationId}`,
+    );
+    if (response.error) throw new Error(response.error);
+  };
 
   return {
     automation: data,
@@ -78,5 +96,7 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
     isError: !!error,
     error: error as Error | undefined,
     mutate,
+    updateAutomation,
+    deleteAutomation,
   };
 }

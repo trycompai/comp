@@ -3,7 +3,6 @@
 import type { Role } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -45,6 +44,7 @@ interface InviteMembersModalProps {
   organizationId: string;
   allowedRoles: Role[];
   customRoles?: CustomRoleOption[];
+  onInviteSuccess?: () => void;
 }
 
 async function submitInvites(
@@ -69,7 +69,7 @@ function handleInviteResults(
   results: InviteResult[],
   form: ReturnType<typeof useForm<InviteFormData>>,
   onOpenChange: (open: boolean) => void,
-  router: ReturnType<typeof useRouter>,
+  onInviteSuccess?: () => void,
 ) {
   const successCount = results.filter((r) => r.success).length;
   const failedInvites = results.filter((r) => !r.success);
@@ -80,7 +80,7 @@ function handleInviteResults(
       form.reset();
       onOpenChange(false);
     }
-    router.refresh();
+    onInviteSuccess?.();
   }
 
   if (failedInvites.length > 0) {
@@ -95,8 +95,8 @@ export function InviteMembersModal({
   onOpenChange,
   allowedRoles,
   customRoles = [],
+  onInviteSuccess,
 }: InviteMembersModalProps) {
-  const router = useRouter();
   const [mode, setMode] = useState<'manual' | 'csv'>('manual');
   const [isLoading, setIsLoading] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
@@ -141,7 +141,7 @@ export function InviteMembersModal({
           roles: invite.roles,
         }));
         const results = await submitInvites(invites);
-        handleInviteResults(results, form, onOpenChange, router);
+        handleInviteResults(results, form, onOpenChange, onInviteSuccess);
       } else if (values.mode === 'csv') {
         await handleCsvSubmit(values);
       }
@@ -180,7 +180,7 @@ export function InviteMembersModal({
         ...results,
         ...parseErrors.map((e) => ({ email: e.email, success: false, error: e.error })),
       ];
-      handleInviteResults(allResults, form, onOpenChange, router);
+      handleInviteResults(allResults, form, onOpenChange, onInviteSuccess);
     } else if (parseErrors.length > 0) {
       toast.error(
         `Failed: ${parseErrors.map((f) => `${f.email}: ${f.error}`).join(', ')}`,

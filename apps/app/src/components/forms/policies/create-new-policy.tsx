@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { createPolicySchema, type CreatePolicySchema } from '@/actions/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label, Stack, Text, Textarea } from '@trycompai/design-system';
@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 export function CreateNewPolicyForm() {
-  const api = useApi();
+  const { createPolicy } = usePolicyMutations();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -38,20 +38,19 @@ export function CreateNewPolicyForm() {
 
   const onSubmit = async (data: CreatePolicySchema) => {
     setIsLoading(true);
-    const response = await api.post('/v1/policies', {
-      name: data.title,
-      description: data.description,
-      content: [],
-    });
-    setIsLoading(false);
-
-    if (response.error) {
+    try {
+      await createPolicy({
+        name: data.title,
+        description: data.description,
+        content: [],
+      });
+      toast.success('Policy successfully created');
+      closeSheet();
+    } catch {
       toast.error('Failed to create policy');
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    toast.success('Policy successfully created');
-    closeSheet();
   };
 
   return (

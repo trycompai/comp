@@ -1,7 +1,6 @@
-import { requireRoutePermission } from '@/lib/permissions.server';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
 import { ContextTable } from './ContextTable';
-import { getContextEntries } from './data/getContextEntries';
 
 export default async function ContextHubSettings({
   params,
@@ -15,19 +14,28 @@ export default async function ContextHubSettings({
   }>;
 }) {
   const { orgId } = await params;
-
-  await requireRoutePermission('settings/context-hub', orgId);
-
   const { search, page, perPage } = await searchParams;
 
-  const entriesResult = await getContextEntries({
-    orgId,
-    search,
-    page: Number(page) || 1,
-    perPage: Number(perPage) || 50,
-  });
+  const pageNum = Number(page) || 1;
+  const perPageNum = Number(perPage) || 50;
 
-  return <ContextTable entries={entriesResult.data} pageCount={entriesResult.pageCount} />;
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.set('search', search);
+  queryParams.set('page', String(pageNum));
+  queryParams.set('perPage', String(perPageNum));
+
+  const res = await serverApi.get<{
+    data: any[];
+    count: number;
+    pageCount: number;
+  }>(`/v1/context?${queryParams.toString()}`);
+
+  return (
+    <ContextTable
+      entries={res.data?.data ?? []}
+      pageCount={res.data?.pageCount ?? 0}
+    />
+  );
 }
 
 export async function generateMetadata(): Promise<Metadata> {

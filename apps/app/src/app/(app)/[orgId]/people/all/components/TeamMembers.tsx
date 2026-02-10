@@ -2,7 +2,6 @@
 
 import { serverApi } from '@/lib/api-server';
 import type { Invitation, Member, User } from '@db';
-import { db } from '@db';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
 import type { CustomRoleOption } from './MultiRoleCombobox';
@@ -32,6 +31,10 @@ interface PeopleApiResponse {
   count: number;
 }
 
+interface InvitationsApiResponse {
+  data: Invitation[];
+}
+
 interface RolesApiResponse {
   customRoles: Array<{
     id: string;
@@ -44,10 +47,11 @@ interface RolesApiResponse {
 export async function TeamMembers(props: TeamMembersProps) {
   const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner } = props;
 
-  // Fetch members, roles, and sync data via API
-  const [membersResponse, rolesResponse] = await Promise.all([
+  // Fetch members, roles, invitations, and sync data via API
+  const [membersResponse, rolesResponse, invitationsResponse] = await Promise.all([
     serverApi.get<PeopleApiResponse>('/v1/people?includeDeactivated=true'),
     serverApi.get<RolesApiResponse>('/v1/roles'),
+    serverApi.get<InvitationsApiResponse>('/v1/auth/invitations'),
   ]);
 
   if (!membersResponse.data) {
@@ -57,15 +61,11 @@ export async function TeamMembers(props: TeamMembersProps) {
   const members = membersResponse.data.data ?? [];
   const organizationId = members[0]?.organizationId ?? '';
 
-  // TODO: Migrate to API endpoint when invitations API is created
-  const pendingInvitations: Invitation[] = organizationId
-    ? await db.invitation.findMany({
-        where: { organizationId, status: 'pending' },
-        orderBy: { email: 'asc' },
-      })
+  const pendingInvitations: Invitation[] = Array.isArray(invitationsResponse.data?.data)
+    ? invitationsResponse.data.data
     : [];
 
-  const data: TeamMembersData = { members, pendingInvitations };
+  const initialData: TeamMembersData = { members, pendingInvitations };
 
   const employeeSyncData = await getEmployeeSyncConnections(organizationId);
 
@@ -79,7 +79,7 @@ export async function TeamMembers(props: TeamMembersProps) {
 
   return (
     <TeamMembersClient
-      data={data}
+      initialData={initialData}
       organizationId={organizationId}
       canManageMembers={canManageMembers}
       canInviteUsers={canInviteUsers}

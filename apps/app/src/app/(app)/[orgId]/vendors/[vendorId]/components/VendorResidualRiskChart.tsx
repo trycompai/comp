@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useVendor, useVendorActions } from '@/hooks/use-vendors';
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
 import type { Vendor } from '@db';
 
@@ -9,7 +9,8 @@ interface ResidualRiskChartProps {
 }
 
 export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
-  const api = useApi();
+  const { updateVendor } = useVendorActions();
+  const { mutate } = useVendor(vendor.id);
 
   return (
     <RiskMatrixChart
@@ -19,14 +20,11 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
       activeLikelihood={vendor.residualProbability}
       activeImpact={vendor.residualImpact}
       saveAction={async ({ id, probability, impact }) => {
-        const response = await api.patch(`/v1/vendors/${id}`, {
+        await updateVendor(id, {
           residualProbability: probability,
           residualImpact: impact,
         });
-        if (response.error) {
-          throw new Error('Failed to update residual risk');
-        }
-        return response;
+        mutate();
       }}
     />
   );

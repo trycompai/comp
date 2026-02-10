@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { useMediaQuery } from '@comp/ui/hooks';
 import type { Policy } from '@db';
 import {
@@ -21,18 +20,24 @@ import {
 } from '@trycompai/design-system';
 import { Archive, Renew } from '@trycompai/design-system/icons';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { toast } from 'sonner';
+import { usePolicy } from '../hooks/usePolicy';
 
 export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMutate?: () => void }) {
-  const api = useApi();
   const router = useRouter();
+  const { orgId } = useParams<{ orgId: string }>();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useQueryState('archive-policy-sheet');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isOpen = Boolean(open);
   const isArchived = policy.isArchived;
+
+  const { archivePolicy } = usePolicy({
+    policyId: policy.id,
+    organizationId: orgId,
+  });
 
   const handleOpenChange = (open: boolean) => {
     setOpen(open ? 'true' : null);
@@ -41,25 +46,22 @@ export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMut
   const handleAction = async () => {
     const shouldArchive = !isArchived;
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/policies/${policy.id}`, {
-      isArchived: shouldArchive,
-    });
-    setIsSubmitting(false);
+    try {
+      await archivePolicy(shouldArchive);
+      await onMutate?.();
 
-    if (response.error) {
+      if (shouldArchive) {
+        toast.success('Policy archived successfully');
+        router.push(`/${policy.organizationId}/policies`);
+      } else {
+        toast.success('Policy restored successfully');
+      }
+      handleOpenChange(false);
+    } catch {
       toast.error('Failed to update policy archive status');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    await onMutate?.();
-
-    if (shouldArchive) {
-      toast.success('Policy archived successfully');
-      router.push(`/${policy.organizationId}/policies`);
-    } else {
-      toast.success('Policy restored successfully');
-    }
-    handleOpenChange(false);
   };
 
   const content = (

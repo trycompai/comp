@@ -1,6 +1,56 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "AuthController_getMe_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get current user info, organizations, and pending invitations",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/invitations/{id}": {
+      "delete": {
+        "operationId": "AuthController_deleteInvitation_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Invitation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Revoke a pending invitation",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/v1/roles": {
       "post": {
         "description": "Create a new custom role with specified permissions. Only admins and owners can create roles.",
@@ -361,7 +411,17 @@
       "get": {
         "description": "Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "OrganizationController_getOrganization_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "includeOwnership",
+            "required": false,
+            "in": "query",
+            "description": "Include ownership data for transfer UI",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Organization information retrieved successfully",
@@ -989,6 +1049,62 @@
         "tags": [
           "Organization"
         ]
+      },
+      "get": {
+        "operationId": "OrganizationController_getRoleNotifications_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get role notification settings",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/organization/api-keys": {
+      "get": {
+        "operationId": "OrganizationController_listApiKeys_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List active API keys",
+        "tags": [
+          "Organization"
+        ]
+      },
+      "post": {
+        "operationId": "OrganizationController_createApiKey_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a new API key",
+        "tags": [
+          "Organization"
+        ]
       }
     },
     "/v1/organization/primary-color": {
@@ -1110,26 +1226,6 @@
           }
         ],
         "summary": "Remove organization logo",
-        "tags": [
-          "Organization"
-        ]
-      }
-    },
-    "/v1/organization/api-keys": {
-      "post": {
-        "operationId": "OrganizationController_createApiKey_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Create a new API key",
         "tags": [
           "Organization"
         ]
@@ -1422,6 +1518,46 @@
           }
         ],
         "summary": "Create a new member",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/devices": {
+      "get": {
+        "operationId": "PeopleController_getDevices_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all employee devices with fleet compliance data",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/test-stats/by-assignee": {
+      "get": {
+        "operationId": "PeopleController_getTestStatsByAssignee_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get integration test statistics grouped by assignee",
         "tags": [
           "People"
         ]
@@ -2006,6 +2142,68 @@
         ]
       }
     },
+    "/v1/people/{id}/training-videos": {
+      "get": {
+        "operationId": "PeopleController_getTrainingVideos_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get training video completions for a member",
+        "tags": [
+          "People"
+        ]
+      }
+    },
+    "/v1/people/{id}/fleet-compliance": {
+      "get": {
+        "operationId": "PeopleController_getFleetCompliance_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get fleet/device compliance for a member",
+        "tags": [
+          "People"
+        ]
+      }
+    },
     "/v1/people/{id}/host/{hostId}": {
       "delete": {
         "description": "Removes a single host (device) from FleetDM by host ID. Only organization owners can perform this action. Validates that the organization exists and the member exists within the organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -2242,6 +2440,24 @@
       }
     },
     "/v1/people/me/email-preferences": {
+      "get": {
+        "operationId": "PeopleController_getEmailPreferences_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get current user email notification preferences",
+        "tags": [
+          "People"
+        ]
+      },
       "put": {
         "operationId": "PeopleController_updateEmailPreferences_v1",
         "parameters": [],
@@ -2873,6 +3089,46 @@
           }
         ],
         "summary": "Create a new risk",
+        "tags": [
+          "Risks"
+        ]
+      }
+    },
+    "/v1/risks/stats/by-assignee": {
+      "get": {
+        "operationId": "RisksController_getStatsByAssignee_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get risk statistics grouped by assignee",
+        "tags": [
+          "Risks"
+        ]
+      }
+    },
+    "/v1/risks/stats/by-department": {
+      "get": {
+        "operationId": "RisksController_getStatsByDepartment_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get risk counts grouped by department",
         "tags": [
           "Risks"
         ]
@@ -4746,7 +5002,35 @@
       "get": {
         "description": "Returns all context entries for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "ContextController_getAllContext_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by question text",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "perPage",
+            "required": false,
+            "in": "query",
+            "description": "Items per page",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Context entries retrieved successfully",
@@ -5751,7 +6035,32 @@
       "get": {
         "description": "Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
         "operationId": "PoliciesController_getAllPolicies_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isRequiredToSign",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isArchived",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Policies retrieved successfully",
@@ -5987,6 +6296,26 @@
           }
         ],
         "summary": "Download all published policies as a single PDF",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/publish-all": {
+      "post": {
+        "operationId": "PoliciesController_publishAll_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Publish all draft/needs_review policies",
         "tags": [
           "Policies"
         ]
@@ -7378,6 +7707,35 @@
       }
     },
     "/v1/policies/{id}/controls": {
+      "get": {
+        "operationId": "PoliciesController_getPolicyControls_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get control mapping info for a policy",
+        "tags": [
+          "Policies"
+        ]
+      },
       "post": {
         "operationId": "PoliciesController_mapControls_v1",
         "parameters": [
@@ -7616,7 +7974,17 @@
       "get": {
         "description": "Retrieve all tasks for the authenticated organization. Employees/contractors only see their assigned tasks.",
         "operationId": "TasksController_getTasks_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "includeRelations",
+            "required": false,
+            "in": "query",
+            "description": "Include controls and automations with runs",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Tasks retrieved successfully",
@@ -8044,6 +8412,26 @@
           }
         ],
         "summary": "Reorder tasks",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/options": {
+      "get": {
+        "operationId": "TasksController_getTaskOptions_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get page options for tasks overview",
         "tags": [
           "Tasks"
         ]
@@ -9032,6 +9420,46 @@
           }
         ],
         "summary": "Delete an automation",
+        "tags": [
+          "Task Automations"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/automations/{automationId}/runs": {
+      "get": {
+        "description": "Retrieve all runs for a specific automation",
+        "operationId": "AutomationsController_getAutomationRuns_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Runs retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get all runs for a specific automation",
         "tags": [
           "Task Automations"
         ]
@@ -15771,6 +16199,68 @@
       }
     },
     "/v1/controls": {
+      "get": {
+        "operationId": "ControlsController_findAll_v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "perPage",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "description": "Filter by name (case-insensitive contains)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Field to sort by (default: name)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "required": false,
+            "in": "query",
+            "description": "Sort descending (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List controls with relations",
+        "tags": [
+          "Controls"
+        ]
+      },
       "post": {
         "operationId": "ControlsController_create_v1",
         "parameters": [],
@@ -15800,7 +16290,54 @@
         ]
       }
     },
+    "/v1/controls/options": {
+      "get": {
+        "operationId": "ControlsController_getOptions_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get dropdown options for creating controls",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
     "/v1/controls/{id}": {
+      "get": {
+        "operationId": "ControlsController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get control detail with progress",
+        "tags": [
+          "Controls"
+        ]
+      },
       "delete": {
         "operationId": "ControlsController_delete_v1",
         "parameters": [
@@ -15832,7 +16369,24 @@
     "/v1/frameworks": {
       "get": {
         "operationId": "FrameworksController_findAll_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "includeControls",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "includeScores",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -15847,9 +16401,104 @@
         "tags": [
           "Frameworks"
         ]
+      },
+      "post": {
+        "operationId": "FrameworksController_addFrameworks_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFrameworksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add frameworks to the organization",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/available": {
+      "get": {
+        "operationId": "FrameworksController_findAvailable_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List available frameworks to add",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/scores": {
+      "get": {
+        "operationId": "FrameworksController_getScores_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get overview compliance scores",
+        "tags": [
+          "Frameworks"
+        ]
       }
     },
     "/v1/frameworks/{id}": {
+      "get": {
+        "operationId": "FrameworksController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single framework instance with full detail",
+        "tags": [
+          "Frameworks"
+        ]
+      },
       "delete": {
         "operationId": "FrameworksController_delete_v1",
         "parameters": [
@@ -15875,6 +16524,197 @@
         "summary": "Delete a framework instance",
         "tags": [
           "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements/{requirementKey}": {
+      "get": {
+        "operationId": "FrameworksController_findRequirement_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requirementKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a specific requirement with related controls",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/secrets": {
+      "get": {
+        "operationId": "SecretsController_listSecrets_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List all secrets (metadata only, no values)",
+        "tags": [
+          "Secrets"
+        ]
+      },
+      "post": {
+        "operationId": "SecretsController_createSecret_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "value"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "category": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a new secret",
+        "tags": [
+          "Secrets"
+        ]
+      }
+    },
+    "/v1/secrets/{id}": {
+      "get": {
+        "operationId": "SecretsController_getSecret_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Secret ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a secret with decrypted value",
+        "tags": [
+          "Secrets"
+        ]
+      },
+      "put": {
+        "operationId": "SecretsController_updateSecret_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Secret ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a secret",
+        "tags": [
+          "Secrets"
+        ]
+      },
+      "delete": {
+        "operationId": "SecretsController_deleteSecret_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Secret ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a secret",
+        "tags": [
+          "Secrets"
         ]
       }
     }
@@ -19858,6 +20698,22 @@
         "required": [
           "name",
           "description"
+        ]
+      },
+      "AddFrameworksDto": {
+        "type": "object",
+        "properties": {
+          "frameworkIds": {
+            "description": "Array of framework editor framework IDs to add",
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "frameworkIds"
         ]
       }
     }

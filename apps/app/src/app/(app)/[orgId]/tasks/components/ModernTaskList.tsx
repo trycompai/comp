@@ -25,6 +25,7 @@ interface ModernTaskListProps {
   })[];
   members: (Member & { user: User })[];
   statusFilter?: string | null;
+  mutateTasks: () => Promise<unknown>;
 }
 
 const statusConfig = {
@@ -35,7 +36,7 @@ const statusConfig = {
   not_relevant: { icon: Circle, label: 'Not Relevant', color: 'text-slate-500' },
 } as const;
 
-export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListProps) {
+export function ModernTaskList({ tasks, members, statusFilter, mutateTasks }: ModernTaskListProps) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -94,7 +95,7 @@ export function ModernTaskList({ tasks, members, statusFilter }: ModernTaskListP
         const config = statusConfig[status];
 
         return (
-          <ModernSingleStatusTaskList key={status} config={config} tasks={statusTasks} members={members} handleTaskClick={handleTaskClick} />
+          <ModernSingleStatusTaskList key={status} config={config} tasks={statusTasks} members={members} handleTaskClick={handleTaskClick} mutateTasks={mutateTasks} />
         );
       })}
     </div>

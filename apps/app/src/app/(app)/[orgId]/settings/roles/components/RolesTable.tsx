@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +31,7 @@ import { Add, Edit, OverflowMenuVertical, Search, TrashCan } from '@trycompai/de
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useRoles } from '../hooks/useRoles';
 
 export interface CustomRole {
   id: string;
@@ -57,6 +57,7 @@ function ActionsCell({
   const router = useRouter();
   const params = useParams();
   const orgId = params.orgId as string;
+  const { deleteRole } = useRoles();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -65,18 +66,11 @@ function ActionsCell({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const response = await api.delete(`/v1/roles/${role.id}`);
-
-      if (response.error) {
-        toast.error(response.error);
-        return;
-      }
-
+      await deleteRole(role.id);
       toast.success('Role deleted successfully');
       setDeleteOpen(false);
-      router.refresh();
     } catch (error) {
-      toast.error('Failed to delete role');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete role');
     } finally {
       setIsDeleting(false);
     }

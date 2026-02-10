@@ -1,8 +1,9 @@
+import { serverApi } from '@/lib/api-server';
 import { Breadcrumb, PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getRole } from '../data/getRole';
+import type { CustomRole } from '../components/RolesTable';
 import { EditRolePageClient } from './components/EditRolePageClient';
 
 export default async function EditRolePage({
@@ -12,7 +13,8 @@ export default async function EditRolePage({
 }) {
   const { orgId, roleId } = await params;
 
-  const role = await getRole(roleId, orgId);
+  const res = await serverApi.get<CustomRole>(`/v1/roles/${roleId}`);
+  const role = res.data;
 
   if (!role) {
     notFound();
@@ -43,7 +45,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { roleId, orgId } = await params;
 
-  const role = await getRole(roleId, orgId);
+  const res = await serverApi.get<CustomRole>(`/v1/roles/${roleId}`);
+  const role = res.data;
 
   return {
     title: role ? `Edit Role: ${role.name}` : 'Edit Role',

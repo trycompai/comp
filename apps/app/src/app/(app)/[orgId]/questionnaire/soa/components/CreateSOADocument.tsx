@@ -6,7 +6,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
+import { createSOADocument } from '../../hooks/useSOADocument';
 
 interface CreateSOADocumentProps {
   frameworkId: string;
@@ -26,25 +26,13 @@ export function CreateSOADocument({
     setIsCreating(true);
 
     try {
-      const response = await api.post<{ success: boolean; data?: { id: string } }>(
-        '/v1/soa/create-document',
-        {
-          frameworkId,
-          organizationId,
-        },
-      );
-
-      if (response.error) {
-        toast.error(response.error || 'Failed to create SOA document');
-      } else if (response.data?.success && response.data?.data) {
-        toast.success('SOA document created successfully');
-        router.push(`/${organizationId}/questionnaire/soa/${response.data.data.id}`);
-        router.refresh();
-      } else {
-        toast.error('Failed to create SOA document');
-      }
+      const result = await createSOADocument({ frameworkId, organizationId });
+      toast.success('SOA document created successfully');
+      router.push(`/${organizationId}/questionnaire/soa/${result.id}`);
     } catch (error) {
-      toast.error('An error occurred while creating the SOA document');
+      toast.error(
+        error instanceof Error ? error.message : 'An error occurred while creating the SOA document',
+      );
     } finally {
       setIsCreating(false);
     }
@@ -80,4 +68,3 @@ export function CreateSOADocument({
     </Card>
   );
 }
-

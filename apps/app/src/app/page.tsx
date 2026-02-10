@@ -1,8 +1,21 @@
+import { serverApi } from '@/lib/api-server';
 import { getDefaultRoute, mergePermissions, resolveBuiltInPermissions } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { db } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+
+interface OrgInfo {
+  id: string;
+  onboardingCompleted: boolean;
+  hasAccess: boolean;
+  memberRole: string;
+}
+
+interface AuthMeResponse {
+  organizations: OrgInfo[];
+  pendingInvitation: { id: string } | null;
+}
 
 export default async function RootPage({
   searchParams,
@@ -13,7 +26,6 @@ export default async function RootPage({
     headers: await headers(),
   });
 
-  // Helper function to build URL with search params
   const buildUrlWithParams = async (path: string): Promise<string> => {
     const params = new URLSearchParams();
     Object.entries(await searchParams).forEach(([key, value]) => {
@@ -35,73 +47,41 @@ export default async function RootPage({
 
   const intent = (await searchParams)?.intent;
 
-  // If user is explicitly creating an additional org, go to setup
   if (intent === 'create-additional') {
     return redirect(await buildUrlWithParams('/setup'));
   }
 
-  // Find all organizations the user belongs to (not relying on activeOrganizationId)
-  const memberships = await db.member.findMany({
-    where: {
-      userId: session.user.id,
-      deactivated: false,
-    },
-    select: {
-      organizationId: true,
-      role: true,
-      organization: {
-        select: {
-          id: true,
-          onboardingCompleted: true,
-          hasAccess: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+  const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+  const memberships = meRes.data?.organizations ?? [];
+  const pendingInvitation = meRes.data?.pendingInvitation;
 
-  // No memberships - check for pending invites or go to setup
   if (memberships.length === 0) {
-    const pendingInvite = await db.invitation.findFirst({
-      where: {
-        email: session.user.email,
-        status: 'pending',
-      },
-    });
-
-    if (pendingInvite) {
-      return redirect(await buildUrlWithParams(`/invite/${pendingInvite.id}`));
+    if (pendingInvitation) {
+      return redirect(await buildUrlWithParams(`/invite/${pendingInvitation.id}`));
     }
-
     return redirect(await buildUrlWithParams('/setup'));
   }
 
-  // Find the best org to redirect to:
-  // 1. Prefer orgs with completed onboarding and access
-  // 2. Fall back to first org (most recently joined)
   const readyOrg = memberships.find(
-    (m) => m.organization.onboardingCompleted && m.organization.hasAccess,
+    (m) => m.onboardingCompleted && m.hasAccess,
   );
+  const targetOrg = readyOrg || memberships[0];
 
-  const targetOrg = readyOrg?.organization || memberships[0].organization;
-
-  // If org hasn't completed onboarding, route to onboarding flow
   if (!targetOrg.onboardingCompleted) {
     return redirect(await buildUrlWithParams(`/onboarding/${targetOrg.id}`));
   }
 
-  // If org doesn't have access, route to upgrade
   if (!targetOrg.hasAccess) {
     return redirect(await buildUrlWithParams(`/upgrade/${targetOrg.id}`));
   }
 
-  // Resolve user's default route based on their permissions
-  const targetMembership = memberships.find((m) => m.organization.id === targetOrg.id);
-  const { permissions, customRoleNames } = resolveBuiltInPermissions(targetMembership?.role);
+  // Resolve permissions for default route
+  const { permissions, customRoleNames } = resolveBuiltInPermissions(
+    targetOrg.memberRole,
+  );
 
   if (customRoleNames.length > 0) {
+    // Custom role resolution still needs DB (infrastructure auth concern)
     const customRoles = await db.organizationRole.findMany({
       where: {
         organizationId: targetOrg.id,
@@ -112,7 +92,9 @@ export default async function RootPage({
     for (const role of customRoles) {
       if (!role.permissions) continue;
       const parsed =
-        typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions;
+        typeof role.permissions === 'string'
+          ? JSON.parse(role.permissions)
+          : role.permissions;
       if (parsed && typeof parsed === 'object') {
         mergePermissions(permissions, parsed as Record<string, string[]>);
       }

@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskTemplates } from '@/hooks/use-task-template-api';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -27,7 +26,6 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -48,17 +46,26 @@ const createTaskSchema = z.object({
   taskTemplateId: z.string().nullable().optional(),
 });
 
+interface CreateTaskPayload {
+  title: string;
+  description: string;
+  assigneeId?: string | null;
+  frequency?: string | null;
+  department?: string | null;
+  controlIds?: string[];
+  taskTemplateId?: string | null;
+}
+
 interface CreateTaskSheetProps {
   members: (Member & { user: User })[];
   controls: { id: string; name: string }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  createTask: (data: CreateTaskPayload) => Promise<void>;
 }
 
-export function CreateTaskSheet({ members, controls, open, onOpenChange }: CreateTaskSheetProps) {
+export function CreateTaskSheet({ members, controls, open, onOpenChange, createTask }: CreateTaskSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const api = useApi();
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: taskTemplates } = useTaskTemplates();
@@ -80,7 +87,7 @@ export function CreateTaskSheet({ members, controls, open, onOpenChange }: Creat
     async (data: z.infer<typeof createTaskSchema>) => {
       setIsSubmitting(true);
       try {
-        const response = await api.post('/v1/tasks', {
+        await createTask({
           title: data.title,
           description: data.description,
           assigneeId: data.assigneeId,
@@ -89,18 +96,16 @@ export function CreateTaskSheet({ members, controls, open, onOpenChange }: Creat
           controlIds: data.controlIds,
           taskTemplateId: data.taskTemplateId,
         });
-        if (response.error) throw new Error(response.error);
         toast.success('Evidence created successfully');
         onOpenChange(false);
         form.reset();
-        router.refresh();
       } catch {
         toast.error('Failed to create evidence');
       } finally {
         setIsSubmitting(false);
       }
     },
-    [api, onOpenChange, form, router],
+    [createTask, onOpenChange, form],
   );
 
   // Memoize control options to prevent re-renders

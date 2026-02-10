@@ -242,8 +242,19 @@ export class RolesService {
     // Get custom roles
     const customRoles = await db.organizationRole.findMany({
       where: { organizationId },
-      orderBy: { name: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
+
+    // Get member counts for custom roles
+    const memberCounts = await Promise.all(
+      customRoles.map(async (role) => {
+        const count = await db.member.count({
+          where: { organizationId, role: { contains: role.name } },
+        });
+        return { roleId: role.id, count };
+      }),
+    );
+    const countMap = new Map(memberCounts.map((mc) => [mc.roleId, mc.count]));
 
     // Include built-in roles info
     const builtInRoles = BUILT_IN_ROLES.map(name => ({
@@ -259,8 +270,9 @@ export class RolesService {
         name: r.name,
         permissions: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions,
         isBuiltIn: false,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        _count: { members: countMap.get(r.id) ?? 0 },
       })),
     };
   }
@@ -280,13 +292,18 @@ export class RolesService {
       throw new NotFoundException(`Role not found: ${roleId}`);
     }
 
+    const memberCount = await db.member.count({
+      where: { organizationId, role: { contains: role.name } },
+    });
+
     return {
       id: role.id,
       name: role.name,
       permissions: typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions,
       isBuiltIn: false,
-      createdAt: role.createdAt,
-      updatedAt: role.updatedAt,
+      createdAt: role.createdAt.toISOString(),
+      updatedAt: role.updatedAt.toISOString(),
+      _count: { members: memberCount },
     };
   }
 

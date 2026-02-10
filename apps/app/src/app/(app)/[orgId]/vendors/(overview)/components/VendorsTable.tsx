@@ -1,8 +1,7 @@
 'use client';
 
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
-import { useApi } from '@/hooks/use-api';
-import { useVendors, type Vendor } from '@/hooks/use-vendors';
+import { useVendors, useVendorActions, type Vendor } from '@/hooks/use-vendors';
 import { VendorStatus } from '@/components/vendor-status';
 import {
   AlertDialog,
@@ -44,7 +43,6 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, UserIcon } from 'lucide-react
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { useSWRConfig } from 'swr';
 import { useOnboardingStatus } from '../hooks/use-onboarding-status';
 import { VendorOnboardingProvider, useVendorOnboardingStatus } from './vendor-onboarding-context';
 
@@ -147,8 +145,7 @@ export function VendorsTable({
   orgId,
 }: VendorsTableProps) {
   const router = useRouter();
-  const api = useApi();
-  const { mutate: globalMutate } = useSWRConfig();
+  const { deleteVendor } = useVendorActions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<VendorRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -401,21 +398,10 @@ export function VendorsTable({
 
     setIsDeleting(true);
     try {
-      const response = await api.delete(`/v1/vendors/${vendorToDelete.id}`);
-      if (!response.error) {
-        toast.success('Vendor deleted successfully');
-        setDeleteDialogOpen(false);
-        setVendorToDelete(null);
-        globalMutate(
-          (key) =>
-            (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
-            (typeof key === 'string' && key.includes('/v1/vendors')),
-          undefined,
-          { revalidate: true },
-        );
-      } else {
-        toast.error('Failed to delete vendor');
-      }
+      await deleteVendor(vendorToDelete.id);
+      toast.success('Vendor deleted successfully');
+      setDeleteDialogOpen(false);
+      setVendorToDelete(null);
     } catch {
       toast.error('Failed to delete vendor');
     } finally {

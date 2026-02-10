@@ -1,7 +1,7 @@
 'use client';
 
 import { organizationNameSchema } from '@/actions/schema';
-import { useApi } from '@/hooks/use-api';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 
 export function UpdateOrganizationName({ organizationName }: { organizationName: string }) {
-  const api = useApi();
+  const { updateOrganization } = useOrganizationMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationNameSchema>>({
@@ -33,15 +33,14 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
 
   const onSubmit = async (data: z.infer<typeof organizationNameSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch('/v1/organization', { name: data.name });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updateOrganization({ name: data.name });
+      toast.success('Organization name updated');
+    } catch {
       toast.error('Error updating organization name');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Organization name updated');
   };
 
   return (

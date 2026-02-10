@@ -22,6 +22,7 @@ import {
   AuthContext,
   IsApiKeyAuth,
   OrganizationId,
+  UserId,
 } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -55,19 +56,23 @@ export class OrganizationController {
   @Get()
   @RequirePermission('organization', 'read')
   @ApiOperation(ORGANIZATION_OPERATIONS.getOrganization)
+  @ApiQuery({ name: 'includeOwnership', required: false, description: 'Include ownership data for transfer UI' })
   @ApiResponse(GET_ORGANIZATION_RESPONSES[200])
   @ApiResponse(GET_ORGANIZATION_RESPONSES[401])
   async getOrganization(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @IsApiKeyAuth() isApiKey: boolean,
+    @UserId() userId: string,
+    @Query('includeOwnership') includeOwnership?: string,
   ) {
     const org = await this.organizationService.findById(organizationId);
+    const logoUrl = await this.organizationService.getLogoSignedUrl(org.logo);
 
-    return {
+    const result: any = {
       ...org,
+      logoUrl,
       authType: authContext.authType,
-      // Include user context for session auth (helpful for debugging)
       ...(authContext.userId && {
         authenticatedUser: {
           id: authContext.userId,
@@ -75,6 +80,17 @@ export class OrganizationController {
         },
       }),
     };
+
+    if (includeOwnership === 'true' && userId) {
+      const ownership = await this.organizationService.getOwnershipData(
+        organizationId,
+        userId,
+      );
+      result.isOwner = ownership.isOwner;
+      result.eligibleMembers = ownership.eligibleMembers;
+    }
+
+    return result;
   }
 
   @Get('onboarding')
@@ -247,6 +263,27 @@ export class OrganizationController {
     );
   }
 
+  @Get('api-keys')
+  @RequirePermission('apiKey', 'read')
+  @ApiOperation({ summary: 'List active API keys' })
+  async listApiKeys(@OrganizationId() organizationId: string) {
+    return this.organizationService.listApiKeys(organizationId);
+  }
+
+  @Get('api-keys/available-scopes')
+  @RequirePermission('apiKey', 'read')
+  @ApiOperation({ summary: 'Get available API key scopes' })
+  async getAvailableScopes() {
+    return { data: this.apiKeyService.getAvailableScopes() };
+  }
+
+  @Get('role-notifications')
+  @RequirePermission('organization', 'read')
+  @ApiOperation({ summary: 'Get role notification settings' })
+  async getRoleNotifications(@OrganizationId() organizationId: string) {
+    return this.organizationService.getRoleNotificationSettings(organizationId);
+  }
+
   @Get('primary-color')
   @RequirePermission('organization', 'read')
   @ApiOperation(ORGANIZATION_OPERATIONS.getPrimaryColor)
@@ -314,20 +351,25 @@ export class OrganizationController {
   }
 
   @Post('api-keys')
-  @RequirePermission('organization', 'update')
+  @RequirePermission('apiKey', 'create')
   @ApiOperation({ summary: 'Create a new API key' })
   async createApiKey(
     @OrganizationId() organizationId: string,
-    @Body() body: { name: string; expiresAt?: string },
+    @Body() body: { name: string; expiresAt?: string; scopes?: string[] },
   ) {
     if (!body.name) {
       throw new BadRequestException('Name is required');
     }
-    return this.apiKeyService.create(organizationId, body.name, body.expiresAt);
+    return this.apiKeyService.create(
+      organizationId,
+      body.name,
+      body.expiresAt,
+      body.scopes,
+    );
   }
 
   @Post('api-keys/revoke')
-  @RequirePermission('organization', 'update')
+  @RequirePermission('apiKey', 'delete')
   @ApiOperation({ summary: 'Revoke an API key' })
   async revokeApiKey(
     @OrganizationId() organizationId: string,

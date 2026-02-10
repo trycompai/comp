@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -37,15 +36,7 @@ interface DeleteDialogProps {
 }
 
 export function EditNameDialog({ open, onOpenChange, onSuccess }: EditNameDialogProps) {
-  const { automation, mutate: mutateLocal } = useTaskAutomation();
-  const { orgId, taskId, automationId } = useParams<{
-    orgId: string;
-    taskId: string;
-    automationId: string;
-  }>();
-
-  // Use real automation ID when available
-  const realAutomationId = automation?.id || automationId;
+  const { automation, updateAutomation } = useTaskAutomation();
 
   const [name, setName] = useState(automation?.name || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -63,20 +54,11 @@ export function EditNameDialog({ open, onOpenChange, onSuccess }: EditNameDialog
 
     setIsSaving(true);
     try {
-      const response = await api.patch(
-        `/v1/tasks/${taskId}/automations/${realAutomationId}`,
-        { name: name.trim() },
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      await mutateLocal(); // Refresh automation data in hook
-      await onSuccess?.(); // Notify parent to refresh (e.g., overview page)
+      await updateAutomation({ name: name.trim() });
+      await onSuccess?.();
       onOpenChange(false);
       toast.success('Automation name updated');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update name');
     } finally {
       setIsSaving(false);
@@ -123,12 +105,7 @@ export function EditDescriptionDialog({
   onOpenChange,
   onSuccess,
 }: EditDescriptionDialogProps) {
-  const { automation, mutate: mutateLocal } = useTaskAutomation();
-  const { orgId, taskId, automationId } = useParams<{
-    orgId: string;
-    taskId: string;
-    automationId: string;
-  }>();
+  const { automation, updateAutomation } = useTaskAutomation();
   const [description, setDescription] = useState(automation?.description || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -140,20 +117,11 @@ export function EditDescriptionDialog({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const response = await api.patch(
-        `/v1/tasks/${taskId}/automations/${automationId}`,
-        { description: description.trim() },
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      await mutateLocal(); // Refresh automation data in hook
-      await onSuccess?.(); // Notify parent to refresh (e.g., overview page)
+      await updateAutomation({ description: description.trim() });
+      await onSuccess?.();
       onOpenChange(false);
       toast.success('Automation description updated');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update description');
     } finally {
       setIsSaving(false);
@@ -197,8 +165,8 @@ export function EditDescriptionDialog({
 }
 
 export function DeleteAutomationDialog({ open, onOpenChange, onSuccess }: DeleteDialogProps) {
-  const { automation } = useTaskAutomation();
-  const { orgId, taskId, automationId } = useParams<{
+  const { automation, deleteAutomation } = useTaskAutomation();
+  const { orgId, taskId } = useParams<{
     orgId: string;
     taskId: string;
     automationId: string;
@@ -208,18 +176,13 @@ export function DeleteAutomationDialog({ open, onOpenChange, onSuccess }: Delete
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const response = await api.delete(`/v1/tasks/${taskId}/automations/${automationId}`);
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
+      await deleteAutomation();
       onOpenChange(false);
       toast.success('Automation deleted');
 
       // Redirect back to task page after successful deletion
       window.location.href = `/${orgId}/tasks/${taskId}`;
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete automation');
     } finally {
       setIsDeleting(false);

@@ -6,7 +6,6 @@ import { PeoplePageTabs } from './components/PeoplePageTabs';
 import { EmployeesOverview } from './dashboard/components/EmployeesOverview';
 import { DeviceComplianceChart } from './devices/components/DeviceComplianceChart';
 import { EmployeeDevicesList } from './devices/components/EmployeeDevicesList';
-import { getEmployeeDevices } from './devices/data';
 import type { Host } from './devices/types';
 
 interface PeopleMember {
@@ -23,7 +22,10 @@ interface PeopleApiResponse {
 export default async function PeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  const membersResponse = await serverApi.get<PeopleApiResponse>('/v1/people');
+  const [membersResponse, devicesResponse] = await Promise.all([
+    serverApi.get<PeopleApiResponse>('/v1/people'),
+    serverApi.get<{ data: Host[] }>('/v1/people/devices'),
+  ]);
 
   if (!membersResponse.data) {
     return redirect('/');
@@ -46,15 +48,9 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
 
   const showEmployeeTasks = employees.length > 0;
 
-  // Fetch devices data
-  let devices: Host[] = [];
-  try {
-    const fetchedDevices = await getEmployeeDevices();
-    devices = fetchedDevices || [];
-  } catch (error) {
-    console.error('Error fetching employee devices:', error);
-    devices = [];
-  }
+  const devices: Host[] = Array.isArray(devicesResponse.data?.data)
+    ? devicesResponse.data.data
+    : [];
 
   return (
     <PeoplePageTabs

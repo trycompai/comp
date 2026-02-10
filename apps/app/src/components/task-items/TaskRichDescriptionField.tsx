@@ -11,8 +11,7 @@ import { Textarea } from '@comp/ui/textarea';
 import { toast } from 'sonner';
 import { Paperclip, Loader2 } from 'lucide-react';
 import { Button } from '@comp/ui/button';
-import { api } from '@/lib/api-client';
-import { useParams } from 'next/navigation';
+import { useAttachments } from '@/hooks/use-attachments';
 
 interface TaskRichDescriptionFieldProps {
   value: JSONContent | null;
@@ -47,7 +46,7 @@ export function TaskRichDescriptionField({
 }: TaskRichDescriptionFieldProps) {
   // Hooks must be called unconditionally and in the same order
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { orgId: organizationId } = useParams<{ orgId: string }>();
+  const { getDownloadUrl, deleteAttachment } = useAttachments();
   const [isUploading, setIsUploading] = useState(false);
   const isUploadingRef = useRef(false);
   
@@ -150,42 +149,31 @@ export function TaskRichDescriptionField({
 
   const resolveDownloadUrl = useCallback(
     async (attachmentId: string): Promise<string | null> => {
-      if (!attachmentId || !organizationId) return null;
+      if (!attachmentId) return null;
       try {
-        const response = await api.get<{ downloadUrl: string }>(
-          `/v1/attachments/${attachmentId}/download`,
-        );
-        if (response.error || !response.data?.downloadUrl) {
-          throw new Error(response.error || 'Download URL not available');
-        }
-        return response.data.downloadUrl;
+        return await getDownloadUrl(attachmentId);
       } catch (error) {
         console.error('Failed to refresh attachment download URL:', error);
         toast.error('Failed to refresh attachment download link');
         return null;
       }
     },
-    [organizationId],
+    [getDownloadUrl],
   );
 
   const handleDeleteAttachment = useCallback(
     async (attachmentId: string): Promise<void> => {
-      if (!attachmentId || !organizationId) {
-        throw new Error('Attachment ID or Organization ID is missing');
+      if (!attachmentId) {
+        throw new Error('Attachment ID is missing');
       }
       try {
-        const response = await api.delete(
-          `/v1/task-management/attachments/${attachmentId}`,
-        );
-        if (response.error) {
-          throw new Error(response.error);
-        }
+        await deleteAttachment(attachmentId);
       } catch (error) {
         console.error('Failed to delete attachment:', error);
         throw error; // Re-throw to let FileAttachmentView handle the error
       }
     },
-    [organizationId],
+    [deleteAttachment],
   );
 
   // File attachment extension - no upload handler needed here, handled in drop/paste

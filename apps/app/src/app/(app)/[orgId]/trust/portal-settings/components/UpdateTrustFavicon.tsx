@@ -1,6 +1,6 @@
 'use client';
 
-import { api } from '@/lib/api-client';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
 import Image from 'next/image';
@@ -12,6 +12,7 @@ interface UpdateTrustFaviconProps {
 }
 
 export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProps) {
+  const { uploadFavicon, removeFavicon } = useTrustPortalSettings();
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentFaviconUrl);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -21,13 +22,9 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
     async (fileName: string, fileType: string, fileData: string) => {
       setIsUploading(true);
       try {
-        const response = await api.post<{ success: boolean; faviconUrl: string }>(
-          '/v1/trust-portal/favicon',
-          { fileName, fileType, fileData },
-        );
-        if (response.error) throw new Error(response.error);
-        if (response.data?.faviconUrl) {
-          setPreviewUrl(response.data.faviconUrl);
+        const result = await uploadFavicon(fileName, fileType, fileData);
+        if (result && typeof result === 'object' && 'faviconUrl' in result) {
+          setPreviewUrl((result as { faviconUrl: string }).faviconUrl);
         }
         toast.success('Favicon updated');
       } catch (error) {
@@ -38,14 +35,13 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
         setIsUploading(false);
       }
     },
-    [],
+    [uploadFavicon],
   );
 
   const handleRemove = useCallback(async () => {
     setIsRemoving(true);
     try {
-      const response = await api.delete('/v1/trust-portal/favicon');
-      if (response.error) throw new Error(response.error);
+      await removeFavicon();
       setPreviewUrl(null);
       toast.success('Favicon removed');
     } catch {
@@ -53,7 +49,7 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
     } finally {
       setIsRemoving(false);
     }
-  }, []);
+  }, [removeFavicon]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

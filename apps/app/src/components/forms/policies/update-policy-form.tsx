@@ -1,7 +1,7 @@
 'use client';
 
 import { updatePolicyOverviewSchema } from '@/actions/schema';
-import { useApi } from '@/hooks/use-api';
+import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Policy } from '@db';
 import { Button } from '@comp/ui/button';
@@ -26,7 +26,7 @@ interface UpdatePolicyFormProps {
 }
 
 export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
-  const api = useApi();
+  const { updatePolicy } = usePolicyMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updatePolicyOverviewSchema>>({
@@ -41,19 +41,18 @@ export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
 
   const onSubmit = async (data: z.infer<typeof updatePolicyOverviewSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/policies/${data.id}`, {
-      name: data.title,
-      description: data.description,
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updatePolicy(data.id, {
+        name: data.title,
+        description: data.description,
+      });
+      toast.success('Policy updated successfully');
+      onSuccess?.();
+    } catch {
       toast.error('Failed to update policy');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Policy updated successfully');
-    onSuccess?.();
   };
 
   return (

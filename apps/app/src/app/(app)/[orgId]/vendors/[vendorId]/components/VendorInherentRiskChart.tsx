@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useVendor, useVendorActions } from '@/hooks/use-vendors';
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
 import type { Vendor } from '@db';
 
@@ -9,7 +9,8 @@ interface InherentRiskChartProps {
 }
 
 export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
-  const api = useApi();
+  const { updateVendor } = useVendorActions();
+  const { mutate } = useVendor(vendor.id);
 
   return (
     <RiskMatrixChart
@@ -19,14 +20,11 @@ export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
       activeLikelihood={vendor.inherentProbability}
       activeImpact={vendor.inherentImpact}
       saveAction={async ({ id, probability, impact }) => {
-        const response = await api.patch(`/v1/vendors/${id}`, {
+        await updateVendor(id, {
           inherentProbability: probability,
           inherentImpact: impact,
         });
-        if (response.error) {
-          throw new Error('Failed to update inherent risk');
-        }
-        return response;
+        mutate();
       }}
     />
   );

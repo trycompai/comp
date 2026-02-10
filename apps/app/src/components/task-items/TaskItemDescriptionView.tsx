@@ -7,7 +7,7 @@ import { defaultExtensions } from '@comp/ui/editor/extensions';
 import { createMentionExtension, type MentionUser, validateAndFixTipTapContent } from '@comp/ui/editor';
 import { FileAttachment } from '@comp/ui/editor/extensions/file-attachment';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import { api } from '@/lib/api-client';
+import { useAttachments } from '@/hooks/use-attachments';
 import { toast } from 'sonner';
 
 interface TaskItemDescriptionViewProps {
@@ -20,6 +20,7 @@ export function TaskItemDescriptionView({
   className,
 }: TaskItemDescriptionViewProps) {
   const { members } = useOrganizationMembers();
+  const { getDownloadUrl } = useAttachments();
   // Parse description - could be JSON string or plain string
   const parsedContent = useMemo(() => {
     if (!description) return null;
@@ -71,20 +72,14 @@ export function TaskItemDescriptionView({
     async (attachmentId: string): Promise<string | null> => {
       if (!attachmentId) return null;
       try {
-        const response = await api.get<{ downloadUrl: string }>(
-          `/v1/attachments/${attachmentId}/download`,
-        );
-        if (response.error || !response.data?.downloadUrl) {
-          throw new Error(response.error || 'Download URL not available');
-        }
-        return response.data.downloadUrl;
+        return await getDownloadUrl(attachmentId);
       } catch (error) {
         console.error('Failed to refresh attachment download URL:', error);
         toast.error('Failed to refresh attachment download link');
         return null;
       }
     },
-    [],
+    [getDownloadUrl],
   );
 
   // File attachment extension for read-only view

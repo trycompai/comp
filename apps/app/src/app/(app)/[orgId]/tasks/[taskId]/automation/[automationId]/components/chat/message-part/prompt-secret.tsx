@@ -1,6 +1,9 @@
+import { apiClient } from '@/lib/api-client';
+import { secretsListKey } from '@/app/(app)/[orgId]/settings/secrets/hooks/useSecrets';
 import { AlertCircle, CheckCircle2, Key } from 'lucide-react';
 import { memo, useState } from 'react';
 import { toast } from 'sonner';
+import { mutate as globalMutate } from 'swr';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
@@ -58,27 +61,22 @@ export const PromptSecret = memo(function PromptSecret({
         value,
         description: description || secretData?.description || '',
         category: secretData?.category || 'automation',
-        organizationId: orgId,
       };
 
-      const response = await fetch('/api/secrets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await apiClient.post<{ secret: { name: string } }>('/v1/secrets', payload);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create secret');
+      if (response.error) {
+        throw new Error(response.error);
       }
 
-      const { secret } = await response.json();
+      const secretName = response.data?.secret?.name ?? payload.name;
 
-      toast.success(`Secret "${secret.name}" created successfully`);
+      toast.success(`Secret "${secretName}" created successfully`);
       setIsComplete(true);
-      onSecretAdded?.(secret.name);
+      onSecretAdded?.(secretName);
+
+      // Invalidate any mounted useSecrets hooks
+      globalMutate(secretsListKey());
 
       // Reset form
       setValue('');

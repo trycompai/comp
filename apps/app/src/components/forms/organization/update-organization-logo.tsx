@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -20,7 +20,7 @@ interface UpdateOrganizationLogoProps {
 }
 
 export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLogoProps) {
-  const api = useApi();
+  const { uploadLogo, removeLogo } = useOrganizationMutations();
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentLogoUrl);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -48,14 +48,13 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
       const base64 = (reader.result as string).split(',')[1];
       setIsUploading(true);
       try {
-        const response = await api.post<{ logoUrl: string }>('/v1/organization/logo', {
+        const result = await uploadLogo({
           fileName: file.name,
           fileType: file.type,
           fileData: base64,
         });
-        if (response.error) throw new Error(response.error);
-        if (response.data?.logoUrl) {
-          setPreviewUrl(response.data.logoUrl);
+        if (result?.logoUrl) {
+          setPreviewUrl(result.logoUrl);
         }
         toast.success('Logo updated');
       } catch (error) {
@@ -75,8 +74,7 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
   const handleRemove = async () => {
     setIsRemoving(true);
     try {
-      const response = await api.delete('/v1/organization/logo');
-      if (response.error) throw new Error(response.error);
+      await removeLogo();
       setPreviewUrl(null);
       toast.success('Logo removed');
     } catch {

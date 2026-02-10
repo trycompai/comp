@@ -45,6 +45,7 @@ export function TaskList({
   members,
   frameworkInstances,
   activeTab,
+  mutateTasks,
 }: {
   tasks: (Task & {
     controls: { id: string; name: string }[];
@@ -65,6 +66,7 @@ export function TaskList({
   members: (Member & { user: User })[];
   frameworkInstances: FrameworkInstanceForTasks[];
   activeTab: 'categories' | 'list';
+  mutateTasks: () => Promise<unknown>;
 }) {
   const params = useParams();
   const orgId = params.orgId as string;
@@ -724,7 +726,7 @@ export function TaskList({
               />
             </TabsContent>
             <TabsContent value="list">
-              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} />
+              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} mutateTasks={mutateTasks} />
             </TabsContent>
           </div>
         </Stack>

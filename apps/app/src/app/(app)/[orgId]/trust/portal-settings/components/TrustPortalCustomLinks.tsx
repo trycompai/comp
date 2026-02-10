@@ -11,9 +11,9 @@ import {
 } from '@trycompai/design-system';
 import { Add, Close, Edit, Link as LinkIcon, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { GripVertical } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useTrustPortalCustomLinks } from '@/hooks/use-trust-portal-custom-links';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
 import {
   DndContext,
   closestCenter,
@@ -124,6 +124,13 @@ export function TrustPortalCustomLinks({
   initialLinks,
   orgId,
 }: TrustPortalCustomLinksProps) {
+  const {
+    createLink: createLinkApi,
+    updateLink: updateLinkApi,
+    deleteLink: deleteLinkApi,
+    reorderLinks: reorderLinksApi,
+  } = useTrustPortalCustomLinks(orgId);
+
   const [links, setLinks] = useState<CustomLink[]>(initialLinks);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
@@ -140,80 +147,6 @@ export function TrustPortalCustomLinks({
     }),
   );
 
-  const createLinkApi = useCallback(
-    async (data: { title: string; description: string | null; url: string }) => {
-      setIsMutating(true);
-      try {
-        const response = await api.post<CustomLink>('/v1/trust-portal/custom-links', {
-          organizationId: orgId,
-          ...data,
-        });
-        if (response.error) throw new Error(response.error);
-        if (response.data) {
-          setLinks((prev) => [...prev, response.data as CustomLink]);
-          toast.success('Link created successfully');
-          resetForm();
-        }
-      } catch {
-        toast.error('Failed to create link');
-      } finally {
-        setIsMutating(false);
-      }
-    },
-    [orgId],
-  );
-
-  const updateLinkApi = useCallback(
-    async (linkId: string, data: { title?: string; description?: string | null; url?: string }) => {
-      setIsMutating(true);
-      try {
-        const response = await api.post<CustomLink>(
-          `/v1/trust-portal/custom-links/${linkId}`,
-          data,
-        );
-        if (response.error) throw new Error(response.error);
-        if (response.data) {
-          setLinks((prev) =>
-            prev.map((l) => (l.id === response.data!.id ? (response.data as CustomLink) : l)),
-          );
-          toast.success('Link updated successfully');
-          resetForm();
-        }
-      } catch {
-        toast.error('Failed to update link');
-      } finally {
-        setIsMutating(false);
-      }
-    },
-    [],
-  );
-
-  const deleteLinkApi = useCallback(async (linkId: string) => {
-    try {
-      const response = await api.post(`/v1/trust-portal/custom-links/${linkId}/delete`);
-      if (response.error) throw new Error(response.error);
-      toast.success('Link deleted successfully');
-    } catch {
-      toast.error('Failed to delete link');
-    }
-  }, []);
-
-  const reorderLinksApi = useCallback(
-    async (linkIds: string[]) => {
-      try {
-        const response = await api.post('/v1/trust-portal/custom-links/reorder', {
-          organizationId: orgId,
-          linkIds,
-        });
-        if (response.error) throw new Error(response.error);
-        toast.success('Links reordered');
-      } catch {
-        toast.error('Failed to reorder links');
-      }
-    },
-    [orgId],
-  );
-
   const resetForm = () => {
     setTitle('');
     setDescription('');
@@ -222,7 +155,7 @@ export function TrustPortalCustomLinks({
     setIsModalOpen(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isMutating) return;
 
     if (!title.trim() || !url.trim()) {
@@ -244,19 +177,37 @@ export function TrustPortalCustomLinks({
     }
 
     setUrl(normalizedUrl);
+    setIsMutating(true);
 
-    if (editingLink) {
-      updateLinkApi(editingLink.id, {
-        title,
-        description: description || null,
-        url: normalizedUrl,
-      });
-    } else {
-      createLinkApi({
-        title,
-        description: description || null,
-        url: normalizedUrl,
-      });
+    try {
+      if (editingLink) {
+        const updated = await updateLinkApi(editingLink.id, {
+          title,
+          description: description || null,
+          url: normalizedUrl,
+        });
+        if (updated) {
+          setLinks((prev) =>
+            prev.map((l) => (l.id === (updated as CustomLink).id ? (updated as CustomLink) : l)),
+          );
+        }
+        toast.success('Link updated successfully');
+      } else {
+        const created = await createLinkApi({
+          title,
+          description: description || null,
+          url: normalizedUrl,
+        });
+        if (created) {
+          setLinks((prev) => [...prev, created as CustomLink]);
+        }
+        toast.success('Link created successfully');
+      }
+      resetForm();
+    } catch {
+      toast.error(editingLink ? 'Failed to update link' : 'Failed to create link');
+    } finally {
+      setIsMutating(false);
     }
   };
 
@@ -268,9 +219,14 @@ export function TrustPortalCustomLinks({
     setIsModalOpen(true);
   };
 
-  const handleDelete = (linkId: string) => {
+  const handleDelete = async (linkId: string) => {
     setLinks((prev) => prev.filter((l) => l.id !== linkId));
-    deleteLinkApi(linkId);
+    try {
+      await deleteLinkApi(linkId);
+      toast.success('Link deleted successfully');
+    } catch {
+      toast.error('Failed to delete link');
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -282,7 +238,10 @@ export function TrustPortalCustomLinks({
         const newIndex = items.findIndex((item) => item.id === over.id);
         const newItems = arrayMove(items, oldIndex, newIndex);
 
-        reorderLinksApi(newItems.map((item) => item.id));
+        reorderLinksApi(newItems.map((item) => item.id)).then(
+          () => toast.success('Links reordered'),
+          () => toast.error('Failed to reorder links'),
+        );
 
         return newItems;
       });

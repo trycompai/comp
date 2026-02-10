@@ -6,12 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags,
@@ -43,6 +45,9 @@ export class ContextController {
   @Get()
   @RequirePermission('evidence', 'read')
   @ApiOperation(CONTEXT_OPERATIONS.getAllContext)
+  @ApiQuery({ name: 'search', required: false, description: 'Search by question text' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number (1-based)' })
+  @ApiQuery({ name: 'perPage', required: false, description: 'Items per page' })
   @ApiResponse(GET_ALL_CONTEXT_RESPONSES[200])
   @ApiResponse(GET_ALL_CONTEXT_RESPONSES[401])
   @ApiResponse(GET_ALL_CONTEXT_RESPONSES[404])
@@ -50,13 +55,17 @@ export class ContextController {
   async getAllContext(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
   ) {
-    const contextEntries =
-      await this.contextService.findAllByOrganization(organizationId);
+    const result = await this.contextService.findAllByOrganization(
+      organizationId,
+      { search, page: page ? parseInt(page, 10) : undefined, perPage: perPage ? parseInt(perPage, 10) : undefined },
+    );
 
     return {
-      data: contextEntries,
-      count: contextEntries.length,
+      ...result,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {

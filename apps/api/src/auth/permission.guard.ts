@@ -69,12 +69,27 @@ export class PermissionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    // API keys bypass permission checks for now
-    // TODO: Implement API key scopes for fine-grained access control
+    // API key scope enforcement
     if (request.isApiKey) {
-      this.logger.warn(
-        `[PermissionGuard] API key bypassing permission check for ${requiredPermissions.map((p) => `${p.resource}:${p.actions.join(',')}`).join('; ')}`,
+      const scopes = request.apiKeyScopes;
+
+      // Legacy keys (empty scopes) = full access for backward compatibility
+      if (!scopes || scopes.length === 0) {
+        return true;
+      }
+
+      // Scoped keys: enforce permissions
+      const hasAllPerms = requiredPermissions.every((perm) =>
+        perm.actions.every((action) =>
+          scopes.includes(`${perm.resource}:${action}`),
+        ),
       );
+
+      if (!hasAllPerms) {
+        throw new ForbiddenException(
+          'API key lacks required permission scope',
+        );
+      }
       return true;
     }
 

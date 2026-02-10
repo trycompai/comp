@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -19,6 +18,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useControls } from '../../hooks/useControls';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -33,7 +33,7 @@ interface ControlDeleteDialogProps {
 }
 
 export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteDialogProps) {
-  const api = useApi();
+  const { deleteControl } = useControls();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,11 +44,10 @@ export function ControlDeleteDialog({ isOpen, onClose, control }: ControlDeleteD
     },
   });
 
-  const handleSubmit = async (values: FormValues) => {
+  const handleSubmit = async (_values: FormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await api.delete(`/v1/controls/${control.id}`);
-      if (response.error) throw new Error(response.error);
+      await deleteControl(control.id);
       toast.info('Control deleted! Redirecting to controls list...');
       onClose();
       router.push(`/${control.organizationId}/controls`);

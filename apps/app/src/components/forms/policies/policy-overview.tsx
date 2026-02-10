@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { updatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
 import { useSession } from '@/utils/auth-client';
@@ -22,7 +22,7 @@ import type { z } from 'zod';
 const policyStatuses: PolicyStatus[] = ['draft', 'published', 'needs_review'] as const;
 
 export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
-  const api = useApi();
+  const { updatePolicy } = usePolicyMutations();
   const session = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -49,21 +49,20 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
 
   const onSubmit = async (data: z.infer<typeof updatePolicyFormSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/policies/${data.id}`, {
-      status: data.status,
-      assigneeId: data.assigneeId,
-      department: data.department,
-      frequency: data.review_frequency,
-      reviewDate: data.review_date,
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updatePolicy(data.id, {
+        status: data.status,
+        assigneeId: data.assigneeId,
+        department: data.department,
+        frequency: data.review_frequency,
+        reviewDate: data.review_date,
+      });
+      toast.success('Policy updated successfully');
+    } catch {
       toast.error('Failed to update policy');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Policy updated successfully');
   };
 
   return (

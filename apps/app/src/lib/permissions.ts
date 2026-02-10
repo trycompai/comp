@@ -49,7 +49,7 @@ export const ROUTE_PERMISSIONS: Record<string, Array<{ resource: string; action:
   // Settings pages
   settings: [{ resource: 'organization', action: 'read' }],
   'settings/context-hub': [{ resource: 'evidence', action: 'read' }],
-  'settings/api-keys': [{ resource: 'organization', action: 'update' }],
+  'settings/api-keys': [{ resource: 'apiKey', action: 'read' }],
   'settings/secrets': [{ resource: 'organization', action: 'update' }],
   'settings/roles': [{ resource: 'member', action: 'read' }],
   'settings/notifications': [{ resource: 'organization', action: 'update' }],

@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -19,6 +18,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { FrameworkInstanceWithControls } from '../../types';
+import { useFrameworks } from '../../hooks/useFrameworks';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -37,7 +37,7 @@ export function FrameworkDeleteDialog({
   onClose,
   frameworkInstance,
 }: FrameworkDeleteDialogProps) {
-  const api = useApi();
+  const { deleteFramework } = useFrameworks();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,11 +48,10 @@ export function FrameworkDeleteDialog({
     },
   });
 
-  const handleSubmit = async (values: FormValues) => {
+  const handleSubmit = async (_values: FormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await api.delete(`/v1/frameworks/${frameworkInstance.id}`);
-      if (response.error) throw new Error(response.error);
+      await deleteFramework(frameworkInstance.id);
       toast.info('Framework deleted! Redirecting to frameworks list...');
       onClose();
       router.push(`/${frameworkInstance.organizationId}/frameworks`);

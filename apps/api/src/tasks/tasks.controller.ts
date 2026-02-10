@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags,
@@ -93,17 +95,21 @@ export class TasksController {
       },
     },
   })
+  @ApiQuery({ name: 'includeRelations', required: false, description: 'Include controls and automations with runs' })
   async getTasks(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
-  ): Promise<TaskResponseDto[]> {
+    @Query('includeRelations') includeRelations?: string,
+  ) {
     // Build assignment filter for restricted roles (employee/contractor)
     const assignmentFilter = buildTaskAssignmentFilter(
       authContext.memberId,
       authContext.userRoles,
     );
 
-    return await this.tasksService.getTasks(organizationId, assignmentFilter);
+    return await this.tasksService.getTasks(organizationId, assignmentFilter, {
+      includeRelations: includeRelations === 'true',
+    });
   }
 
   @Post()
@@ -445,6 +451,20 @@ export class TasksController {
     }
 
     return await this.tasksService.deleteTasks(organizationId, taskIds);
+  }
+
+  @Get('options')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
+  @ApiOperation({ summary: 'Get page options for tasks overview' })
+  async getTaskOptions(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    return this.tasksService.getTaskPageOptions(
+      organizationId,
+      authContext.userId,
+    );
   }
 
   @Get(':taskId')

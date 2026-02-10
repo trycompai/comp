@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
@@ -38,11 +37,12 @@ import {
 import { format } from 'date-fns';
 import { Edit, FileText, MoreVertical, Plus, Trash2, Upload } from 'lucide-react';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 const VERSIONS_PER_PAGE = 10;
 import { toast } from 'sonner';
+import { usePolicyVersions } from '../hooks/usePolicyVersions';
 import { PublishVersionDialog } from './PublishVersionDialog';
 
 type PolicyVersionWithPublisher = PolicyVersion & {
@@ -69,10 +69,16 @@ export function PolicyVersionsTab({
   isPendingApproval,
   onMutate,
 }: PolicyVersionsTabProps) {
-  const api = useApi();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { orgId } = useParams<{ orgId: string }>();
+
+  const { deleteVersion, submitForApproval } = usePolicyVersions({
+    policyId: policy.id,
+    organizationId: orgId,
+  });
+
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const [deleteVersionDialogOpen, setDeleteVersionDialogOpen] = useState(false);
   const [versionToDelete, setVersionToDelete] = useState<PolicyVersionWithPublisher | null>(null);
@@ -128,45 +134,35 @@ export function PolicyVersionsTab({
     const versionToPublish = pendingSetActiveVersion;
     setSettingActive(versionToPublish.id);
 
-    const response = await api.post(
-      `/v1/policies/${policy.id}/versions/${versionToPublish.id}/submit-for-approval`,
-      { approverId: versionApprovalApproverId },
-    );
-    setSettingActive(null);
-
-    if (response.error) {
+    try {
+      await submitForApproval(versionToPublish.id, versionApprovalApproverId);
+      toast.success(`Version ${versionToPublish.version} submitted for approval`);
+      setPendingSetActiveVersion(null);
+      setIsSetActiveApprovalDialogOpen(false);
+      setVersionApprovalApproverId(null);
+      onMutate?.();
+    } catch {
       toast.error('Failed to submit version for approval');
-      return;
+    } finally {
+      setSettingActive(null);
     }
-
-    toast.success(`Version ${versionToPublish.version} submitted for approval`);
-    setPendingSetActiveVersion(null);
-    setIsSetActiveApprovalDialogOpen(false);
-    setVersionApprovalApproverId(null);
-
-    onMutate?.();
-    router.refresh();
   };
 
   const handleDeleteVersion = async () => {
     if (!versionToDelete) return;
 
     setIsDeletingVersion(true);
-    const response = await api.delete(
-      `/v1/policies/${policy.id}/versions/${versionToDelete.id}`,
-    );
-    setIsDeletingVersion(false);
-
-    if (response.error) {
+    try {
+      await deleteVersion(versionToDelete.id);
+      toast.success(`Version ${versionToDelete.version} deleted`);
+      setDeleteVersionDialogOpen(false);
+      setVersionToDelete(null);
+      onMutate?.();
+    } catch {
       toast.error('Failed to delete version');
-      return;
+    } finally {
+      setIsDeletingVersion(false);
     }
-
-    toast.success(`Version ${versionToDelete.version} deleted`);
-    setDeleteVersionDialogOpen(false);
-    setVersionToDelete(null);
-    onMutate?.();
-    router.refresh();
   };
 
   const handleEditVersion = (version: PolicyVersionWithPublisher) => {
@@ -368,7 +364,6 @@ export function PolicyVersionsTab({
         onClose={() => setIsPublishDialogOpen(false)}
         onSuccess={() => {
           onMutate?.();
-          router.refresh();
         }}
       />
 

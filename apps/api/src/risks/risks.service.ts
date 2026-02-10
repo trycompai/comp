@@ -200,4 +200,40 @@ export class RisksService {
       throw error;
     }
   }
+
+  async getStatsByAssignee(organizationId: string) {
+    const members = await db.member.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        risks: {
+          where: { organizationId },
+          select: { status: true },
+        },
+        user: {
+          select: { name: true, image: true, email: true },
+        },
+      },
+    });
+
+    return members
+      .filter((m) => m.risks.length > 0)
+      .map((m) => ({
+        id: m.id,
+        user: m.user,
+        totalRisks: m.risks.length,
+        openRisks: m.risks.filter((r) => r.status === 'open').length,
+        pendingRisks: m.risks.filter((r) => r.status === 'pending').length,
+        closedRisks: m.risks.filter((r) => r.status === 'closed').length,
+        archivedRisks: m.risks.filter((r) => r.status === 'archived').length,
+      }));
+  }
+
+  async getStatsByDepartment(organizationId: string) {
+    return db.risk.groupBy({
+      by: ['department'],
+      where: { organizationId },
+      _count: true,
+    });
+  }
 }

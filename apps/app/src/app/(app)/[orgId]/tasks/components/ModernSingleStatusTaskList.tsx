@@ -36,6 +36,7 @@ interface ModernSingleStatusTaskListProps {
   })[];
   members: (Member & { user: User })[];
   handleTaskClick: (taskId: string) => void;
+  mutateTasks: () => Promise<unknown>;
 }
 
 export function ModernSingleStatusTaskList({
@@ -43,6 +44,7 @@ export function ModernSingleStatusTaskList({
   tasks,
   members,
   handleTaskClick,
+  mutateTasks,
 }: ModernSingleStatusTaskListProps) {
   const [selectable, setSelectable] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -160,6 +162,7 @@ export function ModernSingleStatusTaskList({
               open={openBulkStatus}
               onOpenChange={setOpenBulkStatus}
               onSuccess={handleBulkActionSuccess}
+              mutateTasks={mutateTasks}
             />
             <BulkTaskAssigneeChangeModal
               selectedTaskIds={selectedTaskIds}
@@ -167,12 +170,14 @@ export function ModernSingleStatusTaskList({
               open={openBulkAssignee}
               onOpenChange={setOpenBulkAssignee}
               onSuccess={handleBulkActionSuccess}
+              mutateTasks={mutateTasks}
             />
             <BulkTaskDeleteModal
               selectedTaskIds={selectedTaskIds}
               open={openBulkDelete}
               onOpenChange={setOpenBulkDelete}
               onSuccess={handleBulkActionSuccess}
+              mutateTasks={mutateTasks}
             />
           </div>
         ) : null}

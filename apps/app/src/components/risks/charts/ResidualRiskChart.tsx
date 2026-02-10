@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useRiskActions } from '@/hooks/use-risks';
 import type { Risk } from '@db';
 import { useSWRConfig } from 'swr';
 import { RiskMatrixChart } from './RiskMatrixChart';
@@ -10,7 +10,7 @@ interface ResidualRiskChartProps {
 }
 
 export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
-  const api = useApi();
+  const { updateRisk } = useRiskActions();
   const { mutate: globalMutate } = useSWRConfig();
 
   return (
@@ -21,19 +21,15 @@ export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
       activeLikelihood={risk.residualLikelihood}
       activeImpact={risk.residualImpact}
       saveAction={async ({ id, probability, impact }) => {
-        const response = await api.patch(`/v1/risks/${id}`, {
+        await updateRisk(id, {
           residualLikelihood: probability,
           residualImpact: impact,
         });
-        if (response.error) {
-          throw new Error('Failed to update residual risk');
-        }
         globalMutate(
           (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
           undefined,
           { revalidate: true },
         );
-        return response;
       }}
     />
   );

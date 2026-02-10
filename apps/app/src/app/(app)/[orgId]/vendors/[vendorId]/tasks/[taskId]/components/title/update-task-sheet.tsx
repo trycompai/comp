@@ -1,7 +1,7 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -12,7 +12,7 @@ import type { Member, Task, User } from '@db';
 import { TaskStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -35,8 +35,7 @@ interface UpdateTaskSheetProps {
 export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
   const [_, setTaskOverviewSheet] = useQueryState('task-overview-sheet');
   const params = useParams<{ taskId: string }>();
-  const api = useApi();
-  const router = useRouter();
+  const { updateTask } = useTaskMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateTaskSheetSchema>>({
@@ -53,16 +52,14 @@ export function UpdateTaskSheet({ task, assignees }: UpdateTaskSheetProps) {
   const onSubmit = async (data: z.infer<typeof updateTaskSheetSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await api.patch(`/v1/tasks/${data.id}`, {
+      await updateTask(data.id, {
         title: data.title,
         description: data.description,
         status: data.status,
         assigneeId: data.assigneeId,
       });
-      if (response.error) throw new Error(response.error);
       toast.success('Task updated successfully');
       setTaskOverviewSheet(null);
-      router.refresh();
     } catch {
       toast.error('Failed to update task');
     } finally {

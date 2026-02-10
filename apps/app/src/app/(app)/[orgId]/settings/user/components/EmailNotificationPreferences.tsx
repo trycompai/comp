@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import {
   Button,
   Checkbox,
@@ -10,9 +9,9 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Lock } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useEmailPreferences } from '../hooks/useEmailPreferences';
 
 interface EmailPreferences {
   policyNotifications: boolean;
@@ -90,8 +89,7 @@ export function EmailNotificationPreferences({
   isAdminOrOwner = true,
   roleNotifications,
 }: Props) {
-  const api = useApi();
-  const router = useRouter();
+  const { savePreferences } = useEmailPreferences({ initialPreferences });
   const [preferences, setPreferences] =
     useState<EmailPreferences>(initialPreferences);
   const [saving, setSaving] = useState(false);
@@ -118,10 +116,8 @@ export function EmailNotificationPreferences({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await api.put('/v1/people/me/email-preferences', { preferences });
-      if (response.error) throw new Error(response.error);
+      await savePreferences(preferences);
       toast.success('Email preferences updated successfully');
-      router.refresh();
     } catch {
       toast.error('Failed to update preferences');
     } finally {

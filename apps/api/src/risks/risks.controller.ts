@@ -88,6 +88,52 @@ export class RisksController {
     };
   }
 
+  @Get('stats/by-assignee')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('risk', 'read')
+  @ApiOperation({ summary: 'Get risk statistics grouped by assignee' })
+  async getStatsByAssignee(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.risksService.getStatsByAssignee(organizationId);
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get('stats/by-department')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('risk', 'read')
+  @ApiOperation({ summary: 'Get risk counts grouped by department' })
+  async getStatsByDepartment(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.risksService.getStatsByDepartment(organizationId);
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
   @Get(':id')
   @UseGuards(PermissionGuard)
   @RequirePermission('risk', 'read')

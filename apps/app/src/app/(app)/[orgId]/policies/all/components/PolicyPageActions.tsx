@@ -1,13 +1,19 @@
 'use client';
 
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
+import { api } from '@/lib/api-client';
 import { downloadAllPolicies } from '@/lib/pdf-generator';
 import { Add, Download } from '@carbon/icons-react';
-import type { Policy } from '@db';
+import type { AuditLog, Member, Organization, Policy, User } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { getLogsForPolicy } from '../../[policyId]/data';
+
+type AuditLogWithRelations = AuditLog & {
+  user: User | null;
+  member: Member | null;
+  organization: Organization;
+};
 
 interface PolicyPageActionsProps {
   policies: Policy[];
@@ -24,7 +30,10 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
     try {
       const logsEntries = await Promise.all(
         policies.map(async (policy) => {
-          const logs = await getLogsForPolicy(policy.id);
+          const res = await api.get<{ data: AuditLogWithRelations[] }>(
+            `/v1/policies/${policy.id}/activity`,
+          );
+          const logs = Array.isArray(res.data?.data) ? res.data.data : [];
           return [policy.id, logs] as const;
         }),
       );

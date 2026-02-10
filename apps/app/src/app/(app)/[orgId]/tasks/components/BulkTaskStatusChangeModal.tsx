@@ -1,6 +1,5 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -14,9 +13,9 @@ import { Label } from '@comp/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { TaskStatus } from '@db';
 import { Loader2 } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTasks } from '../hooks/useTasks';
 import { TaskStatusIndicator } from './TaskStatusIndicator';
 
 interface BulkTaskStatusChangeModalProps {
@@ -24,6 +23,7 @@ interface BulkTaskStatusChangeModalProps {
   selectedTaskIds: string[];
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  mutateTasks?: () => Promise<unknown>;
 }
 
 export function BulkTaskStatusChangeModal({
@@ -32,10 +32,7 @@ export function BulkTaskStatusChangeModal({
   selectedTaskIds,
   onSuccess,
 }: BulkTaskStatusChangeModalProps) {
-  const router = useRouter();
-  const params = useParams<{ orgId: string }>();
-  const orgIdParam = Array.isArray(params.orgId) ? params.orgId[0] : params.orgId;
-
+  const { bulkUpdateStatus } = useTasks();
   const statusOptions = useMemo(() => Object.values(TaskStatus) as TaskStatus[], []);
   const defaultStatus = statusOptions[0];
 
@@ -51,32 +48,17 @@ export function BulkTaskStatusChangeModal({
   }, [defaultStatus, open]);
 
   const handleMove = async () => {
-    if (!orgIdParam || selectedTaskIds.length === 0) {
+    if (selectedTaskIds.length === 0) {
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const payload = {
-        taskIds: selectedTaskIds,
-        status,
-        ...(status === TaskStatus.done ? { reviewDate: new Date().toISOString() } : {}),
-      };
-
-      const response = await apiClient.patch<{ updatedCount: number }>(
-        '/v1/tasks/bulk',
-        payload,
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      const updatedCount = response.data?.updatedCount ?? selectedTaskIds.length;
+      const reviewDate = status === TaskStatus.done ? new Date().toISOString() : undefined;
+      const { updatedCount } = await bulkUpdateStatus(selectedTaskIds, status, reviewDate);
       toast.success(`Updated ${updatedCount} task${updatedCount === 1 ? '' : 's'}`);
       onSuccess?.();
       onOpenChange(false);
-      router.refresh();
     } catch (error) {
       console.error('Failed to bulk update task status', error);
       const message = error instanceof Error ? error.message : 'Failed to update tasks';

@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import {
   Departments,
@@ -37,8 +36,10 @@ import {
 } from '@trycompai/design-system';
 import { Calendar } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
+import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { usePolicy } from '../hooks/usePolicy';
 
 type PolicyWithVersion = Policy & {
   currentVersion?: (PolicyVersion & { publishedBy: (Member & { user: User }) | null }) | null;
@@ -58,7 +59,12 @@ export function UpdatePolicyOverview({
   isPendingApproval,
   onMutate,
 }: UpdatePolicyOverviewProps) {
-  const api = useApi();
+  const { orgId } = useParams<{ orgId: string }>();
+  const { updatePolicy } = usePolicy({
+    policyId: policy.id,
+    organizationId: orgId,
+  });
+
   const [isStatusChangeDialogOpen, setIsStatusChangeDialogOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<{
     assigneeId: { from: string | null; to: string | null } | null;
@@ -87,8 +93,6 @@ export function UpdatePolicyOverview({
 
   const fieldsDisabled = isPendingApproval;
 
-  // Replaced useAction hooks with useApi calls in handleConfirmChanges and handleConfirmApproval
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -116,23 +120,22 @@ export function UpdatePolicyOverview({
     if (!pendingChanges) return;
 
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/policies/${policy.id}`, {
-      status: pendingChanges.formData.status,
-      assigneeId: pendingChanges.formData.assigneeId,
-      department: pendingChanges.formData.department,
-      frequency: pendingChanges.formData.reviewFrequency,
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
-      toast.error('Failed to update policy');
-    } else {
+    try {
+      await updatePolicy({
+        status: pendingChanges.formData.status,
+        assigneeId: pendingChanges.formData.assigneeId,
+        department: pendingChanges.formData.department,
+        frequency: pendingChanges.formData.reviewFrequency,
+      });
       toast.success('Policy updated successfully');
       onMutate?.();
+    } catch {
+      toast.error('Failed to update policy');
+    } finally {
+      setIsSubmitting(false);
+      setIsStatusChangeDialogOpen(false);
+      setPendingChanges(null);
     }
-
-    setIsStatusChangeDialogOpen(false);
-    setPendingChanges(null);
   };
 
   // Check if any form values have actually changed from their original values

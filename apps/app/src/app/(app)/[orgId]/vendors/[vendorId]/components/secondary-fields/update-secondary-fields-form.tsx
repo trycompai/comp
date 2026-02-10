@@ -2,7 +2,7 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
-import { useApi } from '@/hooks/use-api';
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Checkbox } from '@comp/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -27,7 +27,7 @@ export function UpdateSecondaryFieldsForm({
   assignees: (Member & { user: User })[];
   onUpdate?: () => void;
 }) {
-  const api = useApi();
+  const { updateVendor } = useVendorActions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,29 +48,29 @@ export function UpdateSecondaryFieldsForm({
     const finalAssigneeId = data.assigneeId === '' ? null : data.assigneeId;
 
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/vendors/${data.id}`, {
-      name: data.name,
-      description: data.description,
-      assigneeId: finalAssigneeId,
-      category: data.category,
-      status: data.status,
-      isSubProcessor: data.isSubProcessor,
-    });
-    setIsSubmitting(false);
+    try {
+      await updateVendor(data.id, {
+        name: data.name,
+        description: data.description,
+        assigneeId: finalAssigneeId,
+        category: data.category,
+        status: data.status,
+        isSubProcessor: data.isSubProcessor,
+      });
 
-    if (response.error) {
+      toast.success('Vendor updated successfully');
+      globalMutate(
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
+        undefined,
+        { revalidate: true },
+      );
+    } catch {
       toast.error('Failed to update vendor');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Vendor updated successfully');
-    globalMutate(
-      (key) =>
-        (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
-        (typeof key === 'string' && key.includes('/v1/vendors')),
-      undefined,
-      { revalidate: true },
-    );
   };
 
   return (

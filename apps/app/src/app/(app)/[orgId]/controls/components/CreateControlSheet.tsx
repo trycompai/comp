@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@comp/ui/drawer';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -11,12 +10,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@comp/ui/sheet';
 import { Textarea } from '@comp/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useControls } from '../hooks/useControls';
 
 const createControlSchema = z.object({
   name: z.string().min(1, {
@@ -52,8 +51,7 @@ export function CreateControlSheet({
     frameworkName: string;
   }[];
 }) {
-  const api = useApi();
-  const router = useRouter();
+  const { createControl } = useControls();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [createControlOpen, setCreateControlOpen] = useQueryState('create-control');
   const isOpen = Boolean(createControlOpen);
@@ -78,19 +76,17 @@ export function CreateControlSheet({
     async (data: z.infer<typeof createControlSchema>) => {
       setIsSubmitting(true);
       try {
-        const response = await api.post('/v1/controls', data);
-        if (response.error) throw new Error(response.error);
+        await createControl(data);
         toast.success('Control created successfully');
         setCreateControlOpen(null);
         form.reset();
-        router.refresh();
       } catch {
         toast.error('Failed to create control');
       } finally {
         setIsSubmitting(false);
       }
     },
-    [api, form, router, setCreateControlOpen],
+    [createControl, form, setCreateControlOpen],
   );
 
   // Memoize policy options to prevent re-renders

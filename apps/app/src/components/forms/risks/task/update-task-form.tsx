@@ -1,9 +1,9 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { updateTaskSchema } from '@/actions/schema';
 import { SelectUser } from '@/components/select-user';
 import { StatusIndicator } from '@/components/status-indicator';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
 import { cn } from '@comp/ui/cn';
@@ -14,15 +14,13 @@ import { type Task, TaskStatus, type User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
 export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
-  const api = useApi();
-  const router = useRouter();
+  const { updateTask } = useTaskMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateTaskSchema>>({
@@ -37,13 +35,11 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
   const onSubmit = async (data: z.infer<typeof updateTaskSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await api.patch(`/v1/tasks/${data.id}`, {
+      await updateTask(data.id, {
         status: data.status,
         assigneeId: data.assigneeId,
       });
-      if (response.error) throw new Error(response.error);
       toast.success('Task updated successfully');
-      router.refresh();
     } catch {
       toast.error('Something went wrong, please try again.');
     } finally {

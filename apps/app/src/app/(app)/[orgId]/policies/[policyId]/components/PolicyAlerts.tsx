@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { authClient } from '@/utils/auth-client';
 import type { Member, Policy, User } from '@db';
 import {
@@ -14,9 +13,10 @@ import {
 } from '@trycompai/design-system';
 import { Archive, Renew, Time } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { usePolicy } from '../hooks/usePolicy';
 
 interface PolicyAlertsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
@@ -25,13 +25,18 @@ interface PolicyAlertsProps {
 }
 
 export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAlertsProps) {
-  const api = useApi();
   const { data: activeMember } = authClient.useActiveMember();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
   const [isApproving, setIsApproving] = useState(false);
   const [isDenying, setIsDenying] = useState(false);
+
+  const { acceptChanges, denyChanges } = usePolicy({
+    policyId,
+    organizationId: orgId,
+  });
 
   const approveCommentRef = useRef<HTMLTextAreaElement>(null);
   const rejectCommentRef = useRef<HTMLTextAreaElement>(null);
@@ -41,11 +46,10 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
       const comment = approveCommentRef.current?.value?.trim() || undefined;
       setIsApproving(true);
       try {
-        const response = await api.post(`/v1/policies/${policy.id}/accept-changes`, {
+        await acceptChanges({
           approverId: policy.approverId,
           comment,
         });
-        if (response.error) throw new Error(response.error);
         toast.success('Policy changes accepted and published!');
         onMutate?.();
       } catch {
@@ -61,11 +65,10 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
       const comment = rejectCommentRef.current?.value?.trim() || undefined;
       setIsDenying(true);
       try {
-        const response = await api.post(`/v1/policies/${policy.id}/deny-changes`, {
+        await denyChanges({
           approverId: policy.approverId,
           comment,
         });
-        if (response.error) throw new Error(response.error);
         toast.info('Policy changes denied!');
         onMutate?.();
       } catch {

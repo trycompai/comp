@@ -82,7 +82,7 @@ interface CreateRiskData {
   residualImpact?: Impact;
   treatmentStrategy?: RiskTreatmentType;
   treatmentStrategyDescription?: string;
-  assigneeId?: string;
+  assigneeId?: string | null;
 }
 
 interface UpdateRiskData {

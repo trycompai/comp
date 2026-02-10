@@ -86,6 +86,50 @@ export class PeopleController {
     };
   }
 
+  @Get('devices')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get all employee devices with fleet compliance data' })
+  async getDevices(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const devices = await this.peopleService.getDevices(organizationId);
+
+    return {
+      data: devices,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get('test-stats/by-assignee')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get integration test statistics grouped by assignee' })
+  async getTestStatsByAssignee(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.peopleService.getTestStatsByAssignee(organizationId);
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
   @Post()
   @RequirePermission('member', 'create')
   @ApiOperation(PEOPLE_OPERATIONS.createMember)
@@ -165,6 +209,60 @@ export class PeopleController {
 
     return {
       ...person,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get(':id/training-videos')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get training video completions for a member' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  async getTrainingVideos(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.peopleService.getTrainingVideos(
+      memberId,
+      organizationId,
+    );
+
+    return {
+      data,
+      authType: authContext.authType,
+      ...(authContext.userId &&
+        authContext.userEmail && {
+          authenticatedUser: {
+            id: authContext.userId,
+            email: authContext.userEmail,
+          },
+        }),
+    };
+  }
+
+  @Get(':id/fleet-compliance')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get fleet/device compliance for a member' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  async getFleetCompliance(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.peopleService.getFleetCompliance(
+      memberId,
+      organizationId,
+    );
+
+    return {
+      ...data,
       authType: authContext.authType,
       ...(authContext.userId &&
         authContext.userEmail && {
@@ -309,6 +407,26 @@ export class PeopleController {
           },
         }),
     };
+  }
+
+  @Get('me/email-preferences')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get current user email notification preferences' })
+  async getEmailPreferences(
+    @AuthContext() authContext: AuthContextType,
+    @OrganizationId() organizationId: string,
+  ) {
+    if (!authContext.userId) {
+      throw new BadRequestException(
+        'User ID is required. This endpoint requires session authentication.',
+      );
+    }
+
+    return this.peopleService.getEmailPreferences(
+      authContext.userId,
+      authContext.userEmail!,
+      organizationId,
+    );
   }
 
   @Put('me/email-preferences')

@@ -2,7 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import type { Member, PolicyVersion, User } from '@db';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 
 type PolicyVersionWithPublisher = PolicyVersion & {
@@ -20,6 +20,13 @@ type VersionsApiResponse = {
   authenticatedUser?: { id: string; email: string };
 };
 
+type CreateVersionResponse = {
+  data?: { versionId?: string; version?: number };
+};
+
+export const policyVersionsKey = (policyId: string, organizationId: string) =>
+  ['/v1/policies/versions', policyId, organizationId] as const;
+
 interface UsePolicyVersionsOptions {
   policyId: string;
   organizationId: string;
@@ -32,7 +39,7 @@ export function usePolicyVersions({
   initialData,
 }: UsePolicyVersionsOptions) {
   const { data, error, isLoading, mutate } = useSWR(
-    ['/v1/policies/versions', policyId, organizationId],
+    policyVersionsKey(policyId, organizationId),
     async () => {
       const response = await apiClient.get<VersionsApiResponse>(
         `/v1/policies/${policyId}/versions`,
@@ -53,15 +60,13 @@ export function usePolicyVersions({
   const isFirstRender = useRef(true);
   const prevInitialDataRef = useRef(initialData);
 
-  // Sync initialData to SWR cache when it changes (e.g., after router.refresh())
-  // This ensures the cache is updated when server component re-fetches data
+  // Sync initialData to SWR cache when it changes
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
 
-    // Only update if initialData actually changed (compare by length and first item id for efficiency)
     const prevLength = prevInitialDataRef.current?.length ?? 0;
     const newLength = initialData?.length ?? 0;
     const prevFirstId = prevInitialDataRef.current?.[0]?.id;
@@ -71,11 +76,71 @@ export function usePolicyVersions({
       initialData &&
       (prevLength !== newLength || prevFirstId !== newFirstId)
     ) {
-      mutate(initialData, false); // Update cache without revalidating
+      mutate(initialData, false);
     }
 
     prevInitialDataRef.current = initialData;
   }, [initialData, mutate]);
+
+  const createVersion = useCallback(
+    async (changelog?: string) => {
+      const response = await apiClient.post<CreateVersionResponse>(
+        `/v1/policies/${policyId}/versions`,
+        { changelog: changelog || undefined },
+      );
+      if (response.error) throw new Error(response.error);
+      await mutate();
+      return response;
+    },
+    [policyId, mutate],
+  );
+
+  const deleteVersion = useCallback(
+    async (versionId: string) => {
+      const response = await apiClient.delete(
+        `/v1/policies/${policyId}/versions/${versionId}`,
+      );
+      if (response.error) throw new Error(response.error);
+      await mutate();
+      return response;
+    },
+    [policyId, mutate],
+  );
+
+  const submitForApproval = useCallback(
+    async (versionId: string, approverId: string) => {
+      const response = await apiClient.post(
+        `/v1/policies/${policyId}/versions/${versionId}/submit-for-approval`,
+        { approverId },
+      );
+      if (response.error) throw new Error(response.error);
+      await mutate();
+      return response;
+    },
+    [policyId, mutate],
+  );
+
+  const updateVersionContent = useCallback(
+    async (versionId: string, content: PolicyVersion['content']) => {
+      const response = await apiClient.patch(
+        `/v1/policies/${policyId}/versions/${versionId}`,
+        { content },
+      );
+      if (response.error) throw new Error(response.error);
+      // Optimistically update the version content in cache
+      mutate(
+        (currentVersions) => {
+          if (!currentVersions || !Array.isArray(currentVersions)) return [];
+          return currentVersions.map((v) =>
+            v.id === versionId ? { ...v, content } : v,
+          );
+        },
+        false,
+      );
+      return response;
+    },
+    [policyId, mutate],
+  );
 
   // Ensure we always return an array, even if SWR returns unexpected data
   const safeVersions = Array.isArray(data) ? data : [];
@@ -85,5 +150,9 @@ export function usePolicyVersions({
     isLoading: isLoading && !data,
     error,
     mutate,
+    createVersion,
+    deleteVersion,
+    submitForApproval,
+    updateVersionContent,
   };
 }

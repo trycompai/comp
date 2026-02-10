@@ -1,26 +1,31 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectPills } from '@comp/ui/select-pills';
-import { Control } from '@db';
+import type { Control } from '@db';
 import { Section } from '@trycompai/design-system';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePolicy } from '../hooks/usePolicy';
 
 export const PolicyControlMappings = ({
   mappedControls,
   allControls,
   isPendingApproval,
+  onMutate,
 }: {
   mappedControls: Control[];
   allControls: Control[];
   isPendingApproval: boolean;
+  onMutate?: () => void;
 }) => {
-  const { policyId } = useParams<{ policyId: string }>();
-  const api = useApi();
-  const router = useRouter();
+  const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
   const [loading, setLoading] = useState(false);
+
+  const { addControlMappings, removeControlMapping } = usePolicy({
+    policyId,
+    organizationId: orgId,
+  });
 
   const mappedNames = mappedControls.map((c) => c.name);
 
@@ -36,18 +41,14 @@ export const PolicyControlMappings = ({
 
     try {
       if (added.length > 0) {
-        const response = await api.post(`/v1/policies/${policyId}/controls`, {
-          controlIds: added.map((c) => c.id),
-        });
-        if (response.error) throw new Error(response.error);
+        await addControlMappings(added.map((c) => c.id));
         toast.success('Controls mapped successfully');
       }
       if (removed.length > 0) {
-        const response = await api.delete(`/v1/policies/${policyId}/controls/${removed[0].id}`);
-        if (response.error) throw new Error(response.error);
+        await removeControlMapping(removed[0].id);
         toast.success('Controls unmapped successfully');
       }
-      router.refresh();
+      onMutate?.();
     } catch {
       toast.error('Failed to update controls');
     } finally {

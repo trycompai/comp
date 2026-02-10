@@ -1,7 +1,7 @@
 'use client';
 
 import { updateResidualRiskSchema } from '@/actions/schema';
-import { useApi } from '@/hooks/use-api';
+import { useRiskMutations } from '@/hooks/use-risk-mutations';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Slider } from '@comp/ui/slider';
@@ -47,7 +47,7 @@ export function VendorResidualRiskForm({
   initialProbability,
   initialImpact,
 }: ResidualRiskFormProps) {
-  const api = useApi();
+  const { updateRisk } = useRiskMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('residual-risk-sheet');
 
@@ -62,19 +62,18 @@ export function VendorResidualRiskForm({
 
   const onSubmit = async (data: z.infer<typeof updateResidualRiskSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/risks/${data.id}`, {
-      residualLikelihood: mapNumericToLikelihood(data.probability),
-      residualImpact: mapNumericToImpact(data.impact),
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updateRisk(data.id, {
+        residualLikelihood: mapNumericToLikelihood(data.probability),
+        residualImpact: mapNumericToImpact(data.impact),
+      });
+      toast.success('Residual risk updated successfully');
+      setOpen(null);
+    } catch {
       toast.error('Failed to update residual risk');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Residual risk updated successfully');
-    setOpen(null);
   };
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
 import { Calendar } from '@comp/ui/calendar';
@@ -14,7 +14,7 @@ import { Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { ArrowRightIcon, CalendarIcon } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -31,8 +31,7 @@ const createVendorTaskFormSchema = z.object({
 export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { user: User })[] }) {
   const [_, setCreateVendorTaskSheet] = useQueryState('create-vendor-task-sheet');
   const params = useParams<{ vendorId: string }>();
-  const api = useApi();
-  const router = useRouter();
+  const { createTask } = useTaskMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof createVendorTaskFormSchema>>({
@@ -48,16 +47,14 @@ export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { use
   const onSubmit = async (data: z.infer<typeof createVendorTaskFormSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await api.post('/v1/tasks', {
+      await createTask({
         title: data.title,
         description: data.description,
         assigneeId: data.assigneeId || null,
         vendorId: params.vendorId,
       });
-      if (response.error) throw new Error(response.error);
       toast.success('Task created successfully');
       setCreateVendorTaskSheet(null);
-      router.refresh();
     } catch {
       toast.error('Failed to create task');
     } finally {

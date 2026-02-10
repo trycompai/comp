@@ -2,7 +2,7 @@
 
 import { createRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
-import { useApi } from '@/hooks/use-api';
+import { useRiskActions } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import type { Member, User } from '@db';
 import { Departments, RiskCategory } from '@db';
@@ -35,7 +35,7 @@ interface CreateRiskProps {
 }
 
 export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
-  const api = useApi();
+  const { createRisk } = useRiskActions();
   const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,17 +57,16 @@ export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
 
   const onSubmit = async (data: z.infer<typeof createRiskSchema>) => {
     setIsSubmitting(true);
-    const response = await api.post('/v1/risks', data);
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await createRisk(data);
+      toast.success('Risk created successfully');
+      onSuccess?.();
+      mutate((key) => Array.isArray(key) && key[0] === 'risks', undefined, { revalidate: true });
+    } catch {
       toast.error('Failed to create risk');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Risk created successfully');
-    onSuccess?.();
-    mutate((key) => Array.isArray(key) && key[0] === 'risks', undefined, { revalidate: true });
   };
 
   return (

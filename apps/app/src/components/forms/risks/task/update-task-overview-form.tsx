@@ -1,7 +1,7 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { updateTaskSchema } from '@/actions/schema';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
@@ -9,7 +9,6 @@ import { Textarea } from '@comp/ui/textarea';
 import type { Task } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -18,8 +17,7 @@ import type { z } from 'zod';
 
 export function UpdateTaskOverviewForm({ task }: { task: Task }) {
   const [open, setOpen] = useQueryState('task-update-overview-sheet');
-  const api = useApi();
-  const router = useRouter();
+  const { updateTask } = useTaskMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateTaskSchema>>({
@@ -36,16 +34,14 @@ export function UpdateTaskOverviewForm({ task }: { task: Task }) {
   const onSubmit = async (values: z.infer<typeof updateTaskSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await api.patch(`/v1/tasks/${values.id}`, {
+      await updateTask(values.id, {
         title: values.title,
         description: values.description,
         status: values.status,
         assigneeId: values.assigneeId,
       });
-      if (response.error) throw new Error(response.error);
       toast.success('Risk updated successfully');
       setOpen(null);
-      router.refresh();
     } catch {
       toast.error('Failed to update risk');
     } finally {

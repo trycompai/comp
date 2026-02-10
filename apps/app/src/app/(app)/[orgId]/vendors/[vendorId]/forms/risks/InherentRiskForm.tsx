@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useVendorActions } from '@/hooks/use-vendors';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,7 +31,7 @@ export function InherentRiskForm({
   initialProbability = Likelihood.very_unlikely,
   initialImpact = Impact.insignificant,
 }: InherentRiskFormProps) {
-  const api = useApi();
+  const { updateVendor } = useVendorActions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('inherent-risk-sheet');
@@ -46,26 +46,26 @@ export function InherentRiskForm({
 
   async function onSubmit(values: FormValues) {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/vendors/${vendorId}`, {
-      inherentProbability: values.inherentProbability,
-      inherentImpact: values.inherentImpact,
-    });
-    setIsSubmitting(false);
+    try {
+      await updateVendor(vendorId, {
+        inherentProbability: values.inherentProbability,
+        inherentImpact: values.inherentImpact,
+      });
 
-    if (response.error) {
+      toast.success('Inherent risk updated successfully');
+      globalMutate(
+        (key) =>
+          (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
+          (typeof key === 'string' && key.includes('/v1/vendors')),
+        undefined,
+        { revalidate: true },
+      );
+      setOpen(null);
+    } catch {
       toast.error('An unexpected error occurred');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Inherent risk updated successfully');
-    globalMutate(
-      (key) =>
-        (Array.isArray(key) && key[0]?.includes('/v1/vendors')) ||
-        (typeof key === 'string' && key.includes('/v1/vendors')),
-      undefined,
-      { revalidate: true },
-    );
-    setOpen(null);
   }
 
   return (

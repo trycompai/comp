@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -19,17 +18,17 @@ import {
 import { Icons } from '@comp/ui/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePolicyActions } from '../hooks/usePolicyActions';
 
 export function FullPolicyHeaderActions() {
-  const api = useApi();
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const { regenerateAll } = usePolicyActions();
 
   const handleRegenerate = async () => {
     setIsRegenerating(true);
     try {
-      const response = await api.post('/v1/policies/regenerate-all');
-      if (response.error) throw new Error(response.error);
+      await regenerateAll();
       toast.success('Policy regeneration started. This may take a few minutes.');
       setRegenerateConfirmOpen(false);
     } catch {

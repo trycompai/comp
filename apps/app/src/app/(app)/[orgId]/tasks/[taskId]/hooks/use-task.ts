@@ -1,5 +1,5 @@
-import { api } from '@/lib/api-client';
-import { Control, Task } from '@db';
+import { apiClient } from '@/lib/api-client';
+import type { Control, Task, TaskStatus } from '@db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
@@ -8,12 +8,25 @@ interface TaskData extends Task {
   controls?: Control[];
 }
 
+interface UpdateTaskPayload {
+  status?: TaskStatus;
+  assigneeId?: string | null;
+  frequency?: string | null;
+  department?: string | null;
+  reviewDate?: string | null;
+  title?: string;
+  description?: string;
+}
+
 interface UseTaskReturn {
   task: TaskData | undefined;
   isLoading: boolean;
   isError: boolean;
   error: Error | undefined;
-  mutate: () => Promise<any>;
+  mutate: () => Promise<TaskData | undefined>;
+  updateTask: (data: UpdateTaskPayload) => Promise<void>;
+  deleteTask: () => Promise<void>;
+  regenerateTask: () => Promise<void>;
 }
 
 interface UseTaskOptions {
@@ -27,15 +40,13 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
   }>();
 
   const { data, error, isLoading, mutate } = useSWR(
-    // Only fetch if both orgId and taskId are available
     orgId && taskId ? [`task-${taskId}`, orgId, taskId] : null,
     async () => {
-      // Guard clause - should not happen due to key check, but extra safety
       if (!orgId || !taskId) {
         throw new Error('Organization ID and Task ID are required');
       }
 
-      const response = await api.get<TaskData>(`/v1/tasks/${taskId}`);
+      const response = await apiClient.get<TaskData>(`/v1/tasks/${taskId}`);
 
       if (response.error) {
         throw new Error(response.error);
@@ -54,11 +65,34 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
     },
   );
 
+  const updateTask = async (payload: UpdateTaskPayload): Promise<void> => {
+    if (!taskId) throw new Error('Task ID is required');
+    const response = await apiClient.patch<Task>(`/v1/tasks/${taskId}`, payload);
+    if (response.error) throw new Error(response.error);
+    await mutate();
+  };
+
+  const deleteTask = async (): Promise<void> => {
+    if (!taskId) throw new Error('Task ID is required');
+    const response = await apiClient.delete(`/v1/tasks/${taskId}`);
+    if (response.error) throw new Error(response.error);
+  };
+
+  const regenerateTask = async (): Promise<void> => {
+    if (!taskId) throw new Error('Task ID is required');
+    const response = await apiClient.post(`/v1/tasks/${taskId}/regenerate`);
+    if (response.error) throw new Error(response.error);
+    await mutate();
+  };
+
   return {
     task: data,
     isLoading,
     isError: !!error,
     error: error as Error | undefined,
     mutate,
+    updateTask,
+    deleteTask,
+    regenerateTask,
   };
 }

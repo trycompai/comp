@@ -34,6 +34,7 @@ const statement = {
   finding: ['create', 'read', 'update', 'delete'],
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
+  apiKey: ['create', 'read', 'delete'],
   // App access resources
   app: ['read'], // Main app access
   portal: ['read', 'update'], // Employee portal access
@@ -64,6 +65,7 @@ export const owner = ac.newRole({
   finding: ['create', 'read', 'update', 'delete'],
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
+  apiKey: ['create', 'read', 'delete'],
   // App access
   app: ['read'],
   portal: ['read', 'update'],
@@ -92,6 +94,7 @@ export const admin = ac.newRole({
   finding: ['create', 'read', 'update', 'delete'],
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
+  apiKey: ['create', 'read', 'delete'],
   // App access
   app: ['read'],
   portal: ['read', 'update'],

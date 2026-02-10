@@ -1,7 +1,7 @@
-import { requireRoutePermission } from '@/lib/permissions.server';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
 import { RolesPageClient } from './components/RolesPageClient';
-import { getRoles } from './data/getRoles';
+import type { CustomRole } from './components/RolesTable';
 
 export const metadata: Metadata = {
   title: 'Roles',
@@ -14,9 +14,12 @@ export default async function RolesPage({
 }) {
   const { orgId } = await params;
 
-  await requireRoutePermission('settings/roles', orgId);
+  const res = await serverApi.get<{
+    builtInRoles: Array<{ name: string; isBuiltIn: boolean; description: string }>;
+    customRoles: CustomRole[];
+  }>('/v1/roles');
 
-  const roles = await getRoles(orgId);
+  const roles = res.data?.customRoles ?? [];
 
   return <RolesPageClient initialData={roles} />;
 }

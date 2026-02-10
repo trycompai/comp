@@ -19,6 +19,10 @@ import type { UpdatePeopleDto } from './dto/update-people.dto';
 import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
+import {
+  getFleetComplianceForMember,
+  getAllEmployeeDevices,
+} from './people-fleet.helper';
 
 @Injectable()
 export class PeopleService {
@@ -520,6 +524,191 @@ export class PeopleService {
       );
       throw new InternalServerErrorException('Failed to remove host');
     }
+  }
+
+  async getTestStatsByAssignee(organizationId: string) {
+    const members = await db.member.findMany({
+      where: { organizationId, isActive: true },
+      select: {
+        user: {
+          select: { id: true, name: true, image: true, email: true },
+        },
+      },
+    });
+
+    const userIds = members.map((m) => m.user.id);
+
+    const integrationResults = await db.integrationResult.findMany({
+      where: {
+        organizationId,
+        assignedUserId: { in: userIds },
+      },
+      select: { status: true, assignedUserId: true },
+    });
+
+    const resultsByUser = new Map<string, { status: string }[]>();
+    for (const result of integrationResults) {
+      if (result.assignedUserId) {
+        if (!resultsByUser.has(result.assignedUserId)) {
+          resultsByUser.set(result.assignedUserId, []);
+        }
+        resultsByUser.get(result.assignedUserId)!.push({
+          status: result.status || '',
+        });
+      }
+    }
+
+    return members
+      .filter((m) => resultsByUser.has(m.user.id))
+      .map((m) => {
+        const tests = resultsByUser.get(m.user.id) || [];
+        return {
+          user: m.user,
+          totalTests: tests.length,
+          passedTests: tests.filter(
+            (t) => t.status.toUpperCase() === 'PASSED',
+          ).length,
+          failedTests: tests.filter(
+            (t) => t.status.toUpperCase() === 'FAILED',
+          ).length,
+          unsupportedTests: tests.filter(
+            (t) => t.status.toUpperCase() === 'UNSUPPORTED',
+          ).length,
+        };
+      });
+  }
+
+  async getTrainingVideos(memberId: string, organizationId: string) {
+    const member = await MemberQueries.findByIdInOrganization(
+      memberId,
+      organizationId,
+    );
+
+    if (!member) {
+      throw new NotFoundException(
+        `Member with ID ${memberId} not found in organization ${organizationId}`,
+      );
+    }
+
+    return db.employeeTrainingVideoCompletion.findMany({
+      where: { memberId },
+      orderBy: { videoId: 'asc' },
+    });
+  }
+
+  async getFleetCompliance(memberId: string, organizationId: string) {
+    const member = await MemberQueries.findByIdInOrganization(
+      memberId,
+      organizationId,
+    );
+
+    if (!member) {
+      throw new NotFoundException(
+        `Member with ID ${memberId} not found in organization ${organizationId}`,
+      );
+    }
+
+    return getFleetComplianceForMember(
+      this.fleetService,
+      memberId,
+      organizationId,
+      member.fleetDmLabelId,
+      member.userId,
+    );
+  }
+
+  async getDevices(organizationId: string) {
+    return getAllEmployeeDevices(this.fleetService, organizationId);
+  }
+
+  async getEmailPreferences(
+    userId: string,
+    userEmail: string,
+    organizationId: string,
+  ) {
+    const DEFAULT_PREFERENCES = {
+      policyNotifications: true,
+      taskReminders: true,
+      weeklyTaskDigest: true,
+      unassignedItemsNotifications: true,
+      taskMentions: true,
+      taskAssignments: true,
+    };
+
+    const [user, member] = await Promise.all([
+      db.user.findUnique({
+        where: { email: userEmail },
+        select: {
+          emailPreferences: true,
+          emailNotificationsUnsubscribed: true,
+        },
+      }),
+      db.member.findFirst({
+        where: {
+          organizationId,
+          user: { email: userEmail },
+          deactivated: false,
+        },
+        select: { role: true },
+      }),
+    ]);
+
+    const userRoles = member?.role.split(',').map((r) => r.trim()) ?? [];
+    const isAdminOrOwner = userRoles.some(
+      (r) => r === 'owner' || r === 'admin',
+    );
+
+    let roleNotifications: Record<string, boolean> | null = null;
+
+    if (!isAdminOrOwner && userRoles.length > 0) {
+      const roleSettings = await db.roleNotificationSetting.findMany({
+        where: { organizationId, role: { in: userRoles } },
+      });
+
+      if (roleSettings.length > 0) {
+        roleNotifications = {
+          policyNotifications: roleSettings.some(
+            (s) => s.policyNotifications,
+          ),
+          taskReminders: roleSettings.some((s) => s.taskReminders),
+          taskAssignments: roleSettings.some((s) => s.taskAssignments),
+          taskMentions: roleSettings.some((s) => s.taskMentions),
+          weeklyTaskDigest: roleSettings.some((s) => s.weeklyTaskDigest),
+          findingNotifications: roleSettings.some(
+            (s) => s.findingNotifications,
+          ),
+        };
+      }
+    }
+
+    let preferences: Record<string, boolean>;
+    if (user?.emailNotificationsUnsubscribed) {
+      preferences = {
+        policyNotifications: false,
+        taskReminders: false,
+        weeklyTaskDigest: false,
+        unassignedItemsNotifications: false,
+        taskMentions: false,
+        taskAssignments: false,
+      };
+    } else if (
+      user?.emailPreferences &&
+      typeof user.emailPreferences === 'object'
+    ) {
+      preferences = {
+        ...DEFAULT_PREFERENCES,
+        ...(user.emailPreferences as Record<string, boolean>),
+      };
+    } else {
+      preferences = DEFAULT_PREFERENCES;
+    }
+
+    return {
+      email: userEmail,
+      preferences,
+      isAdminOrOwner,
+      roleNotifications,
+    };
   }
 
   async updateEmailPreferences(

@@ -15,7 +15,7 @@ import { Input } from '@comp/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, ClipboardCopy, ExternalLink, Loader2 } from 'lucide-react';
-import { useApi } from '@/hooks/use-api';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -77,7 +77,7 @@ export function TrustPortalDomain({
     setIsVercelTxtVerified(isVercelTxtVerified === 'true');
   }, [initialDomain]);
 
-  const api = useApi();
+  const { submitCustomDomain, checkDns } = useTrustPortalSettings();
   const [isUpdatingDomain, setIsUpdatingDomain] = useState(false);
   const [isCheckingDns, setIsCheckingDns] = useState(false);
 
@@ -99,13 +99,10 @@ export function TrustPortalDomain({
 
     setIsUpdatingDomain(true);
     try {
-      const response = await api.post<{ success: boolean; needsVerification?: boolean; error?: string }>(
-        '/v1/trust-portal/settings/custom-domain',
-        { domain: data.domain },
-      );
-      if (response.error) throw new Error(response.error);
-      if (response.data?.success === false) {
-        toast.error(response.data.error || 'Failed to update custom domain.');
+      const result = await submitCustomDomain(data.domain);
+      if (result && typeof result === 'object' && 'success' in result && result.success === false) {
+        const errorMsg = 'error' in result ? (result.error as string) : 'Failed to update custom domain.';
+        toast.error(errorMsg);
         return;
       }
       toast.success('Custom domain update submitted, please verify your DNS records.');
@@ -124,20 +121,9 @@ export function TrustPortalDomain({
   const handleCheckDnsRecord = async () => {
     setIsCheckingDns(true);
     try {
-      const response = await api.post<{
-        success: boolean;
-        isCnameVerified?: boolean;
-        isTxtVerified?: boolean;
-        isVercelTxtVerified?: boolean;
-        error?: string;
-      }>('/v1/trust-portal/settings/check-dns', {
-        domain: form.watch('domain'),
-      });
-      if (response.error) throw new Error(response.error);
-
-      const data = response.data;
-      if (data?.error) {
-        toast.error(data.error);
+      const data = await checkDns(form.watch('domain'));
+      if (data && typeof data === 'object' && 'error' in data && data.error) {
+        toast.error(data.error as string);
         if (data.isCnameVerified) {
           setIsCnameVerified(true);
           localStorage.setItem(`${initialDomain}-isCnameVerified`, 'true');
@@ -150,16 +136,16 @@ export function TrustPortalDomain({
           setIsVercelTxtVerified(true);
           localStorage.setItem(`${initialDomain}-isVercelTxtVerified`, 'true');
         }
-      } else {
-        if (data?.isCnameVerified) {
+      } else if (data && typeof data === 'object') {
+        if (data.isCnameVerified) {
           setIsCnameVerified(true);
           localStorage.removeItem(`${initialDomain}-isCnameVerified`);
         }
-        if (data?.isTxtVerified) {
+        if (data.isTxtVerified) {
           setIsTxtVerified(true);
           localStorage.removeItem(`${initialDomain}-isTxtVerified`);
         }
-        if (data?.isVercelTxtVerified) {
+        if (data.isVercelTxtVerified) {
           setIsVercelTxtVerified(true);
           localStorage.removeItem(`${initialDomain}-isVercelTxtVerified`);
         }

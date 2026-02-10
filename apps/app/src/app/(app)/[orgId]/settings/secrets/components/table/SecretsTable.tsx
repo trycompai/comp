@@ -4,27 +4,21 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import { Copy, Edit, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import type { Secret } from '../../hooks/useSecrets';
+import { useSecrets } from '../../hooks/useSecrets';
 import { EditSecretDialog } from '../EditSecretDialog';
 
-interface Secret {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  createdAt: string;
-  updatedAt: string;
-  lastUsedAt: string | null;
-}
-
 interface SecretsTableProps {
-  secrets: Secret[];
+  initialSecrets: Secret[];
 }
 
-export function SecretsTable({ secrets }: SecretsTableProps) {
+export function SecretsTable({ initialSecrets }: SecretsTableProps) {
+  const { secrets, deleteSecret } = useSecrets({ initialData: initialSecrets });
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
   const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
   const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
@@ -44,17 +38,12 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
     setLoadingSecrets((prev) => ({ ...prev, [secretId]: true }));
 
     try {
-      // Get organizationId from the URL path
-      const pathSegments = window.location.pathname.split('/');
-      const orgId = pathSegments[1]; // Assuming path is /{orgId}/settings/secrets
-
-      const response = await fetch(`/api/secrets/${secretId}?organizationId=${orgId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch secret');
+      const response = await apiClient.get<{ value: string }>(`/v1/secrets/${secretId}`);
+      if (response.error) {
+        throw new Error(response.error);
       }
 
-      const data = await response.json();
-      setRevealedSecrets((prev) => ({ ...prev, [secretId]: data.secret.value }));
+      setRevealedSecrets((prev) => ({ ...prev, [secretId]: response.data!.value }));
     } catch (error) {
       toast.error('Failed to reveal secret');
       console.error('Error revealing secret:', error);
@@ -69,21 +58,8 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
     }
 
     try {
-      // Get organizationId from the URL path
-      const pathSegments = window.location.pathname.split('/');
-      const orgId = pathSegments[1]; // Assuming path is /{orgId}/settings/secrets
-
-      const response = await fetch(`/api/secrets/${secretId}?organizationId=${orgId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete secret');
-      }
-
+      await deleteSecret(secretId);
       toast.success('Secret deleted successfully');
-      // Reload the page to refresh the list
-      window.location.reload();
     } catch (error) {
       toast.error('Failed to delete secret');
       console.error('Error deleting secret:', error);
@@ -294,7 +270,6 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
           secret={editingSecret}
           open={!!editingSecret}
           onOpenChange={(open) => !open && setEditingSecret(null)}
-          onSecretUpdated={() => window.location.reload()}
         />
       )}
     </div>

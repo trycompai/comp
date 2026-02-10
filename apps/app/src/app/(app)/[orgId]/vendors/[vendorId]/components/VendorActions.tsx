@@ -1,7 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
-import { useVendor } from '@/hooks/use-vendors';
+import { useVendor, useVendorActions } from '@/hooks/use-vendors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +18,6 @@ import {
 import { Edit, OverflowMenuVertical, Renew } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useSWRConfig } from 'swr';
 
 interface VendorActionsProps {
   vendorId: string;
@@ -32,8 +30,6 @@ export function VendorActions({
   onOpenEditSheet,
   onAssessmentTriggered,
 }: VendorActionsProps) {
-  const api = useApi();
-  const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isAssessmentConfirmOpen, setIsAssessmentConfirmOpen] = useState(false);
   const [isAssessmentSubmitting, setIsAssessmentSubmitting] = useState(false);
@@ -41,30 +37,16 @@ export function VendorActions({
 
   // Get SWR mutate function to refresh vendor data after mutations
   const { mutate: refreshVendor } = useVendor(vendorId);
+  const { triggerAssessment, regenerateMitigation } = useVendorActions();
 
   const handleConfirm = async () => {
     setIsConfirmOpen(false);
     setIsRegenerating(true);
     toast.info('Regenerating vendor risk mitigation...');
     try {
-      const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
-        method: 'POST',
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || 'Failed to trigger mitigation regeneration');
-      }
+      await regenerateMitigation(vendorId);
       toast.success('Regeneration triggered. This may take a moment.');
       refreshVendor();
-      globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
-        revalidate: true,
-      });
-      // Invalidate comments cache for this vendor
-      globalMutate(
-        (key) => typeof key === 'string' && key.includes(`/v1/comments`) && key.includes(vendorId),
-        undefined,
-        { revalidate: true },
-      );
     } catch {
       toast.error('Failed to trigger mitigation regeneration');
     } finally {
@@ -77,16 +59,12 @@ export function VendorActions({
     setIsAssessmentSubmitting(true);
     toast.info('Regenerating vendor risk assessment...');
     try {
-      const response = await api.post<{ success: boolean; runId: string; publicAccessToken: string }>(`/v1/vendors/${vendorId}/trigger-assessment`, {});
-      if (response.error) throw new Error(response.error);
+      const result = await triggerAssessment(vendorId);
       toast.success('Assessment regeneration triggered. This may take a moment.');
       refreshVendor();
-      globalMutate((key) => Array.isArray(key) && key[0] === 'vendors', undefined, {
-        revalidate: true,
-      });
       // Notify parent with run info for real-time tracking
-      if (response.data?.runId && response.data?.publicAccessToken) {
-        onAssessmentTriggered?.(response.data.runId, response.data.publicAccessToken);
+      if (result.runId && result.publicAccessToken) {
+        onAssessmentTriggered?.(result.runId, result.publicAccessToken);
       }
     } catch {
       toast.error('Failed to trigger risk assessment regeneration');

@@ -87,6 +87,9 @@ export class PoliciesController {
   async getAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('status') status?: string,
+    @Query('isRequiredToSign') isRequiredToSign?: string,
+    @Query('isArchived') isArchived?: string,
   ) {
     // Build visibility filter for department-specific policies
     const visibilityFilter = buildPolicyVisibilityFilter(
@@ -94,9 +97,15 @@ export class PoliciesController {
       authContext.userRoles,
     );
 
+    // Build additional filters from query params
+    const additionalFilter: Record<string, unknown> = {};
+    if (status) additionalFilter.status = status;
+    if (isRequiredToSign !== undefined) additionalFilter.isRequiredToSign = isRequiredToSign === 'true';
+    if (isArchived !== undefined) additionalFilter.isArchived = isArchived === 'true';
+
     const policies = await this.policiesService.findAll(
       organizationId,
-      visibilityFilter,
+      { ...visibilityFilter, ...additionalFilter },
     );
 
     return {
@@ -148,6 +157,20 @@ export class PoliciesController {
     };
   }
 
+  @Post('publish-all')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'publish')
+  @ApiOperation({ summary: 'Publish all draft/needs_review policies' })
+  async publishAll(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    return this.policiesService.publishAll(
+      organizationId,
+      authContext.userId!,
+    );
+  }
+
   @Get(':id')
   @UseGuards(PermissionGuard)
   @RequirePermission('policy', 'read')
@@ -162,7 +185,11 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const policy = await this.policiesService.findById(id, organizationId);
+    const policy = await this.policiesService.findById(
+      id,
+      organizationId,
+      authContext.userId,
+    );
 
     // Check visibility access for department-specific policies
     if (
@@ -803,6 +830,33 @@ Keep responses helpful and focused on the policy editing task.`;
     @Query('versionId') versionId?: string,
   ) {
     return this.policiesService.deletePdf(id, organizationId, versionId);
+  }
+
+  @Get(':id/controls')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('policy', 'read')
+  @ApiOperation({ summary: 'Get control mapping info for a policy' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPolicyControls(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.getControlMapping(
+      id,
+      organizationId,
+    );
+
+    return {
+      ...data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
   }
 
   @Post(':id/controls')

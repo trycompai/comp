@@ -6,7 +6,6 @@ import {
   useIntegrationMutations,
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
-import { api } from '@/lib/api-client';
 import { Button } from '@comp/ui/button';
 import { ComboboxDropdown } from '@comp/ui/combobox-dropdown';
 import {
@@ -175,7 +174,13 @@ export function ConnectIntegrationDialog({
   onConnected,
 }: ConnectIntegrationDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
-  const { startOAuth, createConnection, deleteConnection } = useIntegrationMutations();
+  const {
+    startOAuth,
+    createConnection,
+    deleteConnection,
+    updateConnectionCredentials,
+    updateConnectionMetadata,
+  } = useIntegrationMutations();
   const { providers, isLoading: isProvidersLoading } = useIntegrationProviders(true);
   const {
     connections: allConnections,
@@ -444,14 +449,10 @@ export function ConnectIntegrationDialog({
     setSavingCredentials(true);
     try {
       // Update credentials (API validates before saving for AWS)
-      const updateResult = await api.put<{ success: boolean }>(
-        `/v1/integrations/connections/${configureConnectionId}/credentials?organizationId=${orgId}`,
-        { credentials },
-      );
+      const credResult = await updateConnectionCredentials(configureConnectionId, credentials);
 
-      if (updateResult.error) {
-        // Validation failed on the server - don't proceed
-        toast.error(updateResult.error);
+      if (!credResult.success) {
+        toast.error(credResult.error || 'Failed to update credentials');
         setSavingCredentials(false);
         return;
       }
@@ -476,12 +477,9 @@ export function ConnectIntegrationDialog({
       }
 
       if (Object.keys(metadataUpdates).length > 0) {
-        const metadataResult = await api.patch<{ success: boolean }>(
-          `/v1/integrations/connections/${configureConnectionId}?organizationId=${orgId}`,
-          { metadata: metadataUpdates },
-        );
-        if (metadataResult.error) {
-          toast.error(metadataResult.error || 'Failed to update connection details');
+        const metaResult = await updateConnectionMetadata(configureConnectionId, metadataUpdates);
+        if (!metaResult.success) {
+          toast.error(metaResult.error || 'Failed to update connection details');
           setSavingCredentials(false);
           return;
         }
@@ -496,7 +494,7 @@ export function ConnectIntegrationDialog({
     } finally {
       setSavingCredentials(false);
     }
-  }, [configureConnectionId, credentials, orgId, refreshConnections]);
+  }, [configureConnectionId, credentials, orgId, refreshConnections, updateConnectionCredentials, updateConnectionMetadata]);
 
   const updateCredential = (fieldId: string, value: string | string[]) => {
     setCredentials((prev) => ({ ...prev, [fieldId]: value }));

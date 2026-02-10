@@ -1,7 +1,7 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
-import { useApi } from '@/hooks/use-api';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Input } from '@comp/ui/input';
@@ -36,7 +36,7 @@ export function TrustSettingsClient({
   vercelVerification,
   allowedDomains,
 }: TrustSettingsClientProps) {
-  const api = useApi();
+  const { updateToggleSettings } = useTrustPortalSettings();
 
   const form = useForm<z.infer<typeof trustSettingsSchema>>({
     resolver: zodResolver(trustSettingsSchema),
@@ -63,24 +63,21 @@ export function TrustSettingsClient({
       if (lastSaved.current[field] !== value) {
         savingRef.current[field] = true;
         try {
-          const data = {
+          await updateToggleSettings({
             enabled: true, // Settings page assumes portal is enabled
             contactEmail:
               field === 'contactEmail' ? (value as string) : (current.contactEmail ?? ''),
-          };
-          const response = await api.put('/v1/trust-portal/settings/toggle', data);
-          if (response.error) {
-            toast.error('Failed to update trust settings');
-          } else {
-            toast.success('Trust settings updated');
-          }
+          });
+          toast.success('Trust settings updated');
           lastSaved.current[field] = value as string | null;
+        } catch {
+          toast.error('Failed to update trust settings');
         } finally {
           savingRef.current[field] = false;
         }
       }
     },
-    [form, api],
+    [form, updateToggleSettings],
   );
 
   const [contactEmailValue, setContactEmailValue] = useState(form.getValues('contactEmail') || '');

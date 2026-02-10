@@ -1,6 +1,6 @@
 'use client';
 
-import { api } from '@/lib/api-client';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Button, Input, Textarea } from '@trycompai/design-system';
 import { View, ViewOff } from '@trycompai/design-system/icons';
 import { useCallback, useState } from 'react';
@@ -18,6 +18,7 @@ interface TrustPortalOverviewProps {
 }
 
 export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewProps) {
+  const { saveOverview: saveOverviewApi } = useTrustPortalSettings();
   const [title, setTitle] = useState(initialData.overviewTitle ?? '');
   const [content, setContent] = useState(initialData.overviewContent ?? '');
   const [showOverview, setShowOverview] = useState(initialData.showOverview);
@@ -28,13 +29,12 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
     async (overrides?: { showOverview?: boolean }) => {
       setIsSaving(true);
       try {
-        const response = await api.post('/v1/trust-portal/overview', {
+        await saveOverviewApi({
           organizationId: orgId,
           overviewTitle: title.trim() || null,
           overviewContent: content.trim() || null,
           showOverview: overrides?.showOverview ?? showOverview,
         });
-        if (response.error) throw new Error(response.error);
         setIsDirty(false);
         toast.success('Overview saved successfully');
       } catch {
@@ -43,7 +43,7 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
         setIsSaving(false);
       }
     },
-    [orgId, title, content, showOverview],
+    [orgId, title, content, showOverview, saveOverviewApi],
   );
 
   const handleSave = () => {

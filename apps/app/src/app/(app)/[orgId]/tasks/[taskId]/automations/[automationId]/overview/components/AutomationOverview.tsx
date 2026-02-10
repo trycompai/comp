@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -68,7 +67,11 @@ export function AutomationOverview({
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Use the automation hook to get live data and mutate function
-  const { automation: liveAutomation, mutate: mutateAutomation } = useTaskAutomation();
+  const {
+    automation: liveAutomation,
+    mutate: mutateAutomation,
+    updateAutomation,
+  } = useTaskAutomation();
 
   // Use live runs data with auto-refresh
   const { runs: liveRuns, mutate: mutateRuns } = useAutomationRuns();
@@ -146,19 +149,10 @@ export function AutomationOverview({
     }
 
     try {
-      const response = await api.patch(
-        `/v1/tasks/${taskId}/automations/${automationId}`,
-        { description: descriptionValue.trim() || null },
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      await mutateAutomation();
+      await updateAutomation({ description: descriptionValue.trim() });
       toast.success('Description updated');
       setEditingDescription(false);
-    } catch (error) {
+    } catch {
       toast.error('Failed to update description');
       setDescriptionValue(automation.description || '');
       setEditingDescription(false);

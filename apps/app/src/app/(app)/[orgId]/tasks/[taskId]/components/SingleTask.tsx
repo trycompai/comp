@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import { useActiveMember } from '@/utils/auth-client';
 import {
@@ -74,6 +73,8 @@ export function SingleTask({
     task,
     isLoading,
     mutate: mutateTask,
+    updateTask,
+    regenerateTask,
   } = useTask({
     initialData: initialTask,
   });
@@ -90,7 +91,6 @@ export function SingleTask({
   const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
   // isPlatformAdmin is passed from the server component (page.tsx)
 
-  const api = useApi();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -103,9 +103,7 @@ export function SingleTask({
     setIsRegenerating(true);
     setRegenerateConfirmOpen(false);
     try {
-      const response = await api.post(`/v1/tasks/${task.id}/regenerate`);
-      if (response.error) throw new Error(response.error);
-      await mutateTask();
+      await regenerateTask();
       toast.success('Task updated with latest template content.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to regenerate task');
@@ -150,14 +148,7 @@ export function SingleTask({
 
     if (Object.keys(updatePayload).length > 0) {
       try {
-        const response = await api.patch<Task>(`/v1/tasks/${task.id}`, updatePayload);
-
-        if (response.error) {
-          throw new Error(response.error);
-        }
-
-        // Refresh the task data from the server
-        await mutateTask();
+        await updateTask(updatePayload);
       } catch (error) {
         console.error('Failed to update task:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to update task');

@@ -1,4 +1,3 @@
-import { useApi } from '@/hooks/use-api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,7 +9,7 @@ import {
   AlertDialogTitle,
 } from '@comp/ui/alert-dialog';
 import { Button } from '@comp/ui/button';
-import type { Vendor } from '@/hooks/use-vendors';
+import { useVendorActions, type Vendor } from '@/hooks/use-vendors';
 import { Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
@@ -21,7 +20,7 @@ interface VendorDeleteCellProps {
 }
 
 export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) => {
-  const api = useApi();
+  const { deleteVendor } = useVendorActions();
   const { mutate } = useSWRConfig();
   const [isRemoveAlertOpen, setIsRemoveAlertOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -30,9 +29,8 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
     event.stopPropagation();
     setIsDeleting(true);
 
-    const response = await api.delete(`/v1/vendors/${vendor.id}`);
-
-    if (!response.error) {
+    try {
+      await deleteVendor(vendor.id);
       toast.success(`Vendor "${vendor.name}" has been deleted.`);
       setIsRemoveAlertOpen(false);
       mutate(
@@ -42,7 +40,7 @@ export const VendorDeleteCell: React.FC<VendorDeleteCellProps> = ({ vendor }) =>
         undefined,
         { revalidate: true },
       );
-    } else {
+    } catch {
       toast.error('Failed to delete vendor.');
     }
 

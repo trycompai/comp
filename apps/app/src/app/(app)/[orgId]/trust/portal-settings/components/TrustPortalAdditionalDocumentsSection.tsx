@@ -2,6 +2,10 @@
 
 import { FileUploader } from '@/components/file-uploader';
 import {
+  useTrustPortalDocuments,
+  type TrustPortalDocument,
+} from '@/hooks/use-trust-portal-documents';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -14,18 +18,10 @@ import {
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui/card';
 import { Download, FileText, Trash2, Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
 
-export type TrustPortalDocument = {
-  id: string;
-  name: string;
-  description: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type { TrustPortalDocument };
 
 interface TrustPortalAdditionalDocumentsSectionProps {
   organizationId: string;
@@ -33,25 +29,21 @@ interface TrustPortalAdditionalDocumentsSectionProps {
   documents: TrustPortalDocument[];
 }
 
-type UploadTrustPortalDocumentResponse = {
-  id: string;
-  name: string;
-  description?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type TrustPortalDocumentDownloadResponse = {
-  signedUrl: string;
-  fileName: string;
-};
-
 export function TrustPortalAdditionalDocumentsSection({
   organizationId,
   enabled,
-  documents,
+  documents: initialDocuments,
 }: TrustPortalAdditionalDocumentsSectionProps) {
-  const router = useRouter();
+  const {
+    documents,
+    uploadDocument,
+    downloadDocument,
+    deleteDocument,
+  } = useTrustPortalDocuments({
+    organizationId,
+    initialData: initialDocuments,
+  });
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
@@ -101,27 +93,15 @@ export function TrustPortalAdditionalDocumentsSection({
             newProgress[file.name] = 50;
             setUploadProgress({ ...newProgress });
 
-            const response = await api.post<UploadTrustPortalDocumentResponse>(
-              '/v1/trust-portal/documents/upload',
-              {
-                organizationId,
-                fileName: file.name,
-                fileType: file.type || 'application/octet-stream',
-                fileData,
-              },
+            await uploadDocument(
+              file.name,
+              file.type || 'application/octet-stream',
+              fileData,
             );
 
-            if (response.error) {
-              throw new Error(response.error || 'Failed to upload file');
-            }
-
-            if (response.data?.id) {
-              newProgress[file.name] = 100;
-              setUploadProgress({ ...newProgress });
-              toast.success(`Uploaded ${file.name}`);
-            } else {
-              throw new Error('Failed to upload file: invalid response');
-            }
+            newProgress[file.name] = 100;
+            setUploadProgress({ ...newProgress });
+            toast.success(`Uploaded ${file.name}`);
           } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error';
             toast.error(`Failed to upload ${file.name}: ${message}`);
@@ -129,14 +109,12 @@ export function TrustPortalAdditionalDocumentsSection({
             setUploadProgress({ ...newProgress });
           }
         }
-
-        router.refresh();
       } finally {
         setIsUploading(false);
         setUploadProgress({});
       }
     },
-    [enabled, organizationId, router],
+    [enabled, uploadDocument],
   );
 
   const handleDownload = useCallback(
@@ -145,23 +123,10 @@ export function TrustPortalAdditionalDocumentsSection({
 
       setDownloadingIds((prev) => new Set(prev).add(documentId));
       try {
-        const response = await api.post<TrustPortalDocumentDownloadResponse>(
-          `/v1/trust-portal/documents/${documentId}/download`,
-          { organizationId },
-        );
-
-        if (response.error) {
-          toast.error(response.error || 'Failed to download file');
-          return;
-        }
-
-        if (!response.data?.signedUrl) {
-          toast.error('Failed to download file: invalid response');
-          return;
-        }
+        const result = await downloadDocument(documentId);
 
         const link = document.createElement('a');
-        link.href = response.data.signedUrl;
+        link.href = result.signedUrl;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
@@ -178,7 +143,7 @@ export function TrustPortalAdditionalDocumentsSection({
         });
       }
     },
-    [downloadingIds, organizationId],
+    [downloadingIds, downloadDocument],
   );
 
   const handleDeleteClick = (documentId: string, fileName: string) => {
@@ -193,22 +158,8 @@ export function TrustPortalAdditionalDocumentsSection({
     setIsDeleteDialogOpen(false);
 
     try {
-      const response = await api.post<{ success: boolean }>(
-        `/v1/trust-portal/documents/${documentToDelete.id}/delete`,
-        { organizationId },
-      );
-
-      if (response.error) {
-        toast.error(response.error || 'Failed to delete document');
-        return;
-      }
-
-      if (response.data?.success) {
-        toast.success(`Deleted ${documentToDelete.name}`);
-        router.refresh();
-      } else {
-        toast.error('Failed to delete document: invalid response');
-      }
+      await deleteDocument(documentToDelete.id);
+      toast.success(`Deleted ${documentToDelete.name}`);
     } catch (error) {
       console.error('Error deleting trust portal document:', error);
       toast.error('An error occurred while deleting the document');
@@ -216,7 +167,7 @@ export function TrustPortalAdditionalDocumentsSection({
       setDeletingId(null);
       setDocumentToDelete(null);
     }
-  }, [documentToDelete, organizationId, router]);
+  }, [documentToDelete, deleteDocument]);
 
   return (
     <Card className="p-6">
@@ -345,5 +296,3 @@ export function TrustPortalAdditionalDocumentsSection({
     </Card>
   );
 }
-
-

@@ -108,58 +108,147 @@ export class PoliciesService {
     }
   }
 
-  async findById(id: string, organizationId: string) {
+  async publishAll(organizationId: string, userId: string) {
+    const member = await db.member.findFirst({
+      where: { userId, organizationId, deactivated: false },
+    });
+
+    if (!member) {
+      throw new BadRequestException('Member not found');
+    }
+
+    if (!member.role.includes('owner')) {
+      throw new BadRequestException(
+        'Only organization owners can publish all policies',
+      );
+    }
+
+    const policies = await db.policy.findMany({
+      where: {
+        organizationId,
+        status: { in: [PolicyStatus.draft, PolicyStatus.needs_review] },
+      },
+    });
+
+    if (policies.length === 0) {
+      throw new BadRequestException('No unpublished policies found');
+    }
+
+    for (const policy of policies) {
+      if (!policy.currentVersionId) {
+        await db.$transaction(async (tx) => {
+          const newVersion = await tx.policyVersion.create({
+            data: {
+              policyId: policy.id,
+              version: 1,
+              content: (policy.content as Prisma.InputJsonValue[]) || [],
+              pdfUrl: policy.pdfUrl,
+              publishedById: member.id,
+              changelog: 'Initial published version',
+            },
+          });
+
+          await tx.policy.update({
+            where: { id: policy.id },
+            data: {
+              status: PolicyStatus.published,
+              currentVersionId: newVersion.id,
+              assigneeId: member.id,
+              reviewDate: new Date(
+                new Date().setDate(new Date().getDate() + 90),
+              ),
+              lastPublishedAt: new Date(),
+              draftContent:
+                (policy.content as Prisma.InputJsonValue[]) || [],
+              approverId: null,
+              pendingVersionId: null,
+            },
+          });
+        });
+      } else {
+        const currentVersion = await db.policyVersion.findUnique({
+          where: { id: policy.currentVersionId },
+          select: { content: true },
+        });
+
+        await db.policy.update({
+          where: { id: policy.id },
+          data: {
+            status: PolicyStatus.published,
+            assigneeId: member.id,
+            reviewDate: new Date(
+              new Date().setDate(new Date().getDate() + 90),
+            ),
+            lastPublishedAt: new Date(),
+            draftContent:
+              (currentVersion?.content as Prisma.InputJsonValue[]) ||
+              (policy.content as Prisma.InputJsonValue[]) ||
+              [],
+            approverId: null,
+            pendingVersionId: null,
+          },
+        });
+      }
+    }
+
+    // Fetch members for email notifications
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    const members = await db.member.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        deactivated: false,
+        user: { isPlatformAdmin: false },
+      },
+      include: {
+        user: { select: { email: true, name: true } },
+      },
+    });
+
+    const emailPayloads = members
+      .filter((m) => m.user.email)
+      .map((m) => ({
+        email: m.user.email,
+        userName: m.user.name || 'there',
+        organizationName: organization?.name || 'Your organization',
+        organizationId,
+      }));
+
+    return {
+      success: true,
+      publishedCount: policies.length,
+      members: emailPayloads,
+    };
+  }
+
+  private readonly policyDetailInclude = {
+    approver: { include: { user: true } },
+    assignee: { include: { user: true } },
+    currentVersion: {
+      include: {
+        publishedBy: { include: { user: true } },
+      },
+    },
+  };
+
+  async findById(id: string, organizationId: string, userId?: string) {
     try {
       const policy = await db.policy.findFirst({
-        where: {
-          id,
-          organizationId,
-        },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          status: true,
-          content: true,
-          draftContent: true,
-          frequency: true,
-          department: true,
-          isRequiredToSign: true,
-          signedBy: true,
-          reviewDate: true,
-          isArchived: true,
-          createdAt: true,
-          updatedAt: true,
-          lastArchivedAt: true,
-          lastPublishedAt: true,
-          organizationId: true,
-          assigneeId: true,
-          approverId: true,
-          policyTemplateId: true,
-          currentVersionId: true,
-          pendingVersionId: true,
-          displayFormat: true,
-          pdfUrl: true,
-          visibility: true,
-          visibleToDepartments: true,
-          approver: {
-            include: {
-              user: true,
-            },
-          },
-          currentVersion: {
-            select: {
-              id: true,
-              content: true,
-              pdfUrl: true,
-              version: true,
-            },
-          },
-        },
+        where: { id, organizationId },
+        include: this.policyDetailInclude,
       });
 
       if (!policy) {
         throw new NotFoundException(`Policy with ID ${id} not found`);
+      }
+
+      // Lazy version migration: ensure currentVersion exists
+      if (!policy.currentVersionId || !policy.currentVersion) {
+        return this.lazyMigrateVersion(policy, organizationId, userId);
       }
 
       this.logger.log(`Retrieved policy: ${policy.name} (${id})`);
@@ -171,6 +260,92 @@ export class PoliciesService {
       this.logger.error(`Failed to retrieve policy ${id}:`, error);
       throw error;
     }
+  }
+
+  private async lazyMigrateVersion(
+    policy: { id: string; content: unknown; pdfUrl: string | null; name: string },
+    organizationId: string,
+    userId?: string,
+  ) {
+    try {
+      // Check if any versions already exist
+      const latestVersion = await db.policyVersion.findFirst({
+        where: { policyId: policy.id },
+        orderBy: { version: 'desc' },
+        select: { id: true },
+      });
+
+      if (latestVersion) {
+        // Fix orphaned state: set latest version as current
+        return db.policy.update({
+          where: { id: policy.id },
+          data: { currentVersionId: latestVersion.id },
+          include: this.policyDetailInclude,
+        });
+      }
+
+      // No versions exist — create version 1
+      let memberId: string | null = null;
+      if (userId) {
+        const member = await db.member.findFirst({
+          where: { userId, organizationId, deactivated: false },
+          select: { id: true },
+        });
+        memberId = member?.id ?? null;
+      }
+
+      return db.$transaction(async (tx) => {
+        const newVersion = await tx.policyVersion.create({
+          data: {
+            policyId: policy.id,
+            version: 1,
+            content: (policy.content as Prisma.InputJsonValue[]) || [],
+            pdfUrl: policy.pdfUrl,
+            publishedById: memberId,
+            changelog: 'Migrated from legacy policy',
+          },
+        });
+
+        return tx.policy.update({
+          where: { id: policy.id },
+          data: { currentVersionId: newVersion.id },
+          include: this.policyDetailInclude,
+        });
+      });
+    } catch (error) {
+      this.logger.error(
+        `Lazy migration failed for policy: ${policy.id}`,
+        error,
+      );
+      // Re-fetch policy data even if migration failed
+      const fallback = await db.policy.findFirst({
+        where: { id: policy.id },
+        include: this.policyDetailInclude,
+      });
+      if (!fallback) {
+        throw new NotFoundException(`Policy with ID ${policy.id} not found`);
+      }
+      return fallback;
+    }
+  }
+
+  async getControlMapping(policyId: string, organizationId: string) {
+    const [mappedControls, allControls] = await Promise.all([
+      db.control.findMany({
+        where: {
+          organizationId,
+          policies: { some: { id: policyId } },
+        },
+      }),
+      db.control.findMany({
+        where: { organizationId },
+      }),
+    ]);
+
+    return {
+      mappedControls: mappedControls || [],
+      allControls: allControls || [],
+    };
   }
 
   async create(organizationId: string, createData: CreatePolicyDto) {

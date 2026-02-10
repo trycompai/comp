@@ -45,17 +45,17 @@ export class HybridAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid API key format');
     }
 
-    const organizationId =
-      await this.apiKeyService.validateApiKey(extractedKey);
-    if (!organizationId) {
+    const result = await this.apiKeyService.validateApiKey(extractedKey);
+    if (!result) {
       throw new UnauthorizedException('Invalid or expired API key');
     }
 
     // Set request context for API key auth
-    request.organizationId = organizationId;
+    request.organizationId = result.organizationId;
     request.authType = 'api-key';
     request.isApiKey = true;
     request.isPlatformAdmin = false;
+    request.apiKeyScopes = result.scopes;
     // API keys are organization-scoped and are not tied to a specific user/member.
     request.userRoles = null;
 

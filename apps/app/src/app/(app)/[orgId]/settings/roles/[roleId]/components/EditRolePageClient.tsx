@@ -1,12 +1,12 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { RoleForm, type RoleFormValues } from '../../components/RoleForm';
 import type { CustomRole } from '../../components/RolesTable';
+import { useRoles } from '../../hooks/useRoles';
 
 interface EditRolePageClientProps {
   orgId: string;
@@ -16,23 +16,17 @@ interface EditRolePageClientProps {
 
 export function EditRolePageClient({ orgId, roleId, initialData }: EditRolePageClientProps) {
   const router = useRouter();
+  const { updateRole } = useRoles();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (values: RoleFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await api.patch(`/v1/roles/${roleId}`, values);
-
-      if (response.error) {
-        toast.error(response.error);
-        return;
-      }
-
+      await updateRole(roleId, values);
       toast.success('Role updated successfully');
       router.push(`/${orgId}/settings/roles`);
-      router.refresh();
     } catch (error) {
-      toast.error('Failed to update role');
+      toast.error(error instanceof Error ? error.message : 'Failed to update role');
     } finally {
       setIsSubmitting(false);
     }

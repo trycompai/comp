@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import {
   Button,
   Checkbox,
@@ -14,19 +13,18 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { NotificationKey, RoleNotificationConfig } from '../data/getRoleNotificationSettings';
 import { NOTIFICATION_TYPES } from '../data/getRoleNotificationSettings';
+import { useRoleNotifications } from '../hooks/useRoleNotifications';
 
 interface Props {
   initialSettings: RoleNotificationConfig[];
 }
 
 export function RoleNotificationSettings({ initialSettings }: Props) {
-  const api = useApi();
-  const router = useRouter();
+  const { saveSettings } = useRoleNotifications({ initialData: initialSettings });
   const [settings, setSettings] = useState<RoleNotificationConfig[]>(initialSettings);
   const [saving, setSaving] = useState(false);
 
@@ -48,15 +46,8 @@ export function RoleNotificationSettings({ initialSettings }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await api.put('/v1/organization/role-notifications', {
-        settings: settings.map((config) => ({
-          role: config.role,
-          ...config.notifications,
-        })),
-      });
-      if (response.error) throw new Error(response.error);
+      await saveSettings(settings);
       toast.success('Notification settings updated');
-      router.refresh();
     } catch {
       toast.error('Failed to update settings');
     } finally {

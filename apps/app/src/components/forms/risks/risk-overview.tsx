@@ -3,7 +3,7 @@
 import { updateRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
-import { useApi } from '@/hooks/use-api';
+import { useRiskActions } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
@@ -23,7 +23,7 @@ export function UpdateRiskOverview({
   risk: Risk;
   assignees: (Member & { user: User })[];
 }) {
-  const api = useApi();
+  const { updateRisk } = useRiskActions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,27 +42,26 @@ export function UpdateRiskOverview({
 
   const onSubmit = async (data: z.infer<typeof updateRiskSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/risks/${data.id}`, {
-      title: data.title,
-      description: data.description,
-      assigneeId: data.assigneeId,
-      category: data.category,
-      department: data.department,
-      status: data.status,
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updateRisk(data.id, {
+        title: data.title,
+        description: data.description,
+        assigneeId: data.assigneeId,
+        category: data.category,
+        department: data.department,
+        status: data.status,
+      });
+      toast.success('Risk updated successfully');
+      globalMutate(
+        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+        undefined,
+        { revalidate: true },
+      );
+    } catch {
       toast.error('Failed to update risk');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Risk updated successfully');
-    globalMutate(
-      (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
-      undefined,
-      { revalidate: true },
-    );
   };
 
   return (

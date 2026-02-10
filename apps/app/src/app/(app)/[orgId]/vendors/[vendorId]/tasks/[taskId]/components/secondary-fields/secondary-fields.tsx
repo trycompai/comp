@@ -1,7 +1,7 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -10,7 +10,6 @@ import type { Member, Task, User } from '@db';
 import { TaskStatus } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -56,8 +55,7 @@ function TaskSecondaryFieldsForm({
   };
   assignees: (Member & { user: User })[];
 }) {
-  const api = useApi();
-  const router = useRouter();
+  const { updateTask } = useTaskMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof secondaryFieldsSchema>>({
@@ -74,13 +72,11 @@ function TaskSecondaryFieldsForm({
   const onSubmit = async (data: z.infer<typeof secondaryFieldsSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await api.patch(`/v1/tasks/${data.id}`, {
+      await updateTask(data.id, {
         status: data.status,
         assigneeId: data.assigneeId,
       });
-      if (response.error) throw new Error(response.error);
       toast.success('Task updated successfully');
-      router.refresh();
     } catch {
       toast.error('Failed to update task');
     } finally {

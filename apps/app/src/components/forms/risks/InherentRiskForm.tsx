@@ -1,7 +1,7 @@
 'use client';
 
 import { updateInherentRiskSchema } from '@/actions/schema';
-import { useApi } from '@/hooks/use-api';
+import { useRiskActions } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
@@ -44,7 +44,7 @@ export function InherentRiskForm({
   initialProbability,
   initialImpact,
 }: InherentRiskFormProps) {
-  const api = useApi();
+  const { updateRisk } = useRiskActions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_, setOpen] = useQueryState('inherent-risk-sheet');
@@ -60,24 +60,23 @@ export function InherentRiskForm({
 
   const onSubmit = async (values: z.infer<typeof updateInherentRiskSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch(`/v1/risks/${values.id}`, {
-      likelihood: values.probability,
-      impact: values.impact,
-    });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updateRisk(values.id, {
+        likelihood: values.probability,
+        impact: values.impact,
+      });
+      toast.success('Inherent risk updated successfully');
+      globalMutate(
+        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
+        undefined,
+        { revalidate: true },
+      );
+      setOpen(null);
+    } catch {
       toast.error('Failed to update inherent risk');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Inherent risk updated successfully');
-    globalMutate(
-      (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
-      undefined,
-      { revalidate: true },
-    );
-    setOpen(null);
   };
 
   return (

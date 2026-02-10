@@ -1,7 +1,7 @@
 'use client';
 
 import { organizationWebsiteSchema } from '@/actions/schema';
-import { useApi } from '@/hooks/use-api';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -25,7 +25,7 @@ export function UpdateOrganizationWebsite({
 }: {
   organizationWebsite: string;
 }) {
-  const api = useApi();
+  const { updateOrganization } = useOrganizationMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationWebsiteSchema>>({
@@ -37,15 +37,14 @@ export function UpdateOrganizationWebsite({
 
   const onSubmit = async (data: z.infer<typeof organizationWebsiteSchema>) => {
     setIsSubmitting(true);
-    const response = await api.patch('/v1/organization', { website: data.website });
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await updateOrganization({ website: data.website });
+      toast.success('Organization website updated');
+    } catch {
       toast.error('Error updating organization website');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Organization website updated');
   };
 
   return (

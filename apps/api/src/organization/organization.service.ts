@@ -289,6 +289,205 @@ export class OrganizationService {
       throw error;
     }
   }
+  async listApiKeys(organizationId: string) {
+    const apiKeys = await db.apiKey.findMany({
+      where: { organizationId, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        expiresAt: true,
+        lastUsedAt: true,
+        isActive: true,
+        scopes: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      data: apiKeys.map((key) => ({
+        ...key,
+        createdAt: key.createdAt.toISOString(),
+        expiresAt: key.expiresAt ? key.expiresAt.toISOString() : null,
+        lastUsedAt: key.lastUsedAt ? key.lastUsedAt.toISOString() : null,
+      })),
+      count: apiKeys.length,
+    };
+  }
+
+  async getRoleNotificationSettings(organizationId: string) {
+    const BUILT_IN_ROLES = [
+      'owner',
+      'admin',
+      'auditor',
+      'employee',
+      'contractor',
+    ] as const;
+
+    const BUILT_IN_DEFAULTS: Record<
+      string,
+      Record<string, boolean>
+    > = {
+      owner: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: true,
+        findingNotifications: true,
+      },
+      admin: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: true,
+        findingNotifications: true,
+      },
+      auditor: {
+        policyNotifications: true,
+        taskReminders: false,
+        taskAssignments: false,
+        taskMentions: false,
+        weeklyTaskDigest: false,
+        findingNotifications: true,
+      },
+      employee: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: true,
+        findingNotifications: false,
+      },
+      contractor: {
+        policyNotifications: true,
+        taskReminders: true,
+        taskAssignments: true,
+        taskMentions: true,
+        weeklyTaskDigest: false,
+        findingNotifications: false,
+      },
+    };
+
+    const ALL_ON: Record<string, boolean> = {
+      policyNotifications: true,
+      taskReminders: true,
+      taskAssignments: true,
+      taskMentions: true,
+      weeklyTaskDigest: true,
+      findingNotifications: true,
+    };
+
+    const [savedSettings, customRoles] = await Promise.all([
+      db.roleNotificationSetting.findMany({ where: { organizationId } }),
+      db.organizationRole.findMany({
+        where: { organizationId },
+        select: { name: true },
+      }),
+    ]);
+
+    const settingsMap = new Map(savedSettings.map((s) => [s.role, s]));
+    const configs: Array<{
+      role: string;
+      label: string;
+      isCustom: boolean;
+      notifications: Record<string, boolean>;
+    }> = [];
+
+    for (const role of BUILT_IN_ROLES) {
+      const saved = settingsMap.get(role);
+      const defaults = BUILT_IN_DEFAULTS[role];
+      configs.push({
+        role,
+        label: role.charAt(0).toUpperCase() + role.slice(1),
+        isCustom: false,
+        notifications: saved
+          ? {
+              policyNotifications: saved.policyNotifications,
+              taskReminders: saved.taskReminders,
+              taskAssignments: saved.taskAssignments,
+              taskMentions: saved.taskMentions,
+              weeklyTaskDigest: saved.weeklyTaskDigest,
+              findingNotifications: saved.findingNotifications,
+            }
+          : defaults,
+      });
+    }
+
+    for (const customRole of customRoles) {
+      const saved = settingsMap.get(customRole.name);
+      configs.push({
+        role: customRole.name,
+        label: customRole.name,
+        isCustom: true,
+        notifications: saved
+          ? {
+              policyNotifications: saved.policyNotifications,
+              taskReminders: saved.taskReminders,
+              taskAssignments: saved.taskAssignments,
+              taskMentions: saved.taskMentions,
+              weeklyTaskDigest: saved.weeklyTaskDigest,
+              findingNotifications: saved.findingNotifications,
+            }
+          : ALL_ON,
+      });
+    }
+
+    return { data: configs };
+  }
+
+  async getLogoSignedUrl(logoKey: string | null | undefined): Promise<string | null> {
+    if (!logoKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      return null;
+    }
+
+    try {
+      return await getSignedUrl(
+        s3Client,
+        new GetObjectCommand({
+          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+          Key: logoKey,
+        }),
+        { expiresIn: 3600 },
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  async getOwnershipData(organizationId: string, userId: string) {
+    const currentUserMember = await db.member.findFirst({
+      where: { organizationId, userId, deactivated: false },
+    });
+
+    const currentUserRoles =
+      currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
+    const isOwner = currentUserRoles.includes(Role.owner);
+
+    let eligibleMembers: Array<{
+      id: string;
+      user: { name: string | null; email: string };
+    }> = [];
+
+    if (isOwner) {
+      eligibleMembers = await db.member.findMany({
+        where: {
+          organizationId,
+          userId: { not: userId },
+          deactivated: false,
+        },
+        select: {
+          id: true,
+          user: { select: { name: true, email: true } },
+        },
+        orderBy: { user: { email: 'asc' } },
+      });
+    }
+
+    return { isOwner, eligibleMembers };
+  }
+
   async updateRoleNotifications(
     organizationId: string,
     settings: Array<{

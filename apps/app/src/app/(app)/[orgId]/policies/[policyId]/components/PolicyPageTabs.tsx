@@ -166,6 +166,7 @@ export function PolicyPageTabs({
                 mappedControls={mappedControls}
                 allControls={allControls}
                 isPendingApproval={isPendingApproval}
+                onMutate={mutateAll}
               />
             </Stack>
           </TabsContent>

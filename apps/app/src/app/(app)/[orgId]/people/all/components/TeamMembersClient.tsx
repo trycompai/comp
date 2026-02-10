@@ -2,12 +2,10 @@
 
 import { Loader2, Mail, Search, UserPlus, X } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { authClient } from '@/utils/auth-client';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent } from '@comp/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
@@ -19,13 +17,13 @@ import type { CustomRoleOption } from './MultiRoleCombobox';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TeamMembersData } from './TeamMembers';
 
-import { usePeopleActions } from '@/hooks/use-people-api';
 import type { EmployeeSyncConnectionsData } from '../data/queries';
 import { useEmployeeSync } from '../hooks/useEmployeeSync';
+import { useTeamMembers } from '../hooks/useTeamMembers';
 import { InviteMembersModal } from './InviteMembersModal';
 
 interface TeamMembersClientProps {
-  data: TeamMembersData;
+  initialData: TeamMembersData;
   organizationId: string;
   canManageMembers: boolean;
   canInviteUsers: boolean;
@@ -48,7 +46,7 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
 }
 
 export function TeamMembersClient({
-  data,
+  initialData,
   organizationId,
   canManageMembers,
   canInviteUsers,
@@ -57,12 +55,19 @@ export function TeamMembersClient({
   employeeSyncData,
   customRoles = [],
 }: TeamMembersClientProps) {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
   const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
 
-  const { unlinkDevice, removeMember } = usePeopleActions();
+  const {
+    members,
+    pendingInvitations,
+    removeMember,
+    removeDevice,
+    updateMemberRole,
+    cancelInvitation,
+    revalidate,
+  } = useTeamMembers({ organizationId, initialData });
 
   // Add state for the modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -89,13 +94,13 @@ export function TeamMembersClient({
   ) => {
     const result = await syncEmployees(provider);
     if (result?.success) {
-      router.refresh();
+      await revalidate();
     }
   };
 
   // Combine and type members and invitations for filtering/display
   const allItems: DisplayItem[] = [
-    ...data.members.map((member) => {
+    ...members.map((member) => {
       // Process the role to handle comma-separated values
       const roles =
         typeof member.role === 'string' && member.role.includes(',')
@@ -117,7 +122,7 @@ export function TeamMembersClient({
         isDeactivated: member.deactivated,
       };
     }),
-    ...data.pendingInvitations.map((invitation) => {
+    ...pendingInvitations.map((invitation) => {
       // Process the role to handle comma-separated values
       const roles =
         typeof invitation.role === 'string' && invitation.role.includes(',')
@@ -178,21 +183,12 @@ export function TeamMembersClient({
 
   const handleCancelInvitation = async (invitationId: string) => {
     try {
-      const response = await fetch(`/api/invitations/${invitationId}`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.error || 'Failed to cancel invitation');
-        return;
-      }
-
+      await cancelInvitation(invitationId);
       toast.success('Invitation has been cancelled');
-      router.refresh();
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel invitation';
       console.error('Cancel Invitation Error:', error);
-      toast.error('Failed to cancel invitation');
+      toast.error(message);
     }
   };
 
@@ -200,7 +196,6 @@ export function TeamMembersClient({
     try {
       await removeMember(memberId);
       toast.success('Member has been removed from the organization');
-      router.refresh();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to remove member';
       toast.error(errorMessage);
@@ -208,20 +203,23 @@ export function TeamMembersClient({
   };
 
   const handleRemoveDevice = async (memberId: string) => {
-    await unlinkDevice(memberId);
-    toast.success('Device unlinked successfully');
-    router.refresh(); // Revalidate data to update UI
+    try {
+      await removeDevice(memberId);
+      toast.success('Device unlinked successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to unlink device';
+      toast.error(errorMessage);
+    }
   };
 
-  // Update handleUpdateRole to use authClient and add toasts
+  // Update handleUpdateRole to use the hook mutation
   const handleUpdateRole = async (memberId: string, roles: Role[]) => {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
-    const member = data.members.find((m) => m.id === memberId);
+    const member = members.find((m) => m.id === memberId);
 
     // Client-side check (optional, robust check should be server-side in authClient)
     const memberRoles = member?.role?.split(',').map((r) => r.trim()) ?? [];
     if (member && memberRoles.includes('owner') && !rolesArray.includes('owner')) {
-      // Show toast error directly, no need to return an error object
       toast.error('The Owner role cannot be removed.');
       return;
     }
@@ -233,17 +231,10 @@ export function TeamMembersClient({
     }
 
     try {
-      // Use authClient directly
-      await authClient.organization.updateMemberRole({
-        memberId: memberId,
-        role: rolesArray, // Pass the array of roles
-      });
+      await updateMemberRole(memberId, rolesArray);
       toast.success('Member roles updated successfully.');
-      router.refresh(); // Revalidate data
     } catch (error) {
       console.error('Update Role Error:', error);
-      // Attempt to get a meaningful error message from the caught error
-
       if (error instanceof Error) {
         toast.error(error.message);
         return;
@@ -263,6 +254,7 @@ export function TeamMembersClient({
           canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
         }
         customRoles={customRoles}
+        onInviteSuccess={revalidate}
       />
 
       <div className="mb-4 flex items-center justify-between gap-4">

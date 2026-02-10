@@ -20,25 +20,59 @@ export class TasksService {
   async getTasks(
     organizationId: string,
     assignmentFilter: Prisma.TaskWhereInput = {},
-  ): Promise<TaskResponseDto[]> {
+    options?: { includeRelations?: boolean },
+  ) {
     try {
       const tasks = await db.task.findMany({
         where: {
           organizationId,
           ...assignmentFilter,
         },
+        ...(options?.includeRelations && {
+          include: {
+            controls: {
+              select: { id: true, name: true },
+            },
+            evidenceAutomations: {
+              select: {
+                id: true,
+                isEnabled: true,
+                name: true,
+                runs: {
+                  orderBy: { createdAt: 'desc' as const },
+                  take: 3,
+                  select: {
+                    status: true,
+                    success: true,
+                    evaluationStatus: true,
+                    createdAt: true,
+                    triggeredBy: true,
+                    runDuration: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
         orderBy: [{ status: 'asc' }, { order: 'asc' }, { createdAt: 'asc' }],
       });
 
-      return tasks.map((task) => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-        taskTemplateId: task.taskTemplateId,
-      }));
+      if (options?.includeRelations) {
+        return { data: tasks, count: tasks.length };
+      }
+
+      return {
+        data: tasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          status: task.status,
+          createdAt: task.createdAt,
+          updatedAt: task.updatedAt,
+          taskTemplateId: task.taskTemplateId,
+        })),
+        count: tasks.length,
+      };
     } catch (error) {
       console.error('Error fetching tasks:', error);
       throw new InternalServerErrorException('Failed to fetch tasks');
@@ -51,7 +85,7 @@ export class TasksService {
   async getTask(
     organizationId: string,
     taskId: string,
-  ): Promise<TaskResponseDto> {
+  ) {
     try {
       const task = await db.task.findFirst({
         where: {
@@ -60,6 +94,7 @@ export class TasksService {
         },
         include: {
           assignee: true,
+          controls: true,
         },
       });
 
@@ -120,6 +155,53 @@ export class TasksService {
     });
 
     return runs;
+  }
+
+  /**
+   * Get page options for the tasks overview page
+   */
+  async getTaskPageOptions(organizationId: string, userId?: string) {
+    const [controls, frameworkInstances, organization, member] =
+      await Promise.all([
+        db.control.findMany({
+          where: { organizationId },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        db.frameworkInstance.findMany({
+          where: { organizationId },
+          include: {
+            framework: { select: { id: true, name: true } },
+            requirementsMapped: { select: { controlId: true } },
+          },
+        }),
+        db.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        }),
+        userId
+          ? db.member.findFirst({
+              where: { userId, organizationId, deactivated: false },
+              select: { role: true },
+            })
+          : null,
+      ]);
+
+    const roles =
+      member?.role
+        ?.split(',')
+        .map((r) => r.trim())
+        .filter(Boolean) || [];
+    const hasEvidenceExportAccess = roles.some((r) =>
+      ['auditor', 'admin', 'owner'].includes(r),
+    );
+
+    return {
+      controls,
+      frameworkInstances,
+      organizationName: organization?.name ?? null,
+      hasEvidenceExportAccess,
+    };
   }
 
   /**

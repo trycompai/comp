@@ -2,7 +2,7 @@
 
 import { Button, Switch } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
-import { api } from '@/lib/api-client';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -152,6 +152,7 @@ export function TrustPortalVendors({
   initialVendors,
   orgId,
 }: TrustPortalVendorsProps) {
+  const { updateVendorTrustSettings } = useTrustPortalSettings();
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -165,11 +166,9 @@ export function TrustPortalVendors({
       );
 
       try {
-        const response = await api.post(
-          `/v1/trust-portal/vendors/${vendorId}/trust-settings`,
-          { showOnTrustPortal: !currentValue },
-        );
-        if (response.error) throw new Error(response.error);
+        await updateVendorTrustSettings(vendorId, {
+          showOnTrustPortal: !currentValue,
+        });
         toast.success('Vendor settings updated');
       } catch {
         // Revert on failure
@@ -181,7 +180,7 @@ export function TrustPortalVendors({
         toast.error('Failed to update vendor settings');
       }
     },
-    [],
+    [updateVendorTrustSettings],
   );
 
   // Pagination logic

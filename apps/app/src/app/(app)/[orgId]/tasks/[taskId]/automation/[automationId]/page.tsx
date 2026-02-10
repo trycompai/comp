@@ -1,4 +1,5 @@
-import { db } from '@db';
+import { serverApi } from '@/lib/api-server';
+import type { Task } from '@db';
 import { redirect } from 'next/navigation';
 import { loadChatHistory } from './actions/task-automation-actions';
 import { AutomationLayoutWrapper } from './automation-layout-wrapper';
@@ -12,27 +13,23 @@ export default async function Page({
 }) {
   const { taskId, orgId, automationId } = await params;
 
-  const task = await db.task.findUnique({
-    where: {
-      id: taskId,
-      organizationId: orgId,
-    },
-  });
+  const taskRes = await serverApi.get<Task>(`/v1/tasks/${taskId}`);
 
-  if (!task) {
+  if (!taskRes.data || taskRes.error) {
     redirect('/tasks');
   }
 
+  const task = taskRes.data;
   const taskName = task.title;
 
   // Load chat history server-side (skip for ephemeral 'new' automations)
-  let initialMessages = [];
+  let initialMessages: unknown[] = [];
   if (automationId !== 'new') {
     const historyResult = await loadChatHistory(automationId);
     if (historyResult.success && historyResult.data?.messages) {
       // Deduplicate messages by ID (in case of concurrent save/load race conditions)
       const seen = new Set();
-      initialMessages = historyResult.data.messages.filter((msg: any) => {
+      initialMessages = historyResult.data.messages.filter((msg: { id: string }) => {
         if (seen.has(msg.id)) {
           return false;
         }

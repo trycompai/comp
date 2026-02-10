@@ -175,6 +175,24 @@ export class AutomationsController {
     return this.automationsService.delete(automationId);
   }
 
+  @Get(':automationId/runs')
+  @RequirePermission('task', 'read')
+  @ApiOperation({
+    summary: 'Get all runs for a specific automation',
+    description: 'Retrieve all runs for a specific automation',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiResponse({ status: 200, description: 'Runs retrieved successfully' })
+  async getAutomationRuns(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.findRunsByAutomationId(automationId);
+  }
+
   @Get(':automationId/versions')
   @RequirePermission('task', 'read')
   @ApiOperation({

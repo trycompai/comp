@@ -1,5 +1,5 @@
+import { serverApi } from '@/lib/api-server';
 import { Card, CardContent, CardHeader, CardTitle } from '@comp/ui/card';
-import { db } from '@db';
 import type { CSSProperties } from 'react';
 
 interface Props {
@@ -19,19 +19,6 @@ interface UserTestStats {
   unsupportedTests: number;
 }
 
-interface TestData {
-  status: string;
-  assignedUserId: string | null;
-}
-
-interface UserData {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image: string | null;
-  integrationResults: TestData[];
-}
-
 const testStatus = {
   passed: 'bg-[var(--chart-closed)]',
   failed: 'bg-[hsl(var(--destructive))]',
@@ -39,27 +26,10 @@ const testStatus = {
 };
 
 export async function TestsByAssignee({ organizationId }: Props) {
-  const userStats = await userData(organizationId);
-
-  const stats: UserTestStats[] = userStats.map((user) => ({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      image: user.image,
-    },
-    totalTests: user.integrationResults.length,
-    passedTests: user.integrationResults.filter(
-      (test) => test.status.toUpperCase() === 'passed'.toUpperCase(),
-    ).length,
-    failedTests: user.integrationResults.filter(
-      (test) => test.status.toUpperCase() === 'failed'.toUpperCase(),
-    ).length,
-    unsupportedTests: user.integrationResults.filter(
-      (test) => test.status.toUpperCase() === 'unsupported'.toUpperCase(),
-    ).length,
-  }));
-
+  const res = await serverApi.get<{ data: UserTestStats[] }>(
+    '/v1/people/test-stats/by-assignee',
+  );
+  const stats = Array.isArray(res.data?.data) ? res.data.data : [];
   stats.sort((a, b) => b.totalTests - a.totalTests);
 
   return (
@@ -107,34 +77,13 @@ export async function TestsByAssignee({ organizationId }: Props) {
 function TestBarChart({ stat }: { stat: UserTestStats }) {
   const data = [
     ...(stat.passedTests > 0
-      ? [
-          {
-            key: 'passed',
-            value: stat.passedTests,
-            color: testStatus.passed,
-            label: 'passed',
-          },
-        ]
+      ? [{ key: 'passed', value: stat.passedTests, color: testStatus.passed, label: 'passed' }]
       : []),
     ...(stat.failedTests > 0
-      ? [
-          {
-            key: 'failed',
-            value: stat.failedTests,
-            color: testStatus.failed,
-            label: 'failed',
-          },
-        ]
+      ? [{ key: 'failed', value: stat.failedTests, color: testStatus.failed, label: 'failed' }]
       : []),
     ...(stat.unsupportedTests > 0
-      ? [
-          {
-            key: 'unsupported',
-            value: stat.unsupportedTests,
-            color: testStatus.unsupported,
-            label: 'unsupported',
-          },
-        ]
+      ? [{ key: 'unsupported', value: stat.unsupportedTests, color: testStatus.unsupported, label: 'unsupported' }]
       : []),
   ];
 
@@ -195,66 +144,3 @@ function TestBarChart({ stat }: { stat: UserTestStats }) {
     </div>
   );
 }
-
-const userData = async (organizationId: string): Promise<UserData[]> => {
-  // Fetch members in the organization
-  const members = await db.member.findMany({
-    where: {
-      organizationId,
-      isActive: true,
-    },
-    select: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  // Get the list of user IDs in this organization
-  const userIds = members.map((member) => member.user.id);
-
-  // Fetch integration results assigned to these users
-  const integrationResults = await db.integrationResult.findMany({
-    where: {
-      organizationId,
-      assignedUserId: {
-        in: userIds,
-      },
-    },
-    select: {
-      status: true,
-      assignedUserId: true,
-    },
-  });
-
-  // Group integration results by user ID
-  const resultsByUser = new Map<string, TestData[]>();
-
-  for (const result of integrationResults) {
-    if (result.assignedUserId) {
-      if (!resultsByUser.has(result.assignedUserId)) {
-        resultsByUser.set(result.assignedUserId, []);
-      }
-      resultsByUser.get(result.assignedUserId)?.push({
-        status: result.status || '',
-        assignedUserId: result.assignedUserId,
-      });
-    }
-  }
-
-  // Map the data to the expected format
-  const userData: UserData[] = members.map((member) => ({
-    id: member.user.id,
-    name: member.user.name,
-    email: member.user.email,
-    image: member.user.image,
-    integrationResults: resultsByUser.get(member.user.id) || [],
-  }));
-
-  return userData;
-};

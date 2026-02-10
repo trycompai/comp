@@ -1,13 +1,11 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import { Form } from '@comp/ui/form';
 import type { Departments, Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section, Stack } from '@trycompai/design-system';
 import { Save } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -17,6 +15,7 @@ import { Email } from './Fields/Email';
 import { JoinDate } from './Fields/JoinDate';
 import { Name } from './Fields/Name';
 import { Status } from './Fields/Status';
+import { useEmployee } from '../hooks/useEmployee';
 
 // Define form schema with Zod
 const employeeFormSchema = z.object({
@@ -38,8 +37,10 @@ export const EmployeeDetails = ({
   };
   canEdit: boolean;
 }) => {
-  const api = useApi();
-  const router = useRouter();
+  const { updateEmployee } = useEmployee({
+    employeeId: employee.id,
+    initialData: employee,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<EmployeeFormValues>({
@@ -83,10 +84,8 @@ export const EmployeeDetails = ({
 
     setIsSubmitting(true);
     try {
-      const response = await api.patch(`/v1/people/${employee.id}`, updateData);
-      if (response.error) throw new Error(response.error);
+      await updateEmployee(updateData);
       toast.success('Employee details updated successfully');
-      router.refresh();
     } catch {
       toast.error('Failed to update employee details');
     } finally {

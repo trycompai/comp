@@ -1,6 +1,6 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
@@ -28,22 +28,21 @@ export function DeleteOrganization({
   organizationId: string;
   isOwner: boolean;
 }) {
-  const api = useApi();
+  const { deleteOrganization } = useOrganizationMutations();
   const [value, setValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDelete = async () => {
     setIsSubmitting(true);
-    const response = await api.delete('/v1/organization');
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await deleteOrganization();
+      toast.success('Organization deleted');
+      redirect('/');
+    } catch {
       toast.error('Error deleting organization');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Organization deleted');
-    redirect('/');
   };
 
   // Only show delete organization section to the owner

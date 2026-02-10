@@ -1,6 +1,5 @@
 'use client';
 
-import { useApi } from '@/hooks/use-api';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -14,11 +13,12 @@ import { Form } from '@comp/ui/form';
 import { Policy } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { usePolicy } from '../hooks/usePolicy';
 
 const formSchema = z.object({
   comment: z.string().optional(),
@@ -33,9 +33,14 @@ interface PolicyDeleteDialogProps {
 }
 
 export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDialogProps) {
-  const api = useApi();
   const router = useRouter();
+  const { orgId } = useParams<{ orgId: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { deletePolicy } = usePolicy({
+    policyId: policy.id,
+    organizationId: orgId,
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -44,19 +49,18 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
     },
   });
 
-  const handleSubmit = async (values: FormValues) => {
+  const handleSubmit = async (_values: FormValues) => {
     setIsSubmitting(true);
-    const response = await api.delete(`/v1/policies/${policy.id}`);
-    setIsSubmitting(false);
-
-    if (response.error) {
+    try {
+      await deletePolicy();
+      onClose();
+      toast.info('Policy deleted! Redirecting to policies list...');
+      router.replace(`/${policy.organizationId}/policies`);
+    } catch {
       toast.error('Failed to delete policy.');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
-    toast.info('Policy deleted! Redirecting to policies list...');
-    router.replace(`/${policy.organizationId}/policies`);
   };
 
   return (

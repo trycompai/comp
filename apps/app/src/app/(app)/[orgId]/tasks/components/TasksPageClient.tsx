@@ -17,6 +17,7 @@ import {
 import { Add, ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTasks } from '../hooks/useTasks';
 import type { FrameworkInstanceForTasks } from '../types';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { TaskList } from './TaskList';
@@ -48,7 +49,7 @@ interface TasksPageClientProps {
 }
 
 export function TasksPageClient({
-  tasks,
+  tasks: initialTasks,
   members,
   controls,
   frameworkInstances,
@@ -57,6 +58,7 @@ export function TasksPageClient({
   organizationName,
   hasEvidenceExportAccess,
 }: TasksPageClientProps) {
+  const { tasks, createTask, mutate: mutateTasks } = useTasks({ initialData: initialTasks });
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [includeRawJson, setIncludeRawJson] = useState(false);
@@ -128,12 +130,14 @@ export function TasksPageClient({
         members={members}
         frameworkInstances={frameworkInstances}
         activeTab={activeTab}
+        mutateTasks={mutateTasks}
       />
       <CreateTaskSheet
         members={members}
         controls={controls}
         open={isCreateSheetOpen}
         onOpenChange={setIsCreateSheetOpen}
+        createTask={createTask}
       />
     </PageLayout>
   );
