@@ -19,7 +19,6 @@ interface BulkTaskDeleteModalProps {
   selectedTaskIds: string[];
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  mutateTasks?: () => Promise<unknown>;
 }
 
 export function BulkTaskDeleteModal({

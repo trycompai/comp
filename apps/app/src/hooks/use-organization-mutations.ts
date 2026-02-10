@@ -6,6 +6,7 @@ import { useCallback } from 'react';
 interface UpdateOrganizationData {
   name?: string;
   website?: string;
+  evidenceApprovalEnabled?: boolean;
 }
 
 interface UploadLogoData {

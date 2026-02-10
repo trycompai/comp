@@ -24,7 +24,6 @@ interface BulkTaskAssigneeChangeModalProps {
   members: (Member & { user: User })[];
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-  mutateTasks?: () => Promise<unknown>;
 }
 
 const UnassignedAvatar = () => (

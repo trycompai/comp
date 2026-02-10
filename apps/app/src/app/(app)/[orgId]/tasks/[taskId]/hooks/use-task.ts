@@ -11,6 +11,7 @@ interface TaskData extends Task {
 interface UpdateTaskPayload {
   status?: TaskStatus;
   assigneeId?: string | null;
+  approverId?: string | null;
   frequency?: string | null;
   department?: string | null;
   reviewDate?: string | null;
@@ -27,6 +28,9 @@ interface UseTaskReturn {
   updateTask: (data: UpdateTaskPayload) => Promise<void>;
   deleteTask: () => Promise<void>;
   regenerateTask: () => Promise<void>;
+  submitForReview: (approverId: string) => Promise<void>;
+  approveTask: () => Promise<void>;
+  rejectTask: () => Promise<void>;
 }
 
 interface UseTaskOptions {
@@ -85,6 +89,27 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
     await mutate();
   };
 
+  const submitForReview = async (approverId: string): Promise<void> => {
+    if (!taskId) throw new Error('Task ID is required');
+    const response = await apiClient.post(`/v1/tasks/${taskId}/submit-for-review`, { approverId });
+    if (response.error) throw new Error(response.error);
+    await mutate();
+  };
+
+  const approveTask = async (): Promise<void> => {
+    if (!taskId) throw new Error('Task ID is required');
+    const response = await apiClient.post(`/v1/tasks/${taskId}/approve`, {});
+    if (response.error) throw new Error(response.error);
+    await mutate();
+  };
+
+  const rejectTask = async (): Promise<void> => {
+    if (!taskId) throw new Error('Task ID is required');
+    const response = await apiClient.post(`/v1/tasks/${taskId}/reject`, {});
+    if (response.error) throw new Error(response.error);
+    await mutate();
+  };
+
   return {
     task: data,
     isLoading,
@@ -94,5 +119,8 @@ export function useTask({ initialData }: UseTaskOptions = {}): UseTaskReturn {
     updateTask,
     deleteTask,
     regenerateTask,
+    submitForReview,
+    approveTask,
+    rejectTask,
   };
 }

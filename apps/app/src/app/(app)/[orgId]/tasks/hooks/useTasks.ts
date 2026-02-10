@@ -37,6 +37,7 @@ interface UseTasksReturn {
   bulkDelete: (taskIds: string[]) => Promise<{ deletedCount: number }>;
   bulkUpdateStatus: (taskIds: string[], status: TaskStatus, reviewDate?: string) => Promise<{ updatedCount: number }>;
   bulkUpdateAssignee: (taskIds: string[], assigneeId: string | null) => Promise<{ updatedCount: number }>;
+  bulkSubmitForReview: (taskIds: string[], approverId: string) => Promise<{ submittedCount: number }>;
   createTask: (data: CreateTaskPayload) => Promise<void>;
   reorderTasks: (updates: ReorderUpdate[]) => Promise<void>;
 }
@@ -125,6 +126,19 @@ export function useTasks({ initialData }: UseTasksOptions = {}): UseTasksReturn 
     return { updatedCount: response.data?.updatedCount ?? taskIds.length };
   };
 
+  const bulkSubmitForReview = async (
+    taskIds: string[],
+    approverId: string,
+  ): Promise<{ submittedCount: number }> => {
+    const response = await apiClient.post<{ submittedCount: number }>(
+      '/v1/tasks/bulk/submit-for-review',
+      { taskIds, approverId },
+    );
+    if (response.error) throw new Error(response.error);
+    await mutate();
+    return response.data ?? { submittedCount: 0 };
+  };
+
   const createTask = async (payload: CreateTaskPayload): Promise<void> => {
     const response = await apiClient.post('/v1/tasks', payload);
     if (response.error) throw new Error(response.error);
@@ -145,6 +159,7 @@ export function useTasks({ initialData }: UseTasksOptions = {}): UseTasksReturn 
     bulkDelete,
     bulkUpdateStatus,
     bulkUpdateAssignee,
+    bulkSubmitForReview,
     createTask,
     reorderTasks,
   };

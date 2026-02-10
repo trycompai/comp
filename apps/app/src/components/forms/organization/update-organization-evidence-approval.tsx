@@ -1,12 +1,13 @@
 'use client';
 
-import { updateOrganizationEvidenceApprovalAction } from '@/actions/organization/update-organization-evidence-approval-action';
 import { organizationEvidenceApprovalSchema } from '@/actions/schema';
+import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
 import { Loader2 } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -16,14 +17,10 @@ export function UpdateOrganizationEvidenceApproval({
 }: {
   evidenceApprovalEnabled: boolean;
 }) {
-  const updateEvidenceApproval = useAction(updateOrganizationEvidenceApprovalAction, {
-    onSuccess: () => {
-      toast.success('Evidence approval setting updated');
-    },
-    onError: () => {
-      toast.error('Error updating evidence approval setting');
-    },
-  });
+  const { updateOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<z.infer<typeof organizationEvidenceApprovalSchema>>({
     resolver: zodResolver(organizationEvidenceApprovalSchema),
@@ -32,8 +29,16 @@ export function UpdateOrganizationEvidenceApproval({
     },
   });
 
-  const onSubmit = (data: z.infer<typeof organizationEvidenceApprovalSchema>) => {
-    updateEvidenceApproval.execute(data);
+  const onSubmit = async (data: z.infer<typeof organizationEvidenceApprovalSchema>) => {
+    setIsSaving(true);
+    try {
+      await updateOrganization({ evidenceApprovalEnabled: data.evidenceApprovalEnabled });
+      toast.success('Evidence approval setting updated');
+    } catch {
+      toast.error('Error updating evidence approval setting');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -51,7 +56,7 @@ export function UpdateOrganizationEvidenceApproval({
                     When enabled, evidence tasks can be submitted for review before being marked as done.
                     An approver can be assigned to each task who must approve the evidence before completion.
                   </div>
-                  {updateEvidenceApproval.status === 'executing' && (
+                  {isSaving && (
                     <div className="flex items-center text-muted-foreground text-xs pt-1">
                       <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                       Saving...
@@ -65,6 +70,7 @@ export function UpdateOrganizationEvidenceApproval({
                       field.onChange(checked);
                       form.handleSubmit(onSubmit)();
                     }}
+                    disabled={!canUpdate}
                   />
                 </FormControl>
                 <FormMessage />
