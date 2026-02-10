@@ -40,7 +40,7 @@ const statement = {
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
   app: ['read'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 } as const;
 
 const ac = createAccessControl(statement);
@@ -60,7 +60,7 @@ const owner = ac.newRole({
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
   app: ['read'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 const admin = ac.newRole({
@@ -78,7 +78,7 @@ const admin = ac.newRole({
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
   app: ['read'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 const auditor = ac.newRole({
@@ -97,7 +97,7 @@ const auditor = ac.newRole({
   questionnaire: ['read'],
   integration: ['read'],
   app: ['read'],
-  portal: ['read'],
+  trust: ['read'],
 });
 
 const employee = ac.newRole({
@@ -105,14 +105,14 @@ const employee = ac.newRole({
   evidence: ['read', 'upload'],
   policy: ['read'],
   questionnaire: ['read', 'respond'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 const contractor = ac.newRole({
   task: ['read', 'complete'],
   evidence: ['read', 'upload'],
   policy: ['read'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 const allRoles = {

@@ -18,6 +18,7 @@ import { Add, ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTasks } from '../hooks/useTasks';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkInstanceForTasks } from '../types';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { TaskList } from './TaskList';
@@ -59,6 +60,7 @@ export function TasksPageClient({
   hasEvidenceExportAccess,
 }: TasksPageClientProps) {
   const { tasks, createTask, mutate: mutateTasks } = useTasks({ initialData: initialTasks });
+  const { hasPermission } = usePermissions();
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [includeRawJson, setIncludeRawJson] = useState(false);
@@ -116,9 +118,11 @@ export function TasksPageClient({
                   </PopoverContent>
                 </Popover>
               )}
-              <Button iconLeft={<Add />} onClick={() => setIsCreateSheetOpen(true)}>
-                Create Evidence
-              </Button>
+              {hasPermission('task', 'create') && (
+                <Button iconLeft={<Add />} onClick={() => setIsCreateSheetOpen(true)}>
+                  Create Evidence
+                </Button>
+              )}
             </div>
           }
         />

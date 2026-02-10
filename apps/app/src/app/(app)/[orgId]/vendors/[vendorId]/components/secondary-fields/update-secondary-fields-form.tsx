@@ -2,6 +2,7 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { VENDOR_STATUS_TYPES, VendorStatus } from '@/components/vendor-status';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useVendorActions } from '@/hooks/use-vendors';
 import { Button } from '@comp/ui/button';
 import { Checkbox } from '@comp/ui/checkbox';
@@ -29,6 +30,8 @@ export function UpdateSecondaryFieldsForm({
 }) {
   const { updateVendor } = useVendorActions();
   const { mutate: globalMutate } = useSWRConfig();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('vendor', 'update');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateVendorSchema>>({
@@ -85,7 +88,7 @@ export function UpdateSecondaryFieldsForm({
                 <FormLabel>{'Assignee'}</FormLabel>
                 <FormControl>
                   <SelectAssignee
-                    disabled={isSubmitting}
+                    disabled={!canUpdate || isSubmitting}
                     withTitle={false}
                     assignees={assignees}
                     assigneeId={field.value}
@@ -103,7 +106,7 @@ export function UpdateSecondaryFieldsForm({
               <FormItem>
                 <FormLabel>{'Status'}</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a status...'}>
                         {field.value && <VendorStatus status={field.value} />}
@@ -129,7 +132,7 @@ export function UpdateSecondaryFieldsForm({
               <FormItem>
                 <FormLabel>{'Category'}</FormLabel>
                 <FormControl>
-                  <Select {...field} value={field.value} onValueChange={field.onChange}>
+                  <Select {...field} value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a category...'} />
                     </SelectTrigger>
@@ -183,7 +186,7 @@ export function UpdateSecondaryFieldsForm({
                       id="isSubProcessor"
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={isSubmitting}
+                      disabled={!canUpdate || isSubmitting}
                     />
                     <span className="text-sm">
                       Display on Trust Center
@@ -194,15 +197,17 @@ export function UpdateSecondaryFieldsForm({
             )}
           />
         </div>
-        <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </div>
+        {canUpdate && (
+          <div className="mt-4 flex justify-end">
+            <Button type="submit" variant="default" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

@@ -410,7 +410,6 @@ export class PeopleController {
   }
 
   @Get('me/email-preferences')
-  @RequirePermission('member', 'read')
   @ApiOperation({ summary: 'Get current user email notification preferences' })
   async getEmailPreferences(
     @AuthContext() authContext: AuthContextType,
@@ -430,7 +429,6 @@ export class PeopleController {
   }
 
   @Put('me/email-preferences')
-  @RequirePermission('member', 'read')
   @ApiOperation({ summary: 'Update current user email notification preferences' })
   async updateEmailPreferences(
     @AuthContext() authContext: AuthContextType,

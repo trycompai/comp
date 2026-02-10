@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useRisk } from '@/hooks/use-risks';
 import {
   AlertDialog,
@@ -21,11 +22,14 @@ import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 
 export function RiskActions({ riskId, orgId }: { riskId: string; orgId: string }) {
+  const { hasPermission } = usePermissions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const { mutate: refreshRisk } = useRisk(riskId);
+
+  if (!hasPermission('risk', 'update')) return null;
 
   const handleConfirm = async () => {
     setIsConfirmOpen(false);

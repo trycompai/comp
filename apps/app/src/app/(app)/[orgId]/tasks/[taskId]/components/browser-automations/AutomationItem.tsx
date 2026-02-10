@@ -11,6 +11,7 @@ interface AutomationItemProps {
   automation: BrowserAutomation;
   isRunning: boolean;
   isExpanded: boolean;
+  readOnly?: boolean;
   onToggleExpand: () => void;
   onRun: () => void;
   onEdit: () => void;
@@ -20,6 +21,7 @@ export function AutomationItem({
   automation,
   isRunning,
   isExpanded,
+  readOnly,
   onToggleExpand,
   onRun,
   onEdit,
@@ -62,23 +64,27 @@ export function AutomationItem({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Edit automation">
-            <Settings className="h-4 w-4" />
-          </Button>
+          {!readOnly && (
+            <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Edit automation">
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
 
-          <Button variant="outline" size="sm" onClick={onRun} disabled={isRunning}>
-            {isRunning ? (
-              <>
-                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                Running...
-              </>
-            ) : (
-              <>
-                <MonitorPlay className="mr-1.5 h-3 w-3" />
-                Run
-              </>
-            )}
-          </Button>
+          {!readOnly && (
+            <Button variant="outline" size="sm" onClick={onRun} disabled={isRunning}>
+              {isRunning ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <MonitorPlay className="mr-1.5 h-3 w-3" />
+                  Run
+                </>
+              )}
+            </Button>
+          )}
 
           {runs.length > 0 && (
             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onToggleExpand}>

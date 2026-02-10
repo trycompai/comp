@@ -14,6 +14,7 @@ import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@comp/ui/select';
 import { Textarea } from '@comp/ui/textarea';
+import { usePermissions } from '@/hooks/use-permissions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -38,6 +39,8 @@ type SecretFormValues = z.infer<typeof secretSchema>;
 export function AddSecretDialog() {
   const [open, setOpen] = useState(false);
   const { createSecret } = useSecrets();
+  const { hasPermission } = usePermissions();
+  const canManageSecrets = hasPermission('organization', 'update');
 
   const {
     handleSubmit,
@@ -154,7 +157,7 @@ export function AddSecretDialog() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !canManageSecrets}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

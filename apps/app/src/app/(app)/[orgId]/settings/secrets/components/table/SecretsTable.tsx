@@ -4,6 +4,7 @@ import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@comp/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
+import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import { Copy, Edit, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
@@ -19,6 +20,8 @@ interface SecretsTableProps {
 
 export function SecretsTable({ initialSecrets }: SecretsTableProps) {
   const { secrets, deleteSecret } = useSecrets({ initialData: initialSecrets });
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
   const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
   const [editingSecret, setEditingSecret] = useState<Secret | null>(null);
@@ -229,6 +232,7 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
                               size="icon"
                               className="h-8 w-8 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
                               onClick={() => setEditingSecret(secret)}
+                              disabled={!canUpdate}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -246,6 +250,7 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
                               size="icon"
                               className="h-8 w-8 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-all"
                               onClick={() => handleDeleteSecret(secret.id)}
+                              disabled={!canUpdate}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

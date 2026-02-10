@@ -38,6 +38,8 @@ interface CommentsProps {
   title?: string;
   /** Optional custom description */
   description?: string;
+  /** When true, hides the comment form and edit/delete actions */
+  readOnly?: boolean;
 }
 
 /**
@@ -62,6 +64,7 @@ export const Comments = ({
   organizationId,
   title = 'Comments',
   description,
+  readOnly = false,
 }: CommentsProps) => {
   const params = useParams();
   const orgIdFromParams =
@@ -89,7 +92,9 @@ export const Comments = ({
   return (
     <Section title={title} description={description}>
       <Stack gap="md">
-        <CommentForm entityId={entityId} entityType={entityType} organizationId={resolvedOrgId} />
+        {!readOnly && (
+          <CommentForm entityId={entityId} entityType={entityType} organizationId={resolvedOrgId} />
+        )}
 
         {commentsLoading && (
           <Stack gap="sm">
@@ -122,7 +127,7 @@ export const Comments = ({
         )}
 
         {!commentsLoading && !commentsError && (
-          <CommentList comments={comments} refreshComments={refreshComments} />
+          <CommentList comments={comments} refreshComments={refreshComments} readOnly={readOnly} />
         )}
       </Stack>
     </Section>

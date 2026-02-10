@@ -22,6 +22,7 @@ interface ResultsViewProps {
   isScanning: boolean;
   needsConfiguration?: boolean;
   onConfigure?: () => void;
+  canRunScan?: boolean;
 }
 
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
@@ -32,6 +33,7 @@ export function ResultsView({
   isScanning,
   needsConfiguration,
   onConfigure,
+  canRunScan = true,
 }: ResultsViewProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
@@ -160,14 +162,16 @@ export function ResultsView({
           <div />
         )}
 
-        <Button
-          onClick={handleRunScan}
-          disabled={isScanning}
-          className="cursor-pointer gap-2 rounded-lg text-white"
-        >
-          <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
-          {isScanning ? 'Scanning...' : 'Run Scan'}
-        </Button>
+        {canRunScan && (
+          <Button
+            onClick={handleRunScan}
+            disabled={isScanning}
+            className="cursor-pointer gap-2 rounded-lg text-white"
+          >
+            <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
+            {isScanning ? 'Scanning...' : 'Run Scan'}
+          </Button>
+        )}
       </div>
 
       {sortedFindings.length > 0 ? (

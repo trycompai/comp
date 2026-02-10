@@ -52,6 +52,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicy } from '../../hooks/usePolicy';
 import { usePolicyVersions } from '../../hooks/usePolicyVersions';
+import { usePermissions } from '@/hooks/use-permissions';
 import { PdfViewer } from '../../components/PdfViewer';
 import { PublishVersionDialog } from '../../components/PublishVersionDialog';
 import type { PolicyChatUIMessage } from '../types';
@@ -175,6 +176,11 @@ export function PolicyContentManager({
     policyId,
     organizationId: orgId,
   });
+
+  const { hasPermission } = usePermissions();
+  const canUpdatePolicy = hasPermission('policy', 'update');
+  const canPublishPolicy = hasPermission('policy', 'publish');
+  const canDeletePolicy = hasPermission('policy', 'delete');
 
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
@@ -400,6 +406,7 @@ export function PolicyContentManager({
   // 2. Viewing a version that's not the published one (for published policies)
   // 3. OR policy is draft/needs_review
   const canPublishCurrentVersion = useMemo(() => {
+    if (!canPublishPolicy) return false;
     if (isPendingApproval) return false;
     if (isViewingPendingVersion) return false;
 
@@ -410,7 +417,7 @@ export function PolicyContentManager({
 
     // For draft/needs_review, can publish the current version
     return policyStatus === PolicyStatus.draft || policyStatus === PolicyStatus.needs_review;
-  }, [isPendingApproval, isViewingPendingVersion, policyStatus, isViewingActiveVersion]);
+  }, [canPublishPolicy, isPendingApproval, isViewingPendingVersion, policyStatus, isViewingActiveVersion]);
 
   // Content to display is always currentContent (editable)
   const displayContent = useMemo(() => {
@@ -458,14 +465,17 @@ export function PolicyContentManager({
   );
 
   const handleSwitchFormat = async (format: string) => {
-    try {
-      await updatePolicy({ displayFormat: format });
-      previousTabRef.current = activeTab;
-    } catch {
-      toast.error('Failed to switch view.');
-      setActiveTab(previousTabRef.current);
-      if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
-        setShowAiAssistant(true);
+    previousTabRef.current = activeTab;
+    // Only persist the preference if the user can update the policy
+    if (canUpdatePolicy) {
+      try {
+        await updatePolicy({ displayFormat: format });
+      } catch {
+        toast.error('Failed to switch view.');
+        setActiveTab(previousTabRef.current);
+        if (previousTabRef.current === 'EDITOR' && aiAssistantEnabled) {
+          setShowAiAssistant(true);
+        }
       }
     }
   };
@@ -702,7 +712,7 @@ export function PolicyContentManager({
                         const isActive = version.id === currentVersionId;
                         const isPending = version.id === pendingVersionId;
                         const isSelected = version.id === viewingVersion;
-                        const canDelete = !isActive && !isPending;
+                        const canDelete = canDeletePolicy && !isActive && !isPending;
                         return (
                           <div
                             key={version.id}
@@ -1091,6 +1101,9 @@ function PolicyEditorWrapper({
   onVersionContentChange?: (versionId: string, content: JSONContent[]) => void;
   saveVersionContent: (versionId: string, content: JSONContent[]) => Promise<unknown>;
 }) {
+  const { hasPermission } = usePermissions();
+  const canUpdatePolicy = hasPermission('policy', 'update');
+
   const formattedContent = Array.isArray(policyContent)
     ? policyContent
     : [policyContent as JSONContent];
@@ -1113,7 +1126,7 @@ function PolicyEditorWrapper({
   }
 
   // Determine if editor should be read-only
-  const isReadOnly = isPendingApproval || isVersionReadOnly;
+  const isReadOnly = isPendingApproval || isVersionReadOnly || !canUpdatePolicy;
 
   // Get status message and styling for all states
   const getStatusInfo = (): {

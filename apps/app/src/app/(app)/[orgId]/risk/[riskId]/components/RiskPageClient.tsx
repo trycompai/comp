@@ -10,6 +10,7 @@ import { CommentEntityType } from '@db';
 import type { Member, Risk, User } from '@db';
 import { PageHeader } from '@trycompai/design-system';
 import { useMemo } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { RiskActions } from './RiskActions';
 
 type RiskWithAssignee = Risk & {
@@ -50,6 +51,7 @@ export function RiskPageClient({
   taskItemId,
 }: RiskPageClientProps) {
   const { risk: swrRisk } = useRisk(riskId);
+  const { hasPermission } = usePermissions();
   const isViewingTask = Boolean(taskItemId);
 
   const risk = useMemo(() => {

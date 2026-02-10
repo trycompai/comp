@@ -28,6 +28,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Add, Edit, OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -58,6 +59,8 @@ function ActionsCell({
   const params = useParams();
   const orgId = params.orgId as string;
   const { deleteRole } = useRoles();
+  const { hasPermission } = usePermissions();
+  const canManageRoles = hasPermission('member', 'update');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -87,10 +90,12 @@ function ActionsCell({
             <Edit size={16} />
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <TrashCan size={16} />
-            Delete
-          </DropdownMenuItem>
+          {canManageRoles && (
+            <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+              <TrashCan size={16} />
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -133,6 +138,8 @@ export function RolesTable({ roles }: RolesTableProps) {
   const router = useRouter();
   const params = useParams();
   const orgId = params.orgId as string;
+  const { hasPermission } = usePermissions();
+  const canManageRoles = hasPermission('member', 'update');
   const [search, setSearch] = useState('');
 
   const filteredRoles = useMemo(() => {
@@ -170,12 +177,14 @@ export function RolesTable({ roles }: RolesTableProps) {
             />
           </InputGroup>
         </div>
-        <Button
-          iconLeft={<Add size={16} />}
-          onClick={() => router.push(`/${orgId}/settings/roles/new`)}
-        >
-          Create Role
-        </Button>
+        {canManageRoles && (
+          <Button
+            iconLeft={<Add size={16} />}
+            onClick={() => router.push(`/${orgId}/settings/roles/new`)}
+          >
+            Create Role
+          </Button>
+        )}
       </HStack>
 
       {/* Table */}

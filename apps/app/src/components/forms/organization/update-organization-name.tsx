@@ -2,6 +2,7 @@
 
 import { organizationNameSchema } from '@/actions/schema';
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -22,6 +23,7 @@ import type { z } from 'zod';
 
 export function UpdateOrganizationName({ organizationName }: { organizationName: string }) {
   const { updateOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationNameSchema>>({
@@ -73,6 +75,7 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
                       autoCorrect="off"
                       spellCheck="false"
                       maxLength={32}
+                      disabled={!hasPermission('organization', 'update')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -84,7 +87,7 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
             <div className="text-muted-foreground text-xs">
               {'Please use 32 characters at maximum.'}
             </div>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !hasPermission('organization', 'update')}>
               {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}

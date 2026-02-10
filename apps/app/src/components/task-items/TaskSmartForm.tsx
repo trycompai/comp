@@ -28,6 +28,7 @@ import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { TaskRichDescriptionField } from './TaskRichDescriptionField';
 import { useTaskItemAttachmentUpload } from './hooks/use-task-item-attachment-upload';
 import type { JSONContent } from '@tiptap/react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface TaskSmartFormProps {
   entityId: string;
@@ -93,6 +94,9 @@ export function TaskSmartForm({
     initialValues?.assigneeId ?? null,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('task', 'create');
 
   const { optimisticCreate, optimisticUpdate } = useOptimisticTaskItems(
     entityId,
@@ -334,7 +338,7 @@ export function TaskSmartForm({
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={isSubmitting || isUploading || !title.trim()}
+          disabled={isSubmitting || isUploading || !title.trim() || (mode === 'create' && !canCreate)}
           className="h-8 px-3"
         >
           {isSubmitting ? (

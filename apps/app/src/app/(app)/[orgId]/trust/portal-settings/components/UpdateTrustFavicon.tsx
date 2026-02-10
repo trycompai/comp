@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
@@ -12,6 +13,8 @@ interface UpdateTrustFaviconProps {
 }
 
 export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdatePortal = hasPermission('trust', 'update');
   const { uploadFavicon, removeFavicon } = useTrustPortalSettings();
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentFaviconUrl);
   const [isUploading, setIsUploading] = useState(false);
@@ -122,17 +125,19 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
               className="hidden"
               disabled={isLoading}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              loading={isUploading}
-            >
-              Upload favicon
-            </Button>
-            {previewUrl && (
+            {canUpdatePortal && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                loading={isUploading}
+              >
+                Upload favicon
+              </Button>
+            )}
+            {canUpdatePortal && previewUrl && (
               <Button
                 type="button"
                 variant="ghost"

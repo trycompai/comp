@@ -11,6 +11,7 @@ import {
 } from '@comp/ui/dialog';
 import { Form } from '@comp/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -38,6 +39,8 @@ export function FrameworkDeleteDialog({
   frameworkInstance,
 }: FrameworkDeleteDialogProps) {
   const { deleteFramework } = useFrameworks();
+  const { hasPermission } = usePermissions();
+  const canDeleteFramework = hasPermission('framework', 'delete');
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -76,7 +79,7 @@ export function FrameworkDeleteDialog({
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">
+              <Button type="submit" variant="destructive" disabled={isSubmitting || !canDeleteFramework} className="gap-2">
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />

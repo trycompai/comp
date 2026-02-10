@@ -1,6 +1,7 @@
 'use client';
 
 import { updatePolicyOverviewSchema } from '@/actions/schema';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import type { Policy } from '@db';
@@ -26,6 +27,7 @@ interface UpdatePolicyFormProps {
 }
 
 export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
+  const { hasPermission } = usePermissions();
   const { updatePolicy } = usePolicyMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -98,7 +100,7 @@ export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
                   )}
                 />
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting || !hasPermission('policy', 'update')}>
                     {isSubmitting ? 'Saving...' : 'Save'}
                   </Button>
                 </div>

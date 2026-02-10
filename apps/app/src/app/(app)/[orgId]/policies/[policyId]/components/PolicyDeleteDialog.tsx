@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicy } from '../hooks/usePolicy';
 
 const formSchema = z.object({
@@ -35,6 +36,7 @@ interface PolicyDeleteDialogProps {
 export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDialogProps) {
   const router = useRouter();
   const { orgId } = useParams<{ orgId: string }>();
+  const { hasPermission } = usePermissions();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { deletePolicy } = usePolicy({
@@ -78,7 +80,7 @@ export function PolicyDeleteDialog({ isOpen, onClose, policy }: PolicyDeleteDial
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">
+              <Button type="submit" variant="destructive" disabled={isSubmitting || !hasPermission('policy', 'delete')} className="gap-2">
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />

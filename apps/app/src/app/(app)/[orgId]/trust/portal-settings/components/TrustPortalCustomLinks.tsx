@@ -11,6 +11,7 @@ import {
 } from '@trycompai/design-system';
 import { Add, Close, Edit, Link as LinkIcon, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import { GripVertical } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalCustomLinks } from '@/hooks/use-trust-portal-custom-links';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -50,10 +51,12 @@ function SortableLink({
   link,
   onEdit,
   onDelete,
+  canUpdate,
 }: {
   link: CustomLink;
   onEdit: (link: CustomLink) => void;
   onDelete: (linkId: string) => void;
+  canUpdate: boolean;
 }) {
   const {
     attributes,
@@ -87,21 +90,23 @@ function SortableLink({
       <div className="flex-1 space-y-1">
         <div className="flex items-start justify-between">
           <h4 className="font-medium">{link.title}</h4>
-          <DropdownMenu>
-            <DropdownMenuTrigger variant="ellipsis">
-              <OverflowMenuVertical size={16} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(link)}>
-                <Edit size={16} />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(link.id)}>
-                <TrashCan size={16} />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canUpdate && (
+            <DropdownMenu>
+              <DropdownMenuTrigger variant="ellipsis">
+                <OverflowMenuVertical size={16} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(link)}>
+                  <Edit size={16} />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(link.id)}>
+                  <TrashCan size={16} />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         {link.description && (
           <p className="text-sm text-muted-foreground">{link.description}</p>
@@ -124,6 +129,8 @@ export function TrustPortalCustomLinks({
   initialLinks,
   orgId,
 }: TrustPortalCustomLinksProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const {
     createLink: createLinkApi,
     updateLink: updateLinkApi,
@@ -257,9 +264,11 @@ export function TrustPortalCustomLinks({
             Add external links to display on your trust portal (e.g., StatusPage, support site)
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} iconLeft={<Add size={16} />}>
-          Add Link
-        </Button>
+        {canUpdate && (
+          <Button onClick={() => setIsModalOpen(true)} iconLeft={<Add size={16} />}>
+            Add Link
+          </Button>
+        )}
       </div>
 
       {links.length === 0 ? (
@@ -285,6 +294,7 @@ export function TrustPortalCustomLinks({
                   link={link}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  canUpdate={canUpdate}
                 />
               ))}
             </div>

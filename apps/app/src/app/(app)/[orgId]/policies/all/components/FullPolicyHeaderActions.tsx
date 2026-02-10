@@ -19,11 +19,15 @@ import { Icons } from '@comp/ui/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicyActions } from '../hooks/usePolicyActions';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export function FullPolicyHeaderActions() {
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const { regenerateAll } = usePolicyActions();
+  const { hasPermission } = usePermissions();
+
+  if (!hasPermission('policy', 'update')) return null;
 
   const handleRegenerate = async () => {
     setIsRegenerating(true);

@@ -79,7 +79,7 @@ export class TrustAccessController {
 
   @Get('admin/requests')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -99,7 +99,7 @@ export class TrustAccessController {
 
   @Get('admin/requests/:id')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -119,7 +119,7 @@ export class TrustAccessController {
 
   @Post('admin/requests/:id/approve')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -154,7 +154,7 @@ export class TrustAccessController {
 
   @Post('admin/requests/:id/deny')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -186,7 +186,7 @@ export class TrustAccessController {
 
   @Get('admin/grants')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -200,7 +200,7 @@ export class TrustAccessController {
 
   @Post('admin/grants/:id/revoke')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -232,7 +232,7 @@ export class TrustAccessController {
 
   @Post('admin/grants/:id/resend-access-email')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -319,7 +319,7 @@ export class TrustAccessController {
 
   @Post('admin/requests/:id/resend-nda')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -339,7 +339,7 @@ export class TrustAccessController {
 
   @Post('admin/requests/:id/preview-nda')
   @UseGuards(HybridAuthGuard, PermissionGuard)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiSecurity('apikey')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

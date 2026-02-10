@@ -1,6 +1,7 @@
 'use client';
 
 import { FileUploader } from '@/components/file-uploader';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   useTrustPortalDocuments,
   type TrustPortalDocument,
@@ -34,6 +35,8 @@ export function TrustPortalAdditionalDocumentsSection({
   enabled,
   documents: initialDocuments,
 }: TrustPortalAdditionalDocumentsSectionProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdatePortal = hasPermission('trust', 'update');
   const {
     documents,
     uploadDocument,
@@ -230,47 +233,51 @@ export function TrustPortalAdditionalDocumentsSection({
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDeleteClick(doc.id, doc.name)}
-                  disabled={!enabled || isDeleting || isDownloading}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canUpdatePortal && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDeleteClick(doc.id, doc.name)}
+                    disabled={!enabled || isDeleting || isDownloading}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      <div className="mt-4">
-        <FileUploader
-          onUpload={handleFileUpload}
-          multiple={true}
-          maxFileCount={10}
-          accept={{
-            'application/pdf': ['.pdf'],
-            'application/msword': ['.doc'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-            'application/vnd.ms-excel': ['.xls'],
-            'text/csv': ['.csv'],
-            'text/plain': ['.txt'],
-            'text/markdown': ['.md'],
-            'image/png': ['.png'],
-            'image/jpeg': ['.jpg', '.jpeg'],
-            'image/gif': ['.gif'],
-            'image/webp': ['.webp'],
-            'image/svg+xml': ['.svg'],
-          }}
-          maxSize={100 * 1024 * 1024}
-          disabled={!enabled || isUploading}
-          progresses={uploadProgress}
-        />
-      </div>
+      {canUpdatePortal && (
+        <div className="mt-4">
+          <FileUploader
+            onUpload={handleFileUpload}
+            multiple={true}
+            maxFileCount={10}
+            accept={{
+              'application/pdf': ['.pdf'],
+              'application/msword': ['.doc'],
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+              'application/vnd.ms-excel': ['.xls'],
+              'text/csv': ['.csv'],
+              'text/plain': ['.txt'],
+              'text/markdown': ['.md'],
+              'image/png': ['.png'],
+              'image/jpeg': ['.jpg', '.jpeg'],
+              'image/gif': ['.gif'],
+              'image/webp': ['.webp'],
+              'image/svg+xml': ['.svg'],
+            }}
+            maxSize={100 * 1024 * 1024}
+            disabled={!enabled || isUploading}
+            progresses={uploadProgress}
+          />
+        </div>
+      )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

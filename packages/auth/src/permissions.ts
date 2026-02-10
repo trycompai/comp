@@ -37,7 +37,7 @@ const statement = {
   apiKey: ['create', 'read', 'delete'],
   // App access resources
   app: ['read'], // Main app access
-  portal: ['read', 'update'], // Employee portal access
+  trust: ['read', 'update'], // Trust center access
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -68,7 +68,7 @@ export const owner = ac.newRole({
   apiKey: ['create', 'read', 'delete'],
   // App access
   app: ['read'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 /**
@@ -97,7 +97,7 @@ export const admin = ac.newRole({
   apiKey: ['create', 'read', 'delete'],
   // App access
   app: ['read'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 /**
@@ -122,7 +122,7 @@ export const auditor = ac.newRole({
   integration: ['read'],
   // App access
   app: ['read'],
-  portal: ['read'],
+  trust: ['read'],
 });
 
 /**
@@ -137,7 +137,7 @@ export const employee = ac.newRole({
   policy: ['read'],
   questionnaire: ['read', 'respond'],
   // Portal access only - no app access
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 /**
@@ -151,7 +151,7 @@ export const contractor = ac.newRole({
   evidence: ['read', 'upload'],
   policy: ['read'],
   // Portal access only - no app access
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 });
 
 /**

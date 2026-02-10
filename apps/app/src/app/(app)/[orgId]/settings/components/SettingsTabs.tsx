@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { usePathname } from 'next/navigation';
 import { AddSecretDialog } from '../secrets/components/AddSecretDialog';
@@ -12,6 +13,7 @@ interface SettingsTabsProps {
 
 export function SettingsTabs({ orgId, children }: SettingsTabsProps) {
   const pathname = usePathname() ?? '';
+  const { hasPermission } = usePermissions();
 
   // Pages that handle their own PageLayout (with breadcrumbs)
   const hasOwnLayout =
@@ -40,7 +42,7 @@ export function SettingsTabs({ orgId, children }: SettingsTabsProps) {
       header={
         <PageHeader
           title={title}
-          actions={isSecretsPage ? <AddSecretDialog /> : undefined}
+          actions={isSecretsPage && hasPermission('organization', 'update') ? <AddSecretDialog /> : undefined}
         />
       }
     >

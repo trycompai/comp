@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { Invitation, Role } from '@db';
 import { InputGroup, InputGroupAddon, InputGroupInput, Separator } from '@trycompai/design-system';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { MemberRow } from './MemberRow';
 import type { CustomRoleOption } from './MultiRoleCombobox';
 import { PendingInvitationRow } from './PendingInvitationRow';
@@ -48,13 +49,17 @@ interface DisplayItem extends Partial<MemberWithUser>, Partial<Invitation> {
 export function TeamMembersClient({
   initialData,
   organizationId,
-  canManageMembers,
-  canInviteUsers,
+  canManageMembers: _canManageMembers,
+  canInviteUsers: _canInviteUsers,
   isAuditor,
   isCurrentUserOwner,
   employeeSyncData,
   customRoles = [],
 }: TeamMembersClientProps) {
+  const { hasPermission } = usePermissions();
+  const canManageMembers = hasPermission('member', 'update');
+  const canInviteUsers = hasPermission('member', 'create');
+
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [roleFilter, setRoleFilter] = useQueryState('role', parseAsString.withDefault('all'));
   const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));

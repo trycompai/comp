@@ -15,6 +15,7 @@ import { Stack } from '@trycompai/design-system';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicyVersions } from '../hooks/usePolicyVersions';
 
 interface PublishVersionDialogProps {
@@ -33,6 +34,7 @@ export function PublishVersionDialog({
   onSuccess,
 }: PublishVersionDialogProps) {
   const { orgId } = useParams<{ orgId: string }>();
+  const { hasPermission } = usePermissions();
   const { createVersion } = usePolicyVersions({
     policyId,
     organizationId: orgId,
@@ -99,7 +101,7 @@ export function PublishVersionDialog({
           <Button variant="outline" onClick={onClose} disabled={isCreating}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={isCreating}>
+          <Button onClick={handleCreate} disabled={isCreating || !hasPermission('policy', 'update')}>
             {isCreating ? 'Creating...' : 'Create Version'}
           </Button>
         </DialogFooter>

@@ -20,7 +20,7 @@ const VALID_RESOURCES: Record<string, string[]> = {
   questionnaire: ['create', 'read', 'update', 'delete', 'respond'],
   integration: ['create', 'read', 'update', 'delete'],
   app: ['read'],
-  portal: ['read', 'update'],
+  trust: ['read', 'update'],
 };
 
 // Built-in roles that cannot be modified or deleted
@@ -142,20 +142,20 @@ export class RolesService {
           questionnaire: ['read'],
           integration: ['read'],
           app: ['read'],
-          portal: ['read'],
+          trust: ['read'],
         },
         employee: {
           task: ['read', 'complete'],
           evidence: ['read', 'upload'],
           policy: ['read'],
           questionnaire: ['read', 'respond'],
-          portal: ['read', 'update'],
+          trust: ['read', 'update'],
         },
         contractor: {
           task: ['read', 'complete'],
           evidence: ['read', 'upload'],
           policy: ['read'],
-          portal: ['read', 'update'],
+          trust: ['read', 'update'],
         },
       };
       return builtInPermissions[roleName] || {};
@@ -408,6 +408,46 @@ export class RolesService {
     });
 
     return { success: true, message: `Role '${role.name}' deleted` };
+  }
+
+  /**
+   * Get merged permissions for a list of custom role names.
+   * Used by the frontend to resolve effective permissions for custom roles.
+   */
+  async getPermissionsForRoles(
+    organizationId: string,
+    roleNames: string[],
+  ): Promise<Record<string, string[]>> {
+    if (roleNames.length === 0) return {};
+
+    const customRoles = await db.organizationRole.findMany({
+      where: {
+        organizationId,
+        name: { in: roleNames },
+      },
+    });
+
+    const combined: Record<string, string[]> = {};
+    for (const role of customRoles) {
+      const perms =
+        typeof role.permissions === 'string'
+          ? JSON.parse(role.permissions)
+          : role.permissions;
+      for (const [resource, actions] of Object.entries(
+        perms as Record<string, string[]>,
+      )) {
+        if (!combined[resource]) {
+          combined[resource] = [];
+        }
+        for (const action of actions) {
+          if (!combined[resource].includes(action)) {
+            combined[resource].push(action);
+          }
+        }
+      }
+    }
+
+    return combined;
   }
 
   /**

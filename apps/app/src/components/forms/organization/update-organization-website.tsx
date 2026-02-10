@@ -2,6 +2,7 @@
 
 import { organizationWebsiteSchema } from '@/actions/schema';
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -26,6 +27,7 @@ export function UpdateOrganizationWebsite({
   organizationWebsite: string;
 }) {
   const { updateOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof organizationWebsiteSchema>>({
@@ -76,6 +78,7 @@ export function UpdateOrganizationWebsite({
                       spellCheck="false"
                       maxLength={255}
                       placeholder="https://example.com"
+                      disabled={!hasPermission('organization', 'update')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -87,7 +90,7 @@ export function UpdateOrganizationWebsite({
             <div className="text-muted-foreground text-xs">
               {'Please enter a valid URL including https://'}
             </div>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !hasPermission('organization', 'update')}>
               {isSubmitting ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : null}

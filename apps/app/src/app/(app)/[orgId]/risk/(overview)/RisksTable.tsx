@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   useRiskActions,
   useRisks,
@@ -128,6 +129,7 @@ export const RisksTable = ({
   orgId: string;
 }) => {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const { deleteRisk } = useRiskActions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [riskToDelete, setRiskToDelete] = useState<RiskRow | null>(null);
@@ -473,7 +475,7 @@ export const RisksTable = ({
                       {getSortIcon('updatedAt')}
                     </button>
                   </TableHead>
-                  <TableHead>ACTIONS</TableHead>
+                  {hasPermission('risk', 'delete') && <TableHead>ACTIONS</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -500,31 +502,33 @@ export const RisksTable = ({
                       <TableCell>
                         <Text>{formatDate(risk.updatedAt)}</Text>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex justify-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              variant="ellipsis"
-                              disabled={blocked}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <OverflowMenuVertical />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(risk);
-                                }}
+                      {hasPermission('risk', 'delete') && (
+                        <TableCell>
+                          <div className="flex justify-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                variant="ellipsis"
+                                disabled={blocked}
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <TrashCan size={16} />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
+                                <OverflowMenuVertical />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(risk);
+                                  }}
+                                >
+                                  <TrashCan size={16} />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}

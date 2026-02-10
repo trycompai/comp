@@ -40,6 +40,7 @@ import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicy } from '../hooks/usePolicy';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type PolicyWithVersion = Policy & {
   currentVersion?: (PolicyVersion & { publishedBy: (Member & { user: User }) | null }) | null;
@@ -90,8 +91,10 @@ export function UpdatePolicyOverview({
     policy.frequency || Frequency.monthly,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
 
-  const fieldsDisabled = isPendingApproval;
+  const fieldsDisabled = isPendingApproval || !canUpdate;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -240,7 +243,7 @@ export function UpdatePolicyOverview({
             </Stack>
           </Grid>
 
-          {!isPendingApproval && (
+          {!isPendingApproval && canUpdate && (
             <HStack justify="end">
               <Button
                 disabled={!hasFormChanges || isLoading}

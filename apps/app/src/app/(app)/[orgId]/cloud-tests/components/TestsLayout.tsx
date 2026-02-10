@@ -2,6 +2,7 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
 import { Add, Settings } from '@trycompai/design-system/icons';
@@ -44,6 +45,8 @@ const needsVariableConfiguration = (provider: Provider): boolean => {
 };
 
 export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsLayoutProps) {
+  const { hasPermission } = usePermissions();
+  const canRunScan = hasPermission('integration', 'update');
   const api = useApi();
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
@@ -282,6 +285,7 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           setConfigureDialogOpen(true);
         }}
         needsConfiguration={needsVariableConfiguration}
+        canRunScan={canRunScan}
       />
 
       {/* CloudSettingsModal only for providers that do NOT support multiple connections */}

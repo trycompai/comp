@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { updatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
@@ -22,6 +23,8 @@ import type { z } from 'zod';
 const policyStatuses: PolicyStatus[] = ['draft', 'published', 'needs_review'] as const;
 
 export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
   const { updatePolicy } = usePolicyMutations();
   const session = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,7 +198,7 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
           <Button
             type="submit"
             variant="default"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !canUpdate}
           >
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

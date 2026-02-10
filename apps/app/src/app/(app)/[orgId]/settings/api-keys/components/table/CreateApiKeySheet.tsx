@@ -1,6 +1,7 @@
 'use client';
 
 import { useApiKeys } from '@/hooks/use-api-keys';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useMediaQuery } from '@comp/ui/hooks';
 import type { ScopePreset } from '../../lib/scope-presets';
 import {
@@ -37,6 +38,8 @@ interface CreateApiKeySheetProps {
 
 export function CreateApiKeySheet({ open, onOpenChange }: CreateApiKeySheetProps) {
   const { createApiKey } = useApiKeys();
+  const { hasPermission } = usePermissions();
+  const canCreateApiKey = hasPermission('apiKey', 'create');
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [name, setName] = useState('');
   const [expiration, setExpiration] = useState<'never' | '30days' | '90days' | '1year'>('never');
@@ -139,7 +142,7 @@ export function CreateApiKeySheet({ open, onOpenChange }: CreateApiKeySheetProps
 
       <Button
         onClick={handleSubmit}
-        disabled={isCreating || !name.trim() || (preset !== 'full' && selectedScopes.length === 0)}
+        disabled={isCreating || !name.trim() || (preset !== 'full' && selectedScopes.length === 0) || !canCreateApiKey}
         width="full"
       >
         {isCreating ? 'Creating...' : 'Create'}

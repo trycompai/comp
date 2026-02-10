@@ -1,6 +1,7 @@
 'use client';
 
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors, useVendorActions, type Vendor } from '@/hooks/use-vendors';
 import { VendorStatus } from '@/components/vendor-status';
 import {
@@ -145,6 +146,7 @@ export function VendorsTable({
   orgId,
 }: VendorsTableProps) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const { deleteVendor } = useVendorActions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<VendorRow | null>(null);
@@ -514,7 +516,7 @@ export function VendorsTable({
                 <TableHead>STATUS</TableHead>
                 <TableHead>CATEGORY</TableHead>
                 <TableHead>OWNER</TableHead>
-                <TableHead>ACTIONS</TableHead>
+                {hasPermission('vendor', 'delete') && <TableHead>ACTIONS</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -567,31 +569,33 @@ export function VendorsTable({
                         </HStack>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex justify-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            variant="ellipsis"
-                            disabled={blocked}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <OverflowMenuVertical />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(vendor);
-                              }}
+                    {hasPermission('vendor', 'delete') && (
+                      <TableCell>
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              variant="ellipsis"
+                              disabled={blocked}
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <TrashCan size={16} />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
+                              <OverflowMenuVertical />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(vendor);
+                                }}
+                              >
+                                <TrashCan size={16} />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

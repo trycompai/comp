@@ -1,4 +1,5 @@
 import { useDenyAccessRequest } from '@/hooks/use-access-requests';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Dialog,
@@ -27,6 +28,8 @@ export function DenyDialog({
   requestId: string;
   onClose: () => void;
 }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { mutateAsync: denyRequest } = useDenyAccessRequest(orgId);
 
   const form = useForm({
@@ -90,7 +93,7 @@ export function DenyDialog({
             </Button>
             <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
-                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting}>
+                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting || !canUpdate}>
                   {isSubmitting ? 'Denying...' : 'Deny Request'}
                 </Button>
               )}

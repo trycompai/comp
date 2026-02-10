@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useRiskActions } from '@/hooks/use-risks';
 import type { Risk } from '@db';
 import { useSWRConfig } from 'swr';
@@ -12,6 +13,7 @@ interface ResidualRiskChartProps {
 export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
   const { updateRisk } = useRiskActions();
   const { mutate: globalMutate } = useSWRConfig();
+  const { hasPermission } = usePermissions();
 
   return (
     <RiskMatrixChart
@@ -20,6 +22,7 @@ export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
       riskId={risk.id}
       activeLikelihood={risk.residualLikelihood}
       activeImpact={risk.residualImpact}
+      readOnly={!hasPermission('risk', 'update')}
       saveAction={async ({ id, probability, impact }) => {
         await updateRisk(id, {
           residualLikelihood: probability,

@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import { Card } from '@comp/ui';
 import { Plus, Loader2 } from 'lucide-react';
@@ -19,6 +20,8 @@ export function CreateSOADocument({
   frameworkName,
   organizationId,
 }: CreateSOADocumentProps) {
+  const { hasPermission } = usePermissions();
+  const canCreateQuestionnaire = hasPermission('questionnaire', 'create');
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
 
@@ -47,23 +50,25 @@ export function CreateSOADocument({
             Create a new SOA document for this framework
           </p>
         </div>
-        <Button
-          onClick={handleCreate}
-          disabled={isCreating}
-          className="shrink-0"
-        >
-          {isCreating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
-            </>
-          ) : (
-            <>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Document
-            </>
-          )}
-        </Button>
+        {canCreateQuestionnaire && (
+          <Button
+            onClick={handleCreate}
+            disabled={isCreating}
+            className="shrink-0"
+          >
+            {isCreating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Document
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </Card>
   );

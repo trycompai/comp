@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -42,6 +43,8 @@ export function AllowedDomainsManager({
   initialDomains,
   orgId,
 }: AllowedDomainsManagerProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { updateAllowedDomains } = useTrustPortalSettings();
   const [domains, setDomains] = useState<string[]>(initialDomains);
   const [lastSavedDomains, setLastSavedDomains] =
@@ -156,7 +159,7 @@ export function AllowedDomainsManager({
                 setError(null);
               }}
               onKeyDown={handleKeyDown}
-              disabled={isUpdating}
+              disabled={isUpdating || !canUpdate}
             />
             {error && <p className="text-sm text-destructive mt-1">{error}</p>}
           </div>
@@ -165,7 +168,7 @@ export function AllowedDomainsManager({
             variant="outline"
             size="icon"
             onClick={handleAddDomain}
-            disabled={isUpdating || !newDomain.trim()}
+            disabled={isUpdating || !newDomain.trim() || !canUpdate}
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -183,7 +186,7 @@ export function AllowedDomainsManager({
                 <button
                   type="button"
                   onClick={() => setDomainToDelete(domain)}
-                  disabled={isUpdating}
+                  disabled={isUpdating || !canUpdate}
                   className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
                 >
                   <X className="h-3 w-3" />

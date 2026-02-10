@@ -30,6 +30,7 @@ import { TaskItemFocusSidebar } from './TaskItemFocusSidebar';
 import { getTaskIdShort } from './task-item-utils';
 import { Comments } from '../comments/Comments';
 import { CommentEntityType } from '@db';
+import { usePermissions } from '@/hooks/use-permissions';
 import { CustomTaskItemMainContent } from './custom-task/CustomTaskItemMainContent';
 
 interface TaskItemFocusViewProps {
@@ -57,6 +58,9 @@ export function TaskItemFocusView({
   onBack,
   onStatusOrPriorityChange,
 }: TaskItemFocusViewProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdateTask = hasPermission('task', 'update');
+  const canDeleteTask = hasPermission('task', 'delete');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -176,6 +180,7 @@ export function TaskItemFocusView({
             onStatusOrPriorityChange={onStatusOrPriorityChange}
             entityId={entityId}
             entityType={entityType}
+            readOnly={!canUpdateTask}
           />
 
           {/* Divider */}
@@ -189,8 +194,8 @@ export function TaskItemFocusView({
           {/* Divider */}
           <div className="border-t border-border" />
 
-          <Comments 
-            entityId={taskItem.id} 
+          <Comments
+            entityId={taskItem.id}
             entityType={CommentEntityType.task}
             description="Add comments, ask questions, or share updates about this task"
           />
@@ -203,6 +208,8 @@ export function TaskItemFocusView({
           copiedLink={copiedLink}
           copiedTaskId={copiedTaskId}
           isCollapsed={isSidebarCollapsed}
+          readOnly={!canUpdateTask}
+          canDelete={canDeleteTask}
           onCopyLink={handleCopyLink}
           onCopyTaskId={handleCopyTaskId}
           onDelete={() => setIsDeleteOpen(true)}

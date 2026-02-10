@@ -1,6 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   Card,
   CardContent,
@@ -29,6 +30,7 @@ export function UpdateOrganizationAdvancedMode({
   advancedModeEnabled: boolean;
 }) {
   const api = useApi();
+  const { hasPermission } = usePermissions();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -89,6 +91,7 @@ export function UpdateOrganizationAdvancedMode({
                         // Auto-submit when switch is toggled
                         form.handleSubmit(onSubmit)();
                       }}
+                      disabled={!hasPermission('organization', 'update')}
                     />
                   </FormControl>
                   <FormMessage />

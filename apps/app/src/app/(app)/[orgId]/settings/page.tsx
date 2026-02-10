@@ -5,6 +5,7 @@ import { UpdateOrganizationLogo } from '@/components/forms/organization/update-o
 import { UpdateOrganizationName } from '@/components/forms/organization/update-organization-name';
 import { UpdateOrganizationWebsite } from '@/components/forms/organization/update-organization-website';
 import { serverApi } from '@/lib/api-server';
+import { db } from '@db';
 import type { Metadata } from 'next';
 
 export default async function OrganizationSettings({
@@ -14,38 +15,47 @@ export default async function OrganizationSettings({
 }) {
   const { orgId } = await params;
 
-  const res = await serverApi.get<{
-    id: string;
-    name: string;
-    website: string | null;
-    advancedModeEnabled: boolean;
-    logo: string | null;
-    logoUrl: string | null;
-    isOwner: boolean;
-    eligibleMembers: Array<{
+  // Fetch org basic info directly from DB (accessible to any member),
+  // and try the API for ownership data (requires organization:read).
+  const [orgBasic, res] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true, name: true, website: true, advancedModeEnabled: true, logo: true },
+    }),
+    serverApi.get<{
       id: string;
-      user: { name: string | null; email: string };
-    }>;
-  }>('/v1/organization?includeOwnership=true');
+      name: string;
+      website: string | null;
+      advancedModeEnabled: boolean;
+      logo: string | null;
+      logoUrl: string | null;
+      isOwner: boolean;
+      eligibleMembers: Array<{
+        id: string;
+        user: { name: string | null; email: string };
+      }>;
+    }>('/v1/organization?includeOwnership=true'),
+  ]);
 
+  // Use API data when available (has logoUrl, ownership info), fall back to DB for basic fields
   const organization = res.data;
+  const orgName = organization?.name ?? orgBasic?.name ?? '';
+  const orgWebsite = organization?.website ?? orgBasic?.website ?? '';
+  const advancedMode = organization?.advancedModeEnabled ?? orgBasic?.advancedModeEnabled ?? false;
+  const logoUrl = organization?.logoUrl ?? null;
 
   return (
     <div className="flex flex-col gap-4">
-      <UpdateOrganizationName organizationName={organization?.name ?? ''} />
-      <UpdateOrganizationWebsite
-        organizationWebsite={organization?.website ?? ''}
-      />
-      <UpdateOrganizationLogo currentLogoUrl={organization?.logoUrl ?? null} />
-      <UpdateOrganizationAdvancedMode
-        advancedModeEnabled={organization?.advancedModeEnabled ?? false}
-      />
+      <UpdateOrganizationName organizationName={orgName} />
+      <UpdateOrganizationWebsite organizationWebsite={orgWebsite} />
+      <UpdateOrganizationLogo currentLogoUrl={logoUrl} />
+      <UpdateOrganizationAdvancedMode advancedModeEnabled={advancedMode} />
       <TransferOwnership
         members={organization?.eligibleMembers ?? []}
         isOwner={organization?.isOwner ?? false}
       />
       <DeleteOrganization
-        organizationId={organization?.id ?? ''}
+        organizationId={orgBasic?.id ?? orgId}
         isOwner={organization?.isOwner ?? false}
       />
     </div>

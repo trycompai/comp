@@ -1,6 +1,7 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTaskMutations } from '@/hooks/use-task-mutations';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import { Button } from '@comp/ui/button';
@@ -29,6 +30,7 @@ const createVendorTaskFormSchema = z.object({
 });
 
 export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { user: User })[] }) {
+  const { hasPermission } = usePermissions();
   const [_, setCreateVendorTaskSheet] = useQueryState('create-vendor-task-sheet');
   const params = useParams<{ vendorId: string }>();
   const { createTask } = useTaskMutations();
@@ -177,7 +179,7 @@ export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { use
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button type="submit" variant="default" disabled={isSubmitting}>
+            <Button type="submit" variant="default" disabled={isSubmitting || !hasPermission('task', 'create')}>
               <div className="flex items-center justify-center">
                 {'Create'}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />

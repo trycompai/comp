@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Badge } from '@comp/ui/badge';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
@@ -31,6 +32,8 @@ interface BrowserConnectionClientProps {
 }
 
 export function BrowserConnectionClient({ organizationId }: BrowserConnectionClientProps) {
+  const { hasPermission } = usePermissions();
+  const canManageBrowser = hasPermission('integration', 'create');
   const [status, setStatus] = useState<Status>('idle');
   const [hasContext, setHasContext] = useState(false);
   const [contextId, setContextId] = useState<string | null>(null);
@@ -195,10 +198,12 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
                     onChange={(e) => setUrlToCheck(e.target.value)}
                     className="flex-1"
                   />
-                  <Button onClick={handleStartSession} disabled={!urlToCheck}>
-                    <Globe className="mr-2 h-4 w-4" />
-                    {hasContext ? 'Open Browser' : 'Connect Browser'}
-                  </Button>
+                  {canManageBrowser && (
+                    <Button onClick={handleStartSession} disabled={!urlToCheck}>
+                      <Globe className="mr-2 h-4 w-4" />
+                      {hasContext ? 'Open Browser' : 'Connect Browser'}
+                    </Button>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Open a browser session to authenticate with websites. Your login session will be
@@ -250,7 +255,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
                   variant="outline"
                   size="sm"
                   onClick={handleCheckAuth}
-                  disabled={status === 'checking'}
+                  disabled={status === 'checking' || !canManageBrowser}
                 >
                   {status === 'checking' ? (
                     <>

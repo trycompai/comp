@@ -78,7 +78,7 @@ export class TrustPortalController {
 
   @Get('settings')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Get complete trust portal settings for admin page',
   })
@@ -92,7 +92,7 @@ export class TrustPortalController {
 
   @Post('favicon')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Upload a favicon for the trust portal',
   })
@@ -109,7 +109,7 @@ export class TrustPortalController {
 
   @Delete('favicon')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Remove the trust portal favicon',
   })
@@ -123,7 +123,7 @@ export class TrustPortalController {
 
   @Get('domain/status')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Get domain verification status',
     description:
@@ -156,7 +156,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/upload')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Upload or replace a compliance certificate (PDF only)',
     description:
@@ -183,7 +183,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/signed-url')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Generate a temporary signed URL for a compliance certificate',
   })
@@ -203,7 +203,7 @@ export class TrustPortalController {
 
   @Post('compliance-resources/list')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List uploaded compliance certificates for the organization',
   })
@@ -223,7 +223,7 @@ export class TrustPortalController {
 
   @Post('documents/upload')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Upload an additional trust portal document',
     description:
@@ -245,7 +245,7 @@ export class TrustPortalController {
 
   @Post('documents/list')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List additional trust portal documents for the organization',
   })
@@ -265,7 +265,7 @@ export class TrustPortalController {
 
   @Post('documents/:documentId/download')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Generate a temporary signed URL for a trust portal document',
   })
@@ -286,7 +286,7 @@ export class TrustPortalController {
 
   @Post('documents/:documentId/delete')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Delete (deactivate) a trust portal document',
   })
@@ -311,7 +311,7 @@ export class TrustPortalController {
   }
 
   @Put('settings/toggle')
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Enable or disable the trust portal' })
   async togglePortal(
     @OrganizationId() organizationId: string,
@@ -331,7 +331,7 @@ export class TrustPortalController {
   }
 
   @Post('settings/custom-domain')
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Add or update a custom domain for the trust portal' })
   async addCustomDomain(
     @OrganizationId() organizationId: string,
@@ -344,7 +344,7 @@ export class TrustPortalController {
   }
 
   @Post('settings/check-dns')
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Check DNS records for a custom domain' })
   async checkDnsRecords(
     @OrganizationId() organizationId: string,
@@ -360,7 +360,7 @@ export class TrustPortalController {
   }
 
   @Put('settings/faqs')
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update trust portal FAQs' })
   async updateFaqs(
     @OrganizationId() organizationId: string,
@@ -373,7 +373,7 @@ export class TrustPortalController {
   }
 
   @Put('settings/allowed-domains')
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update allowed domains for the trust portal' })
   async updateAllowedDomains(
     @OrganizationId() organizationId: string,
@@ -386,7 +386,7 @@ export class TrustPortalController {
   }
 
   @Put('settings/frameworks')
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update trust portal framework settings' })
   async updateFrameworks(
     @OrganizationId() organizationId: string,
@@ -397,7 +397,7 @@ export class TrustPortalController {
 
   @Post('overview')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Update trust portal overview section',
   })
@@ -416,7 +416,7 @@ export class TrustPortalController {
 
   @Get('overview')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'Get trust portal overview',
   })
@@ -431,7 +431,7 @@ export class TrustPortalController {
 
   @Post('custom-links')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Create a custom link for trust portal',
   })
@@ -450,7 +450,7 @@ export class TrustPortalController {
 
   @Post('custom-links/:linkId')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Update a custom link',
   })
@@ -469,7 +469,7 @@ export class TrustPortalController {
 
   @Post('custom-links/:linkId/delete')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Delete a custom link',
   })
@@ -486,7 +486,7 @@ export class TrustPortalController {
 
   @Post('custom-links/reorder')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Reorder custom links',
   })
@@ -508,7 +508,7 @@ export class TrustPortalController {
 
   @Get('custom-links')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List custom links for trust portal',
   })
@@ -523,7 +523,7 @@ export class TrustPortalController {
 
   @Post('vendors/:vendorId/trust-settings')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'update')
+  @RequirePermission('trust', 'update')
   @ApiOperation({
     summary: 'Update vendor trust portal settings',
   })
@@ -542,7 +542,7 @@ export class TrustPortalController {
 
   @Get('vendors')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('portal', 'read')
+  @RequirePermission('trust', 'read')
   @ApiOperation({
     summary: 'List vendors configured for trust portal',
   })

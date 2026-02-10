@@ -1,6 +1,7 @@
 'use client';
 
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useActiveMember } from '@/utils/auth-client';
 import {
   Breadcrumb,
@@ -84,12 +85,16 @@ export function SingleTask({
 
   // Get current member role information for findings permissions
   const { data: activeMember } = useActiveMember();
+  const { hasPermission } = usePermissions();
 
-  // Parse member roles
+  // Parse member roles for findings (auditor has special finding permissions)
   const memberRoles = activeMember?.role?.split(',').map((r: string) => r.trim()) || [];
   const isAuditor = memberRoles.includes('auditor');
   const isAdminOrOwner = memberRoles.includes('admin') || memberRoles.includes('owner');
   // isPlatformAdmin is passed from the server component (page.tsx)
+
+  const canUpdateTask = hasPermission('task', 'update');
+  const canDeleteTask = hasPermission('task', 'delete');
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
@@ -230,24 +235,28 @@ export function SingleTask({
                 >
                   <Download className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setRegenerateConfirmOpen(true)}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  title="Regenerate task"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  title="Delete task"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canUpdateTask && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setRegenerateConfirmOpen(true)}
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    title="Regenerate task"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                )}
+                {canDeleteTask && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    title="Delete task"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>

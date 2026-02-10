@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -118,6 +119,46 @@ export class RolesController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async listRoles(@OrganizationId() organizationId: string) {
     return this.rolesService.listRoles(organizationId);
+  }
+
+  @Get('permissions')
+  @RequirePermission('app', 'read')
+  @ApiOperation({
+    summary: 'Resolve permissions for custom roles',
+    description:
+      'Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Merged permissions for the requested roles',
+    schema: {
+      type: 'object',
+      properties: {
+        permissions: {
+          type: 'object',
+          additionalProperties: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getPermissionsForRoles(
+    @OrganizationId() organizationId: string,
+    @Query('roles') roles: string,
+  ) {
+    const roleNames = (roles || '')
+      .split(',')
+      .map((r) => r.trim())
+      .filter(Boolean);
+    const permissions =
+      await this.rolesService.getPermissionsForRoles(
+        organizationId,
+        roleNames,
+      );
+    return { permissions };
   }
 
   @Get(':roleId')

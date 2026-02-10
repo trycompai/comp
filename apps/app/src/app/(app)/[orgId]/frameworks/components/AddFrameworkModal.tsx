@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@comp/ui/dialog';
 import type { FrameworkEditorFramework } from '@db';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -29,6 +30,8 @@ export function AddFrameworkModal({
   availableFrameworks,
 }: Props) {
   const { addFrameworks } = useFrameworks();
+  const { hasPermission } = usePermissions();
+  const canCreateFramework = hasPermission('framework', 'create');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -106,7 +109,7 @@ export function AddFrameworkModal({
             <Button
               type="button"
               size="sm"
-              disabled={isSubmitting || selectedIds.length === 0}
+              disabled={isSubmitting || selectedIds.length === 0 || !canCreateFramework}
               onClick={handleSubmit}
             >
               {isSubmitting && (

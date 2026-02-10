@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useVendorActions } from '@/hooks/use-vendors';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
 import { Impact, Likelihood } from '@db';
@@ -31,6 +32,7 @@ export function InherentRiskForm({
   initialProbability = Likelihood.very_unlikely,
   initialImpact = Impact.insignificant,
 }: InherentRiskFormProps) {
+  const { hasPermission } = usePermissions();
   const { updateVendor } = useVendorActions();
   const { mutate: globalMutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,7 +115,7 @@ export function InherentRiskForm({
           />
 
           <div className="flex justify-end pt-4">
-            <Button type="submit">Save</Button>
+            <Button type="submit" disabled={isSubmitting || !hasPermission('vendor', 'assess')}>Save</Button>
           </div>
         </Stack>
       </form>

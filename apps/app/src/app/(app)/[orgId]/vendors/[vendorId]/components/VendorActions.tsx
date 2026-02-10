@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useVendor, useVendorActions } from '@/hooks/use-vendors';
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ export function VendorActions({
   onOpenEditSheet,
   onAssessmentTriggered,
 }: VendorActionsProps) {
+  const { hasPermission } = usePermissions();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isAssessmentConfirmOpen, setIsAssessmentConfirmOpen] = useState(false);
   const [isAssessmentSubmitting, setIsAssessmentSubmitting] = useState(false);
@@ -72,6 +74,8 @@ export function VendorActions({
       setIsAssessmentSubmitting(false);
     }
   };
+
+  if (!hasPermission('vendor', 'update')) return null;
 
   return (
     <>

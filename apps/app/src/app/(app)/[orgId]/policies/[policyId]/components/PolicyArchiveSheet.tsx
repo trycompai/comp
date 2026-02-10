@@ -23,11 +23,14 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicy } from '../hooks/usePolicy';
 
 export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMutate?: () => void }) {
   const router = useRouter();
   const { orgId } = useParams<{ orgId: string }>();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [open, setOpen] = useQueryState('archive-policy-sheet');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,7 +85,7 @@ export function PolicyArchiveSheet({ policy, onMutate }: { policy: Policy; onMut
         <Button
           variant={isArchived ? 'default' : 'destructive'}
           onClick={handleAction}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !canUpdate}
           loading={isSubmitting}
           iconLeft={isArchived ? <Renew size={14} /> : <Archive size={14} />}
         >

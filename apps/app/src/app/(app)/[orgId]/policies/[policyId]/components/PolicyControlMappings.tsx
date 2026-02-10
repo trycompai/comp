@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicy } from '../hooks/usePolicy';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export const PolicyControlMappings = ({
   mappedControls,
@@ -21,6 +22,8 @@ export const PolicyControlMappings = ({
 }) => {
   const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
   const [loading, setLoading] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
 
   const { addControlMappings, removeControlMapping } = usePolicy({
     policyId,
@@ -30,7 +33,7 @@ export const PolicyControlMappings = ({
   const mappedNames = mappedControls.map((c) => c.name);
 
   const handleValueChange = async (selectedNames: string[]) => {
-    if (isPendingApproval || loading) return;
+    if (isPendingApproval || loading || !canUpdate) return;
     setLoading(true);
     const prevIds = mappedControls.map((c) => c.id);
     const nextControls = allControls.filter((c) => selectedNames.includes(c.name));
@@ -63,7 +66,7 @@ export const PolicyControlMappings = ({
         value={mappedNames}
         onValueChange={handleValueChange}
         placeholder="Search controls..."
-        disabled={isPendingApproval || loading}
+        disabled={isPendingApproval || loading || !canUpdate}
       />
     </Section>
   );

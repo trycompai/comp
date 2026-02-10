@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { isJSON } from '@/lib/utils';
 import { useMediaQuery } from '@comp/ui/hooks';
 import type { Context } from '@db';
@@ -56,7 +57,7 @@ import { toast } from 'sonner';
 import { ContextForm } from './components/context-form';
 
 // Editable answer cell - click to edit
-function EditableAnswerCell({ context }: { context: Context }) {
+function EditableAnswerCell({ context, canEdit }: { context: Context; canEdit: boolean }) {
   const { updateEntry } = useContextEntries();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -366,17 +367,19 @@ function EditableAnswerCell({ context }: { context: Context }) {
 
   return (
     <div
-      className="group relative -mx-2 -my-1.5 cursor-pointer rounded-xs px-2 py-1.5 transition-colors hover:bg-muted/50"
-      onClick={() => setIsEditing(true)}
+      className={`group relative -mx-2 -my-1.5 rounded-xs px-2 py-1.5 transition-colors ${canEdit ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+      onClick={() => canEdit && setIsEditing(true)}
     >
-      <div className="pr-6">{renderContent()}</div>
-      <Edit className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className={canEdit ? 'pr-6' : ''}>{renderContent()}</div>
+      {canEdit && (
+        <Edit className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      )}
     </div>
   );
 }
 
 // Actions cell with dropdown
-function ActionsCell({ context }: { context: Context }) {
+function ActionsCell({ context, canDelete }: { context: Context; canDelete: boolean }) {
   const { deleteEntry } = useContextEntries();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -393,6 +396,8 @@ function ActionsCell({ context }: { context: Context }) {
       setIsDeleting(false);
     }
   };
+
+  if (!canDelete) return null;
 
   return (
     <>
@@ -482,6 +487,8 @@ function CreateContextSheetLocal({
 
 export const ContextTable = ({ entries: initialEntries }: { entries: Context[]; pageCount: number }) => {
   const { entries } = useContextEntries({ initialData: initialEntries });
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('evidence', 'update');
   const [search, setSearch] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -511,25 +518,27 @@ export const ContextTable = ({ entries: initialEntries }: { entries: Context[]; 
             />
           </InputGroup>
         </div>
-        <Button onClick={() => setIsSheetOpen(true)}>
-          <Add size={16} />
-          Add Entry
-        </Button>
+        {canUpdate && (
+          <Button onClick={() => setIsSheetOpen(true)}>
+            <Add size={16} />
+            Add Entry
+          </Button>
+        )}
       </HStack>
 
       {/* Table */}
       <Table variant="bordered">
         <TableHeader>
           <TableRow>
-            <TableHead style={{ width: '35%' }}>QUESTION</TableHead>
-            <TableHead style={{ width: '55%', maxWidth: '500px' }}>ANSWER</TableHead>
-            <TableHead style={{ width: '10%' }}>ACTIONS</TableHead>
+            <TableHead style={{ width: canUpdate ? '35%' : '40%' }}>QUESTION</TableHead>
+            <TableHead style={{ width: canUpdate ? '55%' : '60%', maxWidth: '500px' }}>ANSWER</TableHead>
+            {canUpdate && <TableHead style={{ width: '10%' }}>ACTIONS</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredEntries.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={3}>
+              <TableCell colSpan={canUpdate ? 3 : 2}>
                 <div className="flex items-center justify-center py-8">
                   <Text variant="muted">
                     {search ? 'No entries match your search' : 'No context entries yet'}
@@ -544,13 +553,15 @@ export const ContextTable = ({ entries: initialEntries }: { entries: Context[]; 
                   <Text size="sm">{entry.question}</Text>
                 </TableCell>
                 <TableCell style={{ maxWidth: '500px' }}>
-                  <EditableAnswerCell context={entry} />
+                  <EditableAnswerCell context={entry} canEdit={canUpdate} />
                 </TableCell>
-                <TableCell>
-                  <div className="flex justify-center">
-                    <ActionsCell context={entry} />
-                  </div>
-                </TableCell>
+                {canUpdate && (
+                  <TableCell>
+                    <div className="flex justify-center">
+                      <ActionsCell context={entry} canDelete={canUpdate} />
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           )}

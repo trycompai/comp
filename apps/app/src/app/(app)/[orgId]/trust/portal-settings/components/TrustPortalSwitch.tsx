@@ -1,6 +1,7 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Button } from '@comp/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
@@ -216,6 +217,8 @@ export function TrustPortalSwitch({
   vendors: TrustVendor[];
   faviconUrl?: string | null;
 }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const {
     updateToggleSettings,
     updateFrameworkSettings,
@@ -506,6 +509,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="iso27001"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* ISO 42001 */}
                 <ComplianceFramework
@@ -538,6 +542,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="iso42001"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* GDPR */}
                 <ComplianceFramework
@@ -570,6 +575,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="gdpr"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* HIPAA */}
                 <ComplianceFramework
@@ -602,6 +608,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="hipaa"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* SOC 2 Type 1*/}
                 <ComplianceFramework
@@ -634,6 +641,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="soc2type1"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* SOC 2 Type 2*/}
                 <ComplianceFramework
@@ -666,6 +674,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="soc2type2"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* PCI DSS */}
                 <ComplianceFramework
@@ -698,6 +707,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="pcidss"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* NEN 7510 */}
                 <ComplianceFramework
@@ -730,6 +740,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="nen7510"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
                 {/* ISO 9001 */}
                 <ComplianceFramework
@@ -762,6 +773,7 @@ export function TrustPortalSwitch({
                   onFilePreview={handleFilePreview}
                   frameworkKey="iso9001"
                   orgId={orgId}
+                  disabled={!canUpdate}
                 />
               </div>
             </div>
@@ -836,6 +848,7 @@ function ComplianceFramework({
   onFilePreview,
   frameworkKey,
   orgId,
+  disabled,
 }: {
   title: string;
   description: string;
@@ -848,6 +861,7 @@ function ComplianceFramework({
   onFilePreview?: (frameworkKey: string) => Promise<void>;
   frameworkKey: string;
   orgId: string;
+  disabled?: boolean;
 }) {
   const [isEnabled, setIsEnabled] = useState(isEnabledProp);
   const [status, setStatus] = useState(statusProp);
@@ -979,7 +993,7 @@ function ComplianceFramework({
           <div className="flex flex-row items-center justify-between gap-6">
             <div className="min-w-0 flex-1">
               {isEnabled ? (
-                <Select defaultValue={status} value={status} onValueChange={async (value) => {
+                <Select disabled={disabled} defaultValue={status} value={status} onValueChange={async (value) => {
                   const prev = status;
                   setStatus(value);
                   try {
@@ -1019,7 +1033,7 @@ function ComplianceFramework({
               )}
             </div>
             <div className="shrink-0 pl-2">
-              <Switch checked={isEnabled} onCheckedChange={async (checked) => {
+              <Switch disabled={disabled} checked={isEnabled} onCheckedChange={async (checked) => {
                 setIsEnabled(checked);
                 try {
                   await onToggle(checked);
@@ -1044,7 +1058,7 @@ function ComplianceFramework({
                     await processFile(file);
                   }
                 }}
-                disabled={isUploading}
+                disabled={isUploading || disabled}
               />
 
               {/* Section Header */}
@@ -1101,7 +1115,7 @@ function ComplianceFramework({
                             variant="outline"
                             size="sm"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
+                            disabled={isUploading || disabled}
                             className="h-8 gap-1.5 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
                           >
                             <Upload className="h-3.5 w-3.5" />
@@ -1150,7 +1164,7 @@ function ComplianceFramework({
                   onDragLeave={handleDragLeave}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  onClick={() => !isUploading && !disabled && fileInputRef.current?.click()}
                   className={`
                     relative rounded-lg bg-muted/40 border border-border/50 p-4 cursor-pointer
                     h-[122px] flex items-center

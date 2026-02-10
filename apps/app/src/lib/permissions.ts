@@ -39,22 +39,21 @@ export const ROUTE_PERMISSIONS: Record<string, Array<{ resource: string; action:
     { resource: 'evidence', action: 'read' },
     { resource: 'task', action: 'read' },
   ],
-  trust: [{ resource: 'portal', action: 'read' }],
   people: [{ resource: 'member', action: 'read' }],
   risk: [{ resource: 'risk', action: 'read' }],
   vendors: [{ resource: 'vendor', action: 'read' }],
   questionnaire: [{ resource: 'questionnaire', action: 'read' }],
   integrations: [{ resource: 'integration', action: 'read' }],
   'cloud-tests': [{ resource: 'integration', action: 'read' }],
-  // Settings pages
-  settings: [{ resource: 'organization', action: 'read' }],
+  // Settings pages — top-level is accessible to all app users
+  // (sub-page permissions control which settings sections are visible)
   'settings/context-hub': [{ resource: 'evidence', action: 'read' }],
   'settings/api-keys': [{ resource: 'apiKey', action: 'read' }],
   'settings/secrets': [{ resource: 'organization', action: 'update' }],
   'settings/roles': [{ resource: 'member', action: 'read' }],
   'settings/notifications': [{ resource: 'organization', action: 'update' }],
   'settings/browser-connection': [{ resource: 'integration', action: 'read' }],
-  'settings/user': [{ resource: 'app', action: 'read' }],
+  // settings/user is intentionally not listed — every user can access their own preferences
 };
 
 export function canAccessRoute(permissions: UserPermissions, routeSegment: string): boolean {

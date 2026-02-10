@@ -1,6 +1,7 @@
 'use client';
 
 import { FileUploader } from '@/components/file-uploader';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@comp/ui/accordion';
 import {
   AlertDialog,
@@ -38,6 +39,8 @@ export function AdditionalDocumentsSection({
   organizationId,
   documents: initialDocuments,
 }: AdditionalDocumentsSectionProps) {
+  const { hasPermission } = usePermissions();
+  const canManageQuestionnaire = hasPermission('questionnaire', 'create');
   const sectionRef = useRef<HTMLDivElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -244,17 +247,20 @@ export function AdditionalDocumentsSection({
                   isDocumentDeletingVectors={isDocumentDeletingVectors}
                   onDownload={handleDownload}
                   onDeleteClick={handleDeleteClick}
+                  canDelete={canManageQuestionnaire}
                 />
               )}
-              <FileUploader
-                onUpload={handleFileUpload}
-                multiple={true}
-                maxFileCount={10}
-                accept={ACCEPTED_FILE_TYPES}
-                maxSize={100 * 1024 * 1024}
-                disabled={isUploading}
-                progresses={uploadProgress}
-              />
+              {canManageQuestionnaire && (
+                <FileUploader
+                  onUpload={handleFileUpload}
+                  multiple={true}
+                  maxFileCount={10}
+                  accept={ACCEPTED_FILE_TYPES}
+                  maxSize={100 * 1024 * 1024}
+                  disabled={isUploading}
+                  progresses={uploadProgress}
+                />
+              )}
               {totalPages > 1 && (
                 <PaginationControls
                   currentPage={currentPage}
@@ -333,6 +339,7 @@ function DocumentList({
   isDocumentDeletingVectors,
   onDownload,
   onDeleteClick,
+  canDelete,
 }: {
   paginatedItems: KBDocument[];
   downloadingIds: Set<string>;
@@ -341,6 +348,7 @@ function DocumentList({
   isDocumentDeletingVectors: (id: string) => boolean | undefined;
   onDownload: (id: string, name: string, e?: React.MouseEvent) => void;
   onDeleteClick: (id: string, name: string, e: React.MouseEvent) => void;
+  canDelete: boolean;
 }) {
   return (
     <div className="mb-4 flex flex-col gap-2">
@@ -380,7 +388,7 @@ function DocumentList({
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
-              ) : (
+              ) : canDelete ? (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -390,7 +398,7 @@ function DocumentList({
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         );

@@ -381,10 +381,10 @@ describe('AuditLogInterceptor', () => {
     });
   });
 
-  it('should map resource "portal" to entity type "trust"', (done) => {
+  it('should map resource "trust" to entity type "trust"', (done) => {
     jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key) => {
       if (key === PERMISSIONS_KEY) {
-        return [{ resource: 'portal', actions: ['update'] }];
+        return [{ resource: 'trust', actions: ['update'] }];
       }
       if (key === SKIP_AUDIT_LOG_KEY) return false;
       return undefined;

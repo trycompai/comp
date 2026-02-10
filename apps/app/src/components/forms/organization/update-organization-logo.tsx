@@ -1,6 +1,7 @@
 'use client';
 
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import {
   Card,
@@ -21,6 +22,8 @@ interface UpdateOrganizationLogoProps {
 
 export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLogoProps) {
   const { uploadLogo, removeLogo } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentLogoUrl);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -120,14 +123,14 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
               accept="image/*"
               onChange={handleFileChange}
               className="hidden"
-              disabled={isLoading}
+              disabled={isLoading || !canUpdate}
             />
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
+              disabled={isLoading || !canUpdate}
             >
               {isUploading ? (
                 <>
@@ -144,7 +147,7 @@ export function UpdateOrganizationLogo({ currentLogoUrl }: UpdateOrganizationLog
                 variant="ghost"
                 size="sm"
                 onClick={handleRemove}
-                disabled={isLoading}
+                disabled={isLoading || !canUpdate}
                 className="text-destructive hover:text-destructive"
               >
                 {isRemoving ? (

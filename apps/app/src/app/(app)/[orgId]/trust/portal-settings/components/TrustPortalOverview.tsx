@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Button, Input, Textarea } from '@trycompai/design-system';
 import { View, ViewOff } from '@trycompai/design-system/icons';
@@ -18,6 +19,8 @@ interface TrustPortalOverviewProps {
 }
 
 export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { saveOverview: saveOverviewApi } = useTrustPortalSettings();
   const [title, setTitle] = useState(initialData.overviewTitle ?? '');
   const [content, setContent] = useState(initialData.overviewContent ?? '');
@@ -73,8 +76,9 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
         <div className="inline-flex rounded-md overflow-hidden text-xs">
           <button
             type="button"
-            onClick={() => handleToggleChange(true)}
-            className={`flex items-center gap-1 px-2 py-1 font-medium transition-colors cursor-pointer ${
+            onClick={() => canUpdate && handleToggleChange(true)}
+            disabled={!canUpdate}
+            className={`flex items-center gap-1 px-2 py-1 font-medium transition-colors ${canUpdate ? 'cursor-pointer' : 'cursor-default opacity-70'} ${
               showOverview
                 ? 'bg-primary/10 text-primary dark:brightness-175'
                 : 'bg-muted/50 text-muted-foreground hover:bg-muted'
@@ -85,8 +89,9 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
           </button>
           <button
             type="button"
-            onClick={() => handleToggleChange(false)}
-            className={`flex items-center gap-1 px-2 py-1 font-medium transition-colors cursor-pointer ${
+            onClick={() => canUpdate && handleToggleChange(false)}
+            disabled={!canUpdate}
+            className={`flex items-center gap-1 px-2 py-1 font-medium transition-colors ${canUpdate ? 'cursor-pointer' : 'cursor-default opacity-70'} ${
               !showOverview
                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400'
                 : 'bg-muted/50 text-muted-foreground hover:bg-muted'
@@ -103,13 +108,15 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
           <p className="text-sm text-muted-foreground">
             Add a mission statement or overview text to display at the top of your trust portal
           </p>
-          <Button
-            onClick={handleSave}
-            disabled={!isDirty || isSaving}
-            loading={isSaving}
-          >
-            Save Changes
-          </Button>
+          {canUpdate && (
+            <Button
+              onClick={handleSave}
+              disabled={!isDirty || isSaving}
+              loading={isSaving}
+            >
+              Save Changes
+            </Button>
+          )}
         </div>
       </div>
 
@@ -123,6 +130,7 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
             placeholder="e.g., Our Mission, Security Commitment, About Us"
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
+            disabled={!canUpdate}
             maxLength={200}
           />
           <p className="text-xs text-muted-foreground">
@@ -139,6 +147,7 @@ export function TrustPortalOverview({ initialData, orgId }: TrustPortalOverviewP
             placeholder="Write your overview text here. You can use markdown formatting and include links."
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
+            disabled={!canUpdate}
             rows={20}
             maxLength={10000}
             size="full"

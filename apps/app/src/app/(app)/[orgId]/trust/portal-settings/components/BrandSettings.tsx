@@ -1,6 +1,7 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@trycompai/design-system';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
@@ -23,6 +24,8 @@ export function BrandSettings({
   orgId,
   primaryColor,
 }: BrandSettingsProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { updateToggleSettings } = useTrustPortalSettings();
 
   const form = useForm<z.infer<typeof trustSettingsSchema>>({
@@ -121,6 +124,7 @@ export function BrandSettings({
                             type="color"
                             className="sr-only"
                             id="color-picker"
+                            disabled={!canUpdate}
                           />
                           <label
                             htmlFor="color-picker"
@@ -145,6 +149,7 @@ export function BrandSettings({
                               onBlur={handlePrimaryColorBlur}
                               placeholder="#000000"
                               maxLength={7}
+                              disabled={!canUpdate}
                             />
                           </div>
                         </div>

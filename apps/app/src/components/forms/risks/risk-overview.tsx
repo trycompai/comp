@@ -3,6 +3,7 @@
 import { updateRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { StatusIndicator } from '@/components/status-indicator';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useRiskActions } from '@/hooks/use-risks';
 import { Button } from '@comp/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@comp/ui/form';
@@ -25,6 +26,8 @@ export function UpdateRiskOverview({
 }) {
   const { updateRisk } = useRiskActions();
   const { mutate: globalMutate } = useSWRConfig();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('risk', 'update');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof updateRiskSchema>>({
@@ -79,7 +82,7 @@ export function UpdateRiskOverview({
                     assigneeId={field.value ?? null}
                     assignees={assignees}
                     onAssigneeChange={field.onChange}
-                    disabled={isSubmitting}
+                    disabled={!canUpdate || isSubmitting}
                     withTitle={false}
                   />
                 </FormControl>
@@ -94,7 +97,7 @@ export function UpdateRiskOverview({
               <FormItem>
                 <FormLabel>{'Status'}</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a status'}>
                         {field.value && <StatusIndicator status={field.value as RiskStatus} />}
@@ -120,7 +123,7 @@ export function UpdateRiskOverview({
               <FormItem>
                 <FormLabel>{'Category'}</FormLabel>
                 <FormControl>
-                  <Select {...field} value={field.value} onValueChange={field.onChange}>
+                  <Select {...field} value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a category'} />
                     </SelectTrigger>
@@ -151,7 +154,7 @@ export function UpdateRiskOverview({
               <FormItem>
                 <FormLabel>{'Department'}</FormLabel>
                 <FormControl>
-                  <Select {...field} value={field.value} onValueChange={field.onChange}>
+                  <Select {...field} value={field.value} onValueChange={field.onChange} disabled={!canUpdate}>
                     <SelectTrigger>
                       <SelectValue placeholder={'Select a department'} />
                     </SelectTrigger>
@@ -173,15 +176,17 @@ export function UpdateRiskOverview({
             )}
           />
         </div>
-        <div className="mt-4 flex justify-end">
-          <Button type="submit" variant="default" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </div>
+        {canUpdate && (
+          <div className="mt-4 flex justify-end">
+            <Button type="submit" variant="default" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

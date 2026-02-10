@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicy } from '../hooks/usePolicy';
 
 interface PolicyAlertsProps {
@@ -29,7 +30,9 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
   const router = useRouter();
   const searchParams = useSearchParams();
   const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
+  const { hasPermission } = usePermissions();
   const canCurrentUserApprove = policy?.approverId === activeMember?.id;
+  const canUpdate = hasPermission('policy', 'update');
   const [isApproving, setIsApproving] = useState(false);
   const [isDenying, setIsDenying] = useState(false);
 
@@ -180,14 +183,16 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
                 </Text>
               </Stack>
             </HStack>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleOpenArchiveSheet}
-              iconLeft={<Renew size={12} />}
-            >
-              Restore
-            </Button>
+            {canUpdate && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleOpenArchiveSheet}
+                iconLeft={<Renew size={12} />}
+              >
+                Restore
+              </Button>
+            )}
           </HStack>
         </div>
       )}

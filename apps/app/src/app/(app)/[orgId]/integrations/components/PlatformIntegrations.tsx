@@ -2,6 +2,7 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   ConnectionListItem,
   IntegrationProvider,
@@ -84,6 +85,8 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     isLoading: loadingConnections,
     refresh: refreshConnections,
   } = useIntegrationConnections();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('integration', 'create');
   const { startOAuth } = useIntegrationMutations();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -529,28 +532,30 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                             <p className="text-xs text-destructive line-clamp-1">
                               {connection?.errorMessage || 'Connection error'}
                             </p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full"
-                              onClick={() => handleConnect(provider)}
-                              disabled={isConnecting}
-                            >
-                              {isConnecting ? (
-                                <>
-                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                                  Reconnecting...
-                                </>
-                              ) : (
-                                'Reconnect'
-                              )}
-                            </Button>
+                            {canCreate && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => handleConnect(provider)}
+                                disabled={isConnecting}
+                              >
+                                {isConnecting ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                    Reconnecting...
+                                  </>
+                                ) : (
+                                  'Reconnect'
+                                )}
+                              </Button>
+                            )}
                           </div>
                         ) : provider.authType === 'oauth2' && provider.oauthConfigured === false ? (
                           <Button size="sm" variant="outline" className="w-full" disabled>
                             Coming Soon
                           </Button>
-                        ) : (
+                        ) : canCreate ? (
                           <Button
                             size="sm"
                             className="w-full"
@@ -566,7 +571,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                               'Connect'
                             )}
                           </Button>
-                        )}
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>

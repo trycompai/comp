@@ -1,6 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,8 +97,10 @@ export function TransferOwnership({ members, isOwner }: TransferOwnershipProps) 
     }
   };
 
-  // Don't show this section if user is not the owner
-  if (!isOwner) {
+  const { hasPermission } = usePermissions();
+
+  // Don't show this section if user is not the owner or lacks permission
+  if (!isOwner || !hasPermission('organization', 'delete')) {
     return null;
   }
 

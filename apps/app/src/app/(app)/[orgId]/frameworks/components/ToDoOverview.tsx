@@ -15,6 +15,7 @@ import {
   Play,
   Upload,
 } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -43,6 +44,7 @@ export function ToDoOverview({
   currentMember: { id: string; role: string } | null;
   onboardingTriggerJobId: string | null;
 }) {
+  const { hasPermission } = usePermissions();
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -71,9 +73,7 @@ export function ToDoOverview({
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const memberRoles =
-    currentMember?.role?.split(',').map((r) => r.trim()) ?? [];
-  const isOwner = memberRoles.includes('owner') || false;
+  const canPublishPolicies = hasPermission('policy', 'publish');
 
   const handleConfirmAction = async () => {
     setIsLoading(true);
@@ -151,7 +151,7 @@ export function ToDoOverview({
           </TabsList>
 
           <TabsContent value="policies" className="mt-4">
-            {isOwner && unpublishedPolicies.length > 0 && (
+            {canPublishPolicies && unpublishedPolicies.length > 0 && (
               <div className="flex w-full mb-3">
                 <Button
                   size="sm"

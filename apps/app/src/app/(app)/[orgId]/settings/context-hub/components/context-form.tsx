@@ -9,9 +9,12 @@ import type { Context } from '@db';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useContextEntries } from '../hooks/useContextEntries';
 
 export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?: () => void }) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('evidence', 'update');
   const { createEntry, updateEntry } = useContextEntries();
   const [isPending, setIsPending] = useState(false);
 
@@ -70,7 +73,7 @@ export function ContextForm({ entry, onSuccess }: { entry?: Context; onSuccess?:
                   />
                 </div>
               </div>
-              <Button type="submit" disabled={isPending} className="justify-self-end">
+              <Button type="submit" disabled={isPending || !canUpdate} className="justify-self-end">
                 {entry ? 'Update' : 'Create'}{' '}
                 {isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               </Button>

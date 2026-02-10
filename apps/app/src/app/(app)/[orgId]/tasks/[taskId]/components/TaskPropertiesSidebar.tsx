@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { TaskStatusIndicator } from '../../components/TaskStatusIndicator';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTask } from '../hooks/use-task';
 import { PropertySelector } from './PropertySelector';
 import { DEPARTMENT_COLORS, taskDepartments, taskFrequencies, taskStatuses } from './constants';
@@ -24,6 +25,9 @@ export function TaskPropertiesSidebar({ handleUpdateTask, initialMembers }: Task
   const { orgId } = useParams<{ orgId: string }>();
   const { task, isLoading } = useTask();
   const { members } = useAssignableMembers({ initialData: initialMembers });
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('task', 'update');
+  const canAssign = hasPermission('task', 'assign');
 
   const assignedMember =
     !task?.assigneeId || !members ? null : members.find((m) => m.id === task.assigneeId);
@@ -55,6 +59,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask, initialMembers }: Task
                 reviewDate: selectedStatus === 'done' ? new Date() : task.reviewDate,
               });
             }}
+            disabled={!canUpdate}
             trigger={
               <Button
                 variant="ghost"
@@ -125,7 +130,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask, initialMembers }: Task
             searchPlaceholder="Change assignee..."
             emptyText="No member found."
             contentWidth="w-64"
-            disabled={members?.length === 0}
+            disabled={!canAssign || members?.length === 0}
             allowUnassign={true} // Enable unassign option
             showCheck={false} // Hide check icon for assignee selector
           />
@@ -145,6 +150,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask, initialMembers }: Task
                 frequency: selectedFreq === null ? null : (selectedFreq as TaskFrequency),
               });
             }}
+            disabled={!canUpdate}
             trigger={
               <Button
                 variant="ghost"
@@ -168,6 +174,7 @@ export function TaskPropertiesSidebar({ handleUpdateTask, initialMembers }: Task
             value={task.department ?? 'none'}
             options={taskDepartments}
             getKey={(dept) => dept}
+            disabled={!canUpdate}
             renderOption={(dept) => {
               if (dept === 'none') {
                 // Render 'none' as plain text

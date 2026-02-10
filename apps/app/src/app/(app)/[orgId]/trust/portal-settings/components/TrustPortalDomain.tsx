@@ -15,6 +15,7 @@ import { Input } from '@comp/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@comp/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, ClipboardCopy, ExternalLink, Loader2 } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -77,6 +78,8 @@ export function TrustPortalDomain({
     setIsVercelTxtVerified(isVercelTxtVerified === 'true');
   }, [initialDomain]);
 
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { submitCustomDomain, checkDns } = useTrustPortalSettings();
   const [isUpdatingDomain, setIsUpdatingDomain] = useState(false);
   const [isCheckingDns, setIsCheckingDns] = useState(false);
@@ -209,6 +212,7 @@ export function TrustPortalDomain({
                           autoCapitalize="none"
                           autoCorrect="off"
                           spellCheck="false"
+                          disabled={!canUpdate}
                         />
                       </FormControl>
                       {field.value === initialDomain && initialDomain !== '' && !domainVerified && (
@@ -524,7 +528,7 @@ export function TrustPortalDomain({
             <Button
               type="submit"
               disabled={
-                isUpdatingDomain || isCheckingDns
+                !canUpdate || isUpdatingDomain || isCheckingDns
               }
             >
               {isUpdatingDomain ? (

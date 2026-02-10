@@ -21,6 +21,26 @@
         ]
       }
     },
+    "/v1/auth/invitations": {
+      "get": {
+        "operationId": "AuthController_listInvitations_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List pending invitations for the organization",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/v1/auth/invitations/{id}": {
       "delete": {
         "operationId": "AuthController_deleteInvitation_v1",
@@ -200,6 +220,57 @@
           }
         ],
         "summary": "List all roles",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/v1/roles/permissions": {
+      "get": {
+        "description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles.",
+        "operationId": "RolesController_getPermissionsForRoles_v1",
+        "parameters": [
+          {
+            "name": "roles",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merged permissions for the requested roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "permissions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Resolve permissions for custom roles",
         "tags": [
           "Roles"
         ]
@@ -1102,6 +1173,26 @@
           }
         ],
         "summary": "Create a new API key",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/organization/api-keys/available-scopes": {
+      "get": {
+        "operationId": "OrganizationController_getAvailableScopes_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get available API key scopes",
         "tags": [
           "Organization"
         ]

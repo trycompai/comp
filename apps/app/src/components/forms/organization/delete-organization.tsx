@@ -1,6 +1,7 @@
 'use client';
 
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Input } from '@comp/ui/input';
 import { Label } from '@comp/ui/label';
@@ -29,6 +30,7 @@ export function DeleteOrganization({
   isOwner: boolean;
 }) {
   const { deleteOrganization } = useOrganizationMutations();
+  const { hasPermission } = usePermissions();
   const [value, setValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,8 +47,8 @@ export function DeleteOrganization({
     }
   };
 
-  // Only show delete organization section to the owner
-  if (!isOwner) {
+  // Only show delete organization section to the owner with delete permission
+  if (!isOwner || !hasPermission('organization', 'delete')) {
     return null;
   }
 

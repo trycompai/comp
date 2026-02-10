@@ -1,6 +1,7 @@
 'use client';
 
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@comp/ui/form';
@@ -36,6 +37,8 @@ export function TrustSettingsClient({
   vercelVerification,
   allowedDomains,
 }: TrustSettingsClientProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const { updateToggleSettings } = useTrustPortalSettings();
 
   const form = useForm<z.infer<typeof trustSettingsSchema>>({
@@ -55,6 +58,7 @@ export function TrustSettingsClient({
 
   const autoSave = useCallback(
     async (field: string, value: unknown) => {
+      if (!canUpdate) return;
       if (savingRef.current[field]) {
         return;
       }
@@ -130,6 +134,7 @@ export function TrustSettingsClient({
                         }}
                         onBlur={handleContactEmailBlur}
                         placeholder="contact@example.com"
+                        disabled={!canUpdate}
                         autoComplete="off"
                         autoCapitalize="none"
                         autoCorrect="off"

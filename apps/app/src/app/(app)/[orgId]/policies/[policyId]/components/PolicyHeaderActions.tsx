@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { auditLogsKey } from '../hooks/useAuditLogs';
 import { usePolicy, policyKey } from '../hooks/usePolicy';
 import { policyVersionsKey } from '../hooks/usePolicyVersions';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type PolicyWithVersion = Policy & {
   approver: (Member & { user: User }) | null;
@@ -178,9 +179,16 @@ export function PolicyHeaderActions({
     }
   };
 
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('policy', 'update');
+  const canDelete = hasPermission('policy', 'delete');
+
   if (!policy) return null;
 
   const isPendingApproval = !!policy.approverId;
+
+  // Hide entire menu if user has no write permissions
+  if (!canUpdate && !canDelete) return null;
 
   return (
     <>
@@ -191,40 +199,48 @@ export function PolicyHeaderActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => setRegenerateConfirmOpen(true)}
-            disabled={isPendingApproval || isRegenerating}
-          >
-            <Icons.AI className="mr-2 h-4 w-4" />{' '}
-            {isRegenerating ? 'Regenerating...' : 'Regenerate policy'}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              updateQueryParam({ key: 'policy-overview-sheet', value: 'true' });
-            }}
-          >
-            <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
-          </DropdownMenuItem>
+          {canUpdate && (
+            <DropdownMenuItem
+              onClick={() => setRegenerateConfirmOpen(true)}
+              disabled={isPendingApproval || isRegenerating}
+            >
+              <Icons.AI className="mr-2 h-4 w-4" />{' '}
+              {isRegenerating ? 'Regenerating...' : 'Regenerate policy'}
+            </DropdownMenuItem>
+          )}
+          {canUpdate && (
+            <DropdownMenuItem
+              onClick={() => {
+                updateQueryParam({ key: 'policy-overview-sheet', value: 'true' });
+              }}
+            >
+              <Icons.Edit className="mr-2 h-4 w-4" /> Edit policy
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => handleDownloadPDF()} disabled={isDownloading}>
             <Icons.Download className="mr-2 h-4 w-4" />{' '}
             {isDownloading ? 'Downloading...' : 'Download as PDF'}
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              updateQueryParam({ key: 'archive-policy-sheet', value: 'true' });
-            }}
-          >
-            <Icons.InboxCustomize className="mr-2 h-4 w-4" /> Archive / Restore
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              updateQueryParam({ key: 'delete-policy', value: 'true' });
-            }}
-            className="text-destructive"
-          >
-            <Icons.Delete className="mr-2 h-4 w-4" /> Delete
-          </DropdownMenuItem>
+          {canUpdate && (
+            <DropdownMenuItem
+              onClick={() => {
+                updateQueryParam({ key: 'archive-policy-sheet', value: 'true' });
+              }}
+            >
+              <Icons.InboxCustomize className="mr-2 h-4 w-4" /> Archive / Restore
+            </DropdownMenuItem>
+          )}
+          {canDelete && (
+            <DropdownMenuItem
+              onClick={() => {
+                updateQueryParam({ key: 'delete-policy', value: 'true' });
+              }}
+              className="text-destructive"
+            >
+              <Icons.Delete className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

@@ -5,6 +5,7 @@ import type { JSONContent } from '@tiptap/react';
 import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Comments } from '../../../../../../components/comments/Comments';
 import type { AuditLogWithRelations } from '../data';
 import { PolicyContentManager } from '../editor/components/PolicyDetails';
@@ -52,6 +53,7 @@ export function PolicyPageTabs({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { hasPermission } = usePermissions();
 
   // Use SWR for policy data with initial data from server
   const { policy, mutate } = usePolicy({

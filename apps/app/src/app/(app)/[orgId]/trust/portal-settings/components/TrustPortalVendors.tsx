@@ -2,6 +2,7 @@
 
 import { Button, Switch } from '@trycompai/design-system';
 import { ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -153,6 +154,8 @@ export function TrustPortalVendors({
   orgId,
 }: TrustPortalVendorsProps) {
   const { updateVendorTrustSettings } = useTrustPortalSettings();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -250,6 +253,7 @@ export function TrustPortalVendors({
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={vendor.showOnTrustPortal}
+                    disabled={!canUpdate}
                     onCheckedChange={() =>
                       handleToggleVisibility(vendor.id, vendor.showOnTrustPortal)
                     }

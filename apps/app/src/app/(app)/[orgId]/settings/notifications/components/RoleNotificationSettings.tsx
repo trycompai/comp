@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   Button,
   Checkbox,
@@ -25,6 +26,8 @@ interface Props {
 
 export function RoleNotificationSettings({ initialSettings }: Props) {
   const { saveSettings } = useRoleNotifications({ initialData: initialSettings });
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
   const [settings, setSettings] = useState<RoleNotificationConfig[]>(initialSettings);
   const [saving, setSaving] = useState(false);
 
@@ -60,7 +63,7 @@ export function RoleNotificationSettings({ initialSettings }: Props) {
       title="Role Notification Settings"
       description="Configure which email notifications each role receives. Users with owner or admin roles can individually opt out. All other roles follow these settings."
       actions={
-        <Button size="lg" onClick={handleSave} disabled={saving || !hasChanges} loading={saving}>
+        <Button size="lg" onClick={handleSave} disabled={saving || !hasChanges || !canUpdate} loading={saving}>
           Save Changes
         </Button>
       }
@@ -94,6 +97,7 @@ export function RoleNotificationSettings({ initialSettings }: Props) {
                   <HStack justify="center">
                     <Checkbox
                       checked={config.notifications[type.key]}
+                      disabled={!canUpdate}
                       onCheckedChange={(checked) =>
                         handleToggle(roleIndex, type.key, checked === true)
                       }

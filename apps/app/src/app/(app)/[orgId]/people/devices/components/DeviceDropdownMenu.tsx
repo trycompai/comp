@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@comp/ui/dropdown-menu';
 import { Laptop, MoreHorizontal } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Host } from '../types';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 import { useState } from 'react';
@@ -20,12 +21,13 @@ interface DeviceDropdownMenuProps {
 }
 
 export const DeviceDropdownMenu = ({ host, isCurrentUserOwner }: DeviceDropdownMenuProps) => {
+  const { hasPermission } = usePermissions();
   const [isRemoveDeviceAlertOpen, setIsRemoveDeviceAlertOpen] = useState(false);
   const [isRemovingDevice, setIsRemovingDevice] = useState(false);
 
   const { removeDevice } = useDevices();
 
-  if (!isCurrentUserOwner || !host.member_id) {
+  if (!hasPermission('member', 'delete') || !host.member_id) {
     return null;
   }
 

@@ -2,6 +2,7 @@
 
 import { useApiKeys } from '@/hooks/use-api-keys';
 import type { ApiKey } from '@/hooks/use-api-keys';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +63,8 @@ function ScopeBadge({ apiKey }: { apiKey: ApiKey }) {
 
 function ActionsCell({ apiKey }: { apiKey: ApiKey }) {
   const { revokeApiKey } = useApiKeys();
+  const { hasPermission } = usePermissions();
+  const canDeleteApiKey = hasPermission('apiKey', 'delete');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
 
@@ -77,6 +80,8 @@ function ActionsCell({ apiKey }: { apiKey: ApiKey }) {
       setIsRevoking(false);
     }
   };
+
+  if (!canDeleteApiKey) return null;
 
   return (
     <>

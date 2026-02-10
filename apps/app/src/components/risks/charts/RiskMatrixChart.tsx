@@ -45,18 +45,18 @@ interface RiskCell {
   value?: number;
 }
 
-const getRiskColor = (level: string) => {
+const getRiskColor = (level: string, readOnly?: boolean) => {
   switch (level) {
     case 'very-low':
-      return 'bg-emerald-500/20 border-emerald-500/30 hover:bg-emerald-500/30';
+      return `bg-emerald-500/20 border-emerald-500/30${readOnly ? '' : ' hover:bg-emerald-500/30'}`;
     case 'low':
-      return 'bg-green-500/20 border-green-500/30 hover:bg-green-500/30';
+      return `bg-green-500/20 border-green-500/30${readOnly ? '' : ' hover:bg-green-500/30'}`;
     case 'medium':
-      return 'bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30';
+      return `bg-yellow-500/20 border-yellow-500/30${readOnly ? '' : ' hover:bg-yellow-500/30'}`;
     case 'high':
-      return 'bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30';
+      return `bg-orange-500/20 border-orange-500/30${readOnly ? '' : ' hover:bg-orange-500/30'}`;
     case 'very-high':
-      return 'bg-red-500/20 border-red-500/30 hover:bg-red-500/30';
+      return `bg-red-500/20 border-red-500/30${readOnly ? '' : ' hover:bg-red-500/30'}`;
     default:
       return 'bg-slate-500/20 border-slate-500/30';
   }
@@ -81,6 +81,7 @@ interface RiskMatrixChartProps {
   activeLikelihood: Likelihood;
   activeImpact: Impact;
   saveAction: (data: { id: string; probability: Likelihood; impact: Impact }) => Promise<any>;
+  readOnly?: boolean;
 }
 
 export function RiskMatrixChart({
@@ -90,6 +91,7 @@ export function RiskMatrixChart({
   activeLikelihood: initialLikelihoodProp,
   activeImpact: initialImpactProp,
   saveAction,
+  readOnly,
 }: RiskMatrixChartProps) {
   const [initialLikelihood, setInitialLikelihood] = useState<Likelihood>(initialLikelihoodProp);
   const [initialImpact, setInitialImpact] = useState<Impact>(initialImpactProp);
@@ -133,6 +135,7 @@ export function RiskMatrixChart({
   );
 
   const handleCellClick = (probability: string, impact: string) => {
+    if (readOnly) return;
     const likelihoodIdx = probabilityLevels.indexOf(probability);
     const impactIdx = impactLevels.indexOf(impact);
     const newLikelihood = VISUAL_LIKELIHOOD_ORDER[likelihoodIdx];
@@ -167,19 +170,21 @@ export function RiskMatrixChart({
             <CardTitle>{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
           </div>
-          <AnimatePresence>
-            {hasChanges && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-              >
-                <Button onClick={handleSave} variant="default" disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {!readOnly && (
+            <AnimatePresence>
+              {hasChanges && (
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                >
+                  <Button onClick={handleSave} variant="default" disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -218,7 +223,7 @@ export function RiskMatrixChart({
                     return (
                       <div
                         key={`${probability}-${impact}`}
-                        className={`relative h-12 cursor-pointer border transition-all duration-200 ${getRiskColor(cell?.level || 'very-low')} flex items-center justify-center ${rounding} `}
+                        className={`relative h-12 ${readOnly ? '' : 'cursor-pointer'} border transition-all duration-200 ${getRiskColor(cell?.level || 'very-low', readOnly)} flex items-center justify-center ${rounding} `}
                         onClick={() => handleCellClick(probability, impact)}
                       >
                         {cell?.value && (

@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { useVendor, useVendorActions } from '@/hooks/use-vendors';
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
 import type { Vendor } from '@db';
@@ -11,6 +12,7 @@ interface ResidualRiskChartProps {
 export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
   const { updateVendor } = useVendorActions();
   const { mutate } = useVendor(vendor.id);
+  const { hasPermission } = usePermissions();
 
   return (
     <RiskMatrixChart
@@ -19,6 +21,7 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
       riskId={vendor.id}
       activeLikelihood={vendor.residualProbability}
       activeImpact={vendor.residualImpact}
+      readOnly={!hasPermission('vendor', 'assess')}
       saveAction={async ({ id, probability, impact }) => {
         await updateVendor(id, {
           residualProbability: probability,

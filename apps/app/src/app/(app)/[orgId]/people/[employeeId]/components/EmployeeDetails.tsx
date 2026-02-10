@@ -15,6 +15,7 @@ import { Email } from './Fields/Email';
 import { JoinDate } from './Fields/JoinDate';
 import { Name } from './Fields/Name';
 import { Status } from './Fields/Status';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useEmployee } from '../hooks/useEmployee';
 
 // Define form schema with Zod
@@ -30,13 +31,16 @@ export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export const EmployeeDetails = ({
   employee,
-  canEdit,
+  canEdit: _canEdit,
 }: {
   employee: Member & {
     user: User;
   };
   canEdit: boolean;
 }) => {
+  const { hasPermission } = usePermissions();
+  const canEdit = hasPermission('member', 'update');
+
   const { updateEmployee } = useEmployee({
     employeeId: employee.id,
     initialData: employee,

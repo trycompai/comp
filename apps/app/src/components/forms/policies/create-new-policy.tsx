@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { createPolicySchema, type CreatePolicySchema } from '@/actions/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 export function CreateNewPolicyForm() {
+  const { hasPermission } = usePermissions();
   const { createPolicy } = usePolicyMutations();
   const router = useRouter();
   const pathname = usePathname();
@@ -87,7 +89,7 @@ export function CreateNewPolicyForm() {
           )}
         </Stack>
 
-        <Button iconRight={<ArrowRight />} loading={isLoading} onClick={handleSubmit(onSubmit)}>
+        <Button iconRight={<ArrowRight />} loading={isLoading} disabled={!hasPermission('policy', 'create')} onClick={handleSubmit(onSubmit)}>
           Create
         </Button>
       </Stack>

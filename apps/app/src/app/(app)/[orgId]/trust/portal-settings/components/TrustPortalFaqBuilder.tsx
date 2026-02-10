@@ -1,6 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@comp/ui/button';
 import { Input } from '@comp/ui/input';
 import { Textarea } from '@comp/ui/textarea';
@@ -33,6 +34,8 @@ export function TrustPortalFaqBuilder({
   orgId: string;
 }) {
   const { put } = useApi();
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('trust', 'update');
   const [faqs, setFaqs] = useState<FaqItem[]>(() =>
     normalizeFaqs(initialFaqs ?? []),
   );
@@ -155,38 +158,40 @@ export function TrustPortalFaqBuilder({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            onClick={handleAddFaq}
-            variant="default"
-            size="sm"
-            className="gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add FAQ
-          </Button>
-          {isDirty && (
-            <span className="text-xs text-muted-foreground hidden sm:inline">
-              Unsaved changes
-            </span>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            variant={isDirty ? 'default' : 'outline'}
-            disabled={!isDirty || isSaving}
-            onClick={handleSave}
-            className="gap-1.5"
-          >
-            {isSaving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
+        {canUpdate && (
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              onClick={handleAddFaq}
+              variant="default"
+              size="sm"
+              className="gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add FAQ
+            </Button>
+            {isDirty && (
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                Unsaved changes
+              </span>
             )}
-            Save
-          </Button>
-        </div>
+            <Button
+              type="button"
+              size="sm"
+              variant={isDirty ? 'default' : 'outline'}
+              disabled={!isDirty || isSaving}
+              onClick={handleSave}
+              className="gap-1.5"
+            >
+              {isSaving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
+              Save
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* FAQ List */}
@@ -206,7 +211,7 @@ export function TrustPortalFaqBuilder({
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    disabled={index === 0}
+                    disabled={!canUpdate || index === 0}
                     onClick={() => handleMoveUp(index)}
                     title="Move up"
                   >
@@ -217,7 +222,7 @@ export function TrustPortalFaqBuilder({
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    disabled={index === faqs.length - 1}
+                    disabled={!canUpdate || index === faqs.length - 1}
                     onClick={() => handleMoveDown(index)}
                     title="Move down"
                   >
@@ -234,6 +239,7 @@ export function TrustPortalFaqBuilder({
                     <Input
                       value={faq.question}
                       onChange={(e) => handleUpdateFaq(faq.id, 'question', e.target.value)}
+                      disabled={!canUpdate}
                       placeholder="What is your security policy?"
                       className={`font-medium placeholder:text-muted-foreground/70 ${
                         faq.question.trim() === '' && faq.answer.trim() !== ''
@@ -252,6 +258,7 @@ export function TrustPortalFaqBuilder({
                     <Textarea
                       value={faq.answer}
                       onChange={(e) => handleUpdateFaq(faq.id, 'answer', e.target.value)}
+                      disabled={!canUpdate}
                       placeholder="We follow industry best practices..."
                       className={`min-h-[100px] placeholder:text-muted-foreground/70 ${
                         faq.answer.trim() === '' && faq.question.trim() !== ''
@@ -266,17 +273,19 @@ export function TrustPortalFaqBuilder({
                 </div>
 
                 {/* Delete button */}
-                <div className="pt-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteFaq(faq.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {canUpdate && (
+                  <div className="pt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteFaq(faq.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </Card>
           ))

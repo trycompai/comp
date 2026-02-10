@@ -8,6 +8,7 @@ import type { AuditLog, Member, Organization, Policy, User } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type AuditLogWithRelations = AuditLog & {
   user: User | null;
@@ -24,6 +25,7 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const { hasPermission } = usePermissions();
 
   const handleDownloadAll = async () => {
     setIsDownloadingAll(true);
@@ -63,9 +65,11 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
             Download All
           </Button>
         )}
-        <Button iconLeft={<Add />} onClick={handleCreatePolicy}>
-          Create Policy
-        </Button>
+        {hasPermission('policy', 'create') && (
+          <Button iconLeft={<Add />} onClick={handleCreatePolicy}>
+            Create Policy
+          </Button>
+        )}
       </HStack>
       <CreatePolicySheet />
     </>
